@@ -11,6 +11,7 @@
 package com.softinstigate.restart;
 
 import io.undertow.Undertow;
+import io.undertow.Handlers;
 import java.util.Scanner;
 
 /**
@@ -58,7 +59,9 @@ public class Bootstrapper
         server = Undertow.builder()
                 .addHttpListener(8080, "localhost")
                 //.setWorkerThreads(50)
-                .setHandler(new RESTHandler())
+                .setHandler(Handlers.path()
+                        .addPrefixPath("/mgmt", new ErrorHandler(new RequestContextDecoderHandler(new MgmtHandler())))
+                        .addPrefixPath("/api", new ErrorHandler(new RequestContextDecoderHandler(new SchemaEnforcerHandler(new APIHandler())))))
                 .build();
         server.start();
     }
