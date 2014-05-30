@@ -8,16 +8,19 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restart;
+package com.softinstigate.restart.handlers;
 
+import com.softinstigate.restart.utils.HttpStatus;
+import com.softinstigate.restart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
-import java.util.Arrays;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import org.jboss.logging.Logger;
+import org.jboss.logging.Logger.Level;
 
 /**
  *
@@ -46,24 +49,9 @@ public class ErrorHandler implements HttpHandler
         }
         catch (Throwable t)
         {
-            HttpString method = exchange.getRequestMethod();
+            Logger.getLogger(this.getClass().getName()).log(Level.ERROR, "error handling the request", t);
 
-            exchange.setResponseCode(500);
-
-            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, t.getMessage());
-
-            if (t.getStackTrace() != null)
-            {
-                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, Arrays.toString(t.getStackTrace()));
-
-                if (method.equals(Methods.GET))
-                {
-                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
-                    exchange.getResponseSender().send(t.getMessage());
-                    exchange.getResponseSender().send(Arrays.toString(t.getStackTrace()));
-                    exchange.endExchange();
-                }
-            }
+            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, t);
         }
     }
 }

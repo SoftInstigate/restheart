@@ -9,7 +9,7 @@
  * program(s) have been supplied. This copyright notice must not be removed.
  */
 
-package com.softinstigate.restart;
+package com.softinstigate.restart.db;
 
 import com.mongodb.MongoClient;
 import com.mongodb.MongoCredential;

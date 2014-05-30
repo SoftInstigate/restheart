@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restart;
+package com.softinstigate.restart.handlers;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -24,9 +24,10 @@ import io.undertow.util.Methods;
 public class SchemaEnforcerHandler implements HttpHandler
 {
     private final HttpHandler next;
-    
+
     /**
      * Creates a new instance of EntityResource
+     *
      * @param next
      */
     public SchemaEnforcerHandler(HttpHandler next)
@@ -38,11 +39,11 @@ public class SchemaEnforcerHandler implements HttpHandler
     public void handleRequest(HttpServerExchange exchange) throws Exception
     {
         HttpString method = exchange.getRequestMethod();
-        
+
         if (method.equals(Methods.POST) || method.equals(Methods.PUT))
         {
             HeaderValues contentTypevs = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
-            
+
             if (contentTypevs == null || contentTypevs.isEmpty() || !contentTypevs.getFirst().equals("application/json"))
             {
                 throw new IllegalArgumentException("Contet-Type must be application/json");
