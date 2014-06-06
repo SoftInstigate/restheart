@@ -1,0 +1,7 @@
+## RESTHeart configuration file.
+---
+port: 443
+use-embedded keystore: true
+keystore-file: /path/to/keystore
+keystore-password: pas
+certpassword: password

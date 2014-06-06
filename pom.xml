@@ -23,6 +23,12 @@
             <artifactId>undertow-core</artifactId>
             <version>1.0.1.Final</version>
         </dependency>
+        
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>1.13</version>
+        </dependency>
     </dependencies>
     <name>RESTart</name>
     

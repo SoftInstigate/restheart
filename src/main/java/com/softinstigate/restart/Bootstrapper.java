@@ -37,6 +37,7 @@ import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.BlockingHandler;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -53,10 +54,9 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
+import org.yaml.snakeyaml.Yaml;
 
 /**
  *
@@ -68,6 +68,31 @@ public class Bootstrapper
 
     public static void main(final String[] args)
     {
+        Yaml yaml = new Yaml();
+
+        if (args == null || args.length < 1)
+        {
+            System.err.println("you must specify a configuration file");
+            System.exit(-1);
+        }
+        
+        File confFile = new File(args[0]);
+        
+        Map<String, String> conf = null;
+        
+        try
+        {
+            conf = (Map<String, String>) yaml.load(new FileInputStream(confFile));
+        }
+        catch (FileNotFoundException ex)
+        {
+            System.err.println("you specified a configuration file that does not actually exist");
+            System.exit(-2);
+        }
+
+        if (conf != null)
+            System.out.println(conf.toString());
+        
         start();
 
         System.out.println("started");
