@@ -19,6 +19,7 @@ import io.undertow.server.HttpServerExchange;
 import static com.softinstigate.restart.utils.RequestContext.METHOD;
 import static com.softinstigate.restart.utils.RequestContext.TYPE;
 import com.softinstigate.restart.utils.ResponseHelper;
+import io.undertow.server.handlers.AllowedMethodsHandler;
 
 /**
  *
@@ -28,18 +29,18 @@ public class RequestDispacherHandler implements HttpHandler
 {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
     
-    private HttpHandler dbGet;
-    private HttpHandler dbPost;
-    private HttpHandler dbPut;
-    private HttpHandler dbDelete;
-    private HttpHandler collectionGet;
-    private HttpHandler collectionPost;
-    private HttpHandler collectionPut;
-    private HttpHandler collectionDelete;
-    private HttpHandler documentGet;
-    private HttpHandler documentPost;
-    private HttpHandler documentPut;
-    private HttpHandler documentDelete;
+    private final HttpHandler dbGet;
+    private final HttpHandler dbPost;
+    private final HttpHandler dbPut;
+    private final HttpHandler dbDelete;
+    private final HttpHandler collectionGet;
+    private final HttpHandler collectionPost;
+    private final HttpHandler collectionPut;
+    private final HttpHandler collectionDelete;
+    private final HttpHandler documentGet;
+    private final HttpHandler documentPost;
+    private final HttpHandler documentPut;
+    private final HttpHandler documentDelete;
 
     /**
      * Creates a new instance of EntityResource
@@ -103,6 +104,8 @@ public class RequestDispacherHandler implements HttpHandler
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_IMPLEMENTED);
             return;
         }
+        
+        // TODO: use AllowedMethodsHandler to limit methods
         
         switch (c.getMethod())
         {

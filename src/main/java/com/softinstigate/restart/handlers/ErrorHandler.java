@@ -14,11 +14,6 @@ import com.softinstigate.restart.utils.HttpStatus;
 import com.softinstigate.restart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
-import io.undertow.util.HttpString;
-import io.undertow.util.Methods;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import org.jboss.logging.Logger;
 import org.jboss.logging.Logger.Level;
 
