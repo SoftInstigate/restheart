@@ -15,10 +15,12 @@ import com.mongodb.MongoClient;
 import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.CRC32;
 
 /**
  *
@@ -65,8 +67,9 @@ public class MongoDBClientSingleton
         List<MongoCredential> credentials = new ArrayList<>();
         
         servers.add(new ServerAddress(mongoHost, mongoPort));
-        credentials.add(MongoCredential.createPlainCredential(mongoUser, "admin", mongoPassword.toCharArray()));
         
+        credentials.add(MongoCredential.createMongoCRCredential(mongoUser, "admin", mongoPassword.toCharArray()));
+                
         mongoClient = new MongoClient(servers, credentials); 
     }
     
