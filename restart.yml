@@ -1,7 +1,11 @@
 ## RESTHeart configuration file.
 ---
-port: 443
-use-embedded keystore: true
-keystore-file: /path/to/keystore
-keystore-password: pas
-certpassword: password
+port: 10443
+use-embedded-keystore: true
+#keystore-file: </path/to/keystore>
+#keystore-password: <pwd>
+#certpassword: password
+# mongo-host: 127.0.0.1
+# mongo-port: 27017
+mongo-user: admin
+mongo-password: adminadmin

@@ -10,6 +10,7 @@
  */
 package com.softinstigate.restart;
 
+import com.softinstigate.restart.db.MongoDBClientSingleton;
 import com.softinstigate.restart.handlers.ErrorHandler;
 import com.softinstigate.restart.handlers.RequestDispacherHandler;
 import com.softinstigate.restart.handlers.SchemaEnforcerHandler;
@@ -51,7 +52,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.KeyManagerFactory;
@@ -70,60 +70,53 @@ public class Bootstrapper
     {
         Yaml yaml = new Yaml();
 
+        File confFile = null;
+        
         if (args == null || args.length < 1)
         {
-            System.err.println("you must specify a configuration file");
-            System.exit(-1);
+            confFile = new File("restart.yml");
+        }
+        else
+        {
+            confFile = new File(args[0]);
         }
         
-        File confFile = new File(args[0]);
-        
-        Map<String, String> conf = null;
+        Map<String, Object> conf = null;
         
         try
         {
-            conf = (Map<String, String>) yaml.load(new FileInputStream(confFile));
+            conf = (Map<String, Object>) yaml.load(new FileInputStream(confFile));
         }
         catch (FileNotFoundException ex)
         {
-            System.err.println("you specified a configuration file that does not actually exist");
+            System.err.println("cannot find the configuration file");
             System.exit(-2);
         }
-
-        if (conf != null)
-            System.out.println(conf.toString());
         
-        start();
+        int port = (Integer) conf.getOrDefault("port", "443");
+        boolean useEmbeddedKeystore = (Boolean) conf.getOrDefault("use-embedded-keystore", "true");
+        String keystoreFile = (String) conf.get("keystore-file");
+        String keystorePassword = (String) conf.get("keystore-password");
+        String certPassword = (String) conf.get("certpassword");
+        String mongoHost = (String) conf.getOrDefault("mongo-host", "127.0.0.1");
+        int mongoPort = (Integer) conf.getOrDefault("mongo-port", 27017);
+        String mongoUser = (String) conf.getOrDefault("mongo-user", "");
+        String mongoPassword = (String) conf.getOrDefault("mongo-password", "");
+        
+        MongoDBClientSingleton.init(mongoHost, mongoPort, mongoUser, mongoPassword);
+        
+        System.out.println(conf.toString());
+        
+        start(port,useEmbeddedKeystore, keystoreFile, keystorePassword, certPassword);
 
-        System.out.println("started");
-        System.out.println("press any key to stop/start");
-
-        Scanner in = new Scanner(System.in);
-
-        boolean started = true;
-
-        while (in.hasNextLine())
-        {
-            if (started)
-            {
-                stop();
-                started = false;
-
-                System.out.println("stopped");
-            }
-            else
-            {
-                start();
-                started = true;
-
-                System.out.println("started");
-            }
-
-            in.nextLine();
-        }
+        System.out.println("started on port " + port);
     }
 
-    private static void start()
+    private static void start(int port, 
+            boolean useEmbeddedKeystore,
+            String keystoreFile,
+            String keystorePassword,
+            String certPassword)
     {
         final Map<String, char[]> users = new HashMap<>(2);
         users.put("admin", "admin".toCharArray());
@@ -137,18 +130,26 @@ public class Bootstrapper
         {
             KeyManagerFactory kmf;
             KeyStore ks;
-            char[] storepass = "restheart".toCharArray();
-            char[] keypass   = "restheart".toCharArray();
             
-            String storename = "rakeystore.jks";
+            if (useEmbeddedKeystore)
+            {
+                char[] storepass = "restheart".toCharArray();
+                char[] keypass   = "restheart".toCharArray();
 
-            sslContext = SSLContext.getInstance("TLS");
-            kmf = KeyManagerFactory.getInstance("SunX509");
-            ks = KeyStore.getInstance("JKS");
-            ks.load(Bootstrapper.class.getClassLoader().getResourceAsStream(storename), storepass);
+                String storename = "rakeystore.jks";
 
-            kmf.init(ks, keypass);
-            sslContext.init(kmf.getKeyManagers(), null, null);
+                sslContext = SSLContext.getInstance("TLS");
+                kmf = KeyManagerFactory.getInstance("SunX509");
+                ks = KeyStore.getInstance("JKS");
+                ks.load(Bootstrapper.class.getClassLoader().getResourceAsStream(storename), storepass);
+
+                kmf.init(ks, keypass);
+                sslContext.init(kmf.getKeyManagers(), null, null);
+            }
+            else
+            {
+                throw new IllegalArgumentException("user custom keyfactory not yet implemented");
+            }
         }
         catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException ex)
         {
@@ -167,7 +168,7 @@ public class Bootstrapper
         }
         
         server = Undertow.builder()
-                .addHttpsListener(443, "0.0.0.0", sslContext)
+                .addHttpsListener(port, "0.0.0.0", sslContext)
                 .setWorkerThreads(50)
                 .setHandler(addSecurity(
                         new ErrorHandler(

@@ -26,10 +26,20 @@ import java.util.logging.Logger;
  */
 public class MongoDBClientSingleton
 {
+    private static boolean initialized = false;
+    
+    private static transient String mongoHost = null;
+    private static transient int mongoPort = 27017;
+    private static transient String mongoUser = null;
+    private static transient String mongoPassword = null;
+    
     private MongoClient mongoClient;
     
     private MongoDBClientSingleton()
     {
+        if (!initialized)
+            throw new IllegalStateException("not initialized");
+        
         try
         {
             init();
@@ -40,13 +50,22 @@ public class MongoDBClientSingleton
         }
     }
     
+    public static void init(String host, int port, String user, String password)
+    {
+        mongoHost = host;
+        mongoPort = port;
+        mongoUser = user;
+        mongoPassword = password;
+        initialized = true;
+    }
+    
     private void init() throws UnknownHostException
     {
         List<ServerAddress> servers = new ArrayList<>();
         List<MongoCredential> credentials = new ArrayList<>();
         
-        servers.add(new ServerAddress("127.0.0.1", 27017)); //127.6.201.130
-        //credentials.add(MongoCredential.createMongoCRCredential("admin", "services", "teAAFd7r33K3".toCharArray()));
+        servers.add(new ServerAddress(mongoHost, mongoPort));
+        credentials.add(MongoCredential.createPlainCredential(mongoUser, "admin", mongoPassword.toCharArray()));
         
         mongoClient = new MongoClient(servers, credentials); 
     }
