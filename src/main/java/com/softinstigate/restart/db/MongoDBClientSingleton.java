@@ -42,11 +42,15 @@ public class MongoDBClientSingleton
         
         try
         {
-            init();
+            setup();
         }
         catch (UnknownHostException ex)
         {
-            Logger.getLogger(MongoDBClientSingleton.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(MongoDBClientSingleton.class.getName()).log(Level.SEVERE, "error initializing mongodb client", ex);
+        }
+        catch (Throwable tr)
+        {
+            Logger.getLogger(MongoDBClientSingleton.class.getName()).log(Level.SEVERE, "error initializing mongodb client", tr);
         }
     }
     
@@ -59,7 +63,7 @@ public class MongoDBClientSingleton
         initialized = true;
     }
     
-    private void init() throws UnknownHostException
+    private void setup() throws UnknownHostException
     {
         List<ServerAddress> servers = new ArrayList<>();
         List<MongoCredential> credentials = new ArrayList<>();

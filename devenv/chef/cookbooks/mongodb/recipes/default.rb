@@ -10,7 +10,8 @@ apt_package "mongodb-10gen" do
 end
 
 execute "create_mongo_admin" do
-	command "mongo admin -u admin -p \"adminadmin\" --eval \"db.removeUser(\\\"admin\\\"); db.addUser( { user : \\\"admin\\\", pwd : \\\"adminadmin\\\", roles: [ \\\"userAdminAnyDatabase\\\", \\\"dbAdminAnyDatabase\\\", \\\"readWriteAnyDatabase\\\" ] } ) \""
+	command "touch /root/mongo-initialized && mongo admin --eval \"db.removeUser(\\\"admin\\\"); db.addUser( { user : \\\"admin\\\", pwd : \\\"adminadmin\\\", roles: [ \\\"userAdminAnyDatabase\\\", \\\"dbAdminAnyDatabase\\\", \\\"readWriteAnyDatabase\\\" ] } ) \""
+	not_if { ::File.exists?("/root/mongo-initialized") }
 end
 
 cookbook_file "mongodb.conf" do
@@ -23,12 +24,14 @@ service "mongodb" do
 	action :restart
 end
 
+execute "delay_for_mongo_restart" do
+	command "sleep 3"
+end
+
 execute "delete_test_data" do
 	command "mongo testdb --authenticationDatabase admin -u admin -p \"adminadmin\" --eval \"db.testcoll.drop();\""
-	only_if { ::File.exists?("/home/vagrant/restart/.git") }
 end
 
 execute "create_test_data" do
 	command "mongo testdb --authenticationDatabase admin -u admin -p \"adminadmin\" --eval \"db.testcoll.insert( { name: \\\"Andrea\\\", surname: \\\"Di Cesare\\\", phone: { type: \\\"mobile\\\", no: \\\"329.7376417\\\"} });\""
-	only_if { ::File.exists?("/home/vagrant/restart/.git") }
 end
