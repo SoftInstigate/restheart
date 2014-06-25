@@ -38,6 +38,7 @@ import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.BlockingHandler;
+import io.undertow.server.handlers.HttpContinueAcceptingHandler;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -173,6 +174,7 @@ public class Bootstrapper
                 .setHandler(addSecurity(
                         new ErrorHandler(
                                 new BlockingHandler(
+                                        new HttpContinueAcceptingHandler(
                                         new SchemaEnforcerHandler(
                                             new RequestDispacherHandler(
                                                 new GetDBHandler(),             // get collections
@@ -190,6 +192,7 @@ public class Bootstrapper
                                                 new PutDocumentHandler(),       // create/update document
                                                 new DeleteDocumentHandler()     // delete document
                                             )
+                                        )
                                         )
                                 )
                             ), identityManager)

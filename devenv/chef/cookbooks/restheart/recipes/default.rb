@@ -1,5 +1,5 @@
 execute "build" do
-	command "cd /restart; git checkout develop; mvn package"
+	command "cd /restart; mvn package"
 	only_if { ::File.exists?("/restart/.git") }
 end
 
