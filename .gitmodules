@@ -1,0 +1,9 @@
+[submodule "devenv/chef/cookbooks/apt"]
+	path = devenv/chef/cookbooks/apt
+	url = https://github.com/opscode-cookbooks/apt
+[submodule "devenv/chef/cookbooks/java"]
+	path = devenv/chef/cookbooks/java
+	url = https://github.com/opscode-cookbooks/java
+[submodule "devenv/chef/cookbooks/git"]
+	path = devenv/chef/cookbooks/git
+	url = https://github.com/jssjr/git.git

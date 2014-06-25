@@ -1,0 +1,34 @@
+apt_repository 'ubuntu-upstart' do
+  uri        'http://downloads-distro.mongodb.org/repo/ubuntu-upstart'
+  components ['dist', '10gen']
+  keyserver  'hkp://keyserver.ubuntu.com:80'
+  key        '7F0CEB10'
+end
+
+apt_package "mongodb-10gen" do
+ 	action :install
+end
+
+execute "create_mongo_admin" do
+	command "mongo admin -u admin -p \"adminadmin\" --eval \"db.removeUser(\\\"admin\\\"); db.addUser( { user : \\\"admin\\\", pwd : \\\"adminadmin\\\", roles: [ \\\"userAdminAnyDatabase\\\", \\\"dbAdminAnyDatabase\\\", \\\"readWriteAnyDatabase\\\" ] } ) \""
+end
+
+cookbook_file "mongodb.conf" do
+	path "/etc/mongodb.conf" 
+	mode 0644
+	owner "root"
+end
+
+service "mongodb" do
+	action :restart
+end
+
+execute "delete_test_data" do
+	command "mongo testdb --authenticationDatabase admin -u admin -p \"adminadmin\" --eval \"db.testcoll.drop();\""
+	only_if { ::File.exists?("/home/vagrant/restart/.git") }
+end
+
+execute "create_test_data" do
+	command "mongo testdb --authenticationDatabase admin -u admin -p \"adminadmin\" --eval \"db.testcoll.insert( { name: \\\"Andrea\\\", surname: \\\"Di Cesare\\\", phone: { type: \\\"mobile\\\", no: \\\"329.7376417\\\"} });\""
+	only_if { ::File.exists?("/home/vagrant/restart/.git") }
+end
