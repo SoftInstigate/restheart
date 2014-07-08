@@ -14,8 +14,8 @@ import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import org.jboss.logging.Logger;
-import org.jboss.logging.Logger.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -24,6 +24,8 @@ import org.jboss.logging.Logger.Level;
 public class ErrorHandler implements HttpHandler
 {
     private final HttpHandler next;
+    
+    private Logger logger = LoggerFactory.getLogger(ErrorHandler.class);
 
     /**
      * Creates a new instance of EntityResource
@@ -44,7 +46,7 @@ public class ErrorHandler implements HttpHandler
         }
         catch (Throwable t)
         {
-            Logger.getLogger(this.getClass().getName()).log(Level.ERROR, "error handling the request", t);
+            logger.error("error handling the request", t);
 
             ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, t);
         }

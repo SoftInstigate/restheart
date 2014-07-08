@@ -53,10 +53,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
 /**
@@ -66,7 +66,9 @@ import org.yaml.snakeyaml.Yaml;
 public class Bootstrapper
 {
     private static Undertow server;
-
+    
+    static private Logger logger = LoggerFactory.getLogger(Bootstrapper.class);
+    
     public static void main(final String[] args)
     {
         Yaml yaml = new Yaml();
@@ -106,7 +108,7 @@ public class Bootstrapper
 
         MongoDBClientSingleton.init(mongoHost, mongoPort, mongoUser, mongoPassword);
 
-        System.out.println(conf.toString());
+        logger.info("configuration {}", conf.toString());
 
         start(port, useEmbeddedKeystore, keystoreFile, keystorePassword, certPassword);
 
@@ -117,11 +119,11 @@ public class Bootstrapper
                 if (server != null)
                     server.stop();
                 
-                System.out.println("server stopped");
+                logger.info("restheart stopped");
             }
         });
 
-        System.out.println("started on port " + port);
+        logger.info("restheart started on port " + port);
     }
 
     private static void start(int port,
@@ -136,7 +138,7 @@ public class Bootstrapper
 
         final IdentityManager identityManager = new MapIdentityManager(users);
 
-        SSLContext sslContext;
+        SSLContext sslContext = null;
 
         try
         {
@@ -160,23 +162,23 @@ public class Bootstrapper
             }
             else
             {
-                throw new IllegalArgumentException("user custom keyfactory not yet implemented");
+                throw new IllegalArgumentException("custom keyfactory not yet implemented");
             }
         }
         catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException ex)
         {
-            Logger.getLogger(Bootstrapper.class.getName()).log(Level.SEVERE, null, ex);
-            return;
+            logger.error("couldn't start restheart, error with specified keystore", ex);
+            System.exit(-1);
         }
         catch (FileNotFoundException ex)
         {
-            Logger.getLogger(Bootstrapper.class.getName()).log(Level.SEVERE, null, ex);
-            return;
+            logger.error("couldn't start restheart, keystore file not found" , ex);
+            System.exit(-1);
         }
         catch (IOException ex)
         {
-            Logger.getLogger(Bootstrapper.class.getName()).log(Level.SEVERE, null, ex);
-            return;
+            logger.error("couldn't start restheart, error reading the keystore file", ex);
+            System.exit(-1);
         }
 
         server = Undertow.builder()

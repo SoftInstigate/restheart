@@ -17,8 +17,8 @@ import com.mongodb.ServerAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -35,6 +35,8 @@ public class MongoDBClientSingleton
     
     private MongoClient mongoClient;
     
+    private Logger logger = LoggerFactory.getLogger(MongoDBClientSingleton.class);
+    
     private MongoDBClientSingleton()
     {
         if (!initialized)
@@ -46,11 +48,11 @@ public class MongoDBClientSingleton
         }
         catch (UnknownHostException ex)
         {
-            Logger.getLogger(MongoDBClientSingleton.class.getName()).log(Level.SEVERE, "error initializing mongodb client", ex);
+            logger.error("error initializing mongodb client", ex);
         }
         catch (Throwable tr)
         {
-            Logger.getLogger(MongoDBClientSingleton.class.getName()).log(Level.SEVERE, "error initializing mongodb client", tr);
+            logger.error("error initializing mongodb client", tr);
         }
     }
     

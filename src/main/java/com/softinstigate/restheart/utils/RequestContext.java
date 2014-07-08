@@ -17,8 +17,8 @@ import io.undertow.util.Methods;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -32,6 +32,8 @@ public class RequestContext
     private TYPE type;
     private METHOD method;
     private final String[] pathTokens;
+    
+    private Logger logger = LoggerFactory.getLogger(RequestContext.class);
     
     public RequestContext(HttpServerExchange exchange)
     {
@@ -103,7 +105,7 @@ public class RequestContext
         }
         catch (URISyntaxException ex)
         {
-            Logger.getLogger(RequestContext.class.getName()).log(Level.SEVERE, null, ex);
+            logger.error("error instantiating the request URI", ex);
             return null;
         }
     }
