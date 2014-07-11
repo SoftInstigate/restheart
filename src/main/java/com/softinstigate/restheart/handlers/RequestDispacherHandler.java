@@ -12,6 +12,26 @@ package com.softinstigate.restheart.handlers;
 
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.handlers.account.DeleteAccountHandler;
+import com.softinstigate.restheart.handlers.account.GetAccountHandler;
+import com.softinstigate.restheart.handlers.account.PatchAccountHandler;
+import com.softinstigate.restheart.handlers.account.PostAccountHandler;
+import com.softinstigate.restheart.handlers.account.PutAccountHandler;
+import com.softinstigate.restheart.handlers.collection.DeleteCollectionHandler;
+import com.softinstigate.restheart.handlers.collection.GetCollectionHandler;
+import com.softinstigate.restheart.handlers.collection.PatchCollectionHandler;
+import com.softinstigate.restheart.handlers.collection.PostCollectionHandler;
+import com.softinstigate.restheart.handlers.collection.PutCollectionHandler;
+import com.softinstigate.restheart.handlers.database.DeleteDBHandler;
+import com.softinstigate.restheart.handlers.database.GetDBHandler;
+import com.softinstigate.restheart.handlers.database.PatchDBHandler;
+import com.softinstigate.restheart.handlers.database.PostDBHandler;
+import com.softinstigate.restheart.handlers.database.PutDBHandler;
+import com.softinstigate.restheart.handlers.document.DeleteDocumentHandler;
+import com.softinstigate.restheart.handlers.document.GetDocumentHandler;
+import com.softinstigate.restheart.handlers.document.PatchDocumentHandler;
+import com.softinstigate.restheart.handlers.document.PostDocumentHandler;
+import com.softinstigate.restheart.handlers.document.PutDocumentHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import io.undertow.server.HttpHandler;
@@ -19,7 +39,6 @@ import io.undertow.server.HttpServerExchange;
 import static com.softinstigate.restheart.utils.RequestContext.METHOD;
 import static com.softinstigate.restheart.utils.RequestContext.TYPE;
 import com.softinstigate.restheart.utils.ResponseHelper;
-import io.undertow.server.handlers.AllowedMethodsHandler;
 
 /**
  *
@@ -29,62 +48,94 @@ public class RequestDispacherHandler implements HttpHandler
 {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
     
-    private final HttpHandler dbGet;
-    private final HttpHandler dbPost;
-    private final HttpHandler dbPut;
-    private final HttpHandler dbDelete;
-    private final HttpHandler collectionGet;
-    private final HttpHandler collectionPost;
-    private final HttpHandler collectionPut;
-    private final HttpHandler collectionDelete;
-    private final HttpHandler documentGet;
-    private final HttpHandler documentPost;
-    private final HttpHandler documentPut;
-    private final HttpHandler documentDelete;
+    private final GetAccountHandler accountGet;
+    private final PostAccountHandler accountPost;
+    private final PutAccountHandler accountPut;
+    private final DeleteAccountHandler accountDelete;
+    private final PatchAccountHandler accountPatch;
+    private final GetDBHandler dbGet;
+    private final PostDBHandler dbPost;
+    private final PutDBHandler dbPut;
+    private final DeleteDBHandler dbDelete;
+    private final PatchDBHandler dbPatch;
+    private final GetCollectionHandler collectionGet;
+    private final PostCollectionHandler collectionPost;
+    private final PutCollectionHandler collectionPut;
+    private final DeleteCollectionHandler collectionDelete;
+    private final PatchCollectionHandler collectionPatch;
+    private final GetDocumentHandler documentGet;
+    private final PostDocumentHandler documentPost;
+    private final PutDocumentHandler documentPut;
+    private final DeleteDocumentHandler documentDelete;
+    private final PatchDocumentHandler documentPatch;
 
     /**
      * Creates a new instance of EntityResource
      *
+     * @param accountGet
+     * @param accountPost
+     * @param accountPut
+     * @param accountDelete
+     * @param accountPatch
      * @param dbGet
      * @param dbPost
      * @param dbPut
      * @param dbDelete
+     * @param dbPatch
      * @param collectionGet
      * @param collectionPost
      * @param collectionPut
      * @param collectionDelete
+     * @param collectionPatch
      * @param documentGet
      * @param documentPost
      * @param documentPut
      * @param documentDelete
+     * @param documentPatch
      */
     public RequestDispacherHandler(
-            HttpHandler dbGet,
-            HttpHandler dbPost,
-            HttpHandler dbPut,
-            HttpHandler dbDelete,
-            HttpHandler collectionGet,
-            HttpHandler collectionPost,
-            HttpHandler collectionPut,
-            HttpHandler collectionDelete,
-            HttpHandler documentGet,
-            HttpHandler documentPost,
-            HttpHandler documentPut,
-            HttpHandler documentDelete
+            GetAccountHandler accountGet,
+            PostAccountHandler accountPost,
+            PutAccountHandler accountPut,
+            DeleteAccountHandler accountDelete,
+            PatchAccountHandler accountPatch,
+            GetDBHandler dbGet,
+            PostDBHandler dbPost,
+            PutDBHandler dbPut,
+            DeleteDBHandler dbDelete,
+            PatchDBHandler dbPatch,
+            GetCollectionHandler collectionGet,
+            PostCollectionHandler collectionPost,
+            PutCollectionHandler collectionPut,
+            DeleteCollectionHandler collectionDelete,
+            PatchCollectionHandler collectionPatch,
+            GetDocumentHandler documentGet,
+            PostDocumentHandler documentPost,
+            PutDocumentHandler documentPut,
+            DeleteDocumentHandler documentDelete,
+            PatchDocumentHandler documentPatch
     )
     {
+        this.accountGet = accountGet;
+        this.accountPost = accountPost;
+        this.accountPut = accountPut;
+        this.accountDelete = accountDelete;
+        this.accountPatch = accountPatch;
         this.dbGet = dbGet;
         this.dbPost = dbPost;
         this.dbPut = dbPut;
         this.dbDelete = dbDelete;
+        this.dbPatch = dbPatch;
         this.collectionGet = collectionGet;
         this.collectionPost = collectionPost;
         this.collectionPut = collectionPut;
         this.collectionDelete = collectionDelete;
+        this.collectionPatch = collectionPatch;
         this.documentGet = documentGet;
         this.documentPost = documentPost;
         this.documentPut = documentPut;
         this.documentDelete = documentDelete;
+        this.documentPatch = documentPatch;
 
     }
 
@@ -112,6 +163,9 @@ public class RequestDispacherHandler implements HttpHandler
             case GET:
                 switch (c.getType())
                 {
+                    case ACCOUNT:
+                        accountGet.handleRequest(exchange);
+                        return;
                     case DB:
                         if (doesDbExist(exchange, c.getDBName()))
                             dbGet.handleRequest(exchange);
@@ -129,6 +183,9 @@ public class RequestDispacherHandler implements HttpHandler
             case POST:
                 switch (c.getType())
                 {
+                    case ACCOUNT:
+                        accountPost.handleRequest(exchange);
+                        return;
                     case DB:
                         if (doesDbExist(exchange, c.getDBName()))
                             dbPost.handleRequest(exchange);
@@ -146,6 +203,9 @@ public class RequestDispacherHandler implements HttpHandler
             case PUT:
                 switch (c.getType())
                 {
+                    case ACCOUNT:
+                        accountPut.handleRequest(exchange);
+                        return;
                     case DB:
                         if (doesDbExist(exchange, c.getDBName()))
                             dbPut.handleRequest(exchange);
@@ -163,6 +223,9 @@ public class RequestDispacherHandler implements HttpHandler
             case DELETE:
                 switch (c.getType())
                 {
+                    case ACCOUNT:
+                        accountDelete.handleRequest(exchange);
+                        return;
                     case DB:
                         if (doesDbExist(exchange, c.getDBName()))
                             dbDelete.handleRequest(exchange);
@@ -175,6 +238,25 @@ public class RequestDispacherHandler implements HttpHandler
                         if (doesCollectionExist(exchange, c.getDBName(), c.getCollectionName()))
                             documentDelete.handleRequest(exchange);
                         return;
+                }
+            
+            case PATCH:
+                switch (c.getType())
+                {
+                    case ACCOUNT:
+                        accountPatch.handleRequest(exchange);
+                        return;
+                    case DB:
+                        if (doesDbExist(exchange, c.getDBName()))
+                            dbPatch.handleRequest(exchange);
+                        return;
+                    case COLLECTION:
+                        if (doesCollectionExist(exchange, c.getDBName(), c.getCollectionName()))
+                            collectionPatch.handleRequest(exchange);
+                        return;
+                    case DOCUMENT:
+                        if (doesCollectionExist(exchange, c.getDBName(), c.getCollectionName()))
+                            documentPatch.handleRequest(exchange);
                 }
         }
     }

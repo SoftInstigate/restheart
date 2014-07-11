@@ -8,27 +8,29 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.handlers.collections;
+package com.softinstigate.restheart.handlers.document;
 
-import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.utils.RequestContext;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import java.nio.charset.Charset;
 
 /**
  *
  * @author uji
  */
-public class DeleteCollectionsHandler implements HttpHandler
+public class GetDocumentHandler implements HttpHandler
 {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
     
+    final Charset charset = Charset.forName("utf-8");  
+
     /**
      * Creates a new instance of EntityResource
      */
-    public DeleteCollectionsHandler()
+    public GetDocumentHandler()
     {
     }
 
@@ -37,21 +39,6 @@ public class DeleteCollectionsHandler implements HttpHandler
     {
         RequestContext c = new RequestContext(exchange);
         
-        DBCollection coll = client.getDB(c.getDBName()).getCollection(c.getCollectionName());
-
-        deleteCollection(coll);
-        exchange.setResponseCode(200);
-
-        exchange.endExchange();
-    }
-
-    /**
-     * method for deleting the collection coll
-     *
-     * @param coll
-     */
-    public void deleteCollection(DBCollection coll)
-    {
-        coll.drop();
+        throw new RuntimeException("not yet implemented");
     }
 }

@@ -10,7 +10,7 @@ apt_package "mongodb-10gen" do
 end
 
 execute "create_mongo_admin" do
-	command "touch /root/mongo-initialized && mongo admin --eval \"db.removeUser(\\\"admin\\\"); db.addUser( { user : \\\"admin\\\", pwd : \\\"adminadmin\\\", roles: [ \\\"userAdminAnyDatabase\\\", \\\"dbAdminAnyDatabase\\\", \\\"readWriteAnyDatabase\\\" ] } ) \""
+	command "touch /root/mongo-initialized && mongo admin --eval \"db.removeUser(\\\"admin\\\"); db.addUser( { user : \\\"admin\\\", pwd : \\\"adminadmin\\\", roles: [ \\\"userAdminAnyDatabase\\\", \\\"dbAdminAnyDatabase\\\", \\\"readWriteAnyDatabase\\\", \\\"clusterAdmin\\\" ] } ) \""
 	not_if { ::File.exists?("/root/mongo-initialized") }
 end
 
@@ -33,5 +33,5 @@ execute "delete_test_data" do
 end
 
 execute "create_test_data" do
-	command "mongo testdb --authenticationDatabase admin -u admin -p \"adminadmin\" --eval \"db.testcoll.insert( { name: \\\"Andrea\\\", surname: \\\"Di Cesare\\\", phone: { type: \\\"mobile\\\", no: \\\"329.7376417\\\"} });\""
+	command "mongo testdb --authenticationDatabase admin -u admin -p \"adminadmin\" --eval \"db.testcoll.insert( { name: \\\"Andrea ciao\\\", surname: \\\"Di Cesare\\\", phone: { type: \\\"mobile\\\", no: \\\"329.7376417\\\"} });\""
 end

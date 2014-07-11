@@ -26,8 +26,8 @@ import org.slf4j.LoggerFactory;
  */
 public class RequestContext
 {
-    public enum TYPE { ERROR, DB, COLLECTION, DOCUMENT };
-    public enum METHOD { GET, POST, PUT, DELETE, OTHER };
+    public enum TYPE { ERROR, ACCOUNT, DB, COLLECTION, DOCUMENT };
+    public enum METHOD { GET, POST, PUT, DELETE, PATCH, OTHER };
     
     private TYPE type;
     private METHOD method;
@@ -42,7 +42,7 @@ public class RequestContext
         
         if (pathTokens.length < 2)
         {
-            type = TYPE.ERROR;
+            type = TYPE.ACCOUNT;
         } else if (pathTokens.length < 3)
         {
             type = TYPE.DB;
@@ -63,7 +63,9 @@ public class RequestContext
         else if (Methods.PUT.equals(_method))
             this.method = METHOD.PUT;
         else if (Methods.DELETE.equals(_method))
-            this.method = METHOD.DELETE;
+            this.method = METHOD.PATCH;
+        else if (Methods.DELETE.equals(_method))
+            this.method = METHOD.PATCH;
         else
             this.method = METHOD.OTHER;
     }

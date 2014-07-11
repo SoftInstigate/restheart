@@ -10,22 +10,31 @@
  */
 package com.softinstigate.restheart;
 
+import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.handlers.ErrorHandler;
 import com.softinstigate.restheart.handlers.RequestDispacherHandler;
 import com.softinstigate.restheart.handlers.SchemaEnforcerHandler;
-import com.softinstigate.restheart.handlers.collections.DeleteCollectionsHandler;
-import com.softinstigate.restheart.handlers.collections.GetCollectionsHandler;
-import com.softinstigate.restheart.handlers.collections.PostCollectionsHandler;
-import com.softinstigate.restheart.handlers.collections.PutCollectionsHandler;
-import com.softinstigate.restheart.handlers.databases.DeleteDBHandler;
-import com.softinstigate.restheart.handlers.databases.GetDBHandler;
-import com.softinstigate.restheart.handlers.databases.PostDBHandler;
-import com.softinstigate.restheart.handlers.databases.PutDBHandler;
-import com.softinstigate.restheart.handlers.documents.DeleteDocumentHandler;
-import com.softinstigate.restheart.handlers.documents.GetDocumentHandler;
-import com.softinstigate.restheart.handlers.documents.PostDocumentHandler;
-import com.softinstigate.restheart.handlers.documents.PutDocumentHandler;
+import com.softinstigate.restheart.handlers.account.DeleteAccountHandler;
+import com.softinstigate.restheart.handlers.account.GetAccountHandler;
+import com.softinstigate.restheart.handlers.account.PatchAccountHandler;
+import com.softinstigate.restheart.handlers.account.PostAccountHandler;
+import com.softinstigate.restheart.handlers.account.PutAccountHandler;
+import com.softinstigate.restheart.handlers.collection.DeleteCollectionHandler;
+import com.softinstigate.restheart.handlers.collection.GetCollectionHandler;
+import com.softinstigate.restheart.handlers.collection.PatchCollectionHandler;
+import com.softinstigate.restheart.handlers.collection.PostCollectionHandler;
+import com.softinstigate.restheart.handlers.collection.PutCollectionHandler;
+import com.softinstigate.restheart.handlers.database.DeleteDBHandler;
+import com.softinstigate.restheart.handlers.database.GetDBHandler;
+import com.softinstigate.restheart.handlers.database.PatchDBHandler;
+import com.softinstigate.restheart.handlers.database.PostDBHandler;
+import com.softinstigate.restheart.handlers.database.PutDBHandler;
+import com.softinstigate.restheart.handlers.document.DeleteDocumentHandler;
+import com.softinstigate.restheart.handlers.document.GetDocumentHandler;
+import com.softinstigate.restheart.handlers.document.PatchDocumentHandler;
+import com.softinstigate.restheart.handlers.document.PostDocumentHandler;
+import com.softinstigate.restheart.handlers.document.PutDocumentHandler;
 import com.softinstigate.restheart.security.MapIdentityManager;
 import io.undertow.Undertow;
 import io.undertow.security.api.AuthenticationMechanism;
@@ -67,13 +76,13 @@ public class Bootstrapper
 {
     private static Undertow server;
     
-    static private Logger logger = LoggerFactory.getLogger(Bootstrapper.class);
+    private static final Logger logger = LoggerFactory.getLogger(Bootstrapper.class);
     
     public static void main(final String[] args)
     {
         Yaml yaml = new Yaml();
 
-        File confFile = null;
+        File confFile;
 
         if (args == null || args.length < 1)
         {
@@ -112,12 +121,37 @@ public class Bootstrapper
 
         start(port, useEmbeddedKeystore, keystoreFile, keystorePassword, certPassword);
 
+        MongoClient client = MongoDBClientSingleton.getInstance().getClient();
+        
         Runtime.getRuntime().addShutdownHook(new Thread()
         {
+            @Override
             public void run()
             {
                 if (server != null)
-                    server.stop();
+                {
+                    try
+                    {
+                        server.stop();
+                    }
+                    catch(Throwable t)
+                    {
+                        logger.error("error stopping undertow server", t);
+                    }
+                }
+                
+                if (client != null)
+                {
+                    try
+                    {
+                        client.fsync(false);
+                        client.close();
+                    }
+                    catch(Throwable t)
+                    {
+                        logger.error("error closing flushing and clonsing the mongo cliet", t);
+                    }
+                }
                 
                 logger.info("restheart stopped");
             }
@@ -190,20 +224,29 @@ public class Bootstrapper
                                                 new HttpContinueAcceptingHandler(
                                                         new SchemaEnforcerHandler(
                                                                 new RequestDispacherHandler(
-                                                                        new GetDBHandler(), // get collections
-                                                                        new PostDBHandler(), // not allowed
-                                                                        new PutDBHandler(), // not allowed
-                                                                        new DeleteDBHandler(), // not allowed
+                                                                        new GetAccountHandler(),
+                                                                        new PostAccountHandler(),
+                                                                        new PutAccountHandler(),
+                                                                        new DeleteAccountHandler(),
+                                                                        new PatchAccountHandler(),
+                                                                        
+                                                                        new GetDBHandler(),
+                                                                        new PostDBHandler(),
+                                                                        new PutDBHandler(),
+                                                                        new DeleteDBHandler(),
+                                                                        new PatchDBHandler(),
 
-                                                                        new GetCollectionsHandler(), // get documents
-                                                                        new PostCollectionsHandler(), // create document(s)
-                                                                        new PutCollectionsHandler(), // not allowed
-                                                                        new DeleteCollectionsHandler(), // delete documents
+                                                                        new GetCollectionHandler(),
+                                                                        new PostCollectionHandler(),
+                                                                        new PutCollectionHandler(),
+                                                                        new DeleteCollectionHandler(),
+                                                                        new PatchCollectionHandler(),
 
-                                                                        new GetDocumentHandler(), // get document
-                                                                        new PostDocumentHandler(), // not allowed !
-                                                                        new PutDocumentHandler(), // create/update document
-                                                                        new DeleteDocumentHandler() // delete document
+                                                                        new GetDocumentHandler(),
+                                                                        new PostDocumentHandler(),
+                                                                        new PutDocumentHandler(),
+                                                                        new DeleteDocumentHandler(),
+                                                                        new PatchDocumentHandler()
                                                                 )
                                                         )
                                                 )
@@ -213,34 +256,7 @@ public class Bootstrapper
                 .build();
         server.start();
     }
-
-    /*
     
-    
-    
-     new MgmtRequestDispacherHandler(
-     new GetDBHandler(),             // get db metadata
-     new PostDBHandler(),            // not allowed
-     new PutDBHandler(),             // create / update db
-     new DeleteDBHandler(),          // delete db
-
-     new GetCollectionsHandler(),    // get collection metadata
-     new PostCollectionsHandler(),   // not allowed
-     new PutCollectionsHandler(),    // create / update collection
-     new DeleteCollectionsHandler(), // delete collection
-
-     new GetDocumentHandler(),       // not allowed
-     new PostDocumentHandler(),      // not allowed !
-     new PutDocumentHandler(),       // not allowed
-     new DeleteDocumentHandler()     // not allowed
-     )
-    
-     */
-    private static void stop()
-    {
-        server.stop();
-    }
-
     private static HttpHandler addSecurity(final HttpHandler toWrap, final IdentityManager identityManager)
     {
         HttpHandler handler = toWrap;

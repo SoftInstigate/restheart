@@ -8,26 +8,29 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.handlers.databases;
+package com.softinstigate.restheart.handlers.collection;
 
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.utils.RequestContext;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import java.nio.charset.Charset;
 
 /**
  *
  * @author uji
  */
-public class PostDBHandler implements HttpHandler
+public class PatchCollectionHandler implements HttpHandler
 {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
     
+    final Charset charset = Charset.forName("utf-8");  
+
     /**
-     * Creates a new instance of POSTHandler
+     * Creates a new instance of EntityResource
      */
-    public PostDBHandler()
+    public PatchCollectionHandler()
     {
     }
 

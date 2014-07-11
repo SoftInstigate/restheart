@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.handlers.databases;
+package com.softinstigate.restheart.handlers.collection;
 
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
@@ -21,7 +21,7 @@ import java.nio.charset.Charset;
  *
  * @author uji
  */
-public class UpdateDBHandler implements HttpHandler
+public class PutCollectionHandler implements HttpHandler
 {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
     
@@ -30,7 +30,7 @@ public class UpdateDBHandler implements HttpHandler
     /**
      * Creates a new instance of EntityResource
      */
-    public UpdateDBHandler()
+    public PutCollectionHandler()
     {
     }
 

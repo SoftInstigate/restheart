@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.handlers.collections;
+package com.softinstigate.restheart.handlers.collection;
 
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -26,7 +26,7 @@ import java.util.Deque;
  *
  * @author uji
  */
-public class GetCollectionsHandler implements HttpHandler
+public class GetCollectionHandler implements HttpHandler
 {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
     
@@ -35,16 +35,16 @@ public class GetCollectionsHandler implements HttpHandler
     /**
      * Creates a new instance of EntityResource
      */
-    public GetCollectionsHandler()
+    public GetCollectionHandler()
     {
     }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception
     {
-        RequestContext c = new RequestContext(exchange);
+        RequestContext rc = new RequestContext(exchange);
         
-        DBCollection coll = client.getDB(c.getDBName()).getCollection(c.getCollectionName());
+        DBCollection coll = client.getDB(rc.getDBName()).getCollection(rc.getCollectionName());
 
         int skip = 0;
         int limit = 100;
