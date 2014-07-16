@@ -35,6 +35,12 @@
             <artifactId>logback-classic</artifactId>
             <version>1.1.2</version>
         </dependency>
+        
+        <dependency>
+            <groupId>net.hamnaberg.rest</groupId>
+            <artifactId>json-collection</artifactId>
+            <version>3.1.0</version>
+        </dependency>
     </dependencies>
     <name>restheart</name>
     

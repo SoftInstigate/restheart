@@ -12,19 +12,24 @@ package com.softinstigate.restheart.handlers.database;
 
 import com.mongodb.DB;
 import com.mongodb.MongoClient;
-import com.mongodb.util.JSON;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.utils.JSONHelper;
 import com.softinstigate.restheart.utils.RequestContext;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import java.io.IOException;
+import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import net.hamnaberg.funclite.Optional;
+import net.hamnaberg.json.Collection;
+import net.hamnaberg.json.Item;
+import net.hamnaberg.json.Property;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -33,6 +38,8 @@ import java.util.Map;
 public class GetDBHandler implements HttpHandler
 {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
+    
+    private static final Logger logger = LoggerFactory.getLogger(GetDBHandler.class);
     
     final Charset charset = Charset.forName("utf-8");  
 
@@ -104,13 +111,30 @@ public class GetDBHandler implements HttpHandler
         
         colls = colls.subList(skip, limit+skip > colls.size() ? colls.size() : limit + skip );
         
-        Map<String, Map> refs = new HashMap<>();
+        Collection.Builder cb = new Collection.Builder();
         
         for (String coll: colls)
         {
-            refs.putAll(JSONHelper.getReference(baseUrl, coll));
+            ArrayList<Property> props = new ArrayList<>();
+            props.add(Property.value("name", Optional.fromNullable("collection name"), coll));
+
+            cb.addItem(Item.create(JSONHelper.getReference(baseUrl, coll), props));
         }
         
-        return JSON.serialize(refs);
+
+        Collection c = cb.build();
+
+        StringWriter retW = new StringWriter();
+                
+        try
+        {
+            c.writeTo(retW);
+        }
+        catch (IOException ex)
+        {
+            logger.error("Urgh!", ex);
+        }
+        
+        return retW.toString();
     }
 }

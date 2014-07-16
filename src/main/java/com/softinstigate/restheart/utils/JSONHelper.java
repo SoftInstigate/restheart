@@ -11,8 +11,10 @@
 
 package com.softinstigate.restheart.utils;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.net.URI;
+import java.net.URISyntaxException;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  *
@@ -20,15 +22,20 @@ import java.util.Map;
  */
 public class JSONHelper
 {
-    static public Map<String, Map> getReference(String parentUrl, String referencedName)
+    private static final Logger logger = LoggerFactory.getLogger(JSONHelper.class);
+    
+    static public URI getReference(String parentUrl, String referencedName)
     {
-        Map<String, Map> ret  = new HashMap<>();
-        Map<String, String> href = new HashMap<>();
+        try
+        {
+            return new URI(removeTrailingSlashes(parentUrl) + "/" + referencedName);
+        }
+        catch (URISyntaxException ex)
+        {
+            logger.error("error creating URI from {} + / + {}", parentUrl, referencedName , ex);
+        }
         
-        href.put("href", removeTrailingSlashes(parentUrl) + "/" + referencedName);
-        ret.put(referencedName, href);
-        
-        return ret;
+        return null;
     }
     
     static private String removeTrailingSlashes(String s)
