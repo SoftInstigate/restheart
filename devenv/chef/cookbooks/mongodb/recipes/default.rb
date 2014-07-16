@@ -5,12 +5,12 @@ apt_repository 'ubuntu-upstart' do
   key        '7F0CEB10'
 end
 
-apt_package "mongodb-10gen" do
+apt_package "mongodb-org" do
  	action :install
 end
 
 execute "create_mongo_admin" do
-	command "touch /root/mongo-initialized && mongo admin --eval \"db.removeUser(\\\"admin\\\"); db.addUser( { user : \\\"admin\\\", pwd : \\\"adminadmin\\\", roles: [ \\\"userAdminAnyDatabase\\\", \\\"dbAdminAnyDatabase\\\", \\\"readWriteAnyDatabase\\\", \\\"clusterAdmin\\\" ] } ) \""
+	command "touch /root/mongo-initialized && mongo admin --eval \"db.dropUser(\\\"admin\\\"); db.createUser( { user: \\\"admin\\\", pwd: \\\"adminadmin\\\",  roles: [ \\\"root\\\" ] } ) \""
 	not_if { ::File.exists?("/root/mongo-initialized") }
 end
 
@@ -20,7 +20,7 @@ cookbook_file "mongodb.conf" do
 	owner "root"
 end
 
-service "mongodb" do
+service "mongod" do
 	action :restart
 end
 
@@ -33,5 +33,5 @@ execute "delete_test_data" do
 end
 
 execute "create_test_data" do
-	command "mongo testdb --authenticationDatabase admin -u admin -p \"adminadmin\" --eval \"db.testcoll.insert( { name: \\\"Andrea ciao\\\", surname: \\\"Di Cesare\\\", phone: { type: \\\"mobile\\\", no: \\\"329.7376417\\\"} });\""
+	command "mongo testdb --authenticationDatabase admin -u admin -p \"adminadmin\" --eval \"db.testcoll.insert( { name: \\\"Andrea\\\", surname: \\\"Di Cesare\\\", phone: { type: \\\"mobile\\\", no: \\\"329.7376417\\\"} });\""
 end
