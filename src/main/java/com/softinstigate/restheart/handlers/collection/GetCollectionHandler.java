@@ -21,6 +21,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.nio.charset.Charset;
 import java.util.Deque;
+import net.hamnaberg.json.MediaType;
 
 /**
  *
@@ -78,7 +79,11 @@ public class GetCollectionHandler implements HttpHandler
 
         String ret = getDocuments(coll, skip, limit);
 
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+        /** TODO
+         * according to http specifications, Content-Type accepts one single value
+         * however we specify two, to allow some browsers (i.e. Safari) to display data rather than downloading it
+         */
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json," + MediaType.COLLECTION_JSON);
         exchange.setResponseContentLength(ret.length());
         exchange.setResponseCode(200);
 

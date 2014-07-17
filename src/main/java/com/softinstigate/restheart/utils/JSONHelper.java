@@ -11,8 +11,14 @@
 
 package com.softinstigate.restheart.utils;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.net.URISyntaxException;
+import net.hamnaberg.json.Collection;
+import net.hamnaberg.json.Item;
+import net.hamnaberg.json.Property;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -48,5 +54,21 @@ public class JSONHelper
         {
             return s.trim();
         }
+    }
+    
+    static public String addMetadataAndGetJson(Collection c, Iterable<Property> props)
+    {
+        JsonNode node =  Collection.builder().addItem(Item.builder().addProperties(props).build()).build().asJson().findValue("items").findValue("data");
+                
+        ObjectNode on = c.asJson();
+        
+        on.set("metadata", node);
+        
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode rootNode = mapper.createObjectNode();
+        
+        rootNode.set("collection", on);
+        
+        return rootNode.toString();
     }
 }

@@ -27,6 +27,7 @@ import java.util.List;
 import net.hamnaberg.funclite.Optional;
 import net.hamnaberg.json.Collection;
 import net.hamnaberg.json.Item;
+import net.hamnaberg.json.MediaType;
 import net.hamnaberg.json.Property;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,7 +90,11 @@ public class GetDBHandler implements HttpHandler
 
         String content = getCollectionsReferences(db, exchange.getRequestURL(), skip, limit);
 
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+        /** TODO
+         * according to http specifications, Content-Type accepts one single value
+         * however we specify two, to allow some browsers (i.e. Safari) to display data rather than downloading it
+         */
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json," + MediaType.COLLECTION_JSON);
         exchange.setResponseContentLength(content.length());
         exchange.setResponseCode(200);
 
@@ -121,20 +126,6 @@ public class GetDBHandler implements HttpHandler
             cb.addItem(Item.create(JSONHelper.getReference(baseUrl, coll), props));
         }
         
-
-        Collection c = cb.build();
-
-        StringWriter retW = new StringWriter();
-                
-        try
-        {
-            c.writeTo(retW);
-        }
-        catch (IOException ex)
-        {
-            logger.error("Urgh!", ex);
-        }
-        
-        return retW.toString();
+        return cb.build().toString();
     }
 }

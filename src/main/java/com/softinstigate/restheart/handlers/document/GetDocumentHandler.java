@@ -15,7 +15,9 @@ import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.utils.RequestContext;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import java.nio.charset.Charset;
+import net.hamnaberg.json.MediaType;
 
 /**
  *
@@ -38,6 +40,12 @@ public class GetDocumentHandler implements HttpHandler
     public void handleRequest(HttpServerExchange exchange) throws Exception
     {
         RequestContext c = new RequestContext(exchange);
+        
+        /** TODO
+         * according to http specifications, Content-Type accepts one single value
+         * however we specify two, to allow some browsers (i.e. Safari) to display data rather than downloading it
+         */
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json," + MediaType.COLLECTION_JSON);
         
         throw new RuntimeException("not yet implemented");
     }
