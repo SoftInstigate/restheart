@@ -181,21 +181,25 @@ public class GetAccountHandler implements HttpHandler
         
         // *** links
         
+        boolean includepage = page != 1;
+        boolean includepagesize = pagesize != 100;
+        
+        
         try
         {
-            cb.addLink(Link.create(new URI(baseUrl + "?page=1&pagesize=" + pagesize), "first"));
+            cb.addLink(Link.create(new URI(baseUrl + (includepagesize ? "pagesize=" + pagesize : "")), "first"));
             
             if (page < total_pages)
             {
-                cb.addLink(Link.create(new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize), "next"));
-                cb.addLink(Link.create(new URI(baseUrl + "?page=" + total_pages + "&pagesize=" + pagesize), "last"));
+                cb.addLink(Link.create(new URI(baseUrl + "?page=" + (page + 1) + (includepagesize ? "&pagesize=" + pagesize : "")), "next"));
+                cb.addLink(Link.create(new URI(baseUrl + (total_pages != 1 ? "?page=" + total_pages : "") + (total_pages != 1  && includepagesize ? "&" : "?") +  (includepagesize ? "pagesize=" + pagesize : "")), "last"));
             }
             else
-                cb.addLink(Link.create(new URI(baseUrl + queryString), "last"));
+                cb.addLink(Link.create(new URI(baseUrl + (includepagesize ? "?pagesize=" + pagesize : "")), "last"));
             
             if (page > 1)
             {
-                cb.addLink(Link.create(new URI(baseUrl + "?page=" + (page - 1) + "&pagesize=" + pagesize), "previous"));
+                cb.addLink(Link.create(new URI(baseUrl + (page != 2 ? "?page=" + (page -1) : "") + (page - 1 != 1  && includepagesize ? "&" : "?") + (includepagesize ? "pagesize=" + pagesize : "")), "previous"));
             }
         }
         catch (URISyntaxException ex)
