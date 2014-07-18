@@ -94,7 +94,7 @@ public class RequestContext
     public String getDocumentId()
     {
         if (pathTokens.length > 0)
-            return pathTokens[2];
+            return pathTokens[3];
         else
             return null;
     }

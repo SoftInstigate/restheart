@@ -71,6 +71,6 @@ public class GetAccountHandler extends GetHandler
                 }
         ).forEach((item) -> { items.add(item); });
 
-        return generateContent(exchange.getRequestURL(), exchange.getQueryString(), items, page, pagesize, size, sortBy, filterBy, filter);
+        return generateCollectionContent(exchange.getRequestURL(), exchange.getQueryString(), items, page, pagesize, size, sortBy, filterBy, filter);
     }
 }

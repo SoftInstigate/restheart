@@ -129,7 +129,7 @@ public abstract class GetHandler implements HttpHandler
      * @param filter
      * @return
      */
-    protected String generateContent(String baseUrl, String queryString, List<List<Tuple3<String, String, Object>>> data, int page, int pagesize, long size, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
+    protected String generateCollectionContent(String baseUrl, String queryString, List<List<Tuple3<String, String, Object>>> data, int page, int pagesize, long size, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
         Collection.Builder cb = new Collection.Builder();
         
@@ -201,7 +201,7 @@ public abstract class GetHandler implements HttpHandler
         
         try
         {
-            cb.addLink(Link.create(new URI(baseUrl + (includepagesize ? "pagesize=" + pagesize : "")), "first"));
+            cb.addLink(Link.create(new URI(baseUrl + (includepagesize ? "?pagesize=" + pagesize : "")), "first"));
             
             if (page < total_pages)
             {
@@ -248,5 +248,52 @@ public abstract class GetHandler implements HttpHandler
             props.add(Property.value("filter", Optional.fromNullable("filters to apply, comma separated regexs"), filter));
  
         return JSONHelper.addMetadataAndGetJson(cb.build(), props);
+    }
+    
+    protected String generateDocumentContent(String baseUrl, String queryString, List<Tuple3<String, String, Object>> data)
+    {
+        Collection.Builder cb = new Collection.Builder();
+        
+        // *** href document property
+        
+        try
+        {
+            if (queryString == null || queryString.isEmpty())
+                cb.withHref(new URI(baseUrl));
+            else
+                cb.withHref(new URI(baseUrl + "?" + queryString));
+        }
+        catch (URISyntaxException ex)
+        {
+            logger.error("error creating resource self href", ex);
+        }
+        
+        // *** data item
+        
+        int count = 0;
+        
+        ArrayList<Property> props = new ArrayList<>();
+            
+        String id = null;
+            
+        for (Tuple3<String, String, Object> property: data)
+        {
+            if (property._1.equals("id") || property._1.equals("_id"))
+                id = (String) property._3;
+
+            props.add(Property.value(property._1, Optional.fromNullable(property._2), property._3));
+        }
+            
+        if (id != null)
+        {
+            cb.addItem(Item.create(JSONHelper.getReference(baseUrl, id), props));
+            count++; // if item has not an id it wont be added to data array
+        }
+        
+        // *** templates
+        
+        logger.warn("templates not yet implemented");
+
+        return cb.build().toString();
     }
 }

@@ -99,6 +99,6 @@ public class GetCollectionHandler extends GetHandler
             data.add(item);
         });
 
-        return generateContent(exchange.getRequestURL(), exchange.getQueryString(), data, page, pagesize, size, sortBy, filterBy, filter);
+        return generateCollectionContent(exchange.getRequestURL(), exchange.getQueryString(), data, page, pagesize, size, sortBy, filterBy, filter);
     }
 }

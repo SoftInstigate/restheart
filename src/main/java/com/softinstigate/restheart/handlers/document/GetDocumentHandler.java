@@ -10,24 +10,28 @@
  */
 package com.softinstigate.restheart.handlers.document;
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.handlers.GetHandler;
+import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
-import io.undertow.server.HttpHandler;
+import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
-import java.nio.charset.Charset;
-import net.hamnaberg.json.MediaType;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import net.hamnaberg.json.extension.Tuple3;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author uji
  */
-public class GetDocumentHandler implements HttpHandler
+public class GetDocumentHandler extends GetHandler
 {
-    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-    
-    final Charset charset = Charset.forName("utf-8");  
+    private static final Logger logger = LoggerFactory.getLogger(GetDocumentHandler.class);
 
     /**
      * Creates a new instance of EntityResource
@@ -37,16 +41,28 @@ public class GetDocumentHandler implements HttpHandler
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception
+    protected String generateContent(HttpServerExchange exchange, MongoClient client, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
-        RequestContext c = new RequestContext(exchange);
+        RequestContext rc = new RequestContext(exchange);
+
+        BasicDBObject query = new BasicDBObject("_id", rc.getDocumentId());
+
+        DBObject document = client.getDB(rc.getDBName()).getCollection(rc.getCollectionName()).findOne( query);
         
-        /** TODO
-         * according to http specifications, Content-Type accepts one single value
-         * however we specify two, to allow some browsers (i.e. Safari) to display data rather than downloading it
-         */
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json," + MediaType.COLLECTION_JSON);
-        
-        throw new RuntimeException("not yet implemented");
+        if (document == null)
+        {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
+            return null;
+        }
+
+        List<Tuple3<String, String, Object>> item = new ArrayList<>();
+
+        document.keySet().stream().forEach(
+                (key) -> item.add(
+                        Tuple3.of(key, null, document.get(key))
+                )
+        );
+
+        return generateDocumentContent(exchange.getRequestURL(), exchange.getQueryString(), item);
     }
 }
