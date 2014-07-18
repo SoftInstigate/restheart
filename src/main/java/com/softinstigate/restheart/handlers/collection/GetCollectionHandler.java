@@ -56,7 +56,7 @@ public class GetCollectionHandler extends GetHandler
         }
         else
         {
-            for (String sf : sortBy)
+            sortBy.stream().forEach((sf) ->
             {
                 if (sf.startsWith("-"))
                 {
@@ -70,7 +70,7 @@ public class GetCollectionHandler extends GetHandler
                 {
                     sort.put(sf, 1);
                 }
-            }
+            });
         }
 
         // apply filter_by and filter
