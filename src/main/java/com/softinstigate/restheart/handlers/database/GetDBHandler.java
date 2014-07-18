@@ -12,23 +12,14 @@ package com.softinstigate.restheart.handlers.database;
 
 import com.mongodb.DB;
 import com.mongodb.MongoClient;
-import com.softinstigate.restheart.db.MongoDBClientSingleton;
-import com.softinstigate.restheart.utils.JSONHelper;
+import com.softinstigate.restheart.handlers.GetHandler;
 import com.softinstigate.restheart.utils.RequestContext;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
-import net.hamnaberg.funclite.Optional;
-import net.hamnaberg.json.Collection;
-import net.hamnaberg.json.Item;
-import net.hamnaberg.json.MediaType;
-import net.hamnaberg.json.Property;
+import net.hamnaberg.json.extension.Tuple3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,14 +27,10 @@ import org.slf4j.LoggerFactory;
  *
  * @author uji
  */
-public class GetDBHandler implements HttpHandler
+public class GetDBHandler extends GetHandler
 {
-    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-    
     private static final Logger logger = LoggerFactory.getLogger(GetDBHandler.class);
     
-    final Charset charset = Charset.forName("utf-8");  
-
     /**
      * Creates a new instance of EntityResource
      */
@@ -52,80 +39,42 @@ public class GetDBHandler implements HttpHandler
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception
+    protected String generateContent(HttpServerExchange exchange, MongoClient client, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
         RequestContext rc = new RequestContext(exchange);
         
         DB db = client.getDB(rc.getDBName());
-
-        int skip = 0;
-        int limit = 100;
-
-        Deque<String> _skips = exchange.getQueryParameters().get("skip");
-        Deque<String> _limits = exchange.getQueryParameters().get("limit");
-
-        if (_skips != null && !_skips.isEmpty())
-        {
-            try
-            {
-                skip = Integer.parseInt(_skips.getFirst());
-            }
-            catch (NumberFormatException nfwe)
-            {
-                skip = 0;
-            }
-        }
-
-        if (_limits != null && !_limits.isEmpty())
-        {
-            try
-            {
-                limit = Integer.parseInt(_limits.getFirst());
-            }
-            catch (NumberFormatException nfwe)
-            {
-                limit = 100;
-            }
-        }
-
-        String content = getCollectionsReferences(db, exchange.getRequestURL(), skip, limit);
-
-        /** TODO
-         * according to http specifications, Content-Type accepts one single value
-         * however we specify two, to allow some browsers (i.e. Safari) to display data rather than downloading it
-         */
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json," + MediaType.COLLECTION_JSON);
-        exchange.setResponseContentLength(content.length());
-        exchange.setResponseCode(200);
-
-        exchange.getResponseSender().send(content);
         
-        exchange.endExchange();
-    }
-    
-    /**
-     * return collection reference
-     *
-     * @param skip
-     * @param limit default is 100
-     * @return
-     */
-    private String getCollectionsReferences(DB db, String baseUrl, int skip, int limit)
-    {
         List<String> colls = new ArrayList(db.getCollectionNames());
         
-        colls = colls.subList(skip, limit+skip > colls.size() ? colls.size() : limit + skip );
+        int size = colls.size();
         
-        Collection.Builder cb = new Collection.Builder();
+        Collections.sort(colls); // sort by id
         
-        for (String coll: colls)
-        {
-            ArrayList<Property> props = new ArrayList<>();
-            props.add(Property.value("name", Optional.fromNullable("collection name"), coll));
+        // apply page and pagesize
+        
+        colls = colls.subList((page-1)*pagesize, (page-1)*pagesize + pagesize > colls.size() ? colls.size() : (page-1)*pagesize + pagesize );
+        
+        // apply sort_by
+        
+        logger.warn("sort_by not yet implemented");
+        
+        // apply filter_by and filter
+        
+        logger.warn("filter not yet implemented");
+        
+        List<List<Tuple3<String, String, Object>>> items = new ArrayList<>();
 
-            cb.addItem(Item.create(JSONHelper.getReference(baseUrl, coll), props));
-        }
+        colls.stream().map(
+                (coll) ->
+                {
+                    List<Tuple3<String, String, Object>> item = new ArrayList<>();
+
+                    item.add(Tuple3.of("id", "database name", coll));
+                    return item;
+                }
+        ).forEach((item) -> { items.add(item); });
         
-        return cb.build().toString();
+        return generateContent(exchange.getRequestURL(), exchange.getQueryString(), items, page, pagesize, size, sortBy, filterBy, filter);
     }
 }

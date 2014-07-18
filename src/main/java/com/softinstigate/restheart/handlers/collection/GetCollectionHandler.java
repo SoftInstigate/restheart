@@ -10,28 +10,28 @@
  */
 package com.softinstigate.restheart.handlers.collection;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import com.mongodb.util.JSON;
-import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.handlers.GetHandler;
 import com.softinstigate.restheart.utils.RequestContext;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
-import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Deque;
-import net.hamnaberg.json.MediaType;
+import java.util.List;
+import net.hamnaberg.json.extension.Tuple3;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author uji
  */
-public class GetCollectionHandler implements HttpHandler
+public class GetCollectionHandler extends GetHandler
 {
-    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-    
-    final Charset charset = Charset.forName("utf-8");  
+    private static final Logger logger = LoggerFactory.getLogger(GetCollectionHandler.class);
 
     /**
      * Creates a new instance of EntityResource
@@ -41,80 +41,64 @@ public class GetCollectionHandler implements HttpHandler
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception
+    protected String generateContent(HttpServerExchange exchange, MongoClient client, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
         RequestContext rc = new RequestContext(exchange);
-        
+
         DBCollection coll = client.getDB(rc.getDBName()).getCollection(rc.getCollectionName());
 
-        int skip = 0;
-        int limit = 100;
+        // apply sort_by
+        DBObject sort = new BasicDBObject();
 
-        Deque<String> _skips = exchange.getQueryParameters().get("skip");
-        Deque<String> _limits = exchange.getQueryParameters().get("limit");
-
-        if (_skips != null && !_skips.isEmpty())
+        if (sortBy == null || sortBy.isEmpty())
         {
-            try
-            {
-                skip = Integer.parseInt(_skips.getFirst());
-            }
-            catch (NumberFormatException nfwe)
-            {
-                skip = 0;
-            }
+            sort.put("_id", 1);
         }
-
-        if (_limits != null && !_limits.isEmpty())
+        else
         {
-            try
+            for (String sf : sortBy)
             {
-                limit = Integer.parseInt(_limits.getFirst());
-            }
-            catch (NumberFormatException nfwe)
-            {
-                limit = 100;
+                if (sf.startsWith("-"))
+                {
+                    sort.put(sf.substring(1), -1);
+                }
+                else if (sf.startsWith("+"))
+                {
+                    sort.put(sf.substring(1), -1);
+                }
+                else
+                {
+                    sort.put(sf, 1);
+                }
             }
         }
 
-        String ret = getDocuments(coll, skip, limit);
+        // apply filter_by and filter
+        logger.warn("filter not yet implemented");
 
-        /** TODO
-         * according to http specifications, Content-Type accepts one single value
-         * however we specify two, to allow some browsers (i.e. Safari) to display data rather than downloading it
-         */
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json," + MediaType.COLLECTION_JSON);
-        exchange.setResponseContentLength(ret.length());
-        exchange.setResponseCode(200);
+        long size = coll.count();
 
-        exchange.getResponseSender().send(ret);
-        
-        exchange.endExchange();
-    }
+        DBCursor cursor = coll.find().sort(sort).limit(pagesize).skip(pagesize * (page - 1));
 
-    /**
-     * method for getting documents of collection coll
-     *
-     * @param coll
-     * @param skip
-     * @param limit defaule is 100
-     * @return
-     */
-    public String getDocuments(DBCollection coll, int skip, int limit)
-    {
-        DBCursor cursor = coll.find().limit(limit).skip(skip);
+        List<List<Tuple3<String, String, Object>>> data = new ArrayList<>();
 
-        String ret = null;
+        ArrayList<DBObject> rows = new ArrayList<>(cursor.toArray());
 
-        try
+        rows.stream().map((row) ->
         {
-            ret = JSON.serialize(cursor);
-        }
-        finally
+            List<Tuple3<String, String, Object>> item = new ArrayList<>();
+            
+            row.keySet().stream().forEach(
+                    (key) -> item.add(
+                            Tuple3.of(key, null, row.get(key))
+                    )
+            );
+            return item;
+        }).forEach((item) ->
         {
-            cursor.close();
-        }
+            data.add(item);
+        });
 
-        return ret;
+        return generateContent(exchange.getRequestURL(), exchange.getQueryString(), data, page, pagesize, size, sortBy, filterBy, filter);
     }
 }
