@@ -19,7 +19,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
-import net.hamnaberg.json.extension.Tuple3;
+import java.util.Map;
+import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,18 +64,18 @@ public class GetDBHandler extends GetHandler
         
         logger.warn("filter not yet implemented");
         
-        List<List<Tuple3<String, String, Object>>> items = new ArrayList<>();
+        List<Map<String, Object>> data = new ArrayList<>();
 
         colls.stream().map(
                 (coll) ->
                 {
-                    List<Tuple3<String, String, Object>> item = new ArrayList<>();
+                    TreeMap<String, Object> properties = new TreeMap<>();
 
-                    item.add(Tuple3.of("id", "database name", coll));
-                    return item;
+                    properties.put("_id", coll);
+                    return properties;
                 }
-        ).forEach((item) -> { items.add(item); });
+        ).forEach((item) -> { data.add(item); });
         
-        return generateCollectionContent(exchange.getRequestURL(), exchange.getQueryString(), items, page, pagesize, size, sortBy, filterBy, filter);
+        return generateCollectionContent(exchange.getRequestURL(), exchange.getQueryString(), data, page, pagesize, size, sortBy, filterBy, filter);
     }
 }

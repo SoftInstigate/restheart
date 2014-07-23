@@ -11,6 +11,7 @@
 package com.softinstigate.restheart.handlers;
 
 import com.softinstigate.restheart.utils.HttpStatus;
+import com.softinstigate.restheart.utils.JSONHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -46,9 +47,9 @@ public class SchemaEnforcerHandler implements HttpHandler
         {
             HeaderValues contentTypes = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
 
-            if (contentTypes == null || contentTypes.isEmpty() || !contentTypes.contains("application/vnd.collection+json") )
+            if (contentTypes == null || contentTypes.isEmpty() || !contentTypes.contains(JSONHelper.MEDIA_TYPE) )
             {
-                ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, new IllegalArgumentException("Contet-Type must be application/vnd.collection+json"));
+                ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, new IllegalArgumentException("Contet-Type must be " + JSONHelper.MEDIA_TYPE));
                 return;
             }
         }

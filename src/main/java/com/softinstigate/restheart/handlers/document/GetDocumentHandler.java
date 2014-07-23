@@ -10,6 +10,7 @@
  */
 package com.softinstigate.restheart.handlers.document;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
@@ -21,7 +22,8 @@ import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-import net.hamnaberg.json.extension.Tuple3;
+import java.util.Map;
+import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,21 +49,31 @@ public class GetDocumentHandler extends GetHandler
 
         BasicDBObject query = new BasicDBObject("_id", rc.getDocumentId());
 
-        DBObject document = client.getDB(rc.getDBName()).getCollection(rc.getCollectionName()).findOne( query);
-        
+        DBObject document = client.getDB(rc.getDBName()).getCollection(rc.getCollectionName()).findOne(query);
+
         if (document == null)
         {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
             return null;
         }
 
-        List<Tuple3<String, String, Object>> item = new ArrayList<>();
+        Map<String, Object> item = new TreeMap<>();
 
-        document.keySet().stream().forEach(
-                (key) -> item.add(
-                        Tuple3.of(key, null, document.get(key))
-                )
-        );
+        document.keySet().stream().forEach((key) ->
+        {
+            // data value is either a String or a Map. the former case applies with nested json objects
+
+            Object obj = document.get(key);
+
+            if (obj instanceof BasicDBList)
+            {
+                BasicDBList dblist = (BasicDBList) obj;
+
+                obj = dblist.toMap();
+            }
+
+            item.put(key, obj);
+        });
 
         return generateDocumentContent(exchange.getRequestURL(), exchange.getQueryString(), item);
     }

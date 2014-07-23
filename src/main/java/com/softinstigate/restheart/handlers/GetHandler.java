@@ -10,7 +10,6 @@
  */
 package com.softinstigate.restheart.handlers;
 
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.utils.HttpStatus;
@@ -22,18 +21,11 @@ import io.undertow.util.Headers;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-import net.hamnaberg.funclite.Optional;
-import net.hamnaberg.json.Collection;
-import net.hamnaberg.json.Item;
-import net.hamnaberg.json.Link;
-import net.hamnaberg.json.Property;
-import net.hamnaberg.json.Error;
-import net.hamnaberg.json.MediaType;
-import net.hamnaberg.json.Value;
-import net.hamnaberg.json.extension.Tuple3;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,7 +99,7 @@ public abstract class GetHandler implements HttpHandler
          * single value however we specify two, to allow some browsers (i.e.
          * Safari) to display data rather than downloading it
          */
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json," + MediaType.COLLECTION_JSON);
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json," + JSONHelper.MEDIA_TYPE);
         exchange.setResponseContentLength(content.length());
         exchange.setResponseCode(200);
 
@@ -132,91 +124,59 @@ public abstract class GetHandler implements HttpHandler
      * @param filter
      * @return
      */
-    protected String generateCollectionContent(String baseUrl, String queryString, List<List<Tuple3<String, String, Object>>> data, int page, int pagesize, long size, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
+    protected String generateCollectionContent(String baseUrl, String queryString, List<Map<String, Object>> data, int page, int pagesize, long size, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
-        Collection.Builder cb = new Collection.Builder();
-
-        // *** href collection property
-        try
-        {
-            if (queryString == null || queryString.isEmpty())
-            {
-                cb.withHref(new URI(baseUrl));
-            }
-            else
-            {
-                cb.withHref(new URI(baseUrl + "?" + queryString));
-            }
-        }
-        catch (URISyntaxException ex)
-        {
-            logger.error("error creating resource self href", ex);
-        }
-
         // *** arguments check
+
         long total_pages = (size / pagesize) > 1 ? (size / pagesize) : 1;
 
         if (pagesize < 1 || pagesize > 1000)
         {
-            cb.withError(Error.create("illegal argument", "IA-PAGESIZE", "pagesize must be > 0 and <= 1000"));
-            return cb.build().toString();
+            throw new IllegalArgumentException("illegal argument, pagesize must be > 0 and <= 1000");
         }
 
         if (page < 1)
         {
-            cb.withError(Error.create("illegal argument", "IA-PAGE", "page cannot be less than 1"));
-            return cb.build().toString();
+            throw new IllegalArgumentException("illegal argument, page must be > 0");
         }
 
         if (page > total_pages)
         {
-            cb.withError(Error.create("illegal argument", "IA-PAGE", "page is bigger that total pages which is " + total_pages));
-            return cb.build().toString();
+            throw new IllegalArgumentException("illegal argument, page is bigger that total pages which is " + total_pages);
         }
 
         // *** data items
-        long count = data.stream().filter((item) -> item.stream().anyMatch((property) -> property._1.equals("id") || property._1.equals("_id"))).count();
-
-        data.stream().filter((item) -> item.stream().anyMatch((property) -> property._1.equals("id") || property._1.equals("_id"))).forEach(
-                (item) ->
-                {
-                    ArrayList<Property> props = new ArrayList<>();
-
-                    item.stream().forEach((property) ->
-                            {
-                                //TODO if value (property._3) is a json object (instanceof DBObject) it gets quoted
-                                // need to add nested document somehow - check specification
-                                props.add(Property.value(property._1, Optional.fromNullable(property._2), property._3));
-                    });
-
-                    Object id = item.stream().filter((property) -> property._1.equals("id") || property._1.equals("_id")).findFirst().get()._3;
-
-                    if (id != null)
-                    {
-                        cb.addItem(Item.create(JSONHelper.getReference(baseUrl, id.toString()), props));
-                    }
-                });
-
+        
+        List<Map<String, Object>> embedded = data.stream().filter((props) -> props.keySet().stream().anyMatch((k) -> k.equals("id") || k.equals("_id"))).collect(Collectors.toList());
+        
         // *** links
+
         boolean includepagesize = pagesize != 100;
 
+        TreeMap<String, URI> links = new TreeMap<>();
+        
         try
         {
-            cb.addLink(Link.create(new URI(baseUrl + (includepagesize ? "?pagesize=" + pagesize : "")), "first"));
+            if (queryString == null || queryString.isEmpty())
+                links.put("self" , new URI(baseUrl));
+            else
+                links.put("self" , new URI(baseUrl + "?" + queryString));
+            
+            links.put("first" , new URI(baseUrl + (includepagesize ? "?pagesize=" + pagesize : "")));
 
             if (page < total_pages)
             {
-                cb.addLink(Link.create(new URI(baseUrl + "?page=" + (page + 1) + (includepagesize ? "&pagesize=" + pagesize : "")), "next"));
-                cb.addLink(Link.create(new URI(baseUrl + (total_pages != 1 ? "?page=" + total_pages : "") + (total_pages != 1 && includepagesize ? "&" : "?") + (includepagesize ? "pagesize=" + pagesize : "")), "last"));
+                links.put("next", new URI(baseUrl + "?page=" + (page + 1) + (includepagesize ? "&pagesize=" + pagesize : "")));
+                links.put("last", new URI(baseUrl + (total_pages != 1 ? "?page=" + total_pages : "") + (total_pages != 1 && includepagesize ? "&" : "?") + (includepagesize ? "pagesize=" + pagesize : "")));
             }
             else
             {
-                cb.addLink(Link.create(new URI(baseUrl + (includepagesize ? "?pagesize=" + pagesize : "")), "last"));
+                links.put("last", new URI(baseUrl + (includepagesize ? "?pagesize=" + pagesize : "")));
             }
 
             if (page > 1)
             {
-                cb.addLink(Link.create(new URI(baseUrl + (page != 2 ? "?page=" + (page - 1) : "") + (page - 1 != 1 && includepagesize ? "&" : "?") + (includepagesize ? "pagesize=" + pagesize : "")), "previous"));
+                links.put("previous", new URI(baseUrl + (page != 2 ? "?page=" + (page - 1) : "") + (page - 1 != 1 && includepagesize ? "&" : "?") + (includepagesize ? "pagesize=" + pagesize : "")));
             }
         }
         catch (URISyntaxException ex)
@@ -230,76 +190,57 @@ public abstract class GetHandler implements HttpHandler
         // *** templates
         logger.warn("templates not yet implemented");
 
-        // ***  metadata - NOTE: this is an extension to collection+json
-        ArrayList<Property> props = new ArrayList<>();
+        Map<String, String> properties = new TreeMap<>();
 
-        props.add(Property.value("returned", Optional.fromNullable("number of items returned"), count));
-        props.add(Property.value("size", Optional.fromNullable("size of the collection"), size));
-        props.add(Property.value("current_page", Optional.fromNullable("current page number"), page));
-        props.add(Property.value("total_pages", Optional.fromNullable("number of pages"), total_pages));
+        long count = data.stream().filter((props) -> props.keySet().stream().anyMatch((k) -> k.equals("id") || k.equals("_id"))).count();
+        
+        properties.put("returned", "" + count);
+        properties.put("size", "" + size);
+        properties.put("current_page", "" + page);
+        properties.put("total_pages", "" + total_pages);
 
         if (sortBy != null && !sortBy.isEmpty())
         {
-            props.add(Property.value("sort_by", Optional.fromNullable("properties used to sort data items, comma separated"), sortBy));
+            properties.put("sort_by", "" + sortBy);
         }
 
         if (filterBy != null && !filterBy.isEmpty())
         {
-            props.add(Property.value("filter_by", Optional.fromNullable("properties used to filter data items, comma separated"), filterBy));
+            properties.put("filter_by", "" + filterBy);
         }
 
         if (filter != null && !filter.isEmpty())
         {
-            props.add(Property.value("filter", Optional.fromNullable("filters to apply, comma separated regexs"), filter));
+            properties.put("filter", "" + filter);
         }
 
-        return JSONHelper.addMetadataAndGetJson(cb.build(), props);
+        return JSONHelper.getCollectionHal(baseUrl, properties, links, embedded).toString();
     }
 
-    protected String generateDocumentContent(String baseUrl, String queryString, List<Tuple3<String, String, Object>> data)
+    protected String generateDocumentContent(String baseUrl, String queryString, Map<String, Object> data)
     {
-        Collection.Builder cb = new Collection.Builder();
+        // *** links
 
-        // *** href document property
+        TreeMap<String, URI> links = new TreeMap<>();
+        
         try
         {
             if (queryString == null || queryString.isEmpty())
-            {
-                cb.withHref(new URI(baseUrl));
-            }
+                links.put("self" , new URI(baseUrl));
             else
-            {
-                cb.withHref(new URI(baseUrl + "?" + queryString));
-            }
+                links.put("self" , new URI(baseUrl + "?" + queryString));
         }
         catch (URISyntaxException ex)
         {
-            logger.error("error creating resource self href", ex);
+            logger.error("error creating resource links", ex);
         }
 
-        // *** data item
-        ArrayList<Property> props = new ArrayList<>();
-
-        String id = null;
-
-        for (Tuple3<String, String, Object> property : data)
-        {
-            if (property._1.equals("id") || property._1.equals("_id"))
-            {
-                id = (String) property._3;
-            }
-
-            props.add(Property.value(property._1, Optional.fromNullable(property._2), property._3));
-        }
-
-        if (id != null)
-        {
-            cb.addItem(Item.create(JSONHelper.getReference(baseUrl, id), props));
-        }
+        // *** queries
+        logger.warn("queries not yet implemented");
 
         // *** templates
         logger.warn("templates not yet implemented");
 
-        return cb.build().toString();
+        return JSONHelper.getDocumentHal(baseUrl, data, links).toString();
     }
 }

@@ -8,17 +8,14 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-
 package com.softinstigate.restheart.utils;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.eclipsesource.json.JsonArray;
+import com.eclipsesource.json.JsonObject;
 import java.net.URI;
 import java.net.URISyntaxException;
-import net.hamnaberg.json.Collection;
-import net.hamnaberg.json.Item;
-import net.hamnaberg.json.Property;
+import java.util.List;
+import java.util.Map;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -28,8 +25,10 @@ import org.slf4j.Logger;
  */
 public class JSONHelper
 {
+    public static String MEDIA_TYPE = "application/hal+json";
+
     private static final Logger logger = LoggerFactory.getLogger(JSONHelper.class);
-    
+
     static public URI getReference(String parentUrl, String referencedName)
     {
         try
@@ -38,37 +37,113 @@ public class JSONHelper
         }
         catch (URISyntaxException ex)
         {
-            logger.error("error creating URI from {} + / + {}", parentUrl, referencedName , ex);
+            logger.error("error creating URI from {} + / + {}", parentUrl, referencedName, ex);
         }
-        
+
         return null;
     }
-    
+
     static private String removeTrailingSlashes(String s)
     {
         if (s.trim().charAt(s.length() - 1) == '/')
         {
-            return removeTrailingSlashes(s.substring(0, s.length()-1));
+            return removeTrailingSlashes(s.substring(0, s.length() - 1));
         }
         else
         {
             return s.trim();
         }
     }
-    
-    static public String addMetadataAndGetJson(Collection c, Iterable<Property> props)
+
+    static public JsonObject getCollectionHal(String baseUrl, Map<String, String> properties, Map<String, URI> links, List<Map<String, Object>> embedded)
     {
-        JsonNode node =  Collection.builder().addItem(Item.builder().addProperties(props).build()).build().asJson().findValue("items").findValue("data");
+        JsonObject root = new JsonObject();
+
+        if (properties != null && !properties.isEmpty())
+        {
+            properties.keySet().stream().forEach(k -> root.add(k, properties.get(k)));
+        }
+
+        if (links != null && !links.isEmpty())
+        {
+            JsonObject linksFragment = new JsonObject();
+
+            links.keySet().stream().forEach(k -> linksFragment.add(k, links.get(k).toString()));
+
+            root.add("_links", linksFragment);
+        }
+
+        if (embedded != null & !embedded.isEmpty())
+        {
+            JsonObject embeddedFragment = new JsonObject();
+
+            JsonArray embeddedItems = new JsonArray();
+
+            embedded.stream().map((itemProperties) ->
+            {
+                JsonObject embeddedItem = new JsonObject();
+                String id = null;
                 
-        ObjectNode on = c.asJson();
+                for (String itemKey : itemProperties.keySet())
+                {
+                    addObject(embeddedItem, itemKey, itemProperties.get(itemKey));
+
+                    if (itemKey.equals("id") || itemKey.equals("_id")) // id or _id filed are there sice collection was already filtered
+                    {
+                        id = itemProperties.get(itemKey).toString();
+                    }
+                }
+                JsonObject embeddedItemlinksFragment = new JsonObject();
+                embeddedItemlinksFragment.add("self", new JsonObject().add("href", removeTrailingSlashes(baseUrl) + "/" + id));
+                embeddedItem.add("_links", embeddedItemlinksFragment);
+                return embeddedItem;
+            }).forEach((embeddedItem) ->
+            {
+                embeddedItems.add(embeddedItem);
+            });
+
+            root.add("_embedded", embeddedFragment.add("rh:collection", embeddedItems));
+        }
         
-        on.set("metadata", node);
-        
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode rootNode = mapper.createObjectNode();
-        
-        rootNode.set("collection", on);
-        
-        return rootNode.toString();
+        return root;
+    }
+    
+    static public JsonObject getDocumentHal(String baseUrl, Map<String, Object> properties, Map<String, URI> links)
+    {
+        JsonObject root = new JsonObject();
+
+        if (properties != null && !properties.isEmpty())
+        {
+            properties.keySet().stream().forEach(k -> addObject(root, k, properties.get(k)));
+        }
+
+        if (links != null && !links.isEmpty())
+        {
+            JsonObject linksFragment = new JsonObject();
+
+            links.keySet().stream().forEach(k -> linksFragment.add(k, links.get(k).toString()));
+
+            root.add("_links", linksFragment);
+        }
+
+        return root;
+    }
+    
+    private static void addObject(JsonObject json, String key, Object obj)
+    {
+        if (obj instanceof String)
+        {
+            json.add(key, (String)obj);
+        }
+        else if (obj instanceof Map)
+        {
+            JsonObject nested = new JsonObject();
+            
+            Map<String, Object> nestedMap = (Map<String, Object>)obj;
+            
+            (nestedMap).keySet().stream().forEach(k -> addObject(nested, k, nestedMap.get(k)));
+            
+            json.add(key, nested);
+        }
     }
 }

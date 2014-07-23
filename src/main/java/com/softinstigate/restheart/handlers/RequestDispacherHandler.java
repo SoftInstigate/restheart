@@ -274,6 +274,12 @@ public class RequestDispacherHandler implements HttpHandler
     
     private static boolean doesCollectionExist(HttpServerExchange exchange, String dbName, String collectionName)
     {
+        if (dbName == null || dbName.isEmpty() || dbName.contains(" "))
+        {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
+            return false;
+        }
+        
         if (!client.getDB(dbName).collectionExists(collectionName))
         {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
