@@ -7,3 +7,6 @@
 [submodule "devenv/chef/cookbooks/git"]
 	path = devenv/chef/cookbooks/git
 	url = https://github.com/jssjr/git.git
+[submodule "src/main/resources/browser"]
+	path = src/main/resources/browser
+	url = https://github.com/mikekelly/hal-browser.git

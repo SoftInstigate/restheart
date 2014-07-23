@@ -48,6 +48,7 @@ import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
+import io.undertow.server.handlers.resource.FileResourceManager;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -67,6 +68,11 @@ import javax.net.ssl.SSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
+
+import static io.undertow.Handlers.resource;
+import static io.undertow.Handlers.path;
+import java.net.URISyntaxException;
+import java.net.URL;
 
 /**
  *
@@ -215,10 +221,29 @@ public class Bootstrapper
             System.exit(-1);
         }
 
+        URL browserRootURL = Bootstrapper.class.getClassLoader().getResource("browser");  
+        File browserRootFile = null;
+        
+        try
+        {
+            browserRootFile = new File(browserRootURL.toURI());
+        }
+        catch (URISyntaxException ex)
+        {
+            logger.error("error instanitating browser web app root URI", ex);
+            System.exit(-1);
+        }
+        
         server = Undertow.builder()
                 .addHttpsListener(port, "0.0.0.0", sslContext)
                 .setWorkerThreads(50)
-                .setHandler(addSecurity(
+                .setHandler(
+                        
+                        path()
+                        .addPrefixPath("/@browser", resource(new FileResourceManager(browserRootFile, 3)).addWelcomeFiles("browser.html").setDirectoryListingEnabled(false))
+                        .addPrefixPath("/", 
+                        
+                        addSecurity(
                                 new ErrorHandler(
                                         new BlockingHandler(
                                                 new HttpContinueAcceptingHandler(
@@ -252,7 +277,7 @@ public class Bootstrapper
                                                 )
                                         )
                                 ), identityManager)
-                )
+                ))
                 .build();
         server.start();
     }
