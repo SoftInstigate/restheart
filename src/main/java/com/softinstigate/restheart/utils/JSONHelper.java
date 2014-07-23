@@ -68,7 +68,7 @@ public class JSONHelper
         {
             JsonObject linksFragment = new JsonObject();
 
-            links.keySet().stream().forEach(k -> linksFragment.add(k, links.get(k).toString()));
+            links.keySet().stream().forEach(k -> linksFragment.add(k, new JsonObject().add("href", links.get(k).toString())));
 
             root.add("_links", linksFragment);
         }
@@ -121,7 +121,7 @@ public class JSONHelper
         {
             JsonObject linksFragment = new JsonObject();
 
-            links.keySet().stream().forEach(k -> linksFragment.add(k, links.get(k).toString()));
+            links.keySet().stream().forEach(k -> linksFragment.add(k, new JsonObject().add("href", links.get(k).toString())));
 
             root.add("_links", linksFragment);
         }
