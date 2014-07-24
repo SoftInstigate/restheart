@@ -36,16 +36,9 @@ import com.softinstigate.restheart.handlers.document.PatchDocumentHandler;
 import com.softinstigate.restheart.handlers.document.PostDocumentHandler;
 import com.softinstigate.restheart.handlers.document.PutDocumentHandler;
 import com.softinstigate.restheart.security.MapIdentityManager;
+import com.softinstigate.restheart.utils.ResourcesExtractor;
 import io.undertow.Undertow;
-import io.undertow.security.api.AuthenticationMechanism;
-import io.undertow.security.api.AuthenticationMode;
-import io.undertow.security.handlers.AuthenticationCallHandler;
-import io.undertow.security.handlers.AuthenticationConstraintHandler;
-import io.undertow.security.handlers.AuthenticationMechanismsHandler;
-import io.undertow.security.handlers.SecurityInitialHandler;
 import io.undertow.security.idm.IdentityManager;
-import io.undertow.security.impl.BasicAuthenticationMechanism;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
 import io.undertow.server.handlers.resource.FileResourceManager;
@@ -59,9 +52,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -71,8 +62,17 @@ import org.yaml.snakeyaml.Yaml;
 
 import static io.undertow.Handlers.resource;
 import static io.undertow.Handlers.path;
+import io.undertow.security.api.AuthenticationMechanism;
+import io.undertow.security.api.AuthenticationMode;
+import io.undertow.security.handlers.AuthenticationCallHandler;
+import io.undertow.security.handlers.AuthenticationConstraintHandler;
+import io.undertow.security.handlers.AuthenticationMechanismsHandler;
+import io.undertow.security.handlers.SecurityInitialHandler;
+import io.undertow.security.impl.BasicAuthenticationMechanism;
+import io.undertow.server.HttpHandler;
 import java.net.URISyntaxException;
-import java.net.URL;
+import java.util.Collections;
+import java.util.List;
 
 /**
  *
@@ -81,9 +81,11 @@ import java.net.URL;
 public class Bootstrapper
 {
     private static Undertow server;
-    
+
     private static final Logger logger = LoggerFactory.getLogger(Bootstrapper.class);
     
+    private static File browserRootFile = null;
+
     public static void main(final String[] args)
     {
         Yaml yaml = new Yaml();
@@ -121,14 +123,18 @@ public class Bootstrapper
         String mongoUser = (String) conf.getOrDefault("mongo-user", "");
         String mongoPassword = (String) conf.getOrDefault("mongo-password", "");
 
-        MongoDBClientSingleton.init(mongoHost, mongoPort, mongoUser, mongoPassword);
+        try
+        {
+            MongoDBClientSingleton.init(mongoHost, mongoPort, mongoUser, mongoPassword);
+            start(port, useEmbeddedKeystore, keystoreFile, keystorePassword, certPassword);
 
-        logger.info("configuration {}", conf.toString());
+        }
+        catch (Throwable t)
+        {
+            logger.error("exiting", t);
+            System.exit(-1);
+        }
 
-        start(port, useEmbeddedKeystore, keystoreFile, keystorePassword, certPassword);
-
-        MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-        
         Runtime.getRuntime().addShutdownHook(new Thread()
         {
             @Override
@@ -140,25 +146,35 @@ public class Bootstrapper
                     {
                         server.stop();
                     }
-                    catch(Throwable t)
+                    catch (Throwable t)
                     {
                         logger.error("error stopping undertow server", t);
                     }
                 }
+
+                try
+                {
+                    MongoClient client = MongoDBClientSingleton.getInstance().getClient();
+                    client.fsync(false);
+                    client.close();
+                }
+                catch (Throwable t)
+                {
+                    logger.error("error flushing and clonsing the mongo cliet", t);
+                }
                 
-                if (client != null)
+                if (browserRootFile != null)
                 {
                     try
                     {
-                        client.fsync(false);
-                        client.close();
+                        ResourcesExtractor.deleteTempDir("browser", browserRootFile);
                     }
-                    catch(Throwable t)
+                    catch (URISyntaxException | IOException ex)
                     {
-                        logger.error("error closing flushing and clonsing the mongo cliet", t);
+                        logger.error("error cleaning up temporary directory {}", browserRootFile.toString(), ex);
                     }
                 }
-                
+
                 logger.info("restheart stopped");
             }
         });
@@ -212,7 +228,7 @@ public class Bootstrapper
         }
         catch (FileNotFoundException ex)
         {
-            logger.error("couldn't start restheart, keystore file not found" , ex);
+            logger.error("couldn't start restheart, keystore file not found", ex);
             System.exit(-1);
         }
         catch (IOException ex)
@@ -221,67 +237,61 @@ public class Bootstrapper
             System.exit(-1);
         }
 
-        URL browserRootURL = Bootstrapper.class.getClassLoader().getResource("browser");  
-        File browserRootFile = null;
-        
         try
         {
-            browserRootFile = new File(browserRootURL.toURI());
+            browserRootFile = ResourcesExtractor.extract("browser");
         }
-        catch (URISyntaxException ex)
+        catch (URISyntaxException | IOException ex)
         {
-            logger.error("error instanitating browser web app root URI", ex);
+            logger.error("error instanitating browser web app", ex);
             System.exit(-1);
         }
         
+        logger.info("static resources are in {}", browserRootFile.toString());
+
         server = Undertow.builder()
                 .addHttpsListener(port, "0.0.0.0", sslContext)
                 .setWorkerThreads(50)
                 .setHandler(
-                        
                         path()
                         .addPrefixPath("/@browser", resource(new FileResourceManager(browserRootFile, 3)).addWelcomeFiles("browser.html").setDirectoryListingEnabled(false))
-                        .addPrefixPath("/", 
-                        
-                        addSecurity(
-                                new ErrorHandler(
-                                        new BlockingHandler(
-                                                new HttpContinueAcceptingHandler(
-                                                        new SchemaEnforcerHandler(
-                                                                new RequestDispacherHandler(
-                                                                        new GetAccountHandler(),
-                                                                        new PostAccountHandler(),
-                                                                        new PutAccountHandler(),
-                                                                        new DeleteAccountHandler(),
-                                                                        new PatchAccountHandler(),
-                                                                        
-                                                                        new GetDBHandler(),
-                                                                        new PostDBHandler(),
-                                                                        new PutDBHandler(),
-                                                                        new DeleteDBHandler(),
-                                                                        new PatchDBHandler(),
-
-                                                                        new GetCollectionHandler(),
-                                                                        new PostCollectionHandler(),
-                                                                        new PutCollectionHandler(),
-                                                                        new DeleteCollectionHandler(),
-                                                                        new PatchCollectionHandler(),
-
-                                                                        new GetDocumentHandler(),
-                                                                        new PostDocumentHandler(),
-                                                                        new PutDocumentHandler(),
-                                                                        new DeleteDocumentHandler(),
-                                                                        new PatchDocumentHandler()
+                        .addPrefixPath("/",
+                                addSecurity(
+                                        new ErrorHandler(
+                                                new BlockingHandler(
+                                                        new HttpContinueAcceptingHandler(
+                                                                new SchemaEnforcerHandler(
+                                                                        new RequestDispacherHandler(
+                                                                                new GetAccountHandler(),
+                                                                                new PostAccountHandler(),
+                                                                                new PutAccountHandler(),
+                                                                                new DeleteAccountHandler(),
+                                                                                new PatchAccountHandler(),
+                                                                                new GetDBHandler(),
+                                                                                new PostDBHandler(),
+                                                                                new PutDBHandler(),
+                                                                                new DeleteDBHandler(),
+                                                                                new PatchDBHandler(),
+                                                                                new GetCollectionHandler(),
+                                                                                new PostCollectionHandler(),
+                                                                                new PutCollectionHandler(),
+                                                                                new DeleteCollectionHandler(),
+                                                                                new PatchCollectionHandler(),
+                                                                                new GetDocumentHandler(),
+                                                                                new PostDocumentHandler(),
+                                                                                new PutDocumentHandler(),
+                                                                                new DeleteDocumentHandler(),
+                                                                                new PatchDocumentHandler()
+                                                                        )
                                                                 )
                                                         )
                                                 )
-                                        )
-                                ), identityManager)
-                ))
+                                        ), identityManager)
+                        ))
                 .build();
         server.start();
     }
-    
+
     private static HttpHandler addSecurity(final HttpHandler toWrap, final IdentityManager identityManager)
     {
         HttpHandler handler = toWrap;
