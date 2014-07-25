@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
  */
 public class RequestContext
 {
-    public enum TYPE { ERROR, ACCOUNT, DB, COLLECTION, DOCUMENT };
+    public enum TYPE { ERROR, ROOT, DB, COLLECTION, DOCUMENT };
     public enum METHOD { GET, POST, PUT, DELETE, PATCH, OTHER };
     
     private TYPE type;
@@ -42,7 +42,7 @@ public class RequestContext
         
         if (pathTokens.length < 2)
         {
-            type = TYPE.ACCOUNT;
+            type = TYPE.ROOT;
         } else if (pathTokens.length < 3)
         {
             type = TYPE.DB;

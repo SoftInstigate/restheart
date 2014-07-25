@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.handlers.account;
+package com.softinstigate.restheart.handlers.root;
 
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.handlers.GetHandler;
@@ -26,14 +26,14 @@ import org.slf4j.LoggerFactory;
  *
  * @author uji
  */
-public class GetAccountHandler extends GetHandler
+public class GetRootHandler extends GetHandler
 {
-    private static final Logger logger = LoggerFactory.getLogger(GetAccountHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(GetRootHandler.class);
 
     /**
      * Creates a new instance of EntityResource
      */
-    public GetAccountHandler()
+    public GetRootHandler()
     {
     }
 

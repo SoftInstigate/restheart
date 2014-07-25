@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.handlers.account;
+package com.softinstigate.restheart.handlers.root;
 
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.ResponseHelper;
@@ -19,17 +19,17 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author uji
  */
-public class PatchAccountHandler implements HttpHandler
+public class PatchRootHandler implements HttpHandler
 {
     /**
-     * Creates a new instance of PatchAccountHandler
+     * Creates a new instance of PatchRootHandler
      */
-    public PatchAccountHandler()
+    public PatchRootHandler()
     {
     }
 
     /**
-     * updating the account via API is not supported by design
+     * updating the root resource via API is not supported by design
      */
     @Override
     public void handleRequest(HttpServerExchange exchange)

@@ -15,11 +15,11 @@ import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.handlers.ErrorHandler;
 import com.softinstigate.restheart.handlers.RequestDispacherHandler;
 import com.softinstigate.restheart.handlers.SchemaEnforcerHandler;
-import com.softinstigate.restheart.handlers.account.DeleteAccountHandler;
-import com.softinstigate.restheart.handlers.account.GetAccountHandler;
-import com.softinstigate.restheart.handlers.account.PatchAccountHandler;
-import com.softinstigate.restheart.handlers.account.PostAccountHandler;
-import com.softinstigate.restheart.handlers.account.PutAccountHandler;
+import com.softinstigate.restheart.handlers.root.DeleteRootHandler;
+import com.softinstigate.restheart.handlers.root.GetRootHandler;
+import com.softinstigate.restheart.handlers.root.PatchRootHandler;
+import com.softinstigate.restheart.handlers.root.PostRootHandler;
+import com.softinstigate.restheart.handlers.root.PutRootHandler;
 import com.softinstigate.restheart.handlers.collection.DeleteCollectionHandler;
 import com.softinstigate.restheart.handlers.collection.GetCollectionHandler;
 import com.softinstigate.restheart.handlers.collection.PatchCollectionHandler;
@@ -262,11 +262,11 @@ public class Bootstrapper
                                                         new HttpContinueAcceptingHandler(
                                                                 new SchemaEnforcerHandler(
                                                                         new RequestDispacherHandler(
-                                                                                new GetAccountHandler(),
-                                                                                new PostAccountHandler(),
-                                                                                new PutAccountHandler(),
-                                                                                new DeleteAccountHandler(),
-                                                                                new PatchAccountHandler(),
+                                                                                new GetRootHandler(),
+                                                                                new PostRootHandler(),
+                                                                                new PutRootHandler(),
+                                                                                new DeleteRootHandler(),
+                                                                                new PatchRootHandler(),
                                                                                 new GetDBHandler(),
                                                                                 new PostDBHandler(),
                                                                                 new PutDBHandler(),

@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.handlers.account;
+package com.softinstigate.restheart.handlers.root;
 
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.ResponseHelper;
@@ -19,12 +19,12 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author uji
  */
-public class PostAccountHandler implements HttpHandler
+public class PostRootHandler implements HttpHandler
 {
     /**
-     * Creates a new instance of PostAccountHandler
+     * Creates a new instance of PostRootHandler
      */
-    public PostAccountHandler()
+    public PostRootHandler()
     {
     }
 

@@ -12,11 +12,11 @@ package com.softinstigate.restheart.handlers;
 
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
-import com.softinstigate.restheart.handlers.account.DeleteAccountHandler;
-import com.softinstigate.restheart.handlers.account.GetAccountHandler;
-import com.softinstigate.restheart.handlers.account.PatchAccountHandler;
-import com.softinstigate.restheart.handlers.account.PostAccountHandler;
-import com.softinstigate.restheart.handlers.account.PutAccountHandler;
+import com.softinstigate.restheart.handlers.root.DeleteRootHandler;
+import com.softinstigate.restheart.handlers.root.GetRootHandler;
+import com.softinstigate.restheart.handlers.root.PatchRootHandler;
+import com.softinstigate.restheart.handlers.root.PostRootHandler;
+import com.softinstigate.restheart.handlers.root.PutRootHandler;
 import com.softinstigate.restheart.handlers.collection.DeleteCollectionHandler;
 import com.softinstigate.restheart.handlers.collection.GetCollectionHandler;
 import com.softinstigate.restheart.handlers.collection.PatchCollectionHandler;
@@ -48,11 +48,11 @@ public class RequestDispacherHandler implements HttpHandler
 {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
     
-    private final GetAccountHandler accountGet;
-    private final PostAccountHandler accountPost;
-    private final PutAccountHandler accountPut;
-    private final DeleteAccountHandler accountDelete;
-    private final PatchAccountHandler accountPatch;
+    private final GetRootHandler rootGet;
+    private final PostRootHandler rootPost;
+    private final PutRootHandler rootPut;
+    private final DeleteRootHandler rootDelete;
+    private final PatchRootHandler rootPatch;
     private final GetDBHandler dbGet;
     private final PostDBHandler dbPost;
     private final PutDBHandler dbPut;
@@ -72,11 +72,11 @@ public class RequestDispacherHandler implements HttpHandler
     /**
      * Creates a new instance of EntityResource
      *
-     * @param accountGet
-     * @param accountPost
-     * @param accountPut
-     * @param accountDelete
-     * @param accountPatch
+     * @param rootGet
+     * @param rootPost
+     * @param rootPut
+     * @param rootDelete
+     * @param rootPatch
      * @param dbGet
      * @param dbPost
      * @param dbPut
@@ -94,11 +94,11 @@ public class RequestDispacherHandler implements HttpHandler
      * @param documentPatch
      */
     public RequestDispacherHandler(
-            GetAccountHandler accountGet,
-            PostAccountHandler accountPost,
-            PutAccountHandler accountPut,
-            DeleteAccountHandler accountDelete,
-            PatchAccountHandler accountPatch,
+            GetRootHandler rootGet,
+            PostRootHandler rootPost,
+            PutRootHandler rootPut,
+            DeleteRootHandler rootDelete,
+            PatchRootHandler rootPatch,
             GetDBHandler dbGet,
             PostDBHandler dbPost,
             PutDBHandler dbPut,
@@ -116,11 +116,11 @@ public class RequestDispacherHandler implements HttpHandler
             PatchDocumentHandler documentPatch
     )
     {
-        this.accountGet = accountGet;
-        this.accountPost = accountPost;
-        this.accountPut = accountPut;
-        this.accountDelete = accountDelete;
-        this.accountPatch = accountPatch;
+        this.rootGet = rootGet;
+        this.rootPost = rootPost;
+        this.rootPut = rootPut;
+        this.rootDelete = rootDelete;
+        this.rootPatch = rootPatch;
         this.dbGet = dbGet;
         this.dbPost = dbPost;
         this.dbPut = dbPut;
@@ -163,8 +163,8 @@ public class RequestDispacherHandler implements HttpHandler
             case GET:
                 switch (c.getType())
                 {
-                    case ACCOUNT:
-                        accountGet.handleRequest(exchange);
+                    case ROOT:
+                        rootGet.handleRequest(exchange);
                         return;
                     case DB:
                         if (doesDbExist(exchange, c.getDBName()))
@@ -183,8 +183,8 @@ public class RequestDispacherHandler implements HttpHandler
             case POST:
                 switch (c.getType())
                 {
-                    case ACCOUNT:
-                        accountPost.handleRequest(exchange);
+                    case ROOT:
+                        rootPost.handleRequest(exchange);
                         return;
                     case DB:
                         if (doesDbExist(exchange, c.getDBName()))
@@ -203,8 +203,8 @@ public class RequestDispacherHandler implements HttpHandler
             case PUT:
                 switch (c.getType())
                 {
-                    case ACCOUNT:
-                        accountPut.handleRequest(exchange);
+                    case ROOT:
+                        rootPut.handleRequest(exchange);
                         return;
                     case DB:
                         if (doesDbExist(exchange, c.getDBName()))
@@ -223,8 +223,8 @@ public class RequestDispacherHandler implements HttpHandler
             case DELETE:
                 switch (c.getType())
                 {
-                    case ACCOUNT:
-                        accountDelete.handleRequest(exchange);
+                    case ROOT:
+                        rootDelete.handleRequest(exchange);
                         return;
                     case DB:
                         if (doesDbExist(exchange, c.getDBName()))
@@ -243,8 +243,8 @@ public class RequestDispacherHandler implements HttpHandler
             case PATCH:
                 switch (c.getType())
                 {
-                    case ACCOUNT:
-                        accountPatch.handleRequest(exchange);
+                    case ROOT:
+                        rootPatch.handleRequest(exchange);
                         return;
                     case DB:
                         if (doesDbExist(exchange, c.getDBName()))
