@@ -1,11 +1,37 @@
-## RESTHeart configuration file. edited by uji
+## RESTHeart configuration file.
 ---
-port: 10443
+https-listener: true
+https-host: 0.0.0.0
+https-port: 4433
+
+http-listener: false
+http-host: 0.0.0.0
+http-port: 8080
+
+ajp-listener: false
+ajp-host: 0.0.0.0
+ajp-port: 8009
+
+# use embedded self-signed certificate
+# if false, you must define the keystore-file, keystore-password and certpassword properties
 use-embedded-keystore: true
-#keystore-file: </path/to/keystore>
-#keystore-password: <pwd>
+#keystore-file: /path/to/keystore/file
+#keystore-password: password
 #certpassword: password
-# mongo-host: 127.0.0.1
-# mongo-port: 27017
+
+mongo-host: 127.0.0.1
+mongo-port: 27017
 mongo-user: admin
 mongo-password: adminadmin
+
+# usually 1 per core. 2 as least
+io-threads: 2
+
+# suggested 500 since 500 is the default number of concurrent connections accepted by mongo
+worker-threads: 100
+
+#use 16k buffers for best performance
+#as 16k is generally the max amount of data that can be sent in a single write() call
+buffer-size: 16384
+buffers-per-region: 20
+direct-buffers: true
