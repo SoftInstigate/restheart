@@ -15,8 +15,12 @@ import com.eclipsesource.json.ParseException;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.util.JSON;
+import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.JSONHelper;
 import com.softinstigate.restheart.utils.RequestContext;
@@ -44,7 +48,7 @@ public class PutDBHandler implements HttpHandler
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
 
     private static final Logger logger = LoggerFactory.getLogger(PutDBHandler.class);
-    
+
     /**
      * Creates a new instance of EntityResource
      */
@@ -62,68 +66,65 @@ public class PutDBHandler implements HttpHandler
             ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, new IllegalArgumentException("db name cannot be empty or start with @"));
             return;
         }
-        
-        if (client.getDatabaseNames().contains(rc.getDBName()))
-        {
-            // update
 
-            logger.warn("update collection not yet implemented");
+        String _content = ChannelReader.read(exchange.getRequestChannel());
+
+        DBObject content = null;
+
+        try
+        {
+            content = (DBObject) JSON.parse(_content);
+        }
+        catch (JSONParseException ex)
+        {
+            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, ex);
+            return;
+        }
+
+        boolean updating = client.getDatabaseNames().contains(rc.getDBName());
+
+        DB db = client.getDB(rc.getDBName());
+
+        DBCollection coll = null;
+        
+        BasicDBObject metadata = new BasicDBObject();
+
+        if (updating)
+        {
+            coll = db.getCollection("@metadata");
+            
+            BasicDBObject metadataQuery = new BasicDBObject("_id", "@metadata");
+            
+            DBObject oldmetadata = coll.findOne(metadataQuery);
+            
+            if (oldmetadata != null)
+            {
+                metadata.put("@created_on", oldmetadata.get("@created_on"));
+                metadata.put("@lastupdated_on", Instant.now().toString());
+            }
+            
+            coll.remove(metadataQuery);
         }
         else
         {
-            StreamSourceChannel sourceChannel = exchange.getRequestChannel();
+            coll = db.createCollection("@metadata", null);
 
-            JsonObject content = null;
-
-            try
-            {
-                Reader reader = Channels.newReader(sourceChannel, charset.toString());
-
-                content = JsonObject.readFrom(reader);
-            }
-            catch (UnsupportedCharsetException ex)
-            {
-                ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, ex);
-                return;
-            }
-            catch (IOException | ParseException | UnsupportedOperationException ex)
-            {
-                ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, ex);
-                return;
-            }
-            finally
-            {
-                if (sourceChannel != null)
-                {
-                    sourceChannel.close();
-                }
-            }
-
-            // create
-            
-            DB db = client.getDB(rc.getDBName());
-            
-            DBCollection coll = db.createCollection("@metadata", null);
-
-            BasicDBObject indexes = new BasicDBObject();
-
-            indexes.put("@type", 1);
-
-            coll.createIndex(indexes);
-
-            BasicDBObject metadata = new BasicDBObject();
-
-            metadata.put("@type", "metadata");
             metadata.put("@created_on", Instant.now().toString());
-
-            if (content != null && !content.isEmpty())
-            {
-                metadata.putAll(JSONHelper.convertJsonToDbObj(content));
-            }
-
-            coll.insert(metadata);
-
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_CREATED);
         }
+        
+        metadata.put("_id", "@metadata");
+        metadata.put("@type", "metadata");
+        
+        if (content != null)
+        {
+            metadata.putAll(content);
+        }
+
+        coll.insert(metadata);
+
+        if (updating)
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);
+        else
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_CREATED);
     }
 }

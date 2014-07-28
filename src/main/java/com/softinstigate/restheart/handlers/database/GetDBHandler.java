@@ -67,7 +67,7 @@ public class GetDBHandler extends GetHandler
 
             DBObject metadatarow = metadatacoll.findOne(metadataQuery);
             
-            metadata = getDataFromRow(metadatarow, true);
+            metadata = getDataFromRow(metadatarow,  "_id", "@type");
         }
 
         int size = colls.size();

@@ -94,7 +94,7 @@ public class GetCollectionHandler extends GetHandler
         
         ArrayList<DBObject> rows = new ArrayList<>(cursor.toArray());
         
-        Map<String, Object> metadata = getDataFromRow(metadatarow, true);
+        Map<String, Object> metadata = getDataFromRow(metadatarow, "_id", "@type");
         
         List<Map<String, Object>> data = getDataFromRows(rows);
 

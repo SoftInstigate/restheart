@@ -24,9 +24,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -260,7 +262,7 @@ public abstract class GetHandler implements HttpHandler
         
         rows.stream().map((row) ->
         {
-            TreeMap<String, Object> properties = getDataFromRow(row, false);
+            TreeMap<String, Object> properties = getDataFromRow(row);
 
             return properties;
         }).forEach((item) ->
@@ -273,13 +275,16 @@ public abstract class GetHandler implements HttpHandler
     
     /**
      * @param row
-     * @param filterCustomFields if true fields starting with @ will be filtered out
+     * @param fieldsToFilter list of field names to filter
      * @return 
     */
-    protected TreeMap<String, Object> getDataFromRow(DBObject row, boolean filterCustomFields)
+    protected TreeMap<String, Object> getDataFromRow(DBObject row, String... fieldsToFilter)
     {
         if (row == null)
             return null;
+        
+        List<String> _fieldsToFilter = Arrays.asList(fieldsToFilter);
+        
         
         TreeMap<String, Object> properties = new TreeMap<>();
 
@@ -287,7 +292,7 @@ public abstract class GetHandler implements HttpHandler
         {
             // data value is either a String or a Map. the former case applies with nested json objects
 
-            if (!filterCustomFields || !key.startsWith("@"))
+            if (!_fieldsToFilter.contains(key))
             {
                 Object obj = row.get(key);
 

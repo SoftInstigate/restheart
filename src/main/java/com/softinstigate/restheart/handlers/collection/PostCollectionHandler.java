@@ -47,7 +47,7 @@ public class PostCollectionHandler implements HttpHandler
 
         createDocument(coll, ChannelReader.read(exchange.getRequestChannel()));
         
-        ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);
+        ResponseHelper.endExchange(exchange, HttpStatus.SC_CREATED);
     }
 
     /**
