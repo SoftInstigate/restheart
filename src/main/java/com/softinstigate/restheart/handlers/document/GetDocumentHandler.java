@@ -19,11 +19,10 @@ import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import java.util.ArrayList;
 import java.util.Deque;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +46,9 @@ public class GetDocumentHandler extends GetHandler
     {
         RequestContext rc = new RequestContext(exchange);
 
-        BasicDBObject query = new BasicDBObject("_id", rc.getDocumentId());
+        ObjectId id = new ObjectId(rc.getDocumentId());
+        
+        BasicDBObject query = new BasicDBObject("_id", id);
 
         DBObject document = client.getDB(rc.getDBName()).getCollection(rc.getCollectionName()).findOne(query);
 

@@ -14,14 +14,19 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.WriteConcern;
+import com.mongodb.WriteResult;
 import com.mongodb.util.JSON;
+import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
+import com.softinstigate.restheart.utils.JSONHelper;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
+import org.bson.types.ObjectId;
 
 /**
  *
@@ -45,21 +50,36 @@ public class PostCollectionHandler implements HttpHandler
         
         DBCollection coll = client.getDB(c.getDBName()).getCollection(c.getCollectionName());
 
-        createDocument(coll, ChannelReader.read(exchange.getRequestChannel()));
+        String _content = ChannelReader.read(exchange.getRequestChannel());
+
+        DBObject content;
+
+        try
+        {
+            content = (DBObject) JSON.parse(_content);
+        }
+        catch (JSONParseException ex)
+        {
+            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, ex);
+            return;
+        }
+        
+        ObjectId id;
+        
+        if (content.get("_id") == null)
+        {
+            id = new ObjectId();
+            content.put("_id", id);
+        }
+        else
+        {
+            id = (ObjectId) content.get("_id");
+        }
+        
+        coll.insert(content);
+        
+        exchange.getResponseHeaders().add(HttpString.tryFromString("Location"), JSONHelper.getReference(exchange.getRequestURL(), id.toString()).toString());
         
         ResponseHelper.endExchange(exchange, HttpStatus.SC_CREATED);
-    }
-
-    /**
-     * method for creating a document in the collection coll
-     *
-     * @param coll
-     * @param content representation for the resource
-     */
-    private void createDocument(DBCollection coll, String content)
-    {
-        DBObject obj = (DBObject) JSON.parse(content);
-
-        coll.insert(obj, WriteConcern.ACKNOWLEDGED);
     }
 }

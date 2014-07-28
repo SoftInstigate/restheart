@@ -134,8 +134,11 @@ public abstract class GetHandler implements HttpHandler
     {
         // *** arguments check
 
-        long total_pages = (size / pagesize) > 1 ? (size / pagesize) : 1;
-
+        float _size = size + 0f;
+        float _pagesieze = pagesize + 0f;
+        
+        long total_pages = Math.max(1, Math.round(Math.nextUp(_size / _pagesieze)));
+        
         if (pagesize < 1 || pagesize > 1000)
         {
             throw new IllegalArgumentException("illegal argument, pagesize must be > 0 and <= 1000");

@@ -13,17 +13,12 @@ package com.softinstigate.restheart.utils;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
-import jdk.nashorn.internal.parser.JSONParser;
-import org.bson.BSONObject;
-import org.bson.BasicBSONObject;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
