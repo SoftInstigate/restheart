@@ -47,9 +47,9 @@ public class SchemaEnforcerHandler implements HttpHandler
         {
             HeaderValues contentTypes = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
 
-            if (contentTypes == null || contentTypes.isEmpty() || !contentTypes.contains(JSONHelper.MEDIA_TYPE) )
+            if (contentTypes == null || contentTypes.isEmpty() || !contentTypes.contains(JSONHelper.JSON_MEDIA_TYPE) )
             {
-                ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, new IllegalArgumentException("Contet-Type must be " + JSONHelper.MEDIA_TYPE));
+                ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, new IllegalArgumentException("Contet-Type must be " + JSONHelper.JSON_MEDIA_TYPE));
                 return;
             }
         }

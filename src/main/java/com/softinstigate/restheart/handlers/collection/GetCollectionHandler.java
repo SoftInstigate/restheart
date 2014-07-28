@@ -10,7 +10,6 @@
  */
 package com.softinstigate.restheart.handlers.collection;
 
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -23,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,40 +76,28 @@ public class GetCollectionHandler extends GetHandler
         // apply filter_by and filter
         logger.warn("filter not yet implemented");
 
-        long size = coll.count();
+        // get the metadata
+        
+        // filter out metadata document
+        BasicDBObject metadataQuery = new BasicDBObject("@type", "metadata");
+        
+        BasicDBObject exludeField = new BasicDBObject("_id", 0);
+        
+        DBObject metadatarow = coll.findOne(metadataQuery, exludeField);
+        
+        // filter out metadata document
+        BasicDBObject query = new BasicDBObject("@type", new BasicDBObject("$exists", false));
+        
+        long size = coll.count(query);
 
-        DBCursor cursor = coll.find().sort(sort).limit(pagesize).skip(pagesize * (page - 1));
+        DBCursor cursor = coll.find(query).sort(sort).limit(pagesize).skip(pagesize * (page - 1));
         
         ArrayList<DBObject> rows = new ArrayList<>(cursor.toArray());
         
-        List<Map<String, Object>> data = new ArrayList<>();
+        Map<String, Object> metadata = getDataFromRow(metadatarow, true);
+        
+        List<Map<String, Object>> data = getDataFromRows(rows);
 
-        rows.stream().map((row) ->
-        {
-            TreeMap<String, Object> properties = new TreeMap<>();
-
-            row.keySet().stream().forEach((key) ->
-            {
-                // data value is either a String or a Map. the former case applies with nested json objects
-
-                Object obj = row.get(key);
-
-                if (obj instanceof BasicDBList)
-                {
-                    BasicDBList dblist = (BasicDBList) obj;
-
-                    obj = dblist.toMap();
-                }
-
-                properties.put(key, obj);
-            });
-
-            return properties;
-        }).forEach((item) ->
-        {
-            data.add(item);
-        });
-
-        return generateCollectionContent(exchange.getRequestURL(), exchange.getQueryString(), data, page, pagesize, size, sortBy, filterBy, filter);
+        return generateCollectionContent(exchange.getRequestURL(), exchange.getQueryString(), metadata, data, page, pagesize, size, sortBy, filterBy, filter);
     }
 }

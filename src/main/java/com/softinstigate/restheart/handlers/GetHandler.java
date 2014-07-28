@@ -10,6 +10,8 @@
  */
 package com.softinstigate.restheart.handlers;
 
+import com.mongodb.BasicDBList;
+import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.utils.HttpStatus;
@@ -21,6 +23,7 @@ import io.undertow.util.Headers;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
@@ -99,7 +102,7 @@ public abstract class GetHandler implements HttpHandler
          * single value however we specify two, to allow some browsers (i.e.
          * Safari) to display data rather than downloading it
          */
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json," + JSONHelper.MEDIA_TYPE);
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json," + JSONHelper.HAL_JSON_MEDIA_TYPE);
         exchange.setResponseContentLength(content.length());
         exchange.setResponseCode(200);
 
@@ -115,6 +118,7 @@ public abstract class GetHandler implements HttpHandler
      *
      * @param baseUrl
      * @param queryString
+     * @param metadata
      * @param data
      * @param page
      * @param pagesize
@@ -124,7 +128,7 @@ public abstract class GetHandler implements HttpHandler
      * @param filter
      * @return
      */
-    protected String generateCollectionContent(String baseUrl, String queryString, List<Map<String, Object>> data, int page, int pagesize, long size, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
+    protected String generateCollectionContent(String baseUrl, String queryString, Map<String, Object> metadata, List<Map<String, Object>> data, int page, int pagesize, long size, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
         // *** arguments check
 
@@ -190,7 +194,7 @@ public abstract class GetHandler implements HttpHandler
         // *** templates
         logger.warn("templates not yet implemented");
 
-        Map<String, String> properties = new TreeMap<>();
+        Map<String, Object> properties = new TreeMap<>();
 
         long count = data.stream().filter((props) -> props.keySet().stream().anyMatch((k) -> k.equals("id") || k.equals("_id"))).count();
         
@@ -198,6 +202,9 @@ public abstract class GetHandler implements HttpHandler
         properties.put("size", "" + size);
         properties.put("current_page", "" + page);
         properties.put("total_pages", "" + total_pages);
+        
+        if (metadata != null)
+            properties.putAll(metadata);
 
         if (sortBy != null && !sortBy.isEmpty())
         {
@@ -242,5 +249,59 @@ public abstract class GetHandler implements HttpHandler
         logger.warn("templates not yet implemented");
 
         return JSONHelper.getDocumentHal(baseUrl, data, links).toString();
+    }
+    
+    protected List<Map<String, Object>> getDataFromRows(ArrayList<DBObject> rows)
+    {
+        if (rows == null)
+            return null;
+        
+        List<Map<String, Object>> data = new ArrayList<>();
+        
+        rows.stream().map((row) ->
+        {
+            TreeMap<String, Object> properties = getDataFromRow(row, false);
+
+            return properties;
+        }).forEach((item) ->
+        {
+            data.add(item);
+        });
+        
+        return data;
+    }
+    
+    /**
+     * @param row
+     * @param filterCustomFields if true fields starting with @ will be filtered out
+     * @return 
+    */
+    protected TreeMap<String, Object> getDataFromRow(DBObject row, boolean filterCustomFields)
+    {
+        if (row == null)
+            return null;
+        
+        TreeMap<String, Object> properties = new TreeMap<>();
+
+        row.keySet().stream().forEach((key) ->
+        {
+            // data value is either a String or a Map. the former case applies with nested json objects
+
+            if (!filterCustomFields || !key.startsWith("@"))
+            {
+                Object obj = row.get(key);
+
+                if (obj instanceof BasicDBList)
+                {
+                    BasicDBList dblist = (BasicDBList) obj;
+
+                    obj = dblist.toMap();
+                }
+
+                properties.put(key, obj);
+            }
+        });
+        
+        return properties;    
     }
 }

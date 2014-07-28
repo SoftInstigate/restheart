@@ -207,11 +207,10 @@ public class RequestDispacherHandler implements HttpHandler
                         rootPut.handleRequest(exchange);
                         return;
                     case DB:
-                        if (doesDbExist(exchange, c.getDBName()))
                             dbPut.handleRequest(exchange);
                         return;
                     case COLLECTION:
-                        if (doesCollectionExist(exchange, c.getDBName(), c.getCollectionName()))
+                        if (doesDbExist(exchange, c.getDBName()))
                             collectionPut.handleRequest(exchange);
                         return;
                     case DOCUMENT:

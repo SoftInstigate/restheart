@@ -12,10 +12,18 @@ package com.softinstigate.restheart.utils;
 
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
+import com.eclipsesource.json.JsonValue;
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
+import com.mongodb.util.JSON;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
+import jdk.nashorn.internal.parser.JSONParser;
+import org.bson.BSONObject;
+import org.bson.BasicBSONObject;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -25,7 +33,8 @@ import org.slf4j.Logger;
  */
 public class JSONHelper
 {
-    public static String MEDIA_TYPE = "application/hal+json";
+    public static String HAL_JSON_MEDIA_TYPE = "application/hal+json";
+    public static String JSON_MEDIA_TYPE = "application/json";
 
     private static final Logger logger = LoggerFactory.getLogger(JSONHelper.class);
 
@@ -55,13 +64,13 @@ public class JSONHelper
         }
     }
 
-    static public JsonObject getCollectionHal(String baseUrl, Map<String, String> properties, Map<String, URI> links, List<Map<String, Object>> embedded)
+    static public JsonObject getCollectionHal(String baseUrl, Map<String, Object> properties, Map<String, URI> links, List<Map<String, Object>> embedded)
     {
         JsonObject root = new JsonObject();
 
         if (properties != null && !properties.isEmpty())
         {
-            properties.keySet().stream().forEach(k -> root.add(k, properties.get(k)));
+            properties.keySet().stream().forEach(k -> addObject(root, k, properties.get(k)));
         }
 
         if (links != null && !links.isEmpty())
@@ -83,7 +92,7 @@ public class JSONHelper
             {
                 JsonObject embeddedItem = new JsonObject();
                 String id = null;
-                
+
                 for (String itemKey : itemProperties.keySet())
                 {
                     addObject(embeddedItem, itemKey, itemProperties.get(itemKey));
@@ -104,10 +113,10 @@ public class JSONHelper
 
             root.add("_embedded", embeddedFragment.add("rh:collection", embeddedItems));
         }
-        
+
         return root;
     }
-    
+
     static public JsonObject getDocumentHal(String baseUrl, Map<String, Object> properties, Map<String, URI> links)
     {
         JsonObject root = new JsonObject();
@@ -128,22 +137,52 @@ public class JSONHelper
 
         return root;
     }
-    
+
     private static void addObject(JsonObject json, String key, Object obj)
     {
-        if (obj instanceof String)
+        if (obj instanceof Integer)
         {
-            json.add(key, (String)obj);
+            json.add(key, (Integer) obj);
+        }
+        else if (obj instanceof Long)
+        {
+            json.add(key, (Long) obj);
+        }
+        else if (obj instanceof Float)
+        {
+            json.add(key, (Float) obj);
+        }
+        else if (obj instanceof Boolean)
+        {
+            json.add(key, (Boolean) obj);
+        }
+        else if (obj instanceof Double)
+        {
+            json.add(key, (Double) obj);
+        }
+        else if (obj instanceof String)
+        {
+            json.add(key, (String) obj);
         }
         else if (obj instanceof Map)
         {
             JsonObject nested = new JsonObject();
-            
-            Map<String, Object> nestedMap = (Map<String, Object>)obj;
-            
+
+            Map<String, Object> nestedMap = (Map<String, Object>) obj;
+
             (nestedMap).keySet().stream().forEach(k -> addObject(nested, k, nestedMap.get(k)));
-            
+
             json.add(key, nested);
         }
+    }
+
+    public static DBObject convertJsonToDbObj(JsonValue json)
+    {
+        return (DBObject) JSON.parse(json.toString());
+    }
+    
+    public static JsonObject convertDbObjToJson(DBObject dbObj)
+    {
+        return JsonObject.readFrom(dbObj.toString());
     }
 }
