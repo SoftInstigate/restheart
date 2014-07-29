@@ -10,6 +10,7 @@
  */
 package com.softinstigate.restheart.handlers.database;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -77,32 +78,26 @@ public class PatchDBHandler implements HttpHandler
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
             return;
         }
+        
+        // cannot PATCH an array
+        if (content instanceof BasicDBList)
+        {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
+            return;
+        }
 
         DB db = client.getDB(rc.getDBName());
 
         DBCollection coll = db.getCollection("@metadata");
 
-        BasicDBObject metadataQuery = new BasicDBObject("_id", "@metadata");
+        BasicDBObject query = new BasicDBObject("_id", "@metadata");
 
-        DBObject metadata = coll.findOne(metadataQuery);
-
-        if (metadata == null)
-        {
-            metadata = new BasicDBObject();
-            metadata.put("_id", "@metadata");
-            metadata.put("@type", "metadata");
-            metadata.put("@created_on", Instant.now().toString());
-        }
-        else
-        {
-            metadata.put("@lastupdated_on", Instant.now().toString());
-        }
-        
         // apply new values
         
-        metadata.putAll(content);
+        content.put("@lastupdated_on", Instant.now().toString());
+        content.markAsPartialObject();
         
-        coll.update(metadataQuery, metadata, true, false);
+        coll.update(query, new BasicDBObject("$set", content), true, false);
 
         ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);
     }

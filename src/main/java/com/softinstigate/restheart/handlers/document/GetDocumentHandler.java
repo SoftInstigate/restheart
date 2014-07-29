@@ -46,9 +46,31 @@ public class GetDocumentHandler extends GetHandler
     {
         RequestContext rc = new RequestContext(exchange);
 
-        ObjectId id = new ObjectId(rc.getDocumentId());
+        ObjectId oid;
+        String   sid;
         
-        BasicDBObject query = new BasicDBObject("_id", id);
+        try
+        {
+            oid = new ObjectId(rc.getDocumentId());
+            sid = null;
+        }
+        catch(IllegalArgumentException ex)
+        {
+            // the id is not an object id
+            sid = rc.getDocumentId();
+            oid = null;
+        }
+        
+        BasicDBObject query;
+        
+        if (oid != null)
+        {
+            query = new BasicDBObject("_id", oid);
+        }
+        else
+        {
+            query = new BasicDBObject("_id", sid);
+        }
 
         DBObject document = client.getDB(rc.getDBName()).getCollection(rc.getCollectionName()).findOne(query);
 

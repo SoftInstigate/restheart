@@ -10,6 +10,7 @@
  */
 package com.softinstigate.restheart.handlers.database;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -69,47 +70,38 @@ public class PutDBHandler implements HttpHandler
             ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, ex);
             return;
         }
+        
+        // cannot PUT an array
+        if (content instanceof BasicDBList)
+        {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
+            return;
+        }
 
         boolean updating = client.getDatabaseNames().contains(rc.getDBName());
 
         DB db = client.getDB(rc.getDBName());
 
-        DBCollection coll = null;
-        
-        BasicDBObject metadata = new BasicDBObject();
+        DBCollection coll = db.getCollection("@metadata");
 
+        BasicDBObject query = new BasicDBObject("_id", "@metadata");
+        
+        // apply new values
+        
+        String now = Instant.now().toString();
+        
         if (updating)
         {
-            coll = db.getCollection("@metadata");
-            
-            BasicDBObject metadataQuery = new BasicDBObject("_id", "@metadata");
-            
-            DBObject oldmetadata = coll.findOne(metadataQuery);
-            
-            if (oldmetadata != null)
-            {
-                metadata.put("@created_on", oldmetadata.get("@created_on"));
-                metadata.put("@lastupdated_on", Instant.now().toString());
-            }
-            
-            coll.remove(metadataQuery);
+            content.put("@lastupdated_on", now);
         }
         else
         {
-            coll = db.createCollection("@metadata", null);
-
-            metadata.put("@created_on", Instant.now().toString());
+            content.put("_id", "@metadata");
+            content.put("@type", "metadata");
+            content.put("@created_on", now);
         }
         
-        metadata.put("_id", "@metadata");
-        metadata.put("@type", "metadata");
-        
-        if (content != null)
-        {
-            metadata.putAll(content);
-        }
-
-        coll.insert(metadata);
+        coll.update(query, new BasicDBObject("$set", content), true, false);
 
         if (updating)
             ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);

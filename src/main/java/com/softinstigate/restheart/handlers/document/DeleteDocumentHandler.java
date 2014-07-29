@@ -44,15 +44,37 @@ public class DeleteDocumentHandler implements HttpHandler
         
         DBCollection coll = client.getDB(rc.getDBName()).getCollection(rc.getCollectionName());
         
-        ObjectId id = new ObjectId(rc.getDocumentId());
+        ObjectId oid;
+        String   sid;
         
-        BasicDBObject query = new BasicDBObject("_id", id);
-
+        try
+        {
+            oid = new ObjectId(rc.getDocumentId());
+            sid = null;
+        }
+        catch(IllegalArgumentException ex)
+        {
+            // the id is not an object id
+            sid = rc.getDocumentId();
+            oid = null;
+        }
+        
+        BasicDBObject query;
+        
+        if (oid != null)
+        {
+            query = new BasicDBObject("_id", oid);
+        }
+        else
+        {
+            query = new BasicDBObject("_id", sid);
+        }
+        
         WriteResult wr = coll.remove(query);
         
         if (wr.getN() <1)
         {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_FAILURE);
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
         }
         else
         {

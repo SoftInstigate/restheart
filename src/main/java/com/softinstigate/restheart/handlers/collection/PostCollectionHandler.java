@@ -10,9 +10,12 @@
  */
 package com.softinstigate.restheart.handlers.collection;
 
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.WriteResult;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
@@ -30,12 +33,12 @@ import org.bson.types.ObjectId;
  *
  * @author uji
  */
-public class PostCollectionHandler implements HttpHandler
+public class PostCollectionHandler extends PutCollectionHandler implements HttpHandler 
 {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-    
+
     /**
-     * Creates a new instance of POSTHandler
+     * Creates a new instance of PostCollectionHandler
      */
     public PostCollectionHandler()
     {
@@ -44,9 +47,9 @@ public class PostCollectionHandler implements HttpHandler
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception
     {
-        RequestContext c = new RequestContext(exchange);
-        
-        DBCollection coll = client.getDB(c.getDBName()).getCollection(c.getCollectionName());
+        RequestContext rc = new RequestContext(exchange);
+
+        DBCollection coll = client.getDB(rc.getDBName()).getCollection(rc.getCollectionName());
 
         String _content = ChannelReader.read(exchange.getRequestChannel());
 
@@ -62,22 +65,48 @@ public class PostCollectionHandler implements HttpHandler
             return;
         }
         
-        ObjectId id;
+        // cannot POST an array
+        if (content instanceof BasicDBList)
+        {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
+            return;
+        }
+
+        Object id = content.get("_id");
         
-        if (content.get("_id") == null)
+        if (id == null)
         {
             id = new ObjectId();
-            content.put("_id", id);
         }
-        else
-        {
-            id = (ObjectId) content.get("_id");
-        }
-        
-        coll.insert(content);
+
+        WriteResult wr = coll.update(getIdQuery(id), content, true, false);
         
         exchange.getResponseHeaders().add(HttpString.tryFromString("Location"), JSONHelper.getReference(exchange.getRequestURL(), id.toString()).toString());
-        
-        ResponseHelper.endExchange(exchange, HttpStatus.SC_CREATED);
+
+        if (wr.isUpdateOfExisting())
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);
+        else
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_CREATED);
+    }
+    
+    private Object getIdFromString(String id)
+    {
+        try
+        {
+            return new ObjectId(id);
+        }
+        catch(IllegalArgumentException ex)
+        {
+            // the id is not an object id
+            return id;
+        }
+    }
+    
+    private BasicDBObject getIdQuery(Object id)
+    {
+        if (id instanceof ObjectId)
+            return new BasicDBObject("_id", id);
+        else
+            return  new BasicDBObject("_id", getIdFromString((String) id));
     }
 }

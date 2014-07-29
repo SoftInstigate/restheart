@@ -10,9 +10,8 @@
  */
 package com.softinstigate.restheart.handlers.document;
 
-import com.mongodb.MongoClient;
-import com.softinstigate.restheart.db.MongoDBClientSingleton;
-import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.utils.HttpStatus;
+import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
@@ -22,8 +21,6 @@ import io.undertow.server.HttpServerExchange;
  */
 public class PostDocumentHandler implements HttpHandler
 {
-    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-    
     /**
      * Creates a new instance of POSTHandler
      */
@@ -34,8 +31,6 @@ public class PostDocumentHandler implements HttpHandler
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception
     {
-        RequestContext c = new RequestContext(exchange);
-        
-        throw new RuntimeException("not yet implemented");
+        ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_IMPLEMENTED);
     }
 }

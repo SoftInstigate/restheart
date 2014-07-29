@@ -19,6 +19,12 @@ DELETE | NOT_IMPLEMENTED | delete db (1)                | delete collection (2) 
 1) only if db has no collections
 2) only if collection is empty
 
+## Opent point
+
+how to allow batch operations?
+
+idea PUT/PATCH/DELETE /db/collection/_embedded
+
 ## metadata
 
 ### db metadata

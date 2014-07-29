@@ -79,7 +79,7 @@ public class GetCollectionHandler extends GetHandler
         // get the metadata
         
         // filter out metadata document
-        BasicDBObject metadataQuery = new BasicDBObject("@type", "metadata");
+        BasicDBObject metadataQuery = new BasicDBObject("_id", "@metadata");
         
         BasicDBObject exludeField = new BasicDBObject("_id", 0);
         
