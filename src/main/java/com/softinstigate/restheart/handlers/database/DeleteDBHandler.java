@@ -10,11 +10,17 @@
  */
 package com.softinstigate.restheart.handlers.database;
 
+import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -32,10 +38,26 @@ public class DeleteDBHandler implements HttpHandler
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception
+    public void handleRequest(HttpServerExchange exchange)
     {
-        RequestContext c = new RequestContext(exchange);
+        RequestContext rc = new RequestContext(exchange);
+
+        DB db = client.getDB(rc.getDBName());
+
+        List<String> _colls = new ArrayList(db.getCollectionNames());
+
+        // filter out collection starting with @, e.g. @metadata collection
+        long no = _colls.stream().filter(coll -> (!coll.startsWith("@") && !coll.startsWith("system."))).count();
         
-        throw new RuntimeException("not yet implemented");
+        if (no > 0)
+        {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
+        }
+        else
+        {
+            db.dropDatabase();
+            
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_GONE);
+        }
     }
 }

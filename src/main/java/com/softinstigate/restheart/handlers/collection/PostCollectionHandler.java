@@ -13,8 +13,6 @@ package com.softinstigate.restheart.handlers.collection;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import com.mongodb.WriteConcern;
-import com.mongodb.WriteResult;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;

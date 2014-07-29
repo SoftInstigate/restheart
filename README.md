@@ -8,38 +8,42 @@
 	/db/collection				(rest collection of documents)
 	/db/collection/document		(document rest entity)
 
-verbs  | /               | db                  | collection                | document
--------|-----------------|---------------------|---------------------------|-----------------------
-GET    | list of dbs     | list of collections | get documents             | get document
-POST   | NOT_IMPLEMENTED | NOT_IMPLEMENTED     | create document           | NOT_IMPLEMENTED
-PUT    | NOT_IMPLEMENTED | create db           | batch update documents    | create/update document
-PATCH  | NOT_IMPLEMENTED | NOT_IMPLEMENTED     | batch update documents(1) | update document(1)
-DELETE | NOT_IMPLEMENTED | NOT_IMPLEMENTED(2)  | NOT_IMPLEMENTED(3)        | delete document
+verbs  | /               | db                           | collection                | document
+-------|-----------------|------------------------------|---------------------------|-----------------------
+GET    | embedded dbs    | db metadata + embedded colls | get coll + embedded docs  | get document
+POST   | NOT_IMPLEMENTED | NOT_IMPLEMENTED              | create document           | NOT_IMPLEMENTED
+PUT    | NOT_IMPLEMENTED | upsert db                    | upsert coll metadata      | create/update document
+PATCH  | NOT_IMPLEMENTED | patch db metadata            | patch coll metadata       | patch document
+DELETE | NOT_IMPLEMENTED | delete db (1)                | delete collection (2)     | delete document
 
-1) limited to attributes in the request
-2) should be "batch delete collections" but too dangerous (delete /db?entity can be used eventually)
-3) should be "batch delete documents" but too dangerous (delete /db/collection?entity can be used eventually)
+1) only if db has no collections
+2) only if collection is empty
 
-## mgmt operations and operations on metadata
+## metadata
 
-mgmt operation are done against the following entities: account, db and collection
+### db metadata
 
-since those URIs are by default treated as collections, we put the entity query parameter to 
+may include
 
-	/?entity				(account rest entity)
-	/db?entity				(db rest entity)
-	/db/collection?entity	(collection rest entity)
+*	ACL
+*	visibility (see below)
+*	mongodb db options
+*	quota
 
-Note: ~~/db/collection/document?meta~~ are all NOT_ALLOWED
+###collection metadata
 
-verbs | /                          | db                            |  collection                         
-------|----------------------------|-------------------------------|----------------------------------
-GET   | get account metadata       | get db metadata               | get collection metadata
-POST  | NOT_IMPLEMENTED(2)         | NOT_IMPLEMENTED(2)            | NOT_IMPLEMENTED(2)
-PUT   | update account metadata(3) | create db/update db metadata  | create/update collection metadata
-PATCH | update account metadata(1) | update db metadata(1)         | update collection metadata(1)
-DELETE| NOT_IMPLEMENTED(3)         | delete db                     | delete collection
+may include:
 
-1) limited to attributes in the request
-2) post on entities are not allowed
-3) account is created/deleted via service registration/termination
+
+* link definition (for instance it defines which field is a link and target collection)
+* schema constraints (required fields, fields types, etc)
+* collection level ACL (not only admin, write, read)
+* visibility (public, private, and something that allows users to access only data created by themself)
+* default write concern
+
+## TODOs
+
+
+
+
+

@@ -63,8 +63,8 @@ public class RequestContext
         else if (Methods.PUT.equals(_method))
             this.method = METHOD.PUT;
         else if (Methods.DELETE.equals(_method))
-            this.method = METHOD.PATCH;
-        else if (Methods.DELETE.equals(_method))
+            this.method = METHOD.DELETE;
+        else if ("PATCH".equals(_method.toString()))
             this.method = METHOD.PATCH;
         else
             this.method = METHOD.OTHER;

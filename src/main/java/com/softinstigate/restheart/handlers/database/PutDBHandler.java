@@ -10,8 +10,6 @@
  */
 package com.softinstigate.restheart.handlers.database;
 
-import com.eclipsesource.json.JsonObject;
-import com.eclipsesource.json.ParseException;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -22,20 +20,13 @@ import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
-import com.softinstigate.restheart.utils.JSONHelper;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import java.io.IOException;
-import java.io.Reader;
-import java.nio.channels.Channels;
-import java.nio.charset.Charset;
-import java.nio.charset.UnsupportedCharsetException;
 import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xnio.channels.StreamSourceChannel;
 
 /**
  *
@@ -43,8 +34,6 @@ import org.xnio.channels.StreamSourceChannel;
  */
 public class PutDBHandler implements HttpHandler
 {
-    final Charset charset = Charset.forName("utf-8");
-
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
 
     private static final Logger logger = LoggerFactory.getLogger(PutDBHandler.class);
@@ -69,7 +58,7 @@ public class PutDBHandler implements HttpHandler
 
         String _content = ChannelReader.read(exchange.getRequestChannel());
 
-        DBObject content = null;
+        DBObject content;
 
         try
         {

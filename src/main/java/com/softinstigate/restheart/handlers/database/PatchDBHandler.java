@@ -10,12 +10,21 @@
  */
 package com.softinstigate.restheart.handlers.database;
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.util.JSON;
+import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.utils.ChannelReader;
+import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import java.nio.charset.Charset;
+import java.time.Instant;
 
 /**
  *
@@ -24,8 +33,6 @@ import java.nio.charset.Charset;
 public class PatchDBHandler implements HttpHandler
 {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-    
-    final Charset charset = Charset.forName("utf-8");  
 
     /**
      * Creates a new instance of EntityResource
@@ -34,11 +41,69 @@ public class PatchDBHandler implements HttpHandler
     {
     }
 
+    /**
+     * partial update db metadata
+     *
+     * @param exchange
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception
     {
-        RequestContext c = new RequestContext(exchange);
+        RequestContext rc = new RequestContext(exchange);
+
+        if (rc.getDBName().isEmpty() || rc.getDBName().startsWith("@"))
+        {
+            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, new IllegalArgumentException("db name cannot be empty or start with @"));
+            return;
+        }
+
+        String _content = ChannelReader.read(exchange.getRequestChannel());
+
+        DBObject content;
+
+        try
+        {
+            content = (DBObject) JSON.parse(_content);
+        }
+        catch (JSONParseException ex)
+        {
+            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, ex);
+            return;
+        }
         
-        throw new RuntimeException("not yet implemented");
+        if (content == null)
+        {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
+            return;
+        }
+
+        DB db = client.getDB(rc.getDBName());
+
+        DBCollection coll = db.getCollection("@metadata");
+
+        BasicDBObject metadataQuery = new BasicDBObject("_id", "@metadata");
+
+        DBObject metadata = coll.findOne(metadataQuery);
+
+        if (metadata == null)
+        {
+            metadata = new BasicDBObject();
+            metadata.put("_id", "@metadata");
+            metadata.put("@type", "metadata");
+            metadata.put("@created_on", Instant.now().toString());
+        }
+        else
+        {
+            metadata.put("@lastupdated_on", Instant.now().toString());
+        }
+        
+        // apply new values
+        
+        metadata.putAll(content);
+        
+        coll.update(metadataQuery, metadata, true, false);
+
+        ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);
     }
 }

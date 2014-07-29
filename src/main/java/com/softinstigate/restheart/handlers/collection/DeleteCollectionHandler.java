@@ -10,12 +10,18 @@
  */
 package com.softinstigate.restheart.handlers.collection;
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -35,23 +41,23 @@ public class DeleteCollectionHandler implements HttpHandler
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception
     {
-        RequestContext c = new RequestContext(exchange);
+        RequestContext rc = new RequestContext(exchange);
+
+        DBCollection coll = client.getDB(rc.getDBName()).getCollection(rc.getCollectionName());
+
+        BasicDBObject query = new BasicDBObject("@type", new BasicDBObject("$exists", false));
         
-        DBCollection coll = client.getDB(c.getDBName()).getCollection(c.getCollectionName());
+        long no = coll.count(query);
+        
+        if (no > 0)
+        {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
+        }
+        else
+        {
+            coll.drop();
 
-        deleteCollection(coll);
-        exchange.setResponseCode(200);
-
-        exchange.endExchange();
-    }
-
-    /**
-     * method for deleting the collection coll
-     *
-     * @param coll
-     */
-    public void deleteCollection(DBCollection coll)
-    {
-        coll.drop();
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_GONE);
+        }
     }
 }

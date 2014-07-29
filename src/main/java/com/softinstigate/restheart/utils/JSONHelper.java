@@ -19,6 +19,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
+import org.bson.types.ObjectId;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -168,6 +169,15 @@ public class JSONHelper
             (nestedMap).keySet().stream().forEach(k -> addObject(nested, k, nestedMap.get(k)));
 
             json.add(key, nested);
+        }
+        else if (obj instanceof ObjectId)
+        {
+            json.add(key, obj.toString());
+        }
+        else 
+        {
+            logger.debug("addObject added field {} as toString but type is unknown. value is {}", key, obj.toString());
+            json.add(key, obj.toString());
         }
     }
 

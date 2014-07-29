@@ -10,11 +10,17 @@
  */
 package com.softinstigate.restheart.handlers.document;
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
+import com.mongodb.WriteResult;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import org.bson.types.ObjectId;
 
 /**
  *
@@ -34,8 +40,23 @@ public class DeleteDocumentHandler implements HttpHandler
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception
     {
-        RequestContext c = new RequestContext(exchange);
+        RequestContext rc = new RequestContext(exchange);
         
-        throw new RuntimeException("not yet implemented");
+        DBCollection coll = client.getDB(rc.getDBName()).getCollection(rc.getCollectionName());
+        
+        ObjectId id = new ObjectId(rc.getDocumentId());
+        
+        BasicDBObject query = new BasicDBObject("_id", id);
+
+        WriteResult wr = coll.remove(query);
+        
+        if (wr.getN() <1)
+        {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_FAILURE);
+        }
+        else
+        {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_GONE);
+        }
     }
 }

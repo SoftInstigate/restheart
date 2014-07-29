@@ -75,7 +75,7 @@ public class PutCollectionHandler implements HttpHandler
             return;
         }
 
-        DBCollection coll = null;
+        DBCollection coll;
         
         BasicDBObject metadata = new BasicDBObject();
         

@@ -71,7 +71,6 @@ import io.undertow.security.handlers.AuthenticationMechanismsHandler;
 import io.undertow.security.handlers.SecurityInitialHandler;
 import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpHandler;
-import java.net.BindException;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
