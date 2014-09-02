@@ -42,7 +42,7 @@ public class DeleteCollectionHandler implements HttpHandler
 
         DBCollection coll = client.getDB(rc.getDBName()).getCollection(rc.getCollectionName());
 
-        BasicDBObject query = new BasicDBObject("@type", new BasicDBObject("$exists", false));
+        BasicDBObject query = new BasicDBObject("_id", new BasicDBObject("$ne", "@metadata"));
         
         long no = coll.count(query);
         

@@ -46,7 +46,7 @@ public class ResponseHelper
     {
         exchange.setResponseCode(code);
 
-        if (t.getStackTrace() != null && Methods.GET.equals(exchange.getRequestMethod()))
+        if (t.getStackTrace() != null)
         {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);

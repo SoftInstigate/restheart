@@ -12,6 +12,8 @@ ajp-listener: false
 ajp-host: 0.0.0.0
 ajp-port: 8009
 
+force-gzip-encoding: true
+
 # use embedded self-signed certificate
 # if false, you must define the keystore-file, keystore-password and certpassword properties
 use-embedded-keystore: true
@@ -25,10 +27,10 @@ mongo-user: admin
 mongo-password: adminadmin
 
 # usually 1 per core. 2 as least. default 8
-io-threads: 4
+io-threads: 4 
 
 # suggested 500 since 500 is the default number of concurrent connections accepted by mongo
-worker-threads: 50
+worker-threads: 250 
 
 #use 16k buffers for best performance
 #as 16k is generally the max amount of data that can be sent in a single write() call

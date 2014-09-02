@@ -85,10 +85,9 @@ public class GetCollectionHandler extends GetHandler
         
         DBObject metadatarow = coll.findOne(metadataQuery, exludeField);
         
-        // filter out metadata document
-        BasicDBObject query = new BasicDBObject("@type", new BasicDBObject("$exists", false));
+        BasicDBObject query = new BasicDBObject("_id", new BasicDBObject("$ne", "@metadata"));
         
-        long size = coll.count(query);
+        long size = coll.count() - 1 ; // filter out metadata document
 
         DBCursor cursor = coll.find(query).sort(sort).limit(pagesize).skip(pagesize * (page - 1));
         
