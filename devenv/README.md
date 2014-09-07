@@ -1,18 +1,29 @@
 
 
-##before vagrant up do the following:
+##setu
 
 
-#### update submodules
+####update submodules
 
 	$ git submodule update
 
-####add vagrant needed plugins
+####add required vagrant plugins
 
 	$ vagrant plugin install vagrant-hostsupdater
 	$ vagrant plugin install vagrant-omnibus
+	$ vagrant plugin install vagrant-aws
 	
-## to update the /etc/hosts
+## howto update /etc/hosts
 
 	$ vagrant hostmanager
+	
+## howto instantiate VMs
+
+on vitualbox
+
+	$ vagrant up
+	
+on AWS	
+
+	$ vagrant up --provider=aws
 
