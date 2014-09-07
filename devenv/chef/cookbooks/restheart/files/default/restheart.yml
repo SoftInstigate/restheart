@@ -2,15 +2,17 @@
 ---
 https-listener: true
 https-host: 0.0.0.0
-https-port: 4433
+https-port: 443
 
-http-listener: false
+http-listener: true
 http-host: 0.0.0.0
-http-port: 8080
+http-port: 80
 
 ajp-listener: false
 ajp-host: 0.0.0.0
 ajp-port: 8009
+
+force-gzip-encoding: true
 
 # use embedded self-signed certificate
 # if false, you must define the keystore-file, keystore-password and certpassword properties
@@ -19,19 +21,20 @@ use-embedded-keystore: true
 #keystore-password: password
 #certpassword: password
 
-mongo-host: 127.0.0.1
+mongo-host: mongo-node
 mongo-port: 27017
 mongo-user: admin
 mongo-password: adminadmin
 
-# usually 1 per core. 2 as least
-io-threads: 2
+# the number of I/O threads created for non-blocking tasks. tests have shown core*2 to be fine
+io-threads: 4
 
-# suggested 500 since 500 is the default number of concurrent connections accepted by mongo
-worker-threads: 100
+# the number of threads created for blocking tasks (such as ones involving db access). at least core*16
+worker-threads: 64
 
 #use 16k buffers for best performance
-#as 16k is generally the max amount of data that can be sent in a single write() call
+#as in linux 16k is generally the default amount of data that can be sent in a single write() call
 buffer-size: 16384
 buffers-per-region: 20
+#should the buffer pool use direct buffers, this instructs the JVM to use native (if possible) I/O operations on the buffers
 direct-buffers: true

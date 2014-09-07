@@ -1,5 +1,5 @@
 # Name of the role should match the name of the file
-name "restheart-box"
+name "restheart-node"
 
 default_attributes(
   "java" => {
@@ -15,8 +15,5 @@ default_attributes(
 run_list(
     "recipe[apt]",
     "recipe[java::default]",
-    "recipe[git]",
-    "recipe[mongodb]",
-    "recipe[maven]",
     "recipe[restheart]"
 )

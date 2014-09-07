@@ -9,13 +9,21 @@ apt_package "mongodb-org" do
  	action :install
 end
 
+service "mongod" do
+	action [ :enable, :start ]
+end
+
+execute "delay_for_mongo_start" do
+	command "sleep 10"
+end
+
 execute "create_mongo_admin" do
-	command "touch /root/mongo-initialized && mongo admin --eval \"db.dropUser(\\\"admin\\\"); db.createUser( { user: \\\"admin\\\", pwd: \\\"adminadmin\\\",  roles: [ \\\"root\\\" ] } ) \""
+	command "mongo admin --eval \"db.dropUser(\\\"admin\\\"); db.createUser( { user: \\\"admin\\\", pwd: \\\"adminadmin\\\",  roles: [ \\\"root\\\" ] } ) \" && touch /root/mongo-initialized"
 	not_if { ::File.exists?("/root/mongo-initialized") }
 end
 
-cookbook_file "mongodb.conf" do
-	path "/etc/mongodb.conf" 
+cookbook_file "mongod.conf" do
+	path "/etc/mongod.conf" 
 	mode 0644
 	owner "root"
 end
@@ -25,7 +33,7 @@ service "mongod" do
 end
 
 execute "delay_for_mongo_restart" do
-	command "sleep 3"
+	command "sleep 10"
 end
 
 execute "delete_test_data" do
