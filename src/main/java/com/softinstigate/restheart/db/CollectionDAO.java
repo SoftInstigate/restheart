@@ -41,7 +41,7 @@ public class CollectionDAO
     private static final BasicDBObject DATA_QUERY         = new BasicDBObject("_id", new BasicDBObject("$ne", "@metadata"));
     private static final BasicDBObject ALL_FIELDS_BUT_ID  = new BasicDBObject("_id", "0");
     
-    public static boolean checkCollectionExist(HttpServerExchange exchange, String dbName, String collectionName)
+    public static boolean checkCollectionExists(HttpServerExchange exchange, String dbName, String collectionName)
     {
         if (!doesCollectionExist(dbName, collectionName))
         {

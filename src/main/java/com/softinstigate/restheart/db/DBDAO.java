@@ -41,7 +41,7 @@ public class DBDAO
     
     public static final BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "@metadata");
     
-    public static boolean doesDbExist(HttpServerExchange exchange, String dbName)
+    public static boolean checkDbExists(HttpServerExchange exchange, String dbName)
     {
         if (!client.getDatabaseNames().contains(dbName))
         {

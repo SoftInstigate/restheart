@@ -10,8 +10,8 @@
  */
 package com.softinstigate.restheart.handlers;
 
-import static com.softinstigate.restheart.db.CollectionDAO.checkCollectionExist;
-import static com.softinstigate.restheart.db.DBDAO.doesDbExist;
+import static com.softinstigate.restheart.db.CollectionDAO.checkCollectionExists;
+import static com.softinstigate.restheart.db.DBDAO.checkDbExists;
 import com.softinstigate.restheart.handlers.root.DeleteRootHandler;
 import com.softinstigate.restheart.handlers.root.GetRootHandler;
 import com.softinstigate.restheart.handlers.root.PatchRootHandler;
@@ -165,16 +165,15 @@ public class RequestDispacherHandler implements HttpHandler
                         rootGet.handleRequest(exchange);
                         return;
                     case DB:
-                        if (doesDbExist(exchange, c.getDBName()))
+                        if (checkDbExists(exchange, c.getDBName()))
                             dbGet.handleRequest(exchange);
                         return;
                     case COLLECTION:
-                        if (checkCollectionExist(exchange, c.getDBName(), c.getCollectionName()))
+                        if (checkDbExists(exchange, c.getDBName()) && checkCollectionExists(exchange, c.getDBName(), c.getCollectionName()))
                             collectionGet.handleRequest(exchange);
                         return;
                     case DOCUMENT:
-                        if (checkCollectionExist(exchange, c.getDBName(), c.getCollectionName()))
-                            documentGet.handleRequest(exchange);
+                        documentGet.handleRequest(exchange);
                         return;
                 }
             
@@ -185,16 +184,15 @@ public class RequestDispacherHandler implements HttpHandler
                         rootPost.handleRequest(exchange);
                         return;
                     case DB:
-                        if (doesDbExist(exchange, c.getDBName()))
+                        if (checkDbExists(exchange, c.getDBName()))
                             dbPost.handleRequest(exchange);
                         return;
                     case COLLECTION:
-                        if (checkCollectionExist(exchange, c.getDBName(), c.getCollectionName()))
+                        if (checkDbExists(exchange, c.getDBName()) && checkCollectionExists(exchange, c.getDBName(), c.getCollectionName()))
                             collectionPost.handleRequest(exchange);
                         return;
                     case DOCUMENT:
-                        if (checkCollectionExist(exchange, c.getDBName(), c.getCollectionName()))
-                            documentPost.handleRequest(exchange);
+                        documentPost.handleRequest(exchange);
                         return;
                 }
             
@@ -208,11 +206,11 @@ public class RequestDispacherHandler implements HttpHandler
                             dbPut.handleRequest(exchange);
                         return;
                     case COLLECTION:
-                        if (doesDbExist(exchange, c.getDBName()))
+                        if (checkDbExists(exchange, c.getDBName()))
                             collectionPut.handleRequest(exchange);
                         return;
                     case DOCUMENT:
-                        if (checkCollectionExist(exchange, c.getDBName(), c.getCollectionName()))
+                        if (checkDbExists(exchange, c.getDBName()) && checkCollectionExists(exchange, c.getDBName(), c.getCollectionName()))
                             documentPut.handleRequest(exchange);
                         return;
                 }
@@ -224,15 +222,15 @@ public class RequestDispacherHandler implements HttpHandler
                         rootDelete.handleRequest(exchange);
                         return;
                     case DB:
-                        if (doesDbExist(exchange, c.getDBName()))
+                        if (checkDbExists(exchange, c.getDBName()))
                             dbDelete.handleRequest(exchange);
                         return;
                     case COLLECTION:
-                        if (checkCollectionExist(exchange, c.getDBName(), c.getCollectionName()))
+                        if (checkDbExists(exchange, c.getDBName()) && checkCollectionExists(exchange, c.getDBName(), c.getCollectionName()))
                             collectionDelete.handleRequest(exchange);
                         return;
                     case DOCUMENT:
-                        if (checkCollectionExist(exchange, c.getDBName(), c.getCollectionName()))
+                        if (checkDbExists(exchange, c.getDBName()) && checkCollectionExists(exchange, c.getDBName(), c.getCollectionName()))
                             documentDelete.handleRequest(exchange);
                         return;
                 }
@@ -244,16 +242,15 @@ public class RequestDispacherHandler implements HttpHandler
                         rootPatch.handleRequest(exchange);
                         return;
                     case DB:
-                        if (doesDbExist(exchange, c.getDBName()))
+                        if (checkDbExists(exchange, c.getDBName()))
                             dbPatch.handleRequest(exchange);
                         return;
                     case COLLECTION:
-                        if (checkCollectionExist(exchange, c.getDBName(), c.getCollectionName()))
+                        if (checkDbExists(exchange, c.getDBName()) && checkCollectionExists(exchange, c.getDBName(), c.getCollectionName()))
                             collectionPatch.handleRequest(exchange);
                         return;
                     case DOCUMENT:
-                        if (checkCollectionExist(exchange, c.getDBName(), c.getCollectionName()))
-                            documentPatch.handleRequest(exchange);
+                        documentPatch.handleRequest(exchange);
                 }
         }
     }
