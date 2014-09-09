@@ -14,6 +14,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 import com.mongodb.WriteResult;
+import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
@@ -28,8 +29,6 @@ import org.bson.types.ObjectId;
  */
 public class DeleteDocumentHandler implements HttpHandler
 {
-    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-    
     /**
      * Creates a new instance of EntityResource
      */
@@ -42,7 +41,7 @@ public class DeleteDocumentHandler implements HttpHandler
     {
         RequestContext rc = new RequestContext(exchange);
         
-        DBCollection coll = client.getDB(rc.getDBName()).getCollection(rc.getCollectionName());
+        DBCollection coll = CollectionDAO.getCollection(rc.getDBName(), rc.getDBName());
         
         ObjectId oid;
         String   sid;

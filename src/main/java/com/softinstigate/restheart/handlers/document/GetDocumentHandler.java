@@ -13,7 +13,7 @@ package com.softinstigate.restheart.handlers.document;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
+import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.handlers.GetHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
@@ -42,7 +42,7 @@ public class GetDocumentHandler extends GetHandler
     }
 
     @Override
-    protected String generateContent(HttpServerExchange exchange, MongoClient client, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
+    protected String generateContent(HttpServerExchange exchange, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
         RequestContext rc = new RequestContext(exchange);
 
@@ -72,7 +72,7 @@ public class GetDocumentHandler extends GetHandler
             query = new BasicDBObject("_id", sid);
         }
 
-        DBObject document = client.getDB(rc.getDBName()).getCollection(rc.getCollectionName()).findOne(query);
+        DBObject document = CollectionDAO.getCollection(rc.getDBName(), rc.getDBName()).findOne(query);
 
         if (document == null)
         {

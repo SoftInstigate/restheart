@@ -10,10 +10,7 @@
  */
 package com.softinstigate.restheart.handlers;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.JSONHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
@@ -23,8 +20,6 @@ import io.undertow.util.Headers;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
@@ -39,8 +34,6 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class GetHandler implements HttpHandler
 {
-    protected static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-
     protected static final Logger logger = LoggerFactory.getLogger(GetHandler.class);
 
     final Charset charset = Charset.forName("utf-8");
@@ -96,7 +89,7 @@ public abstract class GetHandler implements HttpHandler
             }
         }
 
-        String content = generateContent(exchange, client, page, pagesize, sortBy, filterBy, filter);
+        String content = generateContent(exchange, page, pagesize, sortBy, filterBy, filter);
 
         /**
          * TODO according to http specifications, Content-Type accepts one
@@ -112,7 +105,7 @@ public abstract class GetHandler implements HttpHandler
         exchange.endExchange();
     }
 
-    protected abstract String generateContent(HttpServerExchange exchange, MongoClient client, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter);
+    protected abstract String generateContent(HttpServerExchange exchange, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter);
 
     /**
      * generic helper method for generating response body
@@ -193,10 +186,10 @@ public abstract class GetHandler implements HttpHandler
         }
 
         // *** queries
-        logger.warn("queries not yet implemented");
+        logger.debug("queries not yet implemented");
 
         // *** templates
-        logger.warn("templates not yet implemented");
+        logger.debug("templates not yet implemented");
 
         Map<String, Object> properties = new TreeMap<>();
 
@@ -247,68 +240,13 @@ public abstract class GetHandler implements HttpHandler
         }
 
         // *** queries
-        logger.warn("queries not yet implemented");
+        logger.debug("queries not yet implemented");
 
         // *** templates
-        logger.warn("templates not yet implemented");
+        logger.debug("templates not yet implemented");
 
         return JSONHelper.getDocumentHal(baseUrl, data, links).toString();
     }
     
-    protected List<Map<String, Object>> getDataFromRows(ArrayList<DBObject> rows)
-    {
-        if (rows == null)
-            return null;
-        
-        List<Map<String, Object>> data = new ArrayList<>();
-        
-        rows.stream().map((row) ->
-        {
-            TreeMap<String, Object> properties = getDataFromRow(row);
-
-            return properties;
-        }).forEach((item) ->
-        {
-            data.add(item);
-        });
-        
-        return data;
-    }
     
-    /**
-     * @param row
-     * @param fieldsToFilter list of field names to filter
-     * @return 
-    */
-    protected TreeMap<String, Object> getDataFromRow(DBObject row, String... fieldsToFilter)
-    {
-        if (row == null)
-            return null;
-        
-        List<String> _fieldsToFilter = Arrays.asList(fieldsToFilter);
-        
-        
-        TreeMap<String, Object> properties = new TreeMap<>();
-
-        row.keySet().stream().forEach((key) ->
-        {
-            // data value is either a String or a Map. the former case applies with nested json objects
-
-            if (!_fieldsToFilter.contains(key))
-            {
-                Object obj = row.get(key);
-
-                if (obj instanceof BasicDBList)
-                {
-                    BasicDBList dblist = (BasicDBList) obj;
-
-                    obj = dblist.toMap();
-                }
-
-                properties.put(key, obj);
-            }
-        });
-        
-        return properties;    
-    }
 }

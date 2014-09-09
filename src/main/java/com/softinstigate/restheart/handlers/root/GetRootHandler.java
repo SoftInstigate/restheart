@@ -11,6 +11,7 @@
 package com.softinstigate.restheart.handlers.root;
 
 import com.mongodb.MongoClient;
+import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.handlers.GetHandler;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
@@ -28,6 +29,8 @@ import org.slf4j.LoggerFactory;
  */
 public class GetRootHandler extends GetHandler
 {
+    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
+    
     private static final Logger logger = LoggerFactory.getLogger(GetRootHandler.class);
 
     /**
@@ -38,7 +41,7 @@ public class GetRootHandler extends GetHandler
     }
 
     @Override
-    protected String generateContent(HttpServerExchange exchange, MongoClient client, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
+    protected String generateContent(HttpServerExchange exchange, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
         List<String> dbs = client.getDatabaseNames();
 
@@ -55,10 +58,10 @@ public class GetRootHandler extends GetHandler
         dbs = dbs.subList((page - 1) * pagesize, (page - 1) * pagesize + pagesize > dbs.size() ? dbs.size() : (page - 1) * pagesize + pagesize);
 
         // apply sort_by
-        logger.warn("sort_by not yet implemented");
+        logger.debug("sort_by not yet implemented");
 
         // apply filter_by and filter
-        logger.warn("filter not yet implemented");
+        logger.debug("filter not yet implemented");
         
         List<Map<String, Object>> data = new ArrayList<>();
 

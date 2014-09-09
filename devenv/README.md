@@ -9,7 +9,7 @@
 
 ####add required vagrant plugins
 
-	$ vagrant plugin install vagrant-hostsupdater
+	$ vagrant plugin install vagrant-hostsmanager
 	$ vagrant plugin install vagrant-omnibus
 	$ vagrant plugin install vagrant-aws
 	

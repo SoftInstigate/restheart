@@ -10,10 +10,8 @@
  */
 package com.softinstigate.restheart.handlers.collection;
 
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
-import com.mongodb.MongoClient;
-import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
@@ -26,8 +24,6 @@ import io.undertow.server.HttpServerExchange;
  */
 public class DeleteCollectionHandler implements HttpHandler
 {
-    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-    
     /**
      * Creates a new instance of EntityResource
      */
@@ -40,21 +36,17 @@ public class DeleteCollectionHandler implements HttpHandler
     {
         RequestContext rc = new RequestContext(exchange);
 
-        DBCollection coll = client.getDB(rc.getDBName()).getCollection(rc.getCollectionName());
-
-        BasicDBObject query = new BasicDBObject("_id", new BasicDBObject("$ne", "@metadata"));
+        DBCollection coll = CollectionDAO.getCollection(rc.getDBName(), rc.getCollectionName());
         
-        long no = coll.count(query);
-        
-        if (no > 0)
+        if (CollectionDAO.isCollectionEmpty(coll))
         {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
+            CollectionDAO.dropCollection(coll);
+
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_GONE);
         }
         else
         {
-            coll.drop();
-
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_GONE);
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
         }
     }
 }

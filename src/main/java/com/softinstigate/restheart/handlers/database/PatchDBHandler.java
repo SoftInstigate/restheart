@@ -18,6 +18,7 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
+import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
@@ -86,18 +87,16 @@ public class PatchDBHandler implements HttpHandler
             return;
         }
 
-        DB db = client.getDB(rc.getDBName());
+        DB db = DBDAO.getDB(rc.getDBName());
 
         DBCollection coll = db.getCollection("@metadata");
-
-        BasicDBObject query = new BasicDBObject("_id", "@metadata");
 
         // apply new values
         
         content.put("@lastupdated_on", Instant.now().toString());
         content.markAsPartialObject();
         
-        coll.update(query, new BasicDBObject("$set", content), true, false);
+        coll.update(DBDAO.METADATA_QUERY, new BasicDBObject("$set", content), true, false);
 
         ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);
     }

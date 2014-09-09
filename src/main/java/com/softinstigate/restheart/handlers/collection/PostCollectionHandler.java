@@ -14,11 +14,10 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
 import com.mongodb.WriteResult;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
-import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.JSONHelper;
@@ -35,8 +34,6 @@ import org.bson.types.ObjectId;
  */
 public class PostCollectionHandler extends PutCollectionHandler implements HttpHandler 
 {
-    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-
     /**
      * Creates a new instance of PostCollectionHandler
      */
@@ -49,7 +46,7 @@ public class PostCollectionHandler extends PutCollectionHandler implements HttpH
     {
         RequestContext rc = new RequestContext(exchange);
 
-        DBCollection coll = client.getDB(rc.getDBName()).getCollection(rc.getCollectionName());
+        DBCollection coll = CollectionDAO.getCollection(rc.getDBName(), rc.getCollectionName());
 
         String _content = ChannelReader.read(exchange.getRequestChannel());
 

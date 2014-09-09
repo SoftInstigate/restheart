@@ -19,7 +19,7 @@
     </encoder>
   </appender>
 
-    <logger name="com.softinstigate" level="DEBUG" />
+    <logger name="com.softinstigate" level="INFO" />
 
   <root level="error">
     <appender-ref ref="STDOUT" />

@@ -18,6 +18,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.WriteResult;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
+import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.handlers.collection.PutCollectionHandler;
 import com.softinstigate.restheart.utils.ChannelReader;
@@ -36,8 +37,6 @@ import org.slf4j.LoggerFactory;
  */
 public class PutDocumentHandler implements HttpHandler
 {
-    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-    
     private static final Logger logger = LoggerFactory.getLogger(PutCollectionHandler.class);
     
     /**
@@ -52,7 +51,7 @@ public class PutDocumentHandler implements HttpHandler
     {
         RequestContext rc = new RequestContext(exchange);
 
-        DBCollection coll = client.getDB(rc.getDBName()).getCollection(rc.getCollectionName());
+        DBCollection coll = CollectionDAO.getCollection(rc.getDBName(), rc.getDBName());
         
         String _content = ChannelReader.read(exchange.getRequestChannel());
 

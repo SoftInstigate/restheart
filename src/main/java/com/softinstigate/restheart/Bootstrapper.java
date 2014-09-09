@@ -145,9 +145,13 @@ public class Bootstrapper
         
         boolean forceGzipEncoding = (Boolean) conf.getOrDefault("force-gzip-encoding", true);
 
+        logger.info("initializing mongodb connection pool to {}:{}", mongoHost, mongoPort);
+        
         try
         {
             MongoDBClientSingleton.init(mongoHost, mongoPort, mongoUser, mongoPassword);
+            
+            logger.info("mongodb connection pool initialized");
         }
         catch (Throwable t)
         {
@@ -347,39 +351,39 @@ public class Bootstrapper
                         .addPrefixPath("/@browser", resource(new FileResourceManager(browserRootFile, 3)).addWelcomeFiles("browser.html").setDirectoryListingEnabled(false))
                         .addPrefixPath("/",
                                 addSecurity(
+                                    new BlockingHandler(
                                         new GzipEncodingHandler(
-                                                new ErrorHandler(
-                                                        new BlockingHandler(
-                                                                new HttpContinueAcceptingHandler(
-                                                                        new SchemaEnforcerHandler(
-                                                                                new RequestDispacherHandler(
-                                                                                        new GetRootHandler(),
-                                                                                        new PostRootHandler(),
-                                                                                        new PutRootHandler(),
-                                                                                        new DeleteRootHandler(),
-                                                                                        new PatchRootHandler(),
-                                                                                        new GetDBHandler(),
-                                                                                        new PostDBHandler(),
-                                                                                        new PutDBHandler(),
-                                                                                        new DeleteDBHandler(),
-                                                                                        new PatchDBHandler(),
-                                                                                        new GetCollectionHandler(),
-                                                                                        new PostCollectionHandler(),
-                                                                                        new PutCollectionHandler(),
-                                                                                        new DeleteCollectionHandler(),
-                                                                                        new PatchCollectionHandler(),
-                                                                                        new GetDocumentHandler(),
-                                                                                        new PostDocumentHandler(),
-                                                                                        new PutDocumentHandler(),
-                                                                                        new DeleteDocumentHandler(),
-                                                                                        new PatchDocumentHandler()
-                                                                                )
-                                                                        )
-                                                                )
-                                                        )
-                                                ), forceGzipEncoding
-                                            ), identityManager)
-                                ));
+                                            new ErrorHandler(
+                                                new HttpContinueAcceptingHandler(
+                                                    new SchemaEnforcerHandler(
+                                                        new RequestDispacherHandler(
+                                                        new GetRootHandler(),
+                                                        new PostRootHandler(),
+                                                        new PutRootHandler(),
+                                                        new DeleteRootHandler(),
+                                                        new PatchRootHandler(),
+                                                        new GetDBHandler(),
+                                                        new PostDBHandler(),
+                                                        new PutDBHandler(),
+                                                        new DeleteDBHandler(),
+                                                        new PatchDBHandler(),
+                                                        new GetCollectionHandler(),
+                                                        new PostCollectionHandler(),
+                                                        new PutCollectionHandler(),
+                                                        new DeleteCollectionHandler(),
+                                                        new PatchCollectionHandler(),
+                                                        new GetDocumentHandler(),
+                                                        new PostDocumentHandler(),
+                                                        new PutDocumentHandler(),
+                                                        new DeleteDocumentHandler(),
+                                                        new PatchDocumentHandler()
+                                                )
+                                            )
+                                        )
+                                    ) , forceGzipEncoding
+                                )
+                            ), identityManager)
+                        ));
 
         builder.build().start();
     }

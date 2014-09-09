@@ -97,7 +97,6 @@ public class PutDBHandler implements HttpHandler
         else
         {
             content.put("_id", "@metadata");
-            content.put("@type", "metadata");
             content.put("@created_on", now);
         }
         

@@ -18,6 +18,8 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
+import com.softinstigate.restheart.db.CollectionDAO;
+import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
@@ -27,7 +29,6 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import java.nio.charset.Charset;
 import java.time.Instant;
-import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,13 +56,13 @@ public class PutCollectionHandler implements HttpHandler
     {
         RequestContext rc = new RequestContext(exchange);
 
-        DB db = client.getDB(rc.getDBName());
-
         if (rc.getCollectionName().isEmpty() || rc.getCollectionName().startsWith("@"))
         {
             ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, new IllegalArgumentException("collection name cannot be empty or start with @"));
             return;
         }
+        
+        DB db = DBDAO.getDB(rc.getDBName());
 
         String _content = ChannelReader.read(exchange.getRequestChannel());
 
@@ -84,28 +85,11 @@ public class PutCollectionHandler implements HttpHandler
             return;
         }
 
-        boolean updating = db.collectionExists(rc.getCollectionName());
+        boolean updating = CollectionDAO.doesCollectionExist(rc.getDBName(), rc.getCollectionName());
         
         DBCollection coll = db.getCollection(rc.getCollectionName());
 
-        BasicDBObject query = new BasicDBObject("_id", "@metadata");
-
-        // apply new values
-        
-        String now = Instant.now().toString();
-        
-        if (updating)
-        {
-            content.put("@lastupdated_on", now);
-        }
-        else
-        {
-            content.put("_id", "@metadata");
-            content.put("@type", "metadata");
-            content.put("@created_on", now);
-        }
-        
-        coll.update(query, new BasicDBObject("$set", content), true, false);
+        CollectionDAO.upsertCollection(coll, content, updating);
 
         if (updating)
             ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);

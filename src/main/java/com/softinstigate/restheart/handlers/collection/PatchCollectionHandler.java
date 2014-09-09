@@ -11,21 +11,16 @@
 package com.softinstigate.restheart.handlers.collection;
 
 import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
-import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import java.time.Instant;
 
 /**
  *
@@ -33,8 +28,6 @@ import java.time.Instant;
  */
 public class PatchCollectionHandler implements HttpHandler
 {
-    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-    
     /**
      * Creates a new instance of EntityResource
      */
@@ -85,19 +78,8 @@ public class PatchCollectionHandler implements HttpHandler
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
             return;
         }
-
-        DB db = client.getDB(rc.getDBName());
-
-        DBCollection coll = db.getCollection(rc.getCollectionName());
-
-        BasicDBObject query = new BasicDBObject("_id", "@metadata");
-
-        // apply new values
         
-        content.put("@lastupdated_on", Instant.now().toString());
-        content.markAsPartialObject();
-        
-        coll.update(query, new BasicDBObject("$set", content), true, false);
+        CollectionDAO.upsertCollection(CollectionDAO.getCollection(rc.getDBName(), rc.getCollectionName()), content, true);
         
         ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);
     }
