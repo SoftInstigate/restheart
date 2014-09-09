@@ -51,7 +51,7 @@ public class PutDocumentHandler implements HttpHandler
     {
         RequestContext rc = new RequestContext(exchange);
 
-        DBCollection coll = CollectionDAO.getCollection(rc.getDBName(), rc.getDBName());
+        DBCollection coll = CollectionDAO.getCollection(rc.getDBName(), rc.getCollectionName());
         
         String _content = ChannelReader.read(exchange.getRequestChannel());
 
@@ -68,12 +68,9 @@ public class PutDocumentHandler implements HttpHandler
         }
         
         if (content == null)
-        {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
-            return;
-        }
+            content = new BasicDBObject();
         
-        // cannot PATCH an array
+        // cannot PUT an array
         if (content instanceof BasicDBList)
         {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);

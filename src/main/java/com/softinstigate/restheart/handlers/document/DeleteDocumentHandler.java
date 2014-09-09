@@ -41,7 +41,7 @@ public class DeleteDocumentHandler implements HttpHandler
     {
         RequestContext rc = new RequestContext(exchange);
         
-        DBCollection coll = CollectionDAO.getCollection(rc.getDBName(), rc.getDBName());
+        DBCollection coll = CollectionDAO.getCollection(rc.getDBName(), rc.getCollectionName());
         
         ObjectId oid;
         String   sid;

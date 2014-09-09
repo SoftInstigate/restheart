@@ -62,6 +62,9 @@ public class PostCollectionHandler extends PutCollectionHandler implements HttpH
             return;
         }
         
+        if (content == null)
+            content = new BasicDBObject();
+        
         // cannot POST an array
         if (content instanceof BasicDBList)
         {

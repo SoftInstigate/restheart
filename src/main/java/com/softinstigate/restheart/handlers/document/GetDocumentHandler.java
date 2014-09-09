@@ -72,7 +72,7 @@ public class GetDocumentHandler extends GetHandler
             query = new BasicDBObject("_id", sid);
         }
 
-        DBObject document = CollectionDAO.getCollection(rc.getDBName(), rc.getDBName()).findOne(query);
+        DBObject document = CollectionDAO.getCollection(rc.getDBName(), rc.getCollectionName()).findOne(query);
 
         if (document == null)
         {

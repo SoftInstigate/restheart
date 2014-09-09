@@ -48,7 +48,7 @@ public class PatchDocumentHandler implements HttpHandler
     {
         RequestContext rc = new RequestContext(exchange);
 
-        DBCollection coll = CollectionDAO.getCollection(rc.getDBName(), rc.getDBName());
+        DBCollection coll = CollectionDAO.getCollection(rc.getDBName(), rc.getCollectionName());
         
         String _content = ChannelReader.read(exchange.getRequestChannel());
 
@@ -64,6 +64,7 @@ public class PatchDocumentHandler implements HttpHandler
             return;
         }
         
+        // cannot PATCH with no data
         if (content == null)
         {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);

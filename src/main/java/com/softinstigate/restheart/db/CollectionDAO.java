@@ -79,7 +79,7 @@ public class CollectionDAO
     
     public static long getCollectionSize(DBCollection coll)
     {
-        return coll.count(DATA_QUERY);
+        return coll.count() - 1; // -1 for the metadata document
     }
     
     public static List<Map<String, Object>> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
@@ -126,6 +126,9 @@ public class CollectionDAO
     public static void upsertCollection(DBCollection coll, DBObject content, boolean updating)
     {
         String now = Instant.now().toString();
+        
+        if (content == null)
+            content = new BasicDBObject();
         
         if (updating)
         {

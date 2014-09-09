@@ -114,7 +114,7 @@ public class DBDAO
         List<String> _colls = colls.stream().filter(coll -> !coll.startsWith("@")).collect(Collectors.toList());
         
         // apply page and pagesize
-        _colls = _colls.subList((page - 1) * pagesize, (page - 1) * pagesize + pagesize > colls.size() ? colls.size() : (page - 1) * pagesize + pagesize);
+        _colls = _colls.subList((page - 1) * pagesize, (page - 1) * pagesize + pagesize > _colls.size() ? _colls.size() : (page - 1) * pagesize + pagesize);
 
         // apply sort_by
         logger.debug("sort_by not yet implemented");

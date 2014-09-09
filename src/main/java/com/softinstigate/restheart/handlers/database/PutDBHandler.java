@@ -90,6 +90,9 @@ public class PutDBHandler implements HttpHandler
         
         String now = Instant.now().toString();
         
+        if (content == null)
+            content = new BasicDBObject();
+        
         if (updating)
         {
             content.put("@lastupdated_on", now);
