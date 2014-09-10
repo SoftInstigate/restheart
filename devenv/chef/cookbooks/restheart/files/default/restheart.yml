@@ -26,6 +26,10 @@ mongo-port: 27017
 mongo-user: admin
 mongo-password: adminadmin
 
+log-file: /var/log/restheart.log
+#  log levels: OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL.
+log-level: WARN
+
 # the number of I/O threads created for non-blocking tasks. tests have shown core*2 to be fine
 io-threads: 4
 

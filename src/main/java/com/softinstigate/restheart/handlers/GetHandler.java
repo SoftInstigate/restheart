@@ -91,6 +91,9 @@ public abstract class GetHandler implements HttpHandler
 
         String content = generateContent(exchange, page, pagesize, sortBy, filterBy, filter);
 
+        if (content == null) // null if doc not exists. exchange already closed by generateContent
+            return;
+        
         /**
          * TODO according to http specifications, Content-Type accepts one
          * single value however we specify two, to allow some browsers (i.e.

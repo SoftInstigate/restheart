@@ -10,6 +10,7 @@
  */
 package com.softinstigate.restheart;
 
+import ch.qos.logback.classic.Level;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.handlers.ErrorHandler;
@@ -38,6 +39,7 @@ import com.softinstigate.restheart.handlers.document.PostDocumentHandler;
 import com.softinstigate.restheart.handlers.document.PutDocumentHandler;
 import com.softinstigate.restheart.security.MapIdentityManager;
 import com.softinstigate.restheart.utils.ResourcesExtractor;
+import com.softinstigate.restheart.utils.LoggingInitializer;
 import io.undertow.Undertow;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.handlers.BlockingHandler;
@@ -57,8 +59,6 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
 import static io.undertow.Handlers.resource;
@@ -75,6 +75,8 @@ import io.undertow.server.HttpHandler;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -84,7 +86,7 @@ public class Bootstrapper
 {
     private static Undertow server;
 
-    private static final Logger logger = LoggerFactory.getLogger(Bootstrapper.class);
+    private static Logger logger = LoggerFactory.getLogger(Bootstrapper.class);
 
     private static File browserRootFile = null;
 
@@ -111,7 +113,7 @@ public class Bootstrapper
         }
         catch (FileNotFoundException ex)
         {
-            System.err.println("cannot find the configuration file. exiting..");
+            logger.error("cannot find the configuration file. exiting..");
             System.exit(-2);
         }
 
@@ -136,21 +138,36 @@ public class Bootstrapper
         int mongoPort = (Integer) conf.getOrDefault("mongo-port", 27017);
         String mongoUser = (String) conf.getOrDefault("mongo-user", "");
         String mongoPassword = (String) conf.getOrDefault("mongo-password", "");
+        
+        String logFile = (String) conf.getOrDefault("log-file", System.getProperty("java.io.tmpdir" + File.separator +  "restheart.log"));
+        String logLevel = (String) conf.getOrDefault("log-level", "WARN");
 
+        Level _logLevel = null;
+        
+        try
+        {
+            _logLevel = Level.valueOf(logLevel);
+        }
+        catch(Exception e)
+        {
+            logger.warn("wrong level {} - set default to WARN", logLevel, "");
+            _logLevel = Level.WARN;
+        }
+        
         int ioThreads = (Integer) conf.getOrDefault("io-threads", 8);
         int workerThreads = (Integer) conf.getOrDefault("worker-threads", 500);
         int bufferSize = (Integer) conf.getOrDefault("buffer-size", 16384);
         int buffersPerRegion = (Integer) conf.getOrDefault("buffers-per-region", 20);
         boolean directBuffers = (Boolean) conf.getOrDefault("direct-buffers", "true");
-        
+
         boolean forceGzipEncoding = (Boolean) conf.getOrDefault("force-gzip-encoding", true);
 
         logger.info("initializing mongodb connection pool to {}:{}", mongoHost, mongoPort);
-        
+
         try
         {
             MongoDBClientSingleton.init(mongoHost, mongoPort, mongoUser, mongoPassword);
-            
+
             logger.info("mongodb connection pool initialized");
         }
         catch (Throwable t)
@@ -219,6 +236,9 @@ public class Bootstrapper
         });
 
         logger.info("restheart started");
+        logger.info("logging to {} with level {}", logFile, _logLevel);
+        LoggingInitializer.stopConsoleLogging();
+        LoggingInitializer.startFileLogging(logFile, _logLevel);
     }
 
     private static void start(
@@ -241,7 +261,6 @@ public class Bootstrapper
             int buffersPerRegion,
             boolean directBuffers,
             boolean forceGzipEncoding
-            
     )
     {
         if (!httpsListener && !httpListener && !ajpListener)
@@ -351,38 +370,38 @@ public class Bootstrapper
                         .addPrefixPath("/@browser", resource(new FileResourceManager(browserRootFile, 3)).addWelcomeFiles("browser.html").setDirectoryListingEnabled(false))
                         .addPrefixPath("/",
                                 addSecurity(
-                                    new BlockingHandler(
-                                        new GzipEncodingHandler(
-                                            new ErrorHandler(
-                                                new HttpContinueAcceptingHandler(
-                                                    new SchemaEnforcerHandler(
-                                                        new RequestDispacherHandler(
-                                                        new GetRootHandler(),
-                                                        new PostRootHandler(),
-                                                        new PutRootHandler(),
-                                                        new DeleteRootHandler(),
-                                                        new PatchRootHandler(),
-                                                        new GetDBHandler(),
-                                                        new PostDBHandler(),
-                                                        new PutDBHandler(),
-                                                        new DeleteDBHandler(),
-                                                        new PatchDBHandler(),
-                                                        new GetCollectionHandler(),
-                                                        new PostCollectionHandler(),
-                                                        new PutCollectionHandler(),
-                                                        new DeleteCollectionHandler(),
-                                                        new PatchCollectionHandler(),
-                                                        new GetDocumentHandler(),
-                                                        new PostDocumentHandler(),
-                                                        new PutDocumentHandler(),
-                                                        new DeleteDocumentHandler(),
-                                                        new PatchDocumentHandler()
+                                        new BlockingHandler(
+                                                new GzipEncodingHandler(
+                                                        new ErrorHandler(
+                                                                new HttpContinueAcceptingHandler(
+                                                                        new SchemaEnforcerHandler(
+                                                                                new RequestDispacherHandler(
+                                                                                        new GetRootHandler(),
+                                                                                        new PostRootHandler(),
+                                                                                        new PutRootHandler(),
+                                                                                        new DeleteRootHandler(),
+                                                                                        new PatchRootHandler(),
+                                                                                        new GetDBHandler(),
+                                                                                        new PostDBHandler(),
+                                                                                        new PutDBHandler(),
+                                                                                        new DeleteDBHandler(),
+                                                                                        new PatchDBHandler(),
+                                                                                        new GetCollectionHandler(),
+                                                                                        new PostCollectionHandler(),
+                                                                                        new PutCollectionHandler(),
+                                                                                        new DeleteCollectionHandler(),
+                                                                                        new PatchCollectionHandler(),
+                                                                                        new GetDocumentHandler(),
+                                                                                        new PostDocumentHandler(),
+                                                                                        new PutDocumentHandler(),
+                                                                                        new DeleteDocumentHandler(),
+                                                                                        new PatchDocumentHandler()
+                                                                                )
+                                                                        )
+                                                                )
+                                                        ), forceGzipEncoding
                                                 )
-                                            )
-                                        )
-                                    ) , forceGzipEncoding
-                                )
-                            ), identityManager)
+                                        ), identityManager)
                         ));
 
         builder.build().start();
