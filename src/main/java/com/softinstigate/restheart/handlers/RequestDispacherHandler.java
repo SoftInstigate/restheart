@@ -34,7 +34,6 @@ import com.softinstigate.restheart.handlers.document.PostDocumentHandler;
 import com.softinstigate.restheart.handlers.document.PutDocumentHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import static com.softinstigate.restheart.utils.RequestContext.METHOD;
 import static com.softinstigate.restheart.utils.RequestContext.TYPE;
@@ -44,7 +43,7 @@ import com.softinstigate.restheart.utils.ResponseHelper;
  *
  * @author uji
  */
-public class RequestDispacherHandler implements HttpHandler
+public class RequestDispacherHandler extends PipedHttpHandler
 {
     private final GetRootHandler rootGet;
     private final PostRootHandler rootPost;
@@ -114,6 +113,7 @@ public class RequestDispacherHandler implements HttpHandler
             PatchDocumentHandler documentPatch
     )
     {
+        super(null);
         this.rootGet = rootGet;
         this.rootPost = rootPost;
         this.rootPut = rootPut;
@@ -138,119 +138,123 @@ public class RequestDispacherHandler implements HttpHandler
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        RequestContext c = new RequestContext(exchange);
-
-        if (c.getType() == TYPE.ERROR)
+        if (context.getType() == TYPE.ERROR)
         {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
             return;
         }
         
-        if (c.getMethod() == METHOD.OTHER)
+        if (context.getMethod() == METHOD.OTHER)
         {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_IMPLEMENTED);
             return;
         }
         
+        if (context.isReservedResource())
+        {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
+            return;
+        }
+        
         // TODO: use AllowedMethodsHandler to limit methods
         
-        switch (c.getMethod())
+        switch (context.getMethod())
         {
             case GET:
-                switch (c.getType())
+                switch (context.getType())
                 {
                     case ROOT:
-                        rootGet.handleRequest(exchange);
+                        rootGet.handleRequest(exchange, context);
                         return;
                     case DB:
-                        if (checkDbExists(exchange, c.getDBName()))
-                            dbGet.handleRequest(exchange);
+                        if (checkDbExists(exchange, context.getDBName()))
+                            dbGet.handleRequest(exchange, context);
                         return;
                     case COLLECTION:
-                        if (checkDbExists(exchange, c.getDBName()) && checkCollectionExists(exchange, c.getDBName(), c.getCollectionName()))
-                            collectionGet.handleRequest(exchange);
+                        if (checkDbExists(exchange, context.getDBName()) && checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
+                            collectionGet.handleRequest(exchange, context);
                         return;
                     case DOCUMENT:
-                        documentGet.handleRequest(exchange);
+                        documentGet.handleRequest(exchange, context);
                         return;
                 }
             
             case POST:
-                switch (c.getType())
+                switch (context.getType())
                 {
                     case ROOT:
-                        rootPost.handleRequest(exchange);
+                        rootPost.handleRequest(exchange, context);
                         return;
                     case DB:
-                        if (checkDbExists(exchange, c.getDBName()))
-                            dbPost.handleRequest(exchange);
+                        if (checkDbExists(exchange, context.getDBName()))
+                            dbPost.handleRequest(exchange, context);
                         return;
                     case COLLECTION:
-                        if (checkDbExists(exchange, c.getDBName()) && checkCollectionExists(exchange, c.getDBName(), c.getCollectionName()))
-                            collectionPost.handleRequest(exchange);
+                        if (checkDbExists(exchange, context.getDBName()) && checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
+                            collectionPost.handleRequest(exchange, context);
                         return;
                     case DOCUMENT:
-                        documentPost.handleRequest(exchange);
+                        documentPost.handleRequest(exchange, context);
                         return;
                 }
             
             case PUT:
-                switch (c.getType())
+                switch (context.getType())
                 {
                     case ROOT:
-                        rootPut.handleRequest(exchange);
+                        rootPut.handleRequest(exchange, context);
                         return;
                     case DB:
-                            dbPut.handleRequest(exchange);
+                            dbPut.handleRequest(exchange, context);
                         return;
                     case COLLECTION:
-                        if (checkDbExists(exchange, c.getDBName()))
-                            collectionPut.handleRequest(exchange);
+                        if (checkDbExists(exchange, context.getDBName()))
+                            collectionPut.handleRequest(exchange, context);
                         return;
                     case DOCUMENT:
-                        if (checkDbExists(exchange, c.getDBName()) && checkCollectionExists(exchange, c.getDBName(), c.getCollectionName()))
-                            documentPut.handleRequest(exchange);
+                        if (checkDbExists(exchange, context.getDBName()) && checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
+                            documentPut.handleRequest(exchange, context);
                         return;
                 }
             
             case DELETE:
-                switch (c.getType())
+                switch (context.getType())
                 {
                     case ROOT:
-                        rootDelete.handleRequest(exchange);
+                        rootDelete.handleRequest(exchange, context);
                         return;
                     case DB:
-                        if (checkDbExists(exchange, c.getDBName()))
-                            dbDelete.handleRequest(exchange);
+                        if (checkDbExists(exchange, context.getDBName()))
+                            dbDelete.handleRequest(exchange, context);
                         return;
                     case COLLECTION:
-                        if (checkDbExists(exchange, c.getDBName()) && checkCollectionExists(exchange, c.getDBName(), c.getCollectionName()))
-                            collectionDelete.handleRequest(exchange);
+                        if (checkDbExists(exchange, context.getDBName()) && checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
+                            collectionDelete.handleRequest(exchange, context);
                         return;
                     case DOCUMENT:
-                        if (checkDbExists(exchange, c.getDBName()) && checkCollectionExists(exchange, c.getDBName(), c.getCollectionName()))
-                            documentDelete.handleRequest(exchange);
+                        if (checkDbExists(exchange, context.getDBName()) && checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
+                            documentDelete.handleRequest(exchange, context);
                         return;
                 }
             
             case PATCH:
-                switch (c.getType())
+                switch (context.getType())
                 {
                     case ROOT:
-                        rootPatch.handleRequest(exchange);
+                        rootPatch.handleRequest(exchange, context);
                         return;
                     case DB:
-                        if (checkDbExists(exchange, c.getDBName()))
-                            dbPatch.handleRequest(exchange);
+                        if (checkDbExists(exchange, context.getDBName()))
+                            dbPatch.handleRequest(exchange, context);
                         return;
                     case COLLECTION:
-                        if (checkDbExists(exchange, c.getDBName()) && checkCollectionExists(exchange, c.getDBName(), c.getCollectionName()))
-                            collectionPatch.handleRequest(exchange);
+                        if (checkDbExists(exchange, context.getDBName()) && checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
+                            collectionPatch.handleRequest(exchange, context);
                         return;
                     case DOCUMENT:
-                        documentPatch.handleRequest(exchange);
+                        documentPatch.handleRequest(exchange, context);
                 }
         }
     }

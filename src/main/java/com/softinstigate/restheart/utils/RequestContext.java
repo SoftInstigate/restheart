@@ -77,7 +77,7 @@ public class RequestContext
     
     public String getDBName()
     {
-        if (pathTokens.length > 0)
+        if (pathTokens.length > 1)
             return pathTokens[1];
         else
             return null;
@@ -85,7 +85,7 @@ public class RequestContext
     
     public String getCollectionName()
     {
-        if (pathTokens.length > 1)
+        if (pathTokens.length > 2)
             return pathTokens[2];
         else
             return null;
@@ -93,7 +93,7 @@ public class RequestContext
     
     public String getDocumentId()
     {
-        if (pathTokens.length > 0)
+        if (pathTokens.length > 3)
             return pathTokens[3];
         else
             return null;
@@ -115,5 +115,28 @@ public class RequestContext
     public METHOD getMethod()
     {
         return method;
+    }
+    
+    public static boolean isReservedResourceDb(String dbName)
+    {
+        return dbName.equals("admin") || dbName.startsWith("system.") || dbName.startsWith("@");
+    }
+    
+    public static boolean isReservedResourceCollection(String collectionName)
+    {
+        return collectionName!= null && (collectionName.startsWith("system.") || collectionName.startsWith("@"));
+    }
+    
+    public static boolean isReservedResourceDocument(String documentId)
+    {
+        return documentId != null && documentId.startsWith("@");
+    }
+    
+    public boolean isReservedResource()
+    {
+        if (type == TYPE.ROOT)
+            return false;
+        
+        return isReservedResourceDb(getDBName()) || isReservedResourceCollection(getCollectionName()) || isReservedResourceDocument(getDocumentId());
     }
 }

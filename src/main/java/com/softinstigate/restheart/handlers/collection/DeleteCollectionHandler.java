@@ -12,31 +12,30 @@ package com.softinstigate.restheart.handlers.collection;
 
 import com.mongodb.DBCollection;
 import com.softinstigate.restheart.db.CollectionDAO;
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
 /**
  *
  * @author uji
  */
-public class DeleteCollectionHandler implements HttpHandler
+public class DeleteCollectionHandler extends PipedHttpHandler
 {
     /**
      * Creates a new instance of EntityResource
      */
     public DeleteCollectionHandler()
     {
+        super(null);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        RequestContext rc = new RequestContext(exchange);
-
-        DBCollection coll = CollectionDAO.getCollection(rc.getDBName(), rc.getCollectionName());
+        DBCollection coll = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName());
         
         if (CollectionDAO.isCollectionEmpty(coll))
         {

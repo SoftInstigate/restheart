@@ -32,15 +32,14 @@ public class GetDBHandler extends GetHandler
      */
     public GetDBHandler()
     {
+        super(null);
     }
 
     @Override
-    protected String generateContent(HttpServerExchange exchange, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
+    protected String generateContent(HttpServerExchange exchange, RequestContext context, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
-        RequestContext rc = new RequestContext(exchange);
-
-        List<String> colls = DBDAO.getDbCollections(DBDAO.getDB(rc.getDBName()));
+        List<String> colls = DBDAO.getDbCollections(DBDAO.getDB(context.getDBName()));
         
-        return generateCollectionContent(exchange.getRequestURL(), exchange.getQueryString(), DBDAO.getDbMetaData(rc.getDBName(), colls), DBDAO.getData(colls, page, pagesize, sortBy, filterBy, filter), page, pagesize, DBDAO.getDBSize(colls), sortBy, filterBy, filter);
+        return generateCollectionContent(exchange.getRequestURL(), exchange.getQueryString(), DBDAO.getDbMetaData(context.getDBName(), colls), DBDAO.getData(colls, page, pagesize, sortBy, filterBy, filter), page, pagesize, DBDAO.getDBSize(colls), sortBy, filterBy, filter);
     }
 }

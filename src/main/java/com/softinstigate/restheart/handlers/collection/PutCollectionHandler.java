@@ -11,24 +11,20 @@
 package com.softinstigate.restheart.handlers.collection;
 
 import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.db.DBDAO;
-import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import java.nio.charset.Charset;
-import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,11 +32,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author uji
  */
-public class PutCollectionHandler implements HttpHandler
+public class PutCollectionHandler extends PipedHttpHandler
 {
     final Charset charset = Charset.forName("utf-8");
-
-    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
 
     private static final Logger logger = LoggerFactory.getLogger(PutCollectionHandler.class);
 
@@ -49,20 +43,19 @@ public class PutCollectionHandler implements HttpHandler
      */
     public PutCollectionHandler()
     {
+        super(null);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        RequestContext rc = new RequestContext(exchange);
-
-        if (rc.getCollectionName().isEmpty() || rc.getCollectionName().startsWith("@"))
+        if (context.getCollectionName().isEmpty() || context.getCollectionName().startsWith("@"))
         {
             ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, new IllegalArgumentException("collection name cannot be empty or start with @"));
             return;
         }
         
-        DB db = DBDAO.getDB(rc.getDBName());
+        DB db = DBDAO.getDB(context.getDBName());
 
         String _content = ChannelReader.read(exchange.getRequestChannel());
 
@@ -85,9 +78,9 @@ public class PutCollectionHandler implements HttpHandler
             return;
         }
 
-        boolean updating = CollectionDAO.doesCollectionExist(rc.getDBName(), rc.getCollectionName());
+        boolean updating = CollectionDAO.doesCollectionExist(context.getDBName(), context.getCollectionName());
         
-        DBCollection coll = db.getCollection(rc.getCollectionName());
+        DBCollection coll = db.getCollection(context.getCollectionName());
 
         CollectionDAO.upsertCollection(coll, content, updating);
 

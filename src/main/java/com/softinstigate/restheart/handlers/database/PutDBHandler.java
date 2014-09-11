@@ -19,11 +19,11 @@ import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import org.slf4j.Logger;
@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author uji
  */
-public class PutDBHandler implements HttpHandler
+public class PutDBHandler extends PipedHttpHandler
 {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
 
@@ -44,14 +44,13 @@ public class PutDBHandler implements HttpHandler
      */
     public PutDBHandler()
     {
+        super(null);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        RequestContext rc = new RequestContext(exchange);
-
-        if (rc.getDBName().isEmpty() || rc.getDBName().startsWith("@"))
+        if (context.getDBName().isEmpty() || context.getDBName().startsWith("@"))
         {
             ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, new IllegalArgumentException("db name cannot be empty or start with @"));
             return;
@@ -78,9 +77,9 @@ public class PutDBHandler implements HttpHandler
             return;
         }
 
-        boolean updating = client.getDatabaseNames().contains(rc.getDBName());
+        boolean updating = client.getDatabaseNames().contains(context.getDBName());
 
-        DB db = client.getDB(rc.getDBName());
+        DB db = client.getDB(context.getDBName());
 
         DBCollection coll = db.getCollection("@metadata");
 

@@ -12,14 +12,12 @@ package com.softinstigate.restheart.handlers.document;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
-import com.mongodb.MongoClient;
 import com.mongodb.WriteResult;
 import com.softinstigate.restheart.db.CollectionDAO;
-import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
 
@@ -27,34 +25,33 @@ import org.bson.types.ObjectId;
  *
  * @author uji
  */
-public class DeleteDocumentHandler implements HttpHandler
+public class DeleteDocumentHandler extends PipedHttpHandler
 {
     /**
      * Creates a new instance of EntityResource
      */
     public DeleteDocumentHandler()
     {
+        super(null);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        RequestContext rc = new RequestContext(exchange);
-        
-        DBCollection coll = CollectionDAO.getCollection(rc.getDBName(), rc.getCollectionName());
+        DBCollection coll = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName());
         
         ObjectId oid;
         String   sid;
         
         try
         {
-            oid = new ObjectId(rc.getDocumentId());
+            oid = new ObjectId(context.getDocumentId());
             sid = null;
         }
         catch(IllegalArgumentException ex)
         {
             // the id is not an object id
-            sid = rc.getDocumentId();
+            sid = context.getDocumentId();
             oid = null;
         }
         

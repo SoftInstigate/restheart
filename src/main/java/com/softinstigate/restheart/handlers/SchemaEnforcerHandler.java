@@ -12,38 +12,33 @@ package com.softinstigate.restheart.handlers;
 
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.JSONHelper;
+import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
-import io.undertow.util.HttpString;
-import io.undertow.util.Methods;
 
 /**
  *
  * @author uji
  */
-public class SchemaEnforcerHandler implements HttpHandler
+public class SchemaEnforcerHandler extends PipedHttpHandler
 {
-    private final HttpHandler next;
-
     /**
      * Creates a new instance of EntityResource
      *
      * @param next
      */
-    public SchemaEnforcerHandler(HttpHandler next)
+    public SchemaEnforcerHandler(PipedHttpHandler next)
     {
-        this.next = next;
+        super(next);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        HttpString method = exchange.getRequestMethod();
-
-        if (method.equals(Methods.POST) || method.equals(Methods.PUT))
+        if (context.getMethod() == RequestContext.METHOD.POST || context.getMethod() == RequestContext.METHOD.PUT)
         {
             HeaderValues contentTypes = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
 

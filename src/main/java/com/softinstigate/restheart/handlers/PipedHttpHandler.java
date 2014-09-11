@@ -8,31 +8,32 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.handlers.document;
 
-import com.softinstigate.restheart.handlers.PipedHttpHandler;
-import com.softinstigate.restheart.utils.HttpStatus;
+package com.softinstigate.restheart.handlers;
+
 import com.softinstigate.restheart.utils.RequestContext;
-import com.softinstigate.restheart.utils.ResponseHelper;
+import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
 /**
  *
  * @author uji
  */
-public class PostDocumentHandler extends PipedHttpHandler
+public abstract class PipedHttpHandler implements HttpHandler
 {
-    /**
-     * Creates a new instance of POSTHandler
-     */
-    public PostDocumentHandler()
-    {
-        super(null);
-    }
+    protected final PipedHttpHandler next;
 
-    @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
+    public PipedHttpHandler(PipedHttpHandler next)
     {
-        ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_IMPLEMENTED);
+        this.next = next;
+    }
+    
+    public abstract void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception;
+    
+    @Override
+    public void handleRequest(HttpServerExchange exchange) throws Exception
+    {
+        RequestContext context = new RequestContext(exchange);
+        handleRequest(exchange, context);
     }
 }

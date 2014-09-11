@@ -20,11 +20,11 @@ import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 
@@ -32,7 +32,7 @@ import java.time.Instant;
  *
  * @author uji
  */
-public class PatchDBHandler implements HttpHandler
+public class PatchDBHandler extends PipedHttpHandler
 {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
 
@@ -41,6 +41,7 @@ public class PatchDBHandler implements HttpHandler
      */
     public PatchDBHandler()
     {
+        super(null);
     }
 
     /**
@@ -50,11 +51,9 @@ public class PatchDBHandler implements HttpHandler
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        RequestContext rc = new RequestContext(exchange);
-
-        if (rc.getDBName().isEmpty() || rc.getDBName().startsWith("@"))
+        if (context.getDBName().isEmpty() || context.getDBName().startsWith("@"))
         {
             ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, new IllegalArgumentException("db name cannot be empty or start with @"));
             return;
@@ -87,7 +86,7 @@ public class PatchDBHandler implements HttpHandler
             return;
         }
 
-        DB db = DBDAO.getDB(rc.getDBName());
+        DB db = DBDAO.getDB(context.getDBName());
 
         DBCollection coll = db.getCollection("@metadata");
 

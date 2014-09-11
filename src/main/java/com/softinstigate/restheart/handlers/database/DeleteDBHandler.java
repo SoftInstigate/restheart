@@ -12,10 +12,10 @@ package com.softinstigate.restheart.handlers.database;
 
 import com.mongodb.DB;
 import com.softinstigate.restheart.db.DBDAO;
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 
@@ -23,21 +23,20 @@ import java.util.List;
  *
  * @author uji
  */
-public class DeleteDBHandler implements HttpHandler
+public class DeleteDBHandler extends PipedHttpHandler
 {
     /**
      * Creates a new instance of EntityResource
      */
     public DeleteDBHandler()
     {
+        super(null);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange)
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        RequestContext rc = new RequestContext(exchange);
-
-        DB db = DBDAO.getDB(rc.getDBName());
+        DB db = DBDAO.getDB(context.getDBName());
         
         List<String> _colls = DBDAO.getDbCollections(db);
         

@@ -10,9 +10,9 @@
  */
 package com.softinstigate.restheart.handlers;
 
-import com.mongodb.MongoClient;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.JSONHelper;
+import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author uji
  */
-public abstract class GetHandler implements HttpHandler
+public abstract class GetHandler extends PipedHttpHandler
 {
     protected static final Logger logger = LoggerFactory.getLogger(GetHandler.class);
 
@@ -40,18 +40,21 @@ public abstract class GetHandler implements HttpHandler
 
     /**
      * Creates a new instance of EntityResource
+     * @param next
      */
-    public GetHandler()
+    public GetHandler(PipedHttpHandler next)
     {
+        super(next);
     }
 
     /**
+     * @param context
      * @returns the list of db references.
      * @param exchange
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
         int page = 1;
         int pagesize = 100;
@@ -89,7 +92,7 @@ public abstract class GetHandler implements HttpHandler
             }
         }
 
-        String content = generateContent(exchange, page, pagesize, sortBy, filterBy, filter);
+        String content = generateContent(exchange, context, page, pagesize, sortBy, filterBy, filter);
 
         if (content == null) // null if doc not exists. exchange already closed by generateContent
             return;
@@ -108,7 +111,7 @@ public abstract class GetHandler implements HttpHandler
         exchange.endExchange();
     }
 
-    protected abstract String generateContent(HttpServerExchange exchange, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter);
+    protected abstract String generateContent(HttpServerExchange exchange, RequestContext context, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter);
 
     /**
      * generic helper method for generating response body

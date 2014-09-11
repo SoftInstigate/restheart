@@ -34,14 +34,13 @@ public class GetCollectionHandler extends GetHandler
      */
     public GetCollectionHandler()
     {
+        super(null);
     }
 
     @Override
-    protected String generateContent(HttpServerExchange exchange, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
+    protected String generateContent(HttpServerExchange exchange, RequestContext context, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
-        RequestContext rc = new RequestContext(exchange);
-
-        DBCollection coll = CollectionDAO.getCollection(rc.getDBName(), rc.getCollectionName());
+        DBCollection coll = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName());
 
         Map<String, Object> metadata = CollectionDAO.getCollectionMetadata(coll);
         

@@ -15,38 +15,37 @@ import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.CollectionDAO;
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
 /**
  *
  * @author uji
  */
-public class PatchCollectionHandler implements HttpHandler
+public class PatchCollectionHandler extends PipedHttpHandler
 {
     /**
      * Creates a new instance of EntityResource
      */
     public PatchCollectionHandler()
     {
+        super(null);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        RequestContext rc = new RequestContext(exchange);
-
-        if (rc.getDBName().isEmpty() || rc.getDBName().startsWith("@"))
+        if (context.getDBName().isEmpty())
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, new IllegalArgumentException("db name cannot be empty or start with @"));
+            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, new IllegalArgumentException("db name cannot be empty"));
             return;
         }
         
-        if (rc.getCollectionName().isEmpty() || rc.getCollectionName().startsWith("@"))
+        if (context.getCollectionName().isEmpty() || context.getCollectionName().startsWith("@"))
         {
             ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, new IllegalArgumentException("collection name cannot be empty or start with @"));
             return;
@@ -79,7 +78,7 @@ public class PatchCollectionHandler implements HttpHandler
             return;
         }
         
-        CollectionDAO.upsertCollection(CollectionDAO.getCollection(rc.getDBName(), rc.getCollectionName()), content, true);
+        CollectionDAO.upsertCollection(CollectionDAO.getCollection(context.getDBName(), context.getCollectionName()), content, true);
         
         ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);
     }

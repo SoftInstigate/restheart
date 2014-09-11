@@ -14,16 +14,14 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.CollectionDAO;
-import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import java.nio.charset.Charset;
 import org.bson.types.ObjectId;
@@ -32,7 +30,7 @@ import org.bson.types.ObjectId;
  *
  * @author uji
  */
-public class PatchDocumentHandler implements HttpHandler
+public class PatchDocumentHandler extends PipedHttpHandler
 {
     final Charset charset = Charset.forName("utf-8");  
 
@@ -41,14 +39,13 @@ public class PatchDocumentHandler implements HttpHandler
      */
     public PatchDocumentHandler()
     {
+        super(null);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        RequestContext rc = new RequestContext(exchange);
-
-        DBCollection coll = CollectionDAO.getCollection(rc.getDBName(), rc.getCollectionName());
+        DBCollection coll = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName());
         
         String _content = ChannelReader.read(exchange.getRequestChannel());
 
@@ -78,7 +75,7 @@ public class PatchDocumentHandler implements HttpHandler
             return;
         }
 
-        String id = rc.getDocumentId();
+        String id = context.getDocumentId();
         
         if (coll.count(getIdQuery(id)) != 1)
         {

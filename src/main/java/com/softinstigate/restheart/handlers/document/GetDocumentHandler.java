@@ -39,25 +39,24 @@ public class GetDocumentHandler extends GetHandler
      */
     public GetDocumentHandler()
     {
+        super(null);
     }
 
     @Override
-    protected String generateContent(HttpServerExchange exchange, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
+    protected String generateContent(HttpServerExchange exchange, RequestContext context, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
-        RequestContext rc = new RequestContext(exchange);
-
         ObjectId oid;
         String   sid;
         
         try
         {
-            oid = new ObjectId(rc.getDocumentId());
+            oid = new ObjectId(context.getDocumentId());
             sid = null;
         }
         catch(IllegalArgumentException ex)
         {
             // the id is not an object id
-            sid = rc.getDocumentId();
+            sid = context.getDocumentId();
             oid = null;
         }
         
@@ -72,7 +71,7 @@ public class GetDocumentHandler extends GetHandler
             query = new BasicDBObject("_id", sid);
         }
 
-        DBObject document = CollectionDAO.getCollection(rc.getDBName(), rc.getCollectionName()).findOne(query);
+        DBObject document = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName()).findOne(query);
 
         if (document == null)
         {

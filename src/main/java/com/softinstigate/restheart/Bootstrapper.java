@@ -154,6 +154,10 @@ public class Bootstrapper
             _logLevel = Level.WARN;
         }
         
+        LoggingInitializer.startFileLogging(logFile, _logLevel);
+        
+        logger.info("starting restheart ********************************************");
+        
         int ioThreads = (Integer) conf.getOrDefault("io-threads", 8);
         int workerThreads = (Integer) conf.getOrDefault("worker-threads", 500);
         int bufferSize = (Integer) conf.getOrDefault("buffer-size", 16384);
@@ -238,7 +242,6 @@ public class Bootstrapper
         logger.info("restheart started");
         logger.info("logging to {} with level {}", logFile, _logLevel);
         LoggingInitializer.stopConsoleLogging();
-        LoggingInitializer.startFileLogging(logFile, _logLevel);
     }
 
     private static void start(

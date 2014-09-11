@@ -13,6 +13,7 @@ package com.softinstigate.restheart.handlers.root;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.handlers.GetHandler;
+import com.softinstigate.restheart.utils.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,6 +21,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,13 +40,17 @@ public class GetRootHandler extends GetHandler
      */
     public GetRootHandler()
     {
+        super(null);
     }
 
     @Override
-    protected String generateContent(HttpServerExchange exchange, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
+    protected String generateContent(HttpServerExchange exchange, RequestContext context, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
-        List<String> dbs = client.getDatabaseNames();
+        List<String> _dbs = client.getDatabaseNames();
 
+        // filter out reserved resourced
+        List<String> dbs = _dbs.stream().filter(db -> ! RequestContext.isReservedResourceDb(db)).collect(Collectors.toList());
+        
         if (dbs == null)
         {
             dbs = new ArrayList<>();

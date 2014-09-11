@@ -10,29 +10,31 @@
  */
 package com.softinstigate.restheart.handlers.database;
 
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
+import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
 /**
  *
  * @author uji
  */
-public class PostDBHandler implements HttpHandler
+public class PostDBHandler extends PipedHttpHandler
 {
     /**
      * Creates a new instance of POSTHandler
      */
     public PostDBHandler()
     {
+        super(null);
     }
 
     /**
      * creating collections via post is not supported by design
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange)
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
         ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_IMPLEMENTED);
     }

@@ -17,6 +17,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.utils.HttpStatus;
+import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
@@ -59,7 +60,10 @@ public class DBDAO
     
     public static List<String> getDbCollections(DB db)
     {
-        List<String> colls = new ArrayList(db.getCollectionNames());
+        List<String> _colls = new ArrayList(db.getCollectionNames());
+        
+        // filter out reserved resourced
+        List<String> colls = _colls.stream().filter(coll -> ! RequestContext.isReservedResourceCollection(coll)).collect(Collectors.toList());
         
         Collections.sort(colls); // sort by id
         

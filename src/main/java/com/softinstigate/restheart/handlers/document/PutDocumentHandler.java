@@ -14,18 +14,16 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
 import com.mongodb.WriteResult;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.CollectionDAO;
-import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.collection.PutCollectionHandler;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -35,7 +33,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author uji
  */
-public class PutDocumentHandler implements HttpHandler
+public class PutDocumentHandler extends PipedHttpHandler
 {
     private static final Logger logger = LoggerFactory.getLogger(PutCollectionHandler.class);
     
@@ -44,14 +42,13 @@ public class PutDocumentHandler implements HttpHandler
      */
     public PutDocumentHandler()
     {
+        super(null);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        RequestContext rc = new RequestContext(exchange);
-
-        DBCollection coll = CollectionDAO.getCollection(rc.getDBName(), rc.getCollectionName());
+        DBCollection coll = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName());
         
         String _content = ChannelReader.read(exchange.getRequestChannel());
 
@@ -77,7 +74,7 @@ public class PutDocumentHandler implements HttpHandler
             return;
         }
         
-        String id = rc.getDocumentId();
+        String id = context.getDocumentId();
         
         if (content.get("_id") == null)
         {
@@ -86,7 +83,7 @@ public class PutDocumentHandler implements HttpHandler
         else if (!content.get("_id").equals(id))
         {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
-            logger.warn("PUT not acceptable since _id in content body is different than id in URL");
+            logger.warn("PUT not acceptable: _id in content body is different than id in URL");
             return;
         }
         
