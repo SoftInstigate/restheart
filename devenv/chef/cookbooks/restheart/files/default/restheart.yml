@@ -1,5 +1,11 @@
 ## RESTHeart configuration file.
 ---
+#### listeners
+
+# restheart uses basic authentication; usernames and passwords are sent over the net on each request.
+# you must use the https listener to avoid your credentials to be sniffed.
+# use the http listener only on private environments or in case you have a web server using https in front of restheart 
+
 https-listener: true
 https-host: 0.0.0.0
 https-port: 443
@@ -12,33 +18,50 @@ ajp-listener: false
 ajp-host: 0.0.0.0
 ajp-port: 8009
 
-force-gzip-encoding: true
+#### SSL configuration
 
-# use embedded self-signed certificate
-# if false, you must define the keystore-file, keystore-password and certpassword properties
+# use the embedded self-signed certificate
 use-embedded-keystore: true
+
+# uncomment the following lines to use your own certificate. you'll need to create a keystore
+
 #keystore-file: /path/to/keystore/file
 #keystore-password: password
 #certpassword: password
+
+#### mongodb 
 
 mongo-host: mongo-node
 mongo-port: 27017
 mongo-user: admin
 mongo-password: adminadmin
 
-log-file: /var/log/restheart.log
+#### protocol
+
+# if you want to save bandwitdth, you can force requests to support the giz encoding only (if not, requests will be rejected)
+force-gzip-encoding: false
+
+#### logging
+
+enable-log-file: true
+log-file-path: /var/log/restheart.log
+
+enable-log-console: false
+
 #  log levels: OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL.
 log-level: WARN
 
-# the number of I/O threads created for non-blocking tasks. tests have shown core*2 to be fine
-io-threads: 4
 
-# the number of threads created for blocking tasks (such as ones involving db access). at least core*16
-worker-threads: 64
+#### performace settings
 
-#use 16k buffers for best performance
-#as in linux 16k is generally the default amount of data that can be sent in a single write() call
+# the number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
+io-threads: 2
+
+# the number of threads created for blocking tasks (such as ones involving db access). suggested value: core*16
+worker-threads: 32
+
+# use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
 buffer-size: 16384
 buffers-per-region: 20
-#should the buffer pool use direct buffers, this instructs the JVM to use native (if possible) I/O operations on the buffers
+# should the buffer pool use direct buffers, this instructs the JVM to use native (if possible) I/O operations on the buffers
 direct-buffers: true

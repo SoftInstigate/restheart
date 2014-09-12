@@ -139,8 +139,10 @@ public class Bootstrapper
         String mongoUser = (String) conf.getOrDefault("mongo-user", "");
         String mongoPassword = (String) conf.getOrDefault("mongo-password", "");
         
-        String logFile = (String) conf.getOrDefault("log-file", System.getProperty("java.io.tmpdir" + File.separator +  "restheart.log"));
+        String logFilePath = (String) conf.getOrDefault("log-file-path", System.getProperty("java.io.tmpdir" + File.separator +  "restheart.log"));
         String logLevel = (String) conf.getOrDefault("log-level", "WARN");
+        boolean logToConsole = (Boolean) conf.getOrDefault("enable-log-console", true);
+        boolean logToFile = (Boolean) conf.getOrDefault("enable-log-file", true);
 
         Level _logLevel = null;
         
@@ -153,8 +155,11 @@ public class Bootstrapper
             logger.warn("wrong level {} - set default to WARN", logLevel, "");
             _logLevel = Level.WARN;
         }
+
+        LoggingInitializer.setLogLevel(_logLevel);
         
-        LoggingInitializer.startFileLogging(logFile, _logLevel);
+        if (logToFile)
+            LoggingInitializer.startFileLogging(logFilePath);
         
         logger.info("starting restheart ********************************************");
         
@@ -240,8 +245,19 @@ public class Bootstrapper
         });
 
         logger.info("restheart started");
-        logger.info("logging to {} with level {}", logFile, _logLevel);
-        LoggingInitializer.stopConsoleLogging();
+        
+        if (logToFile)
+            logger.info("logging to {} with level {}", logFilePath, _logLevel);
+        
+        if (! logToConsole)
+        {
+            logger.info("stopping logging to console ");
+            LoggingInitializer.stopConsoleLogging();
+        }
+        else
+        {
+            logger.info("logging to console with level {}", _logLevel);
+        }
     }
 
     private static void start(

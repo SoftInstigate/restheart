@@ -29,6 +29,14 @@ import org.slf4j.LoggerFactory;
  */
 public class LoggingInitializer
 {
+    public static void setLogLevel(Level level)
+    {
+        LoggerContext loggerContext = (LoggerContext) org.slf4j.LoggerFactory.getILoggerFactory();
+        Logger logger = loggerContext.getLogger("com.softinstigate");
+
+        logger.setLevel(level);
+    }
+    
     public static void stopConsoleLogging()
     {
         LoggerContext loggerContext = (LoggerContext) org.slf4j.LoggerFactory.getILoggerFactory();
@@ -37,15 +45,14 @@ public class LoggingInitializer
         Appender<ILoggingEvent> appender = rootLogger.getAppender("STDOUT");
 
         appender.stop();
-        rootLogger.detachAppender("STDOUT");
+        //rootLogger.detachAppender("STDOUT");
     }
 
-    public static void startFileLogging(String logFilePath, Level level)
+    public static void startFileLogging(String logFilePath)
     {
         Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
         LoggerContext loggerContext = logger.getLoggerContext();
-        loggerContext.reset();
         
         RollingFileAppender<ILoggingEvent> rfAppender = new RollingFileAppender<>();
         rfAppender.setContext(loggerContext);
@@ -72,9 +79,6 @@ public class LoggingInitializer
         rfAppender.start();
         
         logger.addAppender(rfAppender);
-        
-        Logger rhLogger = (Logger) LoggerFactory.getLogger("com.softinstigate");
-        rhLogger.setLevel(level);
     }
     
     private static String getFileNameFromPath(String filePath)

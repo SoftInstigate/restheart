@@ -1,5 +1,11 @@
 ## RESTHeart configuration file.
 ---
+#### listeners
+
+# restheart uses basic authentication; usernames and passwords are sent over the net on each request.
+# you must use the https listener to avoid your credentials to be sniffed.
+# use the http listener only on private environments or in case you have a web server using https in front of restheart 
+
 https-listener: true
 https-host: 0.0.0.0
 https-port: 4443
@@ -12,24 +18,41 @@ ajp-listener: false
 ajp-host: 0.0.0.0
 ajp-port: 8009
 
-force-gzip-encoding: false
+#### SSL configuration
 
-# use embedded self-signed certificate
-# if false, you must define the keystore-file, keystore-password and certpassword properties
+# use the embedded self-signed certificate
 use-embedded-keystore: true
-#uncomment the following line to use your own certificate. you'll need to create a keystore
+
+# uncomment the following lines to use your own certificate. you'll need to create a keystore
+
 #keystore-file: /path/to/keystore/file
 #keystore-password: password
 #certpassword: password
+
+#### mongodb 
 
 mongo-host: 127.0.0.1
 mongo-port: 27017
 mongo-user: admin
 mongo-password: adminadmin
 
-log-file: /tmp/restheart.log
+#### protocol
+
+# if you want to save bandwitdth, you can force requests to support the giz encoding only (if not, requests will be rejected)
+force-gzip-encoding: false
+
+#### logging
+
+enable-log-file: true
+log-file-path: /tmp/restheart.log
+
+enable-log-console: false
+
 #  log levels: OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL.
 log-level: ALL
+
+
+#### performace settings
 
 # the number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
 io-threads: 2
