@@ -68,6 +68,10 @@ public class PostCollectionHandler extends PutCollectionHandler
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
             return;
         }
+        
+        ObjectId timestamp = new ObjectId();
+        
+        content.put("@etag", timestamp);
 
         Object id = content.get("_id");
         

@@ -26,7 +26,7 @@ import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import java.time.Instant;
+import org.bson.types.ObjectId;
 
 /**
  *
@@ -48,6 +48,7 @@ public class PatchDBHandler extends PipedHttpHandler
      * partial update db metadata
      *
      * @param exchange
+     * @param context
      * @throws Exception
      */
     @Override
@@ -92,7 +93,7 @@ public class PatchDBHandler extends PipedHttpHandler
 
         // apply new values
         
-        content.put("@lastupdated_on", Instant.now().toString());
+        content.put("@etag", new ObjectId());
         content.markAsPartialObject();
         
         coll.update(DBDAO.METADATA_QUERY, new BasicDBObject("$set", content), true, false);

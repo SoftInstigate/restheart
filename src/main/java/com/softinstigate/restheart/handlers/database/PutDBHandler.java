@@ -25,7 +25,7 @@ import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import java.time.Instant;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,19 +87,19 @@ public class PutDBHandler extends PipedHttpHandler
         
         // apply new values
         
-        String now = Instant.now().toString();
+        ObjectId timestamp = new ObjectId();
         
         if (content == null)
             content = new BasicDBObject();
         
         if (updating)
         {
-            content.put("@lastupdated_on", now);
+            content.put("@etag", timestamp);
         }
         else
         {
             content.put("_id", "@metadata");
-            content.put("@created_on", now);
+            content.put("_id", "@created_on");
         }
         
         coll.update(query, new BasicDBObject("$set", content), true, false);

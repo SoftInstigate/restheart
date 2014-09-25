@@ -19,6 +19,7 @@ import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import java.time.Instant;
 import java.util.Deque;
 import java.util.Map;
 import java.util.TreeMap;
@@ -48,12 +49,12 @@ public class GetDocumentHandler extends GetHandler
         ObjectId oid;
         String   sid;
         
-        try
+        if (ObjectId.isValid(context.getDocumentId()))
         {
-            oid = new ObjectId(context.getDocumentId());
             sid = null;
+            oid = new ObjectId(context.getDocumentId());
         }
-        catch(IllegalArgumentException ex)
+        else
         {
             // the id is not an object id
             sid = context.getDocumentId();
@@ -70,7 +71,7 @@ public class GetDocumentHandler extends GetHandler
         {
             query = new BasicDBObject("_id", sid);
         }
-
+        
         DBObject document = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName()).findOne(query);
 
         if (document == null)
@@ -78,7 +79,32 @@ public class GetDocumentHandler extends GetHandler
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
             return null;
         }
-
+        
+        Object etag = document.get("@etag");
+        
+        if (oid != null)
+        {
+            document.put("@created_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
+        }
+        else
+        {
+            Object createdOn = document.get("@created_on");
+            
+            if (createdOn != null && ObjectId.isValid("" + createdOn))
+            {
+                ObjectId _createdOn = new ObjectId("" + createdOn);
+                
+                document.put("@created_on", Instant.ofEpochSecond(_createdOn.getTimestamp()).toString());
+            }
+        }
+        
+        if (etag != null && ObjectId.isValid("" + etag))
+        {
+            ObjectId _etag = new ObjectId("" + etag);
+            
+            document.put("@lastupdated_on", Instant.ofEpochSecond(_etag.getTimestamp()).toString());
+        }
+        
         Map<String, Object> item = new TreeMap<>();
 
         document.keySet().stream().forEach((key) ->

@@ -5,8 +5,8 @@
 
 ####update submodules
 
-	$ git submodule update
-
+	$ git submodule update --init --recursive 
+	
 ####add required vagrant plugins
 
 	$ vagrant plugin install vagrant-hostsmanager

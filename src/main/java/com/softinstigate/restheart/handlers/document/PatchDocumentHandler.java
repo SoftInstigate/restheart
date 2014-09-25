@@ -85,6 +85,8 @@ public class PatchDocumentHandler extends PipedHttpHandler
         
         content.markAsPartialObject();
         
+        content.put("@etag", new ObjectId());
+        
         coll.update(getIdQuery(id), new BasicDBObject("$set", content), true, false);
 
         ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);

@@ -201,10 +201,10 @@ public abstract class GetHandler extends PipedHttpHandler
 
         long count = data.stream().filter((props) -> props.keySet().stream().anyMatch((k) -> k.equals("id") || k.equals("_id"))).count();
         
-        properties.put("returned", "" + count);
-        properties.put("size", "" + size);
-        properties.put("current_page", "" + page);
-        properties.put("total_pages", "" + total_pages);
+        properties.put("@returned", "" + count);
+        properties.put("@size", "" + size);
+        properties.put("@current_page", "" + page);
+        properties.put("@total_pages", "" + total_pages);
         
         if (metadata != null)
             properties.putAll(metadata);

@@ -14,7 +14,6 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.WriteResult;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.CollectionDAO;
@@ -36,6 +35,15 @@ import org.slf4j.LoggerFactory;
 public class PutDocumentHandler extends PipedHttpHandler
 {
     private static final Logger logger = LoggerFactory.getLogger(PutCollectionHandler.class);
+    
+    private static final BasicDBList fieldsToReturn;
+    
+    static
+    {
+        fieldsToReturn = new BasicDBList();
+        fieldsToReturn.add("_id");
+        fieldsToReturn.add("@created_on");
+    }
     
     /**
      * Creates a new instance of EntityResource
@@ -76,9 +84,9 @@ public class PutDocumentHandler extends PipedHttpHandler
         
         String id = context.getDocumentId();
         
-        if (content.get("_id") == null)
+        if (content.get("_id") == null) 
         {
-            content.put("_id", id);
+            content.put("_id", getId(id));
         }
         else if (!content.get("_id").equals(id))
         {
@@ -87,21 +95,58 @@ public class PutDocumentHandler extends PipedHttpHandler
             return;
         }
         
-        WriteResult wr = coll.update(getIdQuery(id), content, true, false);
+        ObjectId timestamp = new ObjectId();
+        
+        content.put("@etag", timestamp);
+        
+        DBObject old = coll.findAndModify(getIdQuery(id), null, null, false, content, false, true);
 
-        if (wr.isUpdateOfExisting())
+        if (old != null)
+        {
+            // need to add @created_on taken from the old record since id is not an objectid
+            if (!ObjectId.isValid(id))
+            {
+                Object oldTimestamp = old.get("@created_on");
+                
+                if (ObjectId.isValid("" + oldTimestamp))
+                {
+                    BasicDBObject createdContet = new BasicDBObject("@created_on", old.get("@created_on"));
+                    createdContet.markAsPartialObject();
+                    coll.update(getIdQuery(id), new BasicDBObject("$set", createdContet), true, false);
+                }
+                else
+                {
+                    logger.warn("could not reset the @create_on field on document with id {} (which is not an ObjectId)" + id);
+                }
+            }
+            
             ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);
+        }
         else
+        {
+            // need to add @created_on since id is not an objectid
+            if (!ObjectId.isValid(id))
+            {
+                BasicDBObject createdContet = new BasicDBObject("@created_on", timestamp);
+                createdContet.markAsPartialObject();
+                coll.update(getIdQuery(id), new BasicDBObject("$set", createdContet), true, false);
+            }
+            
             ResponseHelper.endExchange(exchange, HttpStatus.SC_CREATED);
+        }
+        
+        
+        
+        
     }
     
     private Object getId(String id)
     {
-        try
+        if (ObjectId.isValid(id))
         {
             return new ObjectId(id);
         }
-        catch(IllegalArgumentException ex)
+        else
         {
             // the id is not an object id
             return id;

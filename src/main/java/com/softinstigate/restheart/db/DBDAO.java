@@ -8,7 +8,6 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-
 package com.softinstigate.restheart.db;
 
 import com.mongodb.BasicDBObject;
@@ -20,6 +19,7 @@ import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,11 +38,11 @@ import org.slf4j.LoggerFactory;
 public class DBDAO
 {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-    
+
     private static final Logger logger = LoggerFactory.getLogger(DBDAO.class);
-    
+
     public static final BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "@metadata");
-    
+
     public static boolean checkDbExists(HttpServerExchange exchange, String dbName)
     {
         if (!client.getDatabaseNames().contains(dbName))
@@ -49,60 +50,77 @@ public class DBDAO
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
             return false;
         }
-        
+
         return true;
     }
-    
+
     public static DB getDB(String dbName)
     {
         return client.getDB(dbName);
     }
-    
+
     public static List<String> getDbCollections(DB db)
     {
         List<String> _colls = new ArrayList(db.getCollectionNames());
-        
+
         // filter out reserved resourced
-        List<String> colls = _colls.stream().filter(coll -> ! RequestContext.isReservedResourceCollection(coll)).collect(Collectors.toList());
-        
+        List<String> colls = _colls.stream().filter(coll -> !RequestContext.isReservedResourceCollection(coll)).collect(Collectors.toList());
+
         Collections.sort(colls); // sort by id
-        
+
         return colls;
     }
-    
+
     /**
      * @param colls the collections list got from getDbCollections()
      * @return the number of collections in this db
-    **/
+    *
+     */
     public static long getDBSize(List<String> colls)
     {
         return colls.size();
     }
-    
+
     /**
      * @param dbName
      * @param colls the collections list as got from getDbCollections()
      * @return the db metadata
-    **/
+    *
+     */
     public static Map<String, Object> getDbMetaData(String dbName, List<String> colls)
     {
         Map<String, Object> metadata = null;
-        
+
         // get metadata collection if exists
         if (colls.contains("@metadata"))
         {
             DBCollection metadatacoll = CollectionDAO.getCollection(dbName, "@metadata");
 
-            // filter out metadata document
             DBObject metadatarow = metadatacoll.findOne(METADATA_QUERY);
-            
+
             metadata = DAOUtils.getDataFromRow(metadatarow, "_id");
+
+            Object createdOn = metadata.get("@created_on");
+            Object etag = metadata.get("@etag");
+
+            if (createdOn != null && ObjectId.isValid("" + createdOn))
+            {
+                ObjectId oid = new ObjectId("" + createdOn);
+
+                metadata.put("@created_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
+            }
+
+            if (etag != null && ObjectId.isValid("" + etag))
+            {
+                ObjectId oid = new ObjectId("" + etag);
+
+                metadata.put("@lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
+            }
         }
-        
-        
+
         return metadata;
     }
-    
+
     /**
      * @param colls the collections list as got from getDbCollections()
      * @param page
@@ -111,12 +129,13 @@ public class DBDAO
      * @param filterBy
      * @param filter
      * @return the db data
-    **/
+    *
+     */
     public static List<Map<String, Object>> getData(List<String> colls, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
         // filter out collection starting with @, e.g. @metadata collection
         List<String> _colls = colls.stream().filter(coll -> !coll.startsWith("@")).collect(Collectors.toList());
-        
+
         // apply page and pagesize
         _colls = _colls.subList((page - 1) * pagesize, (page - 1) * pagesize + pagesize > _colls.size() ? _colls.size() : (page - 1) * pagesize + pagesize);
 
@@ -140,7 +159,7 @@ public class DBDAO
         {
             data.add(item);
         });
-        
+
         return data;
     }
 }
