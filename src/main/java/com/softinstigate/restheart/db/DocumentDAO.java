@@ -16,11 +16,13 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import com.mongodb.WriteResult;
 import com.softinstigate.restheart.utils.HttpStatus;
+import com.softinstigate.restheart.utils.JSONHelper;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import java.time.Instant;
 import java.util.ArrayList;
 import org.bson.types.ObjectId;
@@ -113,7 +115,7 @@ public class DocumentDAO
             else
             {
                 // check the old etag (in case restore the old document version)
-                return optimisticCheckEtag(coll, idQuery, oldDocument, requestEtag);
+                return optimisticCheckEtag(coll, oldDocument, requestEtag);
             }
         }
         else
@@ -122,7 +124,7 @@ public class DocumentDAO
             // we need to put this field back using a second update 
             // it is not possible in a single update even using $setOnInsert update operator
             // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
-            DBObject oldDocument = coll.findAndModify(idQuery, fieldsToReturn, null, false, content, false, true);
+            DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, content, false, true);
 
             if (oldDocument != null)
             {
@@ -140,7 +142,7 @@ public class DocumentDAO
                 coll.update(idQuery, new BasicDBObject("$set", createdContet), true, false);
 
                 // check the old etag (in case restore the old document version)
-                return optimisticCheckEtag(coll, idQuery, oldDocument, requestEtag);
+                return optimisticCheckEtag(coll, oldDocument, requestEtag);
             }
             else
             {
@@ -151,6 +153,85 @@ public class DocumentDAO
 
                 return HttpStatus.SC_CREATED;
             }
+        }
+    }
+
+    /**
+     *
+     *
+     * @param exchange
+     * @param dbName
+     * @param collName
+     * @param content
+     * @param requestEtag
+     * @return the HttpStatus code to retrun
+     */
+    public static int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, DBObject content, ObjectId requestEtag)
+    {
+        DB db = DBDAO.getDB(dbName);
+
+        DBCollection coll = db.getCollection(collName);
+
+        ObjectId timestamp = new ObjectId();
+        Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
+
+        if (content == null)
+        {
+            content = new BasicDBObject();
+        }
+
+        content.put("@etag", timestamp);
+        content.removeField("@created_on"); // make sure we don't change this field
+
+        Object _id = content.get("_id");
+        content.removeField("_id");
+        
+        if (_id == null)
+        {
+            ObjectId id = new ObjectId();
+            content.put("_id", id);
+            
+            coll.insert(content);
+            
+            exchange.getResponseHeaders().add(HttpString.tryFromString("Location"), JSONHelper.getReference(exchange.getRequestURL(), id.toString()).toString());
+        
+            return HttpStatus.SC_CREATED;
+        }
+        
+        BasicDBObject idQuery = new BasicDBObject("_id", getId("" + _id));
+
+        // we use findAndModify to get the @created_on field value from the existing document
+        // we need to put this field back using a second update 
+        // it is not possible in a single update even using $setOnInsert update operator
+        // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
+        DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, content, false, true);
+
+        if (oldDocument != null)
+        {
+            Object oldTimestamp = oldDocument.get("@created_on");
+
+            if (oldTimestamp == null)
+            {
+                oldTimestamp = now.toString();
+                logger.warn("metadata of collection {} had no @created_on field. set to now", coll.getFullName());
+            }
+
+            // need to readd the @created_on field 
+            BasicDBObject createdContet = new BasicDBObject("@created_on", "" + oldTimestamp);
+            createdContet.markAsPartialObject();
+            coll.update(idQuery, new BasicDBObject("$set", createdContet), true, false);
+
+            // check the old etag (in case restore the old document version)
+            return optimisticCheckEtag(coll, oldDocument, requestEtag);
+        }
+        else
+        {
+            // need to readd the @created_on field 
+            BasicDBObject createdContet = new BasicDBObject("@created_on", now.toString());
+            createdContet.markAsPartialObject();
+            coll.update(idQuery, new BasicDBObject("$set", createdContet), true, false);
+
+            return HttpStatus.SC_CREATED;
         }
     }
 
@@ -171,7 +252,7 @@ public class DocumentDAO
         else
         {
             // check the old etag (in case restore the old document version)
-            return optimisticCheckEtag(coll, idQuery, oldDocument, requestEtag);
+            return optimisticCheckEtag(coll, oldDocument, requestEtag);
         }
     }
 
@@ -182,6 +263,9 @@ public class DocumentDAO
 
     private static Object getId(String id)
     {
+        if (id == null)
+            return new ObjectId();
+        
         if (ObjectId.isValid(id))
         {
             return new ObjectId(id);
@@ -193,8 +277,15 @@ public class DocumentDAO
         }
     }
 
-    private static int optimisticCheckEtag(DBCollection coll, DBObject documentIdQuery, DBObject oldDocument, ObjectId requestEtag)
+    private static int optimisticCheckEtag(DBCollection coll, DBObject oldDocument, ObjectId requestEtag)
     {
+        if (requestEtag == null)
+        {
+            logger.warn("the {} header in required", Headers.ETAG);
+            coll.save(oldDocument);
+            return HttpStatus.SC_CONFLICT;
+        }
+        
         Object oldEtag = RequestHelper.getEtagAsObjectId(oldDocument.get("@etag"));
 
         if (oldEtag == null) // well we don't had an etag there so fine

@@ -96,13 +96,6 @@ public class PutDocumentHandler extends PipedHttpHandler
         
         ObjectId etag = RequestHelper.getUpdateEtag(exchange);
         
-        if (etag == null)
-        {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
-            logger.warn("error. you must provide the {} header", Headers.ETAG);
-            return;
-        }
-        
         int SC = DocumentDAO.upsertDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), content, etag, false);
         
         ResponseHelper.endExchange(exchange, SC);

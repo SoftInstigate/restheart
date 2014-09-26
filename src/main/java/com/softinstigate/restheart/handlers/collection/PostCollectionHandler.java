@@ -14,19 +14,19 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.WriteResult;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.CollectionDAO;
+import com.softinstigate.restheart.db.DocumentDAO;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
-import com.softinstigate.restheart.utils.JSONHelper;
 import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
-import java.time.Instant;
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -34,6 +34,8 @@ import org.bson.types.ObjectId;
  */
 public class PostCollectionHandler extends PutCollectionHandler
 {
+    private static final Logger logger = LoggerFactory.getLogger(PostCollectionHandler.class);
+    
     /**
      * Creates a new instance of PostCollectionHandler
      */
@@ -44,8 +46,6 @@ public class PostCollectionHandler extends PutCollectionHandler
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        DBCollection coll = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName());
-
         String _content = ChannelReader.read(exchange.getRequestChannel());
 
         DBObject content;
@@ -70,31 +70,11 @@ public class PostCollectionHandler extends PutCollectionHandler
             return;
         }
         
-        ObjectId timestamp = new ObjectId();
-        Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
+        ObjectId etag = RequestHelper.getUpdateEtag(exchange);
         
-        content.put("@etag", timestamp);
+        int SC = DocumentDAO.upsertDocumentPost(exchange, context.getDBName(), context.getCollectionName(), content, etag);
 
-        Object id = content.get("_id");
-        
-        if (id == null)
-        {
-            id = new ObjectId();
-        }
-
-        BasicDBObject updateQuery = new BasicDBObject("$set", content).append("$setOnInsert", new BasicDBObject("@created_on", now.toString()));
-
-        BasicDBObject updateQuery2 = new BasicDBObject("$setOnInsert", new BasicDBObject("@created_on", now.toString()));
-        updateQuery2.putAll(content);
-        
-        WriteResult wr = coll.update(getIdQuery(id), updateQuery2, true, false);
-        
-        exchange.getResponseHeaders().add(HttpString.tryFromString("Location"), JSONHelper.getReference(exchange.getRequestURL(), id.toString()).toString());
-
-        if (wr.isUpdateOfExisting())
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);
-        else
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_CREATED);
+        ResponseHelper.endExchange(exchange, SC);
     }
     
     private Object getIdFromString(String id)

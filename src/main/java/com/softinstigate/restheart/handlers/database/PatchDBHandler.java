@@ -19,8 +19,13 @@ import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
+import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -28,6 +33,8 @@ import io.undertow.server.HttpServerExchange;
  */
 public class PatchDBHandler extends PipedHttpHandler
 {
+    private static final Logger logger = LoggerFactory.getLogger(PatchDBHandler.class);
+    
     /**
      * Creates a new instance of PatchDBHandler
      */
@@ -78,8 +85,17 @@ public class PatchDBHandler extends PipedHttpHandler
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
             return;
         }
+        
+        ObjectId etag = RequestHelper.getUpdateEtag(exchange);
+        
+        if (etag == null)
+        {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
+            logger.warn("the {} header in required", Headers.ETAG);
+            return;
+        }
 
-        int SC = DBDAO.upsertDB(context.getDBName(), content, true);
+        int SC = DBDAO.upsertDB(context.getDBName(), content, etag, true);
         
         ResponseHelper.endExchange(exchange, SC); 
     }

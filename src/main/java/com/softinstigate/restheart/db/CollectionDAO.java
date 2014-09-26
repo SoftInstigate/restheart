@@ -20,6 +20,7 @@ import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -170,10 +171,11 @@ public class CollectionDAO
      * @param dbName
      * @param collName
      * @param content
+     * @param etag
      * @param patching
      * @return the HttpStatus code to retrun
      */
-    public static int upsertCollection(String dbName, String collName, DBObject content, boolean patching)
+    public static int upsertCollection(String dbName, String collName, DBObject content, ObjectId etag, boolean patching)
     {
         DB db = DBDAO.getDB(dbName);
         
@@ -186,6 +188,23 @@ public class CollectionDAO
             return HttpStatus.SC_NOT_FOUND;
         }
         
+        if (updating)
+        {
+            if (etag == null)
+            {
+                logger.warn("the {} header in required", Headers.ETAG);
+                return HttpStatus.SC_PRECONDITION_FAILED;
+            }
+            
+            BasicDBObject idAndEtagQuery = new BasicDBObject("_id", "@metadata");
+            idAndEtagQuery.append("@etag", etag);
+
+            if (coll.count(idAndEtagQuery) < 1)
+            {
+                return HttpStatus.SC_PRECONDITION_FAILED;
+            }
+        }
+        
         ObjectId timestamp = new ObjectId();
         Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
 
@@ -194,6 +213,8 @@ public class CollectionDAO
             content = new BasicDBObject();
         }
 
+        content.removeField("_id"); // make sure we don't change this field
+        
         if (updating)
         {
             content.removeField("@crated_on"); // don't allow to update this field
@@ -208,7 +229,7 @@ public class CollectionDAO
         
         if (patching)
         {
-            coll.update(METADATA_QUERY, new BasicDBObject("$set", content), false, false);
+            coll.update(METADATA_QUERY, new BasicDBObject("$set", content), true, false);
             return HttpStatus.SC_OK;
         }
         else
@@ -255,51 +276,21 @@ public class CollectionDAO
     {
         DBCollection coll = getCollection(dbName, collName);
         
-        if (!isCollectionEmpty(coll))
-        {
-            return HttpStatus.SC_NOT_ACCEPTABLE;
-        }
+        BasicDBObject checkEtag = new BasicDBObject("_id", "@metadata");
+        checkEtag.append("@etag", requestEtag);
         
-        DBObject metadata = coll.findAndModify(METADATA_QUERY, null, null, true, null, false, false);
-
-        if (metadata != null)
+        DBObject exists = coll.findOne(checkEtag, fieldsToReturn);
+        
+        if (exists == null)
         {
-            // check the old etag (in case restore the old document version)
-            return optimisticCheckEtag(coll, METADATA_QUERY, metadata, requestEtag);
+            return HttpStatus.SC_PRECONDITION_FAILED;
         }
         else
         {
             coll.drop();
-        }
-        
-        return HttpStatus.SC_GONE;
-    }
-
-    private static int optimisticCheckEtag(DBCollection coll, DBObject documentIdQuery, DBObject oldDocument, ObjectId requestEtag)
-    {
-        Object oldEtag = RequestHelper.getEtagAsObjectId(oldDocument.get("@etag"));
-
-        if (oldEtag == null) // well we don't had an etag there so fine
-        {
-            return HttpStatus.SC_OK;
-        }
-        else
-        {
-            if (oldEtag.equals(requestEtag))
-            {
-                coll.drop();
-                return HttpStatus.SC_GONE; // ok they match
-            }
-            else
-            {
-                // oopps, we need to restore old document
-                // they call it optimistic lock strategy
-                coll.save(oldDocument);
-                return HttpStatus.SC_PRECONDITION_FAILED;
-            }
+            return HttpStatus.SC_GONE;
         }
     }
-    
 
     public static ArrayList<DBObject> getDataFromCursor(DBCursor cursor)
     {

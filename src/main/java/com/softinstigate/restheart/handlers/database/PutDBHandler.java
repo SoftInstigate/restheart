@@ -19,8 +19,11 @@ import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,8 +72,11 @@ public class PutDBHandler extends PipedHttpHandler
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
             return;
         }
-
-        int SC = DBDAO.upsertDB(context.getDBName(), content, false);
+        
+        
+        ObjectId etag = RequestHelper.getUpdateEtag(exchange);
+        
+        int SC = DBDAO.upsertDB(context.getDBName(), content, etag, false);
         
         ResponseHelper.endExchange(exchange, SC); 
     }

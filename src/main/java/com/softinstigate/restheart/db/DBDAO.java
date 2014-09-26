@@ -15,12 +15,12 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import com.mongodb.WriteResult;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -178,11 +178,36 @@ public class DBDAO
         return data;
     }
     
-    public static int upsertDB(String dbName, DBObject content, boolean patching)
+    public static int upsertDB(String dbName, DBObject content, ObjectId etag, boolean patching)
     {
         DB db = client.getDB(dbName);
 
         DBCollection coll = db.getCollection("@metadata");
+        
+        boolean existing = db.getCollectionNames().size() > 0;
+        
+        if (patching && !existing)
+        {
+            return HttpStatus.SC_NOT_FOUND;
+        }
+        
+        // check the etag
+        if (db.collectionExists("@metadata"))
+        {
+            if (etag == null)
+            {
+                logger.warn("the {} header in required", Headers.ETAG);
+                return HttpStatus.SC_PRECONDITION_FAILED;
+            }
+            
+            BasicDBObject idAndEtagQuery = new BasicDBObject("_id", "@metadata");
+            idAndEtagQuery.append("@etag", etag);
+
+            if (coll.count(idAndEtagQuery) < 1)
+            {
+                return HttpStatus.SC_PRECONDITION_FAILED;
+            }
+        }
 
         // apply new values
         
@@ -194,15 +219,13 @@ public class DBDAO
         
         content.put("@etag", timestamp);
         content.removeField("@created_on"); // make sure we don't change this field
+        content.removeField("_id"); // make sure we don't change this field
         
         if (patching)
         {
-            WriteResult wr = coll.update(METADATA_QUERY, new BasicDBObject("$set", content), false, false);
+            coll.update(METADATA_QUERY, new BasicDBObject("$set", content), true, false);
             
-            if (wr.getN() == 0)
-                return HttpStatus.SC_NOT_FOUND;
-            else
-                return HttpStatus.SC_OK;
+            return HttpStatus.SC_OK;
         }
         else
         {
@@ -245,31 +268,23 @@ public class DBDAO
     {
         DB db = DBDAO.getDB(dbName);
         
-        List<String> _colls = DBDAO.getDbCollections(db);
-        
-        // count filtering out collection starting with @, e.g. @metadata collection
-        long no = _colls.stream().filter(coll -> (!coll.startsWith("@") && !coll.startsWith("system."))).count();
-        
-        if (no > 0)
-        {
-            return HttpStatus.SC_NOT_ACCEPTABLE;
-        }
         
         DBCollection coll = db.getCollection("@metadata");
         
-        DBObject metadata = coll.findAndModify(METADATA_QUERY, null, null, true, null, false, false);
-
-        if (metadata != null)
+        BasicDBObject checkEtag = new BasicDBObject("_id", "@metadata");
+        checkEtag.append("@etag", requestEtag);
+        
+        DBObject exists = coll.findOne(checkEtag, fieldsToReturn);
+        
+        if (exists == null)
         {
-            // check the old etag (in case restore the old document version)
-            return optimisticCheckEtag(db, coll, METADATA_QUERY, metadata, requestEtag);
+            return HttpStatus.SC_PRECONDITION_FAILED;
         }
         else
         {
             db.dropDatabase();
+            return HttpStatus.SC_GONE;
         }
-        
-        return HttpStatus.SC_GONE;
     }
 
     private static int optimisticCheckEtag(DB db, DBCollection coll, DBObject documentIdQuery, DBObject oldDocument, ObjectId requestEtag)
