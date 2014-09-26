@@ -49,7 +49,10 @@ public class GetCollectionHandler extends GetHandler
         
         List<Map<String, Object>> data = CollectionDAO.getCollectionData(coll, page, pagesize, sortBy, filterBy, filter);
         
-        long size = CollectionDAO.getCollectionSize(coll);
+        long size = -1;
+        
+        if (exchange.getQueryParameters().containsKey("count"))
+            size = CollectionDAO.getCollectionSize(coll);
 
         return generateCollectionContent(exchange, metadata, data, page, pagesize, size, sortBy, filterBy, filter);
     }

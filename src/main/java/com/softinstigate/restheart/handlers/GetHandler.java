@@ -41,6 +41,7 @@ public abstract class GetHandler extends PipedHttpHandler
 
     /**
      * Creates a new instance of EntityResource
+     *
      * @param next
      */
     public GetHandler(PipedHttpHandler next)
@@ -96,8 +97,10 @@ public abstract class GetHandler extends PipedHttpHandler
         String content = generateContent(exchange, context, page, pagesize, sortBy, filterBy, filter);
 
         if (content == null) // null if doc not exists. exchange already closed by generateContent
+        {
             return;
-        
+        }
+
         /**
          * TODO according to http specifications, Content-Type accepts one
          * single value however we specify two, to allow some browsers (i.e.
@@ -122,24 +125,34 @@ public abstract class GetHandler extends PipedHttpHandler
      * @param data
      * @param page
      * @param pagesize
-     * @param size
-     * @param sortBy
-     * @param filterBy
+     * @param size if < 0, don't include size in metadata @param sortBy @param
+     * f
+     * ilterBy
      * @param filter
      * @return
      */
     protected String generateCollectionContent(HttpServerExchange exchange, Map<String, Object> metadata, List<Map<String, Object>> data, int page, int pagesize, long size, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
-        String baseUrl = exchange.getRequestURL(); 
+        String baseUrl = exchange.getRequestURL();
         String queryString = exchange.getQueryString();
-        
-        // *** arguments check
 
-        float _size = size + 0f;
-        float _pagesieze = pagesize + 0f;
-        
-        long total_pages = Math.max(1, Math.round(Math.nextUp(_size / _pagesieze)));
-        
+        // *** arguments check
+        long total_pages = -1;
+
+        if (size > 0)
+        {
+
+            float _size = size + 0f;
+            float _pagesize = pagesize + 0f;
+
+            total_pages = Math.max(1, Math.round(Math.nextUp(_size / _pagesize)));
+
+            if (page > total_pages)
+            {
+                throw new IllegalArgumentException("illegal argument, page is bigger that total pages which is " + total_pages);
+            }
+        }
+
         if (pagesize < 1 || pagesize > 1000)
         {
             throw new IllegalArgumentException("illegal argument, pagesize must be > 0 and <= 1000");
@@ -150,38 +163,40 @@ public abstract class GetHandler extends PipedHttpHandler
             throw new IllegalArgumentException("illegal argument, page must be > 0");
         }
 
-        if (page > total_pages)
-        {
-            throw new IllegalArgumentException("illegal argument, page is bigger that total pages which is " + total_pages);
-        }
-
         // *** data items
-        
         List<Map<String, Object>> embedded = data.stream().filter((props) -> props.keySet().stream().anyMatch((k) -> k.equals("id") || k.equals("_id"))).collect(Collectors.toList());
-        
-        // *** links
 
+        // *** links
         boolean includepagesize = pagesize != 100;
 
         TreeMap<String, URI> links = new TreeMap<>();
-        
+
         try
         {
             if (queryString == null || queryString.isEmpty())
-                links.put("self" , new URI(baseUrl));
-            else
-                links.put("self" , new URI(baseUrl + "?" + queryString));
-            
-            links.put("first" , new URI(baseUrl + (includepagesize ? "?pagesize=" + pagesize : "")));
-
-            if (page < total_pages)
             {
-                links.put("next", new URI(baseUrl + "?page=" + (page + 1) + (includepagesize ? "&pagesize=" + pagesize : "")));
-                links.put("last", new URI(baseUrl + (total_pages != 1 ? "?page=" + total_pages : "") + (total_pages != 1 && includepagesize ? "&" : "?") + (includepagesize ? "pagesize=" + pagesize : "")));
+                links.put("self", new URI(baseUrl));
             }
             else
             {
-                links.put("last", new URI(baseUrl + (includepagesize ? "?pagesize=" + pagesize : "")));
+                links.put("self", new URI(baseUrl + "?" + queryString));
+            }
+
+            links.put("first", new URI(baseUrl + (includepagesize ? "?pagesize=" + pagesize : "")));
+
+            links.put("next", new URI(baseUrl + "?page=" + (page + 1) + (includepagesize ? "&pagesize=" + pagesize : "")));
+
+            if (total_pages > 0)
+            {
+                if (page < total_pages)
+                {
+                    links.put("last", new URI(baseUrl + (total_pages != 1 ? "?page=" + total_pages : "") + (total_pages != 1 && includepagesize ? "&" : "?") + (includepagesize ? "pagesize=" + pagesize : "")));
+
+                }
+                else
+                {
+                    links.put("last", new URI(baseUrl + (includepagesize ? "?pagesize=" + pagesize : "")));
+                }
             }
 
             if (page > 1)
@@ -203,14 +218,20 @@ public abstract class GetHandler extends PipedHttpHandler
         Map<String, Object> properties = new TreeMap<>();
 
         long count = data.stream().filter((props) -> props.keySet().stream().anyMatch((k) -> k.equals("id") || k.equals("_id"))).count();
-        
+
         properties.put("@returned", "" + count);
-        properties.put("@size", "" + size);
+        if (size > 0)
+        {
+            properties.put("@size", "" + size);
+            properties.put("@total_pages", "" + total_pages);
+        }
+
         properties.put("@current_page", "" + page);
-        properties.put("@total_pages", "" + total_pages);
-        
+
         if (metadata != null)
+        {
             properties.putAll(metadata);
+        }
 
         if (sortBy != null && !sortBy.isEmpty())
         {
@@ -226,7 +247,7 @@ public abstract class GetHandler extends PipedHttpHandler
         {
             properties.put("filter", "" + filter);
         }
-        
+
         // inject etag header from metadata
         ResponseHelper.injectEtagHeader(exchange, metadata);
 
@@ -235,19 +256,22 @@ public abstract class GetHandler extends PipedHttpHandler
 
     protected String generateDocumentContent(HttpServerExchange exchange, Map<String, Object> data)
     {
-        String baseUrl = exchange.getRequestURL(); 
+        String baseUrl = exchange.getRequestURL();
         String queryString = exchange.getQueryString();
-        
-        // *** links
 
+        // *** links
         TreeMap<String, URI> links = new TreeMap<>();
-        
+
         try
         {
             if (queryString == null || queryString.isEmpty())
-                links.put("self" , new URI(baseUrl));
+            {
+                links.put("self", new URI(baseUrl));
+            }
             else
-                links.put("self" , new URI(baseUrl + "?" + queryString));
+            {
+                links.put("self", new URI(baseUrl + "?" + queryString));
+            }
         }
         catch (URISyntaxException ex)
         {
@@ -259,7 +283,7 @@ public abstract class GetHandler extends PipedHttpHandler
 
         // *** templates
         logger.debug("templates not yet implemented");
-        
+
         // inject etag header from metadata
         ResponseHelper.injectEtagHeader(exchange, data);
 
