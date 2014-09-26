@@ -18,6 +18,7 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.WriteResult;
 import com.softinstigate.restheart.utils.HttpStatus;
+import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
@@ -78,10 +79,11 @@ public class DocumentDAO
      * @param collName
      * @param documentId
      * @param content
+     * @param requestEtag
      * @param patching
      * @return the HttpStatus code to retrun
      */
-    public static int upsertDocument(String dbName, String collName, String documentId, DBObject content, boolean patching)
+    public static int upsertDocument(String dbName, String collName, String documentId, DBObject content, ObjectId requestEtag, boolean patching)
     {
         DB db = DBDAO.getDB(dbName);
 
@@ -99,15 +101,20 @@ public class DocumentDAO
         content.removeField("@created_on"); // make sure we don't change this field
 
         BasicDBObject idQuery = new BasicDBObject("_id", getId(documentId));
-        
+
         if (patching)
         {
-            WriteResult wr = coll.update(idQuery, new BasicDBObject("$set", content), false, false);
-            
-            if (wr.getN() == 0)
+            DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, new BasicDBObject("$set", content), false, false);
+
+            if (oldDocument == null)
+            {
                 return HttpStatus.SC_NOT_FOUND;
+            }
             else
-                return HttpStatus.SC_OK;
+            {
+                // check the old etag (in case restore the old document version)
+                return optimisticCheckEtag(coll, idQuery, oldDocument, requestEtag);
+            }
         }
         else
         {
@@ -115,11 +122,11 @@ public class DocumentDAO
             // we need to put this field back using a second update 
             // it is not possible in a single update even using $setOnInsert update operator
             // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
-            DBObject old = coll.findAndModify(idQuery, fieldsToReturn, null, false, content, false, true);
+            DBObject oldDocument = coll.findAndModify(idQuery, fieldsToReturn, null, false, content, false, true);
 
-            if (old != null)
+            if (oldDocument != null)
             {
-                Object oldTimestamp = old.get("@created_on");
+                Object oldTimestamp = oldDocument.get("@created_on");
 
                 if (oldTimestamp == null)
                 {
@@ -131,8 +138,9 @@ public class DocumentDAO
                 BasicDBObject createdContet = new BasicDBObject("@created_on", "" + oldTimestamp);
                 createdContet.markAsPartialObject();
                 coll.update(idQuery, new BasicDBObject("$set", createdContet), true, false);
-                
-                return HttpStatus.SC_OK;
+
+                // check the old etag (in case restore the old document version)
+                return optimisticCheckEtag(coll, idQuery, oldDocument, requestEtag);
             }
             else
             {
@@ -140,7 +148,7 @@ public class DocumentDAO
                 BasicDBObject createdContet = new BasicDBObject("@created_on", now.toString());
                 createdContet.markAsPartialObject();
                 coll.update(idQuery, new BasicDBObject("$set", createdContet), true, false);
-                
+
                 return HttpStatus.SC_CREATED;
             }
         }
@@ -161,6 +169,30 @@ public class DocumentDAO
         {
             // the id is not an object id
             return id;
+        }
+    }
+
+    private static int optimisticCheckEtag(DBCollection coll, DBObject documentIdQuery, DBObject oldDocument, ObjectId requestEtag)
+    {
+        Object oldEtag = RequestHelper.getEtagAsObjectId(oldDocument.get("@etag"));
+
+        if (oldEtag == null) // well we don't had an etag there so fine
+        {
+            return HttpStatus.SC_OK;
+        }
+        else
+        {
+            if (oldEtag.equals(requestEtag))
+            {
+                return HttpStatus.SC_OK; // ok they match
+            }
+            else
+            {
+                // oopps, we need to restore old document
+                // they call it optimistic lock strategy
+                coll.update(documentIdQuery, oldDocument);
+                return HttpStatus.SC_PRECONDITION_FAILED;
+            }
         }
     }
 }

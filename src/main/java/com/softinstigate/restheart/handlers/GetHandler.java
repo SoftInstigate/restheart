@@ -228,7 +228,7 @@ public abstract class GetHandler extends PipedHttpHandler
         }
         
         // inject etag header from metadata
-        injectEtagHeader(exchange, metadata);
+        ResponseHelper.injectEtagHeader(exchange, metadata);
 
         return JSONHelper.getCollectionHal(baseUrl, properties, links, embedded).toString();
     }
@@ -261,33 +261,8 @@ public abstract class GetHandler extends PipedHttpHandler
         logger.debug("templates not yet implemented");
         
         // inject etag header from metadata
-        injectEtagHeader(exchange, data);
+        ResponseHelper.injectEtagHeader(exchange, data);
 
         return JSONHelper.getDocumentHal(baseUrl, data, links).toString();
-    }
-    
-    protected static boolean checkEtagHeader(HttpServerExchange exchange, String etag)
-    {
-        if (etag == null)
-            return false;
-        
-        HeaderValues vs = exchange.getRequestHeaders().get(Headers.IF_NONE_MATCH);
-        
-        return (vs == null || vs.getFirst() == null) ? false : vs.getFirst().equals(etag);
-    }
-    
-    protected static void injectEtagHeader(HttpServerExchange exchange, Map<String, Object> metadata)
-    {
-        if (metadata == null)
-            return;
-        
-        Object _etag = metadata.get("@etag");
-        
-        if (ObjectId.isValid("" + _etag))
-        {
-            ObjectId etag = (ObjectId) _etag;
-            
-            exchange.getResponseHeaders().put(Headers.ETAG, etag.toString());
-        }
     }
 }

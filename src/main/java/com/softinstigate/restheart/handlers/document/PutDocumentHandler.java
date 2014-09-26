@@ -21,8 +21,10 @@ import com.softinstigate.restheart.handlers.collection.PutCollectionHandler;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,7 +94,16 @@ public class PutDocumentHandler extends PipedHttpHandler
             return;
         }
         
-        int SC = DocumentDAO.upsertDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), content, false);
+        ObjectId etag = RequestHelper.getUpdateEtag(exchange);
+        
+        if (etag == null)
+        {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
+            logger.warn("PATCH error. you must provide the {} header", Headers.ETAG);
+            return;
+        }
+        
+        int SC = DocumentDAO.upsertDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), content, etag, false);
         
         ResponseHelper.endExchange(exchange, SC);
     }

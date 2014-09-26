@@ -15,6 +15,8 @@ import io.undertow.util.Headers;
 import io.undertow.util.Methods;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Map;
+import org.bson.types.ObjectId;
 
 /**
  *
@@ -60,5 +62,20 @@ public class ResponseHelper
         }
 
         exchange.endExchange();
+    }
+    
+    public static void injectEtagHeader(HttpServerExchange exchange, Map<String, Object> metadata)
+    {
+        if (metadata == null)
+            return;
+        
+        Object _etag = metadata.get("@etag");
+        
+        if (ObjectId.isValid("" + _etag))
+        {
+            ObjectId etag = (ObjectId) _etag;
+            
+            exchange.getResponseHeaders().put(Headers.ETAG, etag.toString());
+        }
     }
 }

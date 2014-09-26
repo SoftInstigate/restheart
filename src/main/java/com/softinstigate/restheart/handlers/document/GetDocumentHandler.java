@@ -17,6 +17,7 @@ import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.handlers.GetHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
@@ -89,7 +90,7 @@ public class GetDocumentHandler extends GetHandler
             document.put("@lastupdated_on", Instant.ofEpochSecond(_etag.getTimestamp()).toString());
             
             // in case the request contains the IF_NONE_MATCH header with the current etag value, just return 304 NOT_MODIFIED code
-            if (checkEtagHeader(exchange, etag.toString()))
+            if (RequestHelper.checkReadEtag(exchange, etag.toString()))
             {
                 ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_MODIFIED);
                 return null;
