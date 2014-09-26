@@ -10,8 +10,6 @@
  */
 package com.softinstigate.restheart.handlers.document;
 
-import com.mongodb.DBCollection;
-import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.db.DocumentDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
@@ -43,23 +41,6 @@ public class DeleteDocumentHandler extends PipedHttpHandler
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        DBCollection coll = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName());
-        
-        ObjectId oid;
-        String   sid;
-        
-        try
-        {
-            oid = new ObjectId(context.getDocumentId());
-            sid = null;
-        }
-        catch(IllegalArgumentException ex)
-        {
-            // the id is not an object id
-            sid = context.getDocumentId();
-            oid = null;
-        }
-        
         ObjectId etag = RequestHelper.getUpdateEtag(exchange);
         
         if (etag == null)

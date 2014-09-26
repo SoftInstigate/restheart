@@ -10,13 +10,17 @@
  */
 package com.softinstigate.restheart.handlers.collection;
 
-import com.mongodb.DBCollection;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
+import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -24,6 +28,7 @@ import io.undertow.server.HttpServerExchange;
  */
 public class DeleteCollectionHandler extends PipedHttpHandler
 {
+    private static final Logger logger = LoggerFactory.getLogger(DeleteCollectionHandler.class);
     /**
      * Creates a new instance of EntityResource
      */
@@ -35,17 +40,15 @@ public class DeleteCollectionHandler extends PipedHttpHandler
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        DBCollection coll = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName());
+        ObjectId etag = RequestHelper.getUpdateEtag(exchange);
         
-        if (CollectionDAO.isCollectionEmpty(coll))
+        if (etag == null)
         {
-            CollectionDAO.dropCollection(coll);
-
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_GONE);
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
+            logger.warn("error. you must provide the {} header", Headers.ETAG);
+            return;
         }
-        else
-        {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
-        }
+        
+        ResponseHelper.endExchange(exchange, CollectionDAO.deleteCollection(context.getDBName(), context.getCollectionName(), etag));
     }
 }

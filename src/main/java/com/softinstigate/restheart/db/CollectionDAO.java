@@ -17,11 +17,13 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.utils.HttpStatus;
+import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.bson.types.ObjectId;
@@ -147,6 +149,9 @@ public class CollectionDAO
     {
         Map<String, Object> metadata = DAOUtils.getDataFromRow(coll.findOne(METADATA_QUERY), "_id");
 
+        if (metadata == null)
+            metadata = new HashMap<>();
+        
         Object etag = metadata.get("@etag");
 
         if (etag != null && ObjectId.isValid("" + etag))
@@ -245,6 +250,56 @@ public class CollectionDAO
             }
         }
     }
+    
+    public static int deleteCollection(String dbName, String collName, ObjectId requestEtag)
+    {
+        DBCollection coll = getCollection(dbName, collName);
+        
+        if (!isCollectionEmpty(coll))
+        {
+            return HttpStatus.SC_NOT_ACCEPTABLE;
+        }
+        
+        DBObject metadata = coll.findAndModify(METADATA_QUERY, null, null, true, null, false, false);
+
+        if (metadata != null)
+        {
+            // check the old etag (in case restore the old document version)
+            return optimisticCheckEtag(coll, METADATA_QUERY, metadata, requestEtag);
+        }
+        else
+        {
+            coll.drop();
+        }
+        
+        return HttpStatus.SC_GONE;
+    }
+
+    private static int optimisticCheckEtag(DBCollection coll, DBObject documentIdQuery, DBObject oldDocument, ObjectId requestEtag)
+    {
+        Object oldEtag = RequestHelper.getEtagAsObjectId(oldDocument.get("@etag"));
+
+        if (oldEtag == null) // well we don't had an etag there so fine
+        {
+            return HttpStatus.SC_OK;
+        }
+        else
+        {
+            if (oldEtag.equals(requestEtag))
+            {
+                coll.drop();
+                return HttpStatus.SC_GONE; // ok they match
+            }
+            else
+            {
+                // oopps, we need to restore old document
+                // they call it optimistic lock strategy
+                coll.save(oldDocument);
+                return HttpStatus.SC_PRECONDITION_FAILED;
+            }
+        }
+    }
+    
 
     public static ArrayList<DBObject> getDataFromCursor(DBCursor cursor)
     {

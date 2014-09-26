@@ -18,12 +18,14 @@ import com.mongodb.MongoClient;
 import com.mongodb.WriteResult;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -110,6 +112,11 @@ public class DBDAO
 
             metadata = DAOUtils.getDataFromRow(metadatarow, "_id");
 
+            if (metadata == null)
+            {
+                metadata = new HashMap<>();
+            }
+            
             Object etag = metadata.get("@etag");
 
             if (etag != null && ObjectId.isValid("" + etag))
@@ -230,6 +237,64 @@ public class DBDAO
                 coll.update(METADATA_QUERY, new BasicDBObject("$set", createdContet), true, false);
                 
                 return HttpStatus.SC_CREATED;
+            }
+        }
+    }
+    
+    public static int deleteDB(String dbName, ObjectId requestEtag)
+    {
+        DB db = DBDAO.getDB(dbName);
+        
+        List<String> _colls = DBDAO.getDbCollections(db);
+        
+        // count filtering out collection starting with @, e.g. @metadata collection
+        long no = _colls.stream().filter(coll -> (!coll.startsWith("@") && !coll.startsWith("system."))).count();
+        
+        if (no > 0)
+        {
+            return HttpStatus.SC_NOT_ACCEPTABLE;
+        }
+        
+        DBCollection coll = db.getCollection("@metadata");
+        
+        DBObject metadata = coll.findAndModify(METADATA_QUERY, null, null, true, null, false, false);
+
+        if (metadata != null)
+        {
+            // check the old etag (in case restore the old document version)
+            return optimisticCheckEtag(db, coll, METADATA_QUERY, metadata, requestEtag);
+        }
+        else
+        {
+            db.dropDatabase();
+        }
+        
+        return HttpStatus.SC_GONE;
+    }
+
+    private static int optimisticCheckEtag(DB db, DBCollection coll, DBObject documentIdQuery, DBObject oldDocument, ObjectId requestEtag)
+    {
+        Object oldEtag = RequestHelper.getEtagAsObjectId(oldDocument.get("@etag"));
+
+        if (oldEtag == null) // well we don't had an etag there so fine
+        {
+            db.dropDatabase();
+            return HttpStatus.SC_OK;
+        }
+        else
+        {
+            if (oldEtag.equals(requestEtag))
+            {
+                db.dropDatabase();
+                return HttpStatus.SC_GONE; // ok they match
+                
+            }
+            else
+            {
+                // oopps, we need to restore old document
+                // they call it optimistic lock strategy
+                coll.save(oldDocument);
+                return HttpStatus.SC_PRECONDITION_FAILED;
             }
         }
     }

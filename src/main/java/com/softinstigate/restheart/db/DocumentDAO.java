@@ -211,7 +211,7 @@ public class DocumentDAO
             {
                 // oopps, we need to restore old document
                 // they call it optimistic lock strategy
-                coll.update(documentIdQuery, oldDocument);
+                coll.save(oldDocument);
                 return HttpStatus.SC_PRECONDITION_FAILED;
             }
         }

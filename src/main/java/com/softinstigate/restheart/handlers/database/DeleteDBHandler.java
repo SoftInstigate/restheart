@@ -15,9 +15,14 @@ import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import java.util.List;
+import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -25,6 +30,8 @@ import java.util.List;
  */
 public class DeleteDBHandler extends PipedHttpHandler
 {
+    private static final Logger logger = LoggerFactory.getLogger(DeleteDBHandler.class);
+    
     /**
      * Creates a new instance of EntityResource
      */
@@ -36,22 +43,15 @@ public class DeleteDBHandler extends PipedHttpHandler
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        DB db = DBDAO.getDB(context.getDBName());
+        ObjectId etag = RequestHelper.getUpdateEtag(exchange);
         
-        List<String> _colls = DBDAO.getDbCollections(db);
-        
-        // count filtering out collection starting with @, e.g. @metadata collection
-        long no = _colls.stream().filter(coll -> (!coll.startsWith("@") && !coll.startsWith("system."))).count();
-        
-        if (no > 0)
+        if (etag == null)
         {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
+            logger.warn("error. you must provide the {} header", Headers.ETAG);
+            return;
         }
-        else
-        {
-            db.dropDatabase();
-            
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_GONE);
-        }
+        
+        ResponseHelper.endExchange(exchange, DBDAO.deleteDB(context.getDBName(), etag));
     }
 }
