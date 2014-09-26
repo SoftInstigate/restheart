@@ -81,6 +81,6 @@ public class GetRootHandler extends GetHandler
                 }
         ).forEach((item) -> { data.add(item); });
 
-        return generateCollectionContent(exchange.getRequestURL(), exchange.getQueryString(), null, data, page, pagesize, size, sortBy, filterBy, filter);
+        return generateCollectionContent(exchange, null, data, page, pagesize, size, sortBy, filterBy, filter);
     }
 }

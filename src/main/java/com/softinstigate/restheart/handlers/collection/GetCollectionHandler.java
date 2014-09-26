@@ -13,7 +13,9 @@ package com.softinstigate.restheart.handlers.collection;
 import com.mongodb.DBCollection;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.handlers.GetHandler;
+import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 import java.util.List;
@@ -44,10 +46,19 @@ public class GetCollectionHandler extends GetHandler
 
         Map<String, Object> metadata = CollectionDAO.getCollectionMetadata(coll);
         
+        Object etag = metadata.get("@etag");
+        
+        // in case the request contains the IF_NONE_MATCH header with the current etag value, just return 304 NOT_MODIFIED code
+        if (etag != null && checkEtagHeader(exchange, etag.toString()))
+        {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_MODIFIED);
+            return null;
+        }
+        
         List<Map<String, Object>> data = CollectionDAO.getCollectionData(coll, page, pagesize, sortBy, filterBy, filter);
         
         long size = CollectionDAO.getCollectionSize(coll);
 
-        return generateCollectionContent(exchange.getRequestURL(), exchange.getQueryString(), metadata, data, page, pagesize, size, sortBy, filterBy, filter);
+        return generateCollectionContent(exchange, metadata, data, page, pagesize, size, sortBy, filterBy, filter);
     }
 }

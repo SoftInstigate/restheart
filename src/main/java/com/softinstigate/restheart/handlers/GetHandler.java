@@ -10,13 +10,12 @@
  */
 package com.softinstigate.restheart.handlers;
 
-import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.JSONHelper;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -26,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,8 +117,7 @@ public abstract class GetHandler extends PipedHttpHandler
     /**
      * generic helper method for generating response body
      *
-     * @param baseUrl
-     * @param queryString
+     * @param exchange
      * @param metadata
      * @param data
      * @param page
@@ -129,8 +128,11 @@ public abstract class GetHandler extends PipedHttpHandler
      * @param filter
      * @return
      */
-    protected String generateCollectionContent(String baseUrl, String queryString, Map<String, Object> metadata, List<Map<String, Object>> data, int page, int pagesize, long size, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
+    protected String generateCollectionContent(HttpServerExchange exchange, Map<String, Object> metadata, List<Map<String, Object>> data, int page, int pagesize, long size, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
+        String baseUrl = exchange.getRequestURL(); 
+        String queryString = exchange.getQueryString();
+        
         // *** arguments check
 
         float _size = size + 0f;
@@ -224,12 +226,18 @@ public abstract class GetHandler extends PipedHttpHandler
         {
             properties.put("filter", "" + filter);
         }
+        
+        // inject etag header from metadata
+        injectEtagHeader(exchange, metadata);
 
         return JSONHelper.getCollectionHal(baseUrl, properties, links, embedded).toString();
     }
 
-    protected String generateDocumentContent(String baseUrl, String queryString, Map<String, Object> data)
+    protected String generateDocumentContent(HttpServerExchange exchange, Map<String, Object> data)
     {
+        String baseUrl = exchange.getRequestURL(); 
+        String queryString = exchange.getQueryString();
+        
         // *** links
 
         TreeMap<String, URI> links = new TreeMap<>();
@@ -251,9 +259,35 @@ public abstract class GetHandler extends PipedHttpHandler
 
         // *** templates
         logger.debug("templates not yet implemented");
+        
+        // inject etag header from metadata
+        injectEtagHeader(exchange, data);
 
         return JSONHelper.getDocumentHal(baseUrl, data, links).toString();
     }
     
+    protected static boolean checkEtagHeader(HttpServerExchange exchange, String etag)
+    {
+        if (etag == null)
+            return false;
+        
+        HeaderValues vs = exchange.getRequestHeaders().get(Headers.IF_NONE_MATCH);
+        
+        return (vs == null || vs.getFirst() == null) ? false : vs.getFirst().equals(etag);
+    }
     
+    protected static void injectEtagHeader(HttpServerExchange exchange, Map<String, Object> metadata)
+    {
+        if (metadata == null)
+            return;
+        
+        Object _etag = metadata.get("@etag");
+        
+        if (ObjectId.isValid("" + _etag))
+        {
+            ObjectId etag = (ObjectId) _etag;
+            
+            exchange.getResponseHeaders().put(Headers.ETAG, etag.toString());
+        }
+    }
 }

@@ -12,10 +12,13 @@ package com.softinstigate.restheart.handlers.database;
 
 import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.handlers.GetHandler;
+import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +43,19 @@ public class GetDBHandler extends GetHandler
     {
         List<String> colls = DBDAO.getDbCollections(DBDAO.getDB(context.getDBName()));
         
-        return generateCollectionContent(exchange.getRequestURL(), exchange.getQueryString(), DBDAO.getDbMetaData(context.getDBName(), colls), DBDAO.getData(context.getDBName(), colls, page, pagesize, sortBy, filterBy, filter), page, pagesize, DBDAO.getDBSize(colls), sortBy, filterBy, filter);
+        Map<String, Object> metadata = DBDAO.getDbMetaData(context.getDBName(), colls);
+        
+        Object etag = metadata.get("@etag");
+        
+        // in case the request contains the IF_NONE_MATCH header with the current etag value, just return 304 NOT_MODIFIED code
+        if (etag != null && checkEtagHeader(exchange, etag.toString()))
+        {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_MODIFIED);
+            return null;
+        }
+        
+        List<Map<String, Object>> data = DBDAO.getData(context.getDBName(), colls, page, pagesize, sortBy, filterBy, filter);
+        
+        return generateCollectionContent(exchange, metadata, data, page, pagesize, DBDAO.getDBSize(colls), sortBy, filterBy, filter);
     }
 }

@@ -87,6 +87,13 @@ public class GetDocumentHandler extends GetHandler
             ObjectId _etag = new ObjectId("" + etag);
             
             document.put("@lastupdated_on", Instant.ofEpochSecond(_etag.getTimestamp()).toString());
+            
+            // in case the request contains the IF_NONE_MATCH header with the current etag value, just return 304 NOT_MODIFIED code
+            if (checkEtagHeader(exchange, etag.toString()))
+            {
+                ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_MODIFIED);
+                return null;
+            }
         }
         
         Map<String, Object> item = new TreeMap<>();
@@ -107,6 +114,6 @@ public class GetDocumentHandler extends GetHandler
             item.put(key, obj);
         });
 
-        return generateDocumentContent(exchange.getRequestURL(), exchange.getQueryString(), item);
+        return generateDocumentContent(exchange, item);
     }
 }
