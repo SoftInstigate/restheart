@@ -47,15 +47,6 @@ public class GetCollectionHandler extends GetHandler
 
         Map<String, Object> metadata = CollectionDAO.getCollectionMetadata(coll);
         
-        Object etag = metadata.get("@etag");
-        
-        // in case the request contains the IF_NONE_MATCH header with the current etag value, just return 304 NOT_MODIFIED code
-        if (etag != null && RequestHelper.checkReadEtag(exchange, etag.toString()))
-        {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_MODIFIED);
-            return null;
-        }
-        
         List<Map<String, Object>> data = CollectionDAO.getCollectionData(coll, page, pagesize, sortBy, filterBy, filter);
         
         long size = CollectionDAO.getCollectionSize(coll);

@@ -46,15 +46,6 @@ public class GetDBHandler extends GetHandler
         
         Map<String, Object> metadata = DBDAO.getDbMetaData(context.getDBName(), colls);
         
-        Object etag = metadata.get("@etag");
-        
-        // in case the request contains the IF_NONE_MATCH header with the current etag value, just return 304 NOT_MODIFIED code
-        if (etag != null && RequestHelper.checkReadEtag(exchange, etag.toString()))
-        {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_MODIFIED);
-            return null;
-        }
-        
         List<Map<String, Object>> data = DBDAO.getData(context.getDBName(), colls, page, pagesize, sortBy, filterBy, filter);
         
         return generateCollectionContent(exchange, metadata, data, page, pagesize, DBDAO.getDBSize(colls), sortBy, filterBy, filter);
