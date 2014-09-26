@@ -11,13 +11,10 @@
 package com.softinstigate.restheart.handlers.collection;
 
 import com.mongodb.BasicDBList;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.CollectionDAO;
-import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
@@ -55,11 +52,9 @@ public class PutCollectionHandler extends PipedHttpHandler
             return;
         }
         
-        DB db = DBDAO.getDB(context.getDBName());
-
         String _content = ChannelReader.read(exchange.getRequestChannel());
 
-        DBObject content = null;
+        DBObject content;
 
         try
         {
@@ -78,15 +73,8 @@ public class PutCollectionHandler extends PipedHttpHandler
             return;
         }
 
-        boolean updating = CollectionDAO.doesCollectionExist(context.getDBName(), context.getCollectionName());
+        int SC = CollectionDAO.upsertCollection(context.getDBName(), context.getCollectionName(), content, false);
         
-        DBCollection coll = db.getCollection(context.getCollectionName());
-
-        CollectionDAO.upsertCollection(coll, content, updating);
-
-        if (updating)
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);
-        else
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_CREATED);
+        ResponseHelper.endExchange(exchange, SC);
     }
 }

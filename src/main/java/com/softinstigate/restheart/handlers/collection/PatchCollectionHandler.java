@@ -78,8 +78,8 @@ public class PatchCollectionHandler extends PipedHttpHandler
             return;
         }
         
-        CollectionDAO.upsertCollection(CollectionDAO.getCollection(context.getDBName(), context.getCollectionName()), content, true);
+        int SC = CollectionDAO.upsertCollection(context.getDBName(), context.getCollectionName(), content, true);
         
-        ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);
+        ResponseHelper.endExchange(exchange, SC);
     }
 }

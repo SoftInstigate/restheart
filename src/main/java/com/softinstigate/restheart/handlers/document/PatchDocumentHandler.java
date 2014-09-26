@@ -11,12 +11,10 @@
 package com.softinstigate.restheart.handlers.document;
 
 import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
-import com.softinstigate.restheart.db.CollectionDAO;
+import com.softinstigate.restheart.db.DocumentDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
@@ -25,6 +23,8 @@ import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.nio.charset.Charset;
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -32,6 +32,8 @@ import org.bson.types.ObjectId;
  */
 public class PatchDocumentHandler extends PipedHttpHandler
 {
+    private static final Logger logger = LoggerFactory.getLogger(PatchDocumentHandler.class);
+    
     final Charset charset = Charset.forName("utf-8");  
 
     /**
@@ -45,8 +47,6 @@ public class PatchDocumentHandler extends PipedHttpHandler
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        DBCollection coll = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName());
-        
         String _content = ChannelReader.read(exchange.getRequestChannel());
 
         DBObject content;
@@ -74,39 +74,35 @@ public class PatchDocumentHandler extends PipedHttpHandler
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
             return;
         }
-
+        
         String id = context.getDocumentId();
         
-        if (coll.count(getIdQuery(id)) != 1)
+        if (content.get("_id") == null) 
         {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
+            content.put("_id", getId(id));
+        }
+        else if (!content.get("_id").equals(id))
+        {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
+            logger.warn("PATCH not acceptable: _id in content body is different than id in URL");
             return;
         }
-        
-        content.markAsPartialObject();
-        
-        content.put("@etag", new ObjectId());
-        
-        coll.update(getIdQuery(id), new BasicDBObject("$set", content), true, false);
 
-        ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);
+        int SC = DocumentDAO.upsertDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), content, true);
+        
+        ResponseHelper.endExchange(exchange, SC);
     }
     
-    private Object getId(String id)
+    private static Object getId(String id)
     {
-        try
+        if (ObjectId.isValid(id))
         {
             return new ObjectId(id);
         }
-        catch(IllegalArgumentException ex)
+        else
         {
             // the id is not an object id
             return id;
         }
-    }
-    
-    private BasicDBObject getIdQuery(String id)
-    {
-        return new BasicDBObject("_id", getId(id));
     }
 }

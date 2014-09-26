@@ -11,22 +11,16 @@
 package com.softinstigate.restheart.handlers.database;
 
 import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.DBDAO;
-import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import org.bson.types.ObjectId;
 
 /**
  *
@@ -34,8 +28,6 @@ import org.bson.types.ObjectId;
  */
 public class PatchDBHandler extends PipedHttpHandler
 {
-    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-
     /**
      * Creates a new instance of EntityResource
      */
@@ -87,17 +79,8 @@ public class PatchDBHandler extends PipedHttpHandler
             return;
         }
 
-        DB db = DBDAO.getDB(context.getDBName());
-
-        DBCollection coll = db.getCollection("@metadata");
-
-        // apply new values
+        int SC = DBDAO.upsertDB(context.getDBName(), content, true);
         
-        content.put("@etag", new ObjectId());
-        content.markAsPartialObject();
-        
-        coll.update(DBDAO.METADATA_QUERY, new BasicDBObject("$set", content), true, false);
-
-        ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);
+        ResponseHelper.endExchange(exchange, SC); 
     }
 }

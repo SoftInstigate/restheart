@@ -82,22 +82,6 @@ public class GetDocumentHandler extends GetHandler
         
         Object etag = document.get("@etag");
         
-        if (oid != null)
-        {
-            document.put("@created_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
-        }
-        else
-        {
-            Object createdOn = document.get("@created_on");
-            
-            if (createdOn != null && ObjectId.isValid("" + createdOn))
-            {
-                ObjectId _createdOn = new ObjectId("" + createdOn);
-                
-                document.put("@created_on", Instant.ofEpochSecond(_createdOn.getTimestamp()).toString());
-            }
-        }
-        
         if (etag != null && ObjectId.isValid("" + etag))
         {
             ObjectId _etag = new ObjectId("" + etag);

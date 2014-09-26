@@ -40,6 +40,6 @@ public class GetDBHandler extends GetHandler
     {
         List<String> colls = DBDAO.getDbCollections(DBDAO.getDB(context.getDBName()));
         
-        return generateCollectionContent(exchange.getRequestURL(), exchange.getQueryString(), DBDAO.getDbMetaData(context.getDBName(), colls), DBDAO.getData(colls, page, pagesize, sortBy, filterBy, filter), page, pagesize, DBDAO.getDBSize(colls), sortBy, filterBy, filter);
+        return generateCollectionContent(exchange.getRequestURL(), exchange.getQueryString(), DBDAO.getDbMetaData(context.getDBName(), colls), DBDAO.getData(context.getDBName(), colls, page, pagesize, sortBy, filterBy, filter), page, pagesize, DBDAO.getDBSize(colls), sortBy, filterBy, filter);
     }
 }

@@ -10,6 +10,7 @@
  */
 package com.softinstigate.restheart.handlers;
 
+import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.JSONHelper;
 import com.softinstigate.restheart.utils.RequestContext;

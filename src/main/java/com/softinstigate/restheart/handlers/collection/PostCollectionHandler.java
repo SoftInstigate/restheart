@@ -25,6 +25,7 @@ import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
+import java.time.Instant;
 import org.bson.types.ObjectId;
 
 /**
@@ -70,6 +71,7 @@ public class PostCollectionHandler extends PutCollectionHandler
         }
         
         ObjectId timestamp = new ObjectId();
+        Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
         
         content.put("@etag", timestamp);
 
@@ -80,7 +82,12 @@ public class PostCollectionHandler extends PutCollectionHandler
             id = new ObjectId();
         }
 
-        WriteResult wr = coll.update(getIdQuery(id), content, true, false);
+        BasicDBObject updateQuery = new BasicDBObject("$set", content).append("$setOnInsert", new BasicDBObject("@created_on", now.toString()));
+
+        BasicDBObject updateQuery2 = new BasicDBObject("$setOnInsert", new BasicDBObject("@created_on", now.toString()));
+        updateQuery2.putAll(content);
+        
+        WriteResult wr = coll.update(getIdQuery(id), updateQuery2, true, false);
         
         exchange.getResponseHeaders().add(HttpString.tryFromString("Location"), JSONHelper.getReference(exchange.getRequestURL(), id.toString()).toString());
 

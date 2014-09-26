@@ -15,6 +15,7 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.WriteResult;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
@@ -42,6 +43,15 @@ public class DBDAO
     private static final Logger logger = LoggerFactory.getLogger(DBDAO.class);
 
     public static final BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "@metadata");
+    
+    private static final BasicDBObject fieldsToReturn;
+
+    static
+    {
+        fieldsToReturn = new BasicDBObject();
+        fieldsToReturn.put("_id", 1);
+        fieldsToReturn.put("@created_on", 1);
+    }
 
     public static boolean checkDbExists(HttpServerExchange exchange, String dbName)
     {
@@ -63,12 +73,9 @@ public class DBDAO
     {
         List<String> _colls = new ArrayList(db.getCollectionNames());
 
-        // filter out reserved resourced
-        List<String> colls = _colls.stream().filter(coll -> !RequestContext.isReservedResourceCollection(coll)).collect(Collectors.toList());
-
-        Collections.sort(colls); // sort by id
-
-        return colls;
+        Collections.sort(_colls);
+        
+        return _colls;
     }
 
     /**
@@ -78,7 +85,10 @@ public class DBDAO
      */
     public static long getDBSize(List<String> colls)
     {
-        return colls.size();
+        // filter out reserved resourced
+        List<String> _colls = colls.stream().filter(coll -> !RequestContext.isReservedResourceCollection(coll)).collect(Collectors.toList());
+        
+        return _colls.size();
     }
 
     /**
@@ -100,15 +110,7 @@ public class DBDAO
 
             metadata = DAOUtils.getDataFromRow(metadatarow, "_id");
 
-            Object createdOn = metadata.get("@created_on");
             Object etag = metadata.get("@etag");
-
-            if (createdOn != null && ObjectId.isValid("" + createdOn))
-            {
-                ObjectId oid = new ObjectId("" + createdOn);
-
-                metadata.put("@created_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
-            }
 
             if (etag != null && ObjectId.isValid("" + etag))
             {
@@ -122,6 +124,7 @@ public class DBDAO
     }
 
     /**
+     * @param dbName
      * @param colls the collections list as got from getDbCollections()
      * @param page
      * @param pagesize
@@ -131,11 +134,11 @@ public class DBDAO
      * @return the db data
     *
      */
-    public static List<Map<String, Object>> getData(List<String> colls, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
+    public static List<Map<String, Object>> getData(String dbName, List<String> colls, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
-        // filter out collection starting with @, e.g. @metadata collection
-        List<String> _colls = colls.stream().filter(coll -> !coll.startsWith("@")).collect(Collectors.toList());
-
+        // filter out reserved resourced
+        List<String> _colls = colls.stream().filter(coll -> !RequestContext.isReservedResourceCollection(coll)).collect(Collectors.toList());
+        
         // apply page and pagesize
         _colls = _colls.subList((page - 1) * pagesize, (page - 1) * pagesize + pagesize > _colls.size() ? _colls.size() : (page - 1) * pagesize + pagesize);
 
@@ -153,6 +156,11 @@ public class DBDAO
                     TreeMap<String, Object> properties = new TreeMap<>();
 
                     properties.put("_id", coll);
+                    
+                    Map<String, Object> metadata = CollectionDAO.getCollectionMetadata((CollectionDAO.getCollection(dbName, coll)));
+                    
+                    properties.putAll(metadata);
+                    
                     return properties;
                 }
         ).forEach((item) ->
@@ -161,5 +169,68 @@ public class DBDAO
         });
 
         return data;
+    }
+    
+    public static int upsertDB(String dbName, DBObject content, boolean patching)
+    {
+        DB db = client.getDB(dbName);
+
+        DBCollection coll = db.getCollection("@metadata");
+
+        // apply new values
+        
+        ObjectId timestamp = new ObjectId();
+        Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
+        
+        if (content == null)
+            content = new BasicDBObject();
+        
+        content.put("@etag", timestamp);
+        content.removeField("@created_on"); // make sure we don't change this field
+        
+        if (patching)
+        {
+            WriteResult wr = coll.update(METADATA_QUERY, new BasicDBObject("$set", content), false, false);
+            
+            if (wr.getN() == 0)
+                return HttpStatus.SC_NOT_FOUND;
+            else
+                return HttpStatus.SC_OK;
+        }
+        else
+        {
+            // we use findAndModify to get the @created_on field value from the existing document
+            // we need to put this field back using a second update 
+            // it is not possible in a single update even using $setOnInsert update operator
+            // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
+            DBObject old = coll.findAndModify(METADATA_QUERY, fieldsToReturn, null, false, content, false, true);
+
+            if (old != null)
+            {
+                Object oldTimestamp = old.get("@created_on");
+
+                if (oldTimestamp == null)
+                {
+                    oldTimestamp = now.toString();
+                    logger.warn("metadata of collection {} had no @created_on field. set to now", coll.getFullName());
+                }
+
+                // need to readd the @created_on field 
+                BasicDBObject createdContet = new BasicDBObject("@created_on", "" + oldTimestamp);
+                createdContet.markAsPartialObject();
+                coll.update(METADATA_QUERY, new BasicDBObject("$set", createdContet), true, false);
+                
+                return HttpStatus.SC_OK;
+            }
+            else
+            {
+                // need to readd the @created_on field 
+                BasicDBObject createdContet = new BasicDBObject("@created_on", now.toString());
+                createdContet.markAsPartialObject();
+                coll.update(METADATA_QUERY, new BasicDBObject("$set", createdContet), true, false);
+                
+                return HttpStatus.SC_CREATED;
+            }
+        }
     }
 }

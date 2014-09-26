@@ -11,6 +11,7 @@
 package com.softinstigate.restheart.db;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
@@ -40,6 +41,15 @@ public class CollectionDAO
     private static final BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "@metadata");
     private static final BasicDBObject DATA_QUERY = new BasicDBObject("_id", new BasicDBObject("$ne", "@metadata"));
     private static final BasicDBObject ALL_FIELDS_BUT_ID = new BasicDBObject("_id", "0");
+    
+    private static final BasicDBObject fieldsToReturn;
+    
+    static
+    {
+        fieldsToReturn = new BasicDBObject();
+        fieldsToReturn.put("_id", 1);
+        fieldsToReturn.put("@created_on", 1);
+    }
 
     public static boolean checkCollectionExists(HttpServerExchange exchange, String dbName, String collectionName)
     {
@@ -119,22 +129,6 @@ public class CollectionDAO
 
         data.forEach(row ->
         {
-            Object createdOn = row.get("@created_on");
-            Object id = row.get("_id");
-
-            if (createdOn != null && ObjectId.isValid("" + createdOn))
-            {
-                ObjectId _createdOn = new ObjectId("" + createdOn);
-                
-                row.put("@created_on", Instant.ofEpochSecond(_createdOn.getTimestamp()).toString());
-            }
-            else if (id != null && ObjectId.isValid("" + id))
-            {
-                ObjectId _createdOn = new ObjectId("" + id);
-
-                row.put("@created_on", Instant.ofEpochSecond(_createdOn.getTimestamp()).toString());
-            }
-                
             Object etag = row.get("@etag");
 
             if (etag != null && ObjectId.isValid("" + etag))
@@ -153,15 +147,7 @@ public class CollectionDAO
     {
         Map<String, Object> metadata = DAOUtils.getDataFromRow(coll.findOne(METADATA_QUERY), "_id");
 
-        Object createdOn = metadata.get("@created_on");
         Object etag = metadata.get("@etag");
-
-        if (createdOn != null && ObjectId.isValid("" + createdOn))
-        {
-            ObjectId oid = new ObjectId("" + createdOn);
-
-            metadata.put("@created_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
-        }
 
         if (etag != null && ObjectId.isValid("" + etag))
         {
@@ -173,9 +159,30 @@ public class CollectionDAO
         return metadata;
     }
 
-    public static void upsertCollection(DBCollection coll, DBObject content, boolean updating)
+    /**
+     * 
+     * 
+     * @param dbName
+     * @param collName
+     * @param content
+     * @param patching
+     * @return the HttpStatus code to retrun
+     */
+    public static int upsertCollection(String dbName, String collName, DBObject content, boolean patching)
     {
+        DB db = DBDAO.getDB(dbName);
+        
+        DBCollection coll = db.getCollection(collName);
+        
+        boolean updating = CollectionDAO.doesCollectionExist(dbName, collName);
+        
+        if (patching && !updating)
+        {
+            return HttpStatus.SC_NOT_FOUND;
+        }
+        
         ObjectId timestamp = new ObjectId();
+        Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
 
         if (content == null)
         {
@@ -184,20 +191,70 @@ public class CollectionDAO
 
         if (updating)
         {
+            content.removeField("@crated_on"); // don't allow to update this field
             content.put("@etag", timestamp);
         }
         else
         {
             content.put("_id", "@metadata");
-            content.put("@created_on", timestamp);
+            content.put("@created_on", now.toString());
             content.put("@etag", timestamp);
         }
+        
+        if (patching)
+        {
+            coll.update(METADATA_QUERY, new BasicDBObject("$set", content), false, false);
+            return HttpStatus.SC_OK;
+        }
+        else
+        {
+            // we use findAndModify to get the @created_on field value from the existing metadata document
+            // we need to put this field back using a second update 
+            // it is not possible in a single update even using $setOnInsert update operator
+            // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
+            
+            DBObject old = coll.findAndModify(METADATA_QUERY, fieldsToReturn, null, false, content, false, true);
 
-        coll.update(METADATA_QUERY, new BasicDBObject("$set", content), true, false);
+            if (old != null)
+            {
+                Object oldTimestamp = old.get("@created_on");
+
+                if (oldTimestamp == null)
+                {
+                    oldTimestamp = now.toString();
+                    logger.warn("metadata of collection {} had no @created_on field. set to now", coll.getFullName());
+                }
+
+                // need to readd the @created_on field 
+                BasicDBObject createdContet = new BasicDBObject("@created_on", "" + oldTimestamp);
+                createdContet.markAsPartialObject();
+                coll.update(METADATA_QUERY, new BasicDBObject("$set", createdContet), true, false);
+                
+                return HttpStatus.SC_OK;
+            }
+            else
+            {
+                // need to readd the @created_on field 
+                BasicDBObject createdContet = new BasicDBObject("@created_on", now.toString());
+                createdContet.markAsPartialObject();
+                coll.update(METADATA_QUERY, new BasicDBObject("$set", createdContet), true, false);
+
+                initDefaultIndexes(coll);
+                
+                return HttpStatus.SC_CREATED;
+            }
+        }
     }
 
     public static ArrayList<DBObject> getDataFromCursor(DBCursor cursor)
     {
         return new ArrayList<>(cursor.toArray());
+    }
+    
+    private static void initDefaultIndexes(DBCollection coll)
+    {
+        coll.createIndex(new BasicDBObject("_id", 1).append("@etag", 1), new BasicDBObject("name", "@_id_etag_idx"));
+        coll.createIndex(new BasicDBObject("@etag", 1), new BasicDBObject("name", "@etag_idx"));
+        coll.createIndex(new BasicDBObject("@created_on", 1), new BasicDBObject("name", "@created_on_idx"));
     }
 }

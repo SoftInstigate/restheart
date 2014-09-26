@@ -12,11 +12,10 @@ package com.softinstigate.restheart.handlers.document;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
-import com.softinstigate.restheart.db.CollectionDAO;
+import com.softinstigate.restheart.db.DocumentDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.collection.PutCollectionHandler;
 import com.softinstigate.restheart.utils.ChannelReader;
@@ -36,17 +35,17 @@ public class PutDocumentHandler extends PipedHttpHandler
 {
     private static final Logger logger = LoggerFactory.getLogger(PutCollectionHandler.class);
     
-    private static final BasicDBList fieldsToReturn;
+    private static final BasicDBObject fieldsToReturn;
     
     static
     {
-        fieldsToReturn = new BasicDBList();
-        fieldsToReturn.add("_id");
-        fieldsToReturn.add("@created_on");
+        fieldsToReturn = new BasicDBObject();
+        fieldsToReturn.put("_id", 1);
+        fieldsToReturn.put("@created_on", 1);
     }
     
     /**
-     * Creates a new instance of EntityResource
+     * Creates a new instance of PutDocumentHandler
      */
     public PutDocumentHandler()
     {
@@ -56,8 +55,6 @@ public class PutDocumentHandler extends PipedHttpHandler
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        DBCollection coll = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName());
-        
         String _content = ChannelReader.read(exchange.getRequestChannel());
 
         DBObject content;
@@ -95,52 +92,12 @@ public class PutDocumentHandler extends PipedHttpHandler
             return;
         }
         
-        ObjectId timestamp = new ObjectId();
+        int SC = DocumentDAO.upsertDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), content, false);
         
-        content.put("@etag", timestamp);
-        
-        DBObject old = coll.findAndModify(getIdQuery(id), null, null, false, content, false, true);
-
-        if (old != null)
-        {
-            // need to add @created_on taken from the old record since id is not an objectid
-            if (!ObjectId.isValid(id))
-            {
-                Object oldTimestamp = old.get("@created_on");
-                
-                if (ObjectId.isValid("" + oldTimestamp))
-                {
-                    BasicDBObject createdContet = new BasicDBObject("@created_on", old.get("@created_on"));
-                    createdContet.markAsPartialObject();
-                    coll.update(getIdQuery(id), new BasicDBObject("$set", createdContet), true, false);
-                }
-                else
-                {
-                    logger.warn("could not reset the @create_on field on document with id {} (which is not an ObjectId)" + id);
-                }
-            }
-            
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);
-        }
-        else
-        {
-            // need to add @created_on since id is not an objectid
-            if (!ObjectId.isValid(id))
-            {
-                BasicDBObject createdContet = new BasicDBObject("@created_on", timestamp);
-                createdContet.markAsPartialObject();
-                coll.update(getIdQuery(id), new BasicDBObject("$set", createdContet), true, false);
-            }
-            
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_CREATED);
-        }
-        
-        
-        
-        
+        ResponseHelper.endExchange(exchange, SC);
     }
     
-    private Object getId(String id)
+    private static Object getId(String id)
     {
         if (ObjectId.isValid(id))
         {
@@ -151,10 +108,5 @@ public class PutDocumentHandler extends PipedHttpHandler
             // the id is not an object id
             return id;
         }
-    }
-    
-    private BasicDBObject getIdQuery(String id)
-    {
-        return new BasicDBObject("_id", getId(id));
     }
 }

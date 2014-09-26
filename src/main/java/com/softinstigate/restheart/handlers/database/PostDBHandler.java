@@ -23,7 +23,7 @@ import io.undertow.server.HttpServerExchange;
 public class PostDBHandler extends PipedHttpHandler
 {
     /**
-     * Creates a new instance of POSTHandler
+     * Creates a new instance of PostDBHandler
      */
     public PostDBHandler()
     {
@@ -32,6 +32,9 @@ public class PostDBHandler extends PipedHttpHandler
 
     /**
      * creating collections via post is not supported by design
+     * @param exchange
+     * @param context
+     * @throws java.lang.Exception
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception

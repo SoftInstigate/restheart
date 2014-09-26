@@ -46,7 +46,7 @@ force-gzip-encoding: false
 enable-log-file: true
 log-file-path: /tmp/restheart.log
 
-enable-log-console: false
+enable-log-console: true
 
 #  log levels: OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL.
 log-level: INFO
