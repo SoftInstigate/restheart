@@ -10,16 +10,19 @@
  */
 package com.softinstigate.restheart.handlers.document;
 
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
-import com.mongodb.WriteResult;
 import com.softinstigate.restheart.db.CollectionDAO;
+import com.softinstigate.restheart.db.DocumentDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -27,6 +30,8 @@ import org.bson.types.ObjectId;
  */
 public class DeleteDocumentHandler extends PipedHttpHandler
 {
+    private static final Logger logger = LoggerFactory.getLogger(DeleteDocumentHandler.class);
+    
     /**
      * Creates a new instance of EntityResource
      */
@@ -55,26 +60,17 @@ public class DeleteDocumentHandler extends PipedHttpHandler
             oid = null;
         }
         
-        BasicDBObject query;
+        ObjectId etag = RequestHelper.getUpdateEtag(exchange);
         
-        if (oid != null)
+        if (etag == null)
         {
-            query = new BasicDBObject("_id", oid);
-        }
-        else
-        {
-            query = new BasicDBObject("_id", sid);
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
+            logger.warn("error. you must provide the {} header", Headers.ETAG);
+            return;
         }
         
-        WriteResult wr = coll.remove(query);
+        int SC = DocumentDAO.deleteDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), etag);
         
-        if (wr.getN() <1)
-        {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
-        }
-        else
-        {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_GONE);
-        }
+        ResponseHelper.endExchange(exchange, SC);
     }
 }

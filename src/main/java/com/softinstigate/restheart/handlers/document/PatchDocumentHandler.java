@@ -21,7 +21,6 @@ import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.nio.charset.Charset;
@@ -87,7 +86,7 @@ public class PatchDocumentHandler extends PipedHttpHandler
         else if (!content.get("_id").equals(id))
         {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
-            logger.warn("PATCH not acceptable: _id in content body is different than id in URL");
+            logger.warn("not acceptable: _id in content body is different than id in URL");
             return;
         }
 
@@ -96,7 +95,7 @@ public class PatchDocumentHandler extends PipedHttpHandler
         if (etag == null)
         {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
-            logger.warn("PATCH error. you must provide the {} header", Headers.ETAG);
+            logger.warn("error. you must provide the {} header", Headers.ETAG);
             return;
         }
         

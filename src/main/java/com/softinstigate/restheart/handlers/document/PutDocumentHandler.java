@@ -90,7 +90,7 @@ public class PutDocumentHandler extends PipedHttpHandler
         else if (!content.get("_id").equals(id))
         {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
-            logger.warn("PUT not acceptable: _id in content body is different than id in URL");
+            logger.warn("not acceptable: _id in content body is different than id in URL");
             return;
         }
         
@@ -99,7 +99,7 @@ public class PutDocumentHandler extends PipedHttpHandler
         if (etag == null)
         {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
-            logger.warn("PATCH error. you must provide the {} header", Headers.ETAG);
+            logger.warn("error. you must provide the {} header", Headers.ETAG);
             return;
         }
         

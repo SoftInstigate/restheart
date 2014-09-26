@@ -154,6 +154,27 @@ public class DocumentDAO
         }
     }
 
+    public static int deleteDocument(String dbName, String collName, String documentId, ObjectId requestEtag)
+    {
+        DB db = DBDAO.getDB(dbName);
+
+        DBCollection coll = db.getCollection(collName);
+
+        BasicDBObject idQuery = new BasicDBObject("_id", getId(documentId));
+
+        DBObject oldDocument = coll.findAndModify(idQuery, null, null, true, null, false, false);
+
+        if (oldDocument == null)
+        {
+            return HttpStatus.SC_NOT_FOUND;
+        }
+        else
+        {
+            // check the old etag (in case restore the old document version)
+            return optimisticCheckEtag(coll, idQuery, oldDocument, requestEtag);
+        }
+    }
+
     public static ArrayList<DBObject> getDataFromCursor(DBCursor cursor)
     {
         return new ArrayList<>(cursor.toArray());
@@ -184,7 +205,7 @@ public class DocumentDAO
         {
             if (oldEtag.equals(requestEtag))
             {
-                return HttpStatus.SC_OK; // ok they match
+                return HttpStatus.SC_GONE; // ok they match
             }
             else
             {
