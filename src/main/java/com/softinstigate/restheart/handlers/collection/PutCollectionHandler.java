@@ -36,7 +36,7 @@ public class PutCollectionHandler extends PipedHttpHandler
     private static final Logger logger = LoggerFactory.getLogger(PutCollectionHandler.class);
 
     /**
-     * Creates a new instance of EntityResource
+     * Creates a new instance of PutCollectionHandler
      */
     public PutCollectionHandler()
     {

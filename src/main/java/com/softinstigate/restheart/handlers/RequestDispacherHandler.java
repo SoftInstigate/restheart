@@ -67,7 +67,7 @@ public class RequestDispacherHandler extends PipedHttpHandler
     private final PatchDocumentHandler documentPatch;
 
     /**
-     * Creates a new instance of EntityResource
+     * Creates a new instance of RequestDispacherHandler
      *
      * @param rootGet
      * @param rootPost

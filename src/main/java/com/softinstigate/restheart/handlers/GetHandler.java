@@ -15,7 +15,6 @@ import com.softinstigate.restheart.utils.JSONHelper;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -25,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
-import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +38,7 @@ public abstract class GetHandler extends PipedHttpHandler
     final Charset charset = Charset.forName("utf-8");
 
     /**
-     * Creates a new instance of EntityResource
+     * Creates a new instance of GetHandler
      *
      * @param next
      */

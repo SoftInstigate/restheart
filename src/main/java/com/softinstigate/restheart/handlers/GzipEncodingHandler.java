@@ -35,7 +35,7 @@ public class GzipEncodingHandler extends EncodingHandler
     private boolean forceCompression = false;
     
     /**
-     * Creates a new instance of EntityResource
+     * Creates a new instance of GzipEncodingHandler
      *
      * @param next
      * @param forceCompression if true requests without gzip encoding in Accept-Encoding header will be rejected

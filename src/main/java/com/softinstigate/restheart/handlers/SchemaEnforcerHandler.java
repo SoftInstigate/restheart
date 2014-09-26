@@ -14,7 +14,6 @@ import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.JSONHelper;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
@@ -26,7 +25,7 @@ import io.undertow.util.Headers;
 public class SchemaEnforcerHandler extends PipedHttpHandler
 {
     /**
-     * Creates a new instance of EntityResource
+     * Creates a new instance of SchemaEnforcerHandler
      *
      * @param next
      */

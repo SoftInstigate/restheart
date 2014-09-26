@@ -29,7 +29,7 @@ import io.undertow.server.HttpServerExchange;
 public class PatchCollectionHandler extends PipedHttpHandler
 {
     /**
-     * Creates a new instance of EntityResource
+     * Creates a new instance of PatchCollectionHandler
      */
     public PatchCollectionHandler()
     {

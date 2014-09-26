@@ -30,7 +30,7 @@ public class DeleteCollectionHandler extends PipedHttpHandler
 {
     private static final Logger logger = LoggerFactory.getLogger(DeleteCollectionHandler.class);
     /**
-     * Creates a new instance of EntityResource
+     * Creates a new instance of DeleteCollectionHandler
      */
     public DeleteCollectionHandler()
     {

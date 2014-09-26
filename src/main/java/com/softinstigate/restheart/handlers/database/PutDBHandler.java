@@ -12,11 +12,9 @@ package com.softinstigate.restheart.handlers.database;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.DBDAO;
-import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
@@ -32,12 +30,10 @@ import org.slf4j.LoggerFactory;
  */
 public class PutDBHandler extends PipedHttpHandler
 {
-    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-
     private static final Logger logger = LoggerFactory.getLogger(PutDBHandler.class);
 
     /**
-     * Creates a new instance of EntityResource
+     * Creates a new instance of PutDBHandler
      */
     public PutDBHandler()
     {

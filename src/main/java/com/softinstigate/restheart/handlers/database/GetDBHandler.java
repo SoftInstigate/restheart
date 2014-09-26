@@ -12,10 +12,7 @@ package com.softinstigate.restheart.handlers.database;
 
 import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.handlers.GetHandler;
-import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
-import com.softinstigate.restheart.utils.RequestHelper;
-import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 import java.util.List;
@@ -32,7 +29,7 @@ public class GetDBHandler extends GetHandler
     private static final Logger logger = LoggerFactory.getLogger(GetDBHandler.class);
 
     /**
-     * Creates a new instance of EntityResource
+     * Creates a new instance of GetDBHandler
      */
     public GetDBHandler()
     {

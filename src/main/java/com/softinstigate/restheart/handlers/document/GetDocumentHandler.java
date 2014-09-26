@@ -37,7 +37,7 @@ public class GetDocumentHandler extends GetHandler
     private static final Logger logger = LoggerFactory.getLogger(GetDocumentHandler.class);
 
     /**
-     * Creates a new instance of EntityResource
+     * Creates a new instance of GetDocumentHandler
      */
     public GetDocumentHandler()
     {

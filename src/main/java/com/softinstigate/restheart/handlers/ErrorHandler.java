@@ -28,7 +28,7 @@ public class ErrorHandler implements HttpHandler
     private Logger logger = LoggerFactory.getLogger(ErrorHandler.class);
 
     /**
-     * Creates a new instance of EntityResource
+     * Creates a new instance of ErrorHandler
      *
      * @param next
      */

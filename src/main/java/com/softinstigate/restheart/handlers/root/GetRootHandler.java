@@ -36,7 +36,7 @@ public class GetRootHandler extends GetHandler
     private static final Logger logger = LoggerFactory.getLogger(GetRootHandler.class);
 
     /**
-     * Creates a new instance of EntityResource
+     * Creates a new instance of GetRootHandler
      */
     public GetRootHandler()
     {
@@ -63,12 +63,6 @@ public class GetRootHandler extends GetHandler
         // apply page and pagesize
         dbs = dbs.subList((page - 1) * pagesize, (page - 1) * pagesize + pagesize > dbs.size() ? dbs.size() : (page - 1) * pagesize + pagesize);
 
-        // apply sort_by
-        logger.debug("sort_by not yet implemented");
-
-        // apply filter_by and filter
-        logger.debug("filter not yet implemented");
-        
         List<Map<String, Object>> data = new ArrayList<>();
 
         dbs.stream().map(

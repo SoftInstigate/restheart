@@ -31,7 +31,7 @@ public class DeleteDocumentHandler extends PipedHttpHandler
     private static final Logger logger = LoggerFactory.getLogger(DeleteDocumentHandler.class);
     
     /**
-     * Creates a new instance of EntityResource
+     * Creates a new instance of DeleteDocumentHandler
      */
     public DeleteDocumentHandler()
     {

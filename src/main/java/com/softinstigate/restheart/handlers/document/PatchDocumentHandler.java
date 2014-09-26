@@ -39,7 +39,7 @@ public class PatchDocumentHandler extends PipedHttpHandler
     final Charset charset = Charset.forName("utf-8");  
 
     /**
-     * Creates a new instance of EntityResource
+     * Creates a new instance of PatchDocumentHandler
      */
     public PatchDocumentHandler()
     {

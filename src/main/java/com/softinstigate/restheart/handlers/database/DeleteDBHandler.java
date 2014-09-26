@@ -10,7 +10,6 @@
  */
 package com.softinstigate.restheart.handlers.database;
 
-import com.mongodb.DB;
 import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
@@ -19,7 +18,6 @@ import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import java.util.List;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +31,7 @@ public class DeleteDBHandler extends PipedHttpHandler
     private static final Logger logger = LoggerFactory.getLogger(DeleteDBHandler.class);
     
     /**
-     * Creates a new instance of EntityResource
+     * Creates a new instance of DeleteDBHandler
      */
     public DeleteDBHandler()
     {
