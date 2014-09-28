@@ -10,7 +10,6 @@
  */
 package com.softinstigate.restheart;
 
-import ch.qos.logback.classic.Level;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.handlers.ErrorHandler;
@@ -59,7 +58,6 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import org.yaml.snakeyaml.Yaml;
 
 import static io.undertow.Handlers.resource;
 import static io.undertow.Handlers.path;
@@ -92,90 +90,29 @@ public class Bootstrapper
 
     public static void main(final String[] args)
     {
-        Yaml yaml = new Yaml();
-
-        File confFile;
-
+        Configuration conf ;
+        
         if (args == null || args.length < 1)
         {
-            confFile = new File("restheart.yml");
+            conf = new Configuration("restheart.yml");
         }
         else
         {
-            confFile = new File(args[0]);
+            conf = new Configuration(args[0]);
         }
 
-        Map<String, Object> conf = null;
-
-        try
-        {
-            conf = (Map<String, Object>) yaml.load(new FileInputStream(confFile));
-        }
-        catch (FileNotFoundException ex)
-        {
-            logger.error("cannot find the configuration file. exiting..");
-            System.exit(-2);
-        }
-
-        boolean httpsListener = (Boolean) conf.getOrDefault("https-listener", true);
-        int httpsPort = (Integer) conf.getOrDefault("https-port", "8443");
-        String httpsHost = (String) conf.getOrDefault("https-host", "0.0.0.0");
-
-        boolean httpListener = (Boolean) conf.getOrDefault("http-listener", false);
-        int httpPort = (Integer) conf.getOrDefault("http-port", "8080");
-        String httpHost = (String) conf.getOrDefault("http-host", "0.0.0.0");
-
-        boolean ajpListener = (Boolean) conf.getOrDefault("ajp-listener", false);
-        int ajpPort = (Integer) conf.getOrDefault("ajp-port", "8009");
-        String ajpHost = (String) conf.getOrDefault("ajp-host", "0.0.0.0");
-
-        boolean useEmbeddedKeystore = (Boolean) conf.getOrDefault("use-embedded-keystore", true);
-        String keystoreFile = (String) conf.get("keystore-file");
-        String keystorePassword = (String) conf.get("keystore-password");
-        String certPassword = (String) conf.get("certpassword");
-
-        String mongoHost = (String) conf.getOrDefault("mongo-host", "127.0.0.1");
-        int mongoPort = (Integer) conf.getOrDefault("mongo-port", 27017);
-        String mongoUser = (String) conf.getOrDefault("mongo-user", "");
-        String mongoPassword = (String) conf.getOrDefault("mongo-password", "");
+        LoggingInitializer.setLogLevel(conf.getLogLevel());
         
-        String logFilePath = (String) conf.getOrDefault("log-file-path", System.getProperty("java.io.tmpdir" + File.separator +  "restheart.log"));
-        String logLevel = (String) conf.getOrDefault("log-level", "WARN");
-        boolean logToConsole = (Boolean) conf.getOrDefault("enable-log-console", true);
-        boolean logToFile = (Boolean) conf.getOrDefault("enable-log-file", true);
-
-        Level _logLevel = null;
-        
-        try
-        {
-            _logLevel = Level.valueOf(logLevel);
-        }
-        catch(Exception e)
-        {
-            logger.warn("wrong level {} - set default to WARN", logLevel, "");
-            _logLevel = Level.WARN;
-        }
-
-        LoggingInitializer.setLogLevel(_logLevel);
-        
-        if (logToFile)
-            LoggingInitializer.startFileLogging(logFilePath);
+        if (conf.isLogToFile())
+            LoggingInitializer.startFileLogging(conf.getLogFilePath());
         
         logger.info("starting restheart ********************************************");
         
-        int ioThreads = (Integer) conf.getOrDefault("io-threads", 8);
-        int workerThreads = (Integer) conf.getOrDefault("worker-threads", 500);
-        int bufferSize = (Integer) conf.getOrDefault("buffer-size", 16384);
-        int buffersPerRegion = (Integer) conf.getOrDefault("buffers-per-region", 20);
-        boolean directBuffers = (Boolean) conf.getOrDefault("direct-buffers", "true");
-
-        boolean forceGzipEncoding = (Boolean) conf.getOrDefault("force-gzip-encoding", true);
-
-        logger.info("initializing mongodb connection pool to {}:{}", mongoHost, mongoPort);
+        logger.info("initializing mongodb connection pool to {}:{}", conf.getMongoHost(), conf.getMongoPort());
 
         try
         {
-            MongoDBClientSingleton.init(mongoHost, mongoPort, mongoUser, mongoPassword);
+            MongoDBClientSingleton.init(conf.getMongoHost(), conf.getMongoPort(), conf.getMongoUser(), conf.getMongoPassword());
 
             logger.info("mongodb connection pool initialized");
         }
@@ -188,11 +125,12 @@ public class Bootstrapper
         try
         {
             start(
-                    httpsListener, httpsHost, httpsPort,
-                    httpListener, httpHost, httpPort,
-                    ajpListener, ajpHost, ajpPort,
-                    useEmbeddedKeystore, keystoreFile, keystorePassword, certPassword,
-                    ioThreads, workerThreads, bufferSize, buffersPerRegion, directBuffers, forceGzipEncoding);
+                    conf.isHttpsListener(), conf.getHttpsHost(), conf.getHttpsPort(),
+                    conf.isHttpListener(), conf.getHttpHost(), conf.getHttpPort(),
+                    conf.isAjpListener(), conf.getAjpHost(), conf.getAjpPort(),
+                    conf.isUseEmbeddedKeystore(), conf.getKeystoreFile(), conf.getKeystorePassword(), conf.getCertPassword(),
+                    conf.getIoThreads(), conf.getWorkerThreads(), conf.getBufferSize(), conf.getBuffersPerRegion(), conf.isDirectBuffers(),
+                    conf.isForceGzipEncoding());
         }
         catch (Throwable t)
         {
@@ -246,17 +184,17 @@ public class Bootstrapper
 
         logger.info("restheart started");
         
-        if (logToFile)
-            logger.info("logging to {} with level {}", logFilePath, _logLevel);
+        if (conf.isLogToFile())
+            logger.info("logging to {} with level {}", conf.getLogFilePath(), conf.getLogLevel());
         
-        if (! logToConsole)
+        if (! conf.isLogToConsole())
         {
             logger.info("stopping logging to console ");
             LoggingInitializer.stopConsoleLogging();
         }
         else
         {
-            logger.info("logging to console with level {}", _logLevel);
+            logger.info("logging to console with level {}", conf.getLogLevel());
         }
     }
 
