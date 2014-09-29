@@ -123,11 +123,8 @@ public abstract class GetHandler extends PipedHttpHandler
      * @param data
      * @param page
      * @param pagesize
-     * @param size if < 0, don't include size in metadata @param sortBy @param
-     * f
-     * ilterBy
-     * @param filter
-     * @return
+     * @param size if < 0, don't include size in metadata @param sortBy @param f
+     * ilterBy @param filter @return
      */
     protected String generateCollectionContent(HttpServerExchange exchange, Map<String, Object> metadata, List<Map<String, Object>> data, int page, int pagesize, long size, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
@@ -165,8 +162,6 @@ public abstract class GetHandler extends PipedHttpHandler
         List<Map<String, Object>> embedded = data.stream().filter((props) -> props.keySet().stream().anyMatch((k) -> k.equals("id") || k.equals("_id"))).collect(Collectors.toList());
 
         // *** links
-        boolean includepagesize = pagesize != 100;
-
         TreeMap<String, URI> links = new TreeMap<>();
 
         try
@@ -174,33 +169,64 @@ public abstract class GetHandler extends PipedHttpHandler
             if (queryString == null || queryString.isEmpty())
             {
                 links.put("self", new URI(baseUrl));
+                links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize));
             }
             else
             {
                 links.put("self", new URI(baseUrl + "?" + queryString));
-            }
 
-            links.put("first", new URI(baseUrl + (includepagesize ? "?pagesize=" + pagesize : "")));
+                String queryString2 = removePagingParamsFromQueryString(queryString);
 
-            links.put("next", new URI(baseUrl + "?page=" + (page + 1) + (includepagesize ? "&pagesize=" + pagesize : "")));
-
-            if (total_pages > 0)
-            {
-                if (page < total_pages)
+                if (queryString2 == null || queryString2.isEmpty())
                 {
-                    links.put("last", new URI(baseUrl + (total_pages != 1 ? "?page=" + total_pages : "") + (total_pages != 1 && includepagesize ? "&" : "?") + (includepagesize ? "pagesize=" + pagesize : "")));
+                    links.put("first", new URI(baseUrl + "?pagesize=" + pagesize));
+                    links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize));
+                    
+                    if (total_pages > 0) // i.e. the url contains the count paramenter
+                    {
+                        if (page < total_pages)
+                        {
+                            links.put("last", new URI(baseUrl + (total_pages != 1 ? "?page=" + total_pages : "") + "&pagesize=" + pagesize));
+                            links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryString2));
+                        }
+                        else
+                        {
+                            links.put("last", new URI(baseUrl + (total_pages != 1 ? "?page=" + total_pages : "") + "&pagesize=" + pagesize));
+                        }
+                    }
 
+                    if (page > 1)
+                    {
+                        links.put("previous", new URI(baseUrl + (page >= 2 ? "?page=" + (page - 1) : "") + (page > 2 ? "&pagesize=" + pagesize :  "?pagesize=" + pagesize)));
+                    }
                 }
                 else
                 {
-                    links.put("last", new URI(baseUrl + (includepagesize ? "?pagesize=" + pagesize : "")));
+                    links.put("first", new URI(baseUrl + "?pagesize=" + pagesize + "&" + queryString2));
+                    
+                    if (total_pages <= 0)
+                        links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryString2));
+
+                    if (total_pages > 0) // i.e. the url contains the count paramenter
+                    {
+                        if (page < total_pages)
+                        {
+                            links.put("last", new URI(baseUrl + (total_pages != 1 ? "?page=" + total_pages : "") + "&pagesize=" + pagesize + "&" + queryString2));
+                            links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryString2));
+                        }
+                        else
+                        {
+                            links.put("last", new URI(baseUrl + (total_pages != 1 ? "?page=" + total_pages : "") + "&pagesize=" + pagesize + "&" + queryString2));
+                        }
+                    }
+
+                    if (page > 1)
+                    {
+                        links.put("previous", new URI(baseUrl + (page >= 2 ? "?page=" + (page - 1) : "") + (page > 2 ? "&pagesize=" + pagesize :  "?pagesize=" + pagesize) + "&" + queryString2));
+                    }
                 }
             }
 
-            if (page > 1)
-            {
-                links.put("previous", new URI(baseUrl + (page != 2 ? "?page=" + (page - 1) : "") + (page - 1 != 1 && includepagesize ? "&" : "?") + (includepagesize ? "pagesize=" + pagesize : "")));
-            }
         }
         catch (URISyntaxException ex)
         {
@@ -250,6 +276,21 @@ public abstract class GetHandler extends PipedHttpHandler
         ResponseHelper.injectEtagHeader(exchange, metadata);
 
         return JSONHelper.getCollectionHal(baseUrl, properties, links, embedded).toString();
+    }
+
+    private String removePagingParamsFromQueryString(String queryString)
+    {
+        if (queryString == null)
+            return null;
+        
+        String ret = queryString;
+        ret = ret.replaceAll("page=.?$", "");
+        ret = ret.replaceAll("pagesize=.?$", "");
+
+        ret = ret.replaceAll("page=.?&", "");
+        ret = ret.replaceAll("pagesize=.?&", "");
+        
+        return ret;
     }
 
     protected String generateDocumentContent(HttpServerExchange exchange, Map<String, Object> data)

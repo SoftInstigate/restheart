@@ -13,11 +13,10 @@ package com.softinstigate.restheart;
 /**
  * install ldt from https://github.com/bazhenov/load-test-tool
  * run it from target/class directory (current directory is added to classpath) as follows:
- * <PATH_TO_ldt-assembly-1.1>/bin/ldt.sh -z com.softinstigate.restheart.LoadTestRestHeartTask#get -c 20 -n 500 -w 5 -p "url=http://user:user@127.0.0.1:8080/testdb/testcoll?page=10&pagesize=5"
+ * <PATH_TO_ldt-assembly-1.1>/bin/ldt.sh -z com.softinstigate.restheart.LoadTestRestHeartTask#get -c 20 -n 500 -w 5 -p "url=http://127.0.0.1:8080/testdb/testcoll?page=10&pagesize=5,id=a,pwd=a"
  * @author uji
  */
 import com.mongodb.DBCollection;
-import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import java.io.BufferedReader;
@@ -36,8 +35,9 @@ public class LoadTestRestHeartTask
 {
     private URL url;
     
-    private MongoClient client = null;
-
+    private String id;
+    private String pwd;
+    
     public void setUrl(String url) throws MalformedURLException
     {
         this.url = new URL(url);
@@ -50,20 +50,18 @@ public class LoadTestRestHeartTask
             @Override
             protected PasswordAuthentication getPasswordAuthentication()
             {
-                return new PasswordAuthentication("user", "user".toCharArray());
+                return new PasswordAuthentication(id, pwd.toCharArray());
             }
         });
         
         MongoDBClientSingleton.init("127.0.0.1", 27017, "admin", "adminadmin");
-        
-        this.client = MongoDBClientSingleton.getInstance().getClient();
     }
 
     public void get() throws IOException
     {
         URLConnection connection = url.openConnection();
         
-        connection.setRequestProperty("Accept-Encoding", "gzip");
+        //connection.setRequestProperty("Accept-Encoding", "gzip");
 
         InputStream stream = connection.getInputStream();
         BufferedReader in = new BufferedReader(new InputStreamReader(stream));
@@ -82,8 +80,24 @@ public class LoadTestRestHeartTask
     {
         DBCollection coll = CollectionDAO.getCollection("testdb", "testcoll");
         
-        CollectionDAO.getCollectionSize(coll);
+        CollectionDAO.getCollectionSize(coll, null);
         CollectionDAO.getCollectionMetadata(coll);
-        List<Map<String, Object>> data = CollectionDAO.getCollectionData(coll, 2, 5, null, null, null);
+        List<Map<String, Object>> data = CollectionDAO.getCollectionData(coll, 1, 5, null, null);
+    }
+
+    /**
+     * @param id the id to set
+     */
+    public void setId(String id)
+    {
+        this.id = id;
+    }
+
+    /**
+     * @param pwd the pwd to set
+     */
+    public void setPwd(String pwd)
+    {
+        this.pwd = pwd;
     }
 }

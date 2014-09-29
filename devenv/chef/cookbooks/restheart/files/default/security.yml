@@ -8,6 +8,10 @@
 
 ---
 users:
+    - userid: a
+      password: a
+      roles: [users]
+      
     - userid: user
       password: changeit
       roles: [users]

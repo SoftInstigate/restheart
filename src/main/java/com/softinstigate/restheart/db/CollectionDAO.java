@@ -11,11 +11,14 @@
 package com.softinstigate.restheart.db;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.util.JSON;
+import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
@@ -43,7 +46,6 @@ public class CollectionDAO
 
     private static final BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "@metadata");
     private static final BasicDBObject DATA_QUERY = new BasicDBObject("_id", new BasicDBObject("$ne", "@metadata"));
-    private static final BasicDBObject ALL_FIELDS_BUT_ID = new BasicDBObject("_id", "0");
     
     private static final BasicDBObject fieldsToReturn;
     
@@ -90,14 +92,34 @@ public class CollectionDAO
         coll.drop();
     }
 
-    public static long getCollectionSize(DBCollection coll)
+    public static long getCollectionSize(DBCollection coll, Deque<String> filter)
     {
-        return coll.count() - 1; // -1 for the metadata document
+        BasicDBObject query = DATA_QUERY;
+        
+        if (filter != null)
+        {
+            try
+            {
+                String _filter = filter.getFirst();
+                _filter = _filter.replaceAll("\\[", "{");
+                _filter = _filter.replaceAll("\\]", "}");
+                
+                BasicDBObject filterQuery = (BasicDBObject) JSON.parse(_filter);
+                filterQuery.putAll(query.toMap());
+                query = filterQuery;
+            }
+            catch(JSONParseException jpe)
+            {
+                logger.error("****** error parsing filter expression {}", filter.getFirst());
+            }
+        }
+        
+        return coll.count(query);
     }
 
-    public static List<Map<String, Object>> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
+    public static List<Map<String, Object>> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filter)
     {
-        DAOUtils.getDataFromRow(coll.findOne(METADATA_QUERY, ALL_FIELDS_BUT_ID), "_id");
+        //DAOUtils.getDataFromRow(coll.findOne(METADATA_QUERY, ALL_FIELDS_BUT_ID), "_id");
 
         // apply sort_by
         DBObject sort = new BasicDBObject();
@@ -124,11 +146,34 @@ public class CollectionDAO
                 }
             });
         }
-
+        
         // apply filter_by and filter
         logger.debug("filter not yet implemented");
-
-        List<Map<String, Object>> data = DAOUtils.getDataFromRows(getDataFromCursor(coll.find(DATA_QUERY).sort(sort).limit(pagesize).skip(pagesize * (page - 1))));
+        
+        BasicDBObject query = DATA_QUERY;
+        
+        if (filter != null)
+        {
+            try
+            {
+                String _filter = filter.getFirst();
+                _filter = _filter.replaceAll("\\[", "{");
+                _filter = _filter.replaceAll("\\]", "}");
+                
+                BasicDBObject filterQuery = (BasicDBObject) JSON.parse(_filter);
+                filterQuery.putAll(query.toMap());
+                query = filterQuery;
+            }
+            catch(JSONParseException jpe)
+            {
+                // TODO send over error message in case
+                // also issue: if the query is valid json but, for instance, 
+                // including a not existing operator an exception is thrown when reading the cursor
+                logger.error("****** error parsing filter expression {}", filter.getFirst(), jpe);
+            }
+        }
+        
+        List<Map<String, Object>> data = DAOUtils.getDataFromRows(getDataFromCursor(coll.find(query).sort(sort).limit(pagesize).skip(pagesize * (page - 1))));
 
         data.forEach(row ->
         {

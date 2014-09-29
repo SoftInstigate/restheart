@@ -9,6 +9,12 @@ cookbook_file "restheart.yml" do
 	owner "root"
 end
 
+cookbook_file "security.yml" do
+	path "/etc/restheart-security.yml" 
+	mode 0644
+	owner "root"
+end
+
 cookbook_file "restheartd.conf" do
 	path "/etc/init/restheartd.conf" 
 	mode 0644

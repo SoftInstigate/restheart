@@ -44,12 +44,12 @@ public class GetCollectionHandler extends GetHandler
 
         Map<String, Object> metadata = CollectionDAO.getCollectionMetadata(coll);
         
-        List<Map<String, Object>> data = CollectionDAO.getCollectionData(coll, page, pagesize, sortBy, filterBy, filter);
+        List<Map<String, Object>> data = CollectionDAO.getCollectionData(coll, page, pagesize, sortBy, filter);
         
         long size = -1;
         
         if (exchange.getQueryParameters().containsKey("count"))
-            size = CollectionDAO.getCollectionSize(coll);
+            size = CollectionDAO.getCollectionSize(coll, filter);
 
         return generateCollectionContent(exchange, metadata, data, page, pagesize, size, sortBy, filterBy, filter);
     }
