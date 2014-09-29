@@ -110,11 +110,12 @@ public class Configuration
         
         Map<String, Object> idm = getAsMap(conf, "idm");
         Map<String, Object> am = getAsMap(conf, "access-manager");
+        Map<String, Object> ach = getAsMap(conf, "authentication-constraint-handler");
         
-        idmImpl = getAsStringOrDefault(idm, "idm-implementation", null);
+        idmImpl = getAsStringOrDefault(idm, "implementation-class", null);
         idmArgs = idm;
 
-        amImpl = getAsStringOrDefault(am, "am-implementation", null);
+        amImpl = getAsStringOrDefault(am, "implementation-class", null);
         amArgs = am;
         
         logFilePath = getAsStringOrDefault(conf, "log-file-path", System.getProperty("java.io.tmpdir" + File.separator +  "restheart.log"));

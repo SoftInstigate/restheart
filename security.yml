@@ -1,4 +1,11 @@
 ## RESTHeart simple security configuration file.
+
+## look at undertow documentation for information about predictates syntax 
+## http://undertow.io/documentation/core/predicates-attributes-handlers.html
+
+## the special role $unauthenticated allows to give permissions without requiring authentication
+
+
 ---
 users:
     - userid: user
@@ -15,18 +22,13 @@ users:
       
 permissions:
     - role: admins
-      access-level: ADMIN
-      urls: [ /.* ]
+      predicate: path-prefix[path="/"]
       
-    - role: $all
-      access-level: READ
-      urls: [ /publicdb/coll1/.*, /publicdb/coll2/pub.*, /test/i/.* ]
+    - role: $unauthenticated
+      predicate: path-prefix[path="/publicdb/"] and method[value="GET"]
       
     - role: users
-      access-level: READ
-      urls: [ /.* ]
+      predicate: regex[pattern="/.*/.*", value="%R", full-match=true] and method[value="GET"]
       
-    - role: user1
-      access-level: WRITE
-      urls: [ /publicdb/coll1/.* ]
-      content-condition: author eq $userid
+    - role: users
+      predicate: path-prefix[path="/publicdb/{username}/"]

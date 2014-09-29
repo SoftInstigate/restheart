@@ -39,6 +39,7 @@ import com.softinstigate.restheart.handlers.document.PatchDocumentHandler;
 import com.softinstigate.restheart.handlers.document.PostDocumentHandler;
 import com.softinstigate.restheart.handlers.document.PutDocumentHandler;
 import com.softinstigate.restheart.security.AccessManager;
+import com.softinstigate.restheart.security.handlers.PredicateAuthenticationConstraintHandler;
 import com.softinstigate.restheart.utils.ResourcesExtractor;
 import com.softinstigate.restheart.utils.LoggingInitializer;
 import io.undertow.Undertow;
@@ -398,10 +399,11 @@ public class Bootstrapper
             }
 
             handler = new AuthenticationCallHandler(handler);
-            handler = new AuthenticationConstraintHandler(handler);
+            handler = new PredicateAuthenticationConstraintHandler(handler, accessManager);
             final List<AuthenticationMechanism> mechanisms = Collections.<AuthenticationMechanism>singletonList(new BasicAuthenticationMechanism("RestHeart Realm"));
             handler = new AuthenticationMechanismsHandler(handler, mechanisms);
             handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE, identityManager, handler);
+            
             return handler;
         }
         else

@@ -39,10 +39,10 @@ mongo-password: adminadmin
 ### security 
 
 idm:    
-    idm-implementation: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
+    implementation-class: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
     conf-file: ./security.yml
 access-manager:    
-    am-implementation: com.softinstigate.restheart.security.impl.SimpleAccessManager
+    implementation-class: com.softinstigate.restheart.security.impl.SimpleAccessManager
     conf-file: ./security.yml
     
 #### protocol

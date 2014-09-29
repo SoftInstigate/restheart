@@ -11,7 +11,10 @@
 package com.softinstigate.restheart.security;
 
 import com.softinstigate.restheart.utils.RequestContext;
+import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
+import java.util.HashMap;
+import java.util.Set;
 
 /**
  *
@@ -20,4 +23,6 @@ import io.undertow.server.HttpServerExchange;
 public interface AccessManager
 {
     public boolean isAllowed(HttpServerExchange exchange, RequestContext context);
+    
+    public HashMap<String, Set<Predicate>> getAcl();
 }

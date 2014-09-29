@@ -12,6 +12,8 @@ package com.softinstigate.restheart.security.impl;
 
 import com.softinstigate.restheart.security.AccessManager;
 import com.softinstigate.restheart.utils.RequestContext;
+import io.undertow.predicate.Predicate;
+import io.undertow.predicate.PredicateParser;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import java.io.File;
@@ -34,8 +36,8 @@ public class SimpleAccessManager implements AccessManager
 {
     private static final Logger logger = LoggerFactory.getLogger(SimpleAccessManager.class);
 
-    private HashMap<String, Set<SimplePermission>> acl;
-    
+    private HashMap<String, Set<Predicate>> acl;
+
     public SimpleAccessManager(Map<String, Object> arguments)
     {
         if (arguments == null)
@@ -87,56 +89,40 @@ public class SimpleAccessManager implements AccessManager
         users.stream().forEach(u ->
         {
             Object _role = u.get("role");
-            Object _accessLevel = u.get("access-level");
-            Object _urls = u.get("urls");
-            Object _contentCondition = u.get("content-condition");
+            Object _predicate = u.get("predicate");
 
             if (_role == null || !(_role instanceof String))
             {
                 throw new IllegalArgumentException("wrong configuration file format. a permission entry is missing the role");
             }
-
-            if (_accessLevel == null || !(_accessLevel instanceof String))
-            {
-                throw new IllegalArgumentException("wrong configuration file format. a permission entry is missing the access-level");
-            }
-
-            if (_urls == null)
-            {
-                throw new IllegalArgumentException("wrong configuration file format. a permission entry is missing the urls");
-            }
-
-            if (!(_urls instanceof List))
-            {
-                throw new IllegalArgumentException("wrong configuration file format. a permission entry urls argument is not an array");
-            }
             
-            if (_contentCondition != null && !(_contentCondition instanceof String))
-            {
-                throw new IllegalArgumentException("wrong configuration file format. a permission entry has a not valid content-condition. it has to be a string");
-            }
-
             String role = (String) _role;
-            SimplePermission.ACCESS_LEVEL accessLevel = SimplePermission.ACCESS_LEVEL.valueOf(((String) _accessLevel));
-            String contentCondition = (String) _contentCondition;
-            
-            if (((List) _urls).stream().anyMatch(i -> !(i instanceof String)))
-            {
-                throw new IllegalArgumentException("wrong configuration file format. a permission entry is wrong. all urls must be regular expressions");
-            }
-            
-            Set<String> urls = new HashSet<>((List)_urls);
 
-            
-            Set<SimplePermission> perms = acl.get(role);
-            
+            if (_predicate == null || !(_predicate instanceof String))
+            {
+                throw new IllegalArgumentException("wrong configuration file format. a permission entry is missing the predicate");
+            }
+
+            Predicate predicate = null;
+
+            try
+            {
+                predicate = PredicateParser.parse((String) _predicate, this.getClass().getClassLoader());
+            }
+            catch (Throwable t)
+            {
+                throw new IllegalArgumentException("wrong configuration file format. wrong predictate" + (String) _predicate, t);
+            }
+
+            Set<Predicate> perms = getAcl().get(role);
+
             if (perms == null)
             {
                 perms = new HashSet<>();
-                acl.put(role, perms);
+                getAcl().put(role, perms);
             }
-            
-            perms.add(new SimplePermission(role, accessLevel, urls, contentCondition));
+
+            perms.add(predicate);
         }
         );
     }
@@ -145,7 +131,25 @@ public class SimpleAccessManager implements AccessManager
     public boolean isAllowed(HttpServerExchange exchange, RequestContext context)
     {
         Account account = exchange.getSecurityContext().getAuthenticatedAccount();
-        
-        return account.getRoles().stream().anyMatch(r -> acl == null ? false : acl.get(r).stream().anyMatch(p -> p.doesAllow(exchange, context)));
+
+        if (account == null && getAcl().get("$unauthenticated") != null)
+        {
+            // not authenticated, let's permission give to $all
+            return getAcl() == null ? false : getAcl().get("$unauthenticated").stream().anyMatch(p -> p.resolve(exchange));
+        }
+        else
+        {
+            return account.getRoles().stream().anyMatch(r -> getAcl() == null ? false : getAcl().get(r).stream().anyMatch(p -> p.resolve(exchange)));
+        }
     }
+
+    /**
+     * @return the acl
+     */
+    public HashMap<String, Set<Predicate>> getAcl()
+    {
+        return acl;
+    }
+
+    
 }
