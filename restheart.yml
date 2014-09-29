@@ -36,6 +36,15 @@ mongo-port: 27017
 mongo-user: admin
 mongo-password: adminadmin
 
+### security 
+
+idm:    
+    idm-implementation: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
+    conf-file: ./security.yml
+access-manager:    
+    am-implementation: com.softinstigate.restheart.security.impl.SimpleAccessManager
+    conf-file: ./security.yml
+    
 #### protocol
 
 # if you want to save bandwitdth, you can force requests to support the giz encoding only (if not, requests will be rejected)
@@ -50,7 +59,6 @@ enable-log-console: true
 
 #  log levels: OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL.
 log-level: INFO
-
 
 #### performace settings
 

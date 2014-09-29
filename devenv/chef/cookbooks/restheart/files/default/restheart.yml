@@ -36,6 +36,15 @@ mongo-port: 27017
 mongo-user: admin
 mongo-password: adminadmin
 
+### security 
+
+idm:    
+    idm-implementation: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
+    conf-file: /etc/restheart-security.yml
+access-manager:    
+    am-implementation: com.softinstigate.restheart.security.impl.SimpleAccessManager
+    conf-file: /etc/restheart-security.yml
+
 #### protocol
 
 # if you want to save bandwitdth, you can force requests to support the giz encoding only (if not, requests will be rejected)

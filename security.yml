@@ -1,0 +1,32 @@
+## RESTHeart simple security configuration file.
+---
+users:
+    - userid: user
+      password: changeit
+      roles: [users]
+          
+    - userid: user2
+      password: changeit
+      roles: [users]
+    
+    - userid: admin
+      password: changeit
+      roles: [users, admins]
+      
+permissions:
+    - role: admins
+      access-level: ADMIN
+      urls: [ /.* ]
+      
+    - role: $all
+      access-level: READ
+      urls: [ /publicdb/coll1/.*, /publicdb/coll2/pub.*, /test/i/.* ]
+      
+    - role: users
+      access-level: READ
+      urls: [ /.* ]
+      
+    - role: user1
+      access-level: WRITE
+      urls: [ /publicdb/coll1/.* ]
+      content-condition: author eq $userid

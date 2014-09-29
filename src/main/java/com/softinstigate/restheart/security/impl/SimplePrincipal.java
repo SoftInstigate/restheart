@@ -8,13 +8,29 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.security;
+package com.softinstigate.restheart.security.impl;
+
+import java.security.Principal;
 
 /**
  *
  * @author uji
  */
-public class Role
+public class SimplePrincipal implements Principal
 {
-    public enum ROLE { ADMINISTRATOR, EDITOR, READER };
+    private String name;
+    
+    public SimplePrincipal(String name) 
+    {
+        if (name == null)
+            throw new IllegalArgumentException("argument name cannot be null");
+        
+        this.name = name;
+    }
+    
+    @Override
+    public String getName()
+    {
+        return name;
+    }
 }

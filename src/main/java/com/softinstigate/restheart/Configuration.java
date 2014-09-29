@@ -25,7 +25,7 @@ import org.yaml.snakeyaml.Yaml;
  */
 public class Configuration
 {
-    private static Logger logger = LoggerFactory.getLogger(Configuration.class);
+    private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
     
     private final boolean httpsListener;
     private final int httpsPort;
@@ -48,6 +48,11 @@ public class Configuration
     private final int mongoPort;
     private final String mongoUser;
     private final String mongoPassword;
+    
+    private final String idmImpl;
+    private final Map<String, Object> idmArgs;
+    private final String amImpl;
+    private final Map<String, Object> amArgs;
         
     private final String logFilePath;
     private final Level logLevel;
@@ -103,6 +108,15 @@ public class Configuration
         mongoUser = getAsStringOrDefault(conf, "mongo-user", "");
         mongoPassword = getAsStringOrDefault(conf, "mongo-password", "");
         
+        Map<String, Object> idm = getAsMap(conf, "idm");
+        Map<String, Object> am = getAsMap(conf, "access-manager");
+        
+        idmImpl = getAsStringOrDefault(idm, "idm-implementation", null);
+        idmArgs = idm;
+
+        amImpl = getAsStringOrDefault(am, "am-implementation", null);
+        amArgs = am;
+        
         logFilePath = getAsStringOrDefault(conf, "log-file-path", System.getProperty("java.io.tmpdir" + File.separator +  "restheart.log"));
         String _logLevel = getAsStringOrDefault(conf, "log-level", "WARN");
         logToConsole = getAsBooleanOrDefault(conf, "enable-log-console", true);
@@ -131,8 +145,33 @@ public class Configuration
         forceGzipEncoding = getAsBooleanOrDefault(conf, "force-gzip-encoding", true);
     }
     
+    private static Map<String, Object> getAsMap(Map<String, Object> conf, String key)
+    {
+        if (conf == null)
+        {
+            logger.warn("parameters group {} not specified in the configuration file.", key);
+            return null;
+        }
+        
+        Object o = conf.get(key);
+        
+        if (o instanceof Map)
+            return (Map<String, Object>) o;
+        else
+        {
+            logger.warn("parameters group {} not specified in the configuration file.", key);
+            return null;
+        }
+    }
+    
     private static Boolean getAsBooleanOrDefault(Map<String, Object> conf, String key, Boolean defaultValue)
     {
+        if (conf == null)
+        {
+            logger.error("tried to get paramenter {} from a null configuration map. using its default value {}", key, defaultValue);
+            return defaultValue;
+        }
+        
         Object o = conf.get(key);
         
         if (o == null)
@@ -155,6 +194,12 @@ public class Configuration
     
     private static String getAsStringOrDefault(Map<String, Object> conf, String key, String defaultValue)
     {
+        if (conf == null)
+        {
+            logger.error("tried to get paramenter {} from a null configuration map. using its default value {}", key, defaultValue);
+            return null;
+        }
+        
         Object o = conf.get(key);
         
         if (o == null)
@@ -177,6 +222,12 @@ public class Configuration
     
     private static Integer getAsIntegerOrDefault(Map<String, Object> conf, String key, Integer defaultValue)
     {
+        if (conf == null)
+        {
+            logger.error("tried to get paramenter {} from a null configuration map. using its default value {}", key, defaultValue);
+            return null;
+        }
+        
         Object o = conf.get(key);
         
         if (o == null)
@@ -412,5 +463,37 @@ public class Configuration
     public boolean isForceGzipEncoding()
     {
         return forceGzipEncoding;
+    }
+
+    /**
+     * @return the idmImpl
+     */
+    public String getIdmImpl()
+    {
+        return idmImpl;
+    }
+
+    /**
+     * @return the idmArgs
+     */
+    public Map<String, Object> getIdmArgs()
+    {
+        return idmArgs;
+    }
+
+    /**
+     * @return the amImpl
+     */
+    public String getAmImpl()
+    {
+        return amImpl;
+    }
+
+    /**
+     * @return the amArgs
+     */
+    public Map<String, Object> getAmArgs()
+    {
+        return amArgs;
     }
 }

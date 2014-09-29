@@ -12,8 +12,10 @@ package com.softinstigate.restheart;
 
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.security.handlers.AccessManagerHandler;
 import com.softinstigate.restheart.handlers.ErrorHandler;
 import com.softinstigate.restheart.handlers.GzipEncodingHandler;
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestDispacherHandler;
 import com.softinstigate.restheart.handlers.SchemaEnforcerHandler;
 import com.softinstigate.restheart.handlers.root.DeleteRootHandler;
@@ -36,7 +38,7 @@ import com.softinstigate.restheart.handlers.document.GetDocumentHandler;
 import com.softinstigate.restheart.handlers.document.PatchDocumentHandler;
 import com.softinstigate.restheart.handlers.document.PostDocumentHandler;
 import com.softinstigate.restheart.handlers.document.PutDocumentHandler;
-import com.softinstigate.restheart.security.MapIdentityManager;
+import com.softinstigate.restheart.security.AccessManager;
 import com.softinstigate.restheart.utils.ResourcesExtractor;
 import com.softinstigate.restheart.utils.LoggingInitializer;
 import io.undertow.Undertow;
@@ -54,8 +56,6 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.util.HashMap;
-import java.util.Map;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 
@@ -70,9 +70,11 @@ import io.undertow.security.handlers.AuthenticationMechanismsHandler;
 import io.undertow.security.handlers.SecurityInitialHandler;
 import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,14 +86,14 @@ public class Bootstrapper
 {
     private static Undertow server;
 
-    private static Logger logger = LoggerFactory.getLogger(Bootstrapper.class);
+    private static final Logger logger = LoggerFactory.getLogger(Bootstrapper.class);
 
     private static File browserRootFile = null;
 
     public static void main(final String[] args)
     {
-        Configuration conf ;
-        
+        Configuration conf;
+
         if (args == null || args.length < 1)
         {
             conf = new Configuration("restheart.yml");
@@ -102,12 +104,14 @@ public class Bootstrapper
         }
 
         LoggingInitializer.setLogLevel(conf.getLogLevel());
-        
+
         if (conf.isLogToFile())
+        {
             LoggingInitializer.startFileLogging(conf.getLogFilePath());
-        
+        }
+
         logger.info("starting restheart ********************************************");
-        
+
         logger.info("initializing mongodb connection pool to {}:{}", conf.getMongoHost(), conf.getMongoPort());
 
         try
@@ -124,13 +128,7 @@ public class Bootstrapper
 
         try
         {
-            start(
-                    conf.isHttpsListener(), conf.getHttpsHost(), conf.getHttpsPort(),
-                    conf.isHttpListener(), conf.getHttpHost(), conf.getHttpPort(),
-                    conf.isAjpListener(), conf.getAjpHost(), conf.getAjpPort(),
-                    conf.isUseEmbeddedKeystore(), conf.getKeystoreFile(), conf.getKeystorePassword(), conf.getCertPassword(),
-                    conf.getIoThreads(), conf.getWorkerThreads(), conf.getBufferSize(), conf.getBuffersPerRegion(), conf.isDirectBuffers(),
-                    conf.isForceGzipEncoding());
+            start(conf);
         }
         catch (Throwable t)
         {
@@ -183,11 +181,13 @@ public class Bootstrapper
         });
 
         logger.info("restheart started");
-        
+
         if (conf.isLogToFile())
+        {
             logger.info("logging to {} with level {}", conf.getLogFilePath(), conf.getLogLevel());
-        
-        if (! conf.isLogToConsole())
+        }
+
+        if (!conf.isLogToConsole())
         {
             logger.info("stopping logging to console ");
             LoggingInitializer.stopConsoleLogging();
@@ -198,39 +198,60 @@ public class Bootstrapper
         }
     }
 
-    private static void start(
-            boolean httpsListener,
-            String httpsHost,
-            int httpsPort,
-            boolean httpListener,
-            String httpHost,
-            int httpPort,
-            boolean ajpListener,
-            String ajpHost,
-            int ajpPort,
-            boolean useEmbeddedKeystore,
-            String keystoreFile,
-            String keystorePassword,
-            String certPassword,
-            int ioThreads,
-            int workerThreads,
-            int bufferSize,
-            int buffersPerRegion,
-            boolean directBuffers,
-            boolean forceGzipEncoding
-    )
+    private static void start(Configuration conf)
     {
-        if (!httpsListener && !httpListener && !ajpListener)
+        if (conf == null)
+        {
+            throw new IllegalArgumentException("");
+        }
+
+        if (!conf.isHttpsListener() && !conf.isHttpListener() && !conf.isAjpListener())
         {
             logger.error("no listener specified. exiting..");
             System.exit(-1);
         }
 
-        final Map<String, char[]> users = new HashMap<>(2);
-        users.put("admin", "admin".toCharArray());
-        users.put("user", "user".toCharArray());
+        IdentityManager identityManager = null;
 
-        final IdentityManager identityManager = new MapIdentityManager(users);
+        if (conf.getIdmImpl() == null)
+        {
+            logger.warn("***** no identity manager specified. security disabled.");
+            identityManager = null;
+        }
+        else
+        {
+            try
+            {
+                Object idm = Class.forName(conf.getIdmImpl()).getConstructor(Map.class).newInstance(conf.getIdmArgs());
+                identityManager = (IdentityManager) idm;
+            }
+            catch (ClassCastException | NoSuchMethodException | SecurityException | ClassNotFoundException | IllegalArgumentException | InstantiationException | IllegalAccessException | InvocationTargetException ex)
+            {
+                logger.error("error configuring idm implementation {}", conf.getIdmImpl(), ex);
+                System.exit(-3);
+            }
+        }
+
+        AccessManager accessManager = null;
+
+        if (conf.getAmImpl()== null)
+        {
+            logger.warn("***** no access manager specified. authenticated users can do anything.");
+            accessManager = null;
+        }
+        else
+        {
+            try
+            {
+                Object am = Class.forName(conf.getAmImpl()).getConstructor(Map.class).newInstance(conf.getAmArgs());
+                accessManager = (AccessManager) am;
+            }
+            catch (ClassCastException | NoSuchMethodException | SecurityException | ClassNotFoundException | IllegalArgumentException | InstantiationException | IllegalAccessException | InvocationTargetException ex)
+            {
+                logger.error("error configuring acess manager implementation {}", conf.getAmImpl(), ex);
+                System.exit(-3);
+            }
+        }
 
         SSLContext sslContext = null;
 
@@ -239,7 +260,7 @@ public class Bootstrapper
             KeyManagerFactory kmf;
             KeyStore ks;
 
-            if (useEmbeddedKeystore)
+            if (conf.isUseEmbeddedKeystore())
             {
                 char[] storepass = "restheart".toCharArray();
                 char[] keypass = "restheart".toCharArray();
@@ -260,11 +281,11 @@ public class Bootstrapper
                 kmf = KeyManagerFactory.getInstance("SunX509");
                 ks = KeyStore.getInstance("JKS");
 
-                FileInputStream fis = new FileInputStream(new File(keystoreFile));
+                FileInputStream fis = new FileInputStream(new File(conf.getKeystoreFile()));
 
-                ks.load(fis, keystorePassword.toCharArray());
+                ks.load(fis, conf.getKeystorePassword().toCharArray());
 
-                kmf.init(ks, certPassword.toCharArray());
+                kmf.init(ks, conf.getCertPassword().toCharArray());
                 sslContext.init(kmf.getKeyManagers(), null, null);
             }
         }
@@ -298,39 +319,39 @@ public class Bootstrapper
 
         Builder builder = Undertow.builder();
 
-        if (httpsListener)
+        if (conf.isHttpsListener())
         {
-            builder.addHttpsListener(httpsPort, httpsHost, sslContext);
-            logger.info("https listener bound at {}:{}", httpsHost, httpsPort);
+            builder.addHttpsListener(conf.getHttpsPort(), conf.getHttpHost(), sslContext);
+            logger.info("https listener bound at {}:{}", conf.getHttpsHost(), conf.getHttpsPort());
         }
 
-        if (httpListener)
+        if (conf.isHttpListener())
         {
-            builder.addHttpListener(httpPort, httpHost);
-            logger.info("http listener bound at {}:{}", httpHost, httpPort);
+            builder.addHttpListener(conf.getHttpPort(), conf.getHttpsHost());
+            logger.info("http listener bound at {}:{}", conf.getHttpHost(), conf.getHttpPort());
         }
 
-        if (ajpListener)
+        if (conf.isAjpListener())
         {
-            builder.addAjpListener(ajpPort, ajpHost);
-            logger.info("ajp listener bound at {}:{}", ajpHost, ajpPort);
+            builder.addAjpListener(conf.getAjpPort(), conf.getAjpHost());
+            logger.info("ajp listener bound at {}:{}", conf.getAjpHost(), conf.getAjpPort());
         }
 
         builder
-                .setIoThreads(ioThreads)
-                .setWorkerThreads(workerThreads)
-                .setDirectBuffers(directBuffers)
-                .setBufferSize(bufferSize)
-                .setBuffersPerRegion(buffersPerRegion)
+                .setIoThreads(conf.getIoThreads())
+                .setWorkerThreads(conf.getWorkerThreads())
+                .setDirectBuffers(conf.isDirectBuffers())
+                .setBufferSize(conf.getBufferSize())
+                .setBuffersPerRegion(conf.getBuffersPerRegion())
                 .setHandler(
                         path()
                         .addPrefixPath("/@browser", resource(new FileResourceManager(browserRootFile, 3)).addWelcomeFiles("browser.html").setDirectoryListingEnabled(false))
                         .addPrefixPath("/",
-                                addSecurity(
-                                        new BlockingHandler(
-                                                new GzipEncodingHandler(
-                                                        new ErrorHandler(
-                                                                new HttpContinueAcceptingHandler(
+                                new BlockingHandler(
+                                        new GzipEncodingHandler(
+                                                new ErrorHandler(
+                                                        new HttpContinueAcceptingHandler(
+                                                                addSecurity(
                                                                         new SchemaEnforcerHandler(
                                                                                 new RequestDispacherHandler(
                                                                                         new GetRootHandler(),
@@ -354,24 +375,38 @@ public class Bootstrapper
                                                                                         new DeleteDocumentHandler(),
                                                                                         new PatchDocumentHandler()
                                                                                 )
-                                                                        )
-                                                                )
-                                                        ), forceGzipEncoding
-                                                )
-                                        ), identityManager)
+                                                                        ), identityManager, accessManager)
+                                                        )
+                                                ), conf.isForceGzipEncoding()
+                                        )
+                                )
                         ));
 
         builder.build().start();
     }
 
-    private static HttpHandler addSecurity(final HttpHandler toWrap, final IdentityManager identityManager)
+    private static HttpHandler addSecurity(final PipedHttpHandler toWrap, final IdentityManager identityManager, final AccessManager accessManager)
     {
-        HttpHandler handler = toWrap;
-        handler = new AuthenticationCallHandler(handler);
-        handler = new AuthenticationConstraintHandler(handler);
-        final List<AuthenticationMechanism> mechanisms = Collections.<AuthenticationMechanism>singletonList(new BasicAuthenticationMechanism("My Realm"));
-        handler = new AuthenticationMechanismsHandler(handler, mechanisms);
-        handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE, identityManager, handler);
-        return handler;
+
+        if (identityManager != null)
+        {
+            HttpHandler handler = toWrap;
+
+            if (accessManager != null)
+            {
+                handler = new AccessManagerHandler(accessManager, toWrap);
+            }
+
+            handler = new AuthenticationCallHandler(handler);
+            handler = new AuthenticationConstraintHandler(handler);
+            final List<AuthenticationMechanism> mechanisms = Collections.<AuthenticationMechanism>singletonList(new BasicAuthenticationMechanism("RestHeart Realm"));
+            handler = new AuthenticationMechanismsHandler(handler, mechanisms);
+            handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE, identityManager, handler);
+            return handler;
+        }
+        else
+        {
+            return toWrap;
+        }
     }
 }
