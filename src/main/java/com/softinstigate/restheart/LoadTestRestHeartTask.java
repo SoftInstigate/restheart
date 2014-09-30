@@ -80,8 +80,8 @@ public class LoadTestRestHeartTask
     {
         DBCollection coll = CollectionDAO.getCollection("testdb", "testcoll");
         
-        CollectionDAO.getCollectionSize(coll, null);
-        CollectionDAO.getCollectionMetadata(coll);
+        //CollectionDAO.getCollectionSize(coll, null);
+        //CollectionDAO.getCollectionMetadata(coll);
         List<Map<String, Object>> data = CollectionDAO.getCollectionData(coll, 1, 5, null, null);
     }
 

@@ -15,8 +15,8 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import static com.softinstigate.restheart.db.CollectionDAO.doesCollectionExist;
 import com.softinstigate.restheart.utils.HttpStatus;
+import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
@@ -157,12 +157,32 @@ public class DBDAO
      * @param filterBy
      * @param filter
      * @return the db data
+     * @throws com.softinstigate.restheart.handlers.IllegalQueryParamenterException
     *
      */
     public static List<Map<String, Object>> getData(String dbName, List<String> colls, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
+            throws IllegalQueryParamenterException
     {
         // filter out reserved resourced
         List<String> _colls = colls.stream().filter(coll -> !RequestContext.isReservedResourceCollection(coll)).collect(Collectors.toList());
+        
+        int size = _colls.size();
+        
+         // *** arguments check
+        long total_pages = -1;
+        
+        if (size > 0)
+        {
+            float _size = size + 0f;
+            float _pagesize = pagesize + 0f;
+
+            total_pages = Math.max(1, Math.round(Math.nextUp(_size / _pagesize)));
+
+            if (page > total_pages)
+            {
+                throw new IllegalQueryParamenterException("illegal query paramenter, page is bigger that total pages which is " + total_pages);
+            }
+        }
         
         // apply page and pagesize
         _colls = _colls.subList((page - 1) * pagesize, (page - 1) * pagesize + pagesize > _colls.size() ? _colls.size() : (page - 1) * pagesize + pagesize);

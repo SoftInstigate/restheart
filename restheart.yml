@@ -38,12 +38,15 @@ mongo-servers:
     - mongo-host: 127.0.0.1
       mongo-port: 37017
 
+# NOTE: mongodb users must be created under the "admin" db 
+# e.g. in mongodb shell
+# > use admin
+# > db.createUser( { user: "admin", pwd: "adminadmin",  roles: [ "root" ] } )
 mongo-credentials:
     - mongo-user: admin
       mongo-password: adminadmin
 
 ### security 
-
 idm:    
     implementation-class: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
     conf-file: ./security.yml

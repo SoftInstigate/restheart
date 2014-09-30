@@ -13,7 +13,10 @@ package com.softinstigate.restheart.handlers.root;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.handlers.GetHandler;
+import com.softinstigate.restheart.utils.HttpStatus;
+import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -75,6 +78,14 @@ public class GetRootHandler extends GetHandler
                 }
         ).forEach((item) -> { data.add(item); });
 
-        return generateCollectionContent(exchange, null, data, page, pagesize, size, sortBy, filterBy, filter);
+        try
+        {
+            return generateCollectionContent(exchange, null, data, page, pagesize, size, sortBy, filterBy, filter);
+        }
+        catch (IllegalQueryParamenterException ex)
+        {
+            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
+            return null;
+        }
     }
 }

@@ -16,6 +16,7 @@ import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.handlers.GetHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
+import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
@@ -44,17 +45,32 @@ public class GetCollectionHandler extends GetHandler
     @Override
     protected String generateContent(HttpServerExchange exchange, RequestContext context, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
+
         DBCollection coll = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName());
 
-        Map<String, Object> metadata = CollectionDAO.getCollectionMetadata(coll);
+            // ***** get optional metadata information
+        Map<String, Object> metadata = null;
 
+        if (exchange.getQueryParameters().containsKey("metadata"))
+        {
+            metadata = CollectionDAO.getCollectionMetadata(coll);
+        }
+
+        long size = -1;
+
+        if (exchange.getQueryParameters().containsKey("count"))
+        {
+            size = CollectionDAO.getCollectionSize(coll, filter);
+        }
+
+            // ***** get data
         List<Map<String, Object>> data = null;
 
         try
         {
             data = CollectionDAO.getCollectionData(coll, page, pagesize, sortBy, filter);
         }
-        catch (JSONParseException jpe)
+        catch (JSONParseException jpe) // the filter expression is not a valid json string
         {
             logger.error("invalid filter expression {}", filter, jpe);
             ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", jpe);
@@ -62,7 +78,7 @@ public class GetCollectionHandler extends GetHandler
         }
         catch (MongoException me)
         {
-            if (me.getMessage().matches(".*Can't canonicalize query.*"))
+            if (me.getMessage().matches(".*Can't canonicalize query.*")) // error with the filter expression during query execution
             {
                 logger.error("invalid filter expression {}", filter, me);
                 ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", me);
@@ -74,24 +90,28 @@ public class GetCollectionHandler extends GetHandler
             }
         }
 
-        if (exchange.isComplete()) // if an error occured and the exchange has already been closed
+        if (exchange.isComplete()) // if an error occured getting data, the exchange is already closed
         {
             return null;
         }
 
-        if (data.isEmpty() && metadata.isEmpty())
+            // ***** return NOT_FOUND if collection is not existing (this is to avoid to check existance via the slow CollectionDAO.checkCollectionExists)
+        // TODO check, if metadata query param was not specified and the collection is empty but existing this request gets NOT_FOUND!
+        if (data.isEmpty() && (metadata == null || metadata.isEmpty())) // i.e. collection does not exists
         {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
             return null;
         }
 
-        long size = -1;
-
-        if (exchange.getQueryParameters().containsKey("count"))
+            // ***** return hal document
+        try
         {
-            size = CollectionDAO.getCollectionSize(coll, filter);
+            return generateCollectionContent(exchange, metadata, data, page, pagesize, size, sortBy, filterBy, filter);
         }
-
-        return generateCollectionContent(exchange, metadata, data, page, pagesize, size, sortBy, filterBy, filter);
+        catch (IllegalQueryParamenterException ex)
+        {
+            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
+            return null;
+        }
     }
 }

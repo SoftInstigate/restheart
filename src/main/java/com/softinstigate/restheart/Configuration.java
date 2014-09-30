@@ -110,7 +110,7 @@ public class Configuration
         httpsPort = 4443;
         httpsHost = "0.0.0.0";
 
-        httpListener = false;
+        httpListener = true;
         httpPort = 8080;
         httpHost = "0.0.0.0";
 
@@ -179,7 +179,7 @@ public class Configuration
             httpsPort = 8443;
             httpsHost = "0.0.0.0";
 
-            httpListener = false;
+            httpListener = true;
             httpPort = 8080;
             httpHost = "0.0.0.0";
 

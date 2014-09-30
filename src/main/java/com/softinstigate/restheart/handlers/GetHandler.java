@@ -125,9 +125,14 @@ public abstract class GetHandler extends PipedHttpHandler
      * @param pagesize
      * @param size if < 0, don't include size in metadata @param sortBy @param f
      * ilterBy @param filter @return @param sortBy @param filterBy @param filter
+     * @param sortBy
+     * @param filterBy
+     * @param filter
      * @return
+     * @throws com.softinstigate.restheart.utils.IllegalQueryParamenterException
      */
     protected String generateCollectionContent(HttpServerExchange exchange, Map<String, Object> metadata, List<Map<String, Object>> data, int page, int pagesize, long size, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
+            throws IllegalQueryParamenterException
     {
         String baseUrl = exchange.getRequestURL();
         String queryString = exchange.getQueryString();
@@ -137,7 +142,6 @@ public abstract class GetHandler extends PipedHttpHandler
 
         if (size > 0)
         {
-
             float _size = size + 0f;
             float _pagesize = pagesize + 0f;
 
@@ -145,18 +149,18 @@ public abstract class GetHandler extends PipedHttpHandler
 
             if (page > total_pages)
             {
-                throw new IllegalArgumentException("illegal argument, page is bigger that total pages which is " + total_pages);
+                throw new IllegalQueryParamenterException("illegal query paramenter, page is bigger that total pages which is " + total_pages);
             }
         }
 
         if (pagesize < 1 || pagesize > 1000)
         {
-            throw new IllegalArgumentException("illegal argument, pagesize must be > 0 and <= 1000");
+            throw new IllegalQueryParamenterException("illegal argument, pagesize must be >= 0 and <= 1000");
         }
 
         if (page < 1)
         {
-            throw new IllegalArgumentException("illegal argument, page must be > 0");
+            throw new IllegalQueryParamenterException("illegal argument, page must be > 0");
         }
 
         // *** data items
@@ -177,6 +181,7 @@ public abstract class GetHandler extends PipedHttpHandler
         long count = data.stream().filter((props) -> props.keySet().stream().anyMatch((k) -> k.equals("id") || k.equals("_id"))).count();
 
         properties.put("@returned", "" + count);
+        
         if (size > 0)
         {
             properties.put("@size", "" + size);

@@ -12,11 +12,15 @@ package com.softinstigate.restheart.handlers.database;
 
 import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.handlers.GetHandler;
+import com.softinstigate.restheart.utils.HttpStatus;
+import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,8 +47,16 @@ public class GetDBHandler extends GetHandler
         
         Map<String, Object> metadata = DBDAO.getDbMetaData(context.getDBName(), colls);
         
-        List<Map<String, Object>> data = DBDAO.getData(context.getDBName(), colls, page, pagesize, sortBy, filterBy, filter);
-        
-        return generateCollectionContent(exchange, metadata, data, page, pagesize, DBDAO.getDBSize(colls), sortBy, filterBy, filter);
+        List<Map<String, Object>> data;
+        try
+        {
+            data = DBDAO.getData(context.getDBName(), colls, page, pagesize, sortBy, filterBy, filter);
+            return generateCollectionContent(exchange, metadata, data, page, pagesize, DBDAO.getDBSize(colls), sortBy, filterBy, filter);
+        }
+        catch (IllegalQueryParamenterException ex)
+        {
+            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
+            return null;
+        }
     }
 }
