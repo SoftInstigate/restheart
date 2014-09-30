@@ -48,7 +48,7 @@ public class ErrorHandler implements HttpHandler
         {
             logger.error("error handling the request", t);
 
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown error handling the request", t);
+            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error handling the request", t);
         }
     }
 }

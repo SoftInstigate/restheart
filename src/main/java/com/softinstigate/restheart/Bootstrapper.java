@@ -42,9 +42,9 @@ import com.softinstigate.restheart.security.AccessManager;
 import com.softinstigate.restheart.security.handlers.PredicateAuthenticationConstraintHandler;
 import com.softinstigate.restheart.utils.ResourcesExtractor;
 import com.softinstigate.restheart.utils.LoggingInitializer;
+import com.softinstigate.restheart.utils.RequestContext;
 import io.undertow.Undertow;
 import io.undertow.security.idm.IdentityManager;
-import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import java.io.File;
@@ -66,11 +66,13 @@ import io.undertow.Undertow.Builder;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.AuthenticationMode;
 import io.undertow.security.handlers.AuthenticationCallHandler;
-import io.undertow.security.handlers.AuthenticationConstraintHandler;
 import io.undertow.security.handlers.AuthenticationMechanismsHandler;
 import io.undertow.security.handlers.SecurityInitialHandler;
 import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.handlers.AllowedMethodsHandler;
+import io.undertow.server.handlers.BlockingHandler;
+import io.undertow.util.HttpString;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -235,7 +237,7 @@ public class Bootstrapper
 
         AccessManager accessManager = null;
 
-        if (conf.getAmImpl()== null)
+        if (conf.getAmImpl() == null)
         {
             logger.warn("***** no access manager specified. authenticated users can do anything.");
             accessManager = null;
@@ -348,42 +350,53 @@ public class Bootstrapper
                         path()
                         .addPrefixPath("/@browser", resource(new FileResourceManager(browserRootFile, 3)).addWelcomeFiles("browser.html").setDirectoryListingEnabled(false))
                         .addPrefixPath("/",
-                                new BlockingHandler(
-                                        new GzipEncodingHandler(
-                                                new ErrorHandler(
-                                                        new HttpContinueAcceptingHandler(
-                                                                addSecurity(
-                                                                        new SchemaEnforcerHandler(
-                                                                                new RequestDispacherHandler(
-                                                                                        new GetRootHandler(),
-                                                                                        new PostRootHandler(),
-                                                                                        new PutRootHandler(),
-                                                                                        new DeleteRootHandler(),
-                                                                                        new PatchRootHandler(),
-                                                                                        new GetDBHandler(),
-                                                                                        new PostDBHandler(),
-                                                                                        new PutDBHandler(),
-                                                                                        new DeleteDBHandler(),
-                                                                                        new PatchDBHandler(),
-                                                                                        new GetCollectionHandler(),
-                                                                                        new PostCollectionHandler(),
-                                                                                        new PutCollectionHandler(),
-                                                                                        new DeleteCollectionHandler(),
-                                                                                        new PatchCollectionHandler(),
-                                                                                        new GetDocumentHandler(),
-                                                                                        new PostDocumentHandler(),
-                                                                                        new PutDocumentHandler(),
-                                                                                        new DeleteDocumentHandler(),
-                                                                                        new PatchDocumentHandler()
-                                                                                )
-                                                                        ), identityManager, accessManager)
-                                                        )
-                                                ), conf.isForceGzipEncoding()
+                                new AllowedMethodsHandler(
+                                        new BlockingHandler(
+                                                new GzipEncodingHandler(
+                                                        new ErrorHandler(
+                                                                new HttpContinueAcceptingHandler(
+                                                                        addSecurity(
+                                                                                new SchemaEnforcerHandler(
+                                                                                        new RequestDispacherHandler(
+                                                                                                new GetRootHandler(),
+                                                                                                new PostRootHandler(),
+                                                                                                new PutRootHandler(),
+                                                                                                new DeleteRootHandler(),
+                                                                                                new PatchRootHandler(),
+                                                                                                new GetDBHandler(),
+                                                                                                new PostDBHandler(),
+                                                                                                new PutDBHandler(),
+                                                                                                new DeleteDBHandler(),
+                                                                                                new PatchDBHandler(),
+                                                                                                new GetCollectionHandler(),
+                                                                                                new PostCollectionHandler(),
+                                                                                                new PutCollectionHandler(),
+                                                                                                new DeleteCollectionHandler(),
+                                                                                                new PatchCollectionHandler(),
+                                                                                                new GetDocumentHandler(),
+                                                                                                new PostDocumentHandler(),
+                                                                                                new PutDocumentHandler(),
+                                                                                                new DeleteDocumentHandler(),
+                                                                                                new PatchDocumentHandler()
+                                                                                        )
+                                                                                ), identityManager, accessManager)
+                                                                )
+                                                        ), conf.isForceGzipEncoding()
+                                                )
+                                        ), 
+                                        // allowed methods
+                                        HttpString.tryFromString(RequestContext.METHOD.GET.name()), 
+                                        HttpString.tryFromString(RequestContext.METHOD.POST.name()),
+                                        HttpString.tryFromString(RequestContext.METHOD.PUT.name()),
+                                        HttpString.tryFromString(RequestContext.METHOD.DELETE.name()),
+                                        HttpString.tryFromString(RequestContext.METHOD.PATCH.name())
                                         )
                                 )
-                        ));
+                        );
 
         builder.build().start();
+
+        AllowedMethodsHandler x = new AllowedMethodsHandler(null, HttpString.tryFromString(RequestContext.METHOD.DELETE.name()));
     }
 
     private static HttpHandler addSecurity(final PipedHttpHandler toWrap, final IdentityManager identityManager, final AccessManager accessManager)
@@ -403,7 +416,7 @@ public class Bootstrapper
             final List<AuthenticationMechanism> mechanisms = Collections.<AuthenticationMechanism>singletonList(new BasicAuthenticationMechanism("RestHeart Realm"));
             handler = new AuthenticationMechanismsHandler(handler, mechanisms);
             handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE, identityManager, handler);
-            
+
             return handler;
         }
         else

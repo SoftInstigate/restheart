@@ -39,6 +39,6 @@ public class PutRootHandler extends PipedHttpHandler
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_IMPLEMENTED);
+        ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
     }
 }
