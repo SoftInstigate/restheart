@@ -12,11 +12,16 @@
 package com.softinstigate.restheart.db;
 
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoCredential;
+import com.mongodb.ReadPreference;
 import com.mongodb.ServerAddress;
+import com.mongodb.WriteConcern;
+import com.softinstigate.restheart.Configuration;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,14 +33,12 @@ public class MongoDBClientSingleton
 {
     private static boolean initialized = false;
     
-    private static transient String mongoHost = null;
-    private static transient int mongoPort = 27017;
-    private static transient String mongoUser = null;
-    private static transient String mongoPassword = null;
+    private static transient List<Map<String, Object>> mongoServers;
+    private static transient List<Map<String, Object>> mongoCredentials;
     
     private MongoClient mongoClient;
     
-    private Logger logger = LoggerFactory.getLogger(MongoDBClientSingleton.class);
+    private static Logger logger = LoggerFactory.getLogger(MongoDBClientSingleton.class);
     
     private MongoDBClientSingleton()
     {
@@ -56,26 +59,51 @@ public class MongoDBClientSingleton
         }
     }
     
-    public static void init(String host, int port, String user, String password)
+    public static void init(Configuration conf)
     {
-        mongoHost = host;
-        mongoPort = port;
-        mongoUser = user;
-        mongoPassword = password;
-        initialized = true;
+        mongoServers = conf.getMongoServers();
+        mongoCredentials = conf.getMongoCredentials();
+        
+        if (mongoServers != null && !mongoServers.isEmpty())
+            initialized = true;
+        else
+        {
+            logger.error("error initializing mongodb client, no servers found in configuration");
+        }
     }
     
     private void setup() throws UnknownHostException
     {
-        List<ServerAddress> servers = new ArrayList<>();
-        List<MongoCredential> credentials = new ArrayList<>();
-        
-        servers.add(new ServerAddress(mongoHost, mongoPort));
-        
-        if (mongoUser != null && mongoPassword != null)
-            credentials.add(MongoCredential.createMongoCRCredential(mongoUser, "admin", mongoPassword.toCharArray()));
+        if (initialized)
+        {
+            List<ServerAddress> servers = new ArrayList<>();
+            List<MongoCredential> credentials = new ArrayList<>();
+            
+            for (Map<String, Object> mongoServer : mongoServers)
+            {
+                Object mongoHost = mongoServer.get(Configuration.MONGO_HOST);
+                Object mongoPort = mongoServer.get(Configuration.MONGO_PORT);
                 
-        mongoClient = new MongoClient(servers, credentials); 
+                if (mongoHost != null && mongoHost instanceof String && mongoPort != null && mongoPort instanceof Integer)
+                    servers.add(new ServerAddress((String) mongoHost, (int) mongoPort));
+            }
+            
+            if (mongoCredentials != null)
+            {
+                for (Map<String, Object> mongoCredential : mongoCredentials)
+                {
+                    Object mongoUser = mongoCredential.get(Configuration.MONGO_USER);
+                    Object mongoPwd = mongoCredential.get(Configuration.MONGO_PASSWORD);
+
+                    if (mongoUser != null && mongoUser instanceof String && mongoPwd != null && mongoPwd instanceof String)
+                        credentials.add(MongoCredential.createMongoCRCredential((String) mongoUser, "admin", ((String)mongoPwd).toCharArray()));
+                }
+            }
+        
+            MongoClientOptions opts = MongoClientOptions.builder().readPreference(ReadPreference.primaryPreferred()).writeConcern(WriteConcern.ACKNOWLEDGED).build();
+            
+            mongoClient = new MongoClient(servers, credentials, opts); 
+        }
     }
     
     public static MongoDBClientSingleton getInstance()

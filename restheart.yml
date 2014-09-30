@@ -31,15 +31,15 @@ use-embedded-keystore: true
 
 #### mongodb 
 
-mongodb:
+mongo-servers:
     - mongo-host: 127.0.0.1
       mongo-port: 27017
-      mongo-user: admin
-      mongo-password: adminadmin
 
     - mongo-host: 127.0.0.1
       mongo-port: 37017
-      mongo-user: admin
+
+mongo-credentials:
+    - mongo-user: admin
       mongo-password: adminadmin
 
 ### security 

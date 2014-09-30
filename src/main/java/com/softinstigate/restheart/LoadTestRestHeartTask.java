@@ -54,7 +54,7 @@ public class LoadTestRestHeartTask
             }
         });
         
-        MongoDBClientSingleton.init("127.0.0.1", 27017, "admin", "adminadmin");
+        MongoDBClientSingleton.init(new Configuration());
     }
 
     public void get() throws IOException

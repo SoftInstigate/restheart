@@ -14,6 +14,9 @@ import ch.qos.logback.classic.Level;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,10 +47,8 @@ public class Configuration
     private final String keystorePassword;
     private final String certPassword;
 
-    private final String mongoHost;
-    private final int mongoPort;
-    private final String mongoUser;
-    private final String mongoPassword;
+    private final List<Map<String, Object>> mongoServers;
+    private final List<Map<String, Object>> mongoCredentials;
 
     private final String idmImpl;
     private final Map<String, Object> idmArgs;
@@ -69,6 +70,40 @@ public class Configuration
 
     private final boolean forceGzipEncoding;
 
+    public static final String MONGO_SERVERS = "mongo-servers";
+    public static final String MONGO_CREDENTIALS = "mongo-credentials";
+    public static final String FORCE_GZIP_ENCODING = "force-gzip-encoding";
+    public static final String DIRECT_BUFFERS = "direct-buffers";
+    public static final String BUFFERS_PER_REGION = "buffers-per-region";
+    public static final String BUFFER_SIZE = "buffer-size";
+    public static final String WORKER_THREADS = "worker-threads";
+    public static final String IO_THREADS = "io-threads";
+    public static final String REQUESTS_LIMIT = "requests-limit";
+    public static final String ENABLE_LOG_FILE = "enable-log-file";
+    public static final String ENABLE_LOG_CONSOLE = "enable-log-console";
+    public static final String LOG_LEVEL = "log-level";
+    public static final String LOG_FILE_PATH = "log-file-path";
+    public static final String IMPLEMENTATION_CLASS = "implementation-class";
+    public static final String ACCESS_MANAGER = "access-manager";
+    public static final String IDM = "idm";
+    public static final String MONGO_PASSWORD = "mongo-password";
+    public static final String MONGO_USER = "mongo-user";
+    public static final String MONGO_PORT = "mongo-port";
+    public static final String MONGO_HOST = "mongo-host";
+    public static final String CERT_PASSWORD = "certpassword";
+    public static final String KEYSTORE_PASSWORD = "keystore-password";
+    public static final String KEYSTORE_FILE = "keystore-file";
+    public static final String USE_EMBEDDED_KEYSTORE = "use-embedded-keystore";
+    public static final String AJP_HOST = "ajp-host";
+    public static final String AJP_PORT = "ajp-port";
+    public static final String AJP_LISTENER = "ajp-listener";
+    public static final String HTTP_HOST = "http-host";
+    public static final String HTTP_PORT = "http-port";
+    public static final String HTTP_LISTENER = "http-listener";
+    public static final String HTTPS_HOST = "https-host";
+    public static final String HTTPS_PORT = "https-port";
+    public static final String HTTPS_LISTENER = "https-listener";
+    
     public Configuration()
     {
         httpsListener = true;
@@ -88,10 +123,13 @@ public class Configuration
         keystorePassword = null;
         certPassword = null;
 
-        mongoHost = "127.0.0.1";
-        mongoPort = 27017;
-        mongoUser = null;
-        mongoPassword = null;
+        mongoServers = new ArrayList<>();
+        Map<String, Object> defaultMongoServer = new HashMap<>();
+        defaultMongoServer.put(MONGO_HOST, "127.0.0.1");
+        defaultMongoServer.put(MONGO_PORT, 27017);
+        mongoServers.add(defaultMongoServer);
+        
+        mongoCredentials = null;
 
         idmImpl = null;
         idmArgs = null;
@@ -154,10 +192,13 @@ public class Configuration
             keystorePassword = null;
             certPassword = null;
 
-            mongoHost = "127.0.0.1";
-            mongoPort = 27017;
-            mongoUser = null;
-            mongoPassword = null;
+            mongoServers = new ArrayList<>();
+            Map<String, Object> defaultMongoServer = new HashMap<>();
+            defaultMongoServer.put(MONGO_HOST, "127.0.0.1");
+            defaultMongoServer.put(MONGO_PORT, 27017);
+            mongoServers.add(defaultMongoServer);
+            
+            mongoCredentials = null;
 
             idmImpl = null;
             idmArgs = null;
@@ -181,41 +222,45 @@ public class Configuration
         }
         else
         {
-            httpsListener = getAsBooleanOrDefault(conf, "https-listener", true);
-            httpsPort = getAsIntegerOrDefault(conf, "https-port", 8443);
-            httpsHost = getAsStringOrDefault(conf, "https-host", "0.0.0.0");
+            httpsListener = getAsBooleanOrDefault(conf, HTTPS_LISTENER, true);
+            httpsPort = getAsIntegerOrDefault(conf, HTTPS_PORT, 8443);
+            httpsHost = getAsStringOrDefault(conf, HTTPS_HOST, "0.0.0.0");
 
-            httpListener = getAsBooleanOrDefault(conf, "http-listener", false);
-            httpPort = getAsIntegerOrDefault(conf, "http-port", 8080);
-            httpHost = getAsStringOrDefault(conf, "http-host", "0.0.0.0");
+            httpListener = getAsBooleanOrDefault(conf, HTTP_LISTENER, false);
+            httpPort = getAsIntegerOrDefault(conf, HTTP_PORT, 8080);
+            httpHost = getAsStringOrDefault(conf, HTTP_HOST, "0.0.0.0");
 
-            ajpListener = getAsBooleanOrDefault(conf, "ajp-listener", false);
-            ajpPort = getAsIntegerOrDefault(conf, "ajp-port", 8009);
-            ajpHost = getAsStringOrDefault(conf, "ajp-host", "0.0.0.0");
+            ajpListener = getAsBooleanOrDefault(conf, AJP_LISTENER, false);
+            ajpPort = getAsIntegerOrDefault(conf, AJP_PORT, 8009);
+            ajpHost = getAsStringOrDefault(conf, AJP_HOST, "0.0.0.0");
 
-            useEmbeddedKeystore = getAsBooleanOrDefault(conf, "use-embedded-keystore", true);
-            keystoreFile = getAsStringOrDefault(conf, "keystore-file", null);
-            keystorePassword = getAsStringOrDefault(conf, "keystore-password", null);
-            certPassword = getAsStringOrDefault(conf, "certpassword", null);
+            useEmbeddedKeystore = getAsBooleanOrDefault(conf, USE_EMBEDDED_KEYSTORE, true);
+            keystoreFile = getAsStringOrDefault(conf, KEYSTORE_FILE, null);
+            keystorePassword = getAsStringOrDefault(conf, KEYSTORE_PASSWORD, null);
+            certPassword = getAsStringOrDefault(conf, CERT_PASSWORD, null);
 
-            mongoHost = getAsStringOrDefault(conf, "mongo-host", "127.0.0.1");
-            mongoPort = getAsIntegerOrDefault(conf, "mongo-port", 27017);
-            mongoUser = getAsStringOrDefault(conf, "mongo-user", "");
-            mongoPassword = getAsStringOrDefault(conf, "mongo-password", "");
+            List<Map<String, Object>> mongoServersDefault = new ArrayList<>();
+            Map<String, Object> defaultMongoServer = new HashMap<>();
+            defaultMongoServer.put(MONGO_HOST, "127.0.0.1");
+            defaultMongoServer.put(MONGO_PORT, 27017);
+            mongoServersDefault.add(defaultMongoServer);
+            
+            mongoServers = getAsListOfMaps(conf, MONGO_SERVERS, mongoServersDefault);
+            mongoCredentials = getAsListOfMaps(conf, MONGO_CREDENTIALS, null);
+            
+            Map<String, Object> idm = getAsMap(conf, IDM);
+            Map<String, Object> am = getAsMap(conf, ACCESS_MANAGER);
 
-            Map<String, Object> idm = getAsMap(conf, "idm");
-            Map<String, Object> am = getAsMap(conf, "access-manager");
-
-            idmImpl = getAsStringOrDefault(idm, "implementation-class", "com.softinstigate.restheart.security.impl.SimpleFileIdentityManager");
+            idmImpl = getAsStringOrDefault(idm, IMPLEMENTATION_CLASS, "com.softinstigate.restheart.security.impl.SimpleFileIdentityManager");
             idmArgs = idm;
 
-            amImpl = getAsStringOrDefault(am, "implementation-class", "com.softinstigate.restheart.security.impl.SimpleAccessManager");
+            amImpl = getAsStringOrDefault(am, IMPLEMENTATION_CLASS, "com.softinstigate.restheart.security.impl.SimpleAccessManager");
             amArgs = am;
 
-            logFilePath = getAsStringOrDefault(conf, "log-file-path", System.getProperty("java.io.tmpdir" + File.separator + "restheart.log"));
-            String _logLevel = getAsStringOrDefault(conf, "log-level", "WARN");
-            logToConsole = getAsBooleanOrDefault(conf, "enable-log-console", true);
-            logToFile = getAsBooleanOrDefault(conf, "enable-log-file", true);
+            logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH, System.getProperty("java.io.tmpdir" + File.separator + "restheart.log"));
+            String _logLevel = getAsStringOrDefault(conf, LOG_LEVEL, "WARN");
+            logToConsole = getAsBooleanOrDefault(conf, ENABLE_LOG_CONSOLE, true);
+            logToFile = getAsBooleanOrDefault(conf, ENABLE_LOG_FILE, true);
 
             Level level;
 
@@ -231,15 +276,37 @@ public class Configuration
 
             logLevel = level;
 
-            requestsLimit = getAsIntegerOrDefault(conf, "requests-limit", 100);
+            requestsLimit = getAsIntegerOrDefault(conf, REQUESTS_LIMIT, 100);
 
-            ioThreads = getAsIntegerOrDefault(conf, "io-threads", 2);
-            workerThreads = getAsIntegerOrDefault(conf, "worker-threads", 32);
-            bufferSize = getAsIntegerOrDefault(conf, "buffer-size", 16384);
-            buffersPerRegion = getAsIntegerOrDefault(conf, "buffers-per-region", 20);
-            directBuffers = getAsBooleanOrDefault(conf, "direct-buffers", true);
+            ioThreads = getAsIntegerOrDefault(conf, IO_THREADS, 2);
+            workerThreads = getAsIntegerOrDefault(conf, WORKER_THREADS, 32);
+            bufferSize = getAsIntegerOrDefault(conf, BUFFER_SIZE, 16384);
+            buffersPerRegion = getAsIntegerOrDefault(conf, BUFFERS_PER_REGION, 20);
+            directBuffers = getAsBooleanOrDefault(conf, DIRECT_BUFFERS, true);
 
-            forceGzipEncoding = getAsBooleanOrDefault(conf, "force-gzip-encoding", false);
+            forceGzipEncoding = getAsBooleanOrDefault(conf, FORCE_GZIP_ENCODING, false);
+        }
+    }
+
+    private static List<Map<String, Object>> getAsListOfMaps(Map<String, Object> conf, String key, List<Map<String, Object>> defaultValue)
+    {
+        if (conf == null)
+        {
+            logger.warn("parameters group {} not specified in the configuration file. using its default value {}", key, defaultValue);
+            
+            return defaultValue;
+        }
+
+        Object o = conf.get(key);
+
+        if (o instanceof List)
+        {
+            return (List<Map<String, Object>>) o;
+        }
+        else
+        {
+            logger.warn("parameters group {} not specified in the configuration file, using its default value {}", key, defaultValue);
+            return defaultValue;
         }
     }
 
@@ -459,38 +526,6 @@ public class Configuration
     }
 
     /**
-     * @return the mongoHost
-     */
-    public String getMongoHost()
-    {
-        return mongoHost;
-    }
-
-    /**
-     * @return the mongoPort
-     */
-    public int getMongoPort()
-    {
-        return mongoPort;
-    }
-
-    /**
-     * @return the mongoUser
-     */
-    public String getMongoUser()
-    {
-        return mongoUser;
-    }
-
-    /**
-     * @return the mongoPassword
-     */
-    public String getMongoPassword()
-    {
-        return mongoPassword;
-    }
-
-    /**
      * @return the logFilePath
      */
     public String getLogFilePath()
@@ -608,5 +643,21 @@ public class Configuration
     public int getRequestLimit()
     {
         return requestsLimit;
+    }
+
+    /**
+     * @return the mongoServers
+     */
+    public List<Map<String, Object>> getMongoServers()
+    {
+        return mongoServers;
+    }
+
+    /**
+     * @return the mongoCredentials
+     */
+    public List<Map<String, Object>> getMongoCredentials()
+    {
+        return mongoCredentials;
     }
 }

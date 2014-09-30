@@ -120,11 +120,13 @@ public class Bootstrapper
 
         logger.info("starting restheart ********************************************");
 
-        logger.info("initializing mongodb connection pool to {}:{}", conf.getMongoHost(), conf.getMongoPort());
+        String mongoHosts = conf.getMongoServers().stream().map(s -> s.get(Configuration.MONGO_HOST) + ":" + s.get(Configuration.MONGO_PORT) + " ").reduce("", String::concat);
+        
+        logger.info("initializing mongodb connection pool to {}", mongoHosts);
 
         try
         {
-            MongoDBClientSingleton.init(conf.getMongoHost(), conf.getMongoPort(), conf.getMongoUser(), conf.getMongoPassword());
+            MongoDBClientSingleton.init(conf);
 
             logger.info("mongodb connection pool initialized");
         }
