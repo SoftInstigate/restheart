@@ -72,7 +72,8 @@ public class MongoDBClientSingleton
         
         servers.add(new ServerAddress(mongoHost, mongoPort));
         
-        credentials.add(MongoCredential.createMongoCRCredential(mongoUser, "admin", mongoPassword.toCharArray()));
+        if (mongoUser != null && mongoPassword != null)
+            credentials.add(MongoCredential.createMongoCRCredential(mongoUser, "admin", mongoPassword.toCharArray()));
                 
         mongoClient = new MongoClient(servers, credentials); 
     }

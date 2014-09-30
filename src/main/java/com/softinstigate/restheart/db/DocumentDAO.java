@@ -116,7 +116,7 @@ public class DocumentDAO
             else
             {
                 // check the old etag (in case restore the old document version)
-                return optimisticCheckEtag(coll, oldDocument, requestEtag);
+                return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_NO_CONTENT);
             }
         }
         else
@@ -145,7 +145,7 @@ public class DocumentDAO
                 coll.update(idQuery, new BasicDBObject("$set", created), true, false);
 
                 // check the old etag (in case restore the old document version)
-                return optimisticCheckEtag(coll, oldDocument, requestEtag);
+                return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_NO_CONTENT);
             }
             else // insert
             {
@@ -220,7 +220,7 @@ public class DocumentDAO
             coll.update(idQuery, new BasicDBObject("$set", createdContet), true, false);
 
             // check the old etag (in case restore the old document version)
-            return optimisticCheckEtag(coll, oldDocument, requestEtag);
+            return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_NO_CONTENT);
         }
         else // insert
         {
@@ -245,7 +245,7 @@ public class DocumentDAO
         else
         {
             // check the old etag (in case restore the old document version)
-            return optimisticCheckEtag(coll, oldDocument, requestEtag);
+            return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_GONE);
         }
     }
 
@@ -270,7 +270,7 @@ public class DocumentDAO
         }
     }
 
-    private static int optimisticCheckEtag(DBCollection coll, DBObject oldDocument, ObjectId requestEtag)
+    private static int optimisticCheckEtag(DBCollection coll, DBObject oldDocument, ObjectId requestEtag, int httpStatusIfOk)
     {
         if (requestEtag == null)
         {
@@ -289,7 +289,7 @@ public class DocumentDAO
         {
             if (oldEtag.equals(requestEtag))
             {
-                return HttpStatus.SC_NO_CONTENT; // ok they match
+                return httpStatusIfOk; // ok they match
             }
             else
             {

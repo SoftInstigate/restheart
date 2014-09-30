@@ -104,7 +104,7 @@ public class Bootstrapper
 
         if (args == null || args.length < 1)
         {
-            conf = new Configuration("restheart.yml");
+            conf = new Configuration();
         }
         else
         {
