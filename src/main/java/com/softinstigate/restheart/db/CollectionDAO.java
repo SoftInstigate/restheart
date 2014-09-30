@@ -28,6 +28,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.bson.BSONObject;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,9 +45,9 @@ public class CollectionDAO
 
     private static final BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "@metadata");
     private static final BasicDBObject DATA_QUERY = new BasicDBObject("_id", new BasicDBObject("$ne", "@metadata"));
-    
+
     private static final BasicDBObject fieldsToReturn;
-    
+
     static
     {
         fieldsToReturn = new BasicDBObject();
@@ -55,12 +56,14 @@ public class CollectionDAO
     }
 
     /**
-     * WARNING: slow method. perf tests show this can take up to 35% overall requests processing time when getting data from a collection
+     * WARNING: slow method. perf tests show this can take up to 35% overall
+     * requests processing time when getting data from a collection
+     *
      * @param exchange
      * @param dbName
      * @param collectionName
      * @return true if the specified collection exits in the db dbName
-    */
+     */
     public static boolean checkCollectionExists(HttpServerExchange exchange, String dbName, String collectionName)
     {
         if (!doesCollectionExist(dbName, collectionName))
@@ -73,20 +76,22 @@ public class CollectionDAO
     }
 
     /**
-     * WARNING: quite method. perf tests show this can take up to 35% overall requests processing time when getting data from a collection
+     * WARNING: quite method. perf tests show this can take up to 35% overall
+     * requests processing time when getting data from a collection
+     *
      * @param dbName
      * @param collectionName
      * @return true if the specified collection exits in the db dbName
-    */
+     */
     public static boolean doesCollectionExist(String dbName, String collectionName)
     {
         if (dbName == null || dbName.isEmpty() || dbName.contains(" "))
         {
             return false;
         }
-        
+
         BasicDBObject query = new BasicDBObject("name", dbName + "." + collectionName);
-        
+
         return client.getDB(dbName).getCollection("system.namespaces").findOne(query) != null;
     }
 
@@ -108,7 +113,7 @@ public class CollectionDAO
     public static long getCollectionSize(DBCollection coll, Deque<String> filter)
     {
         BasicDBObject query = DATA_QUERY;
-        
+
         if (filter != null)
         {
             try
@@ -116,21 +121,21 @@ public class CollectionDAO
                 String _filter = filter.getFirst();
                 _filter = _filter.replaceAll("\\[", "{");
                 _filter = _filter.replaceAll("\\]", "}");
-                
+
                 BasicDBObject filterQuery = (BasicDBObject) JSON.parse(_filter);
                 filterQuery.putAll(query.toMap());
                 query = filterQuery;
             }
-            catch(JSONParseException jpe)
+            catch (JSONParseException jpe)
             {
                 logger.error("****** error parsing filter expression {}", filter.getFirst());
             }
         }
-        
+
         return coll.count(query);
     }
 
-    public static List<Map<String, Object>> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filter)
+    public static List<Map<String, Object>> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filter) throws JSONParseException
     {
         // apply sort_by
         DBObject sort = new BasicDBObject();
@@ -144,7 +149,7 @@ public class CollectionDAO
             sortBy.stream().forEach((sf) ->
             {
                 sf = sf.replaceAll("@lastupdated_on", "@etag"); // @lastupdated is not stored and actually generated from @tag
-                    
+
                 if (sf.startsWith("-"))
                 {
                     sort.put(sf.substring(1), -1);
@@ -159,31 +164,22 @@ public class CollectionDAO
                 }
             });
         }
-        
+
         // apply filter
-        BasicDBObject query = DATA_QUERY;
-        
+        final BasicDBObject query = new BasicDBObject(DATA_QUERY);
+
         if (filter != null)
         {
-            try
+            filter.stream().forEach(f ->
             {
-                String _filter = filter.getFirst();
-                _filter = _filter.replaceAll("\\[", "{");
+                String _filter = f.replaceAll("\\[", "{");
                 _filter = _filter.replaceAll("\\]", "}");
-                
-                BasicDBObject filterQuery = (BasicDBObject) JSON.parse(_filter);
-                filterQuery.putAll(query.toMap());
-                query = filterQuery;
-            }
-            catch(JSONParseException jpe)
-            {
-                // TODO send over error message in case
-                // also issue: if the query is valid json but, for instance, 
-                // including a not existing operator an exception is thrown when reading the cursor
-                logger.error("****** error parsing filter expression {}", filter.getFirst(), jpe);
-            }
+
+                query.putAll(
+                        (BSONObject) JSON.parse(_filter)); // this can throw JSONParseException for invalid filter parameters
+            });
         }
-        
+
         List<Map<String, Object>> data = DAOUtils.getDataFromRows(getDataFromCursor(coll.find(query).sort(sort).limit(pagesize).skip(pagesize * (page - 1))));
 
         data.forEach(row ->
@@ -207,8 +203,10 @@ public class CollectionDAO
         Map<String, Object> metadata = DAOUtils.getDataFromRow(coll.findOne(METADATA_QUERY), "_id");
 
         if (metadata == null)
+        {
             metadata = new HashMap<>();
-        
+        }
+
         Object etag = metadata.get("@etag");
 
         if (etag != null && ObjectId.isValid("" + etag))
@@ -222,8 +220,8 @@ public class CollectionDAO
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param dbName
      * @param collName
      * @param content
@@ -234,16 +232,16 @@ public class CollectionDAO
     public static int upsertCollection(String dbName, String collName, DBObject content, ObjectId etag, boolean patching)
     {
         DB db = DBDAO.getDB(dbName);
-        
+
         DBCollection coll = db.getCollection(collName);
-        
+
         boolean updating = CollectionDAO.doesCollectionExist(dbName, collName);
-        
+
         if (patching && !updating)
         {
             return HttpStatus.SC_NOT_FOUND;
         }
-        
+
         if (updating)
         {
             if (etag == null)
@@ -251,7 +249,7 @@ public class CollectionDAO
                 logger.warn("the {} header in required", Headers.ETAG);
                 return HttpStatus.SC_PRECONDITION_FAILED;
             }
-            
+
             BasicDBObject idAndEtagQuery = new BasicDBObject("_id", "@metadata");
             idAndEtagQuery.append("@etag", etag);
 
@@ -260,7 +258,7 @@ public class CollectionDAO
                 return HttpStatus.SC_PRECONDITION_FAILED;
             }
         }
-        
+
         ObjectId timestamp = new ObjectId();
         Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
 
@@ -270,7 +268,7 @@ public class CollectionDAO
         }
 
         content.removeField("_id"); // make sure we don't change this field
-        
+
         if (updating)
         {
             content.removeField("@crated_on"); // don't allow to update this field
@@ -282,7 +280,7 @@ public class CollectionDAO
             content.put("@created_on", now.toString());
             content.put("@etag", timestamp);
         }
-        
+
         if (patching)
         {
             coll.update(METADATA_QUERY, new BasicDBObject("$set", content), true, false);
@@ -294,7 +292,7 @@ public class CollectionDAO
             // we need to put this field back using a second update 
             // it is not possible in a single update even using $setOnInsert update operator
             // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
-            
+
             DBObject old = coll.findAndModify(METADATA_QUERY, fieldsToReturn, null, false, content, false, true);
 
             if (old != null)
@@ -311,7 +309,7 @@ public class CollectionDAO
                 BasicDBObject createdContet = new BasicDBObject("@created_on", "" + oldTimestamp);
                 createdContet.markAsPartialObject();
                 coll.update(METADATA_QUERY, new BasicDBObject("$set", createdContet), true, false);
-                
+
                 return HttpStatus.SC_OK;
             }
             else
@@ -322,21 +320,21 @@ public class CollectionDAO
                 coll.update(METADATA_QUERY, new BasicDBObject("$set", createdContet), true, false);
 
                 initDefaultIndexes(coll);
-                
+
                 return HttpStatus.SC_CREATED;
             }
         }
     }
-    
+
     public static int deleteCollection(String dbName, String collName, ObjectId requestEtag)
     {
         DBCollection coll = getCollection(dbName, collName);
-        
+
         BasicDBObject checkEtag = new BasicDBObject("_id", "@metadata");
         checkEtag.append("@etag", requestEtag);
-        
+
         DBObject exists = coll.findOne(checkEtag, fieldsToReturn);
-        
+
         if (exists == null)
         {
             return HttpStatus.SC_PRECONDITION_FAILED;
@@ -352,7 +350,7 @@ public class CollectionDAO
     {
         return new ArrayList<>(cursor.toArray());
     }
-    
+
     private static void initDefaultIndexes(DBCollection coll)
     {
         coll.createIndex(new BasicDBObject("_id", 1).append("@etag", 1), new BasicDBObject("name", "@_id_etag_idx"));

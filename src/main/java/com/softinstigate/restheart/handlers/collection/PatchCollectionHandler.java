@@ -48,13 +48,13 @@ public class PatchCollectionHandler extends PipedHttpHandler
     {
         if (context.getDBName().isEmpty())
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, new IllegalArgumentException("db name cannot be empty"));
+            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, db name cannot be empty", null);
             return;
         }
         
         if (context.getCollectionName().isEmpty() || context.getCollectionName().startsWith("@"))
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, new IllegalArgumentException("collection name cannot be empty or start with @"));
+            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, collection name cannot be empty or start with @", null);
             return;
         }
 
@@ -68,7 +68,7 @@ public class PatchCollectionHandler extends PipedHttpHandler
         }
         catch (JSONParseException ex)
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, ex);
+            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, provied json content is invalid", ex);
             return;
         }
         

@@ -74,7 +74,7 @@ public abstract class GetHandler extends PipedHttpHandler
             }
             catch (NumberFormatException nfwe)
             {
-                ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_BAD_REQUEST, nfwe);
+                ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_BAD_REQUEST, "the page query paramenter is not a number: " + _page, null);
                 return;
             }
         }
@@ -87,7 +87,7 @@ public abstract class GetHandler extends PipedHttpHandler
             }
             catch (NumberFormatException nfwe)
             {
-                ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_BAD_REQUEST, nfwe);
+                ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_BAD_REQUEST, "the pagesize query paramenter is not a number: " + _pagesize, null);
                 return;
             }
         }

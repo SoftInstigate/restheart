@@ -43,7 +43,7 @@ public class SchemaEnforcerHandler extends PipedHttpHandler
 
             if (contentTypes == null || contentTypes.isEmpty() || !contentTypes.contains(JSONHelper.JSON_MEDIA_TYPE) )
             {
-                ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, new IllegalArgumentException("Contet-Type must be " + JSONHelper.JSON_MEDIA_TYPE));
+                ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, "Contet-Type must be " + JSONHelper.JSON_MEDIA_TYPE, null);
                 return;
             }
         }
