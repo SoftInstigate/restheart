@@ -13,7 +13,9 @@ package com.softinstigate.restheart.handlers.collection;
 import com.mongodb.DBCollection;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.handlers.GetHandler;
+import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 import java.util.List;
@@ -41,10 +43,16 @@ public class GetCollectionHandler extends GetHandler
     protected String generateContent(HttpServerExchange exchange, RequestContext context, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
         DBCollection coll = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName());
-
+        
         Map<String, Object> metadata = CollectionDAO.getCollectionMetadata(coll);
         
         List<Map<String, Object>> data = CollectionDAO.getCollectionData(coll, page, pagesize, sortBy, filter);
+        
+        if (data.isEmpty() && metadata.isEmpty())
+        {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
+            return null;
+        }
         
         long size = -1;
         

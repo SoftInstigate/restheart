@@ -15,6 +15,7 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import static com.softinstigate.restheart.db.CollectionDAO.doesCollectionExist;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.RequestHelper;
@@ -54,9 +55,23 @@ public class DBDAO
         fieldsToReturn.put("_id", 1);
         fieldsToReturn.put("@created_on", 1);
     }
-
+    
     public static boolean checkDbExists(HttpServerExchange exchange, String dbName)
     {
+        if (!doesDbExists(dbName))
+        {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
+            return false;
+        }
+
+        return true;
+    }
+
+    public static boolean doesDbExists(String dbName)
+    {
+        BasicDBObject query = new BasicDBObject("name", new BasicDBObject("$regex", "^"+ dbName + "\\..*"));
+        
+        return client.getDB(dbName).getCollection("system.namespaces").findOne(query) != null;
         /*
         TODO check this!!!!! 
         check removed. too slow!
@@ -67,7 +82,6 @@ public class DBDAO
         }
         */
 
-        return true;
     }
 
     public static DB getDB(String dbName)

@@ -101,7 +101,7 @@ public abstract class GetHandler extends PipedHttpHandler
 
         /**
          * TODO according to http specifications, Content-Type accepts one
-         * single value however we specify two, to allow some browsers (i.e.
+         * single value however we specify two to allow some browsers (i.e.
          * Safari) to display data rather than downloading it
          */
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json," + JSONHelper.HAL_JSON_MEDIA_TYPE);

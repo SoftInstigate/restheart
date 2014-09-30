@@ -173,7 +173,8 @@ public class RequestDispacherHandler extends PipedHttpHandler
                             dbGet.handleRequest(exchange, context);
                         return;
                     case COLLECTION:
-                        if (checkDbExists(exchange, context.getDBName()) && checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
+                        // don't use checkCollectionExists here. it is a slow call. the collectionGet.handleRequest will take care of
+                        // returning NOT_FOUND in case
                             collectionGet.handleRequest(exchange, context);
                         return;
                     case DOCUMENT:
@@ -192,7 +193,7 @@ public class RequestDispacherHandler extends PipedHttpHandler
                             dbPost.handleRequest(exchange, context);
                         return;
                     case COLLECTION:
-                        if (checkDbExists(exchange, context.getDBName()) && checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
+                        if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
                             collectionPost.handleRequest(exchange, context);
                         return;
                     case DOCUMENT:
@@ -214,7 +215,7 @@ public class RequestDispacherHandler extends PipedHttpHandler
                             collectionPut.handleRequest(exchange, context);
                         return;
                     case DOCUMENT:
-                        if (checkDbExists(exchange, context.getDBName()) && checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
+                        if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
                             documentPut.handleRequest(exchange, context);
                         return;
                 }
@@ -230,11 +231,11 @@ public class RequestDispacherHandler extends PipedHttpHandler
                             dbDelete.handleRequest(exchange, context);
                         return;
                     case COLLECTION:
-                        if (checkDbExists(exchange, context.getDBName()) && checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
+                        if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
                             collectionDelete.handleRequest(exchange, context);
                         return;
                     case DOCUMENT:
-                        if (checkDbExists(exchange, context.getDBName()) && checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
+                        if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
                             documentDelete.handleRequest(exchange, context);
                         return;
                 }
@@ -250,7 +251,7 @@ public class RequestDispacherHandler extends PipedHttpHandler
                             dbPatch.handleRequest(exchange, context);
                         return;
                     case COLLECTION:
-                        if (checkDbExists(exchange, context.getDBName()) && checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
+                        if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
                             collectionPatch.handleRequest(exchange, context);
                         return;
                     case DOCUMENT:
@@ -258,6 +259,4 @@ public class RequestDispacherHandler extends PipedHttpHandler
                 }
         }
     }
-    
-    
 }

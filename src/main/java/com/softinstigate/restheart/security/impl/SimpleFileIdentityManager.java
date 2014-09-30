@@ -144,7 +144,7 @@ public class SimpleFileIdentityManager implements IdentityManager
     @Override
     public Account verify(Credential credential)
     {
-        // TODO Auto-generated method stub
+        // Auto-generated method stub
         return null;
     }
 

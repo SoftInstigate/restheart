@@ -54,6 +54,13 @@ public class CollectionDAO
         fieldsToReturn.put("@created_on", 1);
     }
 
+    /**
+     * WARNING: slow method. perf tests show this can take up to 35% overall requests processing time when getting data from a collection
+     * @param exchange
+     * @param dbName
+     * @param collectionName
+     * @return true if the specified collection exits in the db dbName
+    */
     public static boolean checkCollectionExists(HttpServerExchange exchange, String dbName, String collectionName)
     {
         if (!doesCollectionExist(dbName, collectionName))
@@ -65,6 +72,12 @@ public class CollectionDAO
         return true;
     }
 
+    /**
+     * WARNING: quite method. perf tests show this can take up to 35% overall requests processing time when getting data from a collection
+     * @param dbName
+     * @param collectionName
+     * @return true if the specified collection exits in the db dbName
+    */
     public static boolean doesCollectionExist(String dbName, String collectionName)
     {
         if (dbName == null || dbName.isEmpty() || dbName.contains(" "))
@@ -72,10 +85,9 @@ public class CollectionDAO
             return false;
         }
         
-        return true;
-        // check removed, too slow
-        // TODO check this!!!!! 
-        //return client.getDB(dbName).collectionExists(collectionName);
+        BasicDBObject query = new BasicDBObject("name", dbName + "." + collectionName);
+        
+        return client.getDB(dbName).getCollection("system.namespaces").findOne(query) != null;
     }
 
     public static DBCollection getCollection(String dbName, String collName)
@@ -148,7 +160,7 @@ public class CollectionDAO
             });
         }
         
-        // apply filter_by and filter
+        // apply filter
         BasicDBObject query = DATA_QUERY;
         
         if (filter != null)
