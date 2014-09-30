@@ -12,11 +12,9 @@ package com.softinstigate.restheart.handlers.collection;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
-import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.db.DocumentDAO;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
@@ -88,13 +86,5 @@ public class PostCollectionHandler extends PutCollectionHandler
             // the id is not an object id
             return id;
         }
-    }
-    
-    private BasicDBObject getIdQuery(Object id)
-    {
-        if (id instanceof ObjectId)
-            return new BasicDBObject("_id", id);
-        else
-            return  new BasicDBObject("_id", getIdFromString((String) id));
     }
 }

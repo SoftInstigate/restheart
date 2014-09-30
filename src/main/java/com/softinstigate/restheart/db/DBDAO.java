@@ -57,11 +57,15 @@ public class DBDAO
 
     public static boolean checkDbExists(HttpServerExchange exchange, String dbName)
     {
+        /*
+        TODO check this!!!!! 
+        check removed. too slow!
         if (!client.getDatabaseNames().contains(dbName))
         {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
             return false;
         }
+        */
 
         return true;
     }

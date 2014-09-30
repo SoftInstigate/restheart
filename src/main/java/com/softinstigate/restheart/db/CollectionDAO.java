@@ -11,7 +11,6 @@
 package com.softinstigate.restheart.db;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -20,7 +19,6 @@ import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.utils.HttpStatus;
-import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -73,8 +71,11 @@ public class CollectionDAO
         {
             return false;
         }
-
-        return client.getDB(dbName).collectionExists(collectionName);
+        
+        return true;
+        // check removed, too slow
+        // TODO check this!!!!! 
+        //return client.getDB(dbName).collectionExists(collectionName);
     }
 
     public static DBCollection getCollection(String dbName, String collName)
@@ -119,8 +120,6 @@ public class CollectionDAO
 
     public static List<Map<String, Object>> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filter)
     {
-        //DAOUtils.getDataFromRow(coll.findOne(METADATA_QUERY, ALL_FIELDS_BUT_ID), "_id");
-
         // apply sort_by
         DBObject sort = new BasicDBObject();
 
@@ -132,6 +131,8 @@ public class CollectionDAO
         {
             sortBy.stream().forEach((sf) ->
             {
+                sf = sf.replaceAll("@lastupdated_on", "@etag"); // @lastupdated is not stored and actually generated from @tag
+                    
                 if (sf.startsWith("-"))
                 {
                     sort.put(sf.substring(1), -1);
@@ -148,8 +149,6 @@ public class CollectionDAO
         }
         
         // apply filter_by and filter
-        logger.debug("filter not yet implemented");
-        
         BasicDBObject query = DATA_QUERY;
         
         if (filter != null)

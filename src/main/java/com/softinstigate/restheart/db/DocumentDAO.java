@@ -100,12 +100,13 @@ public class DocumentDAO
         }
 
         content.put("@etag", timestamp);
-        content.removeField("@created_on"); // make sure we don't change this field
 
         BasicDBObject idQuery = new BasicDBObject("_id", getId(documentId));
 
         if (patching)
         {
+            content.removeField("@created_on"); // make sure we don't change this field
+            
             DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, new BasicDBObject("$set", content), false, false);
 
             if (oldDocument == null)
@@ -126,31 +127,28 @@ public class DocumentDAO
             // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
             DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, content, false, true);
 
-            if (oldDocument != null)
+            content.put("@created_on", now.toString()); // let's optimistically assume this is an insert. in case we'll set it back by a second update
+            
+            if (oldDocument != null) // upsert
             {
                 Object oldTimestamp = oldDocument.get("@created_on");
 
                 if (oldTimestamp == null)
                 {
                     oldTimestamp = now.toString();
-                    logger.warn("metadata of collection {} had no @created_on field. set to now", coll.getFullName());
+                    logger.warn("metadata of document /{}/{}/{} had no @created_on field. set to now", dbName, collName, documentId);
                 }
 
                 // need to readd the @created_on field 
-                BasicDBObject createdContet = new BasicDBObject("@created_on", "" + oldTimestamp);
-                createdContet.markAsPartialObject();
-                coll.update(idQuery, new BasicDBObject("$set", createdContet), true, false);
+                BasicDBObject created = new BasicDBObject("@created_on", "" + oldTimestamp);
+                created.markAsPartialObject();
+                coll.update(idQuery, new BasicDBObject("$set", created), true, false);
 
                 // check the old etag (in case restore the old document version)
                 return optimisticCheckEtag(coll, oldDocument, requestEtag);
             }
-            else
+            else // insert
             {
-                // need to readd the @created_on field 
-                BasicDBObject createdContet = new BasicDBObject("@created_on", now.toString());
-                createdContet.markAsPartialObject();
-                coll.update(idQuery, new BasicDBObject("$set", createdContet), true, false);
-
                 return HttpStatus.SC_CREATED;
             }
         }
@@ -181,7 +179,7 @@ public class DocumentDAO
         }
 
         content.put("@etag", timestamp);
-        content.removeField("@created_on"); // make sure we don't change this field
+        content.put("@created_on", now.toString()); // make sure we don't change this field
 
         Object _id = content.get("_id");
         content.removeField("_id");
@@ -206,14 +204,14 @@ public class DocumentDAO
         // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
         DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, content, false, true);
 
-        if (oldDocument != null)
+        if (oldDocument != null) // upsert
         {
             Object oldTimestamp = oldDocument.get("@created_on");
 
             if (oldTimestamp == null)
             {
                 oldTimestamp = now.toString();
-                logger.warn("metadata of collection {} had no @created_on field. set to now", coll.getFullName());
+                logger.warn("metadata of document /{}/{}/{} had no @created_on field. set to now", dbName, collName, _id.toString());
             }
 
             // need to readd the @created_on field 
@@ -224,13 +222,8 @@ public class DocumentDAO
             // check the old etag (in case restore the old document version)
             return optimisticCheckEtag(coll, oldDocument, requestEtag);
         }
-        else
+        else // insert
         {
-            // need to readd the @created_on field 
-            BasicDBObject createdContet = new BasicDBObject("@created_on", now.toString());
-            createdContet.markAsPartialObject();
-            coll.update(idQuery, new BasicDBObject("$set", createdContet), true, false);
-
             return HttpStatus.SC_CREATED;
         }
     }
@@ -290,13 +283,13 @@ public class DocumentDAO
 
         if (oldEtag == null) // well we don't had an etag there so fine
         {
-            return HttpStatus.SC_OK;
+            return HttpStatus.SC_NO_CONTENT;
         }
         else
         {
             if (oldEtag.equals(requestEtag))
             {
-                return HttpStatus.SC_GONE; // ok they match
+                return HttpStatus.SC_NO_CONTENT; // ok they match
             }
             else
             {

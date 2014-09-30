@@ -58,7 +58,7 @@ log-file-path: /tmp/restheart.log
 enable-log-console: true
 
 #  log levels: OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL.
-log-level: INFO
+log-level: WARN
 
 #### performace settings
 

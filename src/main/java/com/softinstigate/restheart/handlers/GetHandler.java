@@ -124,7 +124,8 @@ public abstract class GetHandler extends PipedHttpHandler
      * @param page
      * @param pagesize
      * @param size if < 0, don't include size in metadata @param sortBy @param f
-     * ilterBy @param filter @return
+     * ilterBy @param filter @return @param sortBy @param filterBy @param filter
+     * @return
      */
     protected String generateCollectionContent(HttpServerExchange exchange, Map<String, Object> metadata, List<Map<String, Object>> data, int page, int pagesize, long size, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
@@ -162,77 +163,9 @@ public abstract class GetHandler extends PipedHttpHandler
         List<Map<String, Object>> embedded = data.stream().filter((props) -> props.keySet().stream().anyMatch((k) -> k.equals("id") || k.equals("_id"))).collect(Collectors.toList());
 
         // *** links
-        TreeMap<String, URI> links = new TreeMap<>();
-
-        try
-        {
-            if (queryString == null || queryString.isEmpty())
-            {
-                links.put("self", new URI(baseUrl));
-                links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize));
-            }
-            else
-            {
-                links.put("self", new URI(baseUrl + "?" + queryString));
-
-                String queryString2 = removePagingParamsFromQueryString(queryString);
-
-                if (queryString2 == null || queryString2.isEmpty())
-                {
-                    links.put("first", new URI(baseUrl + "?pagesize=" + pagesize));
-                    links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize));
-                    
-                    if (total_pages > 0) // i.e. the url contains the count paramenter
-                    {
-                        if (page < total_pages)
-                        {
-                            links.put("last", new URI(baseUrl + (total_pages != 1 ? "?page=" + total_pages : "") + "&pagesize=" + pagesize));
-                            links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryString2));
-                        }
-                        else
-                        {
-                            links.put("last", new URI(baseUrl + (total_pages != 1 ? "?page=" + total_pages : "") + "&pagesize=" + pagesize));
-                        }
-                    }
-
-                    if (page > 1)
-                    {
-                        links.put("previous", new URI(baseUrl + (page >= 2 ? "?page=" + (page - 1) : "") + (page > 2 ? "&pagesize=" + pagesize :  "?pagesize=" + pagesize)));
-                    }
-                }
-                else
-                {
-                    links.put("first", new URI(baseUrl + "?pagesize=" + pagesize + "&" + queryString2));
-                    
-                    if (total_pages <= 0)
-                        links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryString2));
-
-                    if (total_pages > 0) // i.e. the url contains the count paramenter
-                    {
-                        if (page < total_pages)
-                        {
-                            links.put("last", new URI(baseUrl + (total_pages != 1 ? "?page=" + total_pages : "") + "&pagesize=" + pagesize + "&" + queryString2));
-                            links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryString2));
-                        }
-                        else
-                        {
-                            links.put("last", new URI(baseUrl + (total_pages != 1 ? "?page=" + total_pages : "") + "&pagesize=" + pagesize + "&" + queryString2));
-                        }
-                    }
-
-                    if (page > 1)
-                    {
-                        links.put("previous", new URI(baseUrl + (page >= 2 ? "?page=" + (page - 1) : "") + (page > 2 ? "&pagesize=" + pagesize :  "?pagesize=" + pagesize) + "&" + queryString2));
-                    }
-                }
-            }
-
-        }
-        catch (URISyntaxException ex)
-        {
-            logger.error("error creating resource links", ex);
-        }
-
+        
+        TreeMap<String, URI> links = getLinks(baseUrl, queryString, page, pagesize, total_pages);
+        
         // *** queries
         logger.debug("queries not yet implemented");
 
@@ -281,15 +214,17 @@ public abstract class GetHandler extends PipedHttpHandler
     private String removePagingParamsFromQueryString(String queryString)
     {
         if (queryString == null)
+        {
             return null;
-        
+        }
+
         String ret = queryString;
         ret = ret.replaceAll("page=.?$", "");
         ret = ret.replaceAll("pagesize=.?$", "");
 
         ret = ret.replaceAll("page=.?&", "");
         ret = ret.replaceAll("pagesize=.?&", "");
-        
+
         return ret;
     }
 
@@ -327,5 +262,82 @@ public abstract class GetHandler extends PipedHttpHandler
         ResponseHelper.injectEtagHeader(exchange, data);
 
         return JSONHelper.getDocumentHal(baseUrl, data, links).toString();
+    }
+
+    private TreeMap<String, URI> getLinks(String baseUrl, String queryString, int page, int pagesize, long total_pages)
+    {
+        TreeMap<String, URI> links = new TreeMap<>();
+
+        try
+        {
+            if (queryString == null || queryString.isEmpty())
+            {
+                links.put("self", new URI(baseUrl));
+                links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize));
+            }
+            else
+            {
+                links.put("self", new URI(baseUrl + "?" + queryString));
+
+                String queryString2 = removePagingParamsFromQueryString(queryString);
+
+                if (queryString2 == null || queryString2.isEmpty())
+                {
+                    links.put("first", new URI(baseUrl + "?pagesize=" + pagesize));
+                    links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize));
+
+                    if (total_pages > 0) // i.e. the url contains the count paramenter
+                    {
+                        if (page < total_pages)
+                        {
+                            links.put("last", new URI(baseUrl + (total_pages != 1 ? "?page=" + total_pages : "") + "&pagesize=" + pagesize));
+                            links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryString2));
+                        }
+                        else
+                        {
+                            links.put("last", new URI(baseUrl + (total_pages != 1 ? "?page=" + total_pages : "") + "&pagesize=" + pagesize));
+                        }
+                    }
+
+                    if (page > 1)
+                    {
+                        links.put("previous", new URI(baseUrl + (page >= 2 ? "?page=" + (page - 1) : "") + (page > 2 ? "&pagesize=" + pagesize : "?pagesize=" + pagesize)));
+                    }
+                }
+                else
+                {
+                    links.put("first", new URI(baseUrl + "?pagesize=" + pagesize + "&" + queryString2));
+
+                    if (total_pages <= 0)
+                    {
+                        links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryString2));
+                    }
+
+                    if (total_pages > 0) // i.e. the url contains the count paramenter
+                    {
+                        if (page < total_pages)
+                        {
+                            links.put("last", new URI(baseUrl + (total_pages != 1 ? "?page=" + total_pages : "") + "&pagesize=" + pagesize + "&" + queryString2));
+                            links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryString2));
+                        }
+                        else
+                        {
+                            links.put("last", new URI(baseUrl + (total_pages != 1 ? "?page=" + total_pages : "") + "&pagesize=" + pagesize + "&" + queryString2));
+                        }
+                    }
+
+                    if (page > 1)
+                    {
+                        links.put("previous", new URI(baseUrl + (page >= 2 ? "?page=" + (page - 1) : "") + (page > 2 ? "&pagesize=" + pagesize : "?pagesize=" + pagesize) + "&" + queryString2));
+                    }
+                }
+            }
+        }
+        catch (URISyntaxException ex)
+        {
+            logger.error("error creating resource links", ex);
+        }
+        
+        return links;
     }
 }
