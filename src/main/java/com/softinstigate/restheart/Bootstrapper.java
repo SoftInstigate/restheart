@@ -73,6 +73,8 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.AllowedMethodsHandler;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
+import io.undertow.server.handlers.RequestLimit;
+import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.util.HttpString;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
@@ -153,7 +155,7 @@ public class Bootstrapper
                 try
                 {
                     hanldersPipe.shutdown();
-                    hanldersPipe.awaitShutdown(60*1000); // up to 1 minute
+                    hanldersPipe.awaitShutdown(60 * 1000); // up to 1 minute
                 }
                 catch (InterruptedException ie)
                 {
@@ -355,7 +357,7 @@ public class Bootstrapper
             builder.addAjpListener(conf.getAjpPort(), conf.getAjpHost());
             logger.info("ajp listener bound at {}:{}", conf.getAjpHost(), conf.getAjpPort());
         }
-        
+
         hanldersPipe = getHandlersPipe(conf, identityManager, accessManager);
 
         builder
@@ -377,46 +379,48 @@ public class Bootstrapper
                 path()
                 .addPrefixPath("/@browser", resource(new FileResourceManager(browserRootFile, 3)).addWelcomeFiles("browser.html").setDirectoryListingEnabled(false))
                 .addPrefixPath("/",
-                        new AllowedMethodsHandler(
-                                new BlockingHandler(
-                                        new GzipEncodingHandler(
-                                                new ErrorHandler(
-                                                        new HttpContinueAcceptingHandler(
-                                                                addSecurity(
-                                                                        new SchemaEnforcerHandler(
-                                                                                new RequestDispacherHandler(
-                                                                                        new GetRootHandler(),
-                                                                                        new PostRootHandler(),
-                                                                                        new PutRootHandler(),
-                                                                                        new DeleteRootHandler(),
-                                                                                        new PatchRootHandler(),
-                                                                                        new GetDBHandler(),
-                                                                                        new PostDBHandler(),
-                                                                                        new PutDBHandler(),
-                                                                                        new DeleteDBHandler(),
-                                                                                        new PatchDBHandler(),
-                                                                                        new GetCollectionHandler(),
-                                                                                        new PostCollectionHandler(),
-                                                                                        new PutCollectionHandler(),
-                                                                                        new DeleteCollectionHandler(),
-                                                                                        new PatchCollectionHandler(),
-                                                                                        new GetDocumentHandler(),
-                                                                                        new PostDocumentHandler(),
-                                                                                        new PutDocumentHandler(),
-                                                                                        new DeleteDocumentHandler(),
-                                                                                        new PatchDocumentHandler()
-                                                                                )
-                                                                        ), identityManager, accessManager)
-                                                        )
-                                                ), conf.isForceGzipEncoding()
-                                        )
-                                ),
-                                // allowed methods
-                                HttpString.tryFromString(RequestContext.METHOD.GET.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.POST.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.PUT.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.DELETE.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.PATCH.name())
+                        new RequestLimitingHandler(new RequestLimit(conf.getRequestLimit()),
+                                new AllowedMethodsHandler(
+                                        new BlockingHandler(
+                                                new GzipEncodingHandler(
+                                                        new ErrorHandler(
+                                                                new HttpContinueAcceptingHandler(
+                                                                        addSecurity(
+                                                                                new SchemaEnforcerHandler(
+                                                                                        new RequestDispacherHandler(
+                                                                                                new GetRootHandler(),
+                                                                                                new PostRootHandler(),
+                                                                                                new PutRootHandler(),
+                                                                                                new DeleteRootHandler(),
+                                                                                                new PatchRootHandler(),
+                                                                                                new GetDBHandler(),
+                                                                                                new PostDBHandler(),
+                                                                                                new PutDBHandler(),
+                                                                                                new DeleteDBHandler(),
+                                                                                                new PatchDBHandler(),
+                                                                                                new GetCollectionHandler(),
+                                                                                                new PostCollectionHandler(),
+                                                                                                new PutCollectionHandler(),
+                                                                                                new DeleteCollectionHandler(),
+                                                                                                new PatchCollectionHandler(),
+                                                                                                new GetDocumentHandler(),
+                                                                                                new PostDocumentHandler(),
+                                                                                                new PutDocumentHandler(),
+                                                                                                new DeleteDocumentHandler(),
+                                                                                                new PatchDocumentHandler()
+                                                                                        )
+                                                                                ), identityManager, accessManager)
+                                                                )
+                                                        ), conf.isForceGzipEncoding()
+                                                )
+                                        ),
+                                        // allowed methods
+                                        HttpString.tryFromString(RequestContext.METHOD.GET.name()),
+                                        HttpString.tryFromString(RequestContext.METHOD.POST.name()),
+                                        HttpString.tryFromString(RequestContext.METHOD.PUT.name()),
+                                        HttpString.tryFromString(RequestContext.METHOD.DELETE.name()),
+                                        HttpString.tryFromString(RequestContext.METHOD.PATCH.name())
+                                )
                         )
                 )
         );

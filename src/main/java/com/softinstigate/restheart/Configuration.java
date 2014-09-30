@@ -59,6 +59,8 @@ public class Configuration
     private final boolean logToConsole;
     private final boolean logToFile;
 
+    private final int requestsLimit;
+    
     private final int ioThreads;
     private final int workerThreads;
     private final int bufferSize;
@@ -135,6 +137,8 @@ public class Configuration
         }
         
         logLevel = level;
+        
+        requestsLimit = getAsIntegerOrDefault(conf, "requests-limit", 100);
 
         ioThreads = getAsIntegerOrDefault(conf, "io-threads", 8);
         workerThreads = getAsIntegerOrDefault(conf, "worker-threads", 500);
@@ -495,5 +499,13 @@ public class Configuration
     public Map<String, Object> getAmArgs()
     {
         return amArgs;
+    }
+
+    /**
+     * @return the requestsLimit
+     */
+    public int getRequestLimit()
+    {
+        return requestsLimit;
     }
 }
