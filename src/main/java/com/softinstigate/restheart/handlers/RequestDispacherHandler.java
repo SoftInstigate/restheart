@@ -32,6 +32,9 @@ import com.softinstigate.restheart.handlers.document.GetDocumentHandler;
 import com.softinstigate.restheart.handlers.document.PatchDocumentHandler;
 import com.softinstigate.restheart.handlers.document.PostDocumentHandler;
 import com.softinstigate.restheart.handlers.document.PutDocumentHandler;
+import com.softinstigate.restheart.handlers.indexes.DeleteIndexHandler;
+import com.softinstigate.restheart.handlers.indexes.GetIndexesHandler;
+import com.softinstigate.restheart.handlers.indexes.PutIndexHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
 import io.undertow.server.HttpServerExchange;
@@ -65,6 +68,9 @@ public class RequestDispacherHandler extends PipedHttpHandler
     private final PutDocumentHandler documentPut;
     private final DeleteDocumentHandler documentDelete;
     private final PatchDocumentHandler documentPatch;
+    private final GetIndexesHandler indexesGet;
+    private final PutIndexHandler indexPut;
+    private final DeleteIndexHandler indexDelete;
 
     /**
      * Creates a new instance of RequestDispacherHandler
@@ -89,6 +95,9 @@ public class RequestDispacherHandler extends PipedHttpHandler
      * @param documentPut
      * @param documentDelete
      * @param documentPatch
+     * @param indexesGet
+     * @param indexDelete
+     * @param indexPut
      */
     public RequestDispacherHandler(
             GetRootHandler rootGet,
@@ -110,7 +119,10 @@ public class RequestDispacherHandler extends PipedHttpHandler
             PostDocumentHandler documentPost,
             PutDocumentHandler documentPut,
             DeleteDocumentHandler documentDelete,
-            PatchDocumentHandler documentPatch
+            PatchDocumentHandler documentPatch,
+            GetIndexesHandler indexesGet,
+            PutIndexHandler indexPut,
+            DeleteIndexHandler indexDelete
     )
     {
         super(null);
@@ -134,6 +146,9 @@ public class RequestDispacherHandler extends PipedHttpHandler
         this.documentPut = documentPut;
         this.documentDelete = documentDelete;
         this.documentPatch = documentPatch;
+        this.indexesGet = indexesGet;
+        this.indexPut = indexPut;
+        this.indexDelete = indexDelete;
 
     }
 
@@ -145,118 +160,138 @@ public class RequestDispacherHandler extends PipedHttpHandler
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
             return;
         }
-        
+
         if (context.getMethod() == METHOD.OTHER)
         {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_IMPLEMENTED);
             return;
         }
-        
+
         if (context.isReservedResource())
         {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
             return;
         }
-        
-        // TODO: use AllowedMethodsHandler to limit methods
-        
-        switch (context.getMethod())
+
+        if (context.getMethod() == METHOD.GET)
         {
-            case GET:
-                switch (context.getType())
-                {
-                    case ROOT:
-                        rootGet.handleRequest(exchange, context);
-                        return;
-                    case DB:
-                        if (checkDbExists(exchange, context.getDBName()))
-                            dbGet.handleRequest(exchange, context);
-                        return;
-                    case COLLECTION:
-                        // don't use checkCollectionExists here. it is a slow call. the collectionGet.handleRequest will take care of
-                        // returning NOT_FOUND in case
-                            collectionGet.handleRequest(exchange, context);
-                        return;
-                    case DOCUMENT:
-                        documentGet.handleRequest(exchange, context);
-                        return;
-                }
-            
-            case POST:
-                switch (context.getType())
-                {
-                    case ROOT:
-                        rootPost.handleRequest(exchange, context);
-                        return;
-                    case DB:
-                        if (checkDbExists(exchange, context.getDBName()))
-                            dbPost.handleRequest(exchange, context);
-                        return;
-                    case COLLECTION:
-                        if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
-                            collectionPost.handleRequest(exchange, context);
-                        return;
-                    case DOCUMENT:
-                        documentPost.handleRequest(exchange, context);
-                        return;
-                }
-            
-            case PUT:
-                switch (context.getType())
-                {
-                    case ROOT:
-                        rootPut.handleRequest(exchange, context);
-                        return;
-                    case DB:
-                            dbPut.handleRequest(exchange, context);
-                        return;
-                    case COLLECTION:
-                        if (checkDbExists(exchange, context.getDBName()))
-                            collectionPut.handleRequest(exchange, context);
-                        return;
-                    case DOCUMENT:
-                        if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
-                            documentPut.handleRequest(exchange, context);
-                        return;
-                }
-            
-            case DELETE:
-                switch (context.getType())
-                {
-                    case ROOT:
-                        rootDelete.handleRequest(exchange, context);
-                        return;
-                    case DB:
-                        if (checkDbExists(exchange, context.getDBName()))
-                            dbDelete.handleRequest(exchange, context);
-                        return;
-                    case COLLECTION:
-                        if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
-                            collectionDelete.handleRequest(exchange, context);
-                        return;
-                    case DOCUMENT:
-                        if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
-                            documentDelete.handleRequest(exchange, context);
-                        return;
-                }
-            
-            case PATCH:
-                switch (context.getType())
-                {
-                    case ROOT:
-                        rootPatch.handleRequest(exchange, context);
-                        return;
-                    case DB:
-                        if (checkDbExists(exchange, context.getDBName()))
-                            dbPatch.handleRequest(exchange, context);
-                        return;
-                    case COLLECTION:
-                        if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
-                            collectionPatch.handleRequest(exchange, context);
-                        return;
-                    case DOCUMENT:
-                        documentPatch.handleRequest(exchange, context);
-                }
+            switch (context.getType())
+            {
+                case ROOT:
+                    rootGet.handleRequest(exchange, context);
+                    return;
+                case DB:
+                    if (checkDbExists(exchange, context.getDBName()))
+                    {
+                        dbGet.handleRequest(exchange, context);
+                    }
+                    return;
+                case COLLECTION:
+                    // don't use checkCollectionExists here. it is a slow call. the collectionGet.handleRequest will take care of
+                    // returning NOT_FOUND in case
+                    collectionGet.handleRequest(exchange, context);
+                    return;
+                case DOCUMENT:
+                    documentGet.handleRequest(exchange, context);
+                    return;
+                case COLLECTION_INDEXES:
+                    indexesGet.handleRequest(exchange, context);
+                    return;
+                default:
+                    ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
+            }
+        }
+        else if (context.getMethod() == METHOD.POST)
+        {
+            switch (context.getType())
+            {
+                case COLLECTION:
+                    if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
+                    {
+                        collectionPost.handleRequest(exchange, context);
+                    }
+                    return;
+                default:
+                    ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
+            }
+        }
+        else if (context.getMethod() == METHOD.PUT)
+        {
+            switch (context.getType())
+            {
+                case DB:
+                    dbPut.handleRequest(exchange, context);
+                    return;
+                case COLLECTION:
+                    if (checkDbExists(exchange, context.getDBName()))
+                    {
+                        collectionPut.handleRequest(exchange, context);
+                    }
+                    return;
+                case DOCUMENT:
+                    if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
+                    {
+                        documentPut.handleRequest(exchange, context);
+                    }
+                    return;
+                case INDEX:
+                    indexPut.handleRequest(exchange, context);
+                    return;
+                default:
+                    ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
+            }
+        }
+        else if (context.getMethod() == METHOD.DELETE)
+        {
+            switch (context.getType())
+            {
+                case DB:
+                    if (checkDbExists(exchange, context.getDBName()))
+                    {
+                        dbDelete.handleRequest(exchange, context);
+                    }
+                    return;
+                case COLLECTION:
+                    if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
+                    {
+                        collectionDelete.handleRequest(exchange, context);
+                    }
+                    return;
+                case DOCUMENT:
+                    if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
+                    {
+                        documentDelete.handleRequest(exchange, context);
+                    }
+                    return;
+                case INDEX:
+                    indexDelete.handleRequest(exchange, context);
+                    return;
+                default:
+                    ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
+            }
+        }
+        else if (context.getMethod() == METHOD.PATCH)
+        {
+            switch (context.getType())
+            {
+                case DB:
+                    if (checkDbExists(exchange, context.getDBName()))
+                    {
+                        dbPatch.handleRequest(exchange, context);
+                    }
+                    return;
+                case COLLECTION:
+                    if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
+                    {
+                        collectionPatch.handleRequest(exchange, context);
+                    }
+                    return;
+                case DOCUMENT:
+                    documentPatch.handleRequest(exchange, context);
+                    return;
+                default:
+                    ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
+            }
         }
     }
 }

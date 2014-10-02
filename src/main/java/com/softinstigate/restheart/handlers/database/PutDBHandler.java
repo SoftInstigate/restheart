@@ -62,7 +62,7 @@ public class PutDBHandler extends PipedHttpHandler
         }
         catch (JSONParseException ex)
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, provied json content is invalid", ex);
+            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, json content is invalid", ex);
             return;
         }
         

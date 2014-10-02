@@ -56,8 +56,6 @@ public class MetadataRetrieverHandler extends PipedHttpHandler
 
             collMetadata = CollectionDAO.getCollectionMetadata(coll);
 
-            collMetadata.put("@indexes", CollectionDAO.getCollectionIndexes(context.getDBName(), context.getCollectionName()));
-
             context.setCollectionMetadata(collMetadata);
         }
 

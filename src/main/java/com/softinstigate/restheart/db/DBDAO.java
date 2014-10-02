@@ -56,6 +56,15 @@ public class DBDAO
         fieldsToReturn.put("@created_on", 1);
     }
     
+    private static final BasicDBObject fieldsToReturnIndexes;
+    
+    static
+    {
+        fieldsToReturnIndexes = new BasicDBObject();
+        fieldsToReturnIndexes.put("key", 1);
+        fieldsToReturnIndexes.put("name", 1);
+    }
+    
     public static boolean checkDbExists(HttpServerExchange exchange, String dbName)
     {
         if (!doesDbExists(dbName))

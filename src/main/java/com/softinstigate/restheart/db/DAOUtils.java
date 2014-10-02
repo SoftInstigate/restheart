@@ -29,7 +29,7 @@ public class DAOUtils
      * @param rows list of DBObject rows as returned by getDataFromCursor()
      * @return 
     */
-    public static List<Map<String, Object>> getDataFromRows(ArrayList<DBObject> rows)
+    public static List<Map<String, Object>> getDataFromRows(List<DBObject> rows)
     {
         if (rows == null)
             return null;

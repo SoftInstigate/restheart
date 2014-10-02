@@ -110,17 +110,6 @@ public class CollectionDAO
         return client.getDB(dbName).getCollection(collName);
     }
     
-    public static Map<String, Object> getCollectionIndexes(String dbName, String collName)
-    {
-        List<DBObject> indexes = client.getDB("testdb").getCollection("system.indexes").find(new BasicDBObject("ns", dbName + "." + collName), fieldsToReturnIndexes).sort(new BasicDBObject("name", 1)).toArray();
-    
-        HashMap<String, Object> ret = new HashMap<>();
-        
-        indexes.stream().forEach(i -> ret.put((String) i.get("name"), i.get("key")));
-        
-        return ret;
-    }
-
     public static boolean isCollectionEmpty(DBCollection coll)
     {
         return coll.count(DATA_QUERY) == 0;

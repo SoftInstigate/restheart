@@ -40,6 +40,9 @@ import com.softinstigate.restheart.handlers.document.GetDocumentHandler;
 import com.softinstigate.restheart.handlers.document.PatchDocumentHandler;
 import com.softinstigate.restheart.handlers.document.PostDocumentHandler;
 import com.softinstigate.restheart.handlers.document.PutDocumentHandler;
+import com.softinstigate.restheart.handlers.indexes.DeleteIndexHandler;
+import com.softinstigate.restheart.handlers.indexes.GetIndexesHandler;
+import com.softinstigate.restheart.handlers.indexes.PutIndexHandler;
 import com.softinstigate.restheart.security.AccessManager;
 import com.softinstigate.restheart.security.handlers.PredicateAuthenticationConstraintHandler;
 import com.softinstigate.restheart.utils.ResourcesExtractor;
@@ -401,7 +404,10 @@ public class Bootstrapper
                                         new PostDocumentHandler(),
                                         new PutDocumentHandler(),
                                         new DeleteDocumentHandler(),
-                                        new PatchDocumentHandler()
+                                        new PatchDocumentHandler(),
+                                        new GetIndexesHandler(),
+                                        new PutIndexHandler(),
+                                        new DeleteIndexHandler()
                                 )
                         )
                 );

@@ -59,7 +59,7 @@ public class RequestContext
     {
         this.dbMetadata = dbMetadata;
     }
-    public enum TYPE { ERROR, ROOT, DB, COLLECTION, DOCUMENT };
+    public enum TYPE { ERROR, ROOT, DB, COLLECTION, DOCUMENT, COLLECTION_INDEXES, INDEX };
     public enum METHOD { GET, POST, PUT, DELETE, PATCH, OTHER };
     
     private final String urlPrefix;
@@ -101,7 +101,15 @@ public class RequestContext
         } else if (pathTokens.length < 4)
         {
             type = TYPE.COLLECTION;
-        } else
+        } else if (pathTokens.length == 4 && pathTokens[3].equals("@indexes"))
+        {
+            type = TYPE.COLLECTION_INDEXES;
+        }
+        else if (pathTokens.length > 4 && pathTokens[3].equals("@indexes"))
+        {
+            type = TYPE.INDEX;
+        }
+        else
         {
             type = TYPE.DOCUMENT;
         }
@@ -151,6 +159,14 @@ public class RequestContext
             return null;
     }
     
+    public String getIndexId()
+    {
+        if (pathTokens.length > 4)
+            return pathTokens[4];
+        else
+            return null;
+    }
+    
     public URI getUri()
     {
         try
@@ -176,12 +192,12 @@ public class RequestContext
     
     public static boolean isReservedResourceCollection(String collectionName)
     {
-        return collectionName!= null && (collectionName.startsWith("system.") || collectionName.startsWith("@"));
+        return collectionName!= null && (collectionName.startsWith("system.") || collectionName.startsWith("@") );
     }
     
     public static boolean isReservedResourceDocument(String documentId)
     {
-        return documentId != null && (documentId.startsWith("@"));
+        return documentId != null && (documentId.startsWith("@") && !documentId.equals("@indexes"));
     }
     
     public boolean isReservedResource()
