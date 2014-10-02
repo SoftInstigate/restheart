@@ -45,13 +45,11 @@ public class GetDBHandler extends GetHandler
     {
         List<String> colls = DBDAO.getDbCollections(DBDAO.getDB(context.getDBName()));
         
-        Map<String, Object> metadata = DBDAO.getDbMetaData(context.getDBName(), colls);
-        
         List<Map<String, Object>> data;
         try
         {
             data = DBDAO.getData(context.getDBName(), colls, page, pagesize, sortBy, filterBy, filter);
-            return generateCollectionContent(exchange, metadata, data, page, pagesize, DBDAO.getDBSize(colls), sortBy, filterBy, filter);
+            return generateCollectionContent(exchange, context.getDbMetadata(), data, page, pagesize, DBDAO.getDBSize(colls), sortBy, filterBy, filter);
         }
         catch (IllegalQueryParamenterException ex)
         {

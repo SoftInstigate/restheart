@@ -42,10 +42,10 @@ mongo-credentials:
       password: adminadmin
       
 mongo-mounts:
-    - db: testdb
-      url: /
     - db: "*"
-      url: /others///
+      url: /
+#    - db: "*"
+#      url: /all
 
 ### security 
 idm:    

@@ -10,6 +10,7 @@
  */
 package com.softinstigate.restheart.handlers;
 
+import com.mongodb.CommandFailureException;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
@@ -43,6 +44,18 @@ public class ErrorHandler implements HttpHandler
         try
         {
             next.handleRequest(exchange);
+        }
+        catch(CommandFailureException cfe)
+        {
+            logger.error("mongodb command failure handling the request", cfe);
+            
+            Object errmsg = cfe.getCommandResult().get("errmsg");
+            
+            if ("unauthorized".equals(errmsg))
+                ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "mongodb db user is not allowed to execute the command. give it more permissions or hide this resource via mongo-mounts", cfe);
+            else
+                ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error handling the request", cfe);
+                
         }
         catch (Throwable t)
         {

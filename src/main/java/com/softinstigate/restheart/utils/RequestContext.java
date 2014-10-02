@@ -17,6 +17,7 @@ import io.undertow.util.Methods;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +27,38 @@ import org.slf4j.LoggerFactory;
  */
 public class RequestContext
 {
+
+    /**
+     * @return the collectionMetadata
+     */
+    public Map<String, Object> getCollectionMetadata()
+    {
+        return collectionMetadata;
+    }
+
+    /**
+     * @param collectionMetadata the collectionMetadata to set
+     */
+    public void setCollectionMetadata(Map<String, Object> collectionMetadata)
+    {
+        this.collectionMetadata = collectionMetadata;
+    }
+
+    /**
+     * @return the dbMetadata
+     */
+    public Map<String, Object> getDbMetadata()
+    {
+        return dbMetadata;
+    }
+
+    /**
+     * @param dbMetadata the dbMetadata to set
+     */
+    public void setDbMetadata(Map<String, Object> dbMetadata)
+    {
+        this.dbMetadata = dbMetadata;
+    }
     public enum TYPE { ERROR, ROOT, DB, COLLECTION, DOCUMENT };
     public enum METHOD { GET, POST, PUT, DELETE, PATCH, OTHER };
     
@@ -38,6 +71,9 @@ public class RequestContext
     
     private final Logger logger = LoggerFactory.getLogger(RequestContext.class);
     
+    private Map<String, Object> collectionMetadata;
+    private Map<String, Object> dbMetadata;
+    
     public RequestContext(HttpServerExchange exchange, String urlPrefix, String db)
     {
         this.urlPrefix = urlPrefix;
@@ -47,8 +83,9 @@ public class RequestContext
         
         if (db.equals("*"))
         {
-            path = path.replaceFirst("^" + this.urlPrefix, "");
+            path = path.replaceFirst("^" + this.urlPrefix, "/");
         }
+        else
         {
             path = path.replaceFirst("^" + this.urlPrefix, "/" + db + "/");
         }

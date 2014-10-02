@@ -47,23 +47,6 @@ public class GetCollectionHandler extends GetHandler
     {
         DBCollection coll = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName());
 
-        // ***** get optional metadata information
-        Map<String, Object> metadata = null;
-
-        if (exchange.getQueryParameters().containsKey("metadata"))
-        {
-            metadata = CollectionDAO.getCollectionMetadata(coll);
-
-            metadata.put("@indexes", CollectionDAO.getCollectionIndexes(context.getDBName(), context.getCollectionName()));
-        }
-
-        long size = -1;
-
-        if (exchange.getQueryParameters().containsKey("count"))
-        {
-            size = CollectionDAO.getCollectionSize(coll, filter);
-        }
-
         // ***** get data
         List<Map<String, Object>> data = null;
 
@@ -96,24 +79,29 @@ public class GetCollectionHandler extends GetHandler
             return null;
         }
 
-        // ***** return NOT_FOUND from here if collection is not existing (this is to avoid to check existance via the slow CollectionDAO.checkCollectionExists)
-        // note that if metadata query param was not specified (thus metadata == null)
-        // and the collection is empty but existing we need to check metadata with an additional query
-        if (data.isEmpty() && (metadata == null))
+        // ***** return NOT_FOUND from here if collection is not existing 
+        // (this is to avoid to check existance via the slow CollectionDAO.checkCollectionExists)
+        if (data.isEmpty() && (context.getCollectionMetadata() == null || context.getCollectionMetadata().isEmpty()))
         {
-            Map md = CollectionDAO.getCollectionMetadata(coll);
-            
-            if (md == null || md.isEmpty())
-            {
-                ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
-                return null;
-            }
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
+            return null;
         }
+        
+        Object _size = context.getCollectionMetadata().get("@size");
+        
+        if (exchange.getQueryParameters().containsKey("count"))
+        {
+            _size = CollectionDAO.getCollectionSize(coll, exchange.getQueryParameters().get("filter"));
+
+            context.getCollectionMetadata().put("@size", _size);
+        }
+        
+        long size = (_size == null ? -1 : Long.valueOf("" + _size)); 
 
         // ***** return hal document
         try
         {
-            return generateCollectionContent(exchange, metadata, data, page, pagesize, size, sortBy, filterBy, filter);
+            return generateCollectionContent(exchange, context.getCollectionMetadata(), data, page, pagesize, size, sortBy, filterBy, filter);
         }
         catch (IllegalQueryParamenterException ex)
         {

@@ -8,8 +8,9 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.handlers;
+package com.softinstigate.restheart.handlers.metadata;
 
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.JSONHelper;
 import com.softinstigate.restheart.utils.RequestContext;
@@ -22,14 +23,14 @@ import io.undertow.util.Headers;
  *
  * @author uji
  */
-public class SchemaEnforcerHandler extends PipedHttpHandler
+public class MetadataEnforcerHandler extends PipedHttpHandler
 {
     /**
      * Creates a new instance of SchemaEnforcerHandler
      *
      * @param next
      */
-    public SchemaEnforcerHandler(PipedHttpHandler next)
+    public MetadataEnforcerHandler(PipedHttpHandler next)
     {
         super(next);
     }

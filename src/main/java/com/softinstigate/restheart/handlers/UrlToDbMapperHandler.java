@@ -25,6 +25,10 @@ public class UrlToDbMapperHandler extends PipedHttpHandler
     public UrlToDbMapperHandler(String prefixUrl, String db, PipedHttpHandler next)
     {
         super(next);
+        
+        if (!prefixUrl.startsWith("/"))
+            throw new IllegalArgumentException("prefix url must start with /");
+        
         this.prefixUrl = removeTrailingSlashes(prefixUrl);
         this.db = db;
     }

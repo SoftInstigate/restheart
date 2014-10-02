@@ -17,7 +17,7 @@ import com.softinstigate.restheart.handlers.ErrorHandler;
 import com.softinstigate.restheart.handlers.GzipEncodingHandler;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestDispacherHandler;
-import com.softinstigate.restheart.handlers.SchemaEnforcerHandler;
+import com.softinstigate.restheart.handlers.metadata.MetadataEnforcerHandler;
 import com.softinstigate.restheart.handlers.UrlToDbMapperHandler;
 import com.softinstigate.restheart.handlers.root.DeleteRootHandler;
 import com.softinstigate.restheart.handlers.root.GetRootHandler;
@@ -26,6 +26,7 @@ import com.softinstigate.restheart.handlers.root.PostRootHandler;
 import com.softinstigate.restheart.handlers.root.PutRootHandler;
 import com.softinstigate.restheart.handlers.collection.DeleteCollectionHandler;
 import com.softinstigate.restheart.handlers.collection.GetCollectionHandler;
+import com.softinstigate.restheart.handlers.metadata.MetadataRetrieverHandler;
 import com.softinstigate.restheart.handlers.collection.PatchCollectionHandler;
 import com.softinstigate.restheart.handlers.collection.PostCollectionHandler;
 import com.softinstigate.restheart.handlers.collection.PutCollectionHandler;
@@ -377,30 +378,33 @@ public class Bootstrapper
 
     private static GracefulShutdownHandler getHandlersPipe(Configuration conf, IdentityManager identityManager, AccessManager accessManager)
     {
-        PipedHttpHandler coreHanlderChain = new SchemaEnforcerHandler(
-                new RequestDispacherHandler(
-                        new GetRootHandler(),
-                        new PostRootHandler(),
-                        new PutRootHandler(),
-                        new DeleteRootHandler(),
-                        new PatchRootHandler(),
-                        new GetDBHandler(),
-                        new PostDBHandler(),
-                        new PutDBHandler(),
-                        new DeleteDBHandler(),
-                        new PatchDBHandler(),
-                        new GetCollectionHandler(),
-                        new PostCollectionHandler(),
-                        new PutCollectionHandler(),
-                        new DeleteCollectionHandler(),
-                        new PatchCollectionHandler(),
-                        new GetDocumentHandler(),
-                        new PostDocumentHandler(),
-                        new PutDocumentHandler(),
-                        new DeleteDocumentHandler(),
-                        new PatchDocumentHandler()
-                )
-        );
+        PipedHttpHandler coreHanlderChain
+                = new MetadataRetrieverHandler(
+                        new MetadataEnforcerHandler(
+                                new RequestDispacherHandler(
+                                        new GetRootHandler(),
+                                        new PostRootHandler(),
+                                        new PutRootHandler(),
+                                        new DeleteRootHandler(),
+                                        new PatchRootHandler(),
+                                        new GetDBHandler(),
+                                        new PostDBHandler(),
+                                        new PutDBHandler(),
+                                        new DeleteDBHandler(),
+                                        new PatchDBHandler(),
+                                        new GetCollectionHandler(),
+                                        new PostCollectionHandler(),
+                                        new PutCollectionHandler(),
+                                        new DeleteCollectionHandler(),
+                                        new PatchCollectionHandler(),
+                                        new GetDocumentHandler(),
+                                        new PostDocumentHandler(),
+                                        new PutDocumentHandler(),
+                                        new DeleteDocumentHandler(),
+                                        new PatchDocumentHandler()
+                                )
+                        )
+                );
 
         PathHandler paths = path().addPrefixPath("/@browser", resource(new FileResourceManager(browserRootFile, 3)).addWelcomeFiles("browser.html").setDirectoryListingEnabled(false));
 

@@ -134,22 +134,23 @@ public class SimpleAccessManager implements AccessManager
 
         if (account == null && getAcl().get("$unauthenticated") != null)
         {
-            // not authenticated, let's permission give to $all
+            // not authenticated, let's get the permission set given to the $unauthenticated group
             return getAcl() == null ? false : getAcl().get("$unauthenticated").stream().anyMatch(p -> p.resolve(exchange));
         }
-        else
+        else if (account.getRoles() != null)
         {
             return account.getRoles().stream().anyMatch(r -> getAcl() == null ? false : getAcl().get(r).stream().anyMatch(p -> p.resolve(exchange)));
         }
+        else
+            return false;
     }
 
     /**
      * @return the acl
      */
+    @Override
     public HashMap<String, Set<Predicate>> getAcl()
     {
         return acl;
     }
-
-    
 }
