@@ -29,15 +29,30 @@ public class RequestContext
     public enum TYPE { ERROR, ROOT, DB, COLLECTION, DOCUMENT };
     public enum METHOD { GET, POST, PUT, DELETE, PATCH, OTHER };
     
-    private TYPE type;
-    private METHOD method;
+    private final String urlPrefix;
+    private final String db;
+    
+    private final TYPE type;
+    private final METHOD method;
     private final String[] pathTokens;
     
-    private Logger logger = LoggerFactory.getLogger(RequestContext.class);
+    private final Logger logger = LoggerFactory.getLogger(RequestContext.class);
     
-    public RequestContext(HttpServerExchange exchange)
+    public RequestContext(HttpServerExchange exchange, String urlPrefix, String db)
     {
+        this.urlPrefix = urlPrefix;
+        this.db = db;
+
         String path = exchange.getRequestPath();
+        
+        if (db.equals("*"))
+        {
+            path = path.replaceFirst("^" + this.urlPrefix, "");
+        }
+        {
+            path = path.replaceFirst("^" + this.urlPrefix, "/" + db + "/");
+        }
+        
         pathTokens = path.split("/"); // "/db/collection/document" --> { "", "db", "collection", "document" }
         
         if (pathTokens.length < 2)
@@ -129,7 +144,7 @@ public class RequestContext
     
     public static boolean isReservedResourceDocument(String documentId)
     {
-        return documentId != null && documentId.startsWith("@");
+        return documentId != null && (documentId.startsWith("@"));
     }
     
     public boolean isReservedResource()
@@ -138,5 +153,21 @@ public class RequestContext
             return false;
         
         return isReservedResourceDb(getDBName()) || isReservedResourceCollection(getCollectionName()) || isReservedResourceDocument(getDocumentId());
+    }
+
+    /**
+     * @return the urlPrefix
+     */
+    public String getUrlPrefix()
+    {
+        return urlPrefix;
+    }
+
+    /**
+     * @return the db
+     */
+    public String getDb()
+    {
+        return db;
     }
 }

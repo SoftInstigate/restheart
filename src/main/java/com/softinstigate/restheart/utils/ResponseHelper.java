@@ -70,8 +70,13 @@ public class ResponseHelper
         if (t != null && t.getMessage() != null)
             root.add("exception", t.toString());
         
+        if (t != null)
+            root.add("exception", t.getClass().getName());
+        
         if (t != null && t.getMessage() != null)
             root.add("exception message", t.getMessage());
+        else
+            root.add("exception message", "");
         
         if (stackTrace != null)
             root.add("stack trace", getStackTraceJson(t));

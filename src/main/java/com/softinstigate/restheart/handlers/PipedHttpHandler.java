@@ -8,7 +8,6 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-
 package com.softinstigate.restheart.handlers;
 
 import com.softinstigate.restheart.utils.RequestContext;
@@ -27,13 +26,12 @@ public abstract class PipedHttpHandler implements HttpHandler
     {
         this.next = next;
     }
-    
+
     public abstract void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception;
     
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception
     {
-        RequestContext context = new RequestContext(exchange);
-        handleRequest(exchange, context);
+        handleRequest(exchange, null);
     }
 }

@@ -18,6 +18,7 @@ import com.softinstigate.restheart.handlers.GzipEncodingHandler;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestDispacherHandler;
 import com.softinstigate.restheart.handlers.SchemaEnforcerHandler;
+import com.softinstigate.restheart.handlers.UrlToDbMapperHandler;
 import com.softinstigate.restheart.handlers.root.DeleteRootHandler;
 import com.softinstigate.restheart.handlers.root.GetRootHandler;
 import com.softinstigate.restheart.handlers.root.PatchRootHandler;
@@ -73,6 +74,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.AllowedMethodsHandler;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
+import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.RequestLimit;
 import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.util.HttpString;
@@ -121,7 +123,7 @@ public class Bootstrapper
         logger.info("starting restheart ********************************************");
 
         String mongoHosts = conf.getMongoServers().stream().map(s -> s.get(Configuration.MONGO_HOST) + ":" + s.get(Configuration.MONGO_PORT) + " ").reduce("", String::concat);
-        
+
         logger.info("initializing mongodb connection pool to {}", mongoHosts);
 
         try
@@ -371,58 +373,62 @@ public class Bootstrapper
                 .setHandler(hanldersPipe);
 
         builder.build().start();
-
-        AllowedMethodsHandler x = new AllowedMethodsHandler(null, HttpString.tryFromString(RequestContext.METHOD.DELETE.name()));
     }
 
     private static GracefulShutdownHandler getHandlersPipe(Configuration conf, IdentityManager identityManager, AccessManager accessManager)
     {
+        PipedHttpHandler coreHanlderChain = new SchemaEnforcerHandler(
+                new RequestDispacherHandler(
+                        new GetRootHandler(),
+                        new PostRootHandler(),
+                        new PutRootHandler(),
+                        new DeleteRootHandler(),
+                        new PatchRootHandler(),
+                        new GetDBHandler(),
+                        new PostDBHandler(),
+                        new PutDBHandler(),
+                        new DeleteDBHandler(),
+                        new PatchDBHandler(),
+                        new GetCollectionHandler(),
+                        new PostCollectionHandler(),
+                        new PutCollectionHandler(),
+                        new DeleteCollectionHandler(),
+                        new PatchCollectionHandler(),
+                        new GetDocumentHandler(),
+                        new PostDocumentHandler(),
+                        new PutDocumentHandler(),
+                        new DeleteDocumentHandler(),
+                        new PatchDocumentHandler()
+                )
+        );
+
+        PathHandler paths = path().addPrefixPath("/@browser", resource(new FileResourceManager(browserRootFile, 3)).addWelcomeFiles("browser.html").setDirectoryListingEnabled(false));
+
+        conf.getMongoMounts().stream().forEach(m ->
+        {
+            String url = (String) m.get(Configuration.MONGO_MOUNT_URL);
+            String db = (String) m.get(Configuration.MONGO_MOUNT_DB);
+
+            paths.addPrefixPath(url, addSecurity(new UrlToDbMapperHandler(url, db, coreHanlderChain), identityManager, accessManager));
+
+            logger.info("bound url prefix {} to db {}", url, db);
+        });
+
         return new GracefulShutdownHandler(
-                path()
-                .addPrefixPath("/@browser", resource(new FileResourceManager(browserRootFile, 3)).addWelcomeFiles("browser.html").setDirectoryListingEnabled(false))
-                .addPrefixPath("/",
-                        new RequestLimitingHandler(new RequestLimit(conf.getRequestLimit()),
-                                new AllowedMethodsHandler(
-                                        new BlockingHandler(
-                                                new GzipEncodingHandler(
-                                                        new ErrorHandler(
-                                                                new HttpContinueAcceptingHandler(
-                                                                        addSecurity(
-                                                                                new SchemaEnforcerHandler(
-                                                                                        new RequestDispacherHandler(
-                                                                                                new GetRootHandler(),
-                                                                                                new PostRootHandler(),
-                                                                                                new PutRootHandler(),
-                                                                                                new DeleteRootHandler(),
-                                                                                                new PatchRootHandler(),
-                                                                                                new GetDBHandler(),
-                                                                                                new PostDBHandler(),
-                                                                                                new PutDBHandler(),
-                                                                                                new DeleteDBHandler(),
-                                                                                                new PatchDBHandler(),
-                                                                                                new GetCollectionHandler(),
-                                                                                                new PostCollectionHandler(),
-                                                                                                new PutCollectionHandler(),
-                                                                                                new DeleteCollectionHandler(),
-                                                                                                new PatchCollectionHandler(),
-                                                                                                new GetDocumentHandler(),
-                                                                                                new PostDocumentHandler(),
-                                                                                                new PutDocumentHandler(),
-                                                                                                new DeleteDocumentHandler(),
-                                                                                                new PatchDocumentHandler()
-                                                                                        )
-                                                                                ), identityManager, accessManager)
-                                                                )
-                                                        ), conf.isForceGzipEncoding()
-                                                )
-                                        ),
-                                        // allowed methods
-                                        HttpString.tryFromString(RequestContext.METHOD.GET.name()),
-                                        HttpString.tryFromString(RequestContext.METHOD.POST.name()),
-                                        HttpString.tryFromString(RequestContext.METHOD.PUT.name()),
-                                        HttpString.tryFromString(RequestContext.METHOD.DELETE.name()),
-                                        HttpString.tryFromString(RequestContext.METHOD.PATCH.name())
-                                )
+                new RequestLimitingHandler(new RequestLimit(conf.getRequestLimit()),
+                        new AllowedMethodsHandler(
+                                new BlockingHandler(
+                                        new GzipEncodingHandler(
+                                                new ErrorHandler(
+                                                        new HttpContinueAcceptingHandler(paths)
+                                                ), conf.isForceGzipEncoding()
+                                        )
+                                ), // allowed methods
+                                HttpString.tryFromString(RequestContext.METHOD.GET.name()),
+                                HttpString.tryFromString(RequestContext.METHOD.POST.name()),
+                                HttpString.tryFromString(RequestContext.METHOD.PUT.name()),
+                                HttpString.tryFromString(RequestContext.METHOD.DELETE.name()),
+                                HttpString.tryFromString(RequestContext.METHOD.PATCH.name())
                         )
                 )
         );

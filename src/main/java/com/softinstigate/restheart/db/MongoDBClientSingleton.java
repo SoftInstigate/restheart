@@ -92,11 +92,12 @@ public class MongoDBClientSingleton
             {
                 for (Map<String, Object> mongoCredential : mongoCredentials)
                 {
+                    Object mongoAuthDb = mongoCredential.get(Configuration.MONGO_AUTH_DB);
                     Object mongoUser = mongoCredential.get(Configuration.MONGO_USER);
                     Object mongoPwd = mongoCredential.get(Configuration.MONGO_PASSWORD);
 
-                    if (mongoUser != null && mongoUser instanceof String && mongoPwd != null && mongoPwd instanceof String)
-                        credentials.add(MongoCredential.createMongoCRCredential((String) mongoUser, "admin", ((String)mongoPwd).toCharArray()));
+                    if (mongoAuthDb != null && mongoAuthDb instanceof String && mongoUser != null && mongoUser instanceof String && mongoPwd != null && mongoPwd instanceof String)
+                        credentials.add(MongoCredential.createMongoCRCredential((String) mongoUser, (String) mongoAuthDb, ((String)mongoPwd).toCharArray()));
                 }
             }
         

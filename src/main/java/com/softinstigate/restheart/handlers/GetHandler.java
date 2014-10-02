@@ -129,7 +129,7 @@ public abstract class GetHandler extends PipedHttpHandler
      * @param filterBy
      * @param filter
      * @return
-     * @throws com.softinstigate.restheart.utils.IllegalQueryParamenterException
+     * @throws com.softinstigate.restheart.handlers.IllegalQueryParamenterException
      */
     protected String generateCollectionContent(HttpServerExchange exchange, Map<String, Object> metadata, List<Map<String, Object>> data, int page, int pagesize, long size, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
             throws IllegalQueryParamenterException
@@ -182,9 +182,13 @@ public abstract class GetHandler extends PipedHttpHandler
 
         properties.put("@returned", "" + count);
         
-        if (size > 0)
+        if (size >= 0)
         {
             properties.put("@size", "" + size);
+        }
+        
+        if (size > 0)
+        {
             properties.put("@total_pages", "" + total_pages);
         }
 

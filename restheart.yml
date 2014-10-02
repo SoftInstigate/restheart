@@ -31,20 +31,21 @@ use-embedded-keystore: true
 
 #### mongodb 
 
+# in case of replica set, define host and port for all mongod instances
 mongo-servers:
-    - mongo-host: 127.0.0.1
-      mongo-port: 27017
+    - host: 127.0.0.1
+      port: 27017
 
-    - mongo-host: 127.0.0.1
-      mongo-port: 37017
-
-# NOTE: mongodb users must be created under the "admin" db 
-# e.g. in mongodb shell
-# > use admin
-# > db.createUser( { user: "admin", pwd: "adminadmin",  roles: [ "root" ] } )
 mongo-credentials:
-    - mongo-user: admin
-      mongo-password: adminadmin
+    - auth-db: admin
+      user: admin
+      password: adminadmin
+      
+mongo-mounts:
+    - db: testdb
+      url: /
+    - db: "*"
+      url: /others///
 
 ### security 
 idm:    

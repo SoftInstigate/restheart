@@ -48,6 +48,6 @@ public class SchemaEnforcerHandler extends PipedHttpHandler
             }
         }
         
-        next.handleRequest(exchange);
+        next.handleRequest(exchange, context);
     }
 }

@@ -49,6 +49,7 @@ public class Configuration
 
     private final List<Map<String, Object>> mongoServers;
     private final List<Map<String, Object>> mongoCredentials;
+    private final List<Map<String, Object>> mongoMounts;
 
     private final String idmImpl;
     private final Map<String, Object> idmArgs;
@@ -70,8 +71,6 @@ public class Configuration
 
     private final boolean forceGzipEncoding;
 
-    public static final String MONGO_SERVERS = "mongo-servers";
-    public static final String MONGO_CREDENTIALS = "mongo-credentials";
     public static final String FORCE_GZIP_ENCODING = "force-gzip-encoding";
     public static final String DIRECT_BUFFERS = "direct-buffers";
     public static final String BUFFERS_PER_REGION = "buffers-per-region";
@@ -86,10 +85,16 @@ public class Configuration
     public static final String IMPLEMENTATION_CLASS = "implementation-class";
     public static final String ACCESS_MANAGER = "access-manager";
     public static final String IDM = "idm";
-    public static final String MONGO_PASSWORD = "mongo-password";
-    public static final String MONGO_USER = "mongo-user";
-    public static final String MONGO_PORT = "mongo-port";
-    public static final String MONGO_HOST = "mongo-host";
+    public static final String MONGO_SERVERS = "mongo-servers";
+    public static final String MONGO_CREDENTIALS = "mongo-credentials";
+    public static final String MONGO_MOUNTS = "mongo-mounts";
+    public static final String MONGO_AUTH_DB = "auth-db";
+    public static final String MONGO_PASSWORD = "password";
+    public static final String MONGO_USER = "user";
+    public static final String MONGO_PORT = "port";
+    public static final String MONGO_HOST = "host";
+    public static final String MONGO_MOUNT_DB = "db";
+    public static final String MONGO_MOUNT_URL = "url";
     public static final String CERT_PASSWORD = "certpassword";
     public static final String KEYSTORE_PASSWORD = "keystore-password";
     public static final String KEYSTORE_FILE = "keystore-file";
@@ -103,7 +108,7 @@ public class Configuration
     public static final String HTTPS_HOST = "https-host";
     public static final String HTTPS_PORT = "https-port";
     public static final String HTTPS_LISTENER = "https-listener";
-    
+
     public Configuration()
     {
         httpsListener = true;
@@ -128,8 +133,14 @@ public class Configuration
         defaultMongoServer.put(MONGO_HOST, "127.0.0.1");
         defaultMongoServer.put(MONGO_PORT, 27017);
         mongoServers.add(defaultMongoServer);
-        
+
         mongoCredentials = null;
+
+        mongoMounts = new ArrayList<>();
+        Map<String, Object> defaultMongoMounts = new HashMap<>();
+        defaultMongoMounts.put(MONGO_MOUNT_DB, "*");
+        defaultMongoMounts.put(MONGO_MOUNT_URL, "/");
+        mongoMounts.add(defaultMongoMounts);
 
         idmImpl = null;
         idmArgs = null;
@@ -169,7 +180,7 @@ public class Configuration
         }
         catch (Throwable t)
         {
-            logger.error("wrong configuration file format. starting with default parameters.");
+            logger.error("wrong configuration file format. starting with default parameters.", t);
             conf = null;
         }
 
@@ -197,7 +208,13 @@ public class Configuration
             defaultMongoServer.put(MONGO_HOST, "127.0.0.1");
             defaultMongoServer.put(MONGO_PORT, 27017);
             mongoServers.add(defaultMongoServer);
-            
+
+            mongoMounts = new ArrayList<>();
+            Map<String, Object> defaultMongoMounts = new HashMap<>();
+            defaultMongoMounts.put(MONGO_MOUNT_DB, "*");
+            defaultMongoMounts.put(MONGO_MOUNT_URL, "/");
+            mongoMounts.add(defaultMongoMounts);
+
             mongoCredentials = null;
 
             idmImpl = null;
@@ -244,10 +261,18 @@ public class Configuration
             defaultMongoServer.put(MONGO_HOST, "127.0.0.1");
             defaultMongoServer.put(MONGO_PORT, 27017);
             mongoServersDefault.add(defaultMongoServer);
-            
+
             mongoServers = getAsListOfMaps(conf, MONGO_SERVERS, mongoServersDefault);
             mongoCredentials = getAsListOfMaps(conf, MONGO_CREDENTIALS, null);
             
+            List<Map<String, Object>> mongoMountsDefault = new ArrayList<>();
+            Map<String, Object> defaultMongoMounts = new HashMap<>();
+            defaultMongoMounts.put(MONGO_MOUNT_DB, "*");
+            defaultMongoMounts.put(MONGO_MOUNT_URL, "/");
+            mongoMountsDefault.add(defaultMongoMounts);
+            
+            mongoMounts = getAsListOfMaps(conf, MONGO_MOUNTS, mongoMountsDefault);
+
             Map<String, Object> idm = getAsMap(conf, IDM);
             Map<String, Object> am = getAsMap(conf, ACCESS_MANAGER);
 
@@ -293,7 +318,7 @@ public class Configuration
         if (conf == null)
         {
             logger.warn("parameters group {} not specified in the configuration file. using its default value {}", key, defaultValue);
-            
+
             return defaultValue;
         }
 
@@ -659,5 +684,13 @@ public class Configuration
     public List<Map<String, Object>> getMongoCredentials()
     {
         return mongoCredentials;
+    }
+
+    /**
+     * @return the mongoMountsDefault
+     */
+    public List<Map<String, Object>> getMongoMounts()
+    {
+        return mongoMounts;
     }
 }

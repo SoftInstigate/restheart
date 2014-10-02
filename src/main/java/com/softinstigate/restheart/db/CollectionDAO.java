@@ -10,6 +10,7 @@
  */
 package com.softinstigate.restheart.db;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -47,12 +48,21 @@ public class CollectionDAO
     private static final BasicDBObject DATA_QUERY = new BasicDBObject("_id", new BasicDBObject("$ne", "@metadata"));
 
     private static final BasicDBObject fieldsToReturn;
-
+    
     static
     {
         fieldsToReturn = new BasicDBObject();
         fieldsToReturn.put("_id", 1);
         fieldsToReturn.put("@created_on", 1);
+    }
+    
+    private static final BasicDBObject fieldsToReturnIndexes;
+    
+    static
+    {
+        fieldsToReturnIndexes = new BasicDBObject();
+        fieldsToReturnIndexes.put("key", 1);
+        fieldsToReturnIndexes.put("name", 1);
     }
 
     /**
@@ -98,6 +108,17 @@ public class CollectionDAO
     public static DBCollection getCollection(String dbName, String collName)
     {
         return client.getDB(dbName).getCollection(collName);
+    }
+    
+    public static Map<String, Object> getCollectionIndexes(String dbName, String collName)
+    {
+        List<DBObject> indexes = client.getDB("testdb").getCollection("system.indexes").find(new BasicDBObject("ns", dbName + "." + collName), fieldsToReturnIndexes).sort(new BasicDBObject("name", 1)).toArray();
+    
+        HashMap<String, Object> ret = new HashMap<>();
+        
+        indexes.stream().forEach(i -> ret.put((String) i.get("name"), i.get("key")));
+        
+        return ret;
     }
 
     public static boolean isCollectionEmpty(DBCollection coll)
@@ -215,7 +236,7 @@ public class CollectionDAO
 
             metadata.put("@lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
         }
-
+        
         return metadata;
     }
 

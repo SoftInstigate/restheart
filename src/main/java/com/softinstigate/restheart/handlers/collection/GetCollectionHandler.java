@@ -45,15 +45,16 @@ public class GetCollectionHandler extends GetHandler
     @Override
     protected String generateContent(HttpServerExchange exchange, RequestContext context, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
-
         DBCollection coll = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName());
 
-            // ***** get optional metadata information
+        // ***** get optional metadata information
         Map<String, Object> metadata = null;
 
         if (exchange.getQueryParameters().containsKey("metadata"))
         {
             metadata = CollectionDAO.getCollectionMetadata(coll);
+
+            metadata.put("@indexes", CollectionDAO.getCollectionIndexes(context.getDBName(), context.getCollectionName()));
         }
 
         long size = -1;
@@ -63,7 +64,7 @@ public class GetCollectionHandler extends GetHandler
             size = CollectionDAO.getCollectionSize(coll, filter);
         }
 
-            // ***** get data
+        // ***** get data
         List<Map<String, Object>> data = null;
 
         try
@@ -95,15 +96,21 @@ public class GetCollectionHandler extends GetHandler
             return null;
         }
 
-            // ***** return NOT_FOUND if collection is not existing (this is to avoid to check existance via the slow CollectionDAO.checkCollectionExists)
-        // TODO check, if metadata query param was not specified and the collection is empty but existing this request gets NOT_FOUND!
-        if (data.isEmpty() && (metadata == null || metadata.isEmpty())) // i.e. collection does not exists
+        // ***** return NOT_FOUND from here if collection is not existing (this is to avoid to check existance via the slow CollectionDAO.checkCollectionExists)
+        // note that if metadata query param was not specified (thus metadata == null)
+        // and the collection is empty but existing we need to check metadata with an additional query
+        if (data.isEmpty() && (metadata == null))
         {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
-            return null;
+            Map md = CollectionDAO.getCollectionMetadata(coll);
+            
+            if (md == null || md.isEmpty())
+            {
+                ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
+                return null;
+            }
         }
 
-            // ***** return hal document
+        // ***** return hal document
         try
         {
             return generateCollectionContent(exchange, metadata, data, page, pagesize, size, sortBy, filterBy, filter);
