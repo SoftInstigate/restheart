@@ -187,7 +187,7 @@ public class RequestContext
     
     public static boolean isReservedResourceDb(String dbName)
     {
-        return dbName.equals("admin") || dbName.startsWith("system.") || dbName.startsWith("@");
+        return dbName.equals("admin") || dbName.equals("local") ||dbName.startsWith("system.") || dbName.startsWith("@");
     }
     
     public static boolean isReservedResourceCollection(String collectionName)

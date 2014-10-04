@@ -82,7 +82,6 @@ public class DBDAO
 
     /**
      * WARNING: slow method. 
-    * @deprecated
     **/
     public static boolean doesDbExists(String dbName)
     {
@@ -206,7 +205,8 @@ public class DBDAO
 
                     Map<String, Object> metadata = CollectionDAO.getCollectionMetadata(dbName, coll);
 
-                    properties.putAll(metadata);
+                    if (metadata != null)
+                        properties.putAll(metadata);
 
                     return properties;
                 }

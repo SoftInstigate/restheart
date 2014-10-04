@@ -23,7 +23,6 @@ import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import java.nio.charset.Charset;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,8 +35,6 @@ public class PatchDocumentHandler extends PipedHttpHandler
 {
     private static final Logger logger = LoggerFactory.getLogger(PatchDocumentHandler.class);
     
-    final Charset charset = Charset.forName("utf-8");  
-
     /**
      * Creates a new instance of PatchDocumentHandler
      */

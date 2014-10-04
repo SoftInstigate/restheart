@@ -22,7 +22,6 @@ import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import java.nio.charset.Charset;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,8 +32,6 @@ import org.slf4j.LoggerFactory;
  */
 public class PutCollectionHandler extends PipedHttpHandler
 {
-    final Charset charset = Charset.forName("utf-8");
-
     private static final Logger logger = LoggerFactory.getLogger(PutCollectionHandler.class);
 
     /**

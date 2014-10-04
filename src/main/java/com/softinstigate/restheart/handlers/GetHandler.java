@@ -18,7 +18,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.Charset;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
@@ -34,8 +33,6 @@ import org.slf4j.LoggerFactory;
 public abstract class GetHandler extends PipedHttpHandler
 {
     protected static final Logger logger = LoggerFactory.getLogger(GetHandler.class);
-
-    final Charset charset = Charset.forName("utf-8");
 
     /**
      * Creates a new instance of GetHandler
@@ -94,7 +91,7 @@ public abstract class GetHandler extends PipedHttpHandler
 
         String content = generateContent(exchange, context, page, pagesize, sortBy, filterBy, filter);
 
-        if (content == null) // null if doc not exists. exchange already closed by generateContent
+        if (exchange.isResponseComplete()) // exchange already closed by generateContent
         {
             return;
         }
