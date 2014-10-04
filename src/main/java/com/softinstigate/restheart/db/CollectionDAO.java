@@ -208,8 +208,10 @@ public class CollectionDAO
         return data;
     }
 
-    public static Map<String, Object> getCollectionMetadata(DBCollection coll)
+    public static Map<String, Object> getCollectionMetadata(String dbName, String collName)
     {
+        DBCollection coll = CollectionDAO.getCollection(dbName, collName);
+        
         Map<String, Object> metadata = DAOUtils.getDataFromRow(coll.findOne(METADATA_QUERY), "_id");
 
         if (metadata == null)

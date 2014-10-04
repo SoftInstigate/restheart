@@ -37,6 +37,9 @@ public class LoadTestRestHeartTask
     
     private String id;
     private String pwd;
+    private boolean printData = false;
+    private String db;
+    private String coll;
     
     public void setUrl(String url) throws MalformedURLException
     {
@@ -68,7 +71,21 @@ public class LoadTestRestHeartTask
         
         try
         {
-            while (in.readLine() != null);
+            if (!printData)
+            {
+                while (in.readLine() != null);
+            }
+            else
+            {
+                String data = in.readLine();
+                
+                while( data != null)
+                {
+                    System.out.println(data.toString());
+                    
+                    data = in.readLine();
+                }
+            }
         }
         finally
         {
@@ -78,11 +95,14 @@ public class LoadTestRestHeartTask
     
     public void dbdirect() throws IOException
     {
-        DBCollection coll = CollectionDAO.getCollection("testdb", "testcoll");
+        DBCollection dbcoll = CollectionDAO.getCollection(db, coll);
         
         //CollectionDAO.getCollectionSize(coll, null);
         //CollectionDAO.getCollectionMetadata(coll);
-        List<Map<String, Object>> data = CollectionDAO.getCollectionData(coll, 1, 5, null, null);
+        List<Map<String, Object>> data = CollectionDAO.getCollectionData(dbcoll, 1, 5, null, null);
+        
+        if (printData)
+            System.out.println(data != null ? data.toString() : "null data");
     }
 
     /**
@@ -99,5 +119,29 @@ public class LoadTestRestHeartTask
     public void setPwd(String pwd)
     {
         this.pwd = pwd;
+    }
+
+    /**
+     * @param printData the printData to set
+     */
+    public void setPrintData(String printData)
+    {
+        this.printData = Boolean.valueOf(printData);
+    }
+
+    /**
+     * @param db the db to set
+     */
+    public void setDb(String db)
+    {
+        this.db = db;
+    }
+
+    /**
+     * @param coll the coll to set
+     */
+    public void setColl(String coll)
+    {
+        this.coll = coll;
     }
 }

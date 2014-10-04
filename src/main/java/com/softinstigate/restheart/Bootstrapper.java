@@ -409,7 +409,7 @@ public class Bootstrapper
                                         new PutIndexHandler(),
                                         new DeleteIndexHandler()
                                 )
-                        )
+                        ), conf.isMetadataLocalCacheEnabled(), conf.getMetadataLocalCacheTtl()
                 );
 
         PathHandler paths = path().addPrefixPath("/@browser", resource(new FileResourceManager(browserRootFile, 3)).addWelcomeFiles("browser.html").setDirectoryListingEnabled(false));

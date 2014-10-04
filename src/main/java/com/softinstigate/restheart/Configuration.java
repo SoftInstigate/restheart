@@ -61,6 +61,9 @@ public class Configuration
     private final boolean logToConsole;
     private final boolean logToFile;
 
+    private final boolean metadataLocalCacheEnabled;
+    private final int metadataLocalCacheTtl;
+    
     private final int requestsLimit;
 
     private final int ioThreads;
@@ -71,6 +74,9 @@ public class Configuration
 
     private final boolean forceGzipEncoding;
 
+    public static final String METADATA_LOCAL_CACHE_ENABLED = "metadata-local-cache-enabled";
+    public static final String METADATA_LOCAL_CACHE_TTL = "metadata-local-cache-ttl";
+    
     public static final String FORCE_GZIP_ENCODING = "force-gzip-encoding";
     public static final String DIRECT_BUFFERS = "direct-buffers";
     public static final String BUFFERS_PER_REGION = "buffers-per-region";
@@ -153,6 +159,9 @@ public class Configuration
         logToFile = true;
         logLevel = Level.INFO;
 
+        metadataLocalCacheEnabled = false;
+        metadataLocalCacheTtl = 1000;
+        
         requestsLimit = 100;
         ioThreads = 2;
         workerThreads = 32;
@@ -228,7 +237,11 @@ public class Configuration
             logToFile = true;
             logLevel = Level.INFO;
 
+            metadataLocalCacheEnabled = false;
+            metadataLocalCacheTtl = 1000;
+            
             requestsLimit = 100;
+            
             ioThreads = 2;
             workerThreads = 32;
             bufferSize = 16384;
@@ -302,6 +315,9 @@ public class Configuration
             logLevel = level;
 
             requestsLimit = getAsIntegerOrDefault(conf, REQUESTS_LIMIT, 100);
+            
+            metadataLocalCacheEnabled = getAsBooleanOrDefault(conf, METADATA_LOCAL_CACHE_ENABLED, false);
+            metadataLocalCacheTtl = getAsIntegerOrDefault(conf, METADATA_LOCAL_CACHE_TTL, 1000);
 
             ioThreads = getAsIntegerOrDefault(conf, IO_THREADS, 2);
             workerThreads = getAsIntegerOrDefault(conf, WORKER_THREADS, 32);
@@ -667,7 +683,7 @@ public class Configuration
      */
     public int getRequestLimit()
     {
-        return requestsLimit;
+        return getRequestsLimit();
     }
 
     /**
@@ -692,5 +708,29 @@ public class Configuration
     public List<Map<String, Object>> getMongoMounts()
     {
         return mongoMounts;
+    }
+
+    /**
+     * @return the metadataLocalCacheEnabled
+     */
+    public boolean isMetadataLocalCacheEnabled()
+    {
+        return metadataLocalCacheEnabled;
+    }
+
+    /**
+     * @return the metadataLocalCacheTimeout
+     */
+    public int getMetadataLocalCacheTtl()
+    {
+        return metadataLocalCacheTtl;
+    }
+
+    /**
+     * @return the requestsLimit
+     */
+    public int getRequestsLimit()
+    {
+        return requestsLimit;
     }
 }

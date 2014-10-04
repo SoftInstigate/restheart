@@ -46,7 +46,7 @@ public class DBDAO
     private static final Logger logger = LoggerFactory.getLogger(DBDAO.class);
 
     public static final BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "@metadata");
-    
+
     private static final BasicDBObject fieldsToReturn;
 
     static
@@ -55,16 +55,16 @@ public class DBDAO
         fieldsToReturn.put("_id", 1);
         fieldsToReturn.put("@created_on", 1);
     }
-    
+
     private static final BasicDBObject fieldsToReturnIndexes;
-    
+
     static
     {
         fieldsToReturnIndexes = new BasicDBObject();
         fieldsToReturnIndexes.put("key", 1);
         fieldsToReturnIndexes.put("name", 1);
     }
-    
+
     public static boolean checkDbExists(HttpServerExchange exchange, String dbName)
     {
         if (!doesDbExists(dbName))
@@ -78,18 +78,18 @@ public class DBDAO
 
     public static boolean doesDbExists(String dbName)
     {
-        BasicDBObject query = new BasicDBObject("name", new BasicDBObject("$regex", "^"+ dbName + "\\..*"));
-        
+        BasicDBObject query = new BasicDBObject("name", new BasicDBObject("$regex", "^" + dbName + "\\..*"));
+
         return client.getDB(dbName).getCollection("system.namespaces").findOne(query) != null;
         /*
-        TODO check this!!!!! 
-        check removed. too slow!
-        if (!client.getDatabaseNames().contains(dbName))
-        {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
-            return false;
-        }
-        */
+         TODO check this!!!!! 
+         check removed. too slow!
+         if (!client.getDatabaseNames().contains(dbName))
+         {
+         ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
+         return false;
+         }
+         */
 
     }
 
@@ -103,55 +103,50 @@ public class DBDAO
         List<String> _colls = new ArrayList(db.getCollectionNames());
 
         Collections.sort(_colls);
-        
+
         return _colls;
     }
 
     /**
      * @param colls the collections list got from getDbCollections()
      * @return the number of collections in this db
-    *
+     *
      */
     public static long getDBSize(List<String> colls)
     {
         // filter out reserved resourced
         List<String> _colls = colls.stream().filter(coll -> !RequestContext.isReservedResourceCollection(coll)).collect(Collectors.toList());
-        
+
         return _colls.size();
     }
 
     /**
      * @param dbName
-     * @param colls the collections list as got from getDbCollections()
      * @return the db metadata
-    *
+     *
      */
-    public static Map<String, Object> getDbMetaData(String dbName, List<String> colls)
+    public static Map<String, Object> getDbMetaData(String dbName)
     {
         Map<String, Object> metadata = null;
 
-        // get metadata collection if exists
-        if (colls.contains("@metadata"))
+        DBCollection metadatacoll = CollectionDAO.getCollection(dbName, "@metadata");
+
+        DBObject metadatarow = metadatacoll.findOne(METADATA_QUERY);
+
+        if (metadatarow == null)
         {
-            DBCollection metadatacoll = CollectionDAO.getCollection(dbName, "@metadata");
+            return new HashMap<>();
+        }
+        
+        metadata = DAOUtils.getDataFromRow(metadatarow, "_id");
 
-            DBObject metadatarow = metadatacoll.findOne(METADATA_QUERY);
+        Object etag = metadata.get("@etag");
 
-            metadata = DAOUtils.getDataFromRow(metadatarow, "_id");
+        if (etag != null && ObjectId.isValid("" + etag))
+        {
+            ObjectId oid = new ObjectId("" + etag);
 
-            if (metadata == null)
-            {
-                metadata = new HashMap<>();
-            }
-            
-            Object etag = metadata.get("@etag");
-
-            if (etag != null && ObjectId.isValid("" + etag))
-            {
-                ObjectId oid = new ObjectId("" + etag);
-
-                metadata.put("@lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
-            }
+            metadata.put("@lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
         }
 
         return metadata;
@@ -166,20 +161,21 @@ public class DBDAO
      * @param filterBy
      * @param filter
      * @return the db data
-     * @throws com.softinstigate.restheart.handlers.IllegalQueryParamenterException
-    *
+     * @throws
+     * com.softinstigate.restheart.handlers.IllegalQueryParamenterException
+     *
      */
     public static List<Map<String, Object>> getData(String dbName, List<String> colls, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
             throws IllegalQueryParamenterException
     {
         // filter out reserved resourced
         List<String> _colls = colls.stream().filter(coll -> !RequestContext.isReservedResourceCollection(coll)).collect(Collectors.toList());
-        
+
         int size = _colls.size();
-        
-         // *** arguments check
+
+        // *** arguments check
         long total_pages = -1;
-        
+
         if (size > 0)
         {
             float _size = size + 0f;
@@ -192,7 +188,7 @@ public class DBDAO
                 throw new IllegalQueryParamenterException("illegal query paramenter, page is bigger that total pages which is " + total_pages);
             }
         }
-        
+
         // apply page and pagesize
         _colls = _colls.subList((page - 1) * pagesize, (page - 1) * pagesize + pagesize > _colls.size() ? _colls.size() : (page - 1) * pagesize + pagesize);
 
@@ -210,11 +206,11 @@ public class DBDAO
                     TreeMap<String, Object> properties = new TreeMap<>();
 
                     properties.put("_id", coll);
-                    
-                    Map<String, Object> metadata = CollectionDAO.getCollectionMetadata((CollectionDAO.getCollection(dbName, coll)));
-                    
+
+                    Map<String, Object> metadata = CollectionDAO.getCollectionMetadata(dbName, coll);
+
                     properties.putAll(metadata);
-                    
+
                     return properties;
                 }
         ).forEach((item) ->
@@ -224,20 +220,20 @@ public class DBDAO
 
         return data;
     }
-    
+
     public static int upsertDB(String dbName, DBObject content, ObjectId etag, boolean patching)
     {
         DB db = client.getDB(dbName);
 
         DBCollection coll = db.getCollection("@metadata");
-        
+
         boolean existing = db.getCollectionNames().size() > 0;
-        
+
         if (patching && !existing)
         {
             return HttpStatus.SC_NOT_FOUND;
         }
-        
+
         // check the etag
         if (db.collectionExists("@metadata"))
         {
@@ -246,7 +242,7 @@ public class DBDAO
                 logger.warn("the {} header in required", Headers.ETAG);
                 return HttpStatus.SC_PRECONDITION_FAILED;
             }
-            
+
             BasicDBObject idAndEtagQuery = new BasicDBObject("_id", "@metadata");
             idAndEtagQuery.append("@etag", etag);
 
@@ -257,21 +253,22 @@ public class DBDAO
         }
 
         // apply new values
-        
         ObjectId timestamp = new ObjectId();
         Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
-        
+
         if (content == null)
+        {
             content = new BasicDBObject();
-        
+        }
+
         content.put("@etag", timestamp);
         content.removeField("@created_on"); // make sure we don't change this field
         content.removeField("_id"); // make sure we don't change this field
-        
+
         if (patching)
         {
             coll.update(METADATA_QUERY, new BasicDBObject("$set", content), true, false);
-            
+
             return HttpStatus.SC_OK;
         }
         else
@@ -296,7 +293,7 @@ public class DBDAO
                 BasicDBObject createdContet = new BasicDBObject("@created_on", "" + oldTimestamp);
                 createdContet.markAsPartialObject();
                 coll.update(METADATA_QUERY, new BasicDBObject("$set", createdContet), true, false);
-                
+
                 return HttpStatus.SC_OK;
             }
             else
@@ -305,24 +302,23 @@ public class DBDAO
                 BasicDBObject createdContet = new BasicDBObject("@created_on", now.toString());
                 createdContet.markAsPartialObject();
                 coll.update(METADATA_QUERY, new BasicDBObject("$set", createdContet), true, false);
-                
+
                 return HttpStatus.SC_CREATED;
             }
         }
     }
-    
+
     public static int deleteDB(String dbName, ObjectId requestEtag)
     {
         DB db = DBDAO.getDB(dbName);
-        
-        
+
         DBCollection coll = db.getCollection("@metadata");
-        
+
         BasicDBObject checkEtag = new BasicDBObject("_id", "@metadata");
         checkEtag.append("@etag", requestEtag);
-        
+
         DBObject exists = coll.findOne(checkEtag, fieldsToReturn);
-        
+
         if (exists == null)
         {
             return HttpStatus.SC_PRECONDITION_FAILED;
@@ -349,7 +345,7 @@ public class DBDAO
             {
                 db.dropDatabase();
                 return HttpStatus.SC_GONE; // ok they match
-                
+
             }
             else
             {

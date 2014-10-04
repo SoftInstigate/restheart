@@ -97,7 +97,7 @@ public class PutIndexHandler extends PipedHttpHandler
         
         if (keys == null)
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, content must include keys", null);
+            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, content must include 'keys' object", null);
             return;
         }
         
