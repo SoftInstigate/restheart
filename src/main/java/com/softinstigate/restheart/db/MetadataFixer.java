@@ -113,7 +113,6 @@ public class MetadataFixer
         {
             try
             {
-                logger.error("*** {}", dbName);
                 addDbMetadata(dbName);
             }
             catch (Throwable t)
@@ -128,7 +127,6 @@ public class MetadataFixer
             DBDAO.getDbCollections(db).stream().filter((collectionName) -> (!RequestContext.isReservedResourceCollection(collectionName))).forEach(
                     (collectionName) ->
                     {
-                        logger.error("*** {}/{}", dbName, collectionName);
                         try
                         {
                             addCollectionMetadata(dbName, collectionName);
