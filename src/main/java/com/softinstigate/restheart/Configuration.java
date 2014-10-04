@@ -62,7 +62,7 @@ public class Configuration
     private final boolean logToFile;
 
     private final boolean metadataLocalCacheEnabled;
-    private final int metadataLocalCacheTtl;
+    private final long metadataLocalCacheTtl;
     
     private final int requestsLimit;
 
@@ -317,7 +317,7 @@ public class Configuration
             requestsLimit = getAsIntegerOrDefault(conf, REQUESTS_LIMIT, 100);
             
             metadataLocalCacheEnabled = getAsBooleanOrDefault(conf, METADATA_LOCAL_CACHE_ENABLED, false);
-            metadataLocalCacheTtl = getAsIntegerOrDefault(conf, METADATA_LOCAL_CACHE_TTL, 1000);
+            metadataLocalCacheTtl = getAsLongOrDefault(conf, METADATA_LOCAL_CACHE_TTL, (long)1000);
 
             ioThreads = getAsIntegerOrDefault(conf, IO_THREADS, 2);
             workerThreads = getAsIntegerOrDefault(conf, WORKER_THREADS, 32);
@@ -454,6 +454,36 @@ public class Configuration
         {
             logger.debug("paramenter {} set to {}", key, o);
             return (Integer) o;
+        }
+        else
+        {
+            logger.info("wrong value for parameter {}: {}. using its default value {}", key, o, defaultValue);
+            return defaultValue;
+        }
+    }
+    
+    private static Long getAsLongOrDefault(Map<String, Object> conf, String key, Long defaultValue)
+    {
+        if (conf == null)
+        {
+            logger.error("tried to get paramenter {} from a null configuration map. using its default value {}", key, defaultValue);
+            return null;
+        }
+
+        Object o = conf.get(key);
+
+        if (o == null)
+        {
+            if (defaultValue != null) // if default value is null there is no default value actually
+            {
+                logger.info("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
+            }
+            return defaultValue;
+        }
+        else if (o instanceof Long)
+        {
+            logger.debug("paramenter {} set to {}", key, o);
+            return (Long) o;
         }
         else
         {
@@ -721,7 +751,7 @@ public class Configuration
     /**
      * @return the metadataLocalCacheTimeout
      */
-    public int getMetadataLocalCacheTtl()
+    public long getMetadataLocalCacheTtl()
     {
         return metadataLocalCacheTtl;
     }

@@ -37,37 +37,42 @@ public class MetadataRetrieverHandler extends PipedHttpHandler
      * @param metadataLocalCacheEnabled
      * @param metadataLocalCacheTtl
      */
-    public MetadataRetrieverHandler(PipedHttpHandler next, boolean metadataLocalCacheEnabled, int metadataLocalCacheTtl)
+    public MetadataRetrieverHandler(PipedHttpHandler next, boolean metadataLocalCacheEnabled, long metadataLocalCacheTtl)
     {
         super(next);
 
         if (metadataLocalCacheEnabled)
         {
-            this.dbMetadataCache = CacheBuilder.newBuilder()
-                    .maximumSize(1000)
-                    .expireAfterWrite(metadataLocalCacheTtl, TimeUnit.MILLISECONDS).build(
-                            new CacheLoader<String, Map<String, Object>>()
-                            {
+            CacheBuilder builder = CacheBuilder.newBuilder();
 
-                                @Override
-                                public Map<String, Object> load(String key) throws Exception
-                                {
-                                    return DBDAO.getDbMetaData(key);
-                                }
-                            });
+            builder.maximumSize(1000);
 
-            this.collectionMetadataCache = CacheBuilder.newBuilder()
-                    .maximumSize(1000)
-                    .expireAfterWrite(metadataLocalCacheTtl, TimeUnit.MILLISECONDS).build(
-                            new CacheLoader<String, Map<String, Object>>()
-                            {
-                                @Override
-                                public Map<String, Object> load(String key) throws Exception
-                                {
-                                    String[] dbNameAndCollectionName = key.split("@@@@");
-                                    return CollectionDAO.getCollectionMetadata(dbNameAndCollectionName[0], dbNameAndCollectionName[1]);
-                                }
-                            });
+            if (metadataLocalCacheTtl > 0)
+            {
+                builder.expireAfterWrite(metadataLocalCacheTtl, TimeUnit.MILLISECONDS);
+            }
+
+            this.dbMetadataCache = builder.build(
+                    new CacheLoader<String, Map<String, Object>>()
+                    {
+
+                        @Override
+                        public Map<String, Object> load(String key) throws Exception
+                        {
+                            return DBDAO.getDbMetaData(key);
+                        }
+                    });
+
+            this.collectionMetadataCache = builder.build(
+                    new CacheLoader<String, Map<String, Object>>()
+                    {
+                        @Override
+                        public Map<String, Object> load(String key) throws Exception
+                        {
+                            String[] dbNameAndCollectionName = key.split("@@@@");
+                            return CollectionDAO.getCollectionMetadata(dbNameAndCollectionName[0], dbNameAndCollectionName[1]);
+                        }
+                    });
         }
         else
         {
@@ -82,7 +87,7 @@ public class MetadataRetrieverHandler extends PipedHttpHandler
         if (context.getDBName() != null)
         {
             Map<String, Object> dbMetadata = null;
-            
+
             if (RequestContext.METHOD.GET != context.getMethod() || dbMetadataCache == null)
             {
                 dbMetadata = DBDAO.getDbMetaData(context.getDBName());
@@ -91,16 +96,16 @@ public class MetadataRetrieverHandler extends PipedHttpHandler
             else
             {
                 boolean cached = false;
-                
+
                 if (dbMetadataCache.getIfPresent(context.getDBName()) != null)
                 {
-                   cached = true;
+                    cached = true;
                 }
-                
-                dbMetadata =  dbMetadataCache.get(context.getDBName());
+
+                dbMetadata = dbMetadataCache.get(context.getDBName());
                 dbMetadata.put("@metadata-cached", cached);
             }
-            
+
             context.setDbMetadata(dbMetadata);
         }
 
@@ -116,16 +121,16 @@ public class MetadataRetrieverHandler extends PipedHttpHandler
             else
             {
                 boolean cached = false;
-                
+
                 if (collectionMetadataCache.getIfPresent(context.getDBName() + "@@@@" + context.getCollectionName()) != null)
                 {
-                   cached = true;
+                    cached = true;
                 }
-                
+
                 collMetadata = collectionMetadataCache.get(context.getDBName() + "@@@@" + context.getCollectionName());
                 collMetadata.put("@metadata-cached", cached);
             }
-            
+
             context.setCollectionMetadata(collMetadata);
         }
 
