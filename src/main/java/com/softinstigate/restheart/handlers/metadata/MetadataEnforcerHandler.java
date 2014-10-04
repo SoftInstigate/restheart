@@ -54,13 +54,19 @@ public class MetadataEnforcerHandler extends PipedHttpHandler
         if (context.getDBName() != null)
         {
             if (context.getDbMetadata() == null)
+            {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "db " + context.getDBName() + " does not exist");
+                return;
+            }
         }
         
         if (context.getCollectionName()!= null && context.getMethod() != METHOD.PUT)
         {
             if (context.getCollectionMetadata() == null)
+            {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "collection " + context.getDBName() + "/" + context.getCollectionName() + " does not exist");
+                return;
+            }
         }
         
         next.handleRequest(exchange, context);

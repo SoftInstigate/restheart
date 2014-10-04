@@ -57,7 +57,7 @@
     <name>restheart</name>
     
     <build>
-        <finalName>${artifactId}-${version}-nodeps</finalName>
+        <finalName>${project.artifactId}-${project.version}-nodeps</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -67,7 +67,7 @@
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
-                    <finalName>${artifactId}-${version}</finalName>
+                    <finalName>${project.artifactId}-${project.version}</finalName>
                     <appendAssemblyId>false</appendAssemblyId>
                     <archive>
                         <manifest>
