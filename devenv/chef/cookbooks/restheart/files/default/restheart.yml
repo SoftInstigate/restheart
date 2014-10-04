@@ -31,13 +31,23 @@ use-embedded-keystore: true
 
 #### mongodb 
 
-mongo-host: mongo-node
-mongo-port: 27017
-mongo-user: admin
-mongo-password: adminadmin
+# in case of replica set, define host and port for all mongod instances
+mongo-servers:
+    - host: 127.0.0.1
+      port: 27017
+
+mongo-credentials:
+    - auth-db: admin
+      user: admin
+      password: adminadmin
+      
+mongo-mounts:
+    - db: "*"
+      url: /
+#    - db: "*"
+#      url: /all
 
 ### security 
-
 idm:    
     implementation-class: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
     conf-file: ./security.yml
@@ -58,10 +68,19 @@ log-file-path: /var/log/restheart.log
 enable-log-console: false
 
 #  log levels: OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL.
-log-level: WARN
-
+log-level: INFO
 
 #### performace settings
+
+# metadata-local-cache drammatically improves GETs performace
+# a GET on a collecation requires two additional queries to retrieve the db and the collection metadata
+# at development time you might want to disable the metadata cache to have all changes to dbs and collections metadata immediatly visible
+metadata-local-cache-enabled: true
+# time to live is in milliseconds; specify a ttl < 0 to never expire cached entries 
+metadata-local-cache-ttl: 1000
+
+# to set a limit for the maximum number of concurrent requests being served
+requests-limit: 100
 
 # the number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
 io-threads: 2
