@@ -64,7 +64,7 @@ public class PutIndexHandler extends PipedHttpHandler
         
         if (id.startsWith("@"))
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "index name cannot start with @", null);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "index name cannot start with @", null);
             return;
         }
         
@@ -78,7 +78,7 @@ public class PutIndexHandler extends PipedHttpHandler
         }
         catch (JSONParseException ex)
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, json content is invalid", ex);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data is invalid", ex);
             return;
         }
         
@@ -88,7 +88,7 @@ public class PutIndexHandler extends PipedHttpHandler
         // cannot PUT an array
         if (content instanceof BasicDBList)
         {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data cannot be an array");
             return;
         }
         
@@ -97,7 +97,7 @@ public class PutIndexHandler extends PipedHttpHandler
         
         if (keys == null)
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, content must include 'keys' object", null);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, content must include 'keys' object", null);
             return;
         }
         
@@ -114,7 +114,7 @@ public class PutIndexHandler extends PipedHttpHandler
         }
         catch(Throwable t)
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "error creating the index", t);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "error creating the index", t);
         }
         
         ResponseHelper.endExchange(exchange, HttpStatus.SC_CREATED);

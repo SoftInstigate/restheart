@@ -26,7 +26,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -65,6 +64,11 @@ public class DBDAO
         fieldsToReturnIndexes.put("name", 1);
     }
 
+    /**
+     * 
+     * WARNING: slow method. 
+    * @deprecated
+    **/
     public static boolean checkDbExists(HttpServerExchange exchange, String dbName)
     {
         if (!doesDbExists(dbName))
@@ -76,20 +80,15 @@ public class DBDAO
         return true;
     }
 
+    /**
+     * WARNING: slow method. 
+    * @deprecated
+    **/
     public static boolean doesDbExists(String dbName)
     {
         BasicDBObject query = new BasicDBObject("name", new BasicDBObject("$regex", "^" + dbName + "\\..*"));
 
         return client.getDB(dbName).getCollection("system.namespaces").findOne(query) != null;
-        /*
-         TODO check this!!!!! 
-         check removed. too slow!
-         if (!client.getDatabaseNames().contains(dbName))
-         {
-         ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
-         return false;
-         }
-         */
 
     }
 
@@ -133,20 +132,18 @@ public class DBDAO
 
         DBObject metadatarow = metadatacoll.findOne(METADATA_QUERY);
 
-        if (metadatarow == null)
+        if (metadatarow != null)
         {
-            return new HashMap<>();
-        }
-        
-        metadata = DAOUtils.getDataFromRow(metadatarow, "_id");
+            metadata = DAOUtils.getDataFromRow(metadatarow, "_id");
 
-        Object etag = metadata.get("@etag");
+            Object etag = metadata.get("@etag");
 
-        if (etag != null && ObjectId.isValid("" + etag))
-        {
-            ObjectId oid = new ObjectId("" + etag);
+            if (etag != null && ObjectId.isValid("" + etag))
+            {
+                ObjectId oid = new ObjectId("" + etag);
 
-            metadata.put("@lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
+                metadata.put("@lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
+            }
         }
 
         return metadata;

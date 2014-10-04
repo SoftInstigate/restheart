@@ -22,7 +22,6 @@ import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 import java.nio.charset.Charset;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -51,7 +50,7 @@ public class PutCollectionHandler extends PipedHttpHandler
     {
         if (context.getCollectionName().isEmpty() || context.getCollectionName().startsWith("@"))
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, collection name cannot be empty or start with @", null);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, collection name cannot be empty or start with @", null);
             return;
         }
         
@@ -65,20 +64,22 @@ public class PutCollectionHandler extends PipedHttpHandler
         }
         catch (JSONParseException ex)
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, json content is invalid", ex);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data is invalid", ex);
             return;
         }
         
         // cannot PUT an array
         if (content instanceof BasicDBList)
         {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data cannot be an array");
             return;
         }
         
         ObjectId etag = RequestHelper.getUpdateEtag(exchange);
         
-        int SC = CollectionDAO.upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, false);
+        boolean updating = context.getCollectionMetadata() != null;
+        
+        int SC = CollectionDAO.upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, updating, false);
         
         ResponseHelper.endExchange(exchange, SC);
     }

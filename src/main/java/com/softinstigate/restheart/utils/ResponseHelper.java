@@ -14,9 +14,6 @@ import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import io.undertow.util.Methods;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Map;
 import org.bson.types.ObjectId;
 
@@ -28,42 +25,33 @@ public class ResponseHelper
 {
     public static void endExchange(HttpServerExchange exchange, int code)
     {
-        exchange.setResponseCode(code);
-
-        if (Methods.GET.equals(exchange.getRequestMethod()))
-        {
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
-
-            String message = HttpStatus.getStatusText(code);
-
-            if (message != null)
-            {
-                exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, message.length());
-                exchange.getResponseSender().send(message);
-            }
-        }
-
-        exchange.endExchange();
+        endExchangeWithMessage(exchange, code, null);
     }
 
-    public static void endExchangeWithError(HttpServerExchange exchange, int code, String errorMessage, Throwable t)
+    public static void endExchangeWithMessage(HttpServerExchange exchange, int code, String message)
+    {
+        endExchangeWithMessage(exchange, code, message, null);
+    }
+    
+    public static void endExchangeWithMessage(HttpServerExchange exchange, int code, String message, Throwable t)
     {
         exchange.setResponseCode(code);
 
         String httpStatuText = HttpStatus.getStatusText(code);
             
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
-        exchange.getResponseSender().send(getErrorJsonDocument(code, httpStatuText, errorMessage, t));
+        exchange.getResponseSender().send(getErrorJsonDocument(code, httpStatuText, message, t));
         exchange.endExchange();
     }
     
-    private static String getErrorJsonDocument(int code, String httpStatusText, String errorMessage, Throwable t)
+    private static String getErrorJsonDocument(int code, String httpStatusText, String message, Throwable t)
     {
         JsonObject root = new JsonObject();
         
         root.add("http status code", code);
         root.add("http status description", httpStatusText);
-        root.add("error message", errorMessage);
+        if (message != null)
+            root.add("message", message);
         
         JsonArray stackTrace = getStackTraceJson(t);
         
@@ -75,8 +63,6 @@ public class ResponseHelper
         
         if (t != null && t.getMessage() != null)
             root.add("exception message", t.getMessage());
-        else
-            root.add("exception message", "");
         
         if (stackTrace != null)
             root.add("stack trace", getStackTraceJson(t));

@@ -59,21 +59,21 @@ public class PatchDocumentHandler extends PipedHttpHandler
         }
         catch (JSONParseException ex)
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, json content is invalid", ex);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data is invalid", ex);
             return;
         }
         
         // cannot PATCH with no data
         if (content == null)
         {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data is empty");
             return;
         }
         
         // cannot PATCH an array
         if (content instanceof BasicDBList)
         {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data cannot be an array");
             return;
         }
         
@@ -85,7 +85,7 @@ public class PatchDocumentHandler extends PipedHttpHandler
         }
         else if (!content.get("_id").equals(id))
         {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in json data cannot be different than id in URL");
             logger.warn("not acceptable: _id in content body is different than id in URL");
             return;
         }
@@ -94,7 +94,7 @@ public class PatchDocumentHandler extends PipedHttpHandler
         
         if (etag == null)
         {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT, "the " + Headers.ETAG + " header must be provided");
             logger.warn("the {} header in required", Headers.ETAG);
             return;
         }

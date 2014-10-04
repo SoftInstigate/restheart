@@ -57,7 +57,7 @@ public class GetCollectionHandler extends GetHandler
         catch (JSONParseException jpe) // the filter expression is not a valid json string
         {
             logger.error("invalid filter expression {}", filter, jpe);
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", jpe);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", jpe);
             return null;
         }
         catch (MongoException me)
@@ -65,7 +65,7 @@ public class GetCollectionHandler extends GetHandler
             if (me.getMessage().matches(".*Can't canonicalize query.*")) // error with the filter expression during query execution
             {
                 logger.error("invalid filter expression {}", filter, me);
-                ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", me);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", me);
                 return null;
             }
             else
@@ -105,7 +105,7 @@ public class GetCollectionHandler extends GetHandler
         }
         catch (IllegalQueryParamenterException ex)
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
             return null;
         }
     }

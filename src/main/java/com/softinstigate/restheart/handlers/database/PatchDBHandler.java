@@ -55,7 +55,7 @@ public class PatchDBHandler extends PipedHttpHandler
     {
         if (context.getDBName().isEmpty() || context.getDBName().startsWith("@"))
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, db name cannot be empty or start with @", null);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, db name cannot be empty or start with @", null);
             return;
         }
 
@@ -69,20 +69,20 @@ public class PatchDBHandler extends PipedHttpHandler
         }
         catch (JSONParseException ex)
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, json content is invalid", ex);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data is invalid", ex);
             return;
         }
         
         if (content == null)
         {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data is empty");
             return;
         }
         
         // cannot PATCH an array
         if (content instanceof BasicDBList)
         {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data cannot be an array");
             return;
         }
         
@@ -90,7 +90,7 @@ public class PatchDBHandler extends PipedHttpHandler
         
         if (etag == null)
         {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT, "the " + Headers.ETAG + " header must be provided");
             logger.warn("the {} header in required", Headers.ETAG);
             return;
         }

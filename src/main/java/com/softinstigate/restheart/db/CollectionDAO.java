@@ -10,7 +10,6 @@
  */
 package com.softinstigate.restheart.db;
 
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -26,7 +25,6 @@ import io.undertow.util.Headers;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.bson.BSONObject;
@@ -69,6 +67,7 @@ public class CollectionDAO
      * WARNING: slow method. perf tests show this can take up to 35% overall
      * requests processing time when getting data from a collection
      *
+     * @deprecated
      * @param exchange
      * @param dbName
      * @param collectionName
@@ -89,6 +88,7 @@ public class CollectionDAO
      * WARNING: quite method. perf tests show this can take up to 35% overall
      * requests processing time when getting data from a collection
      *
+     * @deprecated
      * @param dbName
      * @param collectionName
      * @return true if the specified collection exits in the db dbName
@@ -214,18 +214,16 @@ public class CollectionDAO
         
         Map<String, Object> metadata = DAOUtils.getDataFromRow(coll.findOne(METADATA_QUERY), "_id");
 
-        if (metadata == null)
+        if (metadata != null)
         {
-            metadata = new HashMap<>();
-        }
+            Object etag = metadata.get("@etag");
 
-        Object etag = metadata.get("@etag");
+            if (etag != null && ObjectId.isValid("" + etag))
+            {
+                ObjectId oid = new ObjectId("" + etag);
 
-        if (etag != null && ObjectId.isValid("" + etag))
-        {
-            ObjectId oid = new ObjectId("" + etag);
-
-            metadata.put("@lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
+                metadata.put("@lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
+            }
         }
         
         return metadata;
@@ -241,13 +239,11 @@ public class CollectionDAO
      * @param patching
      * @return the HttpStatus code to retrun
      */
-    public static int upsertCollection(String dbName, String collName, DBObject content, ObjectId etag, boolean patching)
+    public static int upsertCollection(String dbName, String collName, DBObject content, ObjectId etag, boolean updating, boolean patching)
     {
         DB db = DBDAO.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
-
-        boolean updating = CollectionDAO.doesCollectionExist(dbName, collName);
 
         if (patching && !updating)
         {

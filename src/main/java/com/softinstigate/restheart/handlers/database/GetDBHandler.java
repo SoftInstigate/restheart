@@ -52,7 +52,7 @@ public class GetDBHandler extends GetHandler
         }
         catch (IllegalQueryParamenterException ex)
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
             return null;
         }
     }

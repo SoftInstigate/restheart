@@ -52,16 +52,16 @@ public class ErrorHandler implements HttpHandler
             Object errmsg = cfe.getCommandResult().get("errmsg");
             
             if ("unauthorized".equals(errmsg))
-                ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "mongodb db user is not allowed to execute the command. give it more permissions or hide this resource via mongo-mounts", cfe);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "mongodb db user is not allowed to execute the command. give it more permissions or hide this resource via mongo-mounts", cfe);
             else
-                ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error handling the request", cfe);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error handling the request", cfe);
                 
         }
         catch (Throwable t)
         {
             logger.error("error handling the request", t);
 
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error handling the request", t);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error handling the request", t);
         }
     }
 }

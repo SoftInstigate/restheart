@@ -19,6 +19,7 @@ import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -27,8 +28,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class MetadataRetrieverHandler extends PipedHttpHandler
 {
-    private final LoadingCache<String, Map<String, Object>> dbMetadataCache;
-    private final LoadingCache<String, Map<String, Object>> collectionMetadataCache;
+    private final LoadingCache<String, Optional<Map<String, Object>>> dbMetadataCache;
+    private final LoadingCache<String, Optional<Map<String, Object>>> collectionMetadataCache;
 
     /**
      * Creates a new instance of GetCollectionHandler
@@ -53,24 +54,23 @@ public class MetadataRetrieverHandler extends PipedHttpHandler
             }
 
             this.dbMetadataCache = builder.build(
-                    new CacheLoader<String, Map<String, Object>>()
+                    new CacheLoader<String, Optional<Map<String, Object>>>()
                     {
-
                         @Override
-                        public Map<String, Object> load(String key) throws Exception
+                        public Optional<Map<String, Object>> load(String key) throws Exception
                         {
-                            return DBDAO.getDbMetaData(key);
+                            return Optional.ofNullable(DBDAO.getDbMetaData(key));
                         }
                     });
 
             this.collectionMetadataCache = builder.build(
-                    new CacheLoader<String, Map<String, Object>>()
+                    new CacheLoader<String, Optional<Map<String, Object>>>()
                     {
                         @Override
-                        public Map<String, Object> load(String key) throws Exception
+                        public Optional<Map<String, Object>> load(String key) throws Exception
                         {
                             String[] dbNameAndCollectionName = key.split("@@@@");
-                            return CollectionDAO.getCollectionMetadata(dbNameAndCollectionName[0], dbNameAndCollectionName[1]);
+                            return Optional.ofNullable(CollectionDAO.getCollectionMetadata(dbNameAndCollectionName[0], dbNameAndCollectionName[1]));
                         }
                     });
         }
@@ -88,10 +88,12 @@ public class MetadataRetrieverHandler extends PipedHttpHandler
         {
             Map<String, Object> dbMetadata = null;
 
-            if (RequestContext.METHOD.GET != context.getMethod() || dbMetadataCache == null)
+            if (dbMetadataCache == null)
             {
                 dbMetadata = DBDAO.getDbMetaData(context.getDBName());
-                dbMetadata.put("@metadata-cached", false);
+                
+                if (dbMetadata != null)
+                    dbMetadata.put("@metadata-cached", false);
             }
             else
             {
@@ -102,8 +104,18 @@ public class MetadataRetrieverHandler extends PipedHttpHandler
                     cached = true;
                 }
 
-                dbMetadata = dbMetadataCache.get(context.getDBName());
-                dbMetadata.put("@metadata-cached", cached);
+                Optional<Map<String, Object>> _dbMetadata = dbMetadataCache.get(context.getDBName());
+                
+                if (_dbMetadata.isPresent())
+                {
+                    dbMetadata = _dbMetadata.get();
+                
+                    dbMetadata.put("@metadata-cached", cached);
+                }
+                else
+                {
+                    dbMetadata = null;
+                }
             }
 
             context.setDbMetadata(dbMetadata);
@@ -113,10 +125,12 @@ public class MetadataRetrieverHandler extends PipedHttpHandler
         {
             Map<String, Object> collMetadata = null;
 
-            if (RequestContext.METHOD.GET != context.getMethod() || collectionMetadataCache == null)
+            if (collectionMetadataCache == null)
             {
                 collMetadata = CollectionDAO.getCollectionMetadata(context.getDBName(), context.getCollectionName());
-                collMetadata.put("@metadata-cached", false);
+                
+                if (collMetadata != null)
+                    collMetadata.put("@metadata-cached", false);
             }
             else
             {
@@ -127,8 +141,18 @@ public class MetadataRetrieverHandler extends PipedHttpHandler
                     cached = true;
                 }
 
-                collMetadata = collectionMetadataCache.get(context.getDBName() + "@@@@" + context.getCollectionName());
-                collMetadata.put("@metadata-cached", cached);
+                Optional<Map<String, Object>> _collMetadata = collectionMetadataCache.get(context.getDBName() + "@@@@" + context.getCollectionName());
+                
+                if (_collMetadata.isPresent())
+                {
+                    collMetadata = _collMetadata.get();
+                
+                    collMetadata.put("@metadata-cached", cached);
+                }
+                else
+                {
+                    collMetadata = null;
+                }
             }
 
             context.setCollectionMetadata(collMetadata);

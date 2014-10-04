@@ -10,8 +10,6 @@
  */
 package com.softinstigate.restheart.handlers;
 
-import static com.softinstigate.restheart.db.CollectionDAO.checkCollectionExists;
-import static com.softinstigate.restheart.db.DBDAO.checkDbExists;
 import com.softinstigate.restheart.handlers.root.DeleteRootHandler;
 import com.softinstigate.restheart.handlers.root.GetRootHandler;
 import com.softinstigate.restheart.handlers.root.PatchRootHandler;
@@ -181,14 +179,9 @@ public class RequestDispacherHandler extends PipedHttpHandler
                     rootGet.handleRequest(exchange, context);
                     return;
                 case DB:
-                    if (checkDbExists(exchange, context.getDBName()))
-                    {
                         dbGet.handleRequest(exchange, context);
-                    }
                     return;
                 case COLLECTION:
-                    // don't use checkCollectionExists here. it is a slow call. the collectionGet.handleRequest will take care of
-                    // returning NOT_FOUND in case
                     collectionGet.handleRequest(exchange, context);
                     return;
                 case DOCUMENT:
@@ -206,10 +199,7 @@ public class RequestDispacherHandler extends PipedHttpHandler
             switch (context.getType())
             {
                 case COLLECTION:
-                    if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
-                    {
                         collectionPost.handleRequest(exchange, context);
-                    }
                     return;
                 default:
                     ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
@@ -223,16 +213,10 @@ public class RequestDispacherHandler extends PipedHttpHandler
                     dbPut.handleRequest(exchange, context);
                     return;
                 case COLLECTION:
-                    if (checkDbExists(exchange, context.getDBName()))
-                    {
                         collectionPut.handleRequest(exchange, context);
-                    }
                     return;
                 case DOCUMENT:
-                    if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
-                    {
                         documentPut.handleRequest(exchange, context);
-                    }
                     return;
                 case INDEX:
                     indexPut.handleRequest(exchange, context);
@@ -246,22 +230,13 @@ public class RequestDispacherHandler extends PipedHttpHandler
             switch (context.getType())
             {
                 case DB:
-                    if (checkDbExists(exchange, context.getDBName()))
-                    {
                         dbDelete.handleRequest(exchange, context);
-                    }
                     return;
                 case COLLECTION:
-                    if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
-                    {
                         collectionDelete.handleRequest(exchange, context);
-                    }
                     return;
                 case DOCUMENT:
-                    if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
-                    {
-                        documentDelete.handleRequest(exchange, context);
-                    }
+                    documentDelete.handleRequest(exchange, context);
                     return;
                 case INDEX:
                     indexDelete.handleRequest(exchange, context);
@@ -275,16 +250,10 @@ public class RequestDispacherHandler extends PipedHttpHandler
             switch (context.getType())
             {
                 case DB:
-                    if (checkDbExists(exchange, context.getDBName()))
-                    {
                         dbPatch.handleRequest(exchange, context);
-                    }
                     return;
                 case COLLECTION:
-                    if (checkCollectionExists(exchange, context.getDBName(), context.getCollectionName()))
-                    {
                         collectionPatch.handleRequest(exchange, context);
-                    }
                     return;
                 case DOCUMENT:
                     documentPatch.handleRequest(exchange, context);

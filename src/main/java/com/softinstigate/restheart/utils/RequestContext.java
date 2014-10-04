@@ -63,7 +63,7 @@ public class RequestContext
     public enum METHOD { GET, POST, PUT, DELETE, PATCH, OTHER };
     
     private final String urlPrefix;
-    private final String db;
+    private final String mappedDbName;
     
     private final TYPE type;
     private final METHOD method;
@@ -74,23 +74,23 @@ public class RequestContext
     private Map<String, Object> collectionMetadata;
     private Map<String, Object> dbMetadata;
     
-    public RequestContext(HttpServerExchange exchange, String urlPrefix, String db)
+    public RequestContext(HttpServerExchange exchange, String urlPrefix, String mappedDbName)
     {
         this.urlPrefix = urlPrefix;
-        this.db = db;
+        this.mappedDbName = mappedDbName;
 
         String path = exchange.getRequestPath();
         
-        if (db.equals("*"))
+        if (mappedDbName.equals("*"))
         {
             path = path.replaceFirst("^" + this.urlPrefix, "/");
         }
         else
         {
-            path = path.replaceFirst("^" + this.urlPrefix, "/" + db + "/");
+            path = path.replaceFirst("^" + this.urlPrefix, "/" + mappedDbName + "/");
         }
         
-        pathTokens = path.split("/"); // "/db/collection/document" --> { "", "db", "collection", "document" }
+        pathTokens = path.split("/"); // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
         
         if (pathTokens.length < 2)
         {
@@ -217,10 +217,10 @@ public class RequestContext
     }
 
     /**
-     * @return the db
+     * @return the mappedDbName
      */
-    public String getDb()
+    public String getDbMappedDbName()
     {
-        return db;
+        return mappedDbName;
     }
 }

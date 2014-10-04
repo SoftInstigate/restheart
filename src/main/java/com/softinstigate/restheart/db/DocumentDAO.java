@@ -48,27 +48,6 @@ public class DocumentDAO
         fieldsToReturn.put("@created_on", 1);
     }
 
-    public static boolean checkCollectionExists(HttpServerExchange exchange, String dbName, String collectionName)
-    {
-        if (!doesCollectionExist(dbName, collectionName))
-        {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
-            return false;
-        }
-
-        return true;
-    }
-
-    public static boolean doesCollectionExist(String dbName, String collectionName)
-    {
-        if (dbName == null || dbName.isEmpty() || dbName.contains(" "))
-        {
-            return false;
-        }
-
-        return client.getDB(dbName).collectionExists(collectionName);
-    }
-
     public static DBCollection getCollection(String dbName, String collName)
     {
         return client.getDB(dbName).getCollection(collName);

@@ -45,7 +45,7 @@ public class DeleteDocumentHandler extends PipedHttpHandler
         
         if (etag == null)
         {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT, "the " + Headers.ETAG + " header must be provided");
             logger.warn("the {} header in required", Headers.ETAG);
             return;
         }

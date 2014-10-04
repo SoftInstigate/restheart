@@ -44,7 +44,7 @@ public class DeleteCollectionHandler extends PipedHttpHandler
         
         if (etag == null)
         {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT, "the " + Headers.ETAG + " header must be provided");
             logger.warn("error. you must provide the {} header", Headers.ETAG);
             return;
         }

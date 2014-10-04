@@ -48,13 +48,13 @@ public class PatchCollectionHandler extends PipedHttpHandler
     {
         if (context.getDBName().isEmpty())
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, db name cannot be empty", null);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, db name cannot be empty", null);
             return;
         }
         
         if (context.getCollectionName().isEmpty() || context.getCollectionName().startsWith("@"))
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, collection name cannot be empty or start with @", null);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, collection name cannot be empty or start with @", null);
             return;
         }
 
@@ -68,20 +68,20 @@ public class PatchCollectionHandler extends PipedHttpHandler
         }
         catch (JSONParseException ex)
         {
-            ResponseHelper.endExchangeWithError(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, json content is invalid", ex);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data is invalid", ex);
             return;
         }
         
         if (content == null)
         {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "no json data provided");
             return;
         }
         
         // cannot PUT an array
         if (content instanceof BasicDBList)
         {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data cannot be an array");
             return;
         }
         
@@ -89,12 +89,12 @@ public class PatchCollectionHandler extends PipedHttpHandler
         
         if (etag == null)
         {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT, "the " + Headers.ETAG + " header must be provided");
             logger.warn("the {} header in required", Headers.ETAG);
             return;
         }
         
-        int SC = CollectionDAO.upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, true);
+        int SC = CollectionDAO.upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, true, true);
         
         ResponseHelper.endExchange(exchange, SC);
     }
