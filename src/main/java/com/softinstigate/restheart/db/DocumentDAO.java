@@ -17,7 +17,7 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.utils.HttpStatus;
-import com.softinstigate.restheart.utils.JSONHelper;
+import com.softinstigate.restheart.json.hal.HALDocumentGenerator;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
@@ -170,7 +170,7 @@ public class DocumentDAO
             
             coll.insert(content);
             
-            exchange.getResponseHeaders().add(HttpString.tryFromString("Location"), JSONHelper.getReference(exchange.getRequestURL(), id.toString()).toString());
+            exchange.getResponseHeaders().add(HttpString.tryFromString("Location"), HALDocumentGenerator.getReference(exchange.getRequestURL(), id.toString()).toString());
         
             return HttpStatus.SC_CREATED;
         }

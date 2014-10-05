@@ -16,6 +16,8 @@ import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
+import com.softinstigate.restheart.json.metadata.InvalidMetadataException;
+import com.softinstigate.restheart.json.metadata.Relationship;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestContext;
@@ -48,13 +50,13 @@ public class PatchCollectionHandler extends PipedHttpHandler
     {
         if (context.getDBName().isEmpty())
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, db name cannot be empty", null);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, db name cannot be empty");
             return;
         }
         
         if (context.getCollectionName().isEmpty() || context.getCollectionName().startsWith("@"))
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, collection name cannot be empty or start with @", null);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, collection name cannot be empty or start with @");
             return;
         }
 
@@ -83,6 +85,19 @@ public class PatchCollectionHandler extends PipedHttpHandler
         {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data cannot be an array");
             return;
+        }
+        
+        if (content.containsField(Relationship.RELATIONSHIPS_ELEMENT_NAME))
+        {
+            try
+            {
+                Relationship.getFromJson(content);
+            }
+            catch(InvalidMetadataException ex)
+            {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong relationships definition. " + ex.getMessage(), ex);
+                return;
+            }
         }
         
         ObjectId etag = RequestHelper.getUpdateEtag(exchange);

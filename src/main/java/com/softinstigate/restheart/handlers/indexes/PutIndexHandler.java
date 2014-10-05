@@ -64,7 +64,7 @@ public class PutIndexHandler extends PipedHttpHandler
         
         if (id.startsWith("@"))
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "index name cannot start with @", null);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "index name cannot start with @");
             return;
         }
         

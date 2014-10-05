@@ -12,7 +12,7 @@ package com.softinstigate.restheart.handlers.indexes;
 
 import com.softinstigate.restheart.db.IndexDAO;
 import com.softinstigate.restheart.handlers.GetHandler;
-import com.softinstigate.restheart.utils.JSONHelper;
+import com.softinstigate.restheart.json.hal.HALDocumentGenerator;
 import com.softinstigate.restheart.utils.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
@@ -42,6 +42,6 @@ public class GetIndexesHandler extends GetHandler
     {
         List<Map<String, Object>> indexes = IndexDAO.getCollectionIndexes(context.getDBName(), context.getCollectionName());
         
-        return JSONHelper.getCollectionHal(exchange.getRequestURL(), null, null, indexes).toString();
+        return HALDocumentGenerator.getCollectionHal(exchange.getRequestURL(), null, null, indexes).toString();
     }
 }

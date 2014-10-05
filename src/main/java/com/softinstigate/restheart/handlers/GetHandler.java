@@ -11,7 +11,7 @@
 package com.softinstigate.restheart.handlers;
 
 import com.softinstigate.restheart.utils.HttpStatus;
-import com.softinstigate.restheart.utils.JSONHelper;
+import com.softinstigate.restheart.json.hal.HALDocumentGenerator;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
@@ -71,7 +71,7 @@ public abstract class GetHandler extends PipedHttpHandler
             }
             catch (NumberFormatException nfwe)
             {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "the page query paramenter is not a number: " + _page, null);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "the page query paramenter is not a number: " + _page);
                 return;
             }
         }
@@ -84,7 +84,7 @@ public abstract class GetHandler extends PipedHttpHandler
             }
             catch (NumberFormatException nfwe)
             {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "the pagesize query paramenter is not a number: " + _pagesize, null);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "the pagesize query paramenter is not a number: " + _pagesize);
                 return;
             }
         }
@@ -101,7 +101,7 @@ public abstract class GetHandler extends PipedHttpHandler
          * single value however we specify two to allow some browsers (i.e.
          * Safari) to display data rather than downloading it
          */
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json," + JSONHelper.HAL_JSON_MEDIA_TYPE);
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json," + HALDocumentGenerator.HAL_JSON_MEDIA_TYPE);
         exchange.setResponseContentLength(content.length());
         exchange.setResponseCode(200);
 
@@ -120,8 +120,7 @@ public abstract class GetHandler extends PipedHttpHandler
      * @param data
      * @param page
      * @param pagesize
-     * @param size if < 0, don't include size in metadata @param sortBy @param f
-     * ilterBy @param filter @return @param sortBy @param filterBy @param filter
+     * @param size if < 0, don't include size in metadata
      * @param sortBy
      * @param filterBy
      * @param filter
@@ -214,7 +213,7 @@ public abstract class GetHandler extends PipedHttpHandler
         // inject etag header from metadata
         ResponseHelper.injectEtagHeader(exchange, metadata);
 
-        return JSONHelper.getCollectionHal(baseUrl, properties, links, embedded).toString();
+        return HALDocumentGenerator.getCollectionHal(baseUrl, properties, links, embedded).toString();
     }
 
     private String removePagingParamsFromQueryString(String queryString)
@@ -267,7 +266,7 @@ public abstract class GetHandler extends PipedHttpHandler
         // inject etag header from metadata
         ResponseHelper.injectEtagHeader(exchange, data);
 
-        return JSONHelper.getDocumentHal(baseUrl, data, links).toString();
+        return HALDocumentGenerator.getDocumentHal(baseUrl, data, links).toString();
     }
 
     private TreeMap<String, URI> getLinks(String baseUrl, String queryString, int page, int pagesize, long total_pages)

@@ -12,7 +12,7 @@ package com.softinstigate.restheart.handlers.metadata;
 
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
-import com.softinstigate.restheart.utils.JSONHelper;
+import com.softinstigate.restheart.json.hal.HALDocumentGenerator;
 import com.softinstigate.restheart.utils.RequestContext;
 import com.softinstigate.restheart.utils.RequestContext.METHOD;
 import com.softinstigate.restheart.utils.ResponseHelper;
@@ -44,9 +44,9 @@ public class MetadataEnforcerHandler extends PipedHttpHandler
         {
             HeaderValues contentTypes = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
 
-            if (contentTypes == null || contentTypes.isEmpty() || !contentTypes.contains(JSONHelper.JSON_MEDIA_TYPE) )
+            if (contentTypes == null || contentTypes.isEmpty() || !contentTypes.contains(HALDocumentGenerator.JSON_MEDIA_TYPE) )
             {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, "Contet-Type must be " + JSONHelper.JSON_MEDIA_TYPE);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, "Contet-Type must be " + HALDocumentGenerator.JSON_MEDIA_TYPE);
                 return;
             }
         }
