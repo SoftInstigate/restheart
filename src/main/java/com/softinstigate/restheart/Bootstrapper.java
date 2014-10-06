@@ -27,7 +27,7 @@ import com.softinstigate.restheart.handlers.root.PostRootHandler;
 import com.softinstigate.restheart.handlers.root.PutRootHandler;
 import com.softinstigate.restheart.handlers.collection.DeleteCollectionHandler;
 import com.softinstigate.restheart.handlers.collection.GetCollectionHandler;
-import com.softinstigate.restheart.handlers.metadata.MetadataRetrieverHandler;
+import com.softinstigate.restheart.handlers.metadata.MetadataInjecterHandler;
 import com.softinstigate.restheart.handlers.collection.PatchCollectionHandler;
 import com.softinstigate.restheart.handlers.collection.PostCollectionHandler;
 import com.softinstigate.restheart.handlers.collection.PutCollectionHandler;
@@ -385,7 +385,7 @@ public class Bootstrapper
     private static GracefulShutdownHandler getHandlersPipe(Configuration conf, IdentityManager identityManager, AccessManager accessManager)
     {
         PipedHttpHandler coreHanlderChain
-                = new MetadataRetrieverHandler(
+                = new MetadataInjecterHandler(
                         new MetadataEnforcerHandler(
                                 new RequestDispacherHandler(
                                         new GetRootHandler(),

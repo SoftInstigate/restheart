@@ -88,18 +88,17 @@ public class GetDocumentHandler extends PipedHttpHandler
             document.put("@lastupdated_on", Instant.ofEpochSecond(_etag.getTimestamp()).toString());
             
             // in case the request contains the IF_NONE_MATCH header with the current etag value, just return 304 NOT_MODIFIED code
-            if (RequestHelper.checkReadEtag(exchange, etag.toString()))
+            if (false && RequestHelper.checkReadEtag(exchange, etag.toString()))
             {
                 ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_MODIFIED);
                 return;
             }
         }
-        
-        exchange.setResponseCode(HttpStatus.SC_OK);
-        
+
         ResponseHelper.injectEtagHeader(exchange, document);
         
         HALDocumentSender.sendDocument(exchange, context, document);
+        exchange.setResponseCode(HttpStatus.SC_OK);
         exchange.endExchange();
     }
 }

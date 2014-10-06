@@ -20,4 +20,9 @@ public class IllegalQueryParamenterException extends Exception
     {
         super(message);
     }
+    
+    public IllegalQueryParamenterException(String message, Throwable cause)
+    {
+        super(message, cause);
+    }
 }

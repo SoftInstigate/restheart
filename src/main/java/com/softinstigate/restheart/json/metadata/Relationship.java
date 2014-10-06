@@ -12,7 +12,8 @@ package com.softinstigate.restheart.json.metadata;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -79,11 +80,14 @@ public class Relationship
         this.referenceField = referenceField;
     }
     
-    public static List<Relationship> getFromJson(DBObject content) throws InvalidMetadataException
+    public static List<Relationship> getFromJson(DBObject collProps) throws InvalidMetadataException
     {
+        if (collProps == null)
+            return null;
+        
         ArrayList<Relationship> ret = new ArrayList<>();
         
-        Object _rels = content.get(RELATIONSHIPS_ELEMENT_NAME);
+        Object _rels = collProps.get(RELATIONSHIPS_ELEMENT_NAME);
         
         if (_rels == null || ! (_rels instanceof BasicDBList))
             throw new InvalidMetadataException("element 'relationships' is not an array list." + _rels);
@@ -113,17 +117,17 @@ public class Relationship
         
         if (_rel == null || !(_rel instanceof String))
         {
-            throw new InvalidMetadataException(_rel == null ? "missing " : "invalid " + REL_ELEMENT_NAME + " element.");
+            throw new InvalidMetadataException((_rel == null ? "missing " : "invalid ") + REL_ELEMENT_NAME + " element.");
         }
         
         if (_type == null || !(_type instanceof String))
         {
-            throw new InvalidMetadataException(_type == null ? "missing " : "invalid " + TYPE_ELEMENT_NAME + " element.");
+            throw new InvalidMetadataException((_type == null ? "missing " : "invalid ") + TYPE_ELEMENT_NAME + " element.");
         }
         
         if (_role == null || !(_role instanceof String))
         {
-            throw new InvalidMetadataException(_role == null ? "missing " : "invalid " + ROLE_ELEMENT_NAME + " element.");
+            throw new InvalidMetadataException((_role == null ? "missing " : "invalid ") + ROLE_ELEMENT_NAME + " element.");
         }
         
         if (_targetDb != null && !(_type instanceof String))
@@ -133,12 +137,12 @@ public class Relationship
         
         if (_targetCollection == null || !(_targetCollection instanceof String))
         {
-            throw new InvalidMetadataException(_targetCollection == null ? "missing " : "invalid " + TARGET_COLLECTION_ELEMENT_NAME + " element.");
+            throw new InvalidMetadataException((_targetCollection == null ? "missing " : "invalid ") + TARGET_COLLECTION_ELEMENT_NAME + " element.");
         }
         
         if (_referenceField == null || !(_referenceField instanceof String))
         {
-            throw new InvalidMetadataException(_referenceField == null ? "missing " : "invalid " + REF_ELEMENT_NAME + " element.");
+            throw new InvalidMetadataException((_referenceField == null ? "missing " : "invalid ") + REF_ELEMENT_NAME + " element.");
         }
         
         String rel = (String) _rel;
@@ -151,9 +155,18 @@ public class Relationship
         return new Relationship(rel, type, role, targetDb, targetCollection, referenceField);
     }
     
-    public URL getRelationshipLink(String baseUrl)
+    public URI getRelationshipLink(String baseUrl, DBObject data) throws URISyntaxException
     {
-        return null;
+        if (role == ROLE.OWNING)
+        {
+            Object _referenceValue = data.get(referenceField);
+            
+            
+            
+            return new URI("http://127.0.0.1" + "/" + _referenceValue);
+        }
+        
+        return new URI("http://127.0.0.1");
     }
     
     /**

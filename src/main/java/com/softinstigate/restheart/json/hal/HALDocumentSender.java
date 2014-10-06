@@ -13,6 +13,8 @@ package com.softinstigate.restheart.json.hal;
 import com.mongodb.DBObject;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
+import com.softinstigate.restheart.json.metadata.InvalidMetadataException;
+import com.softinstigate.restheart.json.metadata.Relationship;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.json.JsonRepresentationFactory;
@@ -115,6 +117,7 @@ public class HALDocumentSender
     }
 
     public static void sendDocument(HttpServerExchange exchange, RequestContext context, DBObject data)
+            throws IllegalQueryParamenterException, URISyntaxException
     {
         String baseUrl = exchange.getRequestURL();
 
@@ -131,6 +134,19 @@ public class HALDocumentSender
             }
 
             rep = rep.withProperty(key, value);
+        }
+        
+        // document links
+        TreeMap<String, URI> links;
+
+        links = getRelationshipsLinks(exchange, context, data);
+
+        if (links != null)
+        {
+            for (String k : links.keySet())
+            {
+                rep = rep.withLink(k, links.get(k));
+            }
         }
 
         // document links
@@ -238,6 +254,35 @@ public class HALDocumentSender
         return links;
     }
 
+    private static TreeMap<String, URI> getRelationshipsLinks(HttpServerExchange exchange, RequestContext context, DBObject data) throws IllegalQueryParamenterException, URISyntaxException
+    {
+        String baseUrl = exchange.getRequestURL().replaceAll(exchange.getRelativePath(), "");
+
+        TreeMap<String, URI> links = new TreeMap<>();
+        
+        List<Relationship> rels;
+        
+        try
+        {
+            rels = Relationship.getFromJson((DBObject) context.getCollectionProps());
+        }
+        catch (InvalidMetadataException ex)
+        {
+            logger.error("collection {}/{} invalid relationships definition", context.getDBName(), context.getCollectionName(), ex);
+            throw new IllegalQueryParamenterException("collection {}/{} invalid relationships definition", ex);
+        }
+
+        for (Relationship rel: rels)
+        {
+            URI uri = rel.getRelationshipLink(baseUrl, data);
+            
+            if (uri != null)
+                links.put(rel.getRel(), uri);
+        }
+        
+        return links;
+    }
+    
     private static String removePagingParamsFromQueryString(String queryString)
     {
         if (queryString == null)

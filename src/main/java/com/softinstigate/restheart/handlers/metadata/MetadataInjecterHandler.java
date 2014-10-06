@@ -19,7 +19,6 @@ import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -27,7 +26,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author uji
  */
-public class MetadataRetrieverHandler extends PipedHttpHandler
+public class MetadataInjecterHandler extends PipedHttpHandler
 {
     private final LoadingCache<String, Optional<DBObject>> dbMetadataCache;
     private final LoadingCache<String, Optional<DBObject>> collectionMetadataCache;
@@ -39,7 +38,7 @@ public class MetadataRetrieverHandler extends PipedHttpHandler
      * @param metadataLocalCacheEnabled
      * @param metadataLocalCacheTtl
      */
-    public MetadataRetrieverHandler(PipedHttpHandler next, boolean metadataLocalCacheEnabled, long metadataLocalCacheTtl)
+    public MetadataInjecterHandler(PipedHttpHandler next, boolean metadataLocalCacheEnabled, long metadataLocalCacheTtl)
     {
         super(next);
 
@@ -98,24 +97,31 @@ public class MetadataRetrieverHandler extends PipedHttpHandler
             }
             else
             {
-                boolean cached = false;
-
-                if (dbMetadataCache.getIfPresent(context.getDBName()) != null)
-                {
-                    cached = true;
-                }
-
-                Optional<DBObject> _dbMetadata = dbMetadataCache.get(context.getDBName());
+                Optional<DBObject> _dbMetadata = dbMetadataCache.getIfPresent(context.getDBName());
                 
-                if (_dbMetadata.isPresent())
+                if (_dbMetadata != null)
                 {
-                    dbMetadata = _dbMetadata.get();
-                
-                    dbMetadata.put("@metadata-cached", cached);
+                    if (_dbMetadata.isPresent())
+                    {
+                        dbMetadata = _dbMetadata.get();
+                        dbMetadata.put("@metadata-cached", true);
+                    }
+                    else
+                        dbMetadata = null;
                 }
                 else
                 {
-                    dbMetadata = null;
+                    _dbMetadata = dbMetadataCache.get(context.getDBName());
+                    
+                    if (_dbMetadata.isPresent())
+                    {
+                        dbMetadata = _dbMetadata.get();
+                        dbMetadata.put("@metadata-cached", false);
+                    }
+                    else
+                        dbMetadata = null;
+                
+                    
                 }
             }
 
@@ -135,24 +141,29 @@ public class MetadataRetrieverHandler extends PipedHttpHandler
             }
             else
             {
-                boolean cached = false;
-
-                if (collectionMetadataCache.getIfPresent(context.getDBName() + "@@@@" + context.getCollectionName()) != null)
-                {
-                    cached = true;
-                }
-
-                Optional<DBObject> _collMetadata = collectionMetadataCache.get(context.getDBName() + "@@@@" + context.getCollectionName());
+                Optional<DBObject> _collMetadata = collectionMetadataCache.getIfPresent(context.getDBName() + "@@@@" + context.getCollectionName());
                 
-                if (_collMetadata.isPresent())
+                if (_collMetadata != null)
                 {
-                    collMetadata = _collMetadata.get();
-                
-                    collMetadata.put("@metadata-cached", cached);
+                    if (_collMetadata.isPresent())
+                    {
+                        collMetadata = _collMetadata.get();
+                        collMetadata.put("@metadata-cached", true);
+                    }
+                    else
+                        collMetadata = null;
                 }
                 else
                 {
-                    collMetadata = null;
+                    _collMetadata = collectionMetadataCache.get(context.getDBName() + "@@@@" + context.getCollectionName());
+                    
+                    if (_collMetadata.isPresent())
+                    {
+                        collMetadata = _collMetadata.get();
+                        collMetadata.put("@metadata-cached", false);
+                    }
+                    else
+                        collMetadata = null;
                 }
             }
 
