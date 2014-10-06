@@ -17,12 +17,12 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.utils.HttpStatus;
-import com.softinstigate.restheart.json.hal.HALDocumentGenerator;
 import com.softinstigate.restheart.utils.RequestHelper;
-import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.ArrayList;
 import org.bson.types.ObjectId;
@@ -170,7 +170,7 @@ public class DocumentDAO
             
             coll.insert(content);
             
-            exchange.getResponseHeaders().add(HttpString.tryFromString("Location"), HALDocumentGenerator.getReference(exchange.getRequestURL(), id.toString()).toString());
+            exchange.getResponseHeaders().add(HttpString.tryFromString("Location"), getReferenceLink(exchange.getRequestURL(), id.toString()).toString());
         
             return HttpStatus.SC_CREATED;
         }
@@ -277,6 +277,32 @@ public class DocumentDAO
                 coll.save(oldDocument);
                 return HttpStatus.SC_PRECONDITION_FAILED;
             }
+        }
+    }
+    
+    static private URI getReferenceLink(String parentUrl, String referencedName)
+    {
+        try
+        {
+            return new URI(removeTrailingSlashes(parentUrl) + "/" + referencedName);
+        }
+        catch (URISyntaxException ex)
+        {
+            logger.error("error creating URI from {} + / + {}", parentUrl, referencedName, ex);
+        }
+
+        return null;
+    }
+    
+    static private String removeTrailingSlashes(String s)
+    {
+        if (s.trim().charAt(s.length() - 1) == '/')
+        {
+            return removeTrailingSlashes(s.substring(0, s.length() - 1));
+        }
+        else
+        {
+            return s.trim();
         }
     }
 }

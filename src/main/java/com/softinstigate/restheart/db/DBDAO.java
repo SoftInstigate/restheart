@@ -17,7 +17,7 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
-import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
@@ -82,13 +82,13 @@ public class DBDAO
 
     /**
      * WARNING: slow method. 
+     * @param dbName
+     * @return 
     **/
     public static boolean doesDbExists(String dbName)
     {
-        BasicDBObject query = new BasicDBObject("name", new BasicDBObject("$regex", "^" + dbName + "\\..*"));
 
-        return client.getDB(dbName).getCollection("system.namespaces").findOne(query) != null;
-
+        return client.getDatabaseNames().contains(dbName);
     }
 
     public static DB getDB(String dbName)
@@ -123,29 +123,25 @@ public class DBDAO
      * @return the db metadata
      *
      */
-    public static Map<String, Object> getDbMetaData(String dbName)
+    public static DBObject getDbMetaData(String dbName)
     {
-        Map<String, Object> metadata = null;
-
         DBCollection metadatacoll = CollectionDAO.getCollection(dbName, "@metadata");
 
         DBObject metadatarow = metadatacoll.findOne(METADATA_QUERY);
 
         if (metadatarow != null)
         {
-            metadata = DAOUtils.getDataFromRow(metadatarow, "_id");
-
-            Object etag = metadata.get("@etag");
+            Object etag = metadatarow.get("@etag");
 
             if (etag != null && ObjectId.isValid("" + etag))
             {
                 ObjectId oid = new ObjectId("" + etag);
 
-                metadata.put("@lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
+                metadatarow.put("@lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
             }
         }
 
-        return metadata;
+        return metadatarow;
     }
 
     /**
@@ -153,15 +149,11 @@ public class DBDAO
      * @param colls the collections list as got from getDbCollections()
      * @param page
      * @param pagesize
-     * @param sortBy
-     * @param filterBy
-     * @param filter
      * @return the db data
-     * @throws
-     * com.softinstigate.restheart.handlers.IllegalQueryParamenterException
+     * @throws com.softinstigate.restheart.handlers.IllegalQueryParamenterException
      *
      */
-    public static List<Map<String, Object>> getData(String dbName, List<String> colls, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
+    public static List<DBObject> getData(String dbName, List<String> colls, int page, int pagesize)
             throws IllegalQueryParamenterException
     {
         // filter out reserved resourced
@@ -188,22 +180,16 @@ public class DBDAO
         // apply page and pagesize
         _colls = _colls.subList((page - 1) * pagesize, (page - 1) * pagesize + pagesize > _colls.size() ? _colls.size() : (page - 1) * pagesize + pagesize);
 
-        // apply sort_by
-        logger.debug("sort_by not yet implemented");
-
-        // apply filter_by and filter
-        logger.debug("filter not yet implemented");
-
-        List<Map<String, Object>> data = new ArrayList<>();
+        List<DBObject> data = new ArrayList<>();
 
         _colls.stream().map(
                 (coll) ->
                 {
-                    TreeMap<String, Object> properties = new TreeMap<>();
+                    BasicDBObject properties = new BasicDBObject();
 
                     properties.put("_id", coll);
 
-                    Map<String, Object> metadata = CollectionDAO.getCollectionMetadata(dbName, coll);
+                    DBObject metadata = CollectionDAO.getCollectionMetadata(dbName, coll);
 
                     if (metadata != null)
                         properties.putAll(metadata);

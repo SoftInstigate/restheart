@@ -10,7 +10,7 @@
  */
 package com.softinstigate.restheart.security;
 
-import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.handlers.RequestContext;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 import java.util.HashMap;

@@ -34,10 +34,9 @@ import com.softinstigate.restheart.handlers.indexes.DeleteIndexHandler;
 import com.softinstigate.restheart.handlers.indexes.GetIndexesHandler;
 import com.softinstigate.restheart.handlers.indexes.PutIndexHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
-import com.softinstigate.restheart.utils.RequestContext;
 import io.undertow.server.HttpServerExchange;
-import static com.softinstigate.restheart.utils.RequestContext.METHOD;
-import static com.softinstigate.restheart.utils.RequestContext.TYPE;
+import static com.softinstigate.restheart.handlers.RequestContext.METHOD;
+import static com.softinstigate.restheart.handlers.RequestContext.TYPE;
 import com.softinstigate.restheart.utils.ResponseHelper;
 
 /**

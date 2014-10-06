@@ -13,10 +13,11 @@ package com.softinstigate.restheart.handlers.metadata;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.mongodb.DBObject;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
-import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
 import java.util.Optional;
@@ -28,8 +29,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class MetadataRetrieverHandler extends PipedHttpHandler
 {
-    private final LoadingCache<String, Optional<Map<String, Object>>> dbMetadataCache;
-    private final LoadingCache<String, Optional<Map<String, Object>>> collectionMetadataCache;
+    private final LoadingCache<String, Optional<DBObject>> dbMetadataCache;
+    private final LoadingCache<String, Optional<DBObject>> collectionMetadataCache;
 
     /**
      * Creates a new instance of GetCollectionHandler
@@ -54,20 +55,20 @@ public class MetadataRetrieverHandler extends PipedHttpHandler
             }
 
             this.dbMetadataCache = builder.build(
-                    new CacheLoader<String, Optional<Map<String, Object>>>()
+                    new CacheLoader<String, Optional<DBObject>>()
                     {
                         @Override
-                        public Optional<Map<String, Object>> load(String key) throws Exception
+                        public Optional<DBObject> load(String key) throws Exception
                         {
                             return Optional.ofNullable(DBDAO.getDbMetaData(key));
                         }
                     });
 
             this.collectionMetadataCache = builder.build(
-                    new CacheLoader<String, Optional<Map<String, Object>>>()
+                    new CacheLoader<String, Optional<DBObject>>()
                     {
                         @Override
-                        public Optional<Map<String, Object>> load(String key) throws Exception
+                        public Optional<DBObject> load(String key) throws Exception
                         {
                             String[] dbNameAndCollectionName = key.split("@@@@");
                             return Optional.ofNullable(CollectionDAO.getCollectionMetadata(dbNameAndCollectionName[0], dbNameAndCollectionName[1]));
@@ -86,7 +87,7 @@ public class MetadataRetrieverHandler extends PipedHttpHandler
     {
         if (context.getDBName() != null)
         {
-            Map<String, Object> dbMetadata = null;
+            DBObject dbMetadata = null;
 
             if (dbMetadataCache == null)
             {
@@ -104,7 +105,7 @@ public class MetadataRetrieverHandler extends PipedHttpHandler
                     cached = true;
                 }
 
-                Optional<Map<String, Object>> _dbMetadata = dbMetadataCache.get(context.getDBName());
+                Optional<DBObject> _dbMetadata = dbMetadataCache.get(context.getDBName());
                 
                 if (_dbMetadata.isPresent())
                 {
@@ -118,12 +119,12 @@ public class MetadataRetrieverHandler extends PipedHttpHandler
                 }
             }
 
-            context.setDbMetadata(dbMetadata);
+            context.setDbProps(dbMetadata);
         }
 
         if (context.getDBName() != null && context.getCollectionName() != null)
         {
-            Map<String, Object> collMetadata = null;
+            DBObject collMetadata = null;
 
             if (collectionMetadataCache == null)
             {
@@ -141,7 +142,7 @@ public class MetadataRetrieverHandler extends PipedHttpHandler
                     cached = true;
                 }
 
-                Optional<Map<String, Object>> _collMetadata = collectionMetadataCache.get(context.getDBName() + "@@@@" + context.getCollectionName());
+                Optional<DBObject> _collMetadata = collectionMetadataCache.get(context.getDBName() + "@@@@" + context.getCollectionName());
                 
                 if (_collMetadata.isPresent())
                 {
@@ -155,7 +156,7 @@ public class MetadataRetrieverHandler extends PipedHttpHandler
                 }
             }
 
-            context.setCollectionMetadata(collMetadata);
+            context.setCollectionProps(collMetadata);
         }
 
         next.handleRequest(exchange, context);

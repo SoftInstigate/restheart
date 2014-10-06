@@ -19,7 +19,7 @@ import com.softinstigate.restheart.handlers.GzipEncodingHandler;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestDispacherHandler;
 import com.softinstigate.restheart.handlers.metadata.MetadataEnforcerHandler;
-import com.softinstigate.restheart.handlers.UrlToDbMapperHandler;
+import com.softinstigate.restheart.handlers.RequestContextInjecterHandler;
 import com.softinstigate.restheart.handlers.root.DeleteRootHandler;
 import com.softinstigate.restheart.handlers.root.GetRootHandler;
 import com.softinstigate.restheart.handlers.root.PatchRootHandler;
@@ -48,7 +48,7 @@ import com.softinstigate.restheart.security.AccessManager;
 import com.softinstigate.restheart.security.handlers.PredicateAuthenticationConstraintHandler;
 import com.softinstigate.restheart.utils.ResourcesExtractor;
 import com.softinstigate.restheart.utils.LoggingInitializer;
-import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.handlers.RequestContext;
 import io.undertow.Undertow;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
@@ -422,7 +422,7 @@ public class Bootstrapper
             String url = (String) m.get(Configuration.MONGO_MOUNT_URL);
             String db = (String) m.get(Configuration.MONGO_MOUNT_DB);
 
-            paths.addPrefixPath(url, addSecurity(new UrlToDbMapperHandler(url, db, coreHanlderChain), identityManager, accessManager));
+            paths.addPrefixPath(url, addSecurity(new RequestContextInjecterHandler(url, db, coreHanlderChain), identityManager, accessManager));
 
             logger.info("bound url prefix {} to db {}", url, db);
         });

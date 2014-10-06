@@ -11,7 +11,7 @@
 package com.softinstigate.restheart.security.impl;
 
 import com.softinstigate.restheart.security.AccessManager;
-import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.handlers.RequestContext;
 import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateParser;
 import io.undertow.security.idm.Account;

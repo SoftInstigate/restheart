@@ -12,6 +12,7 @@ package com.softinstigate.restheart.utils;
 
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
+import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.util.Map;
@@ -25,7 +26,8 @@ public class ResponseHelper
 {
     public static void endExchange(HttpServerExchange exchange, int code)
     {
-        endExchangeWithMessage(exchange, code, null);
+        exchange.setResponseCode(code);
+        exchange.endExchange();
     }
 
     public static void endExchangeWithMessage(HttpServerExchange exchange, int code, String message)
@@ -86,6 +88,21 @@ public class ResponseHelper
     }
     
     public static void injectEtagHeader(HttpServerExchange exchange, Map<String, Object> metadata)
+    {
+        if (metadata == null)
+            return;
+        
+        Object _etag = metadata.get("@etag");
+        
+        if (ObjectId.isValid("" + _etag))
+        {
+            ObjectId etag = (ObjectId) _etag;
+            
+            exchange.getResponseHeaders().put(Headers.ETAG, etag.toString());
+        }
+    }
+    
+    public static void injectEtagHeader(HttpServerExchange exchange, DBObject metadata)
     {
         if (metadata == null)
             return;

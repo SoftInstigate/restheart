@@ -12,9 +12,9 @@ package com.softinstigate.restheart.handlers.metadata;
 
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
-import com.softinstigate.restheart.json.hal.HALDocumentGenerator;
-import com.softinstigate.restheart.utils.RequestContext;
-import com.softinstigate.restheart.utils.RequestContext.METHOD;
+import com.softinstigate.restheart.handlers.RequestContext;
+import com.softinstigate.restheart.handlers.RequestContext.METHOD;
+import com.softinstigate.restheart.json.hal.HALDocumentSender;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
@@ -44,16 +44,16 @@ public class MetadataEnforcerHandler extends PipedHttpHandler
         {
             HeaderValues contentTypes = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
 
-            if (contentTypes == null || contentTypes.isEmpty() || !contentTypes.contains(HALDocumentGenerator.JSON_MEDIA_TYPE) )
+            if (contentTypes == null || contentTypes.isEmpty() || !contentTypes.contains(HALDocumentSender.JSON_MEDIA_TYPE) )
             {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, "Contet-Type must be " + HALDocumentGenerator.JSON_MEDIA_TYPE);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, "Contet-Type must be " + HALDocumentSender.JSON_MEDIA_TYPE);
                 return;
             }
         }
         
         if (context.getDBName() != null)
         {
-            if (context.getDbMetadata() == null)
+            if (context.getDbProps() == null)
             {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "db " + context.getDBName() + " does not exist");
                 return;
@@ -62,7 +62,7 @@ public class MetadataEnforcerHandler extends PipedHttpHandler
         
         if (context.getCollectionName()!= null && context.getMethod() != METHOD.PUT)
         {
-            if (context.getCollectionMetadata() == null)
+            if (context.getCollectionProps() == null)
             {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "collection " + context.getDBName() + "/" + context.getCollectionName() + " does not exist");
                 return;

@@ -10,20 +10,21 @@
  */
 package com.softinstigate.restheart.handlers.root;
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
-import com.softinstigate.restheart.handlers.GetHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
-import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
+import com.softinstigate.restheart.json.hal.HALDocumentSender;
+import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author uji
  */
-public class GetRootHandler extends GetHandler
+public class GetRootHandler extends PipedHttpHandler
 {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
     
@@ -46,8 +47,9 @@ public class GetRootHandler extends GetHandler
         super(null);
     }
 
+
     @Override
-    protected String generateContent(HttpServerExchange exchange, RequestContext context, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
         List<String> _dbs = client.getDatabaseNames();
 
@@ -64,14 +66,14 @@ public class GetRootHandler extends GetHandler
         Collections.sort(dbs); // sort by id
 
         // apply page and pagesize
-        dbs = dbs.subList((page - 1) * pagesize, (page - 1) * pagesize + pagesize > dbs.size() ? dbs.size() : (page - 1) * pagesize + pagesize);
+        dbs = dbs.subList((context.getPage() - 1) * context.getPagesize(), (context.getPage() - 1) * context.getPagesize() + context.getPagesize() > dbs.size() ? dbs.size() : (context.getPage() - 1) * context.getPagesize() + context.getPagesize());
 
-        List<Map<String, Object>> data = new ArrayList<>();
+        List<DBObject> data = new ArrayList<>();
 
         dbs.stream().map(
                 (db) ->
                 {
-                    TreeMap<String, Object> properties = new TreeMap<>();
+                    BasicDBObject properties = new BasicDBObject();
 
                     properties.put("_id", db);
                     return properties;
@@ -80,12 +82,17 @@ public class GetRootHandler extends GetHandler
 
         try
         {
-            return generateCollectionContent(exchange, null, data, page, pagesize, size, sortBy, filterBy, filter);
+            exchange.setResponseCode(HttpStatus.SC_OK);
+            HALDocumentSender.sendCollection(exchange, context, data, size);
+            exchange.endExchange();
         }
         catch (IllegalQueryParamenterException ex)
         {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
-            return null;
+        }
+        catch (URISyntaxException ex)
+        {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, ex.getMessage(), ex);
         }
     }
 }

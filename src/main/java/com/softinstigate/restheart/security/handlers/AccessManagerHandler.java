@@ -13,7 +13,7 @@ package com.softinstigate.restheart.security.handlers;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.security.AccessManager;
 import com.softinstigate.restheart.utils.HttpStatus;
-import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.slf4j.Logger;

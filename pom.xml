@@ -53,6 +53,12 @@
             <artifactId>guava</artifactId>
             <version>18.0</version>
         </dependency>
+        
+        <dependency>
+            <groupId>com.theoryinpractise</groupId>
+            <artifactId>halbuilder-json</artifactId>
+            <version>4.0.2</version>
+        </dependency>
     </dependencies>
     <name>restheart</name>
     

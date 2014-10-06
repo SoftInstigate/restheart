@@ -10,7 +10,6 @@
  */
 package com.softinstigate.restheart.handlers;
 
-import com.softinstigate.restheart.utils.RequestContext;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 

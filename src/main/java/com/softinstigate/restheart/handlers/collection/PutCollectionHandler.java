@@ -20,7 +20,7 @@ import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.json.metadata.InvalidMetadataException;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
-import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
@@ -89,7 +89,7 @@ public class PutCollectionHandler extends PipedHttpHandler
         
         ObjectId etag = RequestHelper.getUpdateEtag(exchange);
         
-        boolean updating = context.getCollectionMetadata() != null;
+        boolean updating = context.getCollectionProps() != null;
         
         int SC = CollectionDAO.upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, updating, false);
         

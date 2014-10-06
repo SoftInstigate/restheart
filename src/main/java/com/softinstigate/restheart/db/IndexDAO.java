@@ -17,7 +17,7 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
-import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
@@ -65,7 +65,7 @@ public class IndexDAO
         fieldsToReturnIndexes.put("name", 1);
     }
     
-   public static List<Map<String, Object>> getCollectionIndexes(String dbName, String collName)
+   public static List<DBObject> getCollectionIndexes(String dbName, String collName)
     {
         List<DBObject> indexes = client.getDB(dbName).getCollection("system.indexes").find(new BasicDBObject("ns", dbName + "." + collName), fieldsToReturnIndexes).sort(new BasicDBObject("name", 1)).toArray();
     
@@ -74,7 +74,7 @@ public class IndexDAO
             i.removeField("name");
         });
         
-        return DAOUtils.getDataFromRows(indexes);
+        return indexes;
     }
    
    public static void createIndex(String db, String co, DBObject keys, DBObject ops)

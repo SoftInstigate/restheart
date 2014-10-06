@@ -10,21 +10,17 @@
  */
 package com.softinstigate.restheart.handlers.document;
 
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.softinstigate.restheart.db.CollectionDAO;
-import com.softinstigate.restheart.handlers.GetHandler;
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
+import com.softinstigate.restheart.json.hal.HALDocumentSender;
 import com.softinstigate.restheart.utils.HttpStatus;
-import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
-import java.util.Deque;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +29,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author uji
  */
-public class GetDocumentHandler extends GetHandler
+public class GetDocumentHandler extends PipedHttpHandler
 {
     private static final Logger logger = LoggerFactory.getLogger(GetDocumentHandler.class);
 
@@ -45,8 +41,9 @@ public class GetDocumentHandler extends GetHandler
         super(null);
     }
 
+
     @Override
-    protected String generateContent(HttpServerExchange exchange, RequestContext context, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
         ObjectId oid;
         String   sid;
@@ -79,7 +76,7 @@ public class GetDocumentHandler extends GetHandler
         if (document == null)
         {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
-            return null;
+            return;
         }
         
         Object etag = document.get("@etag");
@@ -94,28 +91,15 @@ public class GetDocumentHandler extends GetHandler
             if (RequestHelper.checkReadEtag(exchange, etag.toString()))
             {
                 ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_MODIFIED);
-                return null;
+                return;
             }
         }
         
-        Map<String, Object> item = new TreeMap<>();
-
-        document.keySet().stream().forEach((key) ->
-        {
-            // data value is either a String or a Map. the former case applies with nested json objects
-
-            Object obj = document.get(key);
-
-            if (obj instanceof BasicDBList)
-            {
-                BasicDBList dblist = (BasicDBList) obj;
-
-                obj = dblist.toMap();
-            }
-
-            item.put(key, obj);
-        });
-
-        return generateDocumentContent(exchange, item);
+        exchange.setResponseCode(HttpStatus.SC_OK);
+        
+        ResponseHelper.injectEtagHeader(exchange, document);
+        
+        HALDocumentSender.sendDocument(exchange, context, document);
+        exchange.endExchange();
     }
 }

@@ -15,7 +15,7 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.handlers.RequestContext;
 import java.time.Instant;
 import java.util.Map;
 import org.bson.types.ObjectId;
@@ -34,7 +34,7 @@ public class MetadataFixer
 
     public static boolean addCollectionMetadata(String dbName, String collName)
     {
-        Map<String, Object> dbmd = DBDAO.getDbMetaData(dbName);
+        DBObject dbmd = DBDAO.getDbMetaData(dbName);
 
         if (dbmd == null)
         {
@@ -42,7 +42,7 @@ public class MetadataFixer
             return false;
         }
 
-        Map<String, Object> md = CollectionDAO.getCollectionMetadata(dbName, collName);
+        DBObject md = CollectionDAO.getCollectionMetadata(dbName, collName);
 
         if (md != null) // metadata exists
         {
@@ -81,7 +81,7 @@ public class MetadataFixer
             return false;
         }
 
-        Map<String, Object> dbmd = DBDAO.getDbMetaData(dbName);
+        DBObject dbmd = DBDAO.getDbMetaData(dbName);
 
         if (dbmd != null) // metadata exists
         {

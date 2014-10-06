@@ -1,4 +1,4 @@
-/*
+    /*
  * Copyright SoftInstigate srl. All Rights Reserved.
  *
  *
@@ -10,25 +10,21 @@
  */
 package com.softinstigate.restheart.handlers.indexes;
 
+import com.mongodb.DBObject;
 import com.softinstigate.restheart.db.IndexDAO;
-import com.softinstigate.restheart.handlers.GetHandler;
-import com.softinstigate.restheart.json.hal.HALDocumentGenerator;
-import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
+import com.softinstigate.restheart.handlers.RequestContext;
+import com.softinstigate.restheart.json.hal.HALDocumentSender;
+import com.softinstigate.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
-import java.util.Deque;
 import java.util.List;
-import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author uji
  */
-public class GetIndexesHandler extends GetHandler
+public class GetIndexesHandler extends PipedHttpHandler
 {
-    private static final Logger logger = LoggerFactory.getLogger(GetIndexesHandler.class);
-
     /**
      * Creates a new instance of GetCollectionHandler
      */
@@ -38,10 +34,12 @@ public class GetIndexesHandler extends GetHandler
     }
 
     @Override
-    protected String generateContent(HttpServerExchange exchange, RequestContext context, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        List<Map<String, Object>> indexes = IndexDAO.getCollectionIndexes(context.getDBName(), context.getCollectionName());
+        List<DBObject> indexes = IndexDAO.getCollectionIndexes(context.getDBName(), context.getCollectionName());
         
-        return HALDocumentGenerator.getCollectionHal(exchange.getRequestURL(), null, null, indexes).toString();
+        exchange.setResponseCode(HttpStatus.SC_OK);
+        HALDocumentSender.sendCollection(exchange, context, indexes, indexes.size());
+        exchange.endExchange();
     }
 }

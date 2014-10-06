@@ -10,16 +10,17 @@
  */
 package com.softinstigate.restheart.handlers.database;
 
+import com.mongodb.DBObject;
 import com.softinstigate.restheart.db.DBDAO;
-import com.softinstigate.restheart.handlers.GetHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
-import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
+import com.softinstigate.restheart.handlers.RequestContext;
+import com.softinstigate.restheart.json.hal.HALDocumentSender;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import java.util.Deque;
+import java.net.URISyntaxException;
 import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +28,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author uji
  */
-public class GetDBHandler extends GetHandler
+public class GetDBHandler extends PipedHttpHandler
 {
     private static final Logger logger = LoggerFactory.getLogger(GetDBHandler.class);
 
@@ -40,20 +41,27 @@ public class GetDBHandler extends GetHandler
     }
 
     @Override
-    protected String generateContent(HttpServerExchange exchange, RequestContext context, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
         List<String> colls = DBDAO.getDbCollections(DBDAO.getDB(context.getDBName()));
         
-        List<Map<String, Object>> data;
+        List<DBObject> data;
+        
         try
         {
-            data = DBDAO.getData(context.getDBName(), colls, page, pagesize, sortBy, filterBy, filter);
-            return generateCollectionContent(exchange, context.getDbMetadata(), data, page, pagesize, DBDAO.getDBSize(colls), sortBy, filterBy, filter);
+            data = DBDAO.getData(context.getDBName(), colls, context.getPage(), context.getPagesize());
+            
+            exchange.setResponseCode(HttpStatus.SC_OK);
+            HALDocumentSender.sendCollection(exchange, context, data, data.size());
+            exchange.endExchange();
         }
         catch (IllegalQueryParamenterException ex)
         {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
-            return null;
+        }
+        catch (URISyntaxException ex)
+        {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, ex.getMessage(), ex);
         }
     }
 }

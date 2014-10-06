@@ -11,18 +11,19 @@
 package com.softinstigate.restheart.handlers.collection;
 
 import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.CollectionDAO;
-import com.softinstigate.restheart.handlers.GetHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
-import com.softinstigate.restheart.utils.RequestContext;
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
+import com.softinstigate.restheart.json.hal.HALDocumentSender;
+import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import java.util.Deque;
-import java.util.List;
-import java.util.Map;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +31,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author uji
  */
-public class GetCollectionHandler extends GetHandler
+public class GetCollectionHandler extends PipedHttpHandler
 {
     private static final Logger logger = LoggerFactory.getLogger(GetCollectionHandler.class);
 
@@ -43,12 +44,86 @@ public class GetCollectionHandler extends GetHandler
     }
 
     @Override
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
+    {
+        DBCollection coll = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName());
+        
+        Object _size = null;
+        
+        long size = -1;
+        
+        if (context.isCount())
+        {
+            size = CollectionDAO.getCollectionSize(coll, exchange.getQueryParameters().get("filter"));
+
+            context.getCollectionProps().put("@size", size);
+        }
+        
+        // ***** get data
+        ArrayList<DBObject> data = null;
+
+        try
+        {
+            data = CollectionDAO.getCollectionData(coll, context.getPage(), context.getPagesize(), context.getSortBy(), context.getFilter());
+        }
+        catch (JSONParseException jpe) // the filter expression is not a valid json string
+        {
+            logger.error("invalid filter expression {}", context.getFilter(), jpe);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", jpe);
+            return;
+        }
+        catch (MongoException me)
+        {
+            if (me.getMessage().matches(".*Can't canonicalize query.*")) // error with the filter expression during query execution
+            {
+                logger.error("invalid filter expression {}", context.getFilter(), me);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", me);
+                return;
+            }
+            else
+            {
+                throw me;
+            }
+        }
+
+        if (exchange.isComplete()) // if an error occured getting data, the exchange is already closed
+        {
+            return;
+        }
+
+        // ***** return NOT_FOUND from here if collection is not existing 
+        // (this is to avoid to check existance via the slow CollectionDAO.checkCollectionExists)
+        if (data.isEmpty() && (context.getCollectionProps() == null || context.getCollectionProps().keySet().isEmpty()))
+        {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
+            return;
+        }
+        
+        try
+        {
+            exchange.setResponseCode(HttpStatus.SC_OK);
+            HALDocumentSender.sendCollection(exchange, context, data, size);
+            exchange.endExchange();
+        }
+        catch (IllegalQueryParamenterException ex)
+        {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
+            return;
+        }
+        catch (URISyntaxException ex)
+        {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, ex.getMessage(), ex);
+            return;
+        }
+    }
+    
+    /*
     protected String generateContent(HttpServerExchange exchange, RequestContext context, int page, int pagesize, Deque<String> sortBy, Deque<String> filterBy, Deque<String> filter)
     {
         DBCollection coll = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName());
 
         // ***** get data
-        List<Map<String, Object>> data = null;
+        ArrayList<DBObject> data = null;
 
         try
         {
@@ -81,19 +156,19 @@ public class GetCollectionHandler extends GetHandler
 
         // ***** return NOT_FOUND from here if collection is not existing 
         // (this is to avoid to check existance via the slow CollectionDAO.checkCollectionExists)
-        if (data.isEmpty() && (context.getCollectionMetadata() == null || context.getCollectionMetadata().isEmpty()))
+        if (data.isEmpty() && (context.getCollectionProps() == null || context.getCollectionProps().isEmpty()))
         {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
             return null;
         }
         
-        Object _size = context.getCollectionMetadata().get("@size");
+        Object _size = context.getCollectionProps().get("@size");
         
         if (exchange.getQueryParameters().containsKey("count"))
         {
             _size = CollectionDAO.getCollectionSize(coll, exchange.getQueryParameters().get("filter"));
 
-            context.getCollectionMetadata().put("@size", _size);
+            context.getCollectionProps().put("@size", _size);
         }
         
         long size = (_size == null ? -1 : Long.valueOf("" + _size)); 
@@ -101,12 +176,18 @@ public class GetCollectionHandler extends GetHandler
         // ***** return hal document
         try
         {
-            return generateCollectionContent(exchange, context.getCollectionMetadata(), data, page, pagesize, size, sortBy, filterBy, filter);
+            return generateCollectionContent(exchange, context.getCollectionProps(), data, page, pagesize, size, sortBy, filter);
         }
         catch (IllegalQueryParamenterException ex)
         {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
             return null;
         }
+        catch (URISyntaxException ex)
+        {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, ex.getMessage(), ex);
+            return null;
+        }
     }
+    */
 }

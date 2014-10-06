@@ -17,6 +17,7 @@ package com.softinstigate.restheart;
  * @author uji
  */
 import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import java.io.BufferedReader;
@@ -28,8 +29,7 @@ import java.net.MalformedURLException;
 import java.net.PasswordAuthentication;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.List;
-import java.util.Map;
+import java.util.ArrayList;
 
 public class LoadTestRestHeartTask
 {
@@ -99,7 +99,7 @@ public class LoadTestRestHeartTask
         
         //CollectionDAO.getCollectionSize(coll, null);
         //CollectionDAO.getCollectionMetadata(coll);
-        List<Map<String, Object>> data = CollectionDAO.getCollectionData(dbcoll, 1, 5, null, null);
+        ArrayList<DBObject> data = CollectionDAO.getCollectionData(dbcoll, 1, 5, null, null);
         
         if (printData)
             System.out.println(data != null ? data.toString() : "null data");

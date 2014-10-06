@@ -62,7 +62,7 @@ public class CollectionDAO
         fieldsToReturnIndexes.put("key", 1);
         fieldsToReturnIndexes.put("name", 1);
     }
-
+    
     /**
      * WARNING: slow method. perf tests show this can take up to 35% overall
      * requests processing time when getting data from a collection
@@ -129,8 +129,8 @@ public class CollectionDAO
             try
             {
                 String _filter = filter.getFirst();
-                _filter = _filter.replaceAll("\\[", "{");
-                _filter = _filter.replaceAll("\\]", "}");
+                _filter = _filter.replaceAll("<", "{");
+                _filter = _filter.replaceAll(">", "}");
 
                 BasicDBObject filterQuery = (BasicDBObject) JSON.parse(_filter);
                 filterQuery.putAll(query.toMap());
@@ -145,7 +145,7 @@ public class CollectionDAO
         return coll.count(query);
     }
 
-    public static List<Map<String, Object>> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filter) throws JSONParseException
+    public static ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filter) throws JSONParseException
     {
         // apply sort_by
         DBObject sort = new BasicDBObject();
@@ -182,15 +182,14 @@ public class CollectionDAO
         {
             filter.stream().forEach(f ->
             {
-                String _filter = f.replaceAll("\\[", "{");
-                _filter = _filter.replaceAll("\\]", "}");
-
-                query.putAll(
-                        (BSONObject) JSON.parse(_filter)); // this can throw JSONParseException for invalid filter parameters
+                String _filter = f.replaceAll("<", "{");
+                _filter = _filter.replaceAll(">", "}");
+                
+               query.putAll((BSONObject) JSON.parse(_filter));  // this can throw JSONParseException for invalid filter parameters
             });
         }
 
-        List<Map<String, Object>> data = DAOUtils.getDataFromRows(getDataFromCursor(coll.find(query).sort(sort).limit(pagesize).skip(pagesize * (page - 1))));
+        ArrayList<DBObject> data = getDataFromCursor(coll.find(query).sort(sort).limit(pagesize).skip(pagesize * (page - 1)));
 
         data.forEach(row ->
         {
@@ -208,11 +207,13 @@ public class CollectionDAO
         return data;
     }
 
-    public static Map<String, Object> getCollectionMetadata(String dbName, String collName)
+    public static DBObject getCollectionMetadata(String dbName, String collName)
     {
         DBCollection coll = CollectionDAO.getCollection(dbName, collName);
         
-        Map<String, Object> metadata = DAOUtils.getDataFromRow(coll.findOne(METADATA_QUERY), "_id");
+        DBObject metadata = coll.findOne(METADATA_QUERY);
+        
+        metadata.removeField("_id");
 
         if (metadata != null)
         {

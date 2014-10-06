@@ -480,10 +480,18 @@ public class Configuration
             }
             return defaultValue;
         }
-        else if (o instanceof Long)
+        else if (o instanceof Number)
         {
             logger.debug("paramenter {} set to {}", key, o);
-            return (Long) o;
+            try
+            {
+                return Long.parseLong(o.toString());
+            }
+            catch(NumberFormatException nfe)
+            {
+                logger.info("wrong value for parameter {}: {}. using its default value {}", key, o, defaultValue);
+                return defaultValue;
+            }
         }
         else
         {

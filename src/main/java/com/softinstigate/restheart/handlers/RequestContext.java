@@ -9,15 +9,16 @@
  * program(s) have been supplied. This copyright notice must not be removed.
  */
 
-package com.softinstigate.restheart.utils;
+package com.softinstigate.restheart.handlers;
 
+import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
-import java.util.Map;
+import java.util.Deque;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,36 +30,37 @@ public class RequestContext
 {
 
     /**
-     * @return the collectionMetadata
+     * @return the collectionProps
      */
-    public Map<String, Object> getCollectionMetadata()
+    public DBObject getCollectionProps()
     {
-        return collectionMetadata;
+        return collectionProps;
     }
 
     /**
-     * @param collectionMetadata the collectionMetadata to set
+     * @param collectionProps the collectionProps to set
      */
-    public void setCollectionMetadata(Map<String, Object> collectionMetadata)
+    public void setCollectionProps(DBObject collectionProps)
     {
-        this.collectionMetadata = collectionMetadata;
+        this.collectionProps = collectionProps;
     }
 
     /**
-     * @return the dbMetadata
+     * @return the dbProps
      */
-    public Map<String, Object> getDbMetadata()
+    public DBObject getDbProps()
     {
-        return dbMetadata;
+        return dbProps;
     }
 
     /**
-     * @param dbMetadata the dbMetadata to set
+     * @param dbProps the dbProps to set
      */
-    public void setDbMetadata(Map<String, Object> dbMetadata)
+    public void setDbProps(DBObject dbProps)
     {
-        this.dbMetadata = dbMetadata;
+        this.dbProps = dbProps;
     }
+    
     public enum TYPE { ERROR, ROOT, DB, COLLECTION, DOCUMENT, COLLECTION_INDEXES, INDEX };
     public enum METHOD { GET, POST, PUT, DELETE, PATCH, OTHER };
     
@@ -71,8 +73,14 @@ public class RequestContext
     
     private final Logger logger = LoggerFactory.getLogger(RequestContext.class);
     
-    private Map<String, Object> collectionMetadata;
-    private Map<String, Object> dbMetadata;
+    private DBObject collectionProps;
+    private DBObject dbProps;
+    
+    private int page = 1;
+    private int pagesize = 100;
+    private boolean count = false;
+    private Deque<String> filter = null;
+    private Deque<String> sortBy = null;
     
     public RequestContext(HttpServerExchange exchange, String urlPrefix, String mappedDbName)
     {
@@ -222,5 +230,85 @@ public class RequestContext
     public String getDbMappedDbName()
     {
         return mappedDbName;
+    }
+
+    /**
+     * @return the page
+     */
+    public int getPage()
+    {
+        return page;
+    }
+
+    /**
+     * @param page the page to set
+     */
+    public void setPage(int page)
+    {
+        this.page = page;
+    }
+
+    /**
+     * @return the pagesize
+     */
+    public int getPagesize()
+    {
+        return pagesize;
+    }
+
+    /**
+     * @param pagesize the pagesize to set
+     */
+    public void setPagesize(int pagesize)
+    {
+        this.pagesize = pagesize;
+    }
+
+    /**
+     * @return the count
+     */
+    public boolean isCount()
+    {
+        return count;
+    }
+
+    /**
+     * @param count the count to set
+     */
+    public void setCount(boolean count)
+    {
+        this.count = count;
+    }
+
+    /**
+     * @return the filter
+     */
+    public Deque<String> getFilter()
+    {
+        return filter;
+    }
+
+    /**
+     * @param filter the filter to set
+     */
+    public void setFilter(Deque<String> filter)
+    {
+        this.filter = filter;
+    }
+
+    /**
+     * @return the sortBy
+     */
+    public Deque<String> getSortBy()
+    {
+        return sortBy;
+    }
+
+    /**
+     * @param sortBy the sortBy to set
+     */
+    public void setSortBy(Deque<String> sortBy)
+    {
+        this.sortBy = sortBy;
     }
 }
