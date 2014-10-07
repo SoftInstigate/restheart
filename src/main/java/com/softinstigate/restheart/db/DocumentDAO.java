@@ -18,6 +18,7 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestHelper;
+import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
@@ -284,7 +285,7 @@ public class DocumentDAO
     {
         try
         {
-            return new URI(removeTrailingSlashes(parentUrl) + "/" + referencedName);
+            return new URI(URLUtilis.removeTrailingSlashes(parentUrl) + "/" + referencedName);
         }
         catch (URISyntaxException ex)
         {
@@ -292,17 +293,5 @@ public class DocumentDAO
         }
 
         return null;
-    }
-    
-    static private String removeTrailingSlashes(String s)
-    {
-        if (s.trim().charAt(s.length() - 1) == '/')
-        {
-            return removeTrailingSlashes(s.substring(0, s.length() - 1));
-        }
-        else
-        {
-            return s.trim();
-        }
     }
 }

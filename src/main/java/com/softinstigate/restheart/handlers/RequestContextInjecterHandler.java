@@ -12,6 +12,7 @@ package com.softinstigate.restheart.handlers;
 
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.ResponseHelper;
+import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 
@@ -31,7 +32,7 @@ public class RequestContextInjecterHandler extends PipedHttpHandler
         if (!prefixUrl.startsWith("/"))
             throw new IllegalArgumentException("prefix url must start with /");
         
-        this.prefixUrl = removeTrailingSlashes(prefixUrl);
+        this.prefixUrl = URLUtilis.removeTrailingSlashes(prefixUrl);
         this.db = db;
     }
     
@@ -109,13 +110,5 @@ public class RequestContextInjecterHandler extends PipedHttpHandler
     public void handleRequest(HttpServerExchange exchange) throws Exception
     {
         next.handleRequest(exchange, new RequestContext(exchange, prefixUrl, db));
-    }
-    
-    private String removeTrailingSlashes(String s)
-    {
-        if (s.endsWith("/") && s.length() > 1)
-            return removeTrailingSlashes(s.substring(0, s.length()-1));
-        else
-            return s;
     }
 }

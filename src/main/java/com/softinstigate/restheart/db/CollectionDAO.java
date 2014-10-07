@@ -25,8 +25,6 @@ import io.undertow.util.Headers;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.List;
-import java.util.Map;
 import org.bson.BSONObject;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -46,23 +44,23 @@ public class CollectionDAO
     private static final BasicDBObject DATA_QUERY = new BasicDBObject("_id", new BasicDBObject("$ne", "@metadata"));
 
     private static final BasicDBObject fieldsToReturn;
-    
+
     static
     {
         fieldsToReturn = new BasicDBObject();
         fieldsToReturn.put("_id", 1);
         fieldsToReturn.put("@created_on", 1);
     }
-    
+
     private static final BasicDBObject fieldsToReturnIndexes;
-    
+
     static
     {
         fieldsToReturnIndexes = new BasicDBObject();
         fieldsToReturnIndexes.put("key", 1);
         fieldsToReturnIndexes.put("name", 1);
     }
-    
+
     /**
      * WARNING: slow method. perf tests show this can take up to 35% overall
      * requests processing time when getting data from a collection
@@ -109,7 +107,7 @@ public class CollectionDAO
     {
         return client.getDB(dbName).getCollection(collName);
     }
-    
+
     public static boolean isCollectionEmpty(DBCollection coll)
     {
         return coll.count(DATA_QUERY) == 0;
@@ -122,23 +120,23 @@ public class CollectionDAO
 
     public static long getCollectionSize(DBCollection coll, Deque<String> filter)
     {
-        BasicDBObject query = DATA_QUERY;
+        final BasicDBObject query = DATA_QUERY;
 
         if (filter != null)
         {
             try
             {
-                String _filter = filter.getFirst();
-                _filter = _filter.replaceAll("<", "{");
-                _filter = _filter.replaceAll(">", "}");
-
-                BasicDBObject filterQuery = (BasicDBObject) JSON.parse(_filter);
-                filterQuery.putAll(query.toMap());
-                query = filterQuery;
+                filter.stream().forEach(f ->
+                {
+                    String _filter = f.replaceAll("<", "{");
+                    _filter = _filter.replaceAll(">", "}");
+                    
+                    query.putAll((BSONObject) JSON.parse(_filter));  // this can throw JSONParseException for invalid filter parameters
+                });
             }
             catch (JSONParseException jpe)
             {
-                logger.error("****** error parsing filter expression {}", filter.getFirst());
+                logger.warn("****** error parsing filter expression {}", filter, jpe);
             }
         }
 
@@ -180,12 +178,15 @@ public class CollectionDAO
 
         if (filter != null)
         {
-            filter.stream().forEach(f ->
+            filter.stream().forEach((String f) ->
             {
                 String _filter = f.replaceAll("<", "{");
                 _filter = _filter.replaceAll(">", "}");
                 
-               query.putAll((BSONObject) JSON.parse(_filter));  // this can throw JSONParseException for invalid filter parameters
+                BSONObject filterQuery = (BSONObject) JSON.parse(_filter);
+                replaceObjectIds(filterQuery);
+                    
+                query.putAll(filterQuery);  // this can throw JSONParseException for invalid filter parameters
             });
         }
 
@@ -210,13 +211,13 @@ public class CollectionDAO
     public static DBObject getCollectionMetadata(String dbName, String collName)
     {
         DBCollection coll = CollectionDAO.getCollection(dbName, collName);
-        
+
         DBObject metadata = coll.findOne(METADATA_QUERY);
-        
-        metadata.removeField("_id");
 
         if (metadata != null)
         {
+            metadata.removeField("_id");
+            
             Object etag = metadata.get("@etag");
 
             if (etag != null && ObjectId.isValid("" + etag))
@@ -226,7 +227,7 @@ public class CollectionDAO
                 metadata.put("@lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
             }
         }
-        
+
         return metadata;
     }
 
@@ -365,5 +366,30 @@ public class CollectionDAO
         coll.createIndex(new BasicDBObject("_id", 1).append("@etag", 1), new BasicDBObject("name", "@_id_etag_idx"));
         coll.createIndex(new BasicDBObject("@etag", 1), new BasicDBObject("name", "@etag_idx"));
         coll.createIndex(new BasicDBObject("@created_on", 1), new BasicDBObject("name", "@created_on_idx"));
+    }
+    
+    /**
+     * this replaces string that are valid ObjectIds with ObjectIds objects
+     * @param source
+     * @return 
+     */
+    private static void replaceObjectIds(BSONObject source)
+    {
+        if (source == null)
+            return;
+        
+        source.keySet().stream().forEach((key) ->
+        {
+            Object o = source.get(key);
+            
+            if (o instanceof BSONObject)
+            {
+                replaceObjectIds((BSONObject)o);
+            }
+            else if (ObjectId.isValid(o.toString()))
+            {
+                source.put(key, new ObjectId(o.toString()));
+            }
+        });
     }
 }

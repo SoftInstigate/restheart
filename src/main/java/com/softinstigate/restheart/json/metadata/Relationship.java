@@ -12,11 +12,14 @@ package com.softinstigate.restheart.json.metadata;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
-import java.net.URI;
+import com.softinstigate.restheart.utils.URLUtilis;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -24,6 +27,8 @@ import java.util.List;
  */
 public class Relationship
 {
+    private static final Logger logger = LoggerFactory.getLogger(Relationship.class);
+    
     public enum TYPE { ONE_TO_ONE, ONE_TO_MANY, MANY_TO_ONE, MANY_TO_MANY };
     public enum ROLE { OWNING, INVERSE };
     
@@ -34,7 +39,6 @@ public class Relationship
     public static final String TARGET_DB_ELEMENT_NAME = "target-db";
     public static final String TARGET_COLLECTION_ELEMENT_NAME = "target-coll";
     public static final String REF_ELEMENT_NAME = "ref-field";
-    
     
     private final String rel;
     private final TYPE type;
@@ -144,7 +148,7 @@ public class Relationship
         {
             throw new InvalidMetadataException((_referenceField == null ? "missing " : "invalid ") + REF_ELEMENT_NAME + " element.");
         }
-        
+       
         String rel = (String) _rel;
         String type = (String) _type;
         String role = (String) _role;
@@ -155,19 +159,65 @@ public class Relationship
         return new Relationship(rel, type, role, targetDb, targetCollection, referenceField);
     }
     
-    public URI getRelationshipLink(String baseUrl, DBObject data) throws URISyntaxException
+    public String getRelationshipLink(String urlPrefix, String dbName, String collName, DBObject data) throws IllegalArgumentException, URISyntaxException
     {
-        if (role == ROLE.OWNING)
+        Object _referenceValue = data.get(referenceField);
+        String reference;
+        
+        // check _referenceValue
+        if (type == TYPE.ONE_TO_ONE || (role == ROLE.OWNING && type == TYPE.MANY_TO_ONE) || (role == ROLE.INVERSE && type == TYPE.ONE_TO_MANY))
         {
-            Object _referenceValue = data.get(referenceField);
+            if (!(_referenceValue instanceof String))
+                throw new IllegalArgumentException("in resource " + dbName + "/" + collName + "/" + data.get("_id")
+                        + " the " + type.name() + " relationship ref-field " + this.referenceField + " should be a string, but is " + _referenceValue);
             
+            reference = (String) _referenceValue;
+        }
+        else
+        {if (!(_referenceValue instanceof BasicDBList))
+                throw new IllegalArgumentException("in resource " + dbName + "/" + collName + "/" + data.get("_id")
+                        + " the " + type.name() + " relationship ref-field " + this.referenceField + " should be an array, but is " + _referenceValue);
             
+            String[] ids = ((BasicDBList)_referenceValue).toArray(new String[0]);
+        
+            for (int idx = ids.length-1; idx >=0; idx--)
+            {
+                ids[idx] = "'" + ids[idx] + "'"; 
+            }
             
-            return new URI("http://127.0.0.1" + "/" + _referenceValue);
+            reference = Arrays.toString(ids);
         }
         
-        return new URI("http://127.0.0.1");
+        String db = (targetDb == null ? dbName : targetDb); 
+        
+        if (role == ROLE.OWNING) // the reference field is in this collection
+        {
+            if (type == TYPE.ONE_TO_ONE || type == TYPE.MANY_TO_ONE)
+            {
+                return URLUtilis.getUrlWithDocId(urlPrefix, db, targetCollection, reference);
+            }
+            else if (type == TYPE.ONE_TO_MANY || type == TYPE.MANY_TO_MANY)
+            {
+                return URLUtilis.getUrlWithFilter(urlPrefix, db, targetCollection, referenceField, reference);
+            }
+        }
+        else // INVERSE
+        {
+            if (type == TYPE.ONE_TO_ONE || type == TYPE.ONE_TO_MANY)
+            {
+                return URLUtilis.getUrlWithDocId(urlPrefix, db, targetCollection, reference);
+            }
+            else if (type == TYPE.MANY_TO_ONE || type == TYPE.MANY_TO_MANY)
+            {
+                return URLUtilis.getUrlWithFilter(urlPrefix, db, targetCollection, referenceField, reference);
+            }
+        }
+
+        logger.warn("returned null link. this = {}, data = {}", this, data);
+        return null;
     }
+    
+    
     
     /**
      * @return the rel

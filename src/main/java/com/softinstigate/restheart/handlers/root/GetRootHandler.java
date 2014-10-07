@@ -53,7 +53,7 @@ public class GetRootHandler extends PipedHttpHandler
     {
         List<String> _dbs = client.getDatabaseNames();
 
-        // filter out reserved resourced
+        // filter out reserved resources
         List<String> dbs = _dbs.stream().filter(db -> ! RequestContext.isReservedResourceDb(db)).collect(Collectors.toList());
         
         if (dbs == null)

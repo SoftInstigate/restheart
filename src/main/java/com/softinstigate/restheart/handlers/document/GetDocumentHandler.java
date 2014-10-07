@@ -96,9 +96,9 @@ public class GetDocumentHandler extends PipedHttpHandler
         }
 
         ResponseHelper.injectEtagHeader(exchange, document);
+        exchange.setResponseCode(HttpStatus.SC_OK);
         
         HALDocumentSender.sendDocument(exchange, context, document);
-        exchange.setResponseCode(HttpStatus.SC_OK);
         exchange.endExchange();
     }
 }

@@ -15,6 +15,7 @@ import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.json.metadata.InvalidMetadataException;
 import com.softinstigate.restheart.json.metadata.Relationship;
+import com.softinstigate.restheart.utils.URLUtilis;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.json.JsonRepresentationFactory;
@@ -60,17 +61,27 @@ public class HALDocumentSender
 
         DBObject collProps = context.getCollectionProps();
 
-        if (collProps != null) // collection properties
+        if (collProps != null) // this is a collection, add the collection properties
         {
             addData(rep, collProps);
-
-            if (size > 0)
+        }
+        else // this is a db, add the db properties
+        {
+            DBObject dbProps = context.getDbProps();
+            
+            if (dbProps != null)
             {
-                float _size = size + 0f;
-                float _pagesize = context.getPagesize() + 0f;
-
-                rep.withProperty("@total_pages", Math.max(1, Math.round(Math.nextUp(_size / _pagesize))));
+                addData(rep, dbProps);
             }
+        }
+        
+        if (size > 0)
+        {
+            float _size = size + 0f;
+            float _pagesize = context.getPagesize() + 0f;
+
+            rep.withProperty("@size", size);
+            rep.withProperty("@total_pages", Math.max(1, Math.round(Math.nextUp(_size / _pagesize))));
         }
 
         if (embeddedData != null)
@@ -88,7 +99,27 @@ public class HALDocumentSender
                     if (_id != null && (_id instanceof String || _id instanceof ObjectId))
                     {
                         Representation nrep = representationFactory.newRepresentation(getReferenceLink(baseUrl, _id.toString()));
-                        addData(nrep, d);
+                        
+                        // document links
+                        TreeMap<String, String> links = null;
+                        
+                        try
+                        {
+                            links = getRelationshipsLinks(exchange, context, d);
+                        }
+                        catch (IllegalArgumentException | IllegalQueryParamenterException | URISyntaxException ex)
+                        {
+                            logger.warn("document {}/{}/{} has a wrong relationship", context.getDBName(), context.getCollectionName(), context.getDocumentId(), ex);
+                        }
+
+                        if (links != null)
+                        {
+                            for (String k : links.keySet())
+                            {
+                                nrep = nrep.withLink(k, links.get(k));
+                            }
+                        }
+                        
                         rep = rep.withRepresentation("rh:embedded", nrep);
                     }
                     else
@@ -100,7 +131,7 @@ public class HALDocumentSender
         }
 
         // collection links
-        TreeMap<String, URI> links;
+        TreeMap<String, String> links;
 
         links = getPaginationLinks(exchange, context, size);
 
@@ -135,11 +166,17 @@ public class HALDocumentSender
 
             rep = rep.withProperty(key, value);
         }
-        
         // document links
-        TreeMap<String, URI> links;
+        TreeMap<String, String> links = null;
 
-        links = getRelationshipsLinks(exchange, context, data);
+        try
+        {
+            links = getRelationshipsLinks(exchange, context, data);
+        }
+        catch (IllegalArgumentException | IllegalQueryParamenterException | URISyntaxException ex)
+        {
+            logger.warn("document {}/{}/{} has a wrong relationship", context.getDBName(), context.getCollectionName(), context.getDocumentId(), ex);
+        }
 
         if (links != null)
         {
@@ -169,7 +206,7 @@ public class HALDocumentSender
         }
     }
 
-    private static TreeMap<String, URI> getPaginationLinks(HttpServerExchange exchange, RequestContext context, long size) throws IllegalQueryParamenterException, URISyntaxException
+    private static TreeMap<String, String> getPaginationLinks(HttpServerExchange exchange, RequestContext context, long size) throws IllegalQueryParamenterException, URISyntaxException
     {
         String baseUrl = exchange.getRequestURL();
         String queryString = exchange.getQueryString();
@@ -186,67 +223,67 @@ public class HALDocumentSender
             totalPages = Math.max(1, Math.round(Math.nextUp(_size / _pagesize)));
         }
 
-        TreeMap<String, URI> links = new TreeMap<>();
+        TreeMap<String, String> links = new TreeMap<>();
 
         if (queryString == null || queryString.isEmpty())
         {
-            links.put("self", new URI(baseUrl));
-            links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize));
+            links.put("self", baseUrl);
+            links.put("next", baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize);
         }
         else
         {
             String queryString2 = removePagingParamsFromQueryString(queryString);
 
-            links.put("self", new URI(baseUrl + "?" + queryString2));
+            links.put("self", baseUrl + "?" + queryString2);
 
             if (queryString2 == null || queryString2.isEmpty())
             {
-                links.put("first", new URI(baseUrl + "?pagesize=" + pagesize));
-                links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize));
+                links.put("first", baseUrl + "?pagesize=" + pagesize);
+                links.put("next", baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize);
 
                 if (totalPages > 0) // i.e. the url contains the count paramenter
                 {
                     if (page < totalPages)
                     {
-                        links.put("last", new URI(baseUrl + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize));
-                        links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryString2));
+                        links.put("last", baseUrl + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize);
+                        links.put("next", baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryString2);
                     }
                     else
                     {
-                        links.put("last", new URI(baseUrl + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize));
+                        links.put("last", baseUrl + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize);
                     }
                 }
 
                 if (page > 1)
                 {
-                    links.put("previous", new URI(baseUrl + (page >= 2 ? "?page=" + (page - 1) : "") + (page > 2 ? "&pagesize=" + pagesize : "?pagesize=" + pagesize)));
+                    links.put("previous", baseUrl + (page >= 2 ? "?page=" + (page - 1) : "") + (page > 2 ? "&pagesize=" + pagesize : "?pagesize=" + pagesize));
                 }
             }
             else
             {
-                links.put("first", new URI(baseUrl + "?pagesize=" + pagesize + "&" + queryString2));
+                links.put("first", baseUrl + "?pagesize=" + pagesize + "&" + queryString2);
 
                 if (totalPages <= 0)
                 {
-                    links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryString2));
+                    links.put("next", baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryString2);
                 }
 
                 if (totalPages > 0) // i.e. the url contains the count paramenter
                 {
                     if (page < totalPages)
                     {
-                        links.put("last", new URI(baseUrl + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize + "&" + queryString2));
-                        links.put("next", new URI(baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryString2));
+                        links.put("last", baseUrl + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize + "&" + queryString2);
+                        links.put("next", baseUrl + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryString2);
                     }
                     else
                     {
-                        links.put("last", new URI(baseUrl + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize + "&" + queryString2));
+                        links.put("last", baseUrl + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize + "&" + queryString2);
                     }
                 }
 
                 if (page > 1)
                 {
-                    links.put("previous", new URI(baseUrl + (page >= 2 ? "?page=" + (page - 1) : "") + (page > 2 ? "&pagesize=" + pagesize : "?pagesize=" + pagesize) + "&" + queryString2));
+                    links.put("previous", baseUrl + (page >= 2 ? "?page=" + (page - 1) : "") + (page > 2 ? "&pagesize=" + pagesize : "?pagesize=" + pagesize) + "&" + queryString2);
                 }
             }
         }
@@ -254,14 +291,14 @@ public class HALDocumentSender
         return links;
     }
 
-    private static TreeMap<String, URI> getRelationshipsLinks(HttpServerExchange exchange, RequestContext context, DBObject data) throws IllegalQueryParamenterException, URISyntaxException
+    private static TreeMap<String, String> getRelationshipsLinks(HttpServerExchange exchange, RequestContext context, DBObject data) throws IllegalArgumentException, IllegalQueryParamenterException, URISyntaxException
     {
-        String baseUrl = exchange.getRequestURL().replaceAll(exchange.getRelativePath(), "");
+        String prefixUrl = URLUtilis.getPrefixUrl(exchange);
 
-        TreeMap<String, URI> links = new TreeMap<>();
-        
+        TreeMap<String, String> links = new TreeMap<>();
+
         List<Relationship> rels;
-        
+
         try
         {
             rels = Relationship.getFromJson((DBObject) context.getCollectionProps());
@@ -272,17 +309,22 @@ public class HALDocumentSender
             throw new IllegalQueryParamenterException("collection {}/{} invalid relationships definition", ex);
         }
 
-        for (Relationship rel: rels)
-        {
-            URI uri = rel.getRelationshipLink(baseUrl, data);
-            
-            if (uri != null)
-                links.put(rel.getRel(), uri);
-        }
+        if (rels == null)
+            return links;
         
+        for (Relationship rel : rels)
+        {
+            String link = rel.getRelationshipLink(prefixUrl, context.getDBName(), context.getCollectionName(), data);
+
+            if (link != null)
+            {
+                links.put(rel.getRel(), link);
+            }
+        }
+
         return links;
     }
-    
+
     private static String removePagingParamsFromQueryString(String queryString)
     {
         if (queryString == null)
@@ -300,29 +342,8 @@ public class HALDocumentSender
         return ret;
     }
 
-    static private URI getReferenceLink(String parentUrl, String referencedName)
+    static private String getReferenceLink(String parentUrl, String referencedName)
     {
-        try
-        {
-            return new URI(removeTrailingSlashes(parentUrl) + "/" + referencedName);
-        }
-        catch (URISyntaxException ex)
-        {
-            logger.error("error creating URI from {} + / + {}", parentUrl, referencedName, ex);
-        }
-
-        return null;
-    }
-
-    static private String removeTrailingSlashes(String s)
-    {
-        if (s.trim().charAt(s.length() - 1) == '/')
-        {
-            return removeTrailingSlashes(s.substring(0, s.length() - 1));
-        }
-        else
-        {
-            return s.trim();
-        }
+        return URLUtilis.removeTrailingSlashes(parentUrl) + "/" + referencedName;
     }
 }

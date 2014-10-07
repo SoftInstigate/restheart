@@ -112,7 +112,7 @@ public class DBDAO
      */
     public static long getDBSize(List<String> colls)
     {
-        // filter out reserved resourced
+        // filter out reserved resources
         List<String> _colls = colls.stream().filter(coll -> !RequestContext.isReservedResourceCollection(coll)).collect(Collectors.toList());
 
         return _colls.size();
@@ -156,7 +156,7 @@ public class DBDAO
     public static List<DBObject> getData(String dbName, List<String> colls, int page, int pagesize)
             throws IllegalQueryParamenterException
     {
-        // filter out reserved resourced
+        // filter out reserved resources
         List<String> _colls = colls.stream().filter(coll -> !RequestContext.isReservedResourceCollection(coll)).collect(Collectors.toList());
 
         int size = _colls.size();
