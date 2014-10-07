@@ -100,6 +100,8 @@ public class HALDocumentSender
                     {
                         Representation nrep = representationFactory.newRepresentation(getReferenceLink(baseUrl, _id.toString()));
                         
+                        addData(nrep, d);
+                        
                         // document links
                         TreeMap<String, String> links = null;
                         

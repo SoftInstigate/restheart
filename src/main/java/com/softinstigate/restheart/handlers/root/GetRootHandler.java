@@ -73,10 +73,7 @@ public class GetRootHandler extends PipedHttpHandler
         dbs.stream().map(
                 (db) ->
                 {
-                    BasicDBObject properties = new BasicDBObject();
-
-                    properties.put("_id", db);
-                    return properties;
+                    return new BasicDBObject("_id", db);
                 }
         ).forEach((item) -> { data.add(item); });
 
