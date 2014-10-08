@@ -21,6 +21,7 @@ import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.json.JsonRepresentationFactory;
 import com.theoryinpractise.halbuilder.json.JsonRepresentationWriter;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -38,6 +39,7 @@ import org.slf4j.Logger;
 public class HALDocumentSender
 {
     public static final String JSON_MEDIA_TYPE = "application/json";
+    public static final String HAL_JSON_MEDIA_TYPE = "application/hal+json";
 
     private static final Logger logger = LoggerFactory.getLogger(HALDocumentSender.class);
 
@@ -145,7 +147,7 @@ public class HALDocumentSender
             }
         }
 
-        // document links
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         jrw.write(rep, flags, new OutputStreamWriter(exchange.getOutputStream()));
     }
 
@@ -188,7 +190,7 @@ public class HALDocumentSender
             }
         }
 
-        // document links
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         jrw.write(rep, flags, new OutputStreamWriter(exchange.getOutputStream()));
     }
 
