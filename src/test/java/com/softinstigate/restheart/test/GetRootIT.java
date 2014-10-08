@@ -11,6 +11,7 @@
 package com.softinstigate.restheart.test;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.softinstigate.restheart.Bootstrapper;
 import com.softinstigate.restheart.Configuration;
 import com.softinstigate.restheart.json.hal.HALDocumentSender;
 import com.softinstigate.restheart.utils.HttpStatus;
@@ -45,21 +46,20 @@ import org.junit.Test;
  *
  * @author uji
  */
-public class TestGet
+public class GetRootIT
 {
-    private static final String confFilePath = "../restheart.yml";
+    private static final String confFilePath = "restheart.yml";
     private static Configuration conf = null;
     private static Executor executor = null;
     private static Executor notDecompressingExecutor = null;
     
-    public TestGet()
+    public GetRootIT()
     {
     }
     
     @BeforeClass
     public static void setUpClass()
     {
-        conf = new Configuration(confFilePath);
     }
     
     @AfterClass
@@ -70,6 +70,8 @@ public class TestGet
     @Before
     public void setUp()
     {
+        conf = new Configuration(confFilePath);
+        
         executor = Executor.newInstance().auth(new HttpHost(conf.getHttpHost()), "a", "a");
         notDecompressingExecutor = Executor.newInstance(HttpClients.custom().disableContentCompression().build()).auth(new HttpHost(conf.getHttpHost()), "a", "a");
     }

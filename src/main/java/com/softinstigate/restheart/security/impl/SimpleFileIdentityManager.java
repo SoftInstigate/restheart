@@ -17,6 +17,7 @@ import io.undertow.security.idm.PasswordCredential;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.net.URL;
 import java.util.Arrays;
 
 import java.util.HashMap;
@@ -50,7 +51,10 @@ public class SimpleFileIdentityManager implements IdentityManager
             throw new IllegalArgumentException("\"missing required arguments conf-file");
         }
         
-        String confFilePath = (String) _confFilePath;
+        // this is to allow specifying the configuration file path relative to the jar (also working when running from classes)
+        URL location = this.getClass().getProtectionDomain().getCodeSource().getLocation();
+        File locationFile = new File (location.getPath());
+        String confFilePath = locationFile.getParent() + File.separator + _confFilePath;
         
         this.accounts = new HashMap<>();
 

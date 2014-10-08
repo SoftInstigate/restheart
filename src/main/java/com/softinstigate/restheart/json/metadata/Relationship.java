@@ -93,7 +93,10 @@ public class Relationship
         
         Object _rels = collProps.get(RELATIONSHIPS_ELEMENT_NAME);
         
-        if (_rels == null || ! (_rels instanceof BasicDBList))
+        if (_rels == null)
+            return ret;
+        
+        if (! (_rels instanceof BasicDBList))
             throw new InvalidMetadataException("element 'relationships' is not an array list." + _rels);
         
         BasicDBList rels = (BasicDBList) _rels;

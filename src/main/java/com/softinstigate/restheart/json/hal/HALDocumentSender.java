@@ -309,8 +309,8 @@ public class HALDocumentSender
         }
         catch (InvalidMetadataException ex)
         {
-            logger.error("collection {}/{} invalid relationships definition", context.getDBName(), context.getCollectionName(), ex);
-            throw new IllegalQueryParamenterException("collection {}/{} invalid relationships definition", ex);
+            logger.error("collection {}/{} has invalid relationships definition", context.getDBName(), context.getCollectionName(), ex);
+            throw new IllegalQueryParamenterException("collection " + context.getDBName() + "/" + context.getCollectionName() + " has invalid relationships definition", ex);
         }
 
         if (rels == null)

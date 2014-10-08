@@ -104,11 +104,25 @@ public class Bootstrapper
     private static File browserRootFile = null;
 
     private static GracefulShutdownHandler hanldersPipe = null;
+    
+    private static Configuration conf;
 
+    public static void start(String confFilePath)
+    {
+        String[] args = new String[1];
+        
+        args[0] = confFilePath;
+        
+        main(args);
+    }
+    
+    public static void shutdown()
+    {
+        System.exit(0);
+    }
+    
     public static void main(final String[] args)
     {
-        Configuration conf;
-
         if (args == null || args.length < 1)
         {
             conf = new Configuration();
@@ -147,7 +161,7 @@ public class Bootstrapper
 
         try
         {
-            start(conf);
+            start();
         }
         catch (Throwable t)
         {
@@ -161,7 +175,7 @@ public class Bootstrapper
             public void run()
             {
                 logger.info("restheart stopping");
-                logger.info("waiting for pending request to complete");
+                logger.info("waiting for pending request to complete (up to 1 minute)");
 
                 try
                 {
@@ -230,11 +244,12 @@ public class Bootstrapper
         }
     }
 
-    private static void start(Configuration conf)
+    private static void start()
     {
         if (conf == null)
         {
-            throw new IllegalArgumentException("");
+            logger.error("no configuration found. exiting..");
+            System.exit(-1);
         }
 
         if (!conf.isHttpsListener() && !conf.isHttpListener() && !conf.isAjpListener())
@@ -369,7 +384,7 @@ public class Bootstrapper
             logger.info("ajp listener bound at {}:{}", conf.getAjpHost(), conf.getAjpPort());
         }
 
-        hanldersPipe = getHandlersPipe(conf, identityManager, accessManager);
+        hanldersPipe = getHandlersPipe(identityManager, accessManager);
 
         builder
                 .setIoThreads(conf.getIoThreads())
@@ -382,7 +397,7 @@ public class Bootstrapper
         builder.build().start();
     }
 
-    private static GracefulShutdownHandler getHandlersPipe(Configuration conf, IdentityManager identityManager, AccessManager accessManager)
+    private static GracefulShutdownHandler getHandlersPipe(IdentityManager identityManager, AccessManager accessManager)
     {
         PipedHttpHandler coreHanlderChain
                 = new MetadataInjecterHandler(
@@ -471,5 +486,13 @@ public class Bootstrapper
         {
             return toWrap;
         }
+    }
+
+    /**
+     * @return the conf
+     */
+    public static Configuration getConfiguration()
+    {
+        return conf;
     }
 }

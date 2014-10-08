@@ -57,7 +57,7 @@ public class LoadTestRestHeartTask
             }
         });
         
-        MongoDBClientSingleton.init(new Configuration());
+        MongoDBClientSingleton.init(new Configuration("restheart.yml"));
     }
 
     public void get() throws IOException
