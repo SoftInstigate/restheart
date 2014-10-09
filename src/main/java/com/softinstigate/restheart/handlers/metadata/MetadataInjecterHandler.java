@@ -32,7 +32,7 @@ public class MetadataInjecterHandler extends PipedHttpHandler
     private final LoadingCache<String, Optional<DBObject>> collectionMetadataCache;
 
     /**
-     * Creates a new instance of GetCollectionHandler
+     * Creates a new instance of MetadataInjecterHandler
      *
      * @param next
      * @param metadataLocalCacheEnabled

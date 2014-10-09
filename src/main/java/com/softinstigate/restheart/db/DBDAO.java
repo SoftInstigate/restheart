@@ -208,8 +208,6 @@ public class DBDAO
     {
         DB db = client.getDB(dbName);
 
-        DBCollection coll = db.getCollection("@metadata");
-
         boolean existing = db.getCollectionNames().size() > 0;
 
         if (patching && !existing)
@@ -217,6 +215,8 @@ public class DBDAO
             return HttpStatus.SC_NOT_FOUND;
         }
 
+        DBCollection coll = db.getCollection("@metadata");
+        
         // check the etag
         if (db.collectionExists("@metadata"))
         {
@@ -228,7 +228,7 @@ public class DBDAO
 
             BasicDBObject idAndEtagQuery = new BasicDBObject("_id", "@metadata");
             idAndEtagQuery.append("@etag", etag);
-
+            
             if (coll.count(idAndEtagQuery) < 1)
             {
                 return HttpStatus.SC_PRECONDITION_FAILED;

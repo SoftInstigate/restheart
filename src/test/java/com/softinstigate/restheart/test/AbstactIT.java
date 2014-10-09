@@ -11,8 +11,10 @@
 package com.softinstigate.restheart.test;
 
 import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
 import com.softinstigate.restheart.Configuration;
+import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import java.net.URI;
 import org.apache.http.HttpHost;
 import org.apache.http.client.fluent.Executor;
@@ -29,9 +31,11 @@ import org.junit.BeforeClass;
 public abstract class AbstactIT
 {
     protected static final String confFilePath = "etc/restheart.yml";
+    protected static MongoClient mongoClient;
     protected static Configuration conf = null;
     protected static Executor adminExecutor = null;
-    protected static Executor userExecutor = null;
+    protected static Executor user1Executor = null;
+    protected static Executor user2Executor = null;
     protected static Executor unauthExecutor = null;
     
     protected static URI rootUri;
@@ -48,8 +52,10 @@ public abstract class AbstactIT
     protected static URI indexesUri;
     protected static URI document1Uri;
     protected static URI document2Uri;
+    protected static URI documentTmpUri;
     protected static String document1Id = "doc1";
     protected static String document2Id = "doc2";
+    protected static String documentTmpId = "tmpdoc";
     
     protected static String dbPropsString = "{ \"a\": 1, \"b\": \"due\", \"c\": { \"d\": 1, \"f\": [\"g\",\"h\",3,{\"i\":4, \"l\":\"tre\"}]}}";
     protected static String coll1PropsString = "{ \"a\":1, \"rels\" :  ["
@@ -82,6 +88,10 @@ public abstract class AbstactIT
     {
         conf = new Configuration(confFilePath);
         
+        MongoDBClientSingleton.init(conf);
+        
+        mongoClient = MongoDBClientSingleton.getInstance().getClient();
+        
         rootUri = new URIBuilder()
                 .setScheme("http")
                 .setHost(conf.getHttpHost())
@@ -96,7 +106,7 @@ public abstract class AbstactIT
                 .setPath("/integrationtestdb")
                 .build();
 
-        dbUri = new URIBuilder()
+        dbTmpUri = new URIBuilder()
                 .setScheme("http")
                 .setHost(conf.getHttpHost())
                 .setPort(conf.getHttpPort())
@@ -131,6 +141,13 @@ public abstract class AbstactIT
                 .setPath("/integrationtestdb/coll/@indexes")
                 .build();
         
+        documentTmpUri = new URIBuilder()
+                .setScheme("http")
+                .setHost(conf.getHttpHost())
+                .setPort(conf.getHttpPort())
+                .setPath("/integrationtesttmpdb/tmpcoll/tmpdoc")
+                .build();
+        
         document1Uri = new URIBuilder()
                 .setScheme("http")
                 .setHost(conf.getHttpHost())
@@ -146,8 +163,9 @@ public abstract class AbstactIT
                 .build();
 
 
-        adminExecutor = Executor.newInstance().auth(new HttpHost(conf.getHttpHost()), "a", "a");
-        userExecutor = Executor.newInstance().auth(new HttpHost(conf.getHttpHost()), "user", "changeit");
+        adminExecutor = Executor.newInstance().auth(new HttpHost(conf.getHttpHost()), "admin", "changeit");
+        user1Executor = Executor.newInstance().auth(new HttpHost(conf.getHttpHost()), "user1", "changeit");
+        user2Executor = Executor.newInstance().auth(new HttpHost(conf.getHttpHost()), "user2", "changeit");
         unauthExecutor= Executor.newInstance();
     }
     

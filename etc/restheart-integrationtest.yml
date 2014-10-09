@@ -48,10 +48,10 @@ mongo-mounts:
 ### security 
 idm:    
     implementation-class: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
-    conf-file: ../etc/security.yml
+    conf-file: ../etc/security-integrationtest.yml
 access-manager:    
     implementation-class: com.softinstigate.restheart.security.impl.SimpleAccessManager
-    conf-file: ../etc/security.yml
+    conf-file: ../etc/security-integrationtest.yml
     
 #### protocol
 

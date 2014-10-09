@@ -43,37 +43,8 @@ public class TestDataInitializer extends AbstactIT
     {
         MongoDBClientSingleton.init(conf);
         
-        if (DBDAO.doesDbExists(dbName))
-        {
-            DBObject md = DBDAO.getDbMetaData(dbName);
-            
-            Object o = md.get("@etag");
-            
-            if (o == null || !(o instanceof ObjectId))
-            {
-                throw new RuntimeException("error. cannot delete existing test data. db " + dbName + " does not have a valid etag property");
-            }
-            
-            ObjectId etag = (ObjectId) o ;
-            
-            DBDAO.deleteDB(dbName, etag);
-        }
-        
-        if (DBDAO.doesDbExists(dbTmpName))
-        {
-            DBObject md = DBDAO.getDbMetaData(dbTmpName);
-            
-            Object o = md.get("@etag");
-            
-            if (o == null || !(o instanceof String) || !ObjectId.isValid((String)o))
-            {
-                throw new RuntimeException("error. cannot delete existing test data. db " + dbTmpName + " does not have a valid etag property");
-            }
-            
-            ObjectId etag = new ObjectId((String)o);
-            
-            DBDAO.deleteDB(dbTmpName, etag);
-        }
+        MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbName);
+        MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbTmpName);
     }
     
     private void createTestData()

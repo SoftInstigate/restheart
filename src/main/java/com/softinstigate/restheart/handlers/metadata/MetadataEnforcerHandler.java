@@ -27,7 +27,7 @@ import io.undertow.util.Headers;
 public class MetadataEnforcerHandler extends PipedHttpHandler
 {
     /**
-     * Creates a new instance of SchemaEnforcerHandler
+     * Creates a new instance of MetadataEnforcerHandler
      *
      * @param next
      */
@@ -51,7 +51,7 @@ public class MetadataEnforcerHandler extends PipedHttpHandler
             }
         }
         
-        if (context.getDBName() != null)
+        if (context.getDBName() != null && context.getMethod() != METHOD.PUT)
         {
             if (context.getDbProps() == null)
             {

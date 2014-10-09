@@ -46,7 +46,7 @@ public class ContentEncodingIT extends AbstactIT
     public void setUp() throws Exception
     {
         super.setUp();
-        notDecompressingExecutor = Executor.newInstance(HttpClients.custom().disableContentCompression().build()).auth(new HttpHost(conf.getHttpHost()), "a", "a");
+        notDecompressingExecutor = Executor.newInstance(HttpClients.custom().disableContentCompression().build()).auth(new HttpHost(conf.getHttpHost()), "admin", "changeit");
     }
             
 
