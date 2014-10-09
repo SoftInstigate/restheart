@@ -10,6 +10,8 @@
  */
 package com.softinstigate.restheart.test;
 
+import com.mongodb.DBObject;
+import com.mongodb.util.JSON;
 import com.softinstigate.restheart.Configuration;
 import java.net.URI;
 import org.apache.http.HttpHost;
@@ -33,6 +35,42 @@ public abstract class AbstactIT
     protected static Executor unauthExecutor = null;
     
     protected static URI rootUri;
+    protected static URI dbUri;
+    protected static String dbName = "integrationtestdb";
+    protected static URI dbTmpUri;
+    protected static String dbTmpName = "integrationtesttmpdb";
+    protected static URI collection1Uri ;
+    protected static String collection1Name = "coll1";
+    protected static URI collection2Uri;
+    protected static String collection2Name = "coll2";
+    protected static URI collectionTmpUri;
+    protected static String collectionTmpName = "tmpcoll";
+    protected static URI indexesUri;
+    protected static URI document1Uri;
+    protected static URI document2Uri;
+    protected static String document1Id = "doc1";
+    protected static String document2Id = "doc2";
+    
+    protected static String dbPropsString = "{ \"a\": 1, \"b\": \"due\", \"c\": { \"d\": 1, \"f\": [\"g\",\"h\",3,{\"i\":4, \"l\":\"tre\"}]}}";
+    protected static String coll1PropsString = "{ \"a\":2, \"rels\" :  ["
+            + "{ \"rel\": \"oto\", \"type\": \"ONE_TO_ONE\",  \"target-coll\": \"coll2\", \"ref-field\": \"oto\" },"
+            + "{ \"rel\": \"otm\", \"type\": \"ONE_TO_MANY\", \"target-coll\": \"coll2\", \"ref-field\": \"otm\" },"
+            + "{ \"rel\": \"mto\", \"type\": \"MANY_TO_ONE\", \"target-coll\": \"coll2\", \"ref-field\": \"mto\" },"
+            + "{ \"rel\": \"mtm\", \"type\": \"ONE_TO_MANY\", \"target-coll\": \"coll2\", \"ref-field\": \"mtm\" }"
+            + "]}";
+    protected static String coll2PropsString = "{ \"a\":1 }";
+    protected static String collTmpPropsString =  "{ \"a\":1 }";
+    
+    protected static String document1PropsString = "{ \"a\": 1, \"oto\": \"doc2\", \"otm\" : [ \"doc2\" ], \"mto\" : \"doc2\", \"mtm\" : [ \"doc2\" ] }";
+    protected static String document2PropsString = "{ \"a\": 2 }";
+    
+    protected static DBObject dbProps = (DBObject) JSON.parse(AbstactIT.dbPropsString);
+    protected static DBObject coll1Props = (DBObject) JSON.parse(AbstactIT.coll1PropsString);
+    protected static DBObject coll2Props = (DBObject) JSON.parse(AbstactIT.coll2PropsString);
+    protected static DBObject collTmpProps = (DBObject) JSON.parse(AbstactIT.collTmpPropsString);
+    
+    protected static DBObject document1Props = (DBObject) JSON.parse(AbstactIT.document1PropsString);
+    protected static DBObject document2Props = (DBObject) JSON.parse(AbstactIT.document2PropsString);
     
     @Before
     public void setUp() throws Exception
@@ -45,6 +83,63 @@ public abstract class AbstactIT
                 .setPort(conf.getHttpPort())
                 .setPath("/")
                 .build();
+        
+        dbUri = new URIBuilder()
+                .setScheme("http")
+                .setHost(conf.getHttpHost())
+                .setPort(conf.getHttpPort())
+                .setPath("/integrationtestdb")
+                .build();
+
+        dbUri = new URIBuilder()
+                .setScheme("http")
+                .setHost(conf.getHttpHost())
+                .setPort(conf.getHttpPort())
+                .setPath("/integrationtesttmpdb")
+                .build();
+        
+        collection1Uri = new URIBuilder()
+                .setScheme("http")
+                .setHost(conf.getHttpHost())
+                .setPort(conf.getHttpPort())
+                .setPath("/integrationtestdb/coll1")
+                .build();
+        
+        collection2Uri = new URIBuilder()
+                .setScheme("http")
+                .setHost(conf.getHttpHost())
+                .setPort(conf.getHttpPort())
+                .setPath("/integrationtestdb/coll2")
+                .build();
+        
+        collectionTmpUri = new URIBuilder()
+                .setScheme("http")
+                .setHost(conf.getHttpHost())
+                .setPort(conf.getHttpPort())
+                .setPath("/integrationtesttmpdb/tmpcoll")
+                .build();
+        
+        indexesUri = new URIBuilder()
+                .setScheme("http")
+                .setHost(conf.getHttpHost())
+                .setPort(conf.getHttpPort())
+                .setPath("/integrationtestdb/coll/@indexes")
+                .build();
+        
+        document1Uri = new URIBuilder()
+                .setScheme("http")
+                .setHost(conf.getHttpHost())
+                .setPort(conf.getHttpPort())
+                .setPath("/integrationtestdb/coll1/doc1")
+                .build();
+        
+        document2Uri = new URIBuilder()
+                .setScheme("http")
+                .setHost(conf.getHttpHost())
+                .setPort(conf.getHttpPort())
+                .setPath("/integrationtestdb/coll2/doc2")
+                .build();
+
 
         adminExecutor = Executor.newInstance().auth(new HttpHost(conf.getHttpHost()), "a", "a");
         userExecutor = Executor.newInstance().auth(new HttpHost(conf.getHttpHost()), "user", "changeit");
