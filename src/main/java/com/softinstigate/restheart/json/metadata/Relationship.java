@@ -13,7 +13,6 @@ package com.softinstigate.restheart.json.metadata;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 import com.softinstigate.restheart.utils.URLUtilis;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,30 +28,34 @@ public class Relationship
     private static final Logger logger = LoggerFactory.getLogger(Relationship.class);
     
     public enum TYPE { ONE_TO_ONE, ONE_TO_MANY, MANY_TO_ONE, MANY_TO_MANY };
+    public enum ROLE { OWNING, INVERSE };
     
     public static final String RELATIONSHIPS_ELEMENT_NAME = "rels";
     public static final String REL_ELEMENT_NAME = "rel";
     public static final String TYPE_ELEMENT_NAME = "type";
+    public static final String ROLE_ELEMENT_NAME = "role";
     public static final String TARGET_DB_ELEMENT_NAME = "target-db";
     public static final String TARGET_COLLECTION_ELEMENT_NAME = "target-coll";
     public static final String REF_ELEMENT_NAME = "ref-field";
     
     private final String rel;
     private final TYPE type;
+    private final ROLE role;
     private final String targetDb;
     private final String targetCollection;
     private final String referenceField;
     
-    public Relationship(String rel, TYPE type, String targetDb, String targetCollection, String referenceField)
+    public Relationship(String rel, TYPE type, ROLE role, String targetDb, String targetCollection, String referenceField)
     {
         this.rel = rel;
         this.type = type;
+        this.role = role;
         this.targetDb = targetDb;
         this.targetCollection = targetCollection;
         this.referenceField = referenceField;
     }
     
-    public Relationship(String rel, String type, String targetDb, String targetCollection, String referenceField) throws InvalidMetadataException
+    public Relationship(String rel, String type, String role, String targetDb, String targetCollection, String referenceField) throws InvalidMetadataException
     {
         this.rel = rel;
         
@@ -63,6 +66,15 @@ public class Relationship
         catch(IllegalArgumentException iae)
         {
             throw new InvalidMetadataException("invalid type value: " + type + ". valid values are " + Arrays.toString(TYPE.values()), iae);
+        }
+        
+        try
+        {
+            this.role = ROLE.valueOf(role);
+        }
+        catch(IllegalArgumentException iae)
+        {
+            throw new InvalidMetadataException("invalid role value " + role + ". valid values are " + Arrays.toString(ROLE.values()), iae);
         }
         
         this.targetDb = targetDb;
@@ -103,6 +115,7 @@ public class Relationship
     {
         Object _rel = content.get(REL_ELEMENT_NAME);
         Object _type = content.get(TYPE_ELEMENT_NAME);
+        Object _role = content.get(ROLE_ELEMENT_NAME);
         Object _targetDb = content.get(TARGET_DB_ELEMENT_NAME);
         Object _targetCollection = content.get(TARGET_COLLECTION_ELEMENT_NAME);
         Object _referenceField = content.get(REF_ELEMENT_NAME);
@@ -117,6 +130,10 @@ public class Relationship
             throw new InvalidMetadataException((_type == null ? "missing " : "invalid ") + TYPE_ELEMENT_NAME + " element.");
         }
         
+        if (_role == null || !(_role instanceof String))
+        {
+            throw new InvalidMetadataException((_role == null ? "missing " : "invalid ") + ROLE_ELEMENT_NAME + " element.");
+        }
         
         if (_targetDb != null && !(_type instanceof String))
         {
@@ -135,11 +152,12 @@ public class Relationship
        
         String rel = (String) _rel;
         String type = (String) _type;
+        String role = (String) _role;
         String targetDb = (String) _targetDb;
         String targetCollection = (String) _targetCollection;
         String referenceField = (String) _referenceField;
         
-        return new Relationship(rel, type, targetDb, targetCollection, referenceField);
+        return new Relationship(rel, type, role, targetDb, targetCollection, referenceField);
     }
     
     public String getRelationshipLink(String urlPrefix, String dbName, String collName, DBObject data) throws IllegalArgumentException
@@ -148,39 +166,60 @@ public class Relationship
         String reference;
         
         // check _referenceValue
-        if (type == TYPE.ONE_TO_ONE || type == TYPE.MANY_TO_ONE)
+        if (role == ROLE.OWNING)
         {
-            if (!(_referenceValue instanceof String))
-                throw new IllegalArgumentException("in resource " + dbName + "/" + collName + "/" + data.get("_id")
-                        + " the " + type.name() + " relationship ref-field " + this.referenceField + " should be a string, but is " + _referenceValue);
-
-            reference = (String) _referenceValue;
-        }
-        else
-        {
-            if (!(_referenceValue instanceof BasicDBList))
-                throw new IllegalArgumentException("in resource " + dbName + "/" + collName + "/" + data.get("_id")
-                        + " the " + type.name() + " relationship ref-field " + this.referenceField + " should be an array, but is " + _referenceValue);
-
-            String[] ids = ((BasicDBList)_referenceValue).toArray(new String[0]);
-
-            for (int idx = ids.length-1; idx >=0; idx--)
+            if (type == TYPE.ONE_TO_ONE || type == TYPE.MANY_TO_ONE)
             {
-                ids[idx] = "'" + ids[idx] + "'"; 
-            }
+                if (!(_referenceValue instanceof String))
+                    throw new IllegalArgumentException("in resource " + dbName + "/" + collName + "/" + data.get("_id")
+                            + " the " + type.name() + " relationship ref-field " + this.referenceField + " should be a string, but is " + _referenceValue);
 
-            reference = Arrays.toString(ids);
+                reference = (String) _referenceValue;
+            }
+            else
+            {
+                if (!(_referenceValue instanceof BasicDBList))
+                    throw new IllegalArgumentException("in resource " + dbName + "/" + collName + "/" + data.get("_id")
+                            + " the " + type.name() + " relationship ref-field " + this.referenceField + " should be an array, but is " + _referenceValue);
+
+                String[] ids = ((BasicDBList)_referenceValue).toArray(new String[0]);
+
+                for (int idx = ids.length-1; idx >=0; idx--)
+                {
+                    ids[idx] = "'" + ids[idx] + "'"; 
+                }
+
+                reference = Arrays.toString(ids);
+            }
+        }
+        else // INVERSE
+        {
+            reference = "'" + data.get("_id").toString() + "'";
         }
         
         String db = (targetDb == null ? dbName : targetDb); 
         
-        if (type == TYPE.ONE_TO_ONE || type == TYPE.MANY_TO_ONE)
+        if (role == ROLE.OWNING)
         {
-            return URLUtilis.getUrlWithDocId(urlPrefix, db, targetCollection, reference);
+            if (type == TYPE.ONE_TO_ONE || type == TYPE.MANY_TO_ONE)
+            {
+                return URLUtilis.getUrlWithDocId(urlPrefix, db, targetCollection, reference);
+            }
+            else if (type == TYPE.ONE_TO_MANY || type == TYPE.MANY_TO_MANY)
+            {
+                return URLUtilis.getUrlWithFilterMany(urlPrefix, db, targetCollection, referenceField, reference);
+            }
         }
-        else if (type == TYPE.ONE_TO_MANY || type == TYPE.MANY_TO_MANY)
+        else
         {
-            return URLUtilis.getUrlWithFilter(urlPrefix, db, targetCollection, reference);
+            if (type == TYPE.ONE_TO_ONE || type == TYPE.ONE_TO_MANY)
+            {
+                return URLUtilis.getUrlWithFilterOne(urlPrefix, db, targetCollection, referenceField, reference);
+            }
+            else if (type == TYPE.MANY_TO_ONE || type == TYPE.MANY_TO_MANY)
+            {
+                return URLUtilis.getUrlWithFilterManyInverse(urlPrefix, db, targetCollection, referenceField, reference);
+            }
         }
 
         logger.warn("returned null link. this = {}, data = {}", this, data);
@@ -203,6 +242,14 @@ public class Relationship
     public TYPE getType()
     {
         return type;
+    }
+    
+    /**
+     * @return the role
+     */
+    public ROLE getRole()
+    {
+        return role;
     }
 
     /**
