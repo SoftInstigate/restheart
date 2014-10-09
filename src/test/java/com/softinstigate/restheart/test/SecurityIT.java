@@ -10,47 +10,42 @@
  */
 package com.softinstigate.restheart.test;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import com.softinstigate.restheart.utils.HttpStatus;
+import junit.framework.Assert;
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
+import org.apache.http.client.fluent.Request;
+import org.apache.http.client.fluent.Response;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 /**
  *
  * @author uji
  */
-public class SecurityIT
+public class SecurityIT extends AbstactIT
 {
-    
     public SecurityIT()
     {
     }
     
-    @BeforeClass
-    public static void setUpClass()
+    @Test
+    public void testAuthentication() throws Exception
     {
+        Response resp = unauthExecutor.execute(Request.Get(rootUri));
+        
+        HttpResponse httpResp = resp.returnResponse();
+        Assert.assertNotNull(httpResp);
+        
+        StatusLine statusLine = httpResp.getStatusLine();
+        Assert.assertNotNull(statusLine);
+        
+        Assert.assertEquals("check unauthorized", HttpStatus.SC_UNAUTHORIZED, statusLine.getStatusCode());
+        
+        resp = adminExecutor.execute(Request.Get(rootUri));
+        
+        httpResp = resp.returnResponse();
+        statusLine = httpResp.getStatusLine();
+        
+        Assert.assertEquals("check authorized", HttpStatus.SC_OK, statusLine.getStatusCode());
     }
-    
-    @AfterClass
-    public static void tearDownClass()
-    {
-    }
-    
-    @Before
-    public void setUp()
-    {
-    }
-    
-    @After
-    public void tearDown()
-    {
-    }
-
-    // TODO add test methods here.
-    // The methods must be annotated with annotation @Test. For example:
-    //
-    // @Test
-    // public void hello() {}
 }
