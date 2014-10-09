@@ -52,13 +52,18 @@ public abstract class AbstactIT
     protected static String document2Id = "doc2";
     
     protected static String dbPropsString = "{ \"a\": 1, \"b\": \"due\", \"c\": { \"d\": 1, \"f\": [\"g\",\"h\",3,{\"i\":4, \"l\":\"tre\"}]}}";
-    protected static String coll1PropsString = "{ \"a\":2, \"rels\" :  ["
-            + "{ \"rel\": \"oto\", \"type\": \"ONE_TO_ONE\",  \"target-coll\": \"coll2\", \"ref-field\": \"oto\" },"
-            + "{ \"rel\": \"otm\", \"type\": \"ONE_TO_MANY\", \"target-coll\": \"coll2\", \"ref-field\": \"otm\" },"
-            + "{ \"rel\": \"mto\", \"type\": \"MANY_TO_ONE\", \"target-coll\": \"coll2\", \"ref-field\": \"mto\" },"
-            + "{ \"rel\": \"mtm\", \"type\": \"ONE_TO_MANY\", \"target-coll\": \"coll2\", \"ref-field\": \"mtm\" }"
+    protected static String coll1PropsString = "{ \"a\":1, \"rels\" :  ["
+            + "{ \"rel\": \"oto\", \"type\": \"ONE_TO_ONE\",  \"role\": \"OWNING\", \"target-coll\": \"coll2\", \"ref-field\": \"oto\" },"
+            + "{ \"rel\": \"otm\", \"type\": \"ONE_TO_MANY\", \"role\": \"OWNING\", \"target-coll\": \"coll2\", \"ref-field\": \"otm\" },"
+            + "{ \"rel\": \"mto\", \"type\": \"MANY_TO_ONE\", \"role\": \"OWNING\", \"target-coll\": \"coll2\", \"ref-field\": \"mto\" },"
+            + "{ \"rel\": \"mtm\", \"type\": \"MANY_TO_MANY\", \"role\": \"OWNING\", \"target-coll\": \"coll2\", \"ref-field\": \"mtm\" }"
             + "]}";
-    protected static String coll2PropsString = "{ \"a\":1 }";
+    protected static String coll2PropsString = "{ \"a\":2, \"rels\" :  ["
+            + "{ \"rel\": \"oto\", \"type\": \"ONE_TO_ONE\",  \"role\": \"INVERSE\", \"target-coll\": \"coll1\", \"ref-field\": \"oto\" },"
+            + "{ \"rel\": \"mto\", \"type\": \"MANY_TO_ONE\", \"role\": \"INVERSE\", \"target-coll\": \"coll1\", \"ref-field\": \"otm\" },"
+            + "{ \"rel\": \"otm\", \"type\": \"ONE_TO_MANY\", \"role\": \"INVERSE\", \"target-coll\": \"coll1\", \"ref-field\": \"mto\" },"
+            + "{ \"rel\": \"mtm\", \"type\": \"MANY_TO_MANY\", \"role\": \"INVERSE\", \"target-coll\": \"coll1\", \"ref-field\": \"mtm\" }"
+            + "]}";
     protected static String collTmpPropsString =  "{ \"a\":1 }";
     
     protected static String document1PropsString = "{ \"a\": 1, \"oto\": \"doc2\", \"otm\" : [ \"doc2\" ], \"mto\" : \"doc2\", \"mtm\" : [ \"doc2\" ] }";
