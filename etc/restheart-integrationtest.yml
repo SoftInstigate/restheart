@@ -73,7 +73,7 @@ log-level: INFO
 # metadata-local-cache drammatically improves GETs performace
 # a GET on a collecation requires two additional queries to retrieve the db and the collection metadata
 # at development time you might want to disable the metadata cache to have all changes to dbs and collections metadata immediatly visible
-metadata-local-cache-enabled: true
+metadata-local-cache-enabled: false
 # time to live is in milliseconds; specify a ttl < 0 to never expire cached entries 
 metadata-local-cache-ttl: 1000
 

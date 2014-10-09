@@ -44,31 +44,30 @@ public class MetadataEnforcerHandler extends PipedHttpHandler
         {
             HeaderValues contentTypes = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
 
-            if (contentTypes == null || contentTypes.isEmpty() || !contentTypes.contains(HALDocumentSender.JSON_MEDIA_TYPE) )
+            if (contentTypes == null || contentTypes.isEmpty() || !contentTypes.contains(HALDocumentSender.JSON_MEDIA_TYPE))
             {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, "Contet-Type must be " + HALDocumentSender.JSON_MEDIA_TYPE);
                 return;
             }
         }
-        
-        if (context.getDBName() != null && context.getMethod() != METHOD.PUT)
+
+        if (context.getDbProps() == null
+                && !(context.getType() == RequestContext.TYPE.DB && context.getMethod() == METHOD.PUT)
+                && (context.getType() != RequestContext.TYPE.ROOT))
         {
-            if (context.getDbProps() == null)
-            {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "db " + context.getDBName() + " does not exist");
-                return;
-            }
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "db " + context.getDBName() + " does not exist");
+            return;
         }
-        
-        if (context.getCollectionName()!= null && context.getMethod() != METHOD.PUT)
+
+        if (context.getCollectionProps() == null
+                && !(context.getType() == RequestContext.TYPE.COLLECTION && context.getMethod() == METHOD.PUT)
+                && (context.getType() != RequestContext.TYPE.ROOT)
+                && (context.getType() != RequestContext.TYPE.DB))
         {
-            if (context.getCollectionProps() == null)
-            {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "collection " + context.getDBName() + "/" + context.getCollectionName() + " does not exist");
-                return;
-            }
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "collection " + context.getDBName() + "/" + context.getCollectionName() + " does not exist");
+            return;
         }
-        
+
         next.handleRequest(exchange, context);
     }
 }
