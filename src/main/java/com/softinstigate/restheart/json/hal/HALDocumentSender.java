@@ -111,9 +111,9 @@ public class HALDocumentSender
                         {
                             links = getRelationshipsLinks(exchange, context, d);
                         }
-                        catch (IllegalArgumentException | IllegalQueryParamenterException | URISyntaxException ex)
+                        catch (InvalidMetadataException ex)
                         {
-                            logger.warn("document {}/{}/{} has a wrong relationship", context.getDBName(), context.getCollectionName(), context.getDocumentId(), ex);
+                            logger.warn("document {}/{}/{} has an invalid relationship definition", context.getDBName(), context.getCollectionName(), context.getDocumentId(), ex);
                         }
 
                         if (links != null)
@@ -177,9 +177,9 @@ public class HALDocumentSender
         {
             links = getRelationshipsLinks(exchange, context, data);
         }
-        catch (IllegalArgumentException | IllegalQueryParamenterException | URISyntaxException ex)
+        catch (InvalidMetadataException ex)
         {
-            logger.warn("document {}/{}/{} has a wrong relationship", context.getDBName(), context.getCollectionName(), context.getDocumentId(), ex);
+            logger.warn(ex.getMessage(), context.getDBName(), context.getCollectionName(), ex);
         }
 
         if (links != null)
@@ -295,7 +295,7 @@ public class HALDocumentSender
         return links;
     }
 
-    private static TreeMap<String, String> getRelationshipsLinks(HttpServerExchange exchange, RequestContext context, DBObject data) throws IllegalArgumentException, IllegalQueryParamenterException, URISyntaxException
+    private static TreeMap<String, String> getRelationshipsLinks(HttpServerExchange exchange, RequestContext context, DBObject data) throws InvalidMetadataException
     {
         String prefixUrl = URLUtilis.getPrefixUrl(exchange);
 
@@ -310,7 +310,7 @@ public class HALDocumentSender
         catch (InvalidMetadataException ex)
         {
             logger.error("collection {}/{} has invalid relationships definition", context.getDBName(), context.getCollectionName(), ex);
-            throw new IllegalQueryParamenterException("collection " + context.getDBName() + "/" + context.getCollectionName() + " has invalid relationships definition", ex);
+            throw new InvalidMetadataException("collection " + context.getDBName() + "/" + context.getCollectionName() + " has invalid relationships definition", ex);
         }
 
         if (rels == null)
@@ -318,11 +318,18 @@ public class HALDocumentSender
         
         for (Relationship rel : rels)
         {
-            String link = rel.getRelationshipLink(prefixUrl, context.getDBName(), context.getCollectionName(), data);
-
-            if (link != null)
+            try
             {
-                links.put(rel.getRel(), link);
+                String link = rel.getRelationshipLink(prefixUrl, context.getDBName(), context.getCollectionName(), data);
+
+                if (link != null)
+                {
+                    links.put(rel.getRel(), link);
+                }
+            }
+            catch(IllegalArgumentException ex)
+            {
+                logger.warn("document {}/{}/{} has an invalid relationship", context.getDBName(), context.getCollectionName(), context.getDocumentId(), ex);
             }
         }
 

@@ -47,13 +47,13 @@ public class URLUtilis
         return sb.toString().replaceAll(" ", "");
     }
     
-    static public String getUrlWithFilter(String baseUrl, String dbName, String collName, String referenceField, String ids)
+    static public String getUrlWithFilter(String baseUrl, String dbName, String collName, String ids)
     {
         StringBuilder sb = new StringBuilder();
         
         ///db/coll/?filter=<"ref":<"$in":<"a","b","c">>
         sb.append(URLUtilis.removeTrailingSlashes(baseUrl)).append("/").append(dbName).append("/").append(collName).append("?")
-                .append("filter=<").append("'").append(referenceField).append("'").append(":").append("<'$in'").append(":").append(ids).append(">>");
+                .append("filter=<").append("'").append("_id").append("'").append(":").append("<'$in'").append(":").append(ids).append(">>");
         
         return sb.toString().replaceAll(" ", "");
     }
