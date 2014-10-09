@@ -31,6 +31,9 @@ permissions:
     - role: $unauthenticated
       predicate: path-prefix[path="/publicdb/"] and method[value="GET"]
       
+    - role: $unauthenticated
+      predicate: path[path="/integrationtestdb/coll1"] and method[value="GET"]
+      
     - role: users
       predicate: regex[pattern="/.*/.*", value="%R", full-match=true] and method[value="GET"]
       

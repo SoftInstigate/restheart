@@ -34,7 +34,10 @@ permissions:
       predicate: regex[pattern="/integrationtestdb/.*", value="%R", full-match=true] and method[value="GET"]
       
     - role: powerusers
-      predicate: regex[pattern="/integrationtestdb/coll1/.*", value="%R", full-match=true]
+      predicate: regex[pattern="/integrationtesttmpdb/.*", value="%R", full-match=true]
       
     - role: users
-      predicate: path-prefix[path="/integrationtestdb/coll2/"] and method[value="GET"]
+      predicate: path-prefix[path="/integrationtestdb/coll2"] and method[value="GET"]
+    
+    - role: users
+      predicate: path[path="/integrationtestdb/coll2"] and method[value="GET"]
