@@ -51,10 +51,15 @@ public class SimpleFileIdentityManager implements IdentityManager
             throw new IllegalArgumentException("\"missing required arguments conf-file");
         }
         
-        // this is to allow specifying the configuration file path relative to the jar (also working when running from classes)
-        URL location = this.getClass().getProtectionDomain().getCodeSource().getLocation();
-        File locationFile = new File (location.getPath());
-        String confFilePath = locationFile.getParent() + File.separator + _confFilePath;
+        String confFilePath = (String) _confFilePath;
+
+        if (!confFilePath.startsWith("/"))
+        {
+            // this is to allow specifying the configuration file path relative to the jar (also working when running from classes)
+            URL location = this.getClass().getProtectionDomain().getCodeSource().getLocation();
+            File locationFile = new File(location.getPath());
+            confFilePath = locationFile.getParent() + File.separator + confFilePath;
+        }
         
         this.accounts = new HashMap<>();
 

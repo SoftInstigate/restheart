@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart;
+package com.softinstigate.restheart.test.performance;
 
 /**
  * install ldt from https://github.com/bazhenov/load-test-tool
@@ -18,6 +18,7 @@ package com.softinstigate.restheart;
  */
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
+import com.softinstigate.restheart.Configuration;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import java.io.BufferedReader;
@@ -31,7 +32,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 
-public class LoadTestRestHeartTask
+public class LoadGetPT
 {
     private URL url;
     
