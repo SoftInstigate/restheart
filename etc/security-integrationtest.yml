@@ -27,14 +27,11 @@ permissions:
     - role: $unauthenticated
       predicate: path-prefix[path="/integrationtestdb/coll1"] and method[value="GET"]
       
-    - role: $unauthenticated
-      predicate: path[path="/integrationtestdb/coll1"] and method[value="GET"]
+    - role: powerusers
+      predicate: path-prefix[path="/integrationtestdb"] and method[value="GET"]
       
     - role: powerusers
-      predicate: regex[pattern="/integrationtestdb/.*", value="%R", full-match=true] and method[value="GET"]
-      
-    - role: powerusers
-      predicate: regex[pattern="/integrationtesttmpdb/.*", value="%R", full-match=true]
+      predicate: path-prefix[path="/integrationtesttmpdb"]
       
     - role: users
       predicate: path-prefix[path="/integrationtestdb/coll2"] and method[value="GET"]

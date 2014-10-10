@@ -11,9 +11,11 @@
 package com.softinstigate.restheart.test;
 
 import com.mongodb.DBObject;
+import com.mongodb.util.JSON;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.db.DocumentDAO;
+import com.softinstigate.restheart.db.IndexDAO;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import static com.softinstigate.restheart.test.AbstactIT.conf;
 import org.bson.types.ObjectId;
@@ -52,7 +54,19 @@ public class TestDataInitializer extends AbstactIT
         DBDAO.upsertDB(dbName, dbProps, new ObjectId(), false);
         CollectionDAO.upsertCollection(dbName, collection1Name, coll1Props, new ObjectId(), false, false);
         CollectionDAO.upsertCollection(dbName, collection2Name, coll2Props, new ObjectId(), false, false);
+        CollectionDAO.upsertCollection(dbName, docsCollectionName, docsCollectionProps, new ObjectId(), false, false);
+        
+        for (String index: docsCollectionIndexesStrings)
+        {
+            IndexDAO.createIndex(dbName, docsCollectionName, ((DBObject)JSON.parse(index)), null);
+        }
+        
         DocumentDAO.upsertDocument(dbName, collection1Name, document1Id, document1Props, new ObjectId(), false);
         DocumentDAO.upsertDocument(dbName, collection2Name, document2Id, document2Props, new ObjectId(), false);
+        
+        for (String doc: docsPropsStrings)
+        {
+            DocumentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), ((DBObject)JSON.parse(doc)), new ObjectId(), false);
+        }
     }
 }

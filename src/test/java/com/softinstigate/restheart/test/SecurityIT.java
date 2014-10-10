@@ -240,27 +240,27 @@ public class SecurityIT extends AbstactIT
     {
         // *** GET root
         Response resp = user1Executor.execute(Request.Get(rootUri));
-        check("check get root unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check get root as user1", resp, HttpStatus.SC_UNAUTHORIZED);
         
         // *** GET db
         resp = user1Executor.execute(Request.Get(dbUri));
-        check("check get db unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check get db as user1", resp, HttpStatus.SC_OK);
         
         // *** GET coll1
         resp = user1Executor.execute(Request.Get(collection1Uri));
-        check("check get coll1 unauthorized", resp, HttpStatus.SC_OK);
+        check("check get coll1 as user1", resp, HttpStatus.SC_OK);
         
         // *** GET doc1
         resp = user1Executor.execute(Request.Get(document1Uri));
-        check("check get doc1 unauthorized", resp, HttpStatus.SC_OK);
+        check("check get doc1 as user1", resp, HttpStatus.SC_OK);
         
          // *** GET coll2
         resp = user1Executor.execute(Request.Get(collection2Uri));
-        check("check get coll2 unauthorized", resp, HttpStatus.SC_OK);
+        check("check get coll2 as user1", resp, HttpStatus.SC_OK);
         
         // *** GET doc2
         resp = user1Executor.execute(Request.Get(document2Uri));
-        check("check get doc2 unauthorized", resp, HttpStatus.SC_OK);
+        check("check get doc2 as user1", resp, HttpStatus.SC_OK);
     }
     
     @Test
@@ -272,14 +272,14 @@ public class SecurityIT extends AbstactIT
             Response resp = user1Executor.execute(Request.Put(rootUri).bodyString("{a:1}", ContentType.APPLICATION_JSON).addHeader(Headers.CONTENT_TYPE_STRING, "application/json"));
             check("check put root as user1", resp, HttpStatus.SC_UNAUTHORIZED);
 
-            // *** PUT tmpdb
-            resp = user1Executor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", ContentType.APPLICATION_JSON).addHeader(Headers.CONTENT_TYPE_STRING, "application/json"));
+            // *** PUT db
+            resp = user1Executor.execute(Request.Put(dbUri).bodyString("{a:1}", ContentType.APPLICATION_JSON).addHeader(Headers.CONTENT_TYPE_STRING, "application/json"));
             check("check put db as user1", resp, HttpStatus.SC_UNAUTHORIZED);
             
-            // *** PUT tmpdb as admin
-            resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", ContentType.APPLICATION_JSON).addHeader(Headers.CONTENT_TYPE_STRING, "application/json"));
-            check("check put db as admin", resp, HttpStatus.SC_CREATED);
-
+            // *** PUT tmpdb
+            resp = user1Executor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", ContentType.APPLICATION_JSON).addHeader(Headers.CONTENT_TYPE_STRING, "application/json"));
+            check("check put db as user1", resp, HttpStatus.SC_CREATED);
+            
             // *** PUT tmpcoll
             resp = user1Executor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", ContentType.APPLICATION_JSON).addHeader(Headers.CONTENT_TYPE_STRING, "application/json"));
             check("check put coll1 as user1", resp, HttpStatus.SC_CREATED);

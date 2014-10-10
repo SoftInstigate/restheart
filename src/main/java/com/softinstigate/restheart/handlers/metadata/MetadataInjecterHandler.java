@@ -120,8 +120,6 @@ public class MetadataInjecterHandler extends PipedHttpHandler
                     }
                     else
                         dbMetadata = null;
-                
-                    
                 }
             }
 

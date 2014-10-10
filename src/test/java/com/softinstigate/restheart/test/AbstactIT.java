@@ -49,6 +49,8 @@ public abstract class AbstactIT
     protected static String collection2Name = "coll2";
     protected static URI collectionTmpUri;
     protected static String collectionTmpName = "tmpcoll";
+    protected static URI docsCollectionUri;
+    protected static String docsCollectionName = "docscoll";
     protected static URI indexesUri;
     protected static URI document1Uri;
     protected static URI document2Uri;
@@ -70,6 +72,9 @@ public abstract class AbstactIT
             + "{ \"rel\": \"otm\", \"type\": \"ONE_TO_MANY\", \"role\": \"INVERSE\", \"target-coll\": \"coll1\", \"ref-field\": \"mto\" },"
             + "{ \"rel\": \"mtm\", \"type\": \"MANY_TO_MANY\", \"role\": \"INVERSE\", \"target-coll\": \"coll1\", \"ref-field\": \"mtm\" }"
             + "]}";
+    
+    protected static String docsCollectionPropsStrings = "{}";
+    
     protected static String collTmpPropsString =  "{ \"a\":1 }";
     
     protected static String document1PropsString = "{ \"a\": 1, \"oto\": \"doc2\", \"otm\" : [ \"doc2\" ], \"mto\" : \"doc2\", \"mtm\" : [ \"doc2\" ] }";
@@ -79,9 +84,30 @@ public abstract class AbstactIT
     protected static DBObject coll1Props = (DBObject) JSON.parse(AbstactIT.coll1PropsString);
     protected static DBObject coll2Props = (DBObject) JSON.parse(AbstactIT.coll2PropsString);
     protected static DBObject collTmpProps = (DBObject) JSON.parse(AbstactIT.collTmpPropsString);
+    protected static DBObject docsCollectionProps = (DBObject) JSON.parse(AbstactIT.docsCollectionPropsStrings);
     
     protected static DBObject document1Props = (DBObject) JSON.parse(AbstactIT.document1PropsString);
     protected static DBObject document2Props = (DBObject) JSON.parse(AbstactIT.document2PropsString);
+    
+    protected static String[] docsPropsStrings = {
+        "{ \"ranking\": 1, \"name\": \"Nick\", \"surname\": \"Cave\", \"band\": \"Nick Cave & the Bad Seeds\"}",
+        "{ \"ranking\": 2, \"name\": \"Robert\", \"surname\": \"Smith\", \"band\": \"The Cure\"}",
+        "{ \"ranking\": 3, \"name\": \"Leonard\", \"surname\": \"Cohen\", \"band\": \"Leonard Cohen\"}",
+        "{ \"ranking\": 4, \"name\": \"Tom\", \"surname\": \"Yorke\", \"band\": \"Radiohead\"}",
+        "{ \"ranking\": 5, \"name\": \"Roger\", \"surname\": \"Waters\", \"band\": \"Pink Floyd\"}",
+        "{ \"ranking\": 6, \"name\": \"Morrissey\", \"surname\": null, \"band\": \"The Smiths\"}",
+        "{ \"ranking\": 7, \"name\": \"Mark\", \"surname\": \"Knopfler\", \"band\": \"Dire Straits\"}",
+        "{ \"ranking\": 8, \"name\": \"Ramone\", \"surname\": \"Ramone\", \"band\": \"Ramones\"}",
+        "{ \"ranking\": 9, \"name\": \"Ian\", \"surname\": \"Astbury\", \"band\": \"The Cult\"}",
+        "{ \"ranking\": 10, \"name\": \"Polly Jean\", \"surname\": \"Harvey\", \"band\": \"PJ Harvey\"}",
+    };
+    // { keys: {a:1, b:-1} }
+    protected static String[] docsCollectionIndexesStrings = {
+        "{ \"name\": 1 }",
+        "{ \"surname\": 1 }",
+        "{ \"band\": 1 }",
+        "{ \"ranking\": 1 }"
+    };
     
     @Before
     public void setUp() throws Exception
@@ -103,63 +129,70 @@ public abstract class AbstactIT
                 .setScheme("http")
                 .setHost(conf.getHttpHost())
                 .setPort(conf.getHttpPort())
-                .setPath("/integrationtestdb")
+                .setPath("/" + dbName)
                 .build();
 
         dbTmpUri = new URIBuilder()
                 .setScheme("http")
                 .setHost(conf.getHttpHost())
                 .setPort(conf.getHttpPort())
-                .setPath("/integrationtesttmpdb")
+                .setPath("/" + dbTmpName)
                 .build();
         
         collection1Uri = new URIBuilder()
                 .setScheme("http")
                 .setHost(conf.getHttpHost())
                 .setPort(conf.getHttpPort())
-                .setPath("/integrationtestdb/coll1")
+                .setPath("/" + dbName + "/" + collection1Name)
                 .build();
         
         collection2Uri = new URIBuilder()
                 .setScheme("http")
                 .setHost(conf.getHttpHost())
                 .setPort(conf.getHttpPort())
-                .setPath("/integrationtestdb/coll2")
+                .setPath("/" + dbName + "/" + collection2Name)
                 .build();
         
         collectionTmpUri = new URIBuilder()
                 .setScheme("http")
                 .setHost(conf.getHttpHost())
                 .setPort(conf.getHttpPort())
-                .setPath("/integrationtesttmpdb/tmpcoll")
+                .setPath("/" + dbTmpName + "/" + collectionTmpName)
+                .build();
+        
+        docsCollectionUri = new URIBuilder()
+                .setScheme("http")
+                .setHost(conf.getHttpHost())
+                .setPort(conf.getHttpPort())
+                .setPath("/" + dbName + "/" + docsCollectionName)
                 .build();
         
         indexesUri = new URIBuilder()
                 .setScheme("http")
                 .setHost(conf.getHttpHost())
                 .setPort(conf.getHttpPort())
-                .setPath("/integrationtestdb/coll/@indexes")
+                .setPath("/" + dbName + "/" + docsCollectionName + "/@indexes")
                 .build();
         
         documentTmpUri = new URIBuilder()
                 .setScheme("http")
                 .setHost(conf.getHttpHost())
                 .setPort(conf.getHttpPort())
-                .setPath("/integrationtesttmpdb/tmpcoll/tmpdoc")
+                .setPath("/" + dbTmpName + "/" + collectionTmpName + "/" + documentTmpId)
                 .build();
         
         document1Uri = new URIBuilder()
                 .setScheme("http")
                 .setHost(conf.getHttpHost())
                 .setPort(conf.getHttpPort())
-                .setPath("/integrationtestdb/coll1/doc1")
+                .setPath("/" + dbName + "/" + collection1Name + "/" + document1Id)
                 .build();
         
         document2Uri = new URIBuilder()
                 .setScheme("http")
                 .setHost(conf.getHttpHost())
                 .setPort(conf.getHttpPort())
-                .setPath("/integrationtestdb/coll2/doc2")
+                .setPath("/" + dbName + "/" + collection2Name + "/" + document2Id)
                 .build();
 
 
