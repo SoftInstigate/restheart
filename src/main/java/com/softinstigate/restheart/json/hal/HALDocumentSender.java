@@ -16,13 +16,8 @@ import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.json.metadata.InvalidMetadataException;
 import com.softinstigate.restheart.json.metadata.Relationship;
 import com.softinstigate.restheart.utils.URLUtilis;
-import com.theoryinpractise.halbuilder.api.Representation;
-import com.theoryinpractise.halbuilder.api.RepresentationFactory;
-import com.theoryinpractise.halbuilder.json.JsonRepresentationFactory;
-import com.theoryinpractise.halbuilder.json.JsonRepresentationWriter;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashSet;
@@ -43,29 +38,20 @@ public class HALDocumentSender
 
     private static final Logger logger = LoggerFactory.getLogger(HALDocumentSender.class);
 
-    private static final RepresentationFactory representationFactory = new JsonRepresentationFactory();
-
-    private static final JsonRepresentationWriter jrw = new JsonRepresentationWriter();
 
     private static final HashSet<URI> flags = new HashSet<>();
-
-    static
-    {
-        flags.add(RepresentationFactory.PRETTY_PRINT);
-        flags.add(RepresentationFactory.STRIP_NULLS);
-    }
 
     static public void sendCollection(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException, URISyntaxException
     {
         String baseUrl = exchange.getRequestURL();
-        Representation rep = representationFactory.newRepresentation(baseUrl);
+        Representation rep = new Representation(baseUrl);
 
         DBObject collProps = context.getCollectionProps();
 
         if (collProps != null) // this is a collection, add the collection properties
         {
-            addData(rep, collProps);
+            rep = addData(rep, collProps);
         }
         else // this is a db, add the db properties
         {
@@ -73,7 +59,7 @@ public class HALDocumentSender
             
             if (dbProps != null)
             {
-                addData(rep, dbProps);
+                rep = addData(rep, dbProps);
             }
         }
         
@@ -82,15 +68,15 @@ public class HALDocumentSender
             float _size = size + 0f;
             float _pagesize = context.getPagesize() + 0f;
 
-            rep.withProperty("@size", size);
-            rep.withProperty("@total_pages", Math.max(1, Math.round(Math.nextUp(_size / _pagesize))));
+            rep = rep.withProperty("@size", size);
+            rep = rep.withProperty("@total_pages", Math.max(1, Math.round(Math.nextUp(_size / _pagesize))));
         }
 
         if (embeddedData != null)
         {
             long count = embeddedData.stream().filter((props) -> props.keySet().stream().anyMatch((k) -> k.equals("id") || k.equals("_id"))).count();
 
-            rep.withProperty("@returned", "" + count);
+            rep = rep.withProperty("@returned", "" + count);
 
             if (!embeddedData.isEmpty()) // embedded documents
             {
@@ -100,9 +86,9 @@ public class HALDocumentSender
 
                     if (_id != null && (_id instanceof String || _id instanceof ObjectId))
                     {
-                        Representation nrep = representationFactory.newRepresentation(getReferenceLink(baseUrl, _id.toString()));
+                        Representation nrep = new Representation(getReferenceLink(baseUrl, _id.toString()));
                         
-                        addData(nrep, d);
+                        nrep = addData(nrep, d);
                         
                         // document links
                         TreeMap<String, String> links = null;
@@ -148,7 +134,7 @@ public class HALDocumentSender
         }
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
-        jrw.write(rep, flags, new OutputStreamWriter(exchange.getOutputStream()));
+        exchange.getResponseSender().send(rep.toString());
     }
 
     public static void sendDocument(HttpServerExchange exchange, RequestContext context, DBObject data)
@@ -156,7 +142,7 @@ public class HALDocumentSender
     {
         String baseUrl = exchange.getRequestURL();
 
-        Representation rep = representationFactory.newRepresentation(baseUrl);
+        Representation rep = new Representation(baseUrl);
 
         // document properties
         for (String key : data.keySet())
@@ -191,10 +177,10 @@ public class HALDocumentSender
         }
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
-        jrw.write(rep, flags, new OutputStreamWriter(exchange.getOutputStream()));
+        exchange.getResponseSender().send(rep.toString());
     }
 
-    private static void addData(Representation rep, DBObject data)
+    private static Representation addData(Representation rep, DBObject data)
     {
         // collection properties
         for (String key : data.keySet())
@@ -208,6 +194,8 @@ public class HALDocumentSender
 
             rep = rep.withProperty(key, value);
         }
+        
+        return rep;
     }
 
     private static TreeMap<String, String> getPaginationLinks(HttpServerExchange exchange, RequestContext context, long size) throws IllegalQueryParamenterException, URISyntaxException
