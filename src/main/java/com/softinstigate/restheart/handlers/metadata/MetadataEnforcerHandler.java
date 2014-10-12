@@ -14,7 +14,6 @@ import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.handlers.RequestContext.METHOD;
-import com.softinstigate.restheart.json.hal.HALDocumentSender;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
@@ -26,6 +25,7 @@ import io.undertow.util.Headers;
  */
 public class MetadataEnforcerHandler extends PipedHttpHandler
 {
+    private final static String JSON_MEDIA_TYPE = "application/json";
     /**
      * Creates a new instance of MetadataEnforcerHandler
      *
@@ -44,9 +44,9 @@ public class MetadataEnforcerHandler extends PipedHttpHandler
         {
             HeaderValues contentTypes = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
 
-            if (contentTypes == null || contentTypes.isEmpty() || !contentTypes.contains(HALDocumentSender.JSON_MEDIA_TYPE))
+            if (contentTypes == null || contentTypes.isEmpty() || !contentTypes.contains(JSON_MEDIA_TYPE))
             {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, "Contet-Type must be " + HALDocumentSender.JSON_MEDIA_TYPE);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, "Contet-Type must be " + JSON_MEDIA_TYPE);
                 return;
             }
         }

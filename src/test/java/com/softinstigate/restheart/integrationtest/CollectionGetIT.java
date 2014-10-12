@@ -8,26 +8,29 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.json.metadata;
+package com.softinstigate.restheart.integrationtest;
+
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import static org.junit.Assert.*;
 
 /**
  *
  * @author uji
  */
-public class InvalidMetadataException extends Exception
+public class CollectionGetIT extends AbstactIT
 {
-    public InvalidMetadataException()
+    
+    public CollectionGetIT()
     {
-        super();
     }
     
-    public InvalidMetadataException(String message)
-    {
-        super(message);
-    }
-    
-    public InvalidMetadataException(String message, Throwable cause)
-    {
-        super(message, cause);
-    }
+    // TODO add test methods here.
+    // The methods must be annotated with annotation @Test. For example:
+    //
+    // @Test
+    // public void hello() {}
 }

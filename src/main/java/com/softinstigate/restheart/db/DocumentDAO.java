@@ -101,14 +101,14 @@ public class DocumentDAO
         }
         else
         {
+            content.put("@created_on", now.toString()); // let's assume this is an insert. in case we'll set it back with a second update
+            
             // we use findAndModify to get the @created_on field value from the existing document
-            // we need to put this field back using a second update 
-            // it is not possible in a single update even using $setOnInsert update operator
-            // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
+            // in case this is an update well need to put it back using a second update 
+            // it is not possible to do it with a single update
+            // (even using $setOnInsert update because we'll need to use the $set operator for other data and this would make it a partial update (patch semantic) 
             DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, content, false, true);
 
-            content.put("@created_on", now.toString()); // let's optimistically assume this is an insert. in case we'll set it back by a second update
-            
             if (oldDocument != null) // upsert
             {
                 Object oldTimestamp = oldDocument.get("@created_on");

@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.test;
+package com.softinstigate.restheart.integrationtest;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -21,10 +21,10 @@ import static org.junit.Assert.*;
  *
  * @author uji
  */
-public class DocumentPutIT
+public class GetCollectionIT extends AbstactIT
 {
     
-    public DocumentPutIT()
+    public GetCollectionIT()
     {
     }
     

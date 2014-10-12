@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.test;
+package com.softinstigate.restheart.integrationtest;
 
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;

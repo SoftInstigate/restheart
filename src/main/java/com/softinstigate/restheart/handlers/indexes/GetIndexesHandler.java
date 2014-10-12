@@ -14,7 +14,7 @@ import com.mongodb.DBObject;
 import com.softinstigate.restheart.db.IndexDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestContext;
-import com.softinstigate.restheart.json.hal.HALDocumentSender;
+import com.softinstigate.restheart.handlers.collection.CollectionRepresentationFactory;
 import com.softinstigate.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
@@ -39,7 +39,7 @@ public class GetIndexesHandler extends PipedHttpHandler
         List<DBObject> indexes = IndexDAO.getCollectionIndexes(context.getDBName(), context.getCollectionName());
         
         exchange.setResponseCode(HttpStatus.SC_OK);
-        HALDocumentSender.sendCollection(exchange, context, indexes, indexes.size());
+        CollectionRepresentationFactory.sendCollection(exchange, context, indexes, indexes.size());
         exchange.endExchange();
     }
 }

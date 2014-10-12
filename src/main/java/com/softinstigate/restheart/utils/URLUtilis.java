@@ -38,43 +38,53 @@ public class URLUtilis
         return exchange.getRequestURL().replaceAll(exchange.getRelativePath(), "");
     }
     
-    static public String getUrlWithDocId(String baseUrl, String dbName, String collName, String documentId)
+    /**
+     * 
+     * @param exchange
+     * @return the request path without the query string
+     */
+    static public String getRequestPath(HttpServerExchange exchange)
+    {
+        return exchange.getRequestPath().replaceAll(exchange.getQueryString(), "");
+    }
+    
+    static public String getUriWithDocId(String dbName, String collName, String documentId)
     {
         StringBuilder sb = new StringBuilder();
         
-        sb.append(URLUtilis.removeTrailingSlashes(baseUrl)).append("/").append(dbName).append("/").append(collName).append("/").append(documentId);
+        sb.append("/").append(dbName).append("/").append(collName).append("/").append(documentId);
                 
         return sb.toString().replaceAll(" ", "");
     }
     
-    static public String getUrlWithFilterMany(String baseUrl, String dbName, String collName, String referenceField, String ids)
+    static public String getUriWithFilterMany(String dbName, String collName, String referenceField, String ids)
     {
         StringBuilder sb = new StringBuilder();
         
         ///db/coll/?filter=<"ref":<"$in":<"a","b","c">>
-        sb.append(URLUtilis.removeTrailingSlashes(baseUrl)).append("/").append(dbName).append("/").append(collName).append("?")
+        sb.append("/").append(dbName).append("/").append(collName).append("?")
                 .append("filter=<").append("'").append(referenceField).append("'").append(":").append("<'$in'").append(":").append(ids).append(">>");
         
         return sb.toString().replaceAll(" ", "");
     }
     
-    static public String getUrlWithFilterOne(String baseUrl, String dbName, String collName, String referenceField, String ids)
+    static public String getUriWithFilterOne(String dbName, String collName, String referenceField, String ids)
     {
         StringBuilder sb = new StringBuilder();
         
         ///db/coll/?filter=<"ref":<"$in":<"a","b","c">>
-        sb.append(URLUtilis.removeTrailingSlashes(baseUrl)).append("/").append(dbName).append("/").append(collName).append("?")
+        sb.append("/").append(dbName).append("/").append(collName).append("?")
                 .append("filter=<").append("'").append(referenceField).append("'").append(":").append(ids).append(">");
         
         return sb.toString().replaceAll(" ", "");
     }
     
-    static public String getUrlWithFilterManyInverse(String baseUrl, String dbName, String collName, String referenceField, String ids)
+    static public String getUriWithFilterManyInverse( String dbName, String collName, String referenceField, String ids)
     {
         StringBuilder sb = new StringBuilder();
         
         ///db/coll/?filter=<'referenceField':<"$elemMatch":<'ids'>>>
-        sb.append(URLUtilis.removeTrailingSlashes(baseUrl)).append("/").append(dbName).append("/").append(collName).append("?")
+        sb.append("/").append(dbName).append("/").append(collName).append("?")
                 .append("filter=<'").append(referenceField).append("':<").append("'$elemMatch':<'$eq':").append(ids).append(">>>>");
         
         return sb.toString().replaceAll(" ", "");

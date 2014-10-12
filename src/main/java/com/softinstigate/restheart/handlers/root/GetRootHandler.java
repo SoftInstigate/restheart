@@ -17,11 +17,10 @@ import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
-import com.softinstigate.restheart.json.hal.HALDocumentSender;
 import com.softinstigate.restheart.handlers.RequestContext;
+import com.softinstigate.restheart.handlers.collection.CollectionRepresentationFactory;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -77,19 +76,8 @@ public class GetRootHandler extends PipedHttpHandler
                 }
         ).forEach((item) -> { data.add(item); });
 
-        try
-        {
-            exchange.setResponseCode(HttpStatus.SC_OK);
-            HALDocumentSender.sendCollection(exchange, context, data, size);
-            exchange.endExchange();
-        }
-        catch (IllegalQueryParamenterException ex)
-        {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
-        }
-        catch (URISyntaxException ex)
-        {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, ex.getMessage(), ex);
-        }
+        exchange.setResponseCode(HttpStatus.SC_OK);
+        CollectionRepresentationFactory.sendCollection(exchange, context, data, size);
+        exchange.endExchange();
     }
 }

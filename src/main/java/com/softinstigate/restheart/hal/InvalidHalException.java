@@ -8,29 +8,26 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.test;
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import static org.junit.Assert.*;
+package com.softinstigate.restheart.hal;
 
 /**
  *
  * @author uji
  */
-public class CollectionPatchIT extends AbstactIT
+public class InvalidHalException extends Exception
 {
-    
-    public CollectionPatchIT()
+    public InvalidHalException()
     {
+        super();
     }
     
-    // TODO add test methods here.
-    // The methods must be annotated with annotation @Test. For example:
-    //
-    // @Test
-    // public void hello() {}
+    public InvalidHalException(String message)
+    {
+        super(message);
+    }
+    
+    public InvalidHalException(String message, Throwable cause)
+    {
+        super(message, cause);
+    }
 }

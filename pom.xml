@@ -37,12 +37,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.eclipsesource.minimal-json</groupId>
-            <artifactId>minimal-json</artifactId>
-            <version>0.9.1</version>
-        </dependency>
-
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.10</version>
@@ -60,6 +54,13 @@
             <artifactId>httpclient</artifactId>
             <version>4.4-beta1</version>
              <scope>test</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>com.eclipsesource.minimal-json</groupId>
+            <artifactId>minimal-json</artifactId>
+            <version>0.9.1</version>
+            <scope>test</scope>
         </dependency>
         
         <dependency>
@@ -177,7 +178,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <mainClass>com.softinstigate.restheart.test.TestDataInitializer</mainClass>
+                    <mainClass>com.softinstigate.restheart.integrationtest.TestDataInitializer</mainClass>
                     <cleanupDaemonThreads>false</cleanupDaemonThreads>
                     <classpathScope>test</classpathScope>
                     <arguments>

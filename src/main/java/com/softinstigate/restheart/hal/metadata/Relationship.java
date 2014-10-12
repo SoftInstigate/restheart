@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.json.metadata;
+package com.softinstigate.restheart.hal.metadata;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
@@ -160,7 +160,7 @@ public class Relationship
         return new Relationship(rel, type, role, targetDb, targetCollection, referenceField);
     }
     
-    public String getRelationshipLink(String urlPrefix, String dbName, String collName, DBObject data) throws IllegalArgumentException
+    public String getRelationshipLink(String dbName, String collName, DBObject data) throws IllegalArgumentException
     {
         Object _referenceValue = data.get(referenceField);
         String reference;
@@ -203,22 +203,22 @@ public class Relationship
         {
             if (type == TYPE.ONE_TO_ONE || type == TYPE.MANY_TO_ONE)
             {
-                return URLUtilis.getUrlWithDocId(urlPrefix, db, targetCollection, reference);
+                return URLUtilis.getUriWithDocId(db, targetCollection, reference);
             }
             else if (type == TYPE.ONE_TO_MANY || type == TYPE.MANY_TO_MANY)
             {
-                return URLUtilis.getUrlWithFilterMany(urlPrefix, db, targetCollection, referenceField, reference);
+                return URLUtilis.getUriWithFilterMany(db, targetCollection, referenceField, reference);
             }
         }
         else
         {
             if (type == TYPE.ONE_TO_ONE || type == TYPE.ONE_TO_MANY)
             {
-                return URLUtilis.getUrlWithFilterOne(urlPrefix, db, targetCollection, referenceField, reference);
+                return URLUtilis.getUriWithFilterOne(db, targetCollection, referenceField, reference);
             }
             else if (type == TYPE.MANY_TO_ONE || type == TYPE.MANY_TO_MANY)
             {
-                return URLUtilis.getUrlWithFilterManyInverse(urlPrefix, db, targetCollection, referenceField, reference);
+                return URLUtilis.getUriWithFilterManyInverse(db, targetCollection, referenceField, reference);
             }
         }
 

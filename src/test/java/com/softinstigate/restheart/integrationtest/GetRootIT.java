@@ -8,10 +8,10 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.test;
+package com.softinstigate.restheart.integrationtest;
 
-import com.softinstigate.restheart.json.hal.HALDocumentSender;
-import com.softinstigate.restheart.json.hal.Representation;
+import com.eclipsesource.json.JsonObject;
+import com.softinstigate.restheart.hal.Representation;
 import com.softinstigate.restheart.utils.HttpStatus;
 import junit.framework.Assert;
 import org.apache.http.HttpEntity;
@@ -46,19 +46,27 @@ public class GetRootIT extends AbstactIT
         
         Assert.assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
         Assert.assertNotNull("content type not null", entity.getContentType());
-        Assert.assertEquals("check content type", HALDocumentSender.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
+        Assert.assertEquals("check content type", Representation.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
         
         String content = EntityUtils.toString(entity);
         
         Assert.assertNotNull("", content);
         
-        Representation rep = Representation.parse(content);
+        JsonObject json = null;
         
-        Assert.assertNotNull("check hal representation not null", rep);
-        Assert.assertNotNull("check not null properties", rep.getProperties());
-        Assert.assertNotNull("check not null @returned property", rep.getProperties().asObject().get("@returned"));
-        Assert.assertNotNull("check not null @size property", rep.getProperties().asObject().get("@size"));
-        Assert.assertNotNull("check not null @total_pages property", rep.getProperties().asObject().get("@total_pages"));
-        Assert.assertNotNull("check not null resources", rep.getResources());
+        try
+        {
+            json = JsonObject.readFrom(content);
+        }
+        catch(Throwable t)
+        {
+            Assert.fail("parsing received json");
+        }
+        
+        Assert.assertNotNull("check json not null", json);
+        Assert.assertNotNull("check not null @returned property", json.get("@returned"));
+        Assert.assertNotNull("check not null @size property", json.get("@size"));
+        Assert.assertNotNull("check not null @total_pages property", json.get("@total_pages"));
+        Assert.assertNotNull("check not null _embedded", json.get("_embedded"));
     }
 }

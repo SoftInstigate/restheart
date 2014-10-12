@@ -18,11 +18,9 @@ import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
-import com.softinstigate.restheart.json.hal.HALDocumentSender;
 import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,17 +96,12 @@ public class GetCollectionHandler extends PipedHttpHandler
         try
         {
             exchange.setResponseCode(HttpStatus.SC_OK);
-            HALDocumentSender.sendCollection(exchange, context, data, size);
+            CollectionRepresentationFactory.sendCollection(exchange, context, data, size);
             exchange.endExchange();
         }
         catch (IllegalQueryParamenterException ex)
         {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
-            return;
-        }
-        catch (URISyntaxException ex)
-        {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, ex.getMessage(), ex);
             return;
         }
     }

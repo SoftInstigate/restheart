@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.test;
+package com.softinstigate.restheart.integrationtest;
 
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
@@ -17,7 +17,7 @@ import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.db.DocumentDAO;
 import com.softinstigate.restheart.db.IndexDAO;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
-import static com.softinstigate.restheart.test.AbstactIT.conf;
+import static com.softinstigate.restheart.integrationtest.AbstactIT.conf;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

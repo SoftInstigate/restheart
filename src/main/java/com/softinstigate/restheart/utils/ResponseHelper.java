@@ -10,9 +10,9 @@
  */
 package com.softinstigate.restheart.utils;
 
-import com.eclipsesource.json.JsonArray;
-import com.eclipsesource.json.JsonObject;
+import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
+import com.softinstigate.restheart.hal.Representation;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.util.Map;
@@ -42,49 +42,48 @@ public class ResponseHelper
         String httpStatuText = HttpStatus.getStatusText(code);
             
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
-        exchange.getResponseSender().send(getErrorJsonDocument(code, httpStatuText, message, t));
+        exchange.getResponseSender().send(getErrorJsonDocument(exchange.getRequestPath(), code, httpStatuText, message, t));
         exchange.endExchange();
     }
     
-    private static String getErrorJsonDocument(int code, String httpStatusText, String message, Throwable t)
+    private static String getErrorJsonDocument(String href, int code, String httpStatusText, String message, Throwable t)
     {
-        JsonObject root = new JsonObject();
+        Representation rep = new Representation(href);
         
-        root.add("http status code", code);
-        root.add("http status description", httpStatusText);
+        rep.addProperty("http status code", code);
+        rep.addProperty("http status description", httpStatusText);
         if (message != null)
-            root.add("message", message);
-        
-        JsonArray stackTrace = getStackTraceJson(t);
-        
-        if (t != null && t.getMessage() != null)
-            root.add("exception", t.toString());
-        
+            rep.addProperty("message", message);
+
         if (t != null)
-            root.add("exception", t.getClass().getName());
+            rep.addProperty("exception", t.getClass().getName());
         
-        if (t != null && t.getMessage() != null)
-            root.add("exception message", t.getMessage());
+        if (t!= null && t.getMessage() != null)
+        {
+            rep.addProperty("exception message", t.getMessage());
+        }
+            
+        BasicDBList stackTrace = getStackTraceJson(t);
         
         if (stackTrace != null)
-            root.add("stack trace", getStackTraceJson(t));
+            rep.addProperty("stack trace", stackTrace);
         
-        return root.toString();
+        return rep.toString();
     }
     
-    private static JsonArray getStackTraceJson(Throwable t)
+    private static BasicDBList getStackTraceJson(Throwable t)
     {
         if (t == null || t.getStackTrace() == null)
             return null;
         
-        JsonArray root = new JsonArray();
+        BasicDBList list = new BasicDBList();
         
         for (StackTraceElement e: t.getStackTrace())
         {
-            root.add(e.toString());
+            list.add(e.toString());
         }
         
-        return root;
+        return list;
     }
     
     public static void injectEtagHeader(HttpServerExchange exchange, Map<String, Object> metadata)

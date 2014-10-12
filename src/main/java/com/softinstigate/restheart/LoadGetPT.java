@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.test.performance;
+package com.softinstigate.restheart;
 
 /**
  * install ldt from https://github.com/bazhenov/load-test-tool

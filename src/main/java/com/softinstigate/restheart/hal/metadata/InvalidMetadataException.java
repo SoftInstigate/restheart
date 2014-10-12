@@ -8,29 +8,28 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.test;
+package com.softinstigate.restheart.hal.metadata;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import com.softinstigate.restheart.hal.InvalidHalException;
 
 /**
  *
  * @author uji
  */
-public class DocumentGetIT extends AbstactIT
+public class InvalidMetadataException extends InvalidHalException
 {
-    
-    public DocumentGetIT()
+    public InvalidMetadataException()
     {
+        super();
     }
     
-    // TODO add test methods here.
-    // The methods must be annotated with annotation @Test. For example:
-    //
-    // @Test
-    // public void hello() {}
+    public InvalidMetadataException(String message)
+    {
+        super(message);
+    }
+    
+    public InvalidMetadataException(String message, Throwable cause)
+    {
+        super(message, cause);
+    }
 }

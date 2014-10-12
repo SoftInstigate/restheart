@@ -8,12 +8,8 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.test;
+package com.softinstigate.restheart.unittest;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -21,13 +17,13 @@ import static org.junit.Assert.*;
  *
  * @author uji
  */
-public class DBDeleteIT extends AbstactIT
+public class RepresentationTest
 {
     
-    public DBDeleteIT()
+    public RepresentationTest()
     {
     }
-    
+
     // TODO add test methods here.
     // The methods must be annotated with annotation @Test. For example:
     //

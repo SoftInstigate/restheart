@@ -14,7 +14,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
-import com.softinstigate.restheart.json.hal.HALDocumentSender;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.utils.RequestHelper;
@@ -98,7 +97,7 @@ public class GetDocumentHandler extends PipedHttpHandler
         ResponseHelper.injectEtagHeader(exchange, document);
         exchange.setResponseCode(HttpStatus.SC_OK);
         
-        HALDocumentSender.sendDocument(exchange, context, document);
+        DocumentRepresentationFactory.sendDocument(exchange, context, document);
         exchange.endExchange();
     }
 }
