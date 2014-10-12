@@ -35,12 +35,10 @@ public class DocumentRepresentationFactory
 {
     private static final Logger logger = LoggerFactory.getLogger(DocumentRepresentationFactory.class);
 
-    public static Representation getDocument(HttpServerExchange exchange, RequestContext context, DBObject data)
+    public static Representation getDocument(String href, HttpServerExchange exchange, RequestContext context, DBObject data)
             throws IllegalQueryParamenterException
     {
-        String requestPath = URLUtilis.getRequestPath(exchange);
-
-        Representation rep = new Representation(requestPath);
+        Representation rep = new Representation(href);
 
         // document properties
         data.keySet().stream().forEach((key) ->
@@ -60,7 +58,7 @@ public class DocumentRepresentationFactory
 
         try
         {
-            links = getRelationshipsLinks(exchange, context, data);
+            links = getRelationshipsLinks(context, data);
         }
         catch (InvalidMetadataException ex)
         {
@@ -78,16 +76,16 @@ public class DocumentRepresentationFactory
         return rep;
     }
     
-    public static void sendDocument(HttpServerExchange exchange, RequestContext context, DBObject data)
+    public static void sendDocument(String href, HttpServerExchange exchange, RequestContext context, DBObject data)
             throws IllegalQueryParamenterException, URISyntaxException
     {
-        Representation rep = getDocument(exchange, context, data);
+        Representation rep = getDocument(href, exchange, context, data);
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
     }
 
-    private static TreeMap<String, String> getRelationshipsLinks(HttpServerExchange exchange, RequestContext context, DBObject data) throws InvalidMetadataException
+    private static TreeMap<String, String> getRelationshipsLinks(RequestContext context, DBObject data) throws InvalidMetadataException
     {
         TreeMap<String, String> links = new TreeMap<>();
 

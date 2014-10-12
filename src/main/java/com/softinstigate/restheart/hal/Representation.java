@@ -10,6 +10,7 @@
  */
 package com.softinstigate.restheart.hal;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.bson.BSONObject;
@@ -69,11 +70,11 @@ public class Representation
         BasicDBObject _embedded = (BasicDBObject) dbObject.get("_embedded");
         
         if (_embedded.get(rel) == null)
-            _embedded.put(rel, new BasicDBObject());
+            _embedded.put(rel, new BasicDBList());
         
-        BasicDBObject _rel = (BasicDBObject) _embedded.get(rel);
+        BasicDBList _rel = (BasicDBList) _embedded.get(rel);
         
-        _rel.putAll((BSONObject)((Representation)rep).getDBObject());
+        _rel.add(((Representation)rep).getDBObject());
     }
     
     @Override

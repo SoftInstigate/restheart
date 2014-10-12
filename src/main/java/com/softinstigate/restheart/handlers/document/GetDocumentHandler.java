@@ -18,6 +18,7 @@ import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
+import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import org.bson.types.ObjectId;
@@ -93,11 +94,13 @@ public class GetDocumentHandler extends PipedHttpHandler
                 return;
             }
         }
+        
+        String requestPath = URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange));
 
         ResponseHelper.injectEtagHeader(exchange, document);
         exchange.setResponseCode(HttpStatus.SC_OK);
         
-        DocumentRepresentationFactory.sendDocument(exchange, context, document);
+        DocumentRepresentationFactory.sendDocument(requestPath, exchange, context, document);
         exchange.endExchange();
     }
 }

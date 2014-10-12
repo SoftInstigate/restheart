@@ -11,18 +11,16 @@
 package com.softinstigate.restheart.handlers.collection;
 
 import com.softinstigate.restheart.hal.*;
-import com.softinstigate.restheart.hal.metadata.InvalidMetadataException;
 import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import static com.softinstigate.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
-import com.softinstigate.restheart.hal.metadata.Relationship;
 import com.softinstigate.restheart.handlers.document.DocumentRepresentationFactory;
 import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import java.net.URISyntaxException;
 import java.util.Deque;
 import java.util.List;
 import java.util.TreeMap;
@@ -41,23 +39,26 @@ public class CollectionRepresentationFactory
     static public void sendCollection(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException
     {
-        String requestPath = URLUtilis.getRequestPath(exchange);
+        String requestPath = URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange));
 
         Representation rep = new Representation(requestPath);
 
-        DBObject collProps = context.getCollectionProps();
-
-        if (collProps != null) // this is a collection, add the collection properties
+        if (context.getType() == RequestContext.TYPE.COLLECTION) // this is a collection, add the collection properties (not true for collection_indexes
         {
-            rep = addData(rep, collProps);
-        }
-        else // this is a db, add the db properties
-        {
-            DBObject dbProps = context.getDbProps();
+            DBObject collProps = context.getCollectionProps();
 
-            if (dbProps != null)
+            if (collProps != null) 
             {
-                rep = addData(rep, dbProps);
+                addData(rep, collProps);
+            }
+            else // this is a db, add the db properties
+            {
+                DBObject dbProps = context.getDbProps();
+
+                if (dbProps != null)
+                {
+                    addData(rep, dbProps);
+                }
             }
         }
 
@@ -84,7 +85,7 @@ public class CollectionRepresentationFactory
 
                     if (_id != null && (_id instanceof String || _id instanceof ObjectId))
                     {
-                        Representation nrep = DocumentRepresentationFactory.getDocument(exchange, context, d);
+                        Representation nrep = DocumentRepresentationFactory.getDocument(requestPath + "/" + _id.toString(), exchange, context, d);
 
                         rep.addRepresentation("rh:documents", nrep);
                     }
@@ -96,64 +97,47 @@ public class CollectionRepresentationFactory
             }
         }
 
-        // collection links
-        TreeMap<String, String> links;
-
-        links = getPaginationLinks(exchange, context, size);
-
-        if (links != null)
+        if (context.getType() != RequestContext.TYPE.COLLECTION_INDEXES)
         {
-            for (String k : links.keySet())
+            // collection links
+            TreeMap<String, String> links;
+
+            links = getPaginationLinks(exchange, context, size);
+
+            if (links != null)
             {
-                rep.addLink(new Link(k, links.get(k)));
+                for (String k : links.keySet())
+                {
+                    rep.addLink(new Link(k, links.get(k)));
+                }
             }
         }
 
+        if (context.getType() == RequestContext.TYPE.COLLECTION)
+        {
+            rep.addLink(new Link("rh:indexes", URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange)) + "/@indexes"));
+        }
+        
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
     }
 
-    
-
-    private static Representation addData(Representation rep, DBObject data)
+    private static void addData(Representation rep, DBObject data)
     {
         // collection properties
         data.keySet().stream().forEach((key) ->
         {
             Object value = data.get(key);
-            
-            if (value instanceof DBObject)
-            {
-                rep.addRepresentation(key, addData(new Representation("xxx"), (DBObject) value));
-            }
-            else if (value instanceof BasicDBList)
-            {
-                BasicDBList list = ((BasicDBList) value);
 
-                for (String key2: list.keySet())
-                {
-                    if (list.get(key2) instanceof DBObject)
-                    {
-                        rep.addRepresentation(key2, addData(new Representation("xxx/" + key2), (DBObject) value));
-                    }
-                    else
-                    {
-                        rep.addProperty(key2, value);
-                    }
-                }
+            if (value instanceof ObjectId)
+            {
+                rep.addProperty(key, value.toString());
             }
             else
             {
-                if (value instanceof ObjectId)
-                {
-                    value = value.toString();
-                }
-
                 rep.addProperty(key, value);
             }
         });
-        
-        return rep;
     }
 
     private static TreeMap<String, String> getPaginationLinks(HttpServerExchange exchange, RequestContext context, long size) throws IllegalQueryParamenterException
