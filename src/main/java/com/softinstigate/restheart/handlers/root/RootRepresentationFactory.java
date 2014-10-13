@@ -15,8 +15,6 @@ import com.mongodb.DBObject;
 import static com.softinstigate.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
-import static com.softinstigate.restheart.handlers.collection.CollectionRepresentationFactory.getCollection;
-import com.softinstigate.restheart.handlers.document.DocumentRepresentationFactory;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
@@ -51,6 +49,8 @@ public class RootRepresentationFactory
         String requestPath = URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange));
         String queryString = (exchange.getQueryString() == null || exchange.getQueryString().isEmpty()) ? "" : "?" + exchange.getQueryString();
         
+        boolean trailingSlash = requestPath.substring(requestPath.length()-1).equals("/");
+        
         Representation rep = new Representation(requestPath + queryString);
 
         if (size > 0)
@@ -76,7 +76,12 @@ public class RootRepresentationFactory
 
                     if (_id != null && (_id instanceof String || _id instanceof ObjectId))
                     {
-                        Representation nrep = new Representation(requestPath + _id.toString());
+                        Representation nrep;
+                        
+                        if (trailingSlash)
+                            nrep = new Representation(requestPath + _id.toString());
+                        else
+                            nrep = new Representation(requestPath + "/" + _id.toString());
                         
                         nrep.addProperties(d);
                         

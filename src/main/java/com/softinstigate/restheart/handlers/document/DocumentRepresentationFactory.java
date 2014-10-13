@@ -69,7 +69,8 @@ public class DocumentRepresentationFactory
         
         // link templates and curies
         String requestPath = URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange));
-        rep.addLink(new Link("rh:coll", URLUtilis.getPerentPath(requestPath)));
+        if (!requestPath.equals("/")) // this can happen due to mongo-mounts mapped URL
+            rep.addLink(new Link("rh:coll", URLUtilis.getPerentPath(requestPath)));
         rep.addLink(new Link("rh", "curies", "/_docs/{rel}.html", true), true);
 
         ResponseHelper.injectWarnings(rep, exchange, context);

@@ -12,6 +12,7 @@
 package com.softinstigate.restheart.handlers;
 
 import com.mongodb.DBObject;
+import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
@@ -56,18 +57,19 @@ public class RequestContext
     
     public RequestContext(HttpServerExchange exchange, String urlPrefix, String mappedDbName)
     {
-        this.urlPrefix = urlPrefix;
+        this.urlPrefix = URLUtilis.removeTrailingSlashes(urlPrefix);
         this.mappedDbName = mappedDbName;
 
-        String path = exchange.getRequestPath();
+        String path = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
         
         if (mappedDbName.equals("*"))
         {
-            path = path.replaceFirst("^" + this.urlPrefix, "/");
+            if (!this.urlPrefix.equals("/"))
+                path = path.replaceFirst("^" + this.urlPrefix, "");
         }
         else
         {
-            path = path.replaceFirst("^" + this.urlPrefix, "/" + mappedDbName + "/");
+            path = URLUtilis.removeTrailingSlashes(path.replaceFirst("^" + this.urlPrefix, "/" + mappedDbName + "/"));
         }
         
         pathTokens = path.split("/"); // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }

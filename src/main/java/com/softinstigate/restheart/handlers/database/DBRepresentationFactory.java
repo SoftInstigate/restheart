@@ -99,7 +99,8 @@ public class DBRepresentationFactory
         }
         
         // link templates and curies
-        rep.addLink(new Link("rh:root", URLUtilis.getPerentPath(requestPath)));
+        if (!requestPath.equals("/")) // this can happen due to mongo-mounts mapped URL
+            rep.addLink(new Link("rh:root", URLUtilis.getPerentPath(requestPath)));
         rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
         rep.addLink(new Link("rh", "curies", "/_docs/{rel}.html", true), true);
         

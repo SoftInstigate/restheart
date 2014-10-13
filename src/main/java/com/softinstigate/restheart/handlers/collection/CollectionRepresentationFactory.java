@@ -108,7 +108,8 @@ public class CollectionRepresentationFactory
         }
         
         // link templates and curies
-        rep.addLink(new Link("rh:db", URLUtilis.getPerentPath(requestPath)));
+        if (!requestPath.equals("/")) // this can happen due to mongo-mounts mapped URL
+            rep.addLink(new Link("rh:db", URLUtilis.getPerentPath(requestPath)));
         rep.addLink(new Link("rh:filter", requestPath + "/{?filter}", true));
         rep.addLink(new Link("rh:sort", requestPath + "/{?sort_by}", true));
         rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
