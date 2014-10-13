@@ -11,6 +11,7 @@
 package com.softinstigate.restheart.handlers.document;
 
 import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
@@ -85,6 +86,13 @@ public class PatchDocumentHandler extends PipedHttpHandler
         }
         
         int SC = DocumentDAO.upsertDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), content, etag, true);
+        
+        // send the warnings if any
+        if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
+        {
+            
+            DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
+        }
         
         ResponseHelper.endExchange(exchange, SC);
     }

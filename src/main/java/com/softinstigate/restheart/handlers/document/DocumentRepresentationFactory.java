@@ -17,6 +17,7 @@ import static com.softinstigate.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.hal.properties.Relationship;
+import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.net.URISyntaxException;
@@ -55,14 +56,7 @@ public class DocumentRepresentationFactory
         // document links
         TreeMap<String, String> links = null;
 
-        try
-        {
-            links = getRelationshipsLinks(context, data);
-        }
-        catch (InvalidMetadataException ex)
-        {
-            logger.warn(ex.getMessage(), context.getDBName(), context.getCollectionName(), ex);
-        }
+        links = getRelationshipsLinks(context, data);
 
         if (links != null)
         {
@@ -80,15 +74,17 @@ public class DocumentRepresentationFactory
     {
         Representation rep = getDocument(href, exchange, context, data);
 
+        ResponseHelper.injectWarnings(rep, exchange, context);
+        
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
     }
 
-    private static TreeMap<String, String> getRelationshipsLinks(RequestContext context, DBObject data) throws InvalidMetadataException
+    private static TreeMap<String, String> getRelationshipsLinks(RequestContext context, DBObject data)
     {
         TreeMap<String, String> links = new TreeMap<>();
 
-        List<Relationship> rels;
+        List<Relationship> rels = null;
 
         try
         {
@@ -96,8 +92,8 @@ public class DocumentRepresentationFactory
         }
         catch (InvalidMetadataException ex)
         {
+            context.addWarning("collection " + context.getDBName() + "/" +context.getCollectionName() + " has invalid relationships definition");
             logger.error("collection {}/{} has invalid relationships definition", context.getDBName(), context.getCollectionName(), ex);
-            throw new InvalidMetadataException("collection " + context.getDBName() + "/" + context.getCollectionName() + " has invalid relationships definition", ex);
         }
 
         if (rels == null)
@@ -118,6 +114,7 @@ public class DocumentRepresentationFactory
             }
             catch (IllegalArgumentException ex)
             {
+                context.addWarning("document " + context.getDBName() + "/" +context.getCollectionName() + "/" + context.getDocumentId() +" has an invalid relationship");
                 logger.warn("document {}/{}/{} has an invalid relationship", context.getDBName(), context.getCollectionName(), context.getDocumentId(), ex);
             }
         }

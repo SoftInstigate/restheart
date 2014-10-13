@@ -10,6 +10,7 @@
  */
 package com.softinstigate.restheart.integrationtest;
 
+import com.softinstigate.restheart.hal.Representation;
 import com.softinstigate.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
 import junit.framework.Assert;
@@ -26,6 +27,13 @@ import org.junit.Test;
  */
 public class SecurityIT extends AbstactIT
 {
+    private static ContentType halCT;
+    
+    static
+    {
+        halCT= ContentType.create(Representation.HAL_JSON_MEDIA_TYPE);
+    }
+    
     public SecurityIT()
     {
     }
@@ -76,11 +84,11 @@ public class SecurityIT extends AbstactIT
     public void testPostUnauthenticated() throws Exception
     {
         // *** POST coll1
-        Response resp = unauthExecutor.execute(Request.Post(collection1Uri).bodyString("{a:1}", ContentType.APPLICATION_JSON));
+        Response resp = unauthExecutor.execute(Request.Post(collection1Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check post coll1 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
         
          // *** GET coll2
-        resp = unauthExecutor.execute(Request.Post(collection2Uri).bodyString("{a:1}", ContentType.APPLICATION_JSON));
+        resp = unauthExecutor.execute(Request.Post(collection2Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check post coll2b unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
     }
     
@@ -88,27 +96,27 @@ public class SecurityIT extends AbstactIT
     public void testPutUnauthenticated() throws Exception
     {
         // *** PUT root
-        Response resp = unauthExecutor.execute(Request.Put(rootUri).bodyString("{a:1}", ContentType.APPLICATION_JSON));
+        Response resp = unauthExecutor.execute(Request.Put(rootUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check put root unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
         
         // *** PUT db
-        resp = unauthExecutor.execute(Request.Put(dbUri).bodyString("{a:1}", ContentType.APPLICATION_JSON));
+        resp = unauthExecutor.execute(Request.Put(dbUri).bodyString("{a:1}", halCT));
         check("check put db unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
         
         // *** PUT coll1
-        resp = unauthExecutor.execute(Request.Put(collection1Uri).bodyString("{a:1}", ContentType.APPLICATION_JSON));
+        resp = unauthExecutor.execute(Request.Put(collection1Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check put coll1 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
         
         // *** PUT doc1
-        resp = unauthExecutor.execute(Request.Put(document1Uri).bodyString("{a:1}", ContentType.APPLICATION_JSON));
+        resp = unauthExecutor.execute(Request.Put(document1Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check put doc1 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
         
          // *** PUT coll2
-        resp = unauthExecutor.execute(Request.Put(collection2Uri).bodyString("{a:1}", ContentType.APPLICATION_JSON));
+        resp = unauthExecutor.execute(Request.Put(collection2Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check put coll2 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
         
         // *** PUT doc2
-        resp = unauthExecutor.execute(Request.Put(document2Uri).bodyString("{a:1}", ContentType.APPLICATION_JSON));
+        resp = unauthExecutor.execute(Request.Put(document2Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check put doc2 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
     }
     
@@ -116,27 +124,27 @@ public class SecurityIT extends AbstactIT
     public void testPatchUnauthenticated() throws Exception
     {
         // *** PATCH root
-        Response resp = unauthExecutor.execute(Request.Patch(rootUri).bodyString("{a:1}", ContentType.APPLICATION_JSON));
+        Response resp = unauthExecutor.execute(Request.Patch(rootUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check patch root unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
         
         // *** PATCH db
-        resp = unauthExecutor.execute(Request.Patch(dbUri).bodyString("{a:1}", ContentType.APPLICATION_JSON));
+        resp = unauthExecutor.execute(Request.Patch(dbUri).bodyString("{a:1}", halCT));
         check("check patch db unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
         
         // *** PATCH coll1
-        resp = unauthExecutor.execute(Request.Patch(collection1Uri).bodyString("{a:1}", ContentType.APPLICATION_JSON));
+        resp = unauthExecutor.execute(Request.Patch(collection1Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check patch coll1 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
         
         // *** PATCH doc1
-        resp = unauthExecutor.execute(Request.Patch(document1Uri).bodyString("{a:1}", ContentType.APPLICATION_JSON));
+        resp = unauthExecutor.execute(Request.Patch(document1Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check patch doc1 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
         
          // *** PATCH coll2
-        resp = unauthExecutor.execute(Request.Patch(collection2Uri).bodyString("{a:1}", ContentType.APPLICATION_JSON));
+        resp = unauthExecutor.execute(Request.Patch(collection2Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check patch coll2 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
         
         // *** PATCH doc2
-        resp = unauthExecutor.execute(Request.Patch(document2Uri).bodyString("{a:1}", ContentType.APPLICATION_JSON));
+        resp = unauthExecutor.execute(Request.Patch(document2Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check patch doc2 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
     }
     
@@ -200,11 +208,11 @@ public class SecurityIT extends AbstactIT
     public void testPostAsAdmin() throws Exception
     {
         // *** POST coll1
-        Response resp = adminExecutor.execute(Request.Post(collection1Uri).bodyString("{a:1}", ContentType.APPLICATION_JSON).addHeader(Headers.CONTENT_TYPE_STRING, "application/json"));
+        Response resp = adminExecutor.execute(Request.Post(collection1Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check post coll1 as admin", resp, HttpStatus.SC_CREATED);
         
          // *** POST coll2
-        resp = adminExecutor.execute(Request.Post(collection2Uri).bodyString("{a:1}", ContentType.APPLICATION_JSON).addHeader(Headers.CONTENT_TYPE_STRING, "application/json"));
+        resp = adminExecutor.execute(Request.Post(collection2Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check post coll2b asadmin", resp, HttpStatus.SC_CREATED);
     }
     
@@ -214,19 +222,19 @@ public class SecurityIT extends AbstactIT
         try
         {
             // *** PUT root
-            Response resp = adminExecutor.execute(Request.Put(rootUri).bodyString("{a:1}", ContentType.APPLICATION_JSON).addHeader(Headers.CONTENT_TYPE_STRING, "application/json"));
+            Response resp = adminExecutor.execute(Request.Put(rootUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check put root as admin", resp, HttpStatus.SC_METHOD_NOT_ALLOWED);
 
             // *** PUT tmpdb
-            resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", ContentType.APPLICATION_JSON).addHeader(Headers.CONTENT_TYPE_STRING, "application/json"));
+            resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check put db as admin", resp, HttpStatus.SC_CREATED);
 
             // *** PUT tmpcoll
-            resp = adminExecutor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", ContentType.APPLICATION_JSON).addHeader(Headers.CONTENT_TYPE_STRING, "application/json"));
+            resp = adminExecutor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check put coll1 as admin", resp, HttpStatus.SC_CREATED);
 
             // *** PUT doc1
-            resp = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", ContentType.APPLICATION_JSON).addHeader(Headers.CONTENT_TYPE_STRING, "application/json"));
+            resp = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check put doc1 as admin", resp, HttpStatus.SC_CREATED);
         }
         finally
@@ -269,23 +277,23 @@ public class SecurityIT extends AbstactIT
         try
         {
             // *** PUT root
-            Response resp = user1Executor.execute(Request.Put(rootUri).bodyString("{a:1}", ContentType.APPLICATION_JSON).addHeader(Headers.CONTENT_TYPE_STRING, "application/json"));
+            Response resp = user1Executor.execute(Request.Put(rootUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check put root as user1", resp, HttpStatus.SC_UNAUTHORIZED);
 
             // *** PUT db
-            resp = user1Executor.execute(Request.Put(dbUri).bodyString("{a:1}", ContentType.APPLICATION_JSON).addHeader(Headers.CONTENT_TYPE_STRING, "application/json"));
+            resp = user1Executor.execute(Request.Put(dbUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check put db as user1", resp, HttpStatus.SC_UNAUTHORIZED);
             
             // *** PUT tmpdb
-            resp = user1Executor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", ContentType.APPLICATION_JSON).addHeader(Headers.CONTENT_TYPE_STRING, "application/json"));
+            resp = user1Executor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check put db as user1", resp, HttpStatus.SC_CREATED);
             
             // *** PUT tmpcoll
-            resp = user1Executor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", ContentType.APPLICATION_JSON).addHeader(Headers.CONTENT_TYPE_STRING, "application/json"));
+            resp = user1Executor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check put coll1 as user1", resp, HttpStatus.SC_CREATED);
 
             // *** PUT doc1
-            resp = user1Executor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", ContentType.APPLICATION_JSON).addHeader(Headers.CONTENT_TYPE_STRING, "application/json"));
+            resp = user1Executor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check put doc1 as user1", resp, HttpStatus.SC_CREATED);
         }
         finally

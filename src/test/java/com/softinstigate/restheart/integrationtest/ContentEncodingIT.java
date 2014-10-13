@@ -43,6 +43,7 @@ public class ContentEncodingIT extends AbstactIT
     }
     
     @Before
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

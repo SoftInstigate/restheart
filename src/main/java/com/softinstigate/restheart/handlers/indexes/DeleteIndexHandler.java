@@ -10,10 +10,12 @@
  */
 package com.softinstigate.restheart.handlers.indexes;
 
+import com.mongodb.BasicDBObject;
 import com.softinstigate.restheart.db.IndexDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.RequestContext;
+import com.softinstigate.restheart.handlers.document.DocumentRepresentationFactory;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.slf4j.Logger;
@@ -50,6 +52,13 @@ public class DeleteIndexHandler extends PipedHttpHandler
         }
         
         IndexDAO.deleteIndex(db, co, id);
+        
+        // send the warnings if any
+        if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
+        {
+            
+            DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
+        }
         
         ResponseHelper.endExchange(exchange, HttpStatus.SC_GONE);
     }

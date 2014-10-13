@@ -10,6 +10,7 @@
  */
 package com.softinstigate.restheart.handlers.document;
 
+import com.mongodb.BasicDBObject;
 import com.softinstigate.restheart.db.DocumentDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
@@ -51,6 +52,13 @@ public class DeleteDocumentHandler extends PipedHttpHandler
         }
         
         int SC = DocumentDAO.deleteDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), etag);
+        
+        // send the warnings if any
+        if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
+        {
+            
+            DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
+        }
         
         ResponseHelper.endExchange(exchange, SC);
     }

@@ -11,6 +11,7 @@
 package com.softinstigate.restheart.handlers.database;
 
 import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
@@ -19,6 +20,7 @@ import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.RequestContext;
+import com.softinstigate.restheart.handlers.document.DocumentRepresentationFactory;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
@@ -84,6 +86,13 @@ public class PatchDBHandler extends PipedHttpHandler
         }
 
         int SC = DBDAO.upsertDB(context.getDBName(), content, etag, true);
+        
+        // send the warnings if any
+        if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
+        {
+            
+            DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
+        }
         
         ResponseHelper.endExchange(exchange, SC); 
     }

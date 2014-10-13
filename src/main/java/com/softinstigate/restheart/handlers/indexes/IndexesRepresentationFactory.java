@@ -16,6 +16,7 @@ import static com.softinstigate.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.handlers.document.DocumentRepresentationFactory;
+import com.softinstigate.restheart.utils.ResponseHelper;
 import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -74,6 +75,8 @@ public class IndexesRepresentationFactory
                 }
             }
         }
+        
+        ResponseHelper.injectWarnings(rep, exchange, context);
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());

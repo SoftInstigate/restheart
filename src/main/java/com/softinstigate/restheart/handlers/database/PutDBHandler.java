@@ -18,6 +18,7 @@ import com.softinstigate.restheart.handlers.injectors.LocalCachesSingleton;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.RequestContext;
+import com.softinstigate.restheart.handlers.document.DocumentRepresentationFactory;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
@@ -65,6 +66,13 @@ public class PutDBHandler extends PipedHttpHandler
         ObjectId etag = RequestHelper.getUpdateEtag(exchange);
         
         int SC = DBDAO.upsertDB(context.getDBName(), content, etag, false);
+        
+        // send the warnings if any
+        if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
+        {
+            
+            DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
+        }
         
         ResponseHelper.endExchange(exchange, SC); 
         LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());

@@ -10,11 +10,13 @@
  */
 package com.softinstigate.restheart.handlers.database;
 
+import com.mongodb.BasicDBObject;
 import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.handlers.injectors.LocalCachesSingleton;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.RequestContext;
+import com.softinstigate.restheart.handlers.document.DocumentRepresentationFactory;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
@@ -49,6 +51,12 @@ public class DeleteDBHandler extends PipedHttpHandler
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT, "the " + Headers.ETAG + " header must be provided");
             logger.warn("error. you must provide the {} header", Headers.ETAG);
             return;
+        }
+        
+        // send the warnings if any
+        if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
+        {
+            DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
         }
         
         ResponseHelper.endExchange(exchange, DBDAO.deleteDB(context.getDBName(), etag));
