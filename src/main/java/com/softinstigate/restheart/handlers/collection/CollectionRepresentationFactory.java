@@ -11,8 +11,6 @@
 package com.softinstigate.restheart.handlers.collection;
 
 import com.softinstigate.restheart.hal.*;
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import static com.softinstigate.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
@@ -40,8 +38,9 @@ public class CollectionRepresentationFactory
             throws IllegalQueryParamenterException
     {
         String requestPath = URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange));
-
-        Representation rep = new Representation(requestPath);
+        String queryString = (exchange.getQueryString() == null || exchange.getQueryString().isEmpty()) ? "" : "?" + exchange.getQueryString();
+        
+        Representation rep = new Representation(requestPath + queryString);
 
         if (context.getType() == RequestContext.TYPE.COLLECTION) // this is a collection, add the collection properties (not true for collection_indexes
         {
@@ -106,10 +105,10 @@ public class CollectionRepresentationFactory
 
             if (links != null)
             {
-                for (String k : links.keySet())
+                links.keySet().stream().forEach((k) ->
                 {
                     rep.addLink(new Link(k, links.get(k)));
-                }
+                });
             }
         }
 
@@ -161,14 +160,11 @@ public class CollectionRepresentationFactory
 
         if (queryString == null || queryString.isEmpty())
         {
-            links.put("self", requestPath);
             links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize);
         }
         else
         {
             String queryString2 = removePagingParamsFromQueryString(queryString, exchange.getQueryParameters().get("page"), exchange.getQueryParameters().get("pagesize"));
-
-            links.put("self", requestPath + "?" + queryString2);
 
             if (queryString2 == null || queryString2.isEmpty())
             {
@@ -247,7 +243,7 @@ public class CollectionRepresentationFactory
         {
             for (String v : pagesize)
             {
-                ret = ret.replaceAll("pagesize=" + v + "$", "");
+                ret = ret.replaceAll("pagesize=" + v + "&", "");
                 ret = ret.replaceAll("pagesize=" + v + "$", "");
             }
         }
