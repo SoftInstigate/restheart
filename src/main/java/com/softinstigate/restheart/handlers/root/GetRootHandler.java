@@ -33,8 +33,6 @@ public class GetRootHandler extends PipedHttpHandler
 {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
     
-    private static final Logger logger = LoggerFactory.getLogger(GetRootHandler.class);
-
     /**
      * Creates a new instance of GetRootHandler
      */
@@ -74,7 +72,7 @@ public class GetRootHandler extends PipedHttpHandler
         ).forEach((item) -> { data.add(item); });
 
         exchange.setResponseCode(HttpStatus.SC_OK);
-        RootRepresentationFactory.sendCollection(exchange, context, data, size);
+        RootRepresentationFactory.sendHal(exchange, context, data, size);
         exchange.endExchange();
     }
 }

@@ -15,11 +15,13 @@ import com.mongodb.DBObject;
 import static com.softinstigate.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
+import static com.softinstigate.restheart.handlers.collection.CollectionRepresentationFactory.getCollection;
 import com.softinstigate.restheart.handlers.document.DocumentRepresentationFactory;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import java.net.URISyntaxException;
 import java.util.List;
 import org.bson.types.ObjectId;
 import org.slf4j.LoggerFactory;
@@ -33,7 +35,16 @@ public class RootRepresentationFactory
 {
     private static final Logger logger = LoggerFactory.getLogger(RootRepresentationFactory.class);
 
-    static public void sendCollection(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
+    public static void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
+            throws IllegalQueryParamenterException, URISyntaxException
+    {
+        Representation rep = getDbs(exchange, context, embeddedData, size);
+
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
+        exchange.getResponseSender().send(rep.toString());
+    }
+    
+    static private Representation getDbs(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException
     {
         String requestPath = URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange));
@@ -58,36 +69,28 @@ public class RootRepresentationFactory
 
             if (!embeddedData.isEmpty()) // embedded documents
             {
-                for (DBObject d : embeddedData)
+                embeddedData.stream().forEach((d) ->
                 {
                     Object _id = d.get("_id");
 
                     if (_id != null && (_id instanceof String || _id instanceof ObjectId))
                     {
-                        Representation nrep;
+                        Representation nrep = new Representation(requestPath + _id.toString());
                         
-                        if (requestPath.endsWith("/")) // this happens for the root
-                        {
-                            nrep = DocumentRepresentationFactory.getDocument(requestPath + _id.toString(), exchange, context, d);
-                        }
-                        else
-                        {
-                            nrep = DocumentRepresentationFactory.getDocument(requestPath + "/" + _id.toString(), exchange, context, d);
-                        }
-
-                        rep.addRepresentation("rh:documents", nrep);
+                        nrep.addProperties(d);
+                        
+                        rep.addRepresentation("rh:dbs", nrep);
                     }
                     else
                     {
                         logger.error("document missing string _id field", d);
                     }
-                }
+                });
             }
         }
 
         ResponseHelper.injectWarnings(rep, exchange, context);
         
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
-        exchange.getResponseSender().send(rep.toString());
+        return rep;
     }
 }

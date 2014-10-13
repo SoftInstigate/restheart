@@ -15,7 +15,7 @@ import com.mongodb.DBObject;
 import static com.softinstigate.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
-import com.softinstigate.restheart.handlers.document.DocumentRepresentationFactory;
+import com.softinstigate.restheart.handlers.collection.CollectionRepresentationFactory;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
@@ -34,7 +34,7 @@ public class DBRepresentationFactory
 {
     private static final Logger logger = LoggerFactory.getLogger(DBRepresentationFactory.class);
 
-    static public void sendCollection(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
+    static public void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException
     {
         String requestPath = URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange));
@@ -64,24 +64,25 @@ public class DBRepresentationFactory
 
             rep.addProperty("_returned", "" + count);
 
-            if (!embeddedData.isEmpty()) // embedded documents
+            if (!embeddedData.isEmpty()) // embedded collections
             {
-                for (DBObject d : embeddedData)
+                embeddedData.stream().forEach((d) ->
                 {
                     Object _id = d.get("_id");
 
                     if (_id != null && (_id instanceof String || _id instanceof ObjectId))
                     {
-                        Representation nrep = DocumentRepresentationFactory.getDocument(requestPath + "/" + _id.toString(), exchange, context, d);
-
-                        rep.addRepresentation("rh:documents", nrep);
+                        Representation nrep = new Representation(requestPath + "/" + _id.toString());
+                        
+                        nrep.addProperties(d);
+                        
+                        rep.addRepresentation("rh:collections", nrep);
                     }
                     else
                     {
-                        context.addWarning("document was filtered out for missing _id field: " + d.toString());
                         logger.error("document missing string _id field", d);
                     }
-                }
+                });
             }
         }
 
@@ -96,11 +97,6 @@ public class DBRepresentationFactory
             {
                 rep.addLink(new Link(k, links.get(k)));
             });
-        }
-
-        if (context.getType() == RequestContext.TYPE.COLLECTION)
-        {
-            rep.addLink(new Link("rh:indexes", URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange)) + "/@indexes"));
         }
 
         ResponseHelper.injectWarnings(rep, exchange, context);

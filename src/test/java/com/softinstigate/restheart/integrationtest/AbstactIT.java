@@ -171,7 +171,7 @@ public abstract class AbstactIT
                 .setScheme("http")
                 .setHost(conf.getHttpHost())
                 .setPort(conf.getHttpPort())
-                .setPath("/" + dbName + "/" + docsCollectionName + "/@indexes")
+                .setPath("/" + dbName + "/" + docsCollectionName + "/_indexes")
                 .build();
         
         documentTmpUri = new URIBuilder()

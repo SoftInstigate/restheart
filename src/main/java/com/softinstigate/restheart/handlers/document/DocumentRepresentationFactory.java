@@ -54,18 +54,20 @@ public class DocumentRepresentationFactory
         });
         
         // document links
-        TreeMap<String, String> links = null;
+        TreeMap<String, String> links;
 
         links = getRelationshipsLinks(context, data);
 
         if (links != null)
         {
-            for (String k : links.keySet())
+            links.keySet().stream().forEach((k) ->
             {
                 rep.addLink(new Link(k, links.get(k)));
-            }
+            });
         }
 
+        ResponseHelper.injectWarnings(rep, exchange, context);
+        
         return rep;
     }
     
@@ -74,8 +76,6 @@ public class DocumentRepresentationFactory
     {
         Representation rep = getDocument(href, exchange, context, data);
 
-        ResponseHelper.injectWarnings(rep, exchange, context);
-        
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
     }
@@ -114,8 +114,8 @@ public class DocumentRepresentationFactory
             }
             catch (IllegalArgumentException ex)
             {
-                context.addWarning("document " + context.getDBName() + "/" +context.getCollectionName() + "/" + context.getDocumentId() +" has an invalid relationship");
-                logger.warn("document {}/{}/{} has an invalid relationship", context.getDBName(), context.getCollectionName(), context.getDocumentId(), ex);
+                context.addWarning(ex.getMessage());
+                logger.warn(ex.getMessage(), ex);
             }
         }
 

@@ -20,6 +20,7 @@ import com.softinstigate.restheart.utils.ResponseHelper;
 import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.TreeMap;
 import org.bson.types.ObjectId;
@@ -34,7 +35,16 @@ public class CollectionRepresentationFactory
 {
     private static final Logger logger = LoggerFactory.getLogger(CollectionRepresentationFactory.class);
 
-    static public void sendCollection(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
+    public static void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
+            throws IllegalQueryParamenterException
+    {
+        Representation rep = getCollection(exchange, context, embeddedData, size);
+
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
+        exchange.getResponseSender().send(rep.toString());
+    }
+    
+    static public Representation getCollection(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException
     {
         String requestPath = URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange));
@@ -98,11 +108,10 @@ public class CollectionRepresentationFactory
             });
         }
 
-        rep.addLink(new Link("rh:indexes", URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange)) + "/@indexes"));
+        rep.addLink(new Link("rh:indexes", URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange)) + "/_indexes"));
         
         ResponseHelper.injectWarnings(rep, exchange, context);
         
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
-        exchange.getResponseSender().send(rep.toString());
+        return rep;
     }
 }

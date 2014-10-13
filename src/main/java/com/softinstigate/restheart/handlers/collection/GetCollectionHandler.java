@@ -96,7 +96,7 @@ public class GetCollectionHandler extends PipedHttpHandler
         try
         {
             exchange.setResponseCode(HttpStatus.SC_OK);
-            CollectionRepresentationFactory.sendCollection(exchange, context, data, size);
+            CollectionRepresentationFactory.sendHal(exchange, context, data, size);
             exchange.endExchange();
         }
         catch (IllegalQueryParamenterException ex)

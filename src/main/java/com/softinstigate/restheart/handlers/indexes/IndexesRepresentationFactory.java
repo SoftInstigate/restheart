@@ -64,9 +64,11 @@ public class IndexesRepresentationFactory
 
                     if (_id != null && (_id instanceof String || _id instanceof ObjectId))
                     {
-                        Representation nrep = DocumentRepresentationFactory.getDocument(requestPath + "/" + _id.toString(), exchange, context, d);
+                        
+                        Representation nrep = new Representation(requestPath + "/" + _id.toString());
+                        nrep.addProperties(d);
 
-                        rep.addRepresentation("rh:documents", nrep);
+                        rep.addRepresentation("rh:indexes", nrep);
                     }
                     else
                     {
