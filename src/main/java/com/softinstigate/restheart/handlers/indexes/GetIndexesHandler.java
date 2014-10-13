@@ -38,7 +38,7 @@ public class GetIndexesHandler extends PipedHttpHandler
         List<DBObject> indexes = IndexDAO.getCollectionIndexes(context.getDBName(), context.getCollectionName());
         
         exchange.setResponseCode(HttpStatus.SC_OK);
-        IndexesRepresentationFactory.sendCollection(exchange, context, indexes, indexes.size());
+        IndexesRepresentationFactory.sendHal(exchange, context, indexes, indexes.size());
         exchange.endExchange();
     }
 }

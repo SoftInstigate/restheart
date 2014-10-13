@@ -83,7 +83,7 @@ public class RootRepresentationFactory
                     }
                     else
                     {
-                        logger.error("document missing string _id field", d);
+                        logger.error("db missing string _id field", d);
                     }
                 });
             }

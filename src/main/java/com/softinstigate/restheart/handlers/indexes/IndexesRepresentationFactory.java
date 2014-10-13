@@ -15,7 +15,6 @@ import com.mongodb.DBObject;
 import static com.softinstigate.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
-import com.softinstigate.restheart.handlers.document.DocumentRepresentationFactory;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
@@ -33,7 +32,7 @@ public class IndexesRepresentationFactory
 {
     private static final Logger logger = LoggerFactory.getLogger(IndexesRepresentationFactory.class);
 
-    static public void sendCollection(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
+    static public void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException
     {
         String requestPath = URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange));
@@ -72,7 +71,7 @@ public class IndexesRepresentationFactory
                     }
                     else
                     {
-                        logger.error("document missing string _id field", d);
+                        logger.error("index missing string _id field", d);
                     }
                 }
             }

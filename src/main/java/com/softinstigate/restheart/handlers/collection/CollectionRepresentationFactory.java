@@ -89,7 +89,7 @@ public class CollectionRepresentationFactory
                     }
                     else
                     {
-                        logger.error("document missing string _id field", d);
+                        logger.error("collection missing string _id field", d);
                     }
                 }
             }

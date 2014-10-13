@@ -93,7 +93,6 @@ public class DocumentRepresentationFactory
         catch (InvalidMetadataException ex)
         {
             context.addWarning("collection " + context.getDBName() + "/" +context.getCollectionName() + " has invalid relationships definition");
-            logger.error("collection {}/{} has invalid relationships definition", context.getDBName(), context.getCollectionName(), ex);
         }
 
         if (rels == null)
