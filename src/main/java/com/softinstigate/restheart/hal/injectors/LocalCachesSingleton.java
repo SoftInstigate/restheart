@@ -35,7 +35,8 @@ public class LocalCachesSingleton
 
     private static final Logger logger = LoggerFactory.getLogger(LocalCachesSingleton.class);
     
-    private static long metadataLocalCacheTtl = 1000;
+    private static long ttl = 1000;
+    private static boolean enabled = false;
     private static final long maxCacheSize = 1000;
 
     private LocalCachesSingleton()
@@ -45,7 +46,8 @@ public class LocalCachesSingleton
     
     public static void init(Configuration conf)
     {
-        metadataLocalCacheTtl = conf.getLocalCacheTtl();
+        ttl = conf.getLocalCacheTtl();
+        enabled = conf.isLocalCacheEnabled();
         initialized = true;
     }
 
@@ -58,11 +60,14 @@ public class LocalCachesSingleton
 
         builder.maximumSize(maxCacheSize);
 
-        if (getMetadataLocalCacheTtl() > 0)
+        if (ttl > 0)
         {
-            builder.expireAfterWrite(getMetadataLocalCacheTtl(), TimeUnit.MILLISECONDS);
+            builder.expireAfterWrite(ttl, TimeUnit.MILLISECONDS);
         }
 
+        if(enabled)
+        {
+        
         this.dbPropsCache = builder.build(
                 new CacheLoader<String, Optional<DBObject>>()
                 {
@@ -83,6 +88,7 @@ public class LocalCachesSingleton
                         return Optional.ofNullable(CollectionDAO.getCollectionProps(dbNameAndCollectionName[0], dbNameAndCollectionName[1]));
                     }
                 });
+        }
     }
 
     public static LocalCachesSingleton getInstance()
@@ -104,20 +110,28 @@ public class LocalCachesSingleton
     {
         return this.collectionPropsCache;
     }
-
-    /**
-     * @return the metadataLocalCacheTtl
-     */
-    public static long getMetadataLocalCacheTtl()
+    
+    public void invalidateDb(String dbName)
     {
-        return metadataLocalCacheTtl;
+        if (enabled && dbPropsCache != null)
+        {
+            dbPropsCache.invalidate(dbName);
+        }
+    }
+    
+    public void invalidateCollection(String dbName, String collName)
+    {
+        if (enabled && collectionPropsCache != null)
+        {
+            collectionPropsCache.invalidate(dbName + "@@@@" + collName);
+        }
     }
 
     /**
-     * @param aMetadataLocalCacheTtl the metadataLocalCacheTtl to set
+     * @return the enabled
      */
-    public static void setMetadataLocalCacheTtl(long aMetadataLocalCacheTtl)
+    public static boolean isEnabled()
     {
-        metadataLocalCacheTtl = aMetadataLocalCacheTtl;
+        return enabled;
     }
 }

@@ -16,6 +16,7 @@ import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.CollectionDAO;
+import com.softinstigate.restheart.hal.injectors.LocalCachesSingleton;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.hal.metadata.InvalidMetadataException;
 import com.softinstigate.restheart.utils.ChannelReader;
@@ -94,5 +95,6 @@ public class PutCollectionHandler extends PipedHttpHandler
         int SC = CollectionDAO.upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, updating, false);
         
         ResponseHelper.endExchange(exchange, SC);
+        LocalCachesSingleton.getInstance().invalidateCollection(context.getDBName(), context.getCollectionName());
     }
 }

@@ -11,6 +11,7 @@
 package com.softinstigate.restheart.handlers.collection;
 
 import com.softinstigate.restheart.db.CollectionDAO;
+import com.softinstigate.restheart.hal.injectors.LocalCachesSingleton;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.RequestContext;
@@ -50,5 +51,6 @@ public class DeleteCollectionHandler extends PipedHttpHandler
         }
         
         ResponseHelper.endExchange(exchange, CollectionDAO.deleteCollection(context.getDBName(), context.getCollectionName(), etag));
+        LocalCachesSingleton.getInstance().invalidateCollection(context.getDBName(), context.getCollectionName());
     }
 }

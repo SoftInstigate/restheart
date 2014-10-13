@@ -11,6 +11,7 @@
 package com.softinstigate.restheart.handlers.database;
 
 import com.softinstigate.restheart.db.DBDAO;
+import com.softinstigate.restheart.hal.injectors.LocalCachesSingleton;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.RequestContext;
@@ -51,5 +52,6 @@ public class DeleteDBHandler extends PipedHttpHandler
         }
         
         ResponseHelper.endExchange(exchange, DBDAO.deleteDB(context.getDBName(), etag));
+        LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());
     }
 }
