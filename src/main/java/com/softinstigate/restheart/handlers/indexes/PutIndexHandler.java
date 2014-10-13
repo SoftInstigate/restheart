@@ -64,33 +64,11 @@ public class PutIndexHandler extends PipedHttpHandler
         
         if (id.startsWith("_"))
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "index name cannot start with @");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "index name cannot start with _");
             return;
         }
         
-        String _content = ChannelReader.read(exchange.getRequestChannel());
-
-        DBObject content;
-
-        try
-        {
-            content = (DBObject) JSON.parse(_content);
-        }
-        catch (JSONParseException ex)
-        {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data is invalid", ex);
-            return;
-        }
-        
-        if (content == null)
-            content = new BasicDBObject();
-        
-        // cannot PUT an array
-        if (content instanceof BasicDBList)
-        {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data cannot be an array");
-            return;
-        }
+        DBObject content = context.getContent();
         
         DBObject keys = (DBObject) content.get("keys");
         DBObject ops = (DBObject) content.get("ops");

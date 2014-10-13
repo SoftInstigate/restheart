@@ -59,30 +59,18 @@ public class PatchDBHandler extends PipedHttpHandler
             return;
         }
 
-        String _content = ChannelReader.read(exchange.getRequestChannel());
-
-        DBObject content;
-
-        try
-        {
-            content = (DBObject) JSON.parse(_content);
-        }
-        catch (JSONParseException ex)
-        {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data is invalid", ex);
-            return;
-        }
+        DBObject content = context.getContent();
         
         if (content == null)
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data is empty");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data is empty");
             return;
         }
         
         // cannot PATCH an array
         if (content instanceof BasicDBList)
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data cannot be an array");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
             return;
         }
         

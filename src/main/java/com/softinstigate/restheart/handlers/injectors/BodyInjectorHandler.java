@@ -60,9 +60,8 @@ public class BodyInjectorHandler extends PipedHttpHandler
             return;
         }
         
-        // get the content
         String _content = ChannelReader.read(exchange.getRequestChannel());
-
+        
         DBObject content;
 
         try
@@ -71,40 +70,29 @@ public class BodyInjectorHandler extends PipedHttpHandler
         }
         catch (JSONParseException ex)
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "body data is invalid", ex);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "invalid data", ex);
             return;
-        }
-        
-        if (content == null)
-            content = new BasicDBObject();
-        
-        // cannot PUT an array
-        if (content instanceof BasicDBList)
-        {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "body data cannot be an array");
-            return;
-        }
+        }   
         
         HashSet<String> keysToRemove = new HashSet<>();
         
         // filter out reserved keys
-        
-        for (String key: content.keySet())
+        content.keySet().stream().filter((key) -> (key.startsWith("_"))).forEach((key) ->
         {
-            if (key.startsWith("_"))
-            {
-                keysToRemove.add(key);
-            }
-        }
+            keysToRemove.add(key);
+        });
         
-        for (String keyToRemove: keysToRemove)
+        keysToRemove.stream().map((keyToRemove) ->
         {
             content.removeField(keyToRemove);
+            return keyToRemove;
+        }).forEach((keyToRemove) ->
+        {
             context.addWarning("the reserved field " + keyToRemove + " was filtered out from the request");
-        }
+        });
         
-        // inject the document props in the context
-        context.setDocumentProps(content);
+        // inject the request content in the context
+        context.setContent(content);
 
         next.handleRequest(exchange, context);
     }

@@ -12,6 +12,7 @@ package com.softinstigate.restheart.handlers.collection;
 
 import com.softinstigate.restheart.hal.properties.Relationship;
 import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
@@ -54,24 +55,15 @@ public class PutCollectionHandler extends PipedHttpHandler
             return;
         }
         
-        String _content = ChannelReader.read(exchange.getRequestChannel());
-
-        DBObject content;
-
-        try
-        {
-            content = (DBObject) JSON.parse(_content);
-        }
-        catch (JSONParseException ex)
-        {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data is invalid", ex);
-            return;
-        }
+        DBObject content = context.getContent();
+        
+        if (content == null)
+            content = new BasicDBObject();
         
         // cannot PUT an array
         if (content instanceof BasicDBList)
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data cannot be an array");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
             return;
         }
         

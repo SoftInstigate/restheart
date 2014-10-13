@@ -51,6 +51,7 @@ import com.softinstigate.restheart.security.handlers.PredicateAuthenticationCons
 import com.softinstigate.restheart.utils.ResourcesExtractor;
 import com.softinstigate.restheart.utils.LoggingInitializer;
 import com.softinstigate.restheart.handlers.RequestContext;
+import com.softinstigate.restheart.handlers.injectors.BodyInjectorHandler;
 import io.undertow.Undertow;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
@@ -106,23 +107,23 @@ public class Bootstrapper
     private static File browserRootFile = null;
 
     private static GracefulShutdownHandler hanldersPipe = null;
-    
+
     private static Configuration conf;
 
     public static void start(String confFilePath)
     {
         String[] args = new String[1];
-        
+
         args[0] = confFilePath;
-        
+
         main(args);
     }
-    
+
     public static void shutdown()
     {
         System.exit(0);
     }
-    
+
     public static void main(final String[] args)
     {
         if (args == null || args.length < 1)
@@ -152,7 +153,7 @@ public class Bootstrapper
             MongoDBClientSingleton.init(conf);
 
             logger.info("mongodb connection pool initialized");
-            
+
             MetadataFixer.fixMetadata();
         }
         catch (Throwable t)
@@ -385,7 +386,7 @@ public class Bootstrapper
             builder.addAjpListener(conf.getAjpPort(), conf.getAjpHost());
             logger.info("ajp listener bound at {}:{}", conf.getAjpHost(), conf.getAjpPort());
         }
-        
+
         if (conf.isLocalCacheEnabled())
         {
             LocalCachesSingleton.init(conf);
@@ -409,35 +410,37 @@ public class Bootstrapper
     {
         PipedHttpHandler coreHanlderChain
                 = new DbPropsInjectorHandler(
-                    new CollectionPropsInjectorHandler(
-                            new MetadataEnforcerHandler(
-                                    new RequestDispacherHandler(
-                                            new GetRootHandler(),
-                                            new PostRootHandler(),
-                                            new PutRootHandler(),
-                                            new DeleteRootHandler(),
-                                            new PatchRootHandler(),
-                                            new GetDBHandler(),
-                                            new PostDBHandler(),
-                                            new PutDBHandler(),
-                                            new DeleteDBHandler(),
-                                            new PatchDBHandler(),
-                                            new GetCollectionHandler(),
-                                            new PostCollectionHandler(),
-                                            new PutCollectionHandler(),
-                                            new DeleteCollectionHandler(),
-                                            new PatchCollectionHandler(),
-                                            new GetDocumentHandler(),
-                                            new PostDocumentHandler(),
-                                            new PutDocumentHandler(),
-                                            new DeleteDocumentHandler(),
-                                            new PatchDocumentHandler(),
-                                            new GetIndexesHandler(),
-                                            new PutIndexHandler(),
-                                            new DeleteIndexHandler()
-                                    )
-                            ), conf.isLocalCacheEnabled()
-                    ), conf.isLocalCacheEnabled()
+                        new CollectionPropsInjectorHandler(
+                                new BodyInjectorHandler(
+                                        new MetadataEnforcerHandler(
+                                                new RequestDispacherHandler(
+                                                        new GetRootHandler(),
+                                                        new PostRootHandler(),
+                                                        new PutRootHandler(),
+                                                        new DeleteRootHandler(),
+                                                        new PatchRootHandler(),
+                                                        new GetDBHandler(),
+                                                        new PostDBHandler(),
+                                                        new PutDBHandler(),
+                                                        new DeleteDBHandler(),
+                                                        new PatchDBHandler(),
+                                                        new GetCollectionHandler(),
+                                                        new PostCollectionHandler(),
+                                                        new PutCollectionHandler(),
+                                                        new DeleteCollectionHandler(),
+                                                        new PatchCollectionHandler(),
+                                                        new GetDocumentHandler(),
+                                                        new PostDocumentHandler(),
+                                                        new PutDocumentHandler(),
+                                                        new DeleteDocumentHandler(),
+                                                        new PatchDocumentHandler(),
+                                                        new GetIndexesHandler(),
+                                                        new PutIndexHandler(),
+                                                        new DeleteIndexHandler()
+                                                )
+                                        )
+                                ), conf.isLocalCacheEnabled()
+                        ), conf.isLocalCacheEnabled()
                 );
 
         PathHandler paths = path().addPrefixPath("/@browser", resource(new FileResourceManager(browserRootFile, 3)).addWelcomeFiles("browser.html").setDirectoryListingEnabled(false));

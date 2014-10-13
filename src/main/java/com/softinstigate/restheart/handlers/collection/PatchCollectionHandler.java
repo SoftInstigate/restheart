@@ -56,34 +56,22 @@ public class PatchCollectionHandler extends PipedHttpHandler
         
         if (context.getCollectionName().isEmpty() || context.getCollectionName().startsWith("_"))
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, collection name cannot be empty or start with @");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, collection name cannot be empty or start with _");
             return;
         }
 
-        String _content = ChannelReader.read(exchange.getRequestChannel());
-
-        DBObject content;
-
-        try
-        {
-            content = (DBObject) JSON.parse(_content);
-        }
-        catch (JSONParseException ex)
-        {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data is invalid", ex);
-            return;
-        }
+        DBObject content = context.getContent();
         
         if (content == null)
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "no json data provided");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "no data provided");
             return;
         }
         
-        // cannot PUT an array
+        // cannot PATCH with an array
         if (content instanceof BasicDBList)
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data cannot be an array");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
             return;
         }
         

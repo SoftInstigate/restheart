@@ -43,7 +43,8 @@ public class RequestContext
     
     private DBObject dbProps;
     private DBObject collectionProps;
-    private DBObject documentProps;
+    
+    private DBObject content;
     
     private final ArrayList<String> warnings = new ArrayList<>();
     
@@ -316,19 +317,19 @@ public class RequestContext
     }
 
     /**
-     * @return the documentProps
+     * @return the content
      */
-    public DBObject getDocumentProps()
+    public DBObject getContent()
     {
-        return documentProps;
+        return content;
     }
 
     /**
-     * @param documentProps the documentProps to set
+     * @param content the content to set
      */
-    public void setDocumentProps(DBObject documentProps)
+    public void setContent(DBObject content)
     {
-        this.documentProps = documentProps;
+        this.content = content;
     }
 
     /**
@@ -340,7 +341,7 @@ public class RequestContext
     }
     
     /**
-     * @return the warnings
+     * @param warning
      */
     public void addWarning(String warning)
     {

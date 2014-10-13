@@ -56,19 +56,7 @@ public class PutDocumentHandler extends PipedHttpHandler
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        String _content = ChannelReader.read(exchange.getRequestChannel());
-
-        DBObject content;
-
-        try
-        {
-            content = (DBObject) JSON.parse(_content);
-        }
-        catch (JSONParseException ex)
-        {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data is invalid", ex);
-            return;
-        }
+        DBObject content = context.getContent();
         
         if (content == null)
             content = new BasicDBObject();
@@ -76,7 +64,7 @@ public class PutDocumentHandler extends PipedHttpHandler
         // cannot PUT an array
         if (content instanceof BasicDBList)
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data cannot be an array");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, " data cannot be an array");
             return;
         }
         

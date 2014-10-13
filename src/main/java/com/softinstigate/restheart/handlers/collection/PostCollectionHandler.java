@@ -13,12 +13,9 @@ package com.softinstigate.restheart.handlers.collection;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import com.mongodb.util.JSON;
-import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.DocumentDAO;
-import com.softinstigate.restheart.utils.ChannelReader;
-import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.RequestContext;
+import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
@@ -44,19 +41,7 @@ public class PostCollectionHandler extends PutCollectionHandler
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        String _content = ChannelReader.read(exchange.getRequestChannel());
-
-        DBObject content;
-
-        try
-        {
-            content = (DBObject) JSON.parse(_content);
-        }
-        catch (JSONParseException ex)
-        {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data is invalid", ex);
-            return;
-        }
+        DBObject content = context.getContent();
         
         if (content == null)
             content = new BasicDBObject();
@@ -64,7 +49,7 @@ public class PostCollectionHandler extends PutCollectionHandler
         // cannot POST an array
         if (content instanceof BasicDBList)
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "json data cannot be an array");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
             return;
         }
         
@@ -73,18 +58,5 @@ public class PostCollectionHandler extends PutCollectionHandler
         int SC = DocumentDAO.upsertDocumentPost(exchange, context.getDBName(), context.getCollectionName(), content, etag);
 
         ResponseHelper.endExchange(exchange, SC);
-    }
-    
-    private Object getIdFromString(String id)
-    {
-        try
-        {
-            return new ObjectId(id);
-        }
-        catch(IllegalArgumentException ex)
-        {
-            // the id is not an object id
-            return id;
-        }
     }
 }
