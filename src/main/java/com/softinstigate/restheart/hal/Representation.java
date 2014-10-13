@@ -49,6 +49,23 @@ public class Representation
         _links.putAll((BSONObject)((Link)link).getDBObject());
     }
     
+    public void addLink(Link link, boolean inArray)
+    {
+        if (dbObject.get("_links") == null)
+            dbObject.put("_links", new BasicDBObject());
+        
+        BasicDBObject _links = (BasicDBObject) dbObject.get("_links");
+        
+        if (_links.get(link.getRef()) == null)
+           _links.put(link.getRef(), new BasicDBList());
+        
+        BasicDBList linkArray = (BasicDBList) _links.get(link.getRef());
+        
+        linkArray.add(link.getDBObject().get(link.getRef()));
+        
+        _links.put(link.getRef(), linkArray);
+    }
+    
     public void addProperty(String key, Object value)
     {
         dbObject.append(key, value);

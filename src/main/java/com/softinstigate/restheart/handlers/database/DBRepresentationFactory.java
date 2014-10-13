@@ -15,7 +15,6 @@ import com.mongodb.DBObject;
 import static com.softinstigate.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
-import com.softinstigate.restheart.handlers.collection.CollectionRepresentationFactory;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
@@ -76,7 +75,7 @@ public class DBRepresentationFactory
                         
                         nrep.addProperties(d);
                         
-                        rep.addRepresentation("rh:collections", nrep);
+                        rep.addRepresentation("rh:coll", nrep);
                     }
                     else
                     {
@@ -98,7 +97,12 @@ public class DBRepresentationFactory
                 rep.addLink(new Link(k, links.get(k)));
             });
         }
-
+        
+        // link templates and curies
+        rep.addLink(new Link("rh:root", URLUtilis.getPerentPath(requestPath)));
+        rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
+        rep.addLink(new Link("rh", "curies", "/_docs/{rel}.html", true), true);
+        
         ResponseHelper.injectWarnings(rep, exchange, context);
         
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);

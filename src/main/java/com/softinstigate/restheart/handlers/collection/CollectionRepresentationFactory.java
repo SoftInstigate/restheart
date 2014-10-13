@@ -20,7 +20,6 @@ import com.softinstigate.restheart.utils.ResponseHelper;
 import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import java.net.URISyntaxException;
 import java.util.List;
 import java.util.TreeMap;
 import org.bson.types.ObjectId;
@@ -85,7 +84,7 @@ public class CollectionRepresentationFactory
                     {
                         Representation nrep = DocumentRepresentationFactory.getDocument(requestPath + "/" + _id.toString(), exchange, context, d);
 
-                        rep.addRepresentation("rh:documents", nrep);
+                        rep.addRepresentation("rh:doc", nrep);
                     }
                     else
                     {
@@ -107,8 +106,15 @@ public class CollectionRepresentationFactory
                 rep.addLink(new Link(k, links.get(k)));
             });
         }
-
-        rep.addLink(new Link("rh:indexes", URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange)) + "/_indexes"));
+        
+        // link templates and curies
+        rep.addLink(new Link("rh:db", URLUtilis.getPerentPath(requestPath)));
+        rep.addLink(new Link("rh:filter", requestPath + "/{?filter}", true));
+        rep.addLink(new Link("rh:sort", requestPath + "/{?sort_by}", true));
+        rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
+        rep.addLink(new Link("rh:countandpaging", requestPath + "/{?page}{&pagesize}&count", true));
+        rep.addLink(new Link("rh:_indexes", "/_indexes"));
+        rep.addLink(new Link("rh", "curies", "/_docs/{rel}.html", true), true);
         
         ResponseHelper.injectWarnings(rep, exchange, context);
         

@@ -57,7 +57,7 @@ public class IndexesRepresentationFactory
 
             if (!embeddedData.isEmpty()) // embedded documents
             {
-                for (DBObject d : embeddedData)
+                embeddedData.stream().forEach((d) ->
                 {
                     Object _id = d.get("_id");
 
@@ -67,15 +67,19 @@ public class IndexesRepresentationFactory
                         Representation nrep = new Representation(requestPath + "/" + _id.toString());
                         nrep.addProperties(d);
 
-                        rep.addRepresentation("rh:indexes", nrep);
+                        rep.addRepresentation("rh:index", nrep);
                     }
                     else
                     {
                         logger.error("index missing string _id field", d);
                     }
-                }
+                });
             }
         }
+        
+        // link templates and curies
+        rep.addLink(new Link("rh:coll", URLUtilis.getPerentPath(requestPath)));
+        rep.addLink(new Link("rh", "curies", "/_docs/{rel}.html", true), true);
         
         ResponseHelper.injectWarnings(rep, exchange, context);
 

@@ -23,6 +23,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.TreeMap;
 import org.bson.types.ObjectId;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -79,7 +80,7 @@ public class RootRepresentationFactory
                         
                         nrep.addProperties(d);
                         
-                        rep.addRepresentation("rh:dbs", nrep);
+                        rep.addRepresentation("rh:db", nrep);
                     }
                     else
                     {
@@ -88,6 +89,23 @@ public class RootRepresentationFactory
                 });
             }
         }
+        
+        // collection links
+        TreeMap<String, String> links;
+
+        links = HALUtils.getPaginationLinks(exchange, context, size);
+
+        if (links != null)
+        {
+            links.keySet().stream().forEach((k) ->
+            {
+                rep.addLink(new Link(k, links.get(k)));
+            });
+        }
+        
+        //curies
+        rep.addLink(new Link("rh:paging", requestPath + "{?page}{&pagesize}", true));
+        rep.addLink(new Link("rh", "curies", "/_docs/{rel}.html", true), true);
 
         ResponseHelper.injectWarnings(rep, exchange, context);
         

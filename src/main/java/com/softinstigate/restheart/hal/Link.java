@@ -29,6 +29,21 @@ public class Link
         dbObject.put(ref, new BasicDBObject("href", href));
     }
     
+    public Link(String ref, String href, boolean templated)
+    {
+        this(ref, href);
+        
+        if (templated)
+            ((BasicDBObject)dbObject.get(ref)).put("templated", true);
+    }
+    
+    public Link(String name, String ref, String href, boolean templated)
+    {
+        this(ref, href, templated);
+        
+        ((BasicDBObject)dbObject.get(ref)).put("name", name);
+    }
+    
     public String getRef()
     {
         return (String) dbObject.keySet().toArray()[0];

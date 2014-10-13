@@ -105,6 +105,7 @@ public class Bootstrapper
     private static final Logger logger = LoggerFactory.getLogger(Bootstrapper.class);
 
     private static File browserRootFile = null;
+    private static File docsRootFile = null;
 
     private static GracefulShutdownHandler hanldersPipe = null;
 
@@ -222,6 +223,18 @@ public class Bootstrapper
                     catch (URISyntaxException | IOException ex)
                     {
                         logger.error("error cleaning up temporary directory {}", browserRootFile.toString(), ex);
+                    }
+                }
+
+                if (docsRootFile != null)
+                {
+                    try
+                    {
+                        ResourcesExtractor.deleteTempDir("docs", docsRootFile);
+                    }
+                    catch (URISyntaxException | IOException ex)
+                    {
+                        logger.error("error cleaning up temporary directory {}", docsRootFile.toString(), ex);
                     }
                 }
 
@@ -365,7 +378,17 @@ public class Bootstrapper
             System.exit(-1);
         }
 
-        logger.info("static resources are in {}", browserRootFile.toString());
+        try
+        {
+            docsRootFile = ResourcesExtractor.extract("docs");
+        }
+        catch (URISyntaxException | IOException ex)
+        {
+            logger.error("error instanitating docs web app. exiting..", ex);
+            System.exit(-1);
+        }
+
+        logger.info("static resources are in {} and {}", browserRootFile.toString(), docsRootFile.toString());
 
         Builder builder = Undertow.builder();
 
@@ -443,7 +466,9 @@ public class Bootstrapper
                         ), conf.isLocalCacheEnabled()
                 );
 
-        PathHandler paths = path().addPrefixPath("/@browser", resource(new FileResourceManager(browserRootFile, 3)).addWelcomeFiles("browser.html").setDirectoryListingEnabled(false));
+        PathHandler paths = path()
+                .addPrefixPath("/_browser", resource(new FileResourceManager(browserRootFile, 3)).addWelcomeFiles("browser.html").setDirectoryListingEnabled(false))
+                .addPrefixPath("/_docs", resource(new FileResourceManager(docsRootFile, 3)).setDirectoryListingEnabled(false));
 
         conf.getMongoMounts().stream().forEach(m ->
         {

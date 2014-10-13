@@ -18,6 +18,7 @@ import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.hal.properties.Relationship;
 import com.softinstigate.restheart.utils.ResponseHelper;
+import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.net.URISyntaxException;
@@ -65,6 +66,11 @@ public class DocumentRepresentationFactory
                 rep.addLink(new Link(k, links.get(k)));
             });
         }
+        
+        // link templates and curies
+        String requestPath = URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange));
+        rep.addLink(new Link("rh:coll", URLUtilis.getPerentPath(requestPath)));
+        rep.addLink(new Link("rh", "curies", "/_docs/{rel}.html", true), true);
 
         ResponseHelper.injectWarnings(rep, exchange, context);
         
@@ -117,7 +123,7 @@ public class DocumentRepresentationFactory
                 logger.warn(ex.getMessage(), ex);
             }
         }
-
+        
         return links;
     }
 }
