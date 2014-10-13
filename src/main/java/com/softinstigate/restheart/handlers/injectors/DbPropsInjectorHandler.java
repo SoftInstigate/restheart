@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.hal.injectors;
+package com.softinstigate.restheart.handlers.injectors;
 
 import com.google.common.cache.LoadingCache;
 import com.mongodb.DBObject;
@@ -25,20 +25,19 @@ import java.util.Optional;
  */
 public class DbPropsInjectorHandler extends PipedHttpHandler
 {
+    private static boolean cacheEnabled = false;
+    
     /**
      * Creates a new instance of MetadataInjecterHandler
      *
      * @param next
-     * @param metadataLocalCacheEnabled
+     * @param propertiesLocalCacheEnabled
      */
-    
-    private static boolean cacheEnabled = false;
-    
-    public DbPropsInjectorHandler(PipedHttpHandler next, boolean metadataLocalCacheEnabled)
+    public DbPropsInjectorHandler(PipedHttpHandler next, boolean propertiesLocalCacheEnabled)
     {
         super(next);
         
-        cacheEnabled = metadataLocalCacheEnabled;
+        cacheEnabled = propertiesLocalCacheEnabled;
     }
 
     @Override
@@ -53,7 +52,7 @@ public class DbPropsInjectorHandler extends PipedHttpHandler
                 dbProps = DBDAO.getDbProps(context.getDBName());
                 
                 if (dbProps != null)
-                    dbProps.put("@db-props-cached", false);
+                    dbProps.put("_db-props-cached", false);
             }
             else
             {
@@ -66,7 +65,7 @@ public class DbPropsInjectorHandler extends PipedHttpHandler
                     if (_dbMetadata.isPresent())
                     {
                         dbProps = _dbMetadata.get();
-                        dbProps.put("@db-props-cached", true);
+                        dbProps.put("_db-props-cached", true);
                     }
                     else
                         dbProps = null;
@@ -78,7 +77,7 @@ public class DbPropsInjectorHandler extends PipedHttpHandler
                     if (_dbMetadata.isPresent())
                     {
                         dbProps = _dbMetadata.get();
-                        dbProps.put("@db-props-cached", false);
+                        dbProps.put("_db-props-cached", false);
                     }
                     else
                         dbProps = null;

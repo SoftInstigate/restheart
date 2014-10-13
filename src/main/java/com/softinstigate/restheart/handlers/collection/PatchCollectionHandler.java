@@ -16,8 +16,8 @@ import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
-import com.softinstigate.restheart.hal.metadata.InvalidMetadataException;
-import com.softinstigate.restheart.hal.metadata.Relationship;
+import com.softinstigate.restheart.hal.properties.InvalidMetadataException;
+import com.softinstigate.restheart.hal.properties.Relationship;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.RequestContext;
@@ -54,7 +54,7 @@ public class PatchCollectionHandler extends PipedHttpHandler
             return;
         }
         
-        if (context.getCollectionName().isEmpty() || context.getCollectionName().startsWith("@"))
+        if (context.getCollectionName().isEmpty() || context.getCollectionName().startsWith("_"))
         {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, collection name cannot be empty or start with @");
             return;

@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.hal.injectors;
+package com.softinstigate.restheart.handlers.injectors;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -19,8 +19,6 @@ import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.db.DBDAO;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -28,13 +26,13 @@ import org.slf4j.LoggerFactory;
  */
 public class LocalCachesSingleton
 {
+    private static final String SEPARATOR = "_@_@_";
+    
     private static boolean initialized = false;
     
     private LoadingCache<String, Optional<DBObject>> dbPropsCache = null;
     private LoadingCache<String, Optional<DBObject>> collectionPropsCache = null;
 
-    private static final Logger logger = LoggerFactory.getLogger(LocalCachesSingleton.class);
-    
     private static long ttl = 1000;
     private static boolean enabled = false;
     private static final long maxCacheSize = 1000;
@@ -84,7 +82,7 @@ public class LocalCachesSingleton
                     @Override
                     public Optional<DBObject> load(String key) throws Exception
                     {
-                        String[] dbNameAndCollectionName = key.split("@@@@");
+                        String[] dbNameAndCollectionName = key.split(SEPARATOR);
                         return Optional.ofNullable(CollectionDAO.getCollectionProps(dbNameAndCollectionName[0], dbNameAndCollectionName[1]));
                     }
                 });
@@ -123,7 +121,7 @@ public class LocalCachesSingleton
     {
         if (enabled && collectionPropsCache != null)
         {
-            collectionPropsCache.invalidate(dbName + "@@@@" + collName);
+            collectionPropsCache.invalidate(dbName + SEPARATOR + collName);
         }
     }
 

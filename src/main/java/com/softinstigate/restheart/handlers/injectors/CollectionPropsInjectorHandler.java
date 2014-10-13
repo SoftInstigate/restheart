@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.hal.injectors;
+package com.softinstigate.restheart.handlers.injectors;
 
 import com.google.common.cache.LoadingCache;
 import com.mongodb.DBObject;
@@ -24,19 +24,21 @@ import java.util.Optional;
  */
 public class CollectionPropsInjectorHandler extends PipedHttpHandler
 {
+    private static final String SEPARATOR = "_@_@_";
+    
     private static boolean cacheEnabled = false;
 
     /**
      * Creates a new instance of MetadataInjecterHandler
      *
      * @param next
-     * @param metadataLocalCacheEnabled
+     * @param propertiesLocalCacheEnabled
      */
-    public CollectionPropsInjectorHandler(PipedHttpHandler next, boolean metadataLocalCacheEnabled)
+    public CollectionPropsInjectorHandler(PipedHttpHandler next, boolean propertiesLocalCacheEnabled)
     {
         super(next);
 
-        cacheEnabled = metadataLocalCacheEnabled;
+        cacheEnabled = propertiesLocalCacheEnabled;
     }
 
     @Override
@@ -51,32 +53,32 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler
                 collProps = CollectionDAO.getCollectionProps(context.getDBName(), context.getCollectionName());
                 
                 if (collProps != null)
-                    collProps.put("@collection-props-cached", false);
+                    collProps.put("_collection-props-cached", false);
             }
             else
             {
                 LoadingCache<String, Optional<DBObject>> collectionPropsCache = LocalCachesSingleton.getInstance().getCollectionCache();
                 
-                Optional<DBObject> _collMetadata = collectionPropsCache.getIfPresent(context.getDBName() + "@@@@" + context.getCollectionName());
+                Optional<DBObject> _collMetadata = collectionPropsCache.getIfPresent(context.getDBName() + SEPARATOR + context.getCollectionName());
                 
                 if (_collMetadata != null)
                 {
                     if (_collMetadata.isPresent())
                     {
                         collProps = _collMetadata.get();
-                        collProps.put("@collection-props-cached", true);
+                        collProps.put("_collection-props-cached", true);
                     }
                     else
                         collProps = null;
                 }
                 else
                 {
-                    _collMetadata = collectionPropsCache.get(context.getDBName() + "@@@@" + context.getCollectionName());
+                    _collMetadata = collectionPropsCache.get(context.getDBName() + SEPARATOR + context.getCollectionName());
                     
                     if (_collMetadata.isPresent())
                     {
                         collProps = _collMetadata.get();
-                        collProps.put("@collection-props-cached", false);
+                        collProps.put("_collection-props-cached", false);
                     }
                     else
                         collProps = null;

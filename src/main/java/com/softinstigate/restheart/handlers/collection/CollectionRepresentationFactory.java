@@ -54,15 +54,15 @@ public class CollectionRepresentationFactory
             float _size = size + 0f;
             float _pagesize = context.getPagesize() + 0f;
 
-            rep.addProperty("@size", size);
-            rep.addProperty("@total_pages", Math.max(1, Math.round(Math.nextUp(_size / _pagesize))));
+            rep.addProperty("_size", size);
+            rep.addProperty("_total_pages", Math.max(1, Math.round(Math.nextUp(_size / _pagesize))));
         }
 
         if (embeddedData != null)
         {
             long count = embeddedData.stream().filter((props) -> props.keySet().stream().anyMatch((k) -> k.equals("id") || k.equals("_id"))).count();
 
-            rep.addProperty("@returned", "" + count);
+            rep.addProperty("_returned", "" + count);
 
             if (!embeddedData.isEmpty()) // embedded documents
             {

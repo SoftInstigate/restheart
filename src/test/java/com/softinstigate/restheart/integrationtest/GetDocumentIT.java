@@ -67,9 +67,9 @@ public class GetDocumentIT extends AbstactIT
         }
         
         Assert.assertNotNull("check json not null", json);
-        Assert.assertNotNull("check not null @etag property", json.get("@etag"));
-        Assert.assertNotNull("check not null @lastupdated_on property", json.get("@lastupdated_on"));
-        Assert.assertNotNull("check not null @created_on property", json.get("@created_on"));
+        Assert.assertNotNull("check not null @etag property", json.get("_etag"));
+        Assert.assertNotNull("check not null @lastupdated_on property", json.get("_lastupdated_on"));
+        Assert.assertNotNull("check not null @created_on property", json.get("_created_on"));
         Assert.assertNotNull("check not null @_id property", json.get("_id"));
         Assert.assertEquals("check @_id value", document1Id, json.get("_id").asString());
         Assert.assertNotNull("check not null a", json.get("a"));

@@ -44,7 +44,7 @@ public class PutIndexHandler extends PipedHttpHandler
     {
         fieldsToReturn = new BasicDBObject();
         fieldsToReturn.put("_id", 1);
-        fieldsToReturn.put("@created_on", 1);
+        fieldsToReturn.put("_created_on", 1);
     }
     
     /**
@@ -62,7 +62,7 @@ public class PutIndexHandler extends PipedHttpHandler
         String co = context.getCollectionName();
         String id = context.getIndexId();
         
-        if (id.startsWith("@"))
+        if (id.startsWith("_"))
         {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "index name cannot start with @");
             return;

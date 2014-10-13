@@ -43,7 +43,7 @@ public class DeleteIndexHandler extends PipedHttpHandler
         
         String id = context.getIndexId();
         
-        if (id.startsWith("@") || id.equals("_id_"))
+        if (id.startsWith("_") || id.equals("_id_"))
         {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNAUTHORIZED, id + " is a default index and cannot be deleted");
             return;

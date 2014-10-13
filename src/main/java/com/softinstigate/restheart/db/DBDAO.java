@@ -41,7 +41,7 @@ public class DBDAO
 
     private static final Logger logger = LoggerFactory.getLogger(DBDAO.class);
 
-    public static final BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "@metadata");
+    public static final BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "_properties");
 
     private static final BasicDBObject fieldsToReturn;
 
@@ -49,7 +49,7 @@ public class DBDAO
     {
         fieldsToReturn = new BasicDBObject();
         fieldsToReturn.put("_id", 1);
-        fieldsToReturn.put("@created_on", 1);
+        fieldsToReturn.put("_created_on", 1);
     }
 
     private static final BasicDBObject fieldsToReturnIndexes;
@@ -122,7 +122,7 @@ public class DBDAO
      */
     public static DBObject getDbProps(String dbName)
     {
-        DBCollection propscoll = CollectionDAO.getCollection(dbName, "@metadata");
+        DBCollection propscoll = CollectionDAO.getCollection(dbName, "_properties");
 
         DBObject row = propscoll.findOne(METADATA_QUERY);
 
@@ -130,13 +130,13 @@ public class DBDAO
         {
             row.removeField("_id");
             
-            Object etag = row.get("@etag");
+            Object etag = row.get("_etag");
 
             if (etag != null && ObjectId.isValid("" + etag))
             {
                 ObjectId oid = new ObjectId("" + etag);
 
-                row.put("@lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
+                row.put("_lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
             }
         }
 
@@ -161,7 +161,7 @@ public class DBDAO
         int size = _colls.size();
 
         // *** arguments check
-        long total_pages = -1;
+        long total_pages;
 
         if (size > 0)
         {
@@ -188,10 +188,10 @@ public class DBDAO
 
                     properties.put("_id", coll);
 
-                    DBObject metadata = CollectionDAO.getCollectionProps(dbName, coll);
+                    DBObject collProperties = CollectionDAO.getCollectionProps(dbName, coll);
 
-                    if (metadata != null)
-                        properties.putAll(metadata);
+                    if (collProperties != null)
+                        properties.putAll(collProperties);
 
                     return properties;
                 }
@@ -214,10 +214,10 @@ public class DBDAO
             return HttpStatus.SC_NOT_FOUND;
         }
 
-        DBCollection coll = db.getCollection("@metadata");
+        DBCollection coll = db.getCollection("_properties");
         
         // check the etag
-        if (db.collectionExists("@metadata"))
+        if (db.collectionExists("_properties"))
         {
             if (etag == null)
             {
@@ -225,8 +225,8 @@ public class DBDAO
                 return HttpStatus.SC_PRECONDITION_FAILED;
             }
 
-            BasicDBObject idAndEtagQuery = new BasicDBObject("_id", "@metadata");
-            idAndEtagQuery.append("@etag", etag);
+            BasicDBObject idAndEtagQuery = new BasicDBObject("_id", "_properties");
+            idAndEtagQuery.append("_etag", etag);
             
             if (coll.count(idAndEtagQuery) < 1)
             {
@@ -243,8 +243,8 @@ public class DBDAO
             content = new BasicDBObject();
         }
 
-        content.put("@etag", timestamp);
-        content.removeField("@created_on"); // make sure we don't change this field
+        content.put("_etag", timestamp);
+        content.removeField("_created_on"); // make sure we don't change this field
         content.removeField("_id"); // make sure we don't change this field
 
         if (patching)
@@ -263,16 +263,16 @@ public class DBDAO
 
             if (old != null)
             {
-                Object oldTimestamp = old.get("@created_on");
+                Object oldTimestamp = old.get("_created_on");
 
                 if (oldTimestamp == null)
                 {
                     oldTimestamp = now.toString();
-                    logger.warn("metadata of collection {} had no @created_on field. set to now", coll.getFullName());
+                    logger.warn("properties of collection {} had no @created_on field. set to now", coll.getFullName());
                 }
 
                 // need to readd the @created_on field 
-                BasicDBObject createdContet = new BasicDBObject("@created_on", "" + oldTimestamp);
+                BasicDBObject createdContet = new BasicDBObject("_created_on", "" + oldTimestamp);
                 createdContet.markAsPartialObject();
                 coll.update(METADATA_QUERY, new BasicDBObject("$set", createdContet), true, false);
 
@@ -281,7 +281,7 @@ public class DBDAO
             else
             {
                 // need to readd the @created_on field 
-                BasicDBObject createdContet = new BasicDBObject("@created_on", now.toString());
+                BasicDBObject createdContet = new BasicDBObject("_created_on", now.toString());
                 createdContet.markAsPartialObject();
                 coll.update(METADATA_QUERY, new BasicDBObject("$set", createdContet), true, false);
 
@@ -294,10 +294,10 @@ public class DBDAO
     {
         DB db = DBDAO.getDB(dbName);
 
-        DBCollection coll = db.getCollection("@metadata");
+        DBCollection coll = db.getCollection("_properties");
 
-        BasicDBObject checkEtag = new BasicDBObject("_id", "@metadata");
-        checkEtag.append("@etag", requestEtag);
+        BasicDBObject checkEtag = new BasicDBObject("_id", "_properties");
+        checkEtag.append("_etag", requestEtag);
 
         DBObject exists = coll.findOne(checkEtag, fieldsToReturn);
 
@@ -314,7 +314,7 @@ public class DBDAO
 
     private static int optimisticCheckEtag(DB db, DBCollection coll, DBObject documentIdQuery, DBObject oldDocument, ObjectId requestEtag)
     {
-        Object oldEtag = RequestHelper.getEtagAsObjectId(oldDocument.get("@etag"));
+        Object oldEtag = RequestHelper.getEtagAsObjectId(oldDocument.get("_etag"));
 
         if (oldEtag == null) // well we don't had an etag there so fine
         {

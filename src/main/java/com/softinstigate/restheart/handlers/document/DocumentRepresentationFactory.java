@@ -11,12 +11,12 @@
 package com.softinstigate.restheart.handlers.document;
 
 import com.softinstigate.restheart.hal.*;
-import com.softinstigate.restheart.hal.metadata.InvalidMetadataException;
+import com.softinstigate.restheart.hal.properties.InvalidMetadataException;
 import com.mongodb.DBObject;
 import static com.softinstigate.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
-import com.softinstigate.restheart.hal.metadata.Relationship;
+import com.softinstigate.restheart.hal.properties.Relationship;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.net.URISyntaxException;

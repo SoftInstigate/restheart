@@ -46,7 +46,7 @@ public class DocumentDAO
     {
         fieldsToReturn = new BasicDBObject();
         fieldsToReturn.put("_id", 1);
-        fieldsToReturn.put("@created_on", 1);
+        fieldsToReturn.put("_created_on", 1);
     }
 
     public static DBCollection getCollection(String dbName, String collName)
@@ -79,13 +79,13 @@ public class DocumentDAO
             content = new BasicDBObject();
         }
 
-        content.put("@etag", timestamp);
+        content.put("_etag", timestamp);
 
         BasicDBObject idQuery = new BasicDBObject("_id", getId(documentId));
 
         if (patching)
         {
-            content.removeField("@created_on"); // make sure we don't change this field
+            content.removeField("_created_on"); // make sure we don't change this field
             
             DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, new BasicDBObject("$set", content), false, false);
 
@@ -101,7 +101,7 @@ public class DocumentDAO
         }
         else
         {
-            content.put("@created_on", now.toString()); // let's assume this is an insert. in case we'll set it back with a second update
+            content.put("_created_on", now.toString()); // let's assume this is an insert. in case we'll set it back with a second update
             
             // we use findAndModify to get the @created_on field value from the existing document
             // in case this is an update well need to put it back using a second update 
@@ -111,16 +111,16 @@ public class DocumentDAO
 
             if (oldDocument != null) // upsert
             {
-                Object oldTimestamp = oldDocument.get("@created_on");
+                Object oldTimestamp = oldDocument.get("_created_on");
 
                 if (oldTimestamp == null)
                 {
                     oldTimestamp = now.toString();
-                    logger.warn("metadata of document /{}/{}/{} had no @created_on field. set to now", dbName, collName, documentId);
+                    logger.warn("properties of document /{}/{}/{} had no @created_on field. set to now", dbName, collName, documentId);
                 }
 
                 // need to readd the @created_on field 
-                BasicDBObject created = new BasicDBObject("@created_on", "" + oldTimestamp);
+                BasicDBObject created = new BasicDBObject("_created_on", "" + oldTimestamp);
                 created.markAsPartialObject();
                 coll.update(idQuery, new BasicDBObject("$set", created), true, false);
 
@@ -158,8 +158,8 @@ public class DocumentDAO
             content = new BasicDBObject();
         }
 
-        content.put("@etag", timestamp);
-        content.put("@created_on", now.toString()); // make sure we don't change this field
+        content.put("_etag", timestamp);
+        content.put("_created_on", now.toString()); // make sure we don't change this field
 
         Object _id = content.get("_id");
         content.removeField("_id");
@@ -186,16 +186,16 @@ public class DocumentDAO
 
         if (oldDocument != null) // upsert
         {
-            Object oldTimestamp = oldDocument.get("@created_on");
+            Object oldTimestamp = oldDocument.get("_created_on");
 
             if (oldTimestamp == null)
             {
                 oldTimestamp = now.toString();
-                logger.warn("metadata of document /{}/{}/{} had no @created_on field. set to now", dbName, collName, _id.toString());
+                logger.warn("properties of document /{}/{}/{} had no @created_on field. set to now", dbName, collName, _id.toString());
             }
 
             // need to readd the @created_on field 
-            BasicDBObject createdContet = new BasicDBObject("@created_on", "" + oldTimestamp);
+            BasicDBObject createdContet = new BasicDBObject("_created_on", "" + oldTimestamp);
             createdContet.markAsPartialObject();
             coll.update(idQuery, new BasicDBObject("$set", createdContet), true, false);
 
@@ -259,7 +259,7 @@ public class DocumentDAO
             return HttpStatus.SC_CONFLICT;
         }
         
-        Object oldEtag = RequestHelper.getEtagAsObjectId(oldDocument.get("@etag"));
+        Object oldEtag = RequestHelper.getEtagAsObjectId(oldDocument.get("_etag"));
 
         if (oldEtag == null) // well we don't had an etag there so fine
         {

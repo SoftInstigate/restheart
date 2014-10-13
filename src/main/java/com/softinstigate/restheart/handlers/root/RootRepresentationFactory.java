@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.handlers.database;
+package com.softinstigate.restheart.handlers.root;
 
 import com.softinstigate.restheart.hal.*;
 import com.mongodb.DBObject;
@@ -20,7 +20,6 @@ import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.util.List;
-import java.util.TreeMap;
 import org.bson.types.ObjectId;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -29,24 +28,17 @@ import org.slf4j.Logger;
  *
  * @author uji
  */
-public class DBRepresentationFactory
+public class RootRepresentationFactory
 {
-    private static final Logger logger = LoggerFactory.getLogger(DBRepresentationFactory.class);
+    private static final Logger logger = LoggerFactory.getLogger(RootRepresentationFactory.class);
 
     static public void sendCollection(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException
     {
         String requestPath = URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange));
         String queryString = (exchange.getQueryString() == null || exchange.getQueryString().isEmpty()) ? "" : "?" + exchange.getQueryString();
-
+        
         Representation rep = new Representation(requestPath + queryString);
-
-        DBObject dbProps = context.getDbProps();
-
-        if (dbProps != null)
-        {
-            HALUtils.addData(rep, dbProps);
-        }
 
         if (size > 0)
         {
@@ -71,7 +63,16 @@ public class DBRepresentationFactory
 
                     if (_id != null && (_id instanceof String || _id instanceof ObjectId))
                     {
-                        Representation nrep = DocumentRepresentationFactory.getDocument(requestPath + "/" + _id.toString(), exchange, context, d);
+                        Representation nrep;
+                        
+                        if (requestPath.endsWith("/")) // this happens for the root
+                        {
+                            nrep = DocumentRepresentationFactory.getDocument(requestPath + _id.toString(), exchange, context, d);
+                        }
+                        else
+                        {
+                            nrep = DocumentRepresentationFactory.getDocument(requestPath + "/" + _id.toString(), exchange, context, d);
+                        }
 
                         rep.addRepresentation("rh:documents", nrep);
                     }
@@ -81,24 +82,6 @@ public class DBRepresentationFactory
                     }
                 }
             }
-        }
-
-        // collection links
-        TreeMap<String, String> links;
-
-        links = HALUtils.getPaginationLinks(exchange, context, size);
-
-        if (links != null)
-        {
-            links.keySet().stream().forEach((k) ->
-            {
-                rep.addLink(new Link(k, links.get(k)));
-            });
-        }
-
-        if (context.getType() == RequestContext.TYPE.COLLECTION)
-        {
-            rep.addLink(new Link("rh:indexes", URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange)) + "/@indexes"));
         }
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);

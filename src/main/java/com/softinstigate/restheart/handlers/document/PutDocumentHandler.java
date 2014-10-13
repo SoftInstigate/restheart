@@ -42,7 +42,7 @@ public class PutDocumentHandler extends PipedHttpHandler
     {
         fieldsToReturn = new BasicDBObject();
         fieldsToReturn.put("_id", 1);
-        fieldsToReturn.put("@created_on", 1);
+        fieldsToReturn.put("_created_on", 1);
     }
     
     /**

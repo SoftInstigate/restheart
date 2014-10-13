@@ -38,13 +38,13 @@ public class MetadataFixer
 
         if (dbmd == null)
         {
-            // db must exists with metadata
+            // db must exists with properties
             return false;
         }
 
         DBObject md = CollectionDAO.getCollectionProps(dbName, collName);
 
-        if (md != null) // metadata exists
+        if (md != null) // properties exists
         {
             return false;
         }
@@ -57,20 +57,20 @@ public class MetadataFixer
             return false;
         }
 
-        // ok, create the metadata
-        DBObject metadata = new BasicDBObject();
+        // ok, create the properties
+        DBObject properties = new BasicDBObject();
 
         ObjectId timestamp = new ObjectId();
         Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
 
-        metadata.put("_id", "@metadata");
-        metadata.put("@created_on", now.toString());
-        metadata.put("@etag", timestamp);
+        properties.put("_id", "_properties");
+        properties.put("_created_on", now.toString());
+        properties.put("_etag", timestamp);
 
         DBCollection coll = CollectionDAO.getCollection(dbName, collName);
 
-        coll.insert(metadata);
-        logger.info("metadata added to {}/{}", dbName, collName);
+        coll.insert(properties);
+        logger.info("properties added to {}/{}", dbName, collName);
         return true;
     }
 
@@ -83,27 +83,27 @@ public class MetadataFixer
 
         DBObject dbmd = DBDAO.getDbProps(dbName);
 
-        if (dbmd != null) // metadata exists
+        if (dbmd != null) // properties exists
         {
             return false;
         }
 
         DB db = DBDAO.getDB(dbName);
 
-        // ok, create the metadata
-        DBObject metadata = new BasicDBObject();
+        // ok, create the properties
+        DBObject properties = new BasicDBObject();
 
         ObjectId timestamp = new ObjectId();
         Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
 
-        metadata.put("_id", "@metadata");
-        metadata.put("@created_on", now.toString());
-        metadata.put("@etag", timestamp);
+        properties.put("_id", "_properties");
+        properties.put("_created_on", now.toString());
+        properties.put("_etag", timestamp);
 
-        DBCollection coll = CollectionDAO.getCollection(dbName, "@metadata");
+        DBCollection coll = CollectionDAO.getCollection(dbName, "_properties");
 
-        coll.insert(metadata);
-        logger.info("metadata added to {}", dbName);
+        coll.insert(properties);
+        logger.info("properties added to {}", dbName);
         return true;
     }
 
@@ -117,7 +117,7 @@ public class MetadataFixer
             }
             catch (Throwable t)
             {
-                logger.error("error fixing metadata of db {}", dbName, t);
+                logger.error("error fixing properties of db {}", dbName, t);
             }
             return dbName;
         }).forEach((dbName) ->
@@ -133,7 +133,7 @@ public class MetadataFixer
                         }
                         catch (Throwable t)
                         {
-                            logger.error("error fixing metadata of collection {}/{}", dbName, collectionName, t);
+                            logger.error("error fixing properties of collection {}/{}", dbName, collectionName, t);
                         }
                     }
             );

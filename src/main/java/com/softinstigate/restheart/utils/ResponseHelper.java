@@ -86,12 +86,12 @@ public class ResponseHelper
         return list;
     }
     
-    public static void injectEtagHeader(HttpServerExchange exchange, Map<String, Object> metadata)
+    public static void injectEtagHeader(HttpServerExchange exchange, Map<String, Object> properties)
     {
-        if (metadata == null)
+        if (properties == null)
             return;
         
-        Object _etag = metadata.get("@etag");
+        Object _etag = properties.get("_etag");
         
         if (ObjectId.isValid("" + _etag))
         {
@@ -101,12 +101,12 @@ public class ResponseHelper
         }
     }
     
-    public static void injectEtagHeader(HttpServerExchange exchange, DBObject metadata)
+    public static void injectEtagHeader(HttpServerExchange exchange, DBObject properties)
     {
-        if (metadata == null)
+        if (properties == null)
             return;
         
-        Object _etag = metadata.get("@etag");
+        Object _etag = properties.get("_etag");
         
         if (ObjectId.isValid("" + _etag))
         {

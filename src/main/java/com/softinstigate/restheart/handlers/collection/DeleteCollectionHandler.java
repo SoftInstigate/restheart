@@ -11,7 +11,7 @@
 package com.softinstigate.restheart.handlers.collection;
 
 import com.softinstigate.restheart.db.CollectionDAO;
-import com.softinstigate.restheart.hal.injectors.LocalCachesSingleton;
+import com.softinstigate.restheart.handlers.injectors.LocalCachesSingleton;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.RequestContext;

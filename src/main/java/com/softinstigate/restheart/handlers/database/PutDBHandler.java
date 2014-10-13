@@ -15,7 +15,7 @@ import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.DBDAO;
-import com.softinstigate.restheart.hal.injectors.LocalCachesSingleton;
+import com.softinstigate.restheart.handlers.injectors.LocalCachesSingleton;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
@@ -46,7 +46,7 @@ public class PutDBHandler extends PipedHttpHandler
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        if (context.getDBName().isEmpty() || context.getDBName().startsWith("@"))
+        if (context.getDBName().isEmpty() || context.getDBName().startsWith("_"))
         {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "db name cannot be empty or start with @");
             return;

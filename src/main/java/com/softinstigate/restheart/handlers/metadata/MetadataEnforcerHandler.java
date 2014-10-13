@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.handlers.metadata;
+package com.softinstigate.restheart.handlers.properties;
 
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
@@ -39,18 +39,6 @@ public class MetadataEnforcerHandler extends PipedHttpHandler
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        // check content type
-        if (context.getMethod() == RequestContext.METHOD.POST || context.getMethod() == RequestContext.METHOD.PUT || context.getMethod() == RequestContext.METHOD.PATCH)
-        {
-            HeaderValues contentTypes = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
-
-            if (contentTypes == null || contentTypes.isEmpty() || !contentTypes.contains(JSON_MEDIA_TYPE))
-            {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, "Contet-Type must be " + JSON_MEDIA_TYPE);
-                return;
-            }
-        }
-
         if (context.getDbProps() == null
                 && !(context.getType() == RequestContext.TYPE.DB && context.getMethod() == METHOD.PUT)
                 && (context.getType() != RequestContext.TYPE.ROOT))

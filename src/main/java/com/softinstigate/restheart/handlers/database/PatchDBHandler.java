@@ -44,7 +44,7 @@ public class PatchDBHandler extends PipedHttpHandler
     }
 
     /**
-     * partial update db metadata
+     * partial update db properties
      *
      * @param exchange
      * @param context
@@ -53,7 +53,7 @@ public class PatchDBHandler extends PipedHttpHandler
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        if (context.getDBName().isEmpty() || context.getDBName().startsWith("@"))
+        if (context.getDBName().isEmpty() || context.getDBName().startsWith("_"))
         {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, db name cannot be empty or start with @");
             return;

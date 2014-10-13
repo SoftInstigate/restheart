@@ -15,11 +15,8 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.utils.HttpStatus;
-import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestContext;
-import com.softinstigate.restheart.handlers.collection.CollectionRepresentationFactory;
-import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -77,7 +74,7 @@ public class GetRootHandler extends PipedHttpHandler
         ).forEach((item) -> { data.add(item); });
 
         exchange.setResponseCode(HttpStatus.SC_OK);
-        CollectionRepresentationFactory.sendCollection(exchange, context, data, size);
+        RootRepresentationFactory.sendCollection(exchange, context, data, size);
         exchange.endExchange();
     }
 }

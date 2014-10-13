@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.hal.metadata;
+package com.softinstigate.restheart.hal.properties;
 
 import com.softinstigate.restheart.hal.InvalidHalException;
 

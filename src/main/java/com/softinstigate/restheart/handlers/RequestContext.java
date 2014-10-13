@@ -17,6 +17,7 @@ import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import org.slf4j.Logger;
@@ -28,39 +29,6 @@ import org.slf4j.LoggerFactory;
  */
 public class RequestContext
 {
-
-    /**
-     * @return the collectionProps
-     */
-    public DBObject getCollectionProps()
-    {
-        return collectionProps;
-    }
-
-    /**
-     * @param collectionProps the collectionProps to set
-     */
-    public void setCollectionProps(DBObject collectionProps)
-    {
-        this.collectionProps = collectionProps;
-    }
-
-    /**
-     * @return the dbProps
-     */
-    public DBObject getDbProps()
-    {
-        return dbProps;
-    }
-
-    /**
-     * @param dbProps the dbProps to set
-     */
-    public void setDbProps(DBObject dbProps)
-    {
-        this.dbProps = dbProps;
-    }
-    
     public enum TYPE { ERROR, ROOT, DB, COLLECTION, DOCUMENT, COLLECTION_INDEXES, INDEX };
     public enum METHOD { GET, POST, PUT, DELETE, PATCH, OTHER };
     
@@ -73,8 +41,11 @@ public class RequestContext
     
     private final Logger logger = LoggerFactory.getLogger(RequestContext.class);
     
-    private DBObject collectionProps;
     private DBObject dbProps;
+    private DBObject collectionProps;
+    private DBObject documentProps;
+    
+    private final ArrayList<String> warnings = new ArrayList<>();
     
     private int page = 1;
     private int pagesize = 100;
@@ -109,11 +80,11 @@ public class RequestContext
         } else if (pathTokens.length < 4)
         {
             type = TYPE.COLLECTION;
-        } else if (pathTokens.length == 4 && pathTokens[3].equals("@indexes"))
+        } else if (pathTokens.length == 4 && pathTokens[3].equals("_indexes"))
         {
             type = TYPE.COLLECTION_INDEXES;
         }
-        else if (pathTokens.length > 4 && pathTokens[3].equals("@indexes"))
+        else if (pathTokens.length > 4 && pathTokens[3].equals("_indexes"))
         {
             type = TYPE.INDEX;
         }
@@ -195,17 +166,17 @@ public class RequestContext
     
     public static boolean isReservedResourceDb(String dbName)
     {
-        return dbName.equals("admin") || dbName.equals("local") ||dbName.startsWith("system.") || dbName.startsWith("@");
+        return dbName.equals("admin") || dbName.equals("local") ||dbName.startsWith("system.") || dbName.startsWith("_");
     }
     
     public static boolean isReservedResourceCollection(String collectionName)
     {
-        return collectionName!= null && (collectionName.startsWith("system.") || collectionName.startsWith("@") );
+        return collectionName!= null && (collectionName.startsWith("system.") || collectionName.startsWith("_") );
     }
     
     public static boolean isReservedResourceDocument(String documentId)
     {
-        return documentId != null && (documentId.startsWith("@") && !documentId.equals("@indexes"));
+        return documentId != null && (documentId.startsWith("_") && !documentId.equals("_indexes"));
     }
     
     public boolean isReservedResource()
@@ -310,5 +281,69 @@ public class RequestContext
     public void setSortBy(Deque<String> sortBy)
     {
         this.sortBy = sortBy;
+    }
+    
+    /**
+     * @return the collectionProps
+     */
+    public DBObject getCollectionProps()
+    {
+        return collectionProps;
+    }
+
+    /**
+     * @param collectionProps the collectionProps to set
+     */
+    public void setCollectionProps(DBObject collectionProps)
+    {
+        this.collectionProps = collectionProps;
+    }
+
+    /**
+     * @return the dbProps
+     */
+    public DBObject getDbProps()
+    {
+        return dbProps;
+    }
+
+    /**
+     * @param dbProps the dbProps to set
+     */
+    public void setDbProps(DBObject dbProps)
+    {
+        this.dbProps = dbProps;
+    }
+
+    /**
+     * @return the documentProps
+     */
+    public DBObject getDocumentProps()
+    {
+        return documentProps;
+    }
+
+    /**
+     * @param documentProps the documentProps to set
+     */
+    public void setDocumentProps(DBObject documentProps)
+    {
+        this.documentProps = documentProps;
+    }
+
+    /**
+     * @return the warnings
+     */
+    public ArrayList<String> getWarnings()
+    {
+        return warnings;
+    }
+    
+    /**
+     * @return the warnings
+     */
+    public void addWarning(String warning)
+    {
+        warnings.add(warning);
     }
 }

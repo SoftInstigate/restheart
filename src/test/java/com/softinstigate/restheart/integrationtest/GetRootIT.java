@@ -64,9 +64,9 @@ public class GetRootIT extends AbstactIT
         }
         
         Assert.assertNotNull("check json not null", json);
-        Assert.assertNotNull("check not null @returned property", json.get("@returned"));
-        Assert.assertNotNull("check not null @size property", json.get("@size"));
-        Assert.assertNotNull("check not null @total_pages property", json.get("@total_pages"));
+        Assert.assertNotNull("check not null @returned property", json.get("_returned"));
+        Assert.assertNotNull("check not null @size property", json.get("_size"));
+        Assert.assertNotNull("check not null @total_pages property", json.get("_total_pages"));
         Assert.assertNotNull("check not null _embedded", json.get("_embedded"));
     }
 }

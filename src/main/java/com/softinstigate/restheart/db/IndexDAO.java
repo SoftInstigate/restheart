@@ -45,7 +45,7 @@ public class IndexDAO
 
     private static final Logger logger = LoggerFactory.getLogger(IndexDAO.class);
 
-    public static final BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "@metadata");
+    public static final BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "_properties");
     
     private static final BasicDBObject fieldsToReturn;
 
@@ -53,7 +53,7 @@ public class IndexDAO
     {
         fieldsToReturn = new BasicDBObject();
         fieldsToReturn.put("_id", 1);
-        fieldsToReturn.put("@created_on", 1);
+        fieldsToReturn.put("_created_on", 1);
     }
     
     private static final BasicDBObject fieldsToReturnIndexes;
