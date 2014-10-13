@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.handlers.collection;
+package com.softinstigate.restheart.handlers.database;
 
 import com.softinstigate.restheart.hal.*;
 import com.mongodb.DBObject;
@@ -29,24 +29,23 @@ import org.slf4j.Logger;
  *
  * @author uji
  */
-public class CollectionRepresentationFactory
+public class DBRepresentationFactory
 {
-    private static final Logger logger = LoggerFactory.getLogger(CollectionRepresentationFactory.class);
+    private static final Logger logger = LoggerFactory.getLogger(DBRepresentationFactory.class);
 
     static public void sendCollection(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException
     {
         String requestPath = URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange));
         String queryString = (exchange.getQueryString() == null || exchange.getQueryString().isEmpty()) ? "" : "?" + exchange.getQueryString();
-        
+
         Representation rep = new Representation(requestPath + queryString);
 
-        // add the collection properties
-        DBObject collProps = context.getCollectionProps();
+        DBObject dbProps = context.getDbProps();
 
-        if (collProps != null) 
+        if (dbProps != null)
         {
-            HALUtils.addData(rep, collProps);
+            HALUtils.addData(rep, dbProps);
         }
 
         if (size > 0)
@@ -97,8 +96,11 @@ public class CollectionRepresentationFactory
             });
         }
 
-        rep.addLink(new Link("rh:indexes", URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange)) + "/@indexes"));
-        
+        if (context.getType() == RequestContext.TYPE.COLLECTION)
+        {
+            rep.addLink(new Link("rh:indexes", URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange)) + "/@indexes"));
+        }
+
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
     }

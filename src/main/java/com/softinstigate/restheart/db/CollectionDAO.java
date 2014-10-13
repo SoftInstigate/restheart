@@ -208,7 +208,7 @@ public class CollectionDAO
         return data;
     }
 
-    public static DBObject getCollectionMetadata(String dbName, String collName)
+    public static DBObject getCollectionProps(String dbName, String collName)
     {
         DBCollection coll = CollectionDAO.getCollection(dbName, collName);
 

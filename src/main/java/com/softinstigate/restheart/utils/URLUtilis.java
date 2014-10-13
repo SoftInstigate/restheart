@@ -11,6 +11,7 @@
 package com.softinstigate.restheart.utils;
 
 import io.undertow.server.HttpServerExchange;
+import java.util.Deque;
 
 /**
  *
@@ -88,5 +89,34 @@ public class URLUtilis
                 .append("filter=<'").append(referenceField).append("':<").append("'$elemMatch':<'$eq':").append(ids).append(">>>>");
         
         return sb.toString().replaceAll(" ", "");
+    }
+    
+    public static String getQueryStringRemovingParams(HttpServerExchange exchange, String... paramsToRemove)
+    {
+        String ret = exchange.getQueryString();
+        
+        if (ret == null || ret.isEmpty())
+        {
+            return ret;
+        }
+        
+        if (paramsToRemove == null)
+            return ret;
+        
+        for (String key: paramsToRemove)
+        {
+            Deque<String> values = exchange.getQueryParameters().get(key);
+
+            if (values != null)
+            {
+                for (String value : values)
+                {
+                    ret = ret.replaceAll(key + "=" + value + "&", "");
+                    ret = ret.replaceAll(key + "=" + value + "$", "");
+                }
+            }
+        }
+        
+        return ret;
     }
 }

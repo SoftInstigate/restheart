@@ -99,7 +99,7 @@ public class LoadGetPT
         DBCollection dbcoll = CollectionDAO.getCollection(db, coll);
         
         //CollectionDAO.getCollectionSize(coll, null);
-        //CollectionDAO.getCollectionMetadata(coll);
+        //CollectionDAO.getCollectionProps(coll);
         ArrayList<DBObject> data = CollectionDAO.getCollectionData(dbcoll, 1, 5, null, null);
         
         if (printData)

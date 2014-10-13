@@ -1,0 +1,123 @@
+/*
+ * Copyright SoftInstigate srl. All Rights Reserved.
+ *
+ *
+ * The copyright to the computer program(s) herein is the property of
+ * SoftInstigate srl, Italy. The program(s) may be used and/or copied only
+ * with the written permission of SoftInstigate srl or in accordance with the
+ * terms and conditions stipulated in the agreement/contract under which the
+ * program(s) have been supplied. This copyright notice must not be removed.
+ */
+package com.softinstigate.restheart.hal.injectors;
+
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.mongodb.DBObject;
+import com.softinstigate.restheart.Configuration;
+import com.softinstigate.restheart.db.CollectionDAO;
+import com.softinstigate.restheart.db.DBDAO;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ *
+ * @author uji
+ */
+public class LocalCachesSingleton
+{
+    private static boolean initialized = false;
+    
+    private LoadingCache<String, Optional<DBObject>> dbPropsCache = null;
+    private LoadingCache<String, Optional<DBObject>> collectionPropsCache = null;
+
+    private static final Logger logger = LoggerFactory.getLogger(LocalCachesSingleton.class);
+    
+    private static long metadataLocalCacheTtl = 1000;
+    private static final long maxCacheSize = 1000;
+
+    private LocalCachesSingleton()
+    {
+        setup();
+    }
+    
+    public static void init(Configuration conf)
+    {
+        metadataLocalCacheTtl = conf.getLocalCacheTtl();
+        initialized = true;
+    }
+
+    private void setup()
+    {
+        if (!initialized)
+            throw new IllegalStateException("not initialized");
+        
+        CacheBuilder builder = CacheBuilder.newBuilder();
+
+        builder.maximumSize(maxCacheSize);
+
+        if (getMetadataLocalCacheTtl() > 0)
+        {
+            builder.expireAfterWrite(getMetadataLocalCacheTtl(), TimeUnit.MILLISECONDS);
+        }
+
+        this.dbPropsCache = builder.build(
+                new CacheLoader<String, Optional<DBObject>>()
+                {
+                    @Override
+                    public Optional<DBObject> load(String key) throws Exception
+                    {
+                        return Optional.ofNullable(DBDAO.getDbProps(key));
+                    }
+                });
+
+        this.collectionPropsCache = builder.build(
+                new CacheLoader<String, Optional<DBObject>>()
+                {
+                    @Override
+                    public Optional<DBObject> load(String key) throws Exception
+                    {
+                        String[] dbNameAndCollectionName = key.split("@@@@");
+                        return Optional.ofNullable(CollectionDAO.getCollectionProps(dbNameAndCollectionName[0], dbNameAndCollectionName[1]));
+                    }
+                });
+    }
+
+    public static LocalCachesSingleton getInstance()
+    {
+        return LocalCachesSingletonHolder.INSTANCE;
+    }
+
+    private static class LocalCachesSingletonHolder
+    {
+        private static final LocalCachesSingleton INSTANCE = new LocalCachesSingleton();
+    }
+
+    public LoadingCache<String, Optional<DBObject>> getDbCache()
+    {
+        return this.dbPropsCache;
+    }
+
+    public LoadingCache<String, Optional<DBObject>> getCollectionCache()
+    {
+        return this.collectionPropsCache;
+    }
+
+    /**
+     * @return the metadataLocalCacheTtl
+     */
+    public static long getMetadataLocalCacheTtl()
+    {
+        return metadataLocalCacheTtl;
+    }
+
+    /**
+     * @param aMetadataLocalCacheTtl the metadataLocalCacheTtl to set
+     */
+    public static void setMetadataLocalCacheTtl(long aMetadataLocalCacheTtl)
+    {
+        metadataLocalCacheTtl = aMetadataLocalCacheTtl;
+    }
+}

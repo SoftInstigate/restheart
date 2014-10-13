@@ -34,7 +34,7 @@ public class MetadataFixer
 
     public static boolean addCollectionMetadata(String dbName, String collName)
     {
-        DBObject dbmd = DBDAO.getDbMetaData(dbName);
+        DBObject dbmd = DBDAO.getDbProps(dbName);
 
         if (dbmd == null)
         {
@@ -42,7 +42,7 @@ public class MetadataFixer
             return false;
         }
 
-        DBObject md = CollectionDAO.getCollectionMetadata(dbName, collName);
+        DBObject md = CollectionDAO.getCollectionProps(dbName, collName);
 
         if (md != null) // metadata exists
         {
@@ -81,7 +81,7 @@ public class MetadataFixer
             return false;
         }
 
-        DBObject dbmd = DBDAO.getDbMetaData(dbName);
+        DBObject dbmd = DBDAO.getDbProps(dbName);
 
         if (dbmd != null) // metadata exists
         {

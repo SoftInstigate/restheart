@@ -73,12 +73,13 @@ log-level: INFO
 
 #### performace settings
 
-# metadata-local-cache drammatically improves GETs performace
-# a GET on a collecation requires two additional queries to retrieve the db and the collection metadata
-# at development time you might want to disable the metadata cache to have all changes to dbs and collections metadata immediatly visible
-metadata-local-cache-enabled: true
+# local-cache to cache the db and collection properties
+# it drammatically improves GETs performace
+# a GET on a collecation requires two additional queries to retrieve the db and the collection props
+# at development time you might want to disable the local cache to have all changes to dbs and collections props immediatly visible
+local-cache-enabled: true
 # time to live is in milliseconds; specify a ttl < 0 to never expire cached entries 
-metadata-local-cache-ttl: 1000
+local-cache-ttl: 1000
 
 # to set a limit for the maximum number of concurrent requests being served
 requests-limit: 100

@@ -25,10 +25,7 @@ import io.undertow.util.Headers;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -120,28 +117,30 @@ public class DBDAO
 
     /**
      * @param dbName
-     * @return the db metadata
+     * @return the db props
      *
      */
-    public static DBObject getDbMetaData(String dbName)
+    public static DBObject getDbProps(String dbName)
     {
-        DBCollection metadatacoll = CollectionDAO.getCollection(dbName, "@metadata");
+        DBCollection propscoll = CollectionDAO.getCollection(dbName, "@metadata");
 
-        DBObject metadatarow = metadatacoll.findOne(METADATA_QUERY);
+        DBObject row = propscoll.findOne(METADATA_QUERY);
 
-        if (metadatarow != null)
+        if (row != null)
         {
-            Object etag = metadatarow.get("@etag");
+            row.removeField("_id");
+            
+            Object etag = row.get("@etag");
 
             if (etag != null && ObjectId.isValid("" + etag))
             {
                 ObjectId oid = new ObjectId("" + etag);
 
-                metadatarow.put("@lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
+                row.put("@lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
             }
         }
 
-        return metadatarow;
+        return row;
     }
 
     /**
@@ -189,7 +188,7 @@ public class DBDAO
 
                     properties.put("_id", coll);
 
-                    DBObject metadata = CollectionDAO.getCollectionMetadata(dbName, coll);
+                    DBObject metadata = CollectionDAO.getCollectionProps(dbName, coll);
 
                     if (metadata != null)
                         properties.putAll(metadata);

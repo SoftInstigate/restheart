@@ -61,8 +61,8 @@ public class Configuration
     private final boolean logToConsole;
     private final boolean logToFile;
 
-    private final boolean metadataLocalCacheEnabled;
-    private final long metadataLocalCacheTtl;
+    private final boolean localCacheEnabled;
+    private final long localCacheTtl;
     
     private final int requestsLimit;
 
@@ -74,8 +74,8 @@ public class Configuration
 
     private final boolean forceGzipEncoding;
 
-    public static final String METADATA_LOCAL_CACHE_ENABLED = "metadata-local-cache-enabled";
-    public static final String METADATA_LOCAL_CACHE_TTL = "metadata-local-cache-ttl";
+    public static final String LOCAL_CACHE_ENABLED = "local-cache-enabled";
+    public static final String LOCAL_CACHE_TTL = "local-cache-ttl";
     
     public static final String FORCE_GZIP_ENCODING = "force-gzip-encoding";
     public static final String DIRECT_BUFFERS = "direct-buffers";
@@ -159,8 +159,8 @@ public class Configuration
         logToFile = true;
         logLevel = Level.INFO;
 
-        metadataLocalCacheEnabled = false;
-        metadataLocalCacheTtl = 1000;
+        localCacheEnabled = false;
+        localCacheTtl = 1000;
         
         requestsLimit = 100;
         ioThreads = 2;
@@ -237,8 +237,8 @@ public class Configuration
             logToFile = true;
             logLevel = Level.INFO;
 
-            metadataLocalCacheEnabled = false;
-            metadataLocalCacheTtl = 1000;
+            localCacheEnabled = false;
+            localCacheTtl = 1000;
             
             requestsLimit = 100;
             
@@ -316,8 +316,8 @@ public class Configuration
 
             requestsLimit = getAsIntegerOrDefault(conf, REQUESTS_LIMIT, 100);
             
-            metadataLocalCacheEnabled = getAsBooleanOrDefault(conf, METADATA_LOCAL_CACHE_ENABLED, false);
-            metadataLocalCacheTtl = getAsLongOrDefault(conf, METADATA_LOCAL_CACHE_TTL, (long)1000);
+            localCacheEnabled = getAsBooleanOrDefault(conf, LOCAL_CACHE_ENABLED, false);
+            localCacheTtl = getAsLongOrDefault(conf, LOCAL_CACHE_TTL, (long)1000);
 
             ioThreads = getAsIntegerOrDefault(conf, IO_THREADS, 2);
             workerThreads = getAsIntegerOrDefault(conf, WORKER_THREADS, 32);
@@ -749,19 +749,19 @@ public class Configuration
     }
 
     /**
-     * @return the metadataLocalCacheEnabled
+     * @return the localCacheEnabled
      */
-    public boolean isMetadataLocalCacheEnabled()
+    public boolean isLocalCacheEnabled()
     {
-        return metadataLocalCacheEnabled;
+        return localCacheEnabled;
     }
 
     /**
-     * @return the metadataLocalCacheTimeout
+     * @return the localCacheTtl
      */
-    public long getMetadataLocalCacheTtl()
+    public long getLocalCacheTtl()
     {
-        return metadataLocalCacheTtl;
+        return localCacheTtl;
     }
 
     /**

@@ -19,7 +19,7 @@ import com.softinstigate.restheart.handlers.GzipEncodingHandler;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestDispacherHandler;
 import com.softinstigate.restheart.handlers.metadata.MetadataEnforcerHandler;
-import com.softinstigate.restheart.handlers.RequestContextInjecterHandler;
+import com.softinstigate.restheart.hal.injectors.RequestContextInjectorHandler;
 import com.softinstigate.restheart.handlers.root.DeleteRootHandler;
 import com.softinstigate.restheart.handlers.root.GetRootHandler;
 import com.softinstigate.restheart.handlers.root.PatchRootHandler;
@@ -27,7 +27,9 @@ import com.softinstigate.restheart.handlers.root.PostRootHandler;
 import com.softinstigate.restheart.handlers.root.PutRootHandler;
 import com.softinstigate.restheart.handlers.collection.DeleteCollectionHandler;
 import com.softinstigate.restheart.handlers.collection.GetCollectionHandler;
-import com.softinstigate.restheart.handlers.metadata.MetadataInjecterHandler;
+import com.softinstigate.restheart.hal.injectors.CollectionPropsInjectorHandler;
+import com.softinstigate.restheart.hal.injectors.DbPropsInjectorHandler;
+import com.softinstigate.restheart.hal.injectors.LocalCachesSingleton;
 import com.softinstigate.restheart.handlers.collection.PatchCollectionHandler;
 import com.softinstigate.restheart.handlers.collection.PostCollectionHandler;
 import com.softinstigate.restheart.handlers.collection.PutCollectionHandler;
@@ -383,6 +385,12 @@ public class Bootstrapper
             builder.addAjpListener(conf.getAjpPort(), conf.getAjpHost());
             logger.info("ajp listener bound at {}:{}", conf.getAjpHost(), conf.getAjpPort());
         }
+        
+        if (conf.isLocalCacheEnabled())
+        {
+            LocalCachesSingleton.init(conf);
+            logger.info("local cache enabled");
+        }
 
         hanldersPipe = getHandlersPipe(identityManager, accessManager);
 
@@ -400,34 +408,36 @@ public class Bootstrapper
     private static GracefulShutdownHandler getHandlersPipe(IdentityManager identityManager, AccessManager accessManager)
     {
         PipedHttpHandler coreHanlderChain
-                = new MetadataInjecterHandler(
-                        new MetadataEnforcerHandler(
-                                new RequestDispacherHandler(
-                                        new GetRootHandler(),
-                                        new PostRootHandler(),
-                                        new PutRootHandler(),
-                                        new DeleteRootHandler(),
-                                        new PatchRootHandler(),
-                                        new GetDBHandler(),
-                                        new PostDBHandler(),
-                                        new PutDBHandler(),
-                                        new DeleteDBHandler(),
-                                        new PatchDBHandler(),
-                                        new GetCollectionHandler(),
-                                        new PostCollectionHandler(),
-                                        new PutCollectionHandler(),
-                                        new DeleteCollectionHandler(),
-                                        new PatchCollectionHandler(),
-                                        new GetDocumentHandler(),
-                                        new PostDocumentHandler(),
-                                        new PutDocumentHandler(),
-                                        new DeleteDocumentHandler(),
-                                        new PatchDocumentHandler(),
-                                        new GetIndexesHandler(),
-                                        new PutIndexHandler(),
-                                        new DeleteIndexHandler()
-                                )
-                        ), conf.isMetadataLocalCacheEnabled(), conf.getMetadataLocalCacheTtl()
+                = new DbPropsInjectorHandler(
+                    new CollectionPropsInjectorHandler(
+                            new MetadataEnforcerHandler(
+                                    new RequestDispacherHandler(
+                                            new GetRootHandler(),
+                                            new PostRootHandler(),
+                                            new PutRootHandler(),
+                                            new DeleteRootHandler(),
+                                            new PatchRootHandler(),
+                                            new GetDBHandler(),
+                                            new PostDBHandler(),
+                                            new PutDBHandler(),
+                                            new DeleteDBHandler(),
+                                            new PatchDBHandler(),
+                                            new GetCollectionHandler(),
+                                            new PostCollectionHandler(),
+                                            new PutCollectionHandler(),
+                                            new DeleteCollectionHandler(),
+                                            new PatchCollectionHandler(),
+                                            new GetDocumentHandler(),
+                                            new PostDocumentHandler(),
+                                            new PutDocumentHandler(),
+                                            new DeleteDocumentHandler(),
+                                            new PatchDocumentHandler(),
+                                            new GetIndexesHandler(),
+                                            new PutIndexHandler(),
+                                            new DeleteIndexHandler()
+                                    )
+                            ), conf.isLocalCacheEnabled()
+                    ), conf.isLocalCacheEnabled()
                 );
 
         PathHandler paths = path().addPrefixPath("/@browser", resource(new FileResourceManager(browserRootFile, 3)).addWelcomeFiles("browser.html").setDirectoryListingEnabled(false));
@@ -437,7 +447,7 @@ public class Bootstrapper
             String url = (String) m.get(Configuration.MONGO_MOUNT_URL);
             String db = (String) m.get(Configuration.MONGO_MOUNT_DB);
 
-            paths.addPrefixPath(url, addSecurity(new RequestContextInjecterHandler(url, db, coreHanlderChain), identityManager, accessManager));
+            paths.addPrefixPath(url, addSecurity(new RequestContextInjectorHandler(url, db, coreHanlderChain), identityManager, accessManager));
 
             logger.info("bound url prefix {} to db {}", url, db);
         });

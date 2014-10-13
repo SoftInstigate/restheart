@@ -13,15 +13,10 @@ package com.softinstigate.restheart.handlers.database;
 import com.mongodb.DBObject;
 import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.utils.HttpStatus;
-import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestContext;
-import com.softinstigate.restheart.handlers.collection.CollectionRepresentationFactory;
-import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -29,8 +24,6 @@ import org.slf4j.LoggerFactory;
  */
 public class GetDBHandler extends PipedHttpHandler
 {
-    private static final Logger logger = LoggerFactory.getLogger(GetDBHandler.class);
-
     /**
      * Creates a new instance of GetDBHandler
      */
@@ -49,7 +42,7 @@ public class GetDBHandler extends PipedHttpHandler
         data = DBDAO.getData(context.getDBName(), colls, context.getPage(), context.getPagesize());
             
         exchange.setResponseCode(HttpStatus.SC_OK);
-        CollectionRepresentationFactory.sendCollection(exchange, context, data, data.size());
+        DBRepresentationFactory.sendCollection(exchange, context, data, colls.size());
         exchange.endExchange();
     }
 }

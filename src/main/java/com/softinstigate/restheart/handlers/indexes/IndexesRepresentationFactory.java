@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.handlers.collection;
+package com.softinstigate.restheart.handlers.indexes;
 
 import com.softinstigate.restheart.hal.*;
 import com.mongodb.DBObject;
@@ -20,7 +20,6 @@ import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.util.List;
-import java.util.TreeMap;
 import org.bson.types.ObjectId;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -29,9 +28,9 @@ import org.slf4j.Logger;
  *
  * @author uji
  */
-public class CollectionRepresentationFactory
+public class IndexesRepresentationFactory
 {
-    private static final Logger logger = LoggerFactory.getLogger(CollectionRepresentationFactory.class);
+    private static final Logger logger = LoggerFactory.getLogger(IndexesRepresentationFactory.class);
 
     static public void sendCollection(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException
@@ -40,14 +39,6 @@ public class CollectionRepresentationFactory
         String queryString = (exchange.getQueryString() == null || exchange.getQueryString().isEmpty()) ? "" : "?" + exchange.getQueryString();
         
         Representation rep = new Representation(requestPath + queryString);
-
-        // add the collection properties
-        DBObject collProps = context.getCollectionProps();
-
-        if (collProps != null) 
-        {
-            HALUtils.addData(rep, collProps);
-        }
 
         if (size > 0)
         {
@@ -84,21 +75,6 @@ public class CollectionRepresentationFactory
             }
         }
 
-        // collection links
-        TreeMap<String, String> links;
-
-        links = HALUtils.getPaginationLinks(exchange, context, size);
-
-        if (links != null)
-        {
-            links.keySet().stream().forEach((k) ->
-            {
-                rep.addLink(new Link(k, links.get(k)));
-            });
-        }
-
-        rep.addLink(new Link("rh:indexes", URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange)) + "/@indexes"));
-        
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
     }

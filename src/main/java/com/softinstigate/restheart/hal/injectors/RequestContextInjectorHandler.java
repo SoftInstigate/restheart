@@ -8,8 +8,10 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.handlers;
+package com.softinstigate.restheart.hal.injectors;
 
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
+import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import com.softinstigate.restheart.utils.URLUtilis;
@@ -20,12 +22,12 @@ import java.util.Deque;
  *
  * @author uji
  */
-public class RequestContextInjecterHandler extends PipedHttpHandler
+public class RequestContextInjectorHandler extends PipedHttpHandler
 {
     private final String prefixUrl;
     private final String db;
     
-    public RequestContextInjecterHandler(String prefixUrl, String db, PipedHttpHandler next)
+    public RequestContextInjectorHandler(String prefixUrl, String db, PipedHttpHandler next)
     {
         super(next);
         
