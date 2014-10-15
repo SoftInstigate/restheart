@@ -56,18 +56,25 @@ public class ResponseHelper
         if (message != null)
             rep.addProperty("message", message);
 
+        Representation nrep = new Representation("#");
+        
         if (t != null)
-            rep.addProperty("exception", t.getClass().getName());
+        {
+            nrep.addProperty("exception", t.getClass().getName());
+            rep.addRepresentation("rh:exception", nrep);
+        }
         
         if (t!= null && t.getMessage() != null)
         {
-            rep.addProperty("exception message", t.getMessage());
+            nrep.addProperty("exception message", t.getMessage());
         }
             
         BasicDBList stackTrace = getStackTraceJson(t);
         
         if (stackTrace != null)
-            rep.addProperty("stack trace", stackTrace);
+        {
+            nrep.addProperty("stack trace", stackTrace);
+        }
         
         return rep.toString();
     }

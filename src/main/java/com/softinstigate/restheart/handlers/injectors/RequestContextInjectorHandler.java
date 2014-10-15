@@ -10,6 +10,8 @@
  */
 package com.softinstigate.restheart.handlers.injectors;
 
+import com.mongodb.DBObject;
+import com.mongodb.util.JSON;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.utils.HttpStatus;
@@ -29,30 +31,32 @@ public class RequestContextInjectorHandler extends PipedHttpHandler
 {
     private final String prefixUrl;
     private final String db;
-    
+
     private static final Logger logger = LoggerFactory.getLogger(RequestContextInjectorHandler.class);
-    
+
     public RequestContextInjectorHandler(String prefixUrl, String db, PipedHttpHandler next)
     {
         super(next);
-        
+
         if (!prefixUrl.startsWith("/"))
+        {
             throw new IllegalArgumentException("prefix url must start with /");
-        
+        }
+
         this.prefixUrl = URLUtilis.removeTrailingSlashes(prefixUrl);
         this.db = db;
     }
-    
+
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
         RequestContext rcontext = new RequestContext(exchange, prefixUrl, db);
-        
+
         Deque<String> __pagesize = exchange.getQueryParameters().get("pagesize");
 
         int page = 1; // default page
         int pagesize = 100; // default pagesize
-        
+
         if (__pagesize != null && !(__pagesize.isEmpty()))
         {
             try
@@ -65,12 +69,13 @@ public class RequestContextInjectorHandler extends PipedHttpHandler
                 return;
             }
         }
-        
+
         if (pagesize < 1 || pagesize > 1000)
         {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal page parameter, pagesize must be >= 0 and <= 1000");
             return;
-        } else
+        }
+        else
         {
             rcontext.setPagesize(pagesize);
         }
@@ -89,7 +94,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler
                 return;
             }
         }
-        
+
         if (page < 1)
         {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal page paramenter, it is < 1");
@@ -99,25 +104,62 @@ public class RequestContextInjectorHandler extends PipedHttpHandler
         {
             rcontext.setPage(page);
         }
-        
+
         Deque<String> __count = exchange.getQueryParameters().get("count");
-        
+
         if (__count != null)
         {
             rcontext.setCount(true);
         }
-        
+        // get and check sort_by parameter
         Deque<String> sort_by = exchange.getQueryParameters().get("sort_by");
-        
-        rcontext.setSortBy(exchange.getQueryParameters().get("sort_by"));
-        
-        Deque<String> filters = exchange.getRequestHeaders().get("filter");
-        
-        rcontext.setFilter(exchange.getQueryParameters().get("filter"));
-        
+
+        if (sort_by != null)
+        {
+            if (sort_by.stream().anyMatch(s -> (s == null || s.isEmpty())))
+            {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal sort_by paramenter");
+                return;
+            }
+            
+            rcontext.setSortBy(exchange.getQueryParameters().get("sort_by"));
+        }
+
+        // get and check filter parameter
+        Deque<String> filters = exchange.getQueryParameters().get("filter");
+
+        if (filters != null)
+        {
+            if (filters.stream().anyMatch(f ->
+            {
+                if (f == null || f.isEmpty())
+                {
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal filter paramenter (empty)");
+                    return true;
+                }
+
+                try
+                {
+                    JSON.parse(f);
+                }
+                catch (Throwable t)
+                {
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal filter paramenter: " + f, t);
+                    return true;
+                }
+                
+                return false;
+            }))
+            {
+                return; // an error occurred
+            }
+            
+            rcontext.setFilter(exchange.getQueryParameters().get("filter"));
+        }
+
         next.handleRequest(exchange, rcontext);
     }
-    
+
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception
     {
