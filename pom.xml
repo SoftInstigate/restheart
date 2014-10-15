@@ -23,6 +23,12 @@
             <artifactId>undertow-core</artifactId>
             <version>1.0.15.Final</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>18.0</version>
+        </dependency>
         
         <dependency>
             <groupId>org.yaml</groupId>
@@ -41,12 +47,6 @@
             <artifactId>junit</artifactId>
             <version>4.10</version>
             <scope>test</scope>
-        </dependency>
-        
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>18.0</version>
         </dependency>
         
         <dependency>
