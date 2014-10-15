@@ -46,7 +46,7 @@ public class RootRepresentationFactory
     static private Representation getDbs(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException
     {
-        String requestPath = URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange));
+        String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRelativePath());
         String queryString = (exchange.getQueryString() == null || exchange.getQueryString().isEmpty()) ? "" : "?" + exchange.getQueryString();
         
         boolean trailingSlash = requestPath.substring(requestPath.length()-1).equals("/");

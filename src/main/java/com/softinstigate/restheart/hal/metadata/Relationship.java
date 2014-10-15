@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.hal.properties;
+package com.softinstigate.restheart.hal.metadata;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;

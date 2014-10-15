@@ -10,17 +10,14 @@
  */
 package com.softinstigate.restheart.handlers.collection;
 
-import com.softinstigate.restheart.hal.properties.Relationship;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import com.mongodb.util.JSON;
-import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.db.CollectionDAO;
+import com.softinstigate.restheart.hal.metadata.InvalidMetadataException;
+import com.softinstigate.restheart.hal.metadata.Relationship;
 import com.softinstigate.restheart.handlers.injectors.LocalCachesSingleton;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
-import com.softinstigate.restheart.hal.properties.InvalidMetadataException;
-import com.softinstigate.restheart.utils.ChannelReader;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.handlers.document.DocumentRepresentationFactory;

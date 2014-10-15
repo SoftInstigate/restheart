@@ -95,7 +95,7 @@ public class GetDocumentHandler extends PipedHttpHandler
             }
         }
         
-        String requestPath = URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange));
+        String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRelativePath());
 
         ResponseHelper.injectEtagHeader(exchange, document);
         exchange.setResponseCode(HttpStatus.SC_OK);

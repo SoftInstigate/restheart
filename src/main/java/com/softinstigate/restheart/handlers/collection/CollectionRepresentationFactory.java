@@ -46,7 +46,7 @@ public class CollectionRepresentationFactory
     static public Representation getCollection(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException
     {
-        String requestPath = URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange));
+        String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRelativePath());
         String queryString = (exchange.getQueryString() == null || exchange.getQueryString().isEmpty()) ? "" : "?" + exchange.getQueryString();
         
         Representation rep = new Representation(requestPath + queryString);

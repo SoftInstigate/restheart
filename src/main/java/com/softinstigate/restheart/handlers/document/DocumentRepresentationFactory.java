@@ -11,12 +11,12 @@
 package com.softinstigate.restheart.handlers.document;
 
 import com.softinstigate.restheart.hal.*;
-import com.softinstigate.restheart.hal.properties.InvalidMetadataException;
 import com.mongodb.DBObject;
 import static com.softinstigate.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
+import com.softinstigate.restheart.hal.metadata.InvalidMetadataException;
+import com.softinstigate.restheart.hal.metadata.Relationship;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
-import com.softinstigate.restheart.hal.properties.Relationship;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
@@ -68,7 +68,7 @@ public class DocumentRepresentationFactory
         }
         
         // link templates and curies
-        String requestPath = URLUtilis.removeTrailingSlashes(URLUtilis.getRequestPath(exchange));
+        String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRelativePath());
         if (!requestPath.equals("/")) // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link("rh:coll", URLUtilis.getPerentPath(requestPath)));
         rep.addLink(new Link("rh", "curies", "/_docs/{rel}.html", true), true);

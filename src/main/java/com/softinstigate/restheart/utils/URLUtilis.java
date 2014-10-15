@@ -12,7 +12,6 @@ package com.softinstigate.restheart.utils;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
-import java.util.regex.Pattern;
 
 /**
  *
@@ -65,16 +64,6 @@ public class URLUtilis
         return exchange.getRequestURL().replaceAll(exchange.getRelativePath(), "");
     }
 
-    /**
-     *
-     * @param exchange
-     * @return the request path without the query string
-     */
-    static public String getRequestPath(HttpServerExchange exchange)
-    {
-        return exchange.getRequestPath().replaceAll(exchange.getQueryString(), "");
-    }
-
     static public String getUriWithDocId(String dbName, String collName, String documentId)
     {
         StringBuilder sb = new StringBuilder();
@@ -88,9 +77,9 @@ public class URLUtilis
     {
         StringBuilder sb = new StringBuilder();
 
-        ///db/coll/?filter=<"ref":<"$in":<"a","b","c">>
+        ///db/coll/?filter={"ref":{"$in":{"a","b","c"}}
         sb.append("/").append(dbName).append("/").append(collName).append("?")
-                .append("filter=<").append("'").append(referenceField).append("'").append(":").append("<'$in'").append(":").append(ids).append(">>");
+                .append("filter={").append("'").append(referenceField).append("'").append(":").append("{'$in'").append(":").append(ids).append("}}");
 
         return sb.toString().replaceAll(" ", "");
     }
@@ -99,9 +88,9 @@ public class URLUtilis
     {
         StringBuilder sb = new StringBuilder();
 
-        ///db/coll/?filter=<"ref":<"$in":<"a","b","c">>
+        ///db/coll/?filter={"ref":{"$in":{"a","b","c"}}
         sb.append("/").append(dbName).append("/").append(collName).append("?")
-                .append("filter=<").append("'").append(referenceField).append("'").append(":").append(ids).append(">");
+                .append("filter={").append("'").append(referenceField).append("'").append(":").append(ids).append("}");
 
         return sb.toString().replaceAll(" ", "");
     }
@@ -110,9 +99,9 @@ public class URLUtilis
     {
         StringBuilder sb = new StringBuilder();
 
-        ///db/coll/?filter=<'referenceField':<"$elemMatch":<'ids'>>>
+        ///db/coll/?filter={'referenceField':{"$elemMatch":{'ids'}}}
         sb.append("/").append(dbName).append("/").append(collName).append("?")
-                .append("filter=<'").append(referenceField).append("':<").append("'$elemMatch':<'$eq':").append(ids).append(">>>>");
+                .append("filter={'").append(referenceField).append("':{").append("'$elemMatch':{'$eq':").append(ids).append("}}}");
 
         return sb.toString().replaceAll(" ", "");
     }

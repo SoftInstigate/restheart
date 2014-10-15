@@ -128,10 +128,7 @@ public class CollectionDAO
             {
                 filter.stream().forEach(f ->
                 {
-                    String _filter = f.replaceAll("<", "{");
-                    _filter = _filter.replaceAll(">", "}");
-                    
-                    query.putAll((BSONObject) JSON.parse(_filter));  // this can throw JSONParseException for invalid filter parameters
+                    query.putAll((BSONObject) JSON.parse(f));  // this can throw JSONParseException for invalid filter parameters
                 });
             }
             catch (JSONParseException jpe)
@@ -180,10 +177,7 @@ public class CollectionDAO
         {
             filter.stream().forEach((String f) ->
             {
-                String _filter = f.replaceAll("<", "{");
-                _filter = _filter.replaceAll(">", "}");
-                
-                BSONObject filterQuery = (BSONObject) JSON.parse(_filter);
+                BSONObject filterQuery = (BSONObject) JSON.parse(f);
                 replaceObjectIds(filterQuery);
                     
                 query.putAll(filterQuery);  // this can throw JSONParseException for invalid filter parameters

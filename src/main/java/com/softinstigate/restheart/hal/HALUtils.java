@@ -44,7 +44,7 @@ public class HALUtils
 
     public static TreeMap<String, String> getPaginationLinks(HttpServerExchange exchange, RequestContext context, long size) throws IllegalQueryParamenterException
     {
-        String requestPath = URLUtilis.getRequestPath(exchange);
+        String requestPath = exchange.getRelativePath();;
         String queryString = exchange.getQueryString();
 
         int page = context.getPage();

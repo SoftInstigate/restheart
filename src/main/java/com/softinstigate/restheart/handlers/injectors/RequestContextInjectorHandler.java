@@ -16,7 +16,10 @@ import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HeaderValues;
 import java.util.Deque;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -26,6 +29,8 @@ public class RequestContextInjectorHandler extends PipedHttpHandler
 {
     private final String prefixUrl;
     private final String db;
+    
+    private static final Logger logger = LoggerFactory.getLogger(RequestContextInjectorHandler.class);
     
     public RequestContextInjectorHandler(String prefixUrl, String db, PipedHttpHandler next)
     {
@@ -102,7 +107,12 @@ public class RequestContextInjectorHandler extends PipedHttpHandler
             rcontext.setCount(true);
         }
         
+        Deque<String> sort_by = exchange.getQueryParameters().get("sort_by");
+        
         rcontext.setSortBy(exchange.getQueryParameters().get("sort_by"));
+        
+        Deque<String> filters = exchange.getRequestHeaders().get("filter");
+        
         rcontext.setFilter(exchange.getQueryParameters().get("filter"));
         
         next.handleRequest(exchange, rcontext);
