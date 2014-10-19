@@ -10,6 +10,7 @@
  */
 package com.softinstigate.restheart.handlers;
 
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mongodb.CommandFailureException;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.ResponseHelper;
@@ -51,8 +52,8 @@ public class ErrorHandler implements HttpHandler
             
             Object errmsg = cfe.getCommandResult().get("errmsg");
             
-            if ("unauthorized".equals(errmsg))
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "mongodb db user is not allowed to execute the command. give it more permissions or hide this resource via mongo-mounts", cfe);
+            if (errmsg != null && errmsg instanceof String && ("unauthorized".equals(errmsg) || ((String)errmsg).contains("not authorized")))
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "not authorized to access the resource in mongodb. check mongo-credentials in the configuration.", cfe);
             else
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error handling the request", cfe);
                 

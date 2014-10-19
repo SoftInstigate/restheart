@@ -11,7 +11,9 @@
 package com.softinstigate.restheart.handlers.injectors;
 
 import com.google.common.cache.LoadingCache;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mongodb.DBObject;
+import com.mongodb.MongoException;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestContext;
@@ -73,7 +75,22 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler
                 }
                 else
                 {
-                    _collMetadata = collectionPropsCache.get(context.getDBName() + SEPARATOR + context.getCollectionName());
+                    try
+                    {
+                        _collMetadata = collectionPropsCache.getUnchecked(context.getDBName() + SEPARATOR + context.getCollectionName());
+                    }
+                    catch(UncheckedExecutionException uex)
+                    {
+                        if (uex.getCause() instanceof MongoException)
+                        {
+                            throw (MongoException) uex.getCause();
+                        }
+                        else
+                        {
+                            throw uex;
+                        }
+                    }
+                    
                     
                     if (_collMetadata.isPresent())
                     {

@@ -11,7 +11,9 @@
 package com.softinstigate.restheart.handlers.injectors;
 
 import com.google.common.cache.LoadingCache;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mongodb.DBObject;
+import com.mongodb.MongoException;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
@@ -45,7 +47,7 @@ public class DbPropsInjectorHandler extends PipedHttpHandler
     {
         if (context.getDBName() != null)
         {
-            DBObject dbProps = null;
+            DBObject dbProps;
 
             if (!cacheEnabled)
             {
@@ -72,9 +74,23 @@ public class DbPropsInjectorHandler extends PipedHttpHandler
                 }
                 else
                 {
-                    _dbMetadata = dbPropsCache.get(context.getDBName());
+                    try
+                    {
+                        _dbMetadata = dbPropsCache.getUnchecked(context.getDBName());
+                    }
+                    catch(UncheckedExecutionException uex)
+                    {
+                        if (uex.getCause() instanceof MongoException)
+                        {
+                            throw (MongoException) uex.getCause();
+                        }
+                        else
+                        {
+                            throw uex;
+                        }
+                    }
                     
-                    if (_dbMetadata.isPresent())
+                    if (_dbMetadata != null && _dbMetadata.isPresent())
                     {
                         dbProps = _dbMetadata.get();
                         dbProps.put("_db-props-cached", false);

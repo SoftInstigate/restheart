@@ -11,7 +11,7 @@
 package com.softinstigate.restheart;
 
 import com.mongodb.MongoClient;
-import com.softinstigate.restheart.db.MetadataFixer;
+import com.softinstigate.restheart.db.PropsFixer;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.security.handlers.AccessManagerHandler;
 import com.softinstigate.restheart.handlers.ErrorHandler;
@@ -155,7 +155,7 @@ public class Bootstrapper
 
             logger.info("mongodb connection pool initialized");
 
-            MetadataFixer.fixMetadata();
+            PropsFixer.fixAllMissingProps();
         }
         catch (Throwable t)
         {

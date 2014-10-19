@@ -11,11 +11,15 @@
 package com.softinstigate.restheart.utils;
 
 import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.softinstigate.restheart.hal.Representation;
 import com.softinstigate.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.Map;
 import org.bson.types.ObjectId;
 
@@ -84,13 +88,20 @@ public class ResponseHelper
         if (t == null || t.getStackTrace() == null)
             return null;
         
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        
+        t.printStackTrace(pw);
+        
+        String st = sw.toString();
+        
+        st = st.replaceAll("\t", "  ");
+        
+        String[] lines = st.split("\n");
+        
         BasicDBList list = new BasicDBList();
         
-        for (StackTraceElement e: t.getStackTrace())
-        {
-            list.add(e.toString());
-        }
-        
+        list.addAll(Arrays.asList(lines));
         return list;
     }
     
