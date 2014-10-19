@@ -149,17 +149,9 @@ public class RequestContext
             return null;
     }
     
-    public URI getUri()
+    public URI getUri() throws URISyntaxException
     {
-        try
-        {
-            return new URI(Arrays.asList(pathTokens).stream().reduce("/", (t1,t2) -> t1 + "/" + t2));
-        }
-        catch (URISyntaxException ex)
-        {
-            logger.error("error instantiating the request URI", ex);
-            return null;
-        }
+        return new URI(Arrays.asList(pathTokens).stream().reduce("/", (t1,t2) -> t1 + "/" + t2));
     }
     
     public METHOD getMethod()
