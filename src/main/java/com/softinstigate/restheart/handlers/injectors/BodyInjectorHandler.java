@@ -54,9 +54,9 @@ public class BodyInjectorHandler extends PipedHttpHandler
         // check content type
         HeaderValues contentTypes = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
 
-        if (contentTypes == null || contentTypes.isEmpty() || !contentTypes.contains(Representation.HAL_JSON_MEDIA_TYPE))
+        if (contentTypes == null || contentTypes.isEmpty() || !contentTypes.contains(Representation.HAL_JSON_MEDIA_TYPE) || !contentTypes.contains("application/json"))
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, "Contet-Type must be " + Representation.HAL_JSON_MEDIA_TYPE);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, "Contet-Type must be either " + Representation.HAL_JSON_MEDIA_TYPE + " or application/json");
             return;
         }
         

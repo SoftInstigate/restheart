@@ -46,7 +46,7 @@ public class ResponseHelper
 
         String httpStatuText = HttpStatus.getStatusText(code);
             
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(getErrorJsonDocument(exchange.getRequestPath(), code, httpStatuText, message, t));
         exchange.endExchange();
     }
