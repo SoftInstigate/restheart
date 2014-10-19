@@ -11,7 +11,6 @@
 package com.softinstigate.restheart.utils;
 
 import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.softinstigate.restheart.hal.Representation;
 import com.softinstigate.restheart.handlers.RequestContext;

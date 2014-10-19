@@ -15,7 +15,6 @@ import io.undertow.predicate.Predicate;
 import io.undertow.security.handlers.AuthenticationConstraintHandler;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import java.util.Map;
 import java.util.Set;
 
 /**

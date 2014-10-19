@@ -11,27 +11,9 @@
 package com.softinstigate.restheart.db;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import com.softinstigate.restheart.utils.HttpStatus;
-import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
-import com.softinstigate.restheart.handlers.RequestContext;
-import com.softinstigate.restheart.utils.RequestHelper;
-import com.softinstigate.restheart.utils.ResponseHelper;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
-import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

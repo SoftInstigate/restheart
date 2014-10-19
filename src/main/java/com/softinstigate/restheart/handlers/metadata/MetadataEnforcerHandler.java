@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.handlers.properties;
+package com.softinstigate.restheart.handlers.metadata;
 
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
@@ -16,8 +16,6 @@ import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.handlers.RequestContext.METHOD;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderValues;
-import io.undertow.util.Headers;
 
 /**
  *
@@ -25,7 +23,6 @@ import io.undertow.util.Headers;
  */
 public class MetadataEnforcerHandler extends PipedHttpHandler
 {
-    private final static String JSON_MEDIA_TYPE = "application/json";
     /**
      * Creates a new instance of MetadataEnforcerHandler
      *

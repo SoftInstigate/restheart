@@ -10,7 +10,6 @@
  */
 package com.softinstigate.restheart.handlers;
 
-import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mongodb.CommandFailureException;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.ResponseHelper;

@@ -10,7 +10,6 @@
  */
 package com.softinstigate.restheart.handlers.injectors;
 
-import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestContext;
@@ -18,7 +17,6 @@ import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderValues;
 import java.util.Deque;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

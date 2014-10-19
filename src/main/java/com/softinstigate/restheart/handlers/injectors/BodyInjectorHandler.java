@@ -10,8 +10,6 @@
  */
 package com.softinstigate.restheart.handlers.injectors;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
@@ -32,6 +30,8 @@ import java.util.HashSet;
  */
 public class BodyInjectorHandler extends PipedHttpHandler
 {
+    private final static String JSON_MEDIA_TYPE = "application/json";
+    
     /**
      * Creates a new instance of BodyInjectorHandler
      *
@@ -54,9 +54,9 @@ public class BodyInjectorHandler extends PipedHttpHandler
         // check content type
         HeaderValues contentTypes = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
 
-        if (contentTypes == null || contentTypes.isEmpty() || !contentTypes.contains(Representation.HAL_JSON_MEDIA_TYPE) || !contentTypes.contains("application/json"))
+        if (contentTypes == null || contentTypes.isEmpty() || !contentTypes.contains(Representation.HAL_JSON_MEDIA_TYPE) || !contentTypes.contains(JSON_MEDIA_TYPE))
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, "Contet-Type must be either " + Representation.HAL_JSON_MEDIA_TYPE + " or application/json");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, "Contet-Type must be either " + Representation.HAL_JSON_MEDIA_TYPE + " or " + JSON_MEDIA_TYPE);
             return;
         }
         

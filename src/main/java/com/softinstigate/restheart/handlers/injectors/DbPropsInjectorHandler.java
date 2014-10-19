@@ -14,7 +14,6 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
-import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestContext;
