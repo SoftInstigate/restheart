@@ -28,6 +28,8 @@ import org.yaml.snakeyaml.Yaml;
  */
 public class Configuration
 {
+    public static String DOC_Path = "http://localhost/~Uji/rhapi/";
+    
     private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
 
     private final boolean httpsListener;

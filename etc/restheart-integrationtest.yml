@@ -36,10 +36,10 @@ mongo-servers:
     - host: 127.0.0.1
       port: 27017
 
-mongo-credentials:
-    - auth-db: admin
-      user: admin
-      password: adminadmin
+#mongo-credentials:
+#    - auth-db: admin
+#      user: admin
+#      password: adminadmin
       
 mongo-mounts:
     - db: "*"
@@ -79,13 +79,13 @@ local-cache-enabled: true
 local-cache-ttl: 1000
 
 # to set a limit for the maximum number of concurrent requests being served
-requests-limit: 100
+requests-limit: 1000
 
 # the number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
-io-threads: 2
+io-threads: 2 
 
 # the number of threads created for blocking tasks (such as ones involving db access). suggested value: core*16
-worker-threads: 32
+worker-threads: 8 
 
 # use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
 buffer-size: 16384

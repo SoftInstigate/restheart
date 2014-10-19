@@ -18,7 +18,6 @@ package com.softinstigate.restheart;
  */
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.softinstigate.restheart.Configuration;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import java.io.BufferedReader;
@@ -58,7 +57,7 @@ public class LoadGetPT
             }
         });
         
-        MongoDBClientSingleton.init(new Configuration("restheart.yml"));
+        MongoDBClientSingleton.init(new Configuration("./etc/restheart-integrationtest.yml"));
     }
 
     public void get() throws IOException

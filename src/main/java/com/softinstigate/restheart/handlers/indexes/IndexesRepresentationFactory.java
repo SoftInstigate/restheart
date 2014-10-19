@@ -12,6 +12,7 @@ package com.softinstigate.restheart.handlers.indexes;
 
 import com.softinstigate.restheart.hal.*;
 import com.mongodb.DBObject;
+import com.softinstigate.restheart.Configuration;
 import static com.softinstigate.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
@@ -79,7 +80,7 @@ public class IndexesRepresentationFactory
         
         // link templates and curies
         rep.addLink(new Link("rh:coll", URLUtilis.getPerentPath(requestPath)));
-        rep.addLink(new Link("rh", "curies", "/_docs/{rel}.html", true), true);
+        rep.addLink(new Link("rh", "curies", Configuration.DOC_Path + "/#{rel}", true), true);
         
         ResponseHelper.injectWarnings(rep, exchange, context);
 

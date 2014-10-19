@@ -30,7 +30,7 @@ import org.junit.BeforeClass;
  */
 public abstract class AbstactIT
 {
-    protected static final String confFilePath = "etc/restheart.yml";
+    protected static final String confFilePath = "etc/restheart-integrationtest.yml";
     protected static MongoClient mongoClient;
     protected static Configuration conf = null;
     protected static Executor adminExecutor = null;

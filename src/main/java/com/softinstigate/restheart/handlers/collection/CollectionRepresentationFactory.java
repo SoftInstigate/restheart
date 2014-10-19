@@ -12,6 +12,7 @@ package com.softinstigate.restheart.handlers.collection;
 
 import com.softinstigate.restheart.hal.*;
 import com.mongodb.DBObject;
+import com.softinstigate.restheart.Configuration;
 import static com.softinstigate.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
@@ -115,7 +116,7 @@ public class CollectionRepresentationFactory
         rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
         rep.addLink(new Link("rh:countandpaging", requestPath + "/{?page}{&pagesize}&count", true));
         rep.addLink(new Link("rh:_indexes", "/_indexes"));
-        rep.addLink(new Link("rh", "curies", "/_docs/{rel}.html", true), true);
+        rep.addLink(new Link("rh", "curies", Configuration.DOC_Path + "/#{rel}", true), true);
         
         ResponseHelper.injectWarnings(rep, exchange, context);
         

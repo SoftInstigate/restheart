@@ -166,7 +166,7 @@ public class Relationship
         String reference;
         
         // check _referenceValue
-        if (role == ROLE.OWNING)
+        if (role == ROLE.OWNING && _referenceValue != null)
         {
             if (type == TYPE.ONE_TO_ONE || type == TYPE.MANY_TO_ONE)
             {
@@ -222,7 +222,7 @@ public class Relationship
             }
         }
 
-        logger.warn("returned null link. this = {}, data = {}", this, data);
+        logger.debug("returned null link. this = {}, data = {}", this, data);
         return null;
     }
     

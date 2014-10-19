@@ -12,6 +12,7 @@ package com.softinstigate.restheart.handlers.document;
 
 import com.softinstigate.restheart.hal.*;
 import com.mongodb.DBObject;
+import com.softinstigate.restheart.Configuration;
 import static com.softinstigate.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import com.softinstigate.restheart.hal.metadata.InvalidMetadataException;
 import com.softinstigate.restheart.hal.metadata.Relationship;
@@ -71,7 +72,7 @@ public class DocumentRepresentationFactory
         String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRelativePath());
         if (!requestPath.equals("/")) // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link("rh:coll", URLUtilis.getPerentPath(requestPath)));
-        rep.addLink(new Link("rh", "curies", "/_docs/{rel}.html", true), true);
+        rep.addLink(new Link("rh", "curies", Configuration.DOC_Path + "/#{rel}", true), true);
 
         ResponseHelper.injectWarnings(rep, exchange, context);
         
