@@ -54,7 +54,7 @@ public class IndexesRepresentationFactory
         {
             long count = embeddedData.stream().filter((props) -> props.keySet().stream().anyMatch((k) -> k.equals("id") || k.equals("_id"))).count();
 
-            rep.addProperty("_returned", "" + count);
+            rep.addProperty("_returned", count);
 
             if (!embeddedData.isEmpty()) // embedded documents
             {

@@ -35,7 +35,6 @@ public class GetRootIT extends AbstactIT
     {
     }
     
-    
     @Test
     public void testGetRoot() throws Exception
     {
@@ -126,8 +125,6 @@ public class GetRootIT extends AbstactIT
         {
             Assert.fail("check _embedded.rh:db[0]._links.self.href to be a valid URI");
         }
-        
-        Assert.assertNotNull("check not null _returned _id", json.get("_returned"));
         
         Assert.assertNotNull("check not null _link", json.get("_links"));
         Assert.assertTrue("check _link to be a json object", (json.get("_links") instanceof JsonObject));

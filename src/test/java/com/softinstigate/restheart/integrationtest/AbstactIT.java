@@ -62,6 +62,7 @@ public abstract class AbstactIT
     protected static String docsCollectionName = "docscoll";
     protected static URI indexesUri;
     protected static URI document1Uri;
+    protected static URI dbUriPaging;
     protected static URI document1UriRemappedAll;
     protected static URI document1UriRemappedDb;
     protected static URI document1UriRemappedCollection;
@@ -156,18 +157,26 @@ public abstract class AbstactIT
                 .setPath("/" + dbName)
                 .build();
         
+        dbUriPaging = new URIBuilder()
+                .setScheme("http")
+                .setHost(conf.getHttpHost())
+                .setPort(conf.getHttpPort())
+                .setPath("/" + dbName)
+                .addParameter("pagesize", "1")
+                .build();
+        
         dbUriRemappedAll = new URIBuilder()
                 .setScheme("http")
                 .setHost(conf.getHttpHost())
                 .setPort(conf.getHttpPort())
-                .setPath("/remappedall" + dbName)
+                .setPath("/remappedall/" + dbName)
                 .build();
       
         dbUriRemappedDb = new URIBuilder()
                 .setScheme("http")
                 .setHost(conf.getHttpHost())
                 .setPort(conf.getHttpPort())
-                .setPath("/remappeddb" + dbName)
+                .setPath("/remappeddb")
                 .build();
 
         dbTmpUri = new URIBuilder()
