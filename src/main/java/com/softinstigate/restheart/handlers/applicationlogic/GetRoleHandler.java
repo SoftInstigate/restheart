@@ -93,10 +93,14 @@ public class GetRoleHandler extends ApplicationLogicHandler
                         root.append("authenticated", true);
                         root.append("roles", _roles);
 
+                        Representation rep = new Representation("/_logic/roles/mine");
+                        rep.addProperties(root);
+                        
                         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
                         exchange.setResponseCode(HttpStatus.SC_OK);
-                        exchange.getResponseSender().send(root.toString());
+                        exchange.getResponseSender().send(rep.toString());
                         exchange.endExchange();
+                        return;
                     }
                 }
             }
@@ -107,9 +111,12 @@ public class GetRoleHandler extends ApplicationLogicHandler
         root.append("authenticated", false);
         root.append("roles", null);
 
+        Representation rep = new Representation("/_logic/roles/mine");
+        rep.addProperties(root);
+        
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
         exchange.setResponseCode(HttpStatus.SC_OK);
-        exchange.getResponseSender().send(root.toString());
+        exchange.getResponseSender().send(rep.toString());
         exchange.endExchange();
     }
 }
