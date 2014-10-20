@@ -91,8 +91,8 @@ public class GetDBIT extends AbstactIT
         Assert.assertTrue("check _link to be a json object", (json.get("_links") instanceof JsonObject));
         
         Assert.assertNotNull("check not null _returned property", json.get("_returned"));
-        Assert.assertNotNull("check not null _size value to be 2", json.get("_size"));
-        Assert.assertNotNull("check not null _total_pages value to be 2", json.get("_total_pages"));
+        Assert.assertNotNull("check not null _size value", json.get("_size"));
+        Assert.assertNotNull("check not null _total_pages", json.get("_total_pages"));
         
         Assert.assertEquals("check _returned value to be 1", 1, json.get("_returned").asInt());
         Assert.assertEquals("check _size value to be 2", 3, json.get("_size").asInt());
@@ -176,7 +176,7 @@ public class GetDBIT extends AbstactIT
         
         Assert.assertNotNull("check not null _embedded.rh:coll", embedded.get("rh:coll"));
         
-        Assert.assertTrue("check _embedded to be a json array", (embedded.get("rh:coll") instanceof JsonArray));
+        Assert.assertTrue("check _embedded.rh:coll to be a json array", (embedded.get("rh:coll") instanceof JsonArray));
         
         JsonArray rhcoll = (JsonArray) embedded.get("rh:coll");
         

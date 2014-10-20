@@ -59,8 +59,14 @@ public abstract class AbstactIT
     protected static URI collectionTmpUri;
     protected static String collectionTmpName = "tmpcoll";
     protected static URI docsCollectionUri;
+    protected static URI docsCollectionUriPaging;
+    protected static URI docsCollectionUriCountAndPaging;
+    protected static URI docsCollectionUriSort;
+    protected static URI docsCollectionUriFilter;
     protected static String docsCollectionName = "docscoll";
     protected static URI indexesUri;
+    protected static URI indexesUriRemappedAll;
+    protected static URI indexesUriRemappedDb;
     protected static URI document1Uri;
     protected static URI dbUriPaging;
     protected static URI document1UriRemappedAll;
@@ -256,11 +262,61 @@ public abstract class AbstactIT
                 .setPath("/" + dbName + "/" + docsCollectionName)
                 .build();
         
+        docsCollectionUriPaging = new URIBuilder()
+                .setScheme("http")
+                .setHost(conf.getHttpHost())
+                .setPort(conf.getHttpPort())
+                .setPath("/" + dbName + "/" + docsCollectionName)
+                .addParameter("pagesize", "2")
+                .build();
+        
+        docsCollectionUriCountAndPaging = new URIBuilder()
+                .setScheme("http")
+                .setHost(conf.getHttpHost())
+                .setPort(conf.getHttpPort())
+                .setPath("/" + dbName + "/" + docsCollectionName)
+                .addParameter("count", null)
+                .addParameter("page", "2")
+                .addParameter("pagesize", "2")
+                .build();
+        
+        docsCollectionUriSort = new URIBuilder()
+                .setScheme("http")
+                .setHost(conf.getHttpHost())
+                .setPort(conf.getHttpPort())
+                .setPath("/" + dbName + "/" + docsCollectionName)
+                .addParameter("sort_by", "surname")
+                .build();
+        
+        docsCollectionUriFilter = new URIBuilder()
+                .setScheme("http")
+                .setHost(conf.getHttpHost())
+                .setPort(conf.getHttpPort())
+                .setPath("/" + dbName + "/" + docsCollectionName)
+                .addParameter("filter", "{'name':{'$regex' : '.*k$'}}")
+                .addParameter("sort_by", "name")
+                .addParameter("count", null)
+                .build();
+        
         indexesUri = new URIBuilder()
                 .setScheme("http")
                 .setHost(conf.getHttpHost())
                 .setPort(conf.getHttpPort())
                 .setPath("/" + dbName + "/" + docsCollectionName + "/_indexes")
+                .build();
+        
+        indexesUriRemappedAll = new URIBuilder()
+                .setScheme("http")
+                .setHost(conf.getHttpHost())
+                .setPort(conf.getHttpPort())
+                .setPath("/remappedall/" + dbName + "/" + docsCollectionName + "/_indexes")
+                .build();
+        
+        indexesUriRemappedDb = new URIBuilder()
+                .setScheme("http")
+                .setHost(conf.getHttpHost())
+                .setPort(conf.getHttpPort())
+                .setPath("/remappeddb/" + docsCollectionName + "/_indexes")
                 .build();
         
         documentTmpUri = new URIBuilder()

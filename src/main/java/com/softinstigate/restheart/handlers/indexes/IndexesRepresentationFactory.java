@@ -47,7 +47,6 @@ public class IndexesRepresentationFactory
             float _pagesize = context.getPagesize() + 0f;
 
             rep.addProperty("_size", size);
-            rep.addProperty("_total_pages", Math.max(1, Math.round(Math.nextUp(_size / _pagesize))));
         }
 
         if (embeddedData != null)
