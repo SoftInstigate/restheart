@@ -94,9 +94,9 @@ public class GetDBIT extends AbstactIT
         Assert.assertNotNull("check not null _size value to be 2", json.get("_size"));
         Assert.assertNotNull("check not null _total_pages value to be 2", json.get("_total_pages"));
         
-        Assert.assertEquals("check _returned value to be 1", json.get("_returned").asInt(), 1);
-        Assert.assertEquals("check _size value to be 2", json.get("_size").asInt(), 3);
-        Assert.assertEquals("check _total_pages value to be 2", json.get("_total_pages").asInt(),3);
+        Assert.assertEquals("check _returned value to be 1", 1, json.get("_returned").asInt());
+        Assert.assertEquals("check _size value to be 2", 3, json.get("_size").asInt());
+        Assert.assertEquals("check _total_pages value to be 2",3, json.get("_total_pages").asInt());
         
         JsonObject links = (JsonObject) json.get("_links");
         
@@ -107,6 +107,26 @@ public class GetDBIT extends AbstactIT
         Assert.assertNotNull("check not null first", links.get("first"));
         Assert.assertNotNull("check not null last", links.get("last"));
         Assert.assertNull("check null previous", links.get("previous"));
+        
+        Response respSelf = adminExecutor.execute(Request.Get(dbUriPaging.resolve(links.get("self").asObject().get("href").asString())));
+        HttpResponse    httpRespSelf    = respSelf.returnResponse();
+        Assert.assertNotNull(httpRespSelf);
+        
+        Response respRoot = adminExecutor.execute(Request.Get(dbUriPaging.resolve(links.get("rh:root").asObject().get("href").asString())));
+        HttpResponse    httpRespRoot    = respRoot.returnResponse();
+        Assert.assertNotNull(httpRespRoot);
+        
+        Response respNext = adminExecutor.execute(Request.Get(dbUriPaging.resolve(links.get("next").asObject().get("href").asString())));
+        HttpResponse    httpRespNext    = respNext.returnResponse();
+        Assert.assertNotNull(httpRespNext);
+        
+        Response respFirst = adminExecutor.execute(Request.Get(dbUriPaging.resolve(links.get("first").asObject().get("href").asString())));
+        HttpResponse    respRespFirst    = respFirst.returnResponse();
+        Assert.assertNotNull(respRespFirst);
+        
+        Response respLast = adminExecutor.execute(Request.Get(dbUriPaging.resolve(links.get("last").asObject().get("href").asString())));
+        HttpResponse    httpRespLast    = respLast.returnResponse();
+        Assert.assertNotNull(httpRespLast);
     }
     
     private void testGetDb(URI uri) throws Exception
