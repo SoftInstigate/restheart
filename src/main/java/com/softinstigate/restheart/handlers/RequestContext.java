@@ -71,7 +71,7 @@ public class RequestContext
         }
         else
         {
-            requestPath = URLUtilis.removeTrailingSlashes(requestPath.replaceFirst("^" + this.urlPrefix, "/" + mappedDbName + "/"));
+            requestPath = URLUtilis.removeTrailingSlashes(requestPath.replaceFirst("^" + this.urlPrefix, "/" + mappedDbName));
         }
         
         if (requestPath.isEmpty())

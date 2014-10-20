@@ -48,7 +48,7 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler
     {
         if (context.getDBName() != null && context.getCollectionName() != null)
         {
-            DBObject collProps = null;
+            DBObject collProps;
 
             if (!cacheEnabled)
             {
