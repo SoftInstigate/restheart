@@ -144,7 +144,7 @@ public class RequestContext
         if (whatUri.equals("*"))
         {
             if (!this.whereUri.equals("/"))
-                return this.whereUri + "/" + unmappedUri;
+                return this.whereUri + unmappedUri;
         }
         else
         {
