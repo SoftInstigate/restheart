@@ -36,14 +36,27 @@ mongo-servers:
     - host: 127.0.0.1
       port: 27017
 
-#mongo-credentials:
-#    - auth-db: admin
-#      user: admin
-#      password: adminadmin
+mongo-credentials:
+    - auth-db: admin
+      user: admin
+      password: adminadmin
       
 mongo-mounts:
     - db: "*"
       url: /
+    - db: "*"
+      url: /remappedall
+    - db: "integrationtestdb"
+      url: /remappeddb
+    - db: "integrationtestdb/coll1"
+      url: /remappedcoll1
+    - db: "integrationtestdb/coll2"
+      url: /remappedcoll2
+    - db: "integrationtestdb/coll1/doc1"
+      url: /remappeddoc1
+    - db: "integrationtestdb/coll2/doc2"   
+      url: /remappeddoc2
+  
 
 ### security 
 idm:    
@@ -60,10 +73,10 @@ force-gzip-encoding: false
 
 #### logging
 
-enable-log-file: true
+enable-log-file: false
 log-file-path: /tmp/restheart.log
 
-enable-log-console: false
+enable-log-console: true
 
 #  log levels: OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL.
 log-level: INFO

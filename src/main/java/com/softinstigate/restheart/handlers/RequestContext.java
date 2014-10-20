@@ -55,24 +55,29 @@ public class RequestContext
     private Deque<String> filter = null;
     private Deque<String> sortBy = null;
     
+    private String requestPath = null;
+    
     public RequestContext(HttpServerExchange exchange, String urlPrefix, String mappedDbName)
     {
         this.urlPrefix = URLUtilis.removeTrailingSlashes(urlPrefix);
         this.mappedDbName = mappedDbName;
 
-        String path = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
+        requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
         
         if (mappedDbName.equals("*"))
         {
             if (!this.urlPrefix.equals("/"))
-                path = path.replaceFirst("^" + this.urlPrefix, "");
+                requestPath = requestPath.replaceFirst("^" + this.urlPrefix, "");
         }
         else
         {
-            path = URLUtilis.removeTrailingSlashes(path.replaceFirst("^" + this.urlPrefix, "/" + mappedDbName + "/"));
+            requestPath = URLUtilis.removeTrailingSlashes(requestPath.replaceFirst("^" + this.urlPrefix, "/" + mappedDbName + "/"));
         }
         
-        pathTokens = path.split("/"); // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
+        if (requestPath.isEmpty())
+            requestPath = "/";
+        
+        pathTokens = requestPath.split("/"); // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
         
         if (pathTokens.length < 2)
         {
@@ -340,5 +345,13 @@ public class RequestContext
     public void addWarning(String warning)
     {
         warnings.add(warning);
+    }
+
+    /**
+     * @return the requestPath
+     */
+    public String getRequestPath()
+    {
+        return requestPath;
     }
 }

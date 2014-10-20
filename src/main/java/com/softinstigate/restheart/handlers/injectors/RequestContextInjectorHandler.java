@@ -18,8 +18,6 @@ import com.softinstigate.restheart.utils.ResponseHelper;
 import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -30,15 +28,18 @@ public class RequestContextInjectorHandler extends PipedHttpHandler
     private final String prefixUrl;
     private final String db;
 
-    private static final Logger logger = LoggerFactory.getLogger(RequestContextInjectorHandler.class);
-
     public RequestContextInjectorHandler(String prefixUrl, String db, PipedHttpHandler next)
     {
         super(next);
 
+        if (prefixUrl == null)
+        {
+            throw new IllegalArgumentException("prefix url cannot be null. check your mongo-mounts.");
+        }
+        
         if (!prefixUrl.startsWith("/"))
         {
-            throw new IllegalArgumentException("prefix url must start with /");
+            throw new IllegalArgumentException("prefix url must start with \"/\". check your mongo-mounts");
         }
 
         this.prefixUrl = URLUtilis.removeTrailingSlashes(prefixUrl);
