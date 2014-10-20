@@ -50,6 +50,7 @@ import com.softinstigate.restheart.security.handlers.PredicateAuthenticationCons
 import com.softinstigate.restheart.utils.ResourcesExtractor;
 import com.softinstigate.restheart.utils.LoggingInitializer;
 import com.softinstigate.restheart.handlers.RequestContext;
+import com.softinstigate.restheart.handlers.applicationlogic.ApplicationLogicHandler;
 import com.softinstigate.restheart.handlers.injectors.BodyInjectorHandler;
 import com.softinstigate.restheart.handlers.metadata.MetadataEnforcerHandler;
 import io.undertow.Undertow;
@@ -477,8 +478,61 @@ public class Bootstrapper
 
             paths.addPrefixPath(url, addSecurity(new RequestContextInjectorHandler(url, db, coreHanlderChain), identityManager, accessManager));
 
-            logger.info("bound url prefix {} to db {}", url, db);
+            logger.info("url {} bound to resource {}", url, db);
         });
+        
+        if (conf.getApplicationLogicMounts() != null)
+        {
+            conf.getApplicationLogicMounts().stream().forEach(al -> 
+            {
+                try
+                {
+                    String alClazz = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHAT);
+                    String alWhere = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE);
+                    boolean alSecured = (Boolean) al.get(Configuration.APPLICATION_LOGIC_MOUNT_SECURED);
+                    Object alArgs =  al.get(Configuration.APPLICATION_LOGIC_MOUNT_ARGS);
+                    
+                    if (alWhere == null || !alWhere.startsWith("/"))
+                    {
+                        logger.error("cannot pipe application logic handler {}. parameter 'where' must start with /", alWhere);
+                        return;
+                    }
+                    
+                    if (alArgs != null && !(alArgs instanceof Map))
+                    {
+                        logger.error("cannot pipe application logic handler {}. args are not defined as a map. it is a ", alWhere, alWhere.getClass());
+                        return;
+                    }
+                    
+                    Object o = Class.forName(alClazz).getConstructor(PipedHttpHandler.class, Map.class).newInstance(null, (Map) alArgs);
+                    
+                    if (o instanceof ApplicationLogicHandler)
+                    {
+                        ApplicationLogicHandler alHandler = (ApplicationLogicHandler) o;
+                        
+                        if (alSecured)
+                        {
+                            paths.addPrefixPath("/_logic" + alWhere, addSecurity(alHandler, identityManager, accessManager));
+                        }
+                        else
+                        {
+                            paths.addPrefixPath("/_logic" + alWhere, alHandler);
+                        }
+
+                        logger.info("url {} bound to application logic handler {}. access manager: {}", "/_logic" + alWhere, alClazz, alSecured);
+                    }
+                    else
+                    {
+                        logger.error("cannot pipe application logic handler {}. class {} does not extend ApplicationLogicHandler", alWhere, alClazz);
+                    }
+                    
+                }
+                catch (Throwable t)
+                {
+                    logger.error("cannot pipe application logic handler {}", al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE), t);
+                }
+            });
+        }
 
         return new GracefulShutdownHandler(
                 new RequestLimitingHandler(new RequestLimit(conf.getRequestLimit()),

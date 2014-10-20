@@ -52,6 +52,8 @@ public class Configuration
     private final List<Map<String, Object>> mongoServers;
     private final List<Map<String, Object>> mongoCredentials;
     private final List<Map<String, Object>> mongoMounts;
+    
+    private final List<Map<String, Object>> applicationLogicMounts;
 
     private final String idmImpl;
     private final Map<String, Object> idmArgs;
@@ -93,16 +95,24 @@ public class Configuration
     public static final String IMPLEMENTATION_CLASS = "implementation-class";
     public static final String ACCESS_MANAGER = "access-manager";
     public static final String IDM = "idm";
+    
     public static final String MONGO_SERVERS = "mongo-servers";
     public static final String MONGO_CREDENTIALS = "mongo-credentials";
     public static final String MONGO_MOUNTS = "mongo-mounts";
+    public static final String MONGO_MOUNT_WHAT = "what";
+    public static final String MONGO_MOUNT_WHERE = "where";
     public static final String MONGO_AUTH_DB = "auth-db";
     public static final String MONGO_PASSWORD = "password";
     public static final String MONGO_USER = "user";
     public static final String MONGO_PORT = "port";
     public static final String MONGO_HOST = "host";
-    public static final String MONGO_MOUNT_WHAT = "what";
-    public static final String MONGO_MOUNT_WHERE = "where";
+    
+    public static final String APPLICATION_LOGIC_MOUNTS = "application-logic-mounts";
+    public static final String APPLICATION_LOGIC_MOUNT_WHAT = "what";
+    public static final String APPLICATION_LOGIC_MOUNT_ARGS = "args";
+    public static final String APPLICATION_LOGIC_MOUNT_WHERE = "where";
+    public static final String APPLICATION_LOGIC_MOUNT_SECURED = "secured";
+
     public static final String CERT_PASSWORD = "certpassword";
     public static final String KEYSTORE_PASSWORD = "keystore-password";
     public static final String KEYSTORE_FILE = "keystore-file";
@@ -149,6 +159,8 @@ public class Configuration
         defaultMongoMounts.put(MONGO_MOUNT_WHAT, "*");
         defaultMongoMounts.put(MONGO_MOUNT_WHERE, "/");
         mongoMounts.add(defaultMongoMounts);
+        
+        applicationLogicMounts = new ArrayList<>();
 
         idmImpl = null;
         idmArgs = null;
@@ -219,12 +231,14 @@ public class Configuration
             defaultMongoServer.put(MONGO_HOST, "127.0.0.1");
             defaultMongoServer.put(MONGO_PORT, 27017);
             mongoServers.add(defaultMongoServer);
-
+            
             mongoMounts = new ArrayList<>();
             Map<String, Object> defaultMongoMounts = new HashMap<>();
             defaultMongoMounts.put(MONGO_MOUNT_WHAT, "*");
             defaultMongoMounts.put(MONGO_MOUNT_WHERE, "/");
             mongoMounts.add(defaultMongoMounts);
+            
+            applicationLogicMounts = new ArrayList<>();
 
             mongoCredentials = null;
 
@@ -287,6 +301,8 @@ public class Configuration
             mongoMountsDefault.add(defaultMongoMounts);
             
             mongoMounts = getAsListOfMaps(conf, MONGO_MOUNTS, mongoMountsDefault);
+            
+            applicationLogicMounts = getAsListOfMaps(conf, APPLICATION_LOGIC_MOUNTS, new ArrayList<>());
 
             Map<String, Object> idm = getAsMap(conf, IDM);
             Map<String, Object> am = getAsMap(conf, ACCESS_MANAGER);
@@ -772,5 +788,13 @@ public class Configuration
     public int getRequestsLimit()
     {
         return requestsLimit;
+    }
+
+    /**
+     * @return the applicationLogicMounts
+     */
+    public List<Map<String, Object>> getApplicationLogicMounts()
+    {
+        return applicationLogicMounts;
     }
 }

@@ -30,7 +30,6 @@ use-embedded-keystore: true
 #certpassword: password
 
 #### mongodb 
-
 # in case of replica set, define host and port for all mongod instances
 mongo-servers:
     - host: 127.0.0.1
@@ -42,12 +41,25 @@ mongo-credentials:
       password: adminadmin
       
 mongo-mounts:
-    - db: "*"
-      url: /
-#    - db: "*"
-#      url: /all
+    - what: "*"
+      where: /
 
-### security 
+#### application logic 
+# application logic handlers are mounted under /_logic
+application-logic-mounts:
+    - what: com.softinstigate.restheart.handlers.applicationlogic.PingHandler
+      where: /ping
+      secured: false
+      args:
+          msg: "ciao from the restheart team"
+    - what: com.softinstigate.restheart.handlers.applicationlogic.GetRoleHandler
+      where: /roles/mine
+      secured: false
+      args:
+          idm-implementation-class: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
+          idm-conf-file: ../etc/security-integrationtest.yml
+
+#### security 
 # conf-file is relative to 
 idm:    
     implementation-class: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
