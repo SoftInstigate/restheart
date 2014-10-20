@@ -21,8 +21,6 @@ import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -30,8 +28,6 @@ import org.slf4j.LoggerFactory;
  */
 public class PostCollectionHandler extends PutCollectionHandler
 {
-    private static final Logger logger = LoggerFactory.getLogger(PostCollectionHandler.class);
-    
     /**
      * Creates a new instance of PostCollectionHandler
      */
