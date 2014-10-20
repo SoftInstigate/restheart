@@ -25,31 +25,36 @@ import java.util.Deque;
  */
 public class RequestContextInjectorHandler extends PipedHttpHandler
 {
-    private final String prefixUrl;
-    private final String db;
+    private final String whereUri;
+    private final String whatUri;
 
-    public RequestContextInjectorHandler(String prefixUrl, String db, PipedHttpHandler next)
+    public RequestContextInjectorHandler(String whereUri, String whatUri, PipedHttpHandler next)
     {
         super(next);
 
-        if (prefixUrl == null)
+        if (whereUri == null)
         {
-            throw new IllegalArgumentException("prefix url cannot be null. check your mongo-mounts.");
+            throw new IllegalArgumentException("whereUri cannot be null. check your mongo-mounts.");
         }
         
-        if (!prefixUrl.startsWith("/"))
+        if (!whereUri.startsWith("/"))
         {
-            throw new IllegalArgumentException("prefix url must start with \"/\". check your mongo-mounts");
+            throw new IllegalArgumentException("whereUri must start with \"/\". check your mongo-mounts");
+        }
+        
+        if (!whatUri.startsWith("/") && !whatUri.equals("*"))
+        {
+            throw new IllegalArgumentException("whatUri must start with \"/\". check your mongo-mounts");
         }
 
-        this.prefixUrl = URLUtilis.removeTrailingSlashes(prefixUrl);
-        this.db = db;
+        this.whereUri = URLUtilis.removeTrailingSlashes(whereUri);
+        this.whatUri = whatUri;
     }
 
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        RequestContext rcontext = new RequestContext(exchange, prefixUrl, db);
+        RequestContext rcontext = new RequestContext(exchange, whereUri, whatUri);
 
         Deque<String> __pagesize = exchange.getQueryParameters().get("pagesize");
 
@@ -162,6 +167,6 @@ public class RequestContextInjectorHandler extends PipedHttpHandler
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception
     {
-        next.handleRequest(exchange, new RequestContext(exchange, prefixUrl, db));
+        next.handleRequest(exchange, new RequestContext(exchange, whereUri, whatUri));
     }
 }

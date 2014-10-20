@@ -472,8 +472,8 @@ public class Bootstrapper
 
         conf.getMongoMounts().stream().forEach(m ->
         {
-            String url = (String) m.get(Configuration.MONGO_MOUNT_URL);
-            String db = (String) m.get(Configuration.MONGO_MOUNT_DB);
+            String url = (String) m.get(Configuration.MONGO_MOUNT_WHERE);
+            String db = (String) m.get(Configuration.MONGO_MOUNT_WHAT);
 
             paths.addPrefixPath(url, addSecurity(new RequestContextInjectorHandler(url, db, coreHanlderChain), identityManager, accessManager));
 

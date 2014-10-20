@@ -69,7 +69,7 @@ public class DocumentRepresentationFactory
         }
         
         // link templates and curies
-        String requestPath = URLUtilis.removeTrailingSlashes(context.getRequestPath());
+        String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
         if (!requestPath.equals("/")) // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link("rh:coll", URLUtilis.getPerentPath(requestPath)));
         rep.addLink(new Link("rh", "curies", Configuration.DOC_Path + "/#{rel}", true), true);
@@ -112,7 +112,7 @@ public class DocumentRepresentationFactory
         {
             try
             {
-                String link = rel.getRelationshipLink(context.getDBName(), context.getCollectionName(), data);
+                String link = rel.getRelationshipLink(context, context.getDBName(), context.getCollectionName(), data);
 
                 if (link != null)
                 {

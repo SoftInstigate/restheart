@@ -22,8 +22,6 @@ import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import org.bson.types.ObjectId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -31,8 +29,6 @@ import org.slf4j.LoggerFactory;
  */
 public class GetDocumentHandler extends PipedHttpHandler
 {
-    private static final Logger logger = LoggerFactory.getLogger(GetDocumentHandler.class);
-
     /**
      * Creates a new instance of GetDocumentHandler
      */
@@ -95,7 +91,7 @@ public class GetDocumentHandler extends PipedHttpHandler
             }
         }
         
-        String requestPath = URLUtilis.removeTrailingSlashes(context.getRequestPath());
+        String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
 
         ResponseHelper.injectEtagHeader(exchange, document);
         exchange.setResponseCode(HttpStatus.SC_OK);

@@ -28,7 +28,7 @@ import org.yaml.snakeyaml.Yaml;
  */
 public class Configuration
 {
-    public static String DOC_Path = "http://localhost/~Uji/rhapi/";
+    public static String DOC_Path = "http://localhost/~Uji/rhapi";
     
     private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
 
@@ -101,8 +101,8 @@ public class Configuration
     public static final String MONGO_USER = "user";
     public static final String MONGO_PORT = "port";
     public static final String MONGO_HOST = "host";
-    public static final String MONGO_MOUNT_DB = "db";
-    public static final String MONGO_MOUNT_URL = "url";
+    public static final String MONGO_MOUNT_WHAT = "what";
+    public static final String MONGO_MOUNT_WHERE = "where";
     public static final String CERT_PASSWORD = "certpassword";
     public static final String KEYSTORE_PASSWORD = "keystore-password";
     public static final String KEYSTORE_FILE = "keystore-file";
@@ -146,8 +146,8 @@ public class Configuration
 
         mongoMounts = new ArrayList<>();
         Map<String, Object> defaultMongoMounts = new HashMap<>();
-        defaultMongoMounts.put(MONGO_MOUNT_DB, "*");
-        defaultMongoMounts.put(MONGO_MOUNT_URL, "/");
+        defaultMongoMounts.put(MONGO_MOUNT_WHAT, "*");
+        defaultMongoMounts.put(MONGO_MOUNT_WHERE, "/");
         mongoMounts.add(defaultMongoMounts);
 
         idmImpl = null;
@@ -222,8 +222,8 @@ public class Configuration
 
             mongoMounts = new ArrayList<>();
             Map<String, Object> defaultMongoMounts = new HashMap<>();
-            defaultMongoMounts.put(MONGO_MOUNT_DB, "*");
-            defaultMongoMounts.put(MONGO_MOUNT_URL, "/");
+            defaultMongoMounts.put(MONGO_MOUNT_WHAT, "*");
+            defaultMongoMounts.put(MONGO_MOUNT_WHERE, "/");
             mongoMounts.add(defaultMongoMounts);
 
             mongoCredentials = null;
@@ -282,8 +282,8 @@ public class Configuration
             
             List<Map<String, Object>> mongoMountsDefault = new ArrayList<>();
             Map<String, Object> defaultMongoMounts = new HashMap<>();
-            defaultMongoMounts.put(MONGO_MOUNT_DB, "*");
-            defaultMongoMounts.put(MONGO_MOUNT_URL, "/");
+            defaultMongoMounts.put(MONGO_MOUNT_WHAT, "*");
+            defaultMongoMounts.put(MONGO_MOUNT_WHERE, "/");
             mongoMountsDefault.add(defaultMongoMounts);
             
             mongoMounts = getAsListOfMaps(conf, MONGO_MOUNTS, mongoMountsDefault);

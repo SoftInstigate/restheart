@@ -12,6 +12,7 @@ package com.softinstigate.restheart.hal.metadata;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
+import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.utils.URLUtilis;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -160,7 +161,7 @@ public class Relationship
         return new Relationship(rel, type, role, targetDb, targetCollection, referenceField);
     }
     
-    public String getRelationshipLink(String dbName, String collName, DBObject data) throws IllegalArgumentException
+    public String getRelationshipLink(RequestContext context, String dbName, String collName, DBObject data) throws IllegalArgumentException
     {
         Object _referenceValue = data.get(referenceField);
         String reference;
@@ -203,22 +204,22 @@ public class Relationship
         {
             if (type == TYPE.ONE_TO_ONE || type == TYPE.MANY_TO_ONE)
             {
-                return URLUtilis.getUriWithDocId(db, targetCollection, reference);
+                return URLUtilis.getUriWithDocId(context, db, targetCollection, reference);
             }
             else if (type == TYPE.ONE_TO_MANY || type == TYPE.MANY_TO_MANY)
             {
-                return URLUtilis.getUriWithFilterMany(db, targetCollection, referenceField, reference);
+                return URLUtilis.getUriWithFilterMany(context, db, targetCollection, referenceField, reference);
             }
         }
         else
         {
             if (type == TYPE.ONE_TO_ONE || type == TYPE.ONE_TO_MANY)
             {
-                return URLUtilis.getUriWithFilterOne(db, targetCollection, referenceField, reference);
+                return URLUtilis.getUriWithFilterOne(context, db, targetCollection, referenceField, reference);
             }
             else if (type == TYPE.MANY_TO_ONE || type == TYPE.MANY_TO_MANY)
             {
-                return URLUtilis.getUriWithFilterManyInverse(db, targetCollection, referenceField, reference);
+                return URLUtilis.getUriWithFilterManyInverse(context, db, targetCollection, referenceField, reference);
             }
         }
 

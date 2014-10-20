@@ -21,8 +21,6 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -33,14 +31,12 @@ public class RequestContext
     public enum TYPE { ERROR, ROOT, DB, COLLECTION, DOCUMENT, COLLECTION_INDEXES, INDEX };
     public enum METHOD { GET, POST, PUT, DELETE, PATCH, OTHER };
     
-    private final String urlPrefix;
-    private final String mappedDbName;
+    private final String whereUri;
+    private final String whatUri;
     
     private final TYPE type;
     private final METHOD method;
     private final String[] pathTokens;
-    
-    private final Logger logger = LoggerFactory.getLogger(RequestContext.class);
     
     private DBObject dbProps;
     private DBObject collectionProps;
@@ -55,29 +51,21 @@ public class RequestContext
     private Deque<String> filter = null;
     private Deque<String> sortBy = null;
     
-    private String requestPath = null;
-    
-    public RequestContext(HttpServerExchange exchange, String urlPrefix, String mappedDbName)
+    private String requestUri = null;
+    /**
+     * 
+     * @param exchange
+     * @param whereUri the uri to map to
+     * @param whatUri  the uri to map
+     */
+    public RequestContext(HttpServerExchange exchange, String whereUri, String whatUri)
     {
-        this.urlPrefix = URLUtilis.removeTrailingSlashes(urlPrefix);
-        this.mappedDbName = mappedDbName;
+        this.whereUri = URLUtilis.removeTrailingSlashes(whereUri);
+        this.whatUri = whatUri;
 
-        requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
+        requestUri = unmapUri(exchange.getRequestPath());
         
-        if (mappedDbName.equals("*"))
-        {
-            if (!this.urlPrefix.equals("/"))
-                requestPath = requestPath.replaceFirst("^" + this.urlPrefix, "");
-        }
-        else
-        {
-            requestPath = URLUtilis.removeTrailingSlashes(requestPath.replaceFirst("^" + this.urlPrefix, "/" + mappedDbName));
-        }
-        
-        if (requestPath.isEmpty())
-            requestPath = "/";
-        
-        pathTokens = requestPath.split("/"); // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
+        pathTokens = requestUri.split("/"); // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
         
         if (pathTokens.length < 2)
         {
@@ -115,6 +103,58 @@ public class RequestContext
             this.method = METHOD.PATCH;
         else
             this.method = METHOD.OTHER;
+    }
+
+    /**
+     * given a mapped uri (/some/mapping/coll) returns the canonical uri (/db/coll)
+     * 
+     * @param mappedUri
+     * @return 
+     */
+    public final String unmapUri(String mappedUri)
+    {
+        String ret = URLUtilis.removeTrailingSlashes(mappedUri);
+        
+        if (whatUri.equals("*"))
+        {
+            if (!this.whereUri.equals("/"))
+                ret = ret.replaceFirst("^" + this.whereUri, "");
+        }
+        else
+        {
+            ret = URLUtilis.removeTrailingSlashes(ret.replaceFirst("^" + this.whereUri, this.whatUri));
+        }
+        
+        if (ret.isEmpty())
+            ret = "/";
+        
+        return ret;
+    }
+    
+    /**
+     * given a canonical uri (/db/coll) returns the mapped uri (/db/coll) relative to this context
+     * 
+     * @param unmappedUri
+     * @return 
+     */
+    public final String mapUri(String unmappedUri)
+    {
+        String ret = URLUtilis.removeTrailingSlashes(unmappedUri);
+        
+        if (whatUri.equals("*"))
+        {
+            if (!this.whereUri.equals("/"))
+                return this.whereUri + "/" + unmappedUri;
+        }
+        else
+        {
+            ret = URLUtilis.removeTrailingSlashes(ret.replaceFirst("^" + this.whatUri, this.whereUri));
+        }
+        
+        if (ret.isEmpty())
+            ret = "/";
+        
+        return ret;
     }
     
     public TYPE getType()
@@ -188,19 +228,19 @@ public class RequestContext
     }
 
     /**
-     * @return the urlPrefix
+     * @return the whereUri
      */
-    public String getUrlPrefix()
+    public String getUriPrefix()
     {
-        return urlPrefix;
+        return whereUri;
     }
 
     /**
-     * @return the mappedDbName
+     * @return the whatUri
      */
-    public String getDbMappedDbName()
+    public String getMappingUri()
     {
-        return mappedDbName;
+        return whatUri;
     }
 
     /**
@@ -348,10 +388,10 @@ public class RequestContext
     }
 
     /**
-     * @return the requestPath
+     * @return the requestUri
      */
-    public String getRequestPath()
+    public String getRequestUri()
     {
-        return requestPath;
+        return requestUri;
     }
 }

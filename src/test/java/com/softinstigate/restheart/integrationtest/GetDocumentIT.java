@@ -13,6 +13,8 @@ package com.softinstigate.restheart.integrationtest;
 import com.eclipsesource.json.JsonObject;
 import com.softinstigate.restheart.hal.Representation;
 import com.softinstigate.restheart.utils.HttpStatus;
+import java.net.URI;
+import java.net.URLEncoder;
 import junit.framework.Assert;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -34,9 +36,32 @@ public class GetDocumentIT extends AbstactIT
     }
     
     @Test
-    public void testGetDocument() throws Exception
+    public void testGetDocumentRemappedAll() throws Exception
     {
-        Response resp = adminExecutor.execute(Request.Get(document1Uri));
+        testGetDocument(document1UriRemappedAll);
+    }
+    
+    @Test
+    public void testGetDocumentRemappedDb() throws Exception
+    {
+        testGetDocument(document1UriRemappedDb);
+    }
+    
+    @Test
+    public void testGetDocumentRemappedCollection() throws Exception
+    {
+        testGetDocument(document1UriRemappedCollection);
+    }
+    
+    @Test
+    public void testGetDocumentRemappedDoc() throws Exception
+    {
+        testGetDocument(document1UriRemappedDocument);
+    }
+    
+    private void testGetDocument(URI uri) throws Exception
+    {
+        Response resp = adminExecutor.execute(Request.Get(uri));
         
         HttpResponse    httpResp    = resp.returnResponse();
         Assert.assertNotNull(httpResp);
@@ -79,11 +104,36 @@ public class GetDocumentIT extends AbstactIT
         Assert.assertNotNull("check not null otm links", json.get("_links").asObject().get("otm"));
         Assert.assertNotNull("check not null oto links", json.get("_links").asObject().get("oto"));
         
-        
-        Assert.assertEquals("check mtm link", collection2Uri.getPath() + "?filter=<'mtm':<'$in':['doc2']>>", json.get("_links").asObject().get("mtm").asObject().get("href").asString());
+        Assert.assertEquals("check mtm link", collection2Uri.getPath() + "?filter={'mtm':{'$in':['doc2']}}", json.get("_links").asObject().get("mtm").asObject().get("href").asString());
         Assert.assertEquals("check mto link", document2Uri.getPath(), json.get("_links").asObject().get("mto").asObject().get("href").asString());
-        Assert.assertEquals("check otm link", collection2Uri.getPath() + "?filter=<'otm':<'$in':['doc2']>>", json.get("_links").asObject().get("otm").asObject().get("href").asString());
+        Assert.assertEquals("check otm link", collection2Uri.getPath() + "?filter={'otm':{'$in':['doc2']}}", json.get("_links").asObject().get("otm").asObject().get("href").asString());
         Assert.assertEquals("check oto link", document2Uri.getPath(), json.get("_links").asObject().get("oto").asObject().get("href").asString());
         
+        String mtm = json.get("_links").asObject().get("mtm").asObject().get("href").asString();
+        String mto = json.get("_links").asObject().get("mto").asObject().get("href").asString();
+        String otm = json.get("_links").asObject().get("otm").asObject().get("href").asString();
+        String oto = json.get("_links").asObject().get("oto").asObject().get("href").asString();
+
+        
+        
+        Response respMtm = adminExecutor.execute(Request.Get(uri.resolve(URLEncoder.encode(mtm, "UTF-8"))));
+        HttpResponse    httpRespMtm    = respMtm.returnResponse();
+        Assert.assertNotNull("check not null get mtm response", httpRespMtm);
+        Assert.assertEquals("check get mtm response status code", HttpStatus.SC_OK, httpRespMtm.getStatusLine().getStatusCode());
+        
+        Response respMto = adminExecutor.execute(Request.Get(uri.resolve(new URI(mto))));
+        HttpResponse    httpRespMto    = respMto.returnResponse();
+        Assert.assertNotNull("check not null get mto response", httpRespMto);
+        Assert.assertEquals("check get mto response status code", HttpStatus.SC_OK, httpRespMto.getStatusLine().getStatusCode());
+        
+        Response respOtm = adminExecutor.execute(Request.Get(uri.resolve(otm)));
+        HttpResponse    httpRespOtm    = respOtm.returnResponse();
+        Assert.assertNotNull("check not null get otm response", httpRespOtm);
+        Assert.assertEquals("check get otm response status code", HttpStatus.SC_OK, httpRespOtm.getStatusLine().getStatusCode());
+        
+        Response respOto = adminExecutor.execute(Request.Get(uri.resolve(oto)));
+        HttpResponse    httpRespOto    = respOto.returnResponse();
+        Assert.assertNotNull("check not null get oto response", httpRespOto);
+        Assert.assertEquals("check get oto response status code", HttpStatus.SC_OK, httpRespOto.getStatusLine().getStatusCode());
     }
 }

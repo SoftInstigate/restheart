@@ -42,20 +42,20 @@ mongo-credentials:
       password: adminadmin
       
 mongo-mounts:
-    - db: "*"
-      url: /
-    - db: "*"
-      url: /remappedall
-    - db: "integrationtestdb"
-      url: /remappeddb
-    - db: "integrationtestdb/coll1"
-      url: /remappedcoll1
-    - db: "integrationtestdb/coll2"
-      url: /remappedcoll2
-    - db: "integrationtestdb/coll1/doc1"
-      url: /remappeddoc1
-    - db: "integrationtestdb/coll2/doc2"   
-      url: /remappeddoc2
+    - what: "*"
+      where: /
+    - what: "*"
+      where: /remappedall
+    - what: /integrationtestdb
+      where: /remappeddb
+    - what: /integrationtestdb/coll1
+      where: /remappedcoll1
+    - what: /integrationtestdb/coll2
+      where: /remappedcoll2
+    - what: /integrationtestdb/coll1/doc1
+      where: /remappeddoc1
+    - what: /integrationtestdb/coll2/doc2
+      where: /remappeddoc2
   
 
 ### security 

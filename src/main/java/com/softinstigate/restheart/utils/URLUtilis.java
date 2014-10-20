@@ -10,6 +10,7 @@
  */
 package com.softinstigate.restheart.utils;
 
+import com.softinstigate.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 
@@ -64,16 +65,16 @@ public class URLUtilis
         return exchange.getRequestURL().replaceAll(exchange.getRelativePath(), "");
     }
 
-    static public String getUriWithDocId(String dbName, String collName, String documentId)
+    static public String getUriWithDocId(RequestContext context, String dbName, String collName, String documentId)
     {
         StringBuilder sb = new StringBuilder();
 
         sb.append("/").append(dbName).append("/").append(collName).append("/").append(documentId);
 
-        return sb.toString().replaceAll(" ", "");
+        return context.mapUri(sb.toString().replaceAll(" ", ""));
     }
 
-    static public String getUriWithFilterMany(String dbName, String collName, String referenceField, String ids)
+    static public String getUriWithFilterMany(RequestContext context, String dbName, String collName, String referenceField, String ids)
     {
         StringBuilder sb = new StringBuilder();
 
@@ -81,10 +82,10 @@ public class URLUtilis
         sb.append("/").append(dbName).append("/").append(collName).append("?")
                 .append("filter={").append("'").append(referenceField).append("'").append(":").append("{'$in'").append(":").append(ids).append("}}");
 
-        return sb.toString().replaceAll(" ", "");
+        return context.mapUri(sb.toString().replaceAll(" ", ""));
     }
 
-    static public String getUriWithFilterOne(String dbName, String collName, String referenceField, String ids)
+    static public String getUriWithFilterOne(RequestContext context, String dbName, String collName, String referenceField, String ids)
     {
         StringBuilder sb = new StringBuilder();
 
@@ -92,10 +93,10 @@ public class URLUtilis
         sb.append("/").append(dbName).append("/").append(collName).append("?")
                 .append("filter={").append("'").append(referenceField).append("'").append(":").append(ids).append("}");
 
-        return sb.toString().replaceAll(" ", "");
+        return context.mapUri(sb.toString().replaceAll(" ", ""));
     }
 
-    static public String getUriWithFilterManyInverse(String dbName, String collName, String referenceField, String ids)
+    static public String getUriWithFilterManyInverse(RequestContext context, String dbName, String collName, String referenceField, String ids)
     {
         StringBuilder sb = new StringBuilder();
 
@@ -103,7 +104,7 @@ public class URLUtilis
         sb.append("/").append(dbName).append("/").append(collName).append("?")
                 .append("filter={'").append(referenceField).append("':{").append("'$elemMatch':{'$eq':").append(ids).append("}}}");
 
-        return sb.toString().replaceAll(" ", "");
+        return context.mapUri(sb.toString().replaceAll(" ", ""));
     }
 
     public static String getQueryStringRemovingParams(HttpServerExchange exchange, String... paramsToRemove)

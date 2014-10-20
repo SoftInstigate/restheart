@@ -15,7 +15,6 @@ import com.eclipsesource.json.JsonObject;
 import com.softinstigate.restheart.hal.Representation;
 import com.softinstigate.restheart.utils.HttpStatus;
 import java.net.URI;
-import java.net.URISyntaxException;
 import junit.framework.Assert;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;

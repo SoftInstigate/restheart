@@ -116,27 +116,33 @@ public class GetCollectionIT extends AbstactIT
         
         Response respSelf = adminExecutor.execute(Request.Get(docsCollectionUriCountAndPaging.resolve(links.get("self").asObject().get("href").asString())));
         HttpResponse    httpRespSelf    = respSelf.returnResponse();
-        Assert.assertNotNull(httpRespSelf);
+        Assert.assertNotNull("check not null get self response", httpRespSelf);
+        Assert.assertEquals("check get self response status code", HttpStatus.SC_OK, httpRespSelf.getStatusLine().getStatusCode());
         
-        Response respRoot = adminExecutor.execute(Request.Get(docsCollectionUriCountAndPaging.resolve(links.get("rh:db").asObject().get("href").asString())));
-        HttpResponse    httpRespRoot    = respRoot.returnResponse();
-        Assert.assertNotNull(httpRespRoot);
+        Response respRhdb = adminExecutor.execute(Request.Get(docsCollectionUriCountAndPaging.resolve(links.get("rh:db").asObject().get("href").asString())));
+        HttpResponse    httpRespRhdb    = respRhdb.returnResponse();
+        Assert.assertNotNull("check not null rh:doc self response", httpRespRhdb);
+        Assert.assertEquals("check get rh:doc response status code", HttpStatus.SC_OK, httpRespRhdb.getStatusLine().getStatusCode());
         
         Response respNext = adminExecutor.execute(Request.Get(docsCollectionUriCountAndPaging.resolve(links.get("next").asObject().get("href").asString())));
         HttpResponse    httpRespNext    = respNext.returnResponse();
-        Assert.assertNotNull(httpRespNext);
+        Assert.assertNotNull("check not null get self response", httpRespNext);
+        Assert.assertEquals("check get self response status code", HttpStatus.SC_OK, httpRespSelf.getStatusLine().getStatusCode());
         
         Response respPrevious = adminExecutor.execute(Request.Get(docsCollectionUriCountAndPaging.resolve(links.get("previous").asObject().get("href").asString())));
         HttpResponse    httpRespPrevious    = respPrevious.returnResponse();
-        Assert.assertNotNull(httpRespPrevious);
+        Assert.assertNotNull("check not null get previous response", httpRespPrevious);
+        Assert.assertEquals("check get self previous status code", HttpStatus.SC_OK, httpRespSelf.getStatusLine().getStatusCode());
         
         Response respFirst = adminExecutor.execute(Request.Get(dbUriPaging.resolve(links.get("first").asObject().get("href").asString())));
         HttpResponse    respRespFirst    = respFirst.returnResponse();
-        Assert.assertNotNull(respRespFirst);
+        Assert.assertNotNull("check not null get first response", respRespFirst);
+        Assert.assertEquals("check get self first status code", HttpStatus.SC_OK, respRespFirst.getStatusLine().getStatusCode());
         
         Response respLast = adminExecutor.execute(Request.Get(dbUriPaging.resolve(links.get("last").asObject().get("href").asString())));
         HttpResponse    httpRespLast    = respLast.returnResponse();
-        Assert.assertNotNull(httpRespLast);
+        Assert.assertNotNull("check not null get last response", httpRespLast);
+        Assert.assertEquals("check get last response status code", HttpStatus.SC_OK, httpRespLast.getStatusLine().getStatusCode());
     }
     
     @Test
