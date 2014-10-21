@@ -21,10 +21,7 @@ import com.softinstigate.restheart.handlers.document.DocumentRepresentationFacto
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 import org.bson.types.ObjectId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -32,8 +29,6 @@ import org.slf4j.LoggerFactory;
  */
 public class PatchDBHandler extends PipedHttpHandler
 {
-    private static final Logger logger = LoggerFactory.getLogger(PatchDBHandler.class);
-    
     /**
      * Creates a new instance of PatchDBHandler
      */
@@ -73,12 +68,11 @@ public class PatchDBHandler extends PipedHttpHandler
             return;
         }
         
-        ObjectId etag = RequestHelper.getUpdateEtag(exchange);
+        ObjectId etag = RequestHelper.getWriteEtag(exchange);
         
         if (etag == null)
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT, "the " + Headers.ETAG + " header must be provided");
-            logger.warn("the {} header in required", Headers.ETAG);
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
             return;
         }
 

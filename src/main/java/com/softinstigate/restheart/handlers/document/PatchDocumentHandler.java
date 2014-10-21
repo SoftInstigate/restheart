@@ -20,10 +20,7 @@ import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 import org.bson.types.ObjectId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -31,8 +28,6 @@ import org.slf4j.LoggerFactory;
  */
 public class PatchDocumentHandler extends PipedHttpHandler
 {
-    private static final Logger logger = LoggerFactory.getLogger(PatchDocumentHandler.class);
-    
     /**
      * Creates a new instance of PatchDocumentHandler
      */
@@ -69,16 +64,14 @@ public class PatchDocumentHandler extends PipedHttpHandler
         else if (!content.get("_id").equals(id))
         {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in json data cannot be different than id in URL");
-            logger.warn("not acceptable: _id in content body is different than id in URL");
             return;
         }
 
-        ObjectId etag = RequestHelper.getUpdateEtag(exchange);
+        ObjectId etag = RequestHelper.getWriteEtag(exchange);
         
         if (etag == null)
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT, "the " + Headers.ETAG + " header must be provided");
-            logger.warn("the {} header in required", Headers.ETAG);
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
             return;
         }
         

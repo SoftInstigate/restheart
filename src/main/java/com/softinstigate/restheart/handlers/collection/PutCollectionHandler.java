@@ -78,7 +78,7 @@ public class PutCollectionHandler extends PipedHttpHandler
             }
         }
         
-        ObjectId etag = RequestHelper.getUpdateEtag(exchange);
+        ObjectId etag = RequestHelper.getWriteEtag(exchange);
         
         boolean updating = context.getCollectionProps() != null;
         

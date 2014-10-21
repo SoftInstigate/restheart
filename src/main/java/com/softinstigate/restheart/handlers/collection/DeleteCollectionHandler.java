@@ -43,7 +43,7 @@ public class DeleteCollectionHandler extends PipedHttpHandler
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        ObjectId etag = RequestHelper.getUpdateEtag(exchange);
+        ObjectId etag = RequestHelper.getWriteEtag(exchange);
         
         if (etag == null)
         {

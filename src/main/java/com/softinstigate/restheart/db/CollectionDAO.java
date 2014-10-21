@@ -232,6 +232,7 @@ public class CollectionDAO
      * @param collName
      * @param content
      * @param etag
+     * @param updating
      * @param patching
      * @return the HttpStatus code to retrun
      */
@@ -250,7 +251,6 @@ public class CollectionDAO
         {
             if (etag == null)
             {
-                logger.warn("the {} header in required", Headers.ETAG);
                 return HttpStatus.SC_PRECONDITION_FAILED;
             }
 

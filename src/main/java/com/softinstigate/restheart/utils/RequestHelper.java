@@ -31,7 +31,7 @@ public class RequestHelper
         return (vs == null || vs.getFirst() == null) ? false : vs.getFirst().equals(etag);
     }
     
-    public static ObjectId getUpdateEtag(HttpServerExchange exchange)
+    public static ObjectId getWriteEtag(HttpServerExchange exchange)
     {
         HeaderValues vs = exchange.getRequestHeaders().get(Headers.IF_MATCH);
         
@@ -46,6 +46,6 @@ public class RequestHelper
         if (ObjectId.isValid("" + etag))
             return new ObjectId("" + etag);
         else
-            return null;
+            return new ObjectId();
     }
 }

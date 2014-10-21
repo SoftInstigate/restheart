@@ -254,7 +254,6 @@ public class DocumentDAO
     {
         if (requestEtag == null)
         {
-            logger.warn("the {} header in required", Headers.ETAG);
             coll.save(oldDocument);
             return HttpStatus.SC_CONFLICT;
         }

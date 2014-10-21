@@ -224,7 +224,6 @@ public class DBDAO
         {
             if (etag == null)
             {
-                logger.warn("the {} header in required", Headers.ETAG);
                 return HttpStatus.SC_PRECONDITION_FAILED;
             }
 

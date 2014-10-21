@@ -78,7 +78,7 @@ public class PutDocumentHandler extends PipedHttpHandler
             return;
         }
         
-        ObjectId etag = RequestHelper.getUpdateEtag(exchange);
+        ObjectId etag = RequestHelper.getWriteEtag(exchange);
         
         int SC = DocumentDAO.upsertDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), content, etag, false);
         

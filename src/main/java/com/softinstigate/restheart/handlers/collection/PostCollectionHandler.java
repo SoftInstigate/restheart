@@ -50,7 +50,7 @@ public class PostCollectionHandler extends PutCollectionHandler
             return;
         }
         
-        ObjectId etag = RequestHelper.getUpdateEtag(exchange);
+        ObjectId etag = RequestHelper.getWriteEtag(exchange);
         
         int SC = DocumentDAO.upsertDocumentPost(exchange, context.getDBName(), context.getCollectionName(), content, etag);
 

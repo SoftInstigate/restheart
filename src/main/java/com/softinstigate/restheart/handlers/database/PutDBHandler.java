@@ -63,7 +63,7 @@ public class PutDBHandler extends PipedHttpHandler
             return;
         }
         
-        ObjectId etag = RequestHelper.getUpdateEtag(exchange);
+        ObjectId etag = RequestHelper.getWriteEtag(exchange);
         
         int SC = DBDAO.upsertDB(context.getDBName(), content, etag, false);
         
