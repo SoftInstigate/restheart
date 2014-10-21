@@ -77,23 +77,30 @@ public class BodyInjectorHandler extends PipedHttpHandler
         
         HashSet<String> keysToRemove = new HashSet<>();
         
-        // filter out reserved keys
-        content.keySet().stream().filter((key) -> (key.startsWith("_"))).forEach((key) ->
+        if (content == null)
         {
-            keysToRemove.add(key);
-        });
-        
-        keysToRemove.stream().map((keyToRemove) ->
+            context.setContent(null);
+        }
+        else
         {
-            content.removeField(keyToRemove);
-            return keyToRemove;
-        }).forEach((keyToRemove) ->
-        {
-            context.addWarning("the reserved field " + keyToRemove + " was filtered out from the request");
-        });
-        
-        // inject the request content in the context
-        context.setContent(content);
+            // filter out reserved keys
+            content.keySet().stream().filter((key) -> (key.startsWith("_"))).forEach((key) ->
+            {
+                keysToRemove.add(key);
+            });
+
+            keysToRemove.stream().map((keyToRemove) ->
+            {
+                content.removeField(keyToRemove);
+                return keyToRemove;
+            }).forEach((keyToRemove) ->
+            {
+                context.addWarning("the reserved field " + keyToRemove + " was filtered out from the request");
+            });
+
+            // inject the request content in the context
+            context.setContent(content);
+        }
 
         next.handleRequest(exchange, context);
     }
