@@ -167,8 +167,13 @@ public class Relationship
         String reference;
         
         // check _referenceValue
-        if (role == ROLE.OWNING && _referenceValue != null)
+        if (role == ROLE.OWNING)
         {
+            if (_referenceValue == null)
+            {
+                return null; // the reference field is missing or it value is null => do not generate a link
+            }
+            
             if (type == TYPE.ONE_TO_ONE || type == TYPE.MANY_TO_ONE)
             {
                 if (!(_referenceValue instanceof String))
