@@ -64,6 +64,7 @@ public class DeleteDBHandler extends PipedHttpHandler
         }
         
         exchange.endExchange();
+        
         LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());
     }
 }

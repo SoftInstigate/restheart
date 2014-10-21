@@ -76,7 +76,8 @@ public class PutDBHandler extends PipedHttpHandler
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
         }
         
-        exchange.endExchange(); 
+        exchange.endExchange();
+        
         LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());
     }
 }

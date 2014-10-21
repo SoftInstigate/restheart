@@ -18,6 +18,7 @@ import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.handlers.document.DocumentRepresentationFactory;
+import com.softinstigate.restheart.handlers.injectors.LocalCachesSingleton;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
@@ -87,6 +88,8 @@ public class PatchDBHandler extends PipedHttpHandler
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
         }
         
-        exchange.endExchange(); 
+        exchange.endExchange();
+        
+        LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());
     }
 }

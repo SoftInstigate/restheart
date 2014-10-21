@@ -96,7 +96,7 @@ public class DocumentDAO
             else
             {
                 // check the old etag (in case restore the old document version)
-                return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_NO_CONTENT);
+                return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_OK);
             }
         }
         else
@@ -125,7 +125,7 @@ public class DocumentDAO
                 coll.update(idQuery, new BasicDBObject("$set", created), true, false);
 
                 // check the old etag (in case restore the old document version)
-                return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_NO_CONTENT);
+                return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_OK);
             }
             else // insert
             {
@@ -200,7 +200,7 @@ public class DocumentDAO
             coll.update(idQuery, new BasicDBObject("$set", createdContet), true, false);
 
             // check the old etag (in case restore the old document version)
-            return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_NO_CONTENT);
+            return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_OK);
         }
         else // insert
         {
