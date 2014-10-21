@@ -84,7 +84,7 @@ public class BodyInjectorHandler extends PipedHttpHandler
         else
         {
             // filter out reserved keys
-            content.keySet().stream().filter((key) -> (key.startsWith("_"))).forEach((key) ->
+            content.keySet().stream().filter((key) -> (key.startsWith("_") && !key.equals("_id"))).forEach((key) ->
             {
                 keysToRemove.add(key);
             });
