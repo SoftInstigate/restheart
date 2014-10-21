@@ -435,7 +435,7 @@ public abstract class AbstactIT
     {
     }
     
-    protected void check(String message, Response resp, int expectedCode) throws Exception
+    protected HttpResponse check(String message, Response resp, int expectedCode) throws Exception
     {
         HttpResponse httpResp = resp.returnResponse();
         Assert.assertNotNull(httpResp);
@@ -444,5 +444,7 @@ public abstract class AbstactIT
         Assert.assertNotNull(statusLine);
         
         Assert.assertEquals(message, expectedCode, statusLine.getStatusCode());
+        
+        return httpResp;
     }
 }
