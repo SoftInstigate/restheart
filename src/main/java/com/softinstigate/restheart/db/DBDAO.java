@@ -224,7 +224,7 @@ public class DBDAO
         {
             if (etag == null)
             {
-                return HttpStatus.SC_PRECONDITION_FAILED;
+                return HttpStatus.SC_CONFLICT;
             }
 
             BasicDBObject idAndEtagQuery = new BasicDBObject("_id", "_properties");
