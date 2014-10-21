@@ -13,6 +13,8 @@ package com.softinstigate.restheart.db;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoException;
+import com.softinstigate.restheart.utils.HttpStatus;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,8 +69,9 @@ public class IndexDAO
            client.getDB(db).getCollection(co).createIndex(keys, ops);
    }
    
-   public static void deleteIndex(String db, String co, String indexId)
+   public static int deleteIndex(String db, String co, String indexId)
    {
-       client.getDB(db).getCollection(co).dropIndex(indexId);
+        client.getDB(db).getCollection(co).dropIndex(indexId);
+        return HttpStatus.SC_GONE;
    }
 }

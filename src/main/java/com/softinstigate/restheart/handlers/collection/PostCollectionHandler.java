@@ -54,12 +54,14 @@ public class PostCollectionHandler extends PutCollectionHandler
         
         int SC = DocumentDAO.upsertDocumentPost(exchange, context.getDBName(), context.getCollectionName(), content, etag);
 
+        exchange.setResponseCode(SC);
+        
         // send the warnings if any
         if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
         {
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
         }
         
-        ResponseHelper.endExchange(exchange, SC);
+        exchange.endExchange();
     }
 }

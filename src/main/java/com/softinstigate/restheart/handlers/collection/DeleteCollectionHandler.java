@@ -52,13 +52,18 @@ public class DeleteCollectionHandler extends PipedHttpHandler
             return;
         }
         
+        int SC = CollectionDAO.deleteCollection(context.getDBName(), context.getCollectionName(), etag);
+        
+        exchange.setResponseCode(SC);
+        
         // send the warnings if any
         if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
         {
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
         }
         
-        ResponseHelper.endExchange(exchange, CollectionDAO.deleteCollection(context.getDBName(), context.getCollectionName(), etag));
+        exchange.endExchange();
+        
         LocalCachesSingleton.getInstance().invalidateCollection(context.getDBName(), context.getCollectionName());
     }
 }

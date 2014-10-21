@@ -51,15 +51,16 @@ public class DeleteIndexHandler extends PipedHttpHandler
             return;
         }
         
-        IndexDAO.deleteIndex(db, co, id);
+        int SC = IndexDAO.deleteIndex(db, co, id);
+        
+        exchange.setResponseCode(SC);
         
         // send the warnings if any
         if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
         {
-            
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
         }
         
-        ResponseHelper.endExchange(exchange, HttpStatus.SC_GONE);
+        exchange.endExchange();
     }
 }

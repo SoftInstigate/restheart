@@ -82,14 +82,15 @@ public class PutDocumentHandler extends PipedHttpHandler
         
         int SC = DocumentDAO.upsertDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), content, etag, false);
         
+        exchange.setResponseCode(SC);
+        
         // send the warnings if any
         if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
         {
-            
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
         }
         
-        ResponseHelper.endExchange(exchange, SC);
+        exchange.endExchange();
     }
     
     private static Object getId(String id)

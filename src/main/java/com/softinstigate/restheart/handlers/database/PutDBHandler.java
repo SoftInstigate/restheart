@@ -67,6 +67,8 @@ public class PutDBHandler extends PipedHttpHandler
         
         int SC = DBDAO.upsertDB(context.getDBName(), content, etag, false);
         
+        exchange.setResponseCode(SC);
+        
         // send the warnings if any
         if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
         {
@@ -74,7 +76,7 @@ public class PutDBHandler extends PipedHttpHandler
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
         }
         
-        ResponseHelper.endExchange(exchange, SC); 
+        exchange.endExchange(); 
         LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());
     }
 }

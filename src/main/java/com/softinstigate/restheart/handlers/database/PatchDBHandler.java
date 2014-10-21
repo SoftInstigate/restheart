@@ -84,6 +84,8 @@ public class PatchDBHandler extends PipedHttpHandler
 
         int SC = DBDAO.upsertDB(context.getDBName(), content, etag, true);
         
+        exchange.setResponseCode(SC);
+        
         // send the warnings if any
         if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
         {
@@ -91,6 +93,6 @@ public class PatchDBHandler extends PipedHttpHandler
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
         }
         
-        ResponseHelper.endExchange(exchange, SC); 
+        exchange.endExchange(); 
     }
 }

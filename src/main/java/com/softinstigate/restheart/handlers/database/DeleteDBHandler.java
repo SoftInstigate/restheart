@@ -53,13 +53,17 @@ public class DeleteDBHandler extends PipedHttpHandler
             return;
         }
         
+        int SC = DBDAO.deleteDB(context.getDBName(), etag);
+        
+        exchange.setResponseCode(SC);
+        
         // send the warnings if any
         if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
         {
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
         }
         
-        ResponseHelper.endExchange(exchange, DBDAO.deleteDB(context.getDBName(), etag));
+        exchange.endExchange();
         LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());
     }
 }

@@ -53,13 +53,14 @@ public class DeleteDocumentHandler extends PipedHttpHandler
         
         int SC = DocumentDAO.deleteDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), etag);
         
+        exchange.setResponseCode(SC);
+        
         // send the warnings if any
         if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
         {
-            
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
         }
         
-        ResponseHelper.endExchange(exchange, SC);
+        exchange.endExchange();
     }
 }
