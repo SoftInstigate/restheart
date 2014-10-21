@@ -71,6 +71,7 @@ public class PatchCollectionIT extends AbstactIT
             resp = adminExecutor.execute(Request.Get(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             
             content = JsonObject.readFrom(resp.returnContent().asString());
+            Assert.assertNotNull("check patched content", content.get("a"));
             Assert.assertNotNull("check patched content", content.get("b"));
             Assert.assertTrue("check patched content", content.get("a").asInt() == 1 && content.get("b").asInt() == 2 );
             etag = content.get("_etag").asString();

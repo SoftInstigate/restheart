@@ -69,14 +69,15 @@ public class PatchDocumentIT  extends AbstactIT
             String etag = content.get("_etag").asString();
             
             // try to patch with correct etag
-            resp = adminExecutor.execute(Request.Patch(documentTmpUri).bodyString("{b:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
+            resp = adminExecutor.execute(Request.Patch(documentTmpUri).bodyString("{b:2}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
             check("check patch tmp doc with correct etag", resp, HttpStatus.SC_OK);
 
             resp = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             
             content = JsonObject.readFrom(resp.returnContent().asString());
-            
-            Assert.assertTrue("check patched content", content.names().stream().anyMatch(k -> k.equals("a") || k.equals("b")));
+            Assert.assertNotNull("check patched content", content.get("a"));
+            Assert.assertNotNull("check patched content", content.get("b"));
+            Assert.assertTrue("check patched content", content.get("a").asInt() == 1 && content.get("b").asInt() == 2 );
         }
         finally
         {
