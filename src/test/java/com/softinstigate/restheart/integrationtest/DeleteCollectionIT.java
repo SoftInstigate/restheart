@@ -31,7 +31,7 @@ public class DeleteCollectionIT extends AbstactIT
     }
     
     @Test
-    public void testDeleteDocument() throws Exception
+    public void testDeleteCollection() throws Exception
     {
         try
         {
