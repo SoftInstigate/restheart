@@ -21,10 +21,10 @@ import static org.junit.Assert.*;
  *
  * @author uji
  */
-public class DBPatchIT extends AbstactIT
+public class PatchCollectionIT extends AbstactIT
 {
     
-    public DBPatchIT()
+    public PatchCollectionIT()
     {
     }
     

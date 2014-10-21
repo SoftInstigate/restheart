@@ -15,10 +15,16 @@ import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
 import com.softinstigate.restheart.Configuration;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.hal.Representation;
 import java.net.URI;
+import junit.framework.Assert;
 import org.apache.http.HttpHost;
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Executor;
+import org.apache.http.client.fluent.Response;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.ContentType;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -96,6 +102,13 @@ public abstract class AbstactIT
             + "{ \"rel\": \"otm\", \"type\": \"ONE_TO_MANY\", \"role\": \"INVERSE\", \"target-coll\": \"coll1\", \"ref-field\": \"mto\" },"
             + "{ \"rel\": \"mtm\", \"type\": \"MANY_TO_MANY\", \"role\": \"INVERSE\", \"target-coll\": \"coll1\", \"ref-field\": \"mtm\" }"
             + "]}";
+    
+    protected static final ContentType halCT;
+
+    static
+    {
+        halCT = ContentType.create(Representation.HAL_JSON_MEDIA_TYPE);
+    }
     
     protected static String docsCollectionPropsStrings = "{}";
     
@@ -420,5 +433,16 @@ public abstract class AbstactIT
     @After
     public void tearDown()
     {
+    }
+    
+    protected void check(String message, Response resp, int expectedCode) throws Exception
+    {
+        HttpResponse httpResp = resp.returnResponse();
+        Assert.assertNotNull(httpResp);
+        
+        StatusLine statusLine = httpResp.getStatusLine();
+        Assert.assertNotNull(statusLine);
+        
+        Assert.assertEquals(message, expectedCode, statusLine.getStatusCode());
     }
 }

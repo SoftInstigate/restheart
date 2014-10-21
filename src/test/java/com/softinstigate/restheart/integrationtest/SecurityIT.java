@@ -18,7 +18,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
-import org.apache.http.entity.ContentType;
 import org.junit.Test;
 
 /**
@@ -27,13 +26,6 @@ import org.junit.Test;
  */
 public class SecurityIT extends AbstactIT
 {
-    private static ContentType halCT;
-    
-    static
-    {
-        halCT= ContentType.create(Representation.HAL_JSON_MEDIA_TYPE);
-    }
-    
     public SecurityIT()
     {
     }
@@ -300,16 +292,5 @@ public class SecurityIT extends AbstactIT
         {
             mongoClient.dropDatabase(dbTmpName);
         }
-    }
-    
-    private void check(String message, Response resp, int expectedCode) throws Exception
-    {
-        HttpResponse httpResp = resp.returnResponse();
-        Assert.assertNotNull(httpResp);
-        
-        StatusLine statusLine = httpResp.getStatusLine();
-        Assert.assertNotNull(statusLine);
-        
-        Assert.assertEquals(message, expectedCode, statusLine.getStatusCode());
     }
 }

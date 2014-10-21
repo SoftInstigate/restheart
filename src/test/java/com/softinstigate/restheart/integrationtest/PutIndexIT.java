@@ -21,10 +21,10 @@ import static org.junit.Assert.*;
  *
  * @author uji
  */
-public class DBDeleteIT extends AbstactIT
+public class PutIndexIT extends AbstactIT
 {
     
-    public DBDeleteIT()
+    public PutIndexIT()
     {
     }
     
