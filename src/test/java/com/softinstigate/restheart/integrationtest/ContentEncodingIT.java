@@ -10,7 +10,6 @@
  */
 package com.softinstigate.restheart.integrationtest;
 
-import static com.softinstigate.restheart.integrationtest.AbstactIT.conf;
 import com.softinstigate.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
 import java.io.ByteArrayInputStream;

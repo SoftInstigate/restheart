@@ -85,9 +85,12 @@ public abstract class AbstactIT
     protected static URI document2UriRemappedCollection;
     protected static URI document2UriRemappedDocument;
     protected static URI documentTmpUri;
+    protected static URI indexesTmpUri;
+    protected static URI indexTmpUri;
     protected static String document1Id = "doc1";
     protected static String document2Id = "doc2";
     protected static String documentTmpId = "tmpdoc";
+    
     
     protected static String dbPropsString = "{ \"a\": 1, \"b\": \"due\", \"c\": { \"d\": 1, \"f\": [\"g\",\"h\",3,{\"i\":4, \"l\":\"tre\"}]}}";
     protected static String coll1PropsString = "{ \"a\":1, \"rels\" :  ["
@@ -338,6 +341,20 @@ public abstract class AbstactIT
                 .setPort(conf.getHttpPort())
                 .setPath("/" + dbTmpName + "/" + collectionTmpName + "/" + documentTmpId)
                 .build();
+        
+        indexesTmpUri = new URIBuilder()
+                .setScheme("http")
+                .setHost("127.0.0.1")
+                .setPort(conf.getHttpPort())
+                .setPath("/" + dbTmpName + "/" + collectionTmpName + "/_indexes")
+                .build();
+        indexTmpUri = new URIBuilder()
+                .setScheme("http")
+                .setHost("127.0.0.1")
+                .setPort(conf.getHttpPort())
+                .setPath("/" + dbTmpName + "/" + collectionTmpName + "/_indexes/new-index")
+                .build();
+        
         
         document1Uri = new URIBuilder()
                 .setScheme("http")
