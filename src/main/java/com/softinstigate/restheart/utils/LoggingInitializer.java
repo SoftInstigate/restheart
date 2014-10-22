@@ -60,7 +60,7 @@ public class LoggingInitializer
 
         FixedWindowRollingPolicy fwRollingPolicy = new FixedWindowRollingPolicy();
         fwRollingPolicy.setContext(loggerContext);
-        fwRollingPolicy.setFileNamePattern(getFileNameFromPath(logFilePath) + "-%i.log.zip");
+        fwRollingPolicy.setFileNamePattern(logFilePath + "-%i.log.zip");
         fwRollingPolicy.setParent(rfAppender);
         fwRollingPolicy.start();
 

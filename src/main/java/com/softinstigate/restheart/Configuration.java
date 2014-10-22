@@ -11,6 +11,7 @@
 package com.softinstigate.restheart;
 
 import ch.qos.logback.classic.Level;
+import com.softinstigate.restheart.utils.URLUtilis;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -168,7 +169,7 @@ public class Configuration
         amImpl = null;
         amArgs = null;
 
-        logFilePath = System.getProperty("java.io.tmpdir") + File.separator + "restheart.log";
+        logFilePath = URLUtilis.removeTrailingSlashes(System.getProperty("java.io.tmpdir")) + File.separator + "restheart.log";
         logToConsole = true;
         logToFile = true;
         logLevel = Level.INFO;
@@ -248,7 +249,7 @@ public class Configuration
             amImpl = null;
             amArgs = null;
 
-            logFilePath = System.getProperty("java.io.tmpdir") + File.separator + "restheart.log";
+            logFilePath = URLUtilis.removeTrailingSlashes(System.getProperty("java.io.tmpdir")) + File.separator + "restheart.log";
             logToConsole = true;
             logToFile = true;
             logLevel = Level.INFO;
@@ -313,7 +314,7 @@ public class Configuration
             amImpl = getAsStringOrDefault(am, IMPLEMENTATION_CLASS, "com.softinstigate.restheart.security.impl.SimpleAccessManager");
             amArgs = am;
 
-            logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH, System.getProperty("java.io.tmpdir" + File.separator + "restheart.log"));
+            logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH, URLUtilis.removeTrailingSlashes(System.getProperty("java.io.tmpdir")) + File.separator + "restheart.log");
             String _logLevel = getAsStringOrDefault(conf, LOG_LEVEL, "WARN");
             logToConsole = getAsBooleanOrDefault(conf, ENABLE_LOG_CONSOLE, true);
             logToFile = getAsBooleanOrDefault(conf, ENABLE_LOG_FILE, true);
