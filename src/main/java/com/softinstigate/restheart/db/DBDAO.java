@@ -171,7 +171,7 @@ public class DBDAO
             float _size = size + 0f;
             float _pagesize = pagesize + 0f;
 
-            total_pages = Math.max(1, Math.round(Math.nextUp(_size / _pagesize)));
+            total_pages = Math.max(1, Math.round(Math.ceil(_size / _pagesize)));
 
             if (page > total_pages)
             {

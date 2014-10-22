@@ -49,14 +49,14 @@ public class HALUtils
 
         int page = context.getPage();
         int pagesize = context.getPagesize();
-        int totalPages = 0;
+        long totalPages = 0;
 
         if (size > 0)
         {
             float _size = size + 0f;
             float _pagesize = pagesize + 0f;
 
-            totalPages = Math.max(1, Math.round(Math.nextUp(_size / _pagesize)));
+            totalPages = Math.max(1, Math.round(Math.ceil(_size / _pagesize)));
         }
 
         TreeMap<String, String> links = new TreeMap<>();

@@ -243,8 +243,6 @@ public class Bootstrapper
             }
         });
 
-        logger.info("restheart started");
-
         if (conf.isLogToFile())
         {
             logger.info("logging to {} with level {}", conf.getLogFilePath(), conf.getLogLevel());
@@ -259,6 +257,8 @@ public class Bootstrapper
         {
             logger.info("logging to console with level {}", conf.getLogLevel());
         }
+        
+        logger.info("restheart started **********************************************");
     }
 
     private static void start()
@@ -279,7 +279,7 @@ public class Bootstrapper
 
         if (conf.getIdmImpl() == null)
         {
-            logger.warn("***** no identity manager specified. security disabled.");
+            logger.warn("***** no identity manager specified. authentication disabled.");
             identityManager = null;
         }
         else
@@ -298,9 +298,14 @@ public class Bootstrapper
 
         AccessManager accessManager = null;
 
-        if (conf.getAmImpl() == null)
+        if (conf.getAmImpl() == null && conf.getIdmImpl() != null)
         {
             logger.warn("***** no access manager specified. authenticated users can do anything.");
+            accessManager = null;
+        }
+        else if (conf.getAmImpl() == null && conf.getIdmImpl() == null)
+        {
+            logger.warn("***** no access manager specified. users can do anything.");
             accessManager = null;
         }
         else
