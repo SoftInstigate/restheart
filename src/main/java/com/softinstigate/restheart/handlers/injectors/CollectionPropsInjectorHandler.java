@@ -17,6 +17,8 @@ import com.mongodb.MongoException;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestContext;
+import com.softinstigate.restheart.utils.HttpStatus;
+import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.util.Optional;
 
@@ -56,6 +58,11 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler
                 
                 if (collProps != null)
                     collProps.put("_collection-props-cached", false);
+                else
+                {
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "collection " + context.getDBName() + "/" + context.getCollectionName() + " does not exist");
+                    return;
+                }
             }
             else
             {
@@ -91,7 +98,6 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler
                         }
                     }
                     
-                    
                     if (_collMetadata.isPresent())
                     {
                         collProps = _collMetadata.get();
@@ -100,6 +106,12 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler
                     else
                         collProps = null;
                 }
+            }
+            
+            if (collProps == null)
+            {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "collection " + context.getDBName() + "/" + context.getCollectionName() + " does not exist");
+                return;
             }
 
             context.setCollectionProps(collProps);

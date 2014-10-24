@@ -17,6 +17,8 @@ import com.mongodb.MongoException;
 import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestContext;
+import com.softinstigate.restheart.utils.HttpStatus;
+import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.util.Optional;
 
@@ -54,6 +56,11 @@ public class DbPropsInjectorHandler extends PipedHttpHandler
                 
                 if (dbProps != null)
                     dbProps.put("_db-props-cached", false);
+                else
+                {
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "db " + context.getDBName() + " does not exis");
+                    return;
+                }
             }
             else
             {
@@ -99,6 +106,12 @@ public class DbPropsInjectorHandler extends PipedHttpHandler
                 }
             }
 
+            if (dbProps == null)
+            {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "db " + context.getDBName() + " does not exis");
+                return;
+            }
+            
             context.setDbProps(dbProps);
         }
         

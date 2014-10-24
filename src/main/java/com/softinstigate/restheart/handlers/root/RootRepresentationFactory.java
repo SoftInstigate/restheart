@@ -17,6 +17,7 @@ import static com.softinstigate.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
+import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.net.URISyntaxException;
@@ -46,7 +47,7 @@ public class RootRepresentationFactory
     static private Representation getDbs(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException
     {
-        String requestPath = context.getRequestUri();
+        String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
         String queryString = (exchange.getQueryString() == null || exchange.getQueryString().isEmpty()) ? "" : "?" + exchange.getQueryString();
         
         boolean trailingSlash = requestPath.substring(requestPath.length() > 0 ? requestPath.length()-1: 0).equals("/");
@@ -86,7 +87,6 @@ public class RootRepresentationFactory
                         if (d.get("_etag") != null && d.get("_etag") instanceof ObjectId)
                             d.put("_etag", ((ObjectId)d.get("_etag")).toString()); // represent the etag as a string
                         
-                        d.removeField("_id");
                         nrep.addProperties(d);
                         
                         rep.addRepresentation("rh:db", nrep);

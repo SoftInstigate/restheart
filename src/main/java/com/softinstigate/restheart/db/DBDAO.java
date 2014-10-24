@@ -131,7 +131,7 @@ public class DBDAO
 
         if (row != null)
         {
-            row.removeField("_id");
+            row.put("_id", dbName);
             
             Object etag = row.get("_etag");
 

@@ -210,7 +210,7 @@ public class CollectionDAO
 
         if (properties != null)
         {
-            properties.removeField("_id");
+            properties.put("_id", collName);
             
             Object etag = properties.get("_etag");
 
