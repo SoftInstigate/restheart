@@ -71,7 +71,7 @@ public class GetDocumentHandler extends PipedHttpHandler
 
         if (document == null)
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "document " + context.getDBName() + "/" + context.getCollectionName() + "/" + context.getDocumentId() + " does not exist");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "document does not exist");
             return;
         }
         
