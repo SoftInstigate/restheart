@@ -74,6 +74,9 @@ public class DBRepresentationFactory
                     {
                         Representation nrep = new Representation(requestPath + "/" + _id.toString());
                         
+                        if (d.get("_etag") != null && d.get("_etag") instanceof ObjectId)
+                            d.put("_etag", ((ObjectId)d.get("_etag")).toString()); // represent the etag as a string
+                        
                         nrep.addProperties(d);
                         
                         rep.addRepresentation("rh:coll", nrep);

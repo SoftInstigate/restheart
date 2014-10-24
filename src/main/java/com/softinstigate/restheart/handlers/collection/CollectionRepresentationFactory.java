@@ -85,6 +85,9 @@ public class CollectionRepresentationFactory
                     {
                         Representation nrep = DocumentRepresentationFactory.getDocument(requestPath + "/" + _id.toString(), exchange, context, d);
 
+                        if (d.get("_etag") != null && d.get("_etag") instanceof ObjectId)
+                            d.put("_etag", ((ObjectId)d.get("_etag")).toString()); // represent the etag as a string
+                        
                         rep.addRepresentation("rh:doc", nrep);
                     }
                     else
