@@ -24,12 +24,14 @@ import java.util.Optional;
 
 /**
  *
+ * this handler injects the db properties in the RequestContext
+ * this handler is also responsible of sending NOT_FOUND in case of requests involving not existing dbs (that are not PUT)
  * @author uji
  */
 public class DbPropsInjectorHandler extends PipedHttpHandler
 {
     private static boolean cacheEnabled = false;
-    
+
     /**
      * Creates a new instance of MetadataInjecterHandler
      *
@@ -39,7 +41,7 @@ public class DbPropsInjectorHandler extends PipedHttpHandler
     public DbPropsInjectorHandler(PipedHttpHandler next, boolean propertiesLocalCacheEnabled)
     {
         super(next);
-        
+
         cacheEnabled = propertiesLocalCacheEnabled;
     }
 
@@ -53,10 +55,13 @@ public class DbPropsInjectorHandler extends PipedHttpHandler
             if (!cacheEnabled)
             {
                 dbProps = DBDAO.getDbProps(context.getDBName());
-                
+
                 if (dbProps != null)
+                {
                     dbProps.put("_db-props-cached", false);
-                else
+                }
+                else if (!(context.getType() == RequestContext.TYPE.DB && context.getMethod() == RequestContext.METHOD.PUT)
+                        && (context.getType() != RequestContext.TYPE.ROOT))
                 {
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "db " + context.getDBName() + " does not exis");
                     return;
@@ -65,9 +70,9 @@ public class DbPropsInjectorHandler extends PipedHttpHandler
             else
             {
                 LoadingCache<String, Optional<DBObject>> dbPropsCache = LocalCachesSingleton.getInstance().getDbCache();
-                
+
                 Optional<DBObject> _dbMetadata = dbPropsCache.getIfPresent(context.getDBName());
-                
+
                 if (_dbMetadata != null)
                 {
                     if (_dbMetadata.isPresent())
@@ -76,7 +81,9 @@ public class DbPropsInjectorHandler extends PipedHttpHandler
                         dbProps.put("_db-props-cached", true);
                     }
                     else
+                    {
                         dbProps = null;
+                    }
                 }
                 else
                 {
@@ -84,7 +91,7 @@ public class DbPropsInjectorHandler extends PipedHttpHandler
                     {
                         _dbMetadata = dbPropsCache.getUnchecked(context.getDBName());
                     }
-                    catch(UncheckedExecutionException uex)
+                    catch (UncheckedExecutionException uex)
                     {
                         if (uex.getCause() instanceof MongoException)
                         {
@@ -95,26 +102,30 @@ public class DbPropsInjectorHandler extends PipedHttpHandler
                             throw uex;
                         }
                     }
-                    
+
                     if (_dbMetadata != null && _dbMetadata.isPresent())
                     {
                         dbProps = _dbMetadata.get();
                         dbProps.put("_db-props-cached", false);
                     }
                     else
+                    {
                         dbProps = null;
+                    }
                 }
             }
 
-            if (dbProps == null)
+            if (dbProps == null 
+                    && (!(context.getType() == RequestContext.TYPE.DB && context.getMethod() == RequestContext.METHOD.PUT)
+                    && (context.getType() != RequestContext.TYPE.ROOT)))
             {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "db " + context.getDBName() + " does not exis");
                 return;
             }
-            
+
             context.setDbProps(dbProps);
         }
-        
+
         next.handleRequest(exchange, context);
     }
 }

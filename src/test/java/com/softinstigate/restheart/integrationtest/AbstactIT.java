@@ -381,7 +381,7 @@ public abstract class AbstactIT
                 .setScheme("http")
                 .setHost("127.0.0.1")
                 .setPort(conf.getHttpPort())
-                .setPath("/remappedcoll1" + "/" + document1Id)
+                .setPath("/remappedrefcoll1" + "/" + document1Id)
                 .build();
         
         document1UriRemappedDocument = new URIBuilder()
@@ -416,7 +416,7 @@ public abstract class AbstactIT
                 .setScheme("http")
                 .setHost("127.0.0.1")
                 .setPort(conf.getHttpPort())
-                .setPath("/remappedcoll2" + "/" + document2Id)
+                .setPath("/remappedrefcoll2" + "/" + document2Id)
                 .build();
         
         document2UriRemappedDocument = new URIBuilder()

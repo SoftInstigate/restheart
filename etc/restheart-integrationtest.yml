@@ -49,9 +49,9 @@ mongo-mounts:
     - what: /mydb
       where: /remappeddb
     - what: /mydb/refcoll1
-      where: /remappedcoll1
+      where: /remappedrefcoll1
     - what: /mydb/refcoll2
-      where: /remappedcoll2
+      where: /remappedrefcoll2
     - what: /mydb/refcoll1/doc1
       where: /remappeddoc1
     - what: /mydb/refcoll2/doc2

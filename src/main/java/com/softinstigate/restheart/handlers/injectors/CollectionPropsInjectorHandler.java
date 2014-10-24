@@ -23,7 +23,8 @@ import io.undertow.server.HttpServerExchange;
 import java.util.Optional;
 
 /**
- *
+ * this handler injects the collection properties in the RequestContext
+ * this handler is also responsible of sending NOT_FOUND in case of requests involving not existing collections (that are not PUT)
  * @author uji
  */
 public class CollectionPropsInjectorHandler extends PipedHttpHandler
@@ -58,7 +59,9 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler
                 
                 if (collProps != null)
                     collProps.put("_collection-props-cached", false);
-                else
+                else if (!(context.getType() == RequestContext.TYPE.COLLECTION && context.getMethod() == RequestContext.METHOD.PUT)
+                        && (context.getType() != RequestContext.TYPE.ROOT)
+                        && (context.getType() != RequestContext.TYPE.DB))
                 {
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "collection " + context.getDBName() + "/" + context.getCollectionName() + " does not exist");
                     return;
@@ -108,7 +111,10 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler
                 }
             }
             
-            if (collProps == null)
+            if (collProps == null 
+                    && (!(context.getType() == RequestContext.TYPE.COLLECTION && context.getMethod() == RequestContext.METHOD.PUT)
+                        && (context.getType() != RequestContext.TYPE.ROOT)
+                        && (context.getType() != RequestContext.TYPE.DB)))
             {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "collection " + context.getDBName() + "/" + context.getCollectionName() + " does not exist");
                 return;

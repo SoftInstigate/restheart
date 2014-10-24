@@ -11,10 +11,7 @@
 package com.softinstigate.restheart.handlers.metadata;
 
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
-import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.RequestContext;
-import com.softinstigate.restheart.handlers.RequestContext.METHOD;
-import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 
 /**
@@ -36,23 +33,6 @@ public class MetadataEnforcerHandler extends PipedHttpHandler
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        if (context.getDbProps() == null
-                && !(context.getType() == RequestContext.TYPE.DB && context.getMethod() == METHOD.PUT)
-                && (context.getType() != RequestContext.TYPE.ROOT))
-        {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "db " + context.getDBName() + " does not exist");
-            return;
-        }
-
-        if (context.getCollectionProps() == null
-                && !(context.getType() == RequestContext.TYPE.COLLECTION && context.getMethod() == METHOD.PUT)
-                && (context.getType() != RequestContext.TYPE.ROOT)
-                && (context.getType() != RequestContext.TYPE.DB))
-        {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "collection " + context.getDBName() + "/" + context.getCollectionName() + " does not exist");
-            return;
-        }
-
         next.handleRequest(exchange, context);
     }
 }

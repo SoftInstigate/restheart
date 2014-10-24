@@ -64,6 +64,8 @@ public class DBDAO
     /**
      * 
      * WARNING: slow method. 
+     * @param exchange
+     * @param dbName
     * @deprecated
     **/
     public static boolean checkDbExists(HttpServerExchange exchange, String dbName)
