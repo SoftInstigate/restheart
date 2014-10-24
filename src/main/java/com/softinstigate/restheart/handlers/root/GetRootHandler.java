@@ -13,6 +13,7 @@ package com.softinstigate.restheart.handlers.root;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
@@ -65,7 +66,14 @@ public class GetRootHandler extends PipedHttpHandler
         dbs.stream().map(
                 (db) ->
                 {
-                    return new BasicDBObject("_id", db);
+                    DBObject props = DBDAO.getDbProps(db);
+                    
+                    BasicDBObject _db = new BasicDBObject("_id", db);
+                    
+                    if (props != null)
+                        _db.putAll((DBObject)props);
+                    
+                    return _db;
                 }
         ).forEach((item) -> { data.add(item); });
 
