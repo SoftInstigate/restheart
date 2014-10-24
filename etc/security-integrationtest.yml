@@ -25,16 +25,16 @@ permissions:
       predicate: path-prefix[path="/"]
       
     - role: $unauthenticated
-      predicate: path-prefix[path="/integrationtestdb/coll1"] and method[value="GET"]
+      predicate: path-prefix[path="/mydb/refcoll1"] and method[value="GET"]
       
     - role: powerusers
-      predicate: path-prefix[path="/integrationtestdb"] and method[value="GET"]
+      predicate: path-prefix[path="/mydb"] and method[value="GET"]
       
     - role: powerusers
-      predicate: path-prefix[path="/integrationtesttmpdb"]
+      predicate: path-prefix[path="/mytmpdb"]
       
     - role: users
-      predicate: path-prefix[path="/integrationtestdb/coll2"] and method[value="GET"]
+      predicate: path-prefix[path="/mydb/refcoll2"] and method[value="GET"]
     
     - role: users
-      predicate: path[path="/integrationtestdb/coll2"] and method[value="GET"]
+      predicate: path[path="/mydb/refcoll2"] and method[value="GET"]

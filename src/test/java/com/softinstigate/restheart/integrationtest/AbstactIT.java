@@ -49,19 +49,19 @@ public abstract class AbstactIT
     protected static URI dbUri;
     protected static URI dbUriRemappedAll;
     protected static URI dbUriRemappedDb;
-    protected static String dbName = "integrationtestdb";
+    protected static String dbName = "mydb";
     protected static URI dbTmpUri;
-    protected static String dbTmpName = "integrationtesttmpdb";
+    protected static String dbTmpName = "mytmpdb";
     protected static URI collection1Uri;
     protected static URI collection1UriRemappedAll;
     protected static URI collection1UriRemappedDb;
     protected static URI collection1UriRemappedCollection;
-    protected static String collection1Name = "coll1";
+    protected static String collection1Name = "refcoll1";
     protected static URI collection2Uri;
     protected static URI collection2UriRemappedAll;
     protected static URI collection2UriRemappedDb;
     protected static URI collection2UriRemappedCollection;
-    protected static String collection2Name = "coll2";
+    protected static String collection2Name = "refcoll2";
     protected static URI collectionTmpUri;
     protected static String collectionTmpName = "tmpcoll";
     protected static URI docsCollectionUri;
@@ -69,7 +69,7 @@ public abstract class AbstactIT
     protected static URI docsCollectionUriCountAndPaging;
     protected static URI docsCollectionUriSort;
     protected static URI docsCollectionUriFilter;
-    protected static String docsCollectionName = "docscoll";
+    protected static String docsCollectionName = "bandleaders";
     protected static URI indexesUri;
     protected static URI indexesUriRemappedAll;
     protected static URI indexesUriRemappedDb;
@@ -94,16 +94,16 @@ public abstract class AbstactIT
     
     protected static String dbPropsString = "{ \"a\": 1, \"b\": \"due\", \"c\": { \"d\": 1, \"f\": [\"g\",\"h\",3,{\"i\":4, \"l\":\"tre\"}]}}";
     protected static String coll1PropsString = "{ \"a\":1, \"rels\" :  ["
-            + "{ \"rel\": \"oto\", \"type\": \"ONE_TO_ONE\",  \"role\": \"OWNING\", \"target-coll\": \"coll2\", \"ref-field\": \"oto\" },"
-            + "{ \"rel\": \"otm\", \"type\": \"ONE_TO_MANY\", \"role\": \"OWNING\", \"target-coll\": \"coll2\", \"ref-field\": \"otm\" },"
-            + "{ \"rel\": \"mto\", \"type\": \"MANY_TO_ONE\", \"role\": \"OWNING\", \"target-coll\": \"coll2\", \"ref-field\": \"mto\" },"
-            + "{ \"rel\": \"mtm\", \"type\": \"MANY_TO_MANY\", \"role\": \"OWNING\", \"target-coll\": \"coll2\", \"ref-field\": \"mtm\" }"
+            + "{ \"rel\": \"oto\", \"type\": \"ONE_TO_ONE\",  \"role\": \"OWNING\", \"target-coll\": \"refcoll2\", \"ref-field\": \"oto\" },"
+            + "{ \"rel\": \"otm\", \"type\": \"ONE_TO_MANY\", \"role\": \"OWNING\", \"target-coll\": \"refcoll2\", \"ref-field\": \"otm\" },"
+            + "{ \"rel\": \"mto\", \"type\": \"MANY_TO_ONE\", \"role\": \"OWNING\", \"target-coll\": \"refcoll2\", \"ref-field\": \"mto\" },"
+            + "{ \"rel\": \"mtm\", \"type\": \"MANY_TO_MANY\", \"role\": \"OWNING\", \"target-coll\": \"refcoll2\", \"ref-field\": \"mtm\" }"
             + "]}";
     protected static String coll2PropsString = "{ \"a\":2, \"rels\" :  ["
-            + "{ \"rel\": \"oto\", \"type\": \"ONE_TO_ONE\",  \"role\": \"INVERSE\", \"target-coll\": \"coll1\", \"ref-field\": \"oto\" },"
-            + "{ \"rel\": \"mto\", \"type\": \"MANY_TO_ONE\", \"role\": \"INVERSE\", \"target-coll\": \"coll1\", \"ref-field\": \"otm\" },"
-            + "{ \"rel\": \"otm\", \"type\": \"ONE_TO_MANY\", \"role\": \"INVERSE\", \"target-coll\": \"coll1\", \"ref-field\": \"mto\" },"
-            + "{ \"rel\": \"mtm\", \"type\": \"MANY_TO_MANY\", \"role\": \"INVERSE\", \"target-coll\": \"coll1\", \"ref-field\": \"mtm\" }"
+            + "{ \"rel\": \"oto\", \"type\": \"ONE_TO_ONE\",  \"role\": \"INVERSE\", \"target-coll\": \"refcoll1\", \"ref-field\": \"oto\" },"
+            + "{ \"rel\": \"mto\", \"type\": \"MANY_TO_ONE\", \"role\": \"INVERSE\", \"target-coll\": \"refcoll1\", \"ref-field\": \"otm\" },"
+            + "{ \"rel\": \"otm\", \"type\": \"ONE_TO_MANY\", \"role\": \"INVERSE\", \"target-coll\": \"refcoll1\", \"ref-field\": \"mto\" },"
+            + "{ \"rel\": \"mtm\", \"type\": \"MANY_TO_MANY\", \"role\": \"INVERSE\", \"target-coll\": \"refcoll1\", \"ref-field\": \"mtm\" }"
             + "]}";
     
     protected static final ContentType halCT;
@@ -233,7 +233,7 @@ public abstract class AbstactIT
                 .setScheme("http")
                 .setHost("127.0.0.1")
                 .setPort(conf.getHttpPort())
-                .setPath("/remappedcoll1")
+                .setPath("/remappedrefcoll1")
                 .build();
         
         collection2Uri = new URIBuilder()
@@ -261,7 +261,7 @@ public abstract class AbstactIT
                 .setScheme("http")
                 .setHost("127.0.0.1")
                 .setPort(conf.getHttpPort())
-                .setPath("/remappedcoll2")
+                .setPath("/remappedrefcoll2")
                 .build();
         
         collectionTmpUri = new URIBuilder()

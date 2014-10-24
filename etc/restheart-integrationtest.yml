@@ -46,15 +46,15 @@ mongo-mounts:
       where: /
     - what: "*"
       where: /remappedall
-    - what: /integrationtestdb
+    - what: /mydb
       where: /remappeddb
-    - what: /integrationtestdb/coll1
+    - what: /mydb/refcoll1
       where: /remappedcoll1
-    - what: /integrationtestdb/coll2
+    - what: /mydb/refcoll2
       where: /remappedcoll2
-    - what: /integrationtestdb/coll1/doc1
+    - what: /mydb/refcoll1/doc1
       where: /remappeddoc1
-    - what: /integrationtestdb/coll2/doc2
+    - what: /mydb/refcoll2/doc2
       where: /remappeddoc2
 
 #### application logic 
@@ -80,11 +80,6 @@ access-manager:
     implementation-class: com.softinstigate.restheart.security.impl.SimpleAccessManager
     conf-file: ../etc/security-integrationtest.yml
     
-#### protocol
-
-# if you want to save bandwitdth, you can force requests to support the giz encoding only (if not, requests will be rejected)
-force-gzip-encoding: false
-
 #### logging
 
 enable-log-file: false
@@ -96,6 +91,9 @@ enable-log-console: true
 log-level: INFO
 
 #### performace settings
+
+# if you want to save bandwitdth, you can force requests to support the giz encoding only (if not, requests will be rejected)
+force-gzip-encoding: false
 
 # local-cache to cache the db and collection properties
 # it drammatically improves GETs performace
