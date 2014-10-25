@@ -33,9 +33,7 @@ public class Representation
         embedded = new BasicDBObject();
         links = new BasicDBObject();
         
-        Link self = new Link("self", href);
-        
-        links.put("_links", self.getDBObject());
+        links.put("self", new BasicDBObject("href", href));
     }
         
     BasicDBObject getDBObject()

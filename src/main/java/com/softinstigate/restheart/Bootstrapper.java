@@ -468,8 +468,8 @@ public class Bootstrapper
                                                         new DeleteIndexHandler()
                                                 )
                                         )
-                                ), conf.isLocalCacheEnabled()
-                        ), conf.isLocalCacheEnabled()
+                                )
+                        )
                 );
 
         PathHandler paths = path()

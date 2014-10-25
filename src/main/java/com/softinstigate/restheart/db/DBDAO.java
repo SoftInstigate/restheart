@@ -18,6 +18,7 @@ import com.mongodb.MongoClient;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
+import com.softinstigate.restheart.handlers.injectors.LocalCachesSingleton;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
@@ -187,14 +188,19 @@ public class DBDAO
         List<DBObject> data = new ArrayList<>();
 
         _colls.stream().map(
-                (coll) ->
+                (collName) ->
                 {
                     BasicDBObject properties = new BasicDBObject();
 
-                    properties.put("_id", coll);
+                    properties.put("_id", collName);
 
-                    DBObject collProperties = CollectionDAO.getCollectionProps(dbName, coll);
-
+                    DBObject collProperties;
+                    
+                    if (LocalCachesSingleton.isEnabled())
+                        collProperties =  LocalCachesSingleton.getInstance().getCollectionProps(dbName, collName);
+                    else
+                        collProperties = CollectionDAO.getCollectionProps(dbName, collName);
+                    
                     if (collProperties != null)
                         properties.putAll(collProperties);
 
