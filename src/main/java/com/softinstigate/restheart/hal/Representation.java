@@ -23,52 +23,57 @@ public class Representation
 {
     public static final String HAL_JSON_MEDIA_TYPE = "application/hal+json";
     
-    private final BasicDBObject dbObject;
+    private final BasicDBObject properties;
+    private final BasicDBObject embedded;
+    private final BasicDBObject links;
     
     public Representation(String href)
     {
-        dbObject = new BasicDBObject();
+        properties = new BasicDBObject();
+        embedded = new BasicDBObject();
+        links = new BasicDBObject();
         
         Link self = new Link("self", href);
         
-        dbObject.put("_links", self.getDBObject());
+        links.put("_links", self.getDBObject());
     }
         
     BasicDBObject getDBObject()
     {
-        return dbObject;
+        BasicDBObject ret = new BasicDBObject(properties);
+        
+        if (!embedded.isEmpty())
+            ret.append("_embedded", embedded);
+        
+        if (!links.isEmpty())
+            ret.append("_links", links); 
+        
+        return ret;
     }
     
     public void addLink(Link link)
     {
-        if (dbObject.get("_links") == null)
-            dbObject.put("_links", new BasicDBObject());
-        
-        BasicDBObject _links = (BasicDBObject) dbObject.get("_links");
-        
-        _links.putAll((BSONObject)((Link)link).getDBObject());
+        links.putAll((BSONObject)((Link)link).getDBObject());
     }
     
     public void addLink(Link link, boolean inArray)
     {
-        if (dbObject.get("_links") == null)
-            dbObject.put("_links", new BasicDBObject());
+        BasicDBList linkArray = (BasicDBList) links.get(link.getRef());
         
-        BasicDBObject _links = (BasicDBObject) dbObject.get("_links");
-        
-        if (_links.get(link.getRef()) == null)
-           _links.put(link.getRef(), new BasicDBList());
-        
-        BasicDBList linkArray = (BasicDBList) _links.get(link.getRef());
+        if (linkArray == null)
+        {
+            linkArray = new BasicDBList();
+            links.append(link.getRef(), linkArray);
+        }
         
         linkArray.add(link.getDBObject().get(link.getRef()));
         
-        _links.put(link.getRef(), linkArray);
+        links.put(link.getRef(), linkArray);
     }
     
     public void addProperty(String key, Object value)
     {
-        dbObject.append(key, value);
+        properties.append(key, value);
     }
     
     public void addProperties(DBObject props)
@@ -76,27 +81,26 @@ public class Representation
         if (props == null)
             return;
         
-        dbObject.putAll(props);
+        properties.putAll(props);
     }
     
     public void addRepresentation(String rel, Representation rep)
     {
-        if (dbObject.get("_embedded") == null)
-            dbObject.put("_embedded", new BasicDBObject());
+        BasicDBList repArray = (BasicDBList) embedded.get(rel);
         
-        BasicDBObject _embedded = (BasicDBObject) dbObject.get("_embedded");
+        if (repArray == null)
+        {
+            repArray = new BasicDBList();
+            
+            embedded.append(rel, repArray);
+        }
         
-        if (_embedded.get(rel) == null)
-            _embedded.put(rel, new BasicDBList());
-        
-        BasicDBList _rel = (BasicDBList) _embedded.get(rel);
-        
-        _rel.add(((Representation)rep).getDBObject());
+        repArray.add(rep.getDBObject());
     }
     
     @Override
     public String toString()
     {
-        return dbObject.toString();
+        return getDBObject().toString();
     }
 }
