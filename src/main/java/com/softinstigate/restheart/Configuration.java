@@ -29,7 +29,7 @@ import org.yaml.snakeyaml.Yaml;
  */
 public class Configuration
 {
-    public static String DOC_Path = "http://localhost/~Uji/rhapi";
+    public static String DOC_Path = "http://www.softinstigate.com/restheart/docs/v0.9";
     
     private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
 
