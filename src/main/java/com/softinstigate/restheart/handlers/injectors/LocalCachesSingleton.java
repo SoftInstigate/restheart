@@ -13,7 +13,9 @@ package com.softinstigate.restheart.handlers.injectors;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mongodb.DBObject;
+import com.mongodb.MongoException;
 import com.softinstigate.restheart.Configuration;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.db.DBDAO;
@@ -27,9 +29,9 @@ import java.util.concurrent.TimeUnit;
 public class LocalCachesSingleton
 {
     private static final String SEPARATOR = "_@_@_";
-    
+
     private static boolean initialized = false;
-    
+
     private LoadingCache<String, Optional<DBObject>> dbPropsCache = null;
     private LoadingCache<String, Optional<DBObject>> collectionPropsCache = null;
 
@@ -41,7 +43,7 @@ public class LocalCachesSingleton
     {
         setup();
     }
-    
+
     public static void init(Configuration conf)
     {
         ttl = conf.getLocalCacheTtl();
@@ -52,8 +54,10 @@ public class LocalCachesSingleton
     private void setup()
     {
         if (!initialized)
+        {
             throw new IllegalStateException("not initialized");
-        
+        }
+
         CacheBuilder builder = CacheBuilder.newBuilder();
 
         builder.maximumSize(maxCacheSize);
@@ -63,29 +67,28 @@ public class LocalCachesSingleton
             builder.expireAfterWrite(ttl, TimeUnit.MILLISECONDS);
         }
 
-        if(enabled)
+        if (enabled)
         {
-        
-        this.dbPropsCache = builder.build(
-                new CacheLoader<String, Optional<DBObject>>()
-                {
-                    @Override
-                    public Optional<DBObject> load(String key) throws Exception
+            this.dbPropsCache = builder.build(
+                    new CacheLoader<String, Optional<DBObject>>()
                     {
-                        return Optional.ofNullable(DBDAO.getDbProps(key));
-                    }
-                });
+                        @Override
+                        public Optional<DBObject> load(String key) throws Exception
+                        {
+                            return Optional.ofNullable(DBDAO.getDbProps(key));
+                        }
+                    });
 
-        this.collectionPropsCache = builder.build(
-                new CacheLoader<String, Optional<DBObject>>()
-                {
-                    @Override
-                    public Optional<DBObject> load(String key) throws Exception
+            this.collectionPropsCache = builder.build(
+                    new CacheLoader<String, Optional<DBObject>>()
                     {
-                        String[] dbNameAndCollectionName = key.split(SEPARATOR);
-                        return Optional.ofNullable(CollectionDAO.getCollectionProps(dbNameAndCollectionName[0], dbNameAndCollectionName[1]));
-                    }
-                });
+                        @Override
+                        public Optional<DBObject> load(String key) throws Exception
+                        {
+                            String[] dbNameAndCollectionName = key.split(SEPARATOR);
+                            return Optional.ofNullable(CollectionDAO.getCollectionProps(dbNameAndCollectionName[0], dbNameAndCollectionName[1]));
+                        }
+                    });
         }
     }
 
@@ -99,16 +102,116 @@ public class LocalCachesSingleton
         private static final LocalCachesSingleton INSTANCE = new LocalCachesSingleton();
     }
 
-    public LoadingCache<String, Optional<DBObject>> getDbCache()
+    public DBObject getDBProps(String dbName)
     {
-        return this.dbPropsCache;
+        if (!enabled)
+        {
+            throw new IllegalStateException("tried to use disabled cache");
+        }
+
+        DBObject dbProps;
+
+        Optional<DBObject> _dbProps = dbPropsCache.getIfPresent(dbName);
+
+        if (_dbProps != null)
+        {
+            if (_dbProps.isPresent())
+            {
+                dbProps = _dbProps.get();
+                dbProps.put("_db-props-cached", true);
+            }
+            else
+            {
+                dbProps = null;
+            }
+        }
+        else
+        {
+            try
+            {
+                _dbProps = dbPropsCache.getUnchecked(dbName);
+            }
+            catch (UncheckedExecutionException uex)
+            {
+                if (uex.getCause() instanceof MongoException)
+                {
+                    throw (MongoException) uex.getCause();
+                }
+                else
+                {
+                    throw uex;
+                }
+            }
+
+            if (_dbProps != null && _dbProps.isPresent())
+            {
+                dbProps = _dbProps.get();
+                dbProps.put("_db-props-cached", false);
+            }
+            else
+            {
+                dbProps = null;
+            }
+        }
+
+        return dbProps;
     }
 
-    public LoadingCache<String, Optional<DBObject>> getCollectionCache()
+    public DBObject getCollectionProps(String dbName, String collName)
     {
-        return this.collectionPropsCache;
+        if (!enabled)
+        {
+            throw new IllegalStateException("tried to use disabled cache");
+        }
+        
+        DBObject collProps;
+
+        Optional<DBObject> _collProps = collectionPropsCache.getIfPresent(dbName + SEPARATOR + collName);
+
+        if (_collProps != null)
+        {
+            if (_collProps.isPresent())
+            {
+                collProps = _collProps.get();
+                collProps.put("_collection-props-cached", true);
+            }
+            else
+            {
+                collProps = null;
+            }
+        }
+        else
+        {
+            try
+            {
+                _collProps = collectionPropsCache.getUnchecked(dbName + SEPARATOR + collName);
+            }
+            catch (UncheckedExecutionException uex)
+            {
+                if (uex.getCause() instanceof MongoException)
+                {
+                    throw (MongoException) uex.getCause();
+                }
+                else
+                {
+                    throw uex;
+                }
+            }
+
+            if (_collProps.isPresent())
+            {
+                collProps = _collProps.get();
+                collProps.put("_collection-props-cached", false);
+            }
+            else
+            {
+                collProps = null;
+            }
+        }
+        
+        return collProps;
     }
-    
+
     public void invalidateDb(String dbName)
     {
         if (enabled && dbPropsCache != null)
@@ -116,7 +219,7 @@ public class LocalCachesSingleton
             dbPropsCache.invalidate(dbName);
         }
     }
-    
+
     public void invalidateCollection(String dbName, String collName)
     {
         if (enabled && collectionPropsCache != null)

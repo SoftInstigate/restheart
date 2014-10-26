@@ -10,7 +10,6 @@
  */
 package com.softinstigate.restheart.handlers.root;
 
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.DBDAO;
@@ -18,12 +17,13 @@ import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestContext;
-import com.softinstigate.restheart.utils.URLUtilis;
+import com.softinstigate.restheart.handlers.injectors.LocalCachesSingleton;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -32,7 +32,9 @@ import java.util.stream.Collectors;
 public class GetRootHandler extends PipedHttpHandler
 {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-    
+
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(GetRootHandler.class);
+
     /**
      * Creates a new instance of GetRootHandler
      */
@@ -41,15 +43,14 @@ public class GetRootHandler extends PipedHttpHandler
         super(null);
     }
 
-
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
         List<String> _dbs = client.getDatabaseNames();
 
         // filter out reserved resources
-        List<String> dbs = _dbs.stream().filter(db -> ! RequestContext.isReservedResourceDb(db)).collect(Collectors.toList());
-        
+        List<String> dbs = _dbs.stream().filter(db -> !RequestContext.isReservedResourceDb(db)).collect(Collectors.toList());
+
         if (dbs == null)
         {
             dbs = new ArrayList<>();
@@ -67,9 +68,15 @@ public class GetRootHandler extends PipedHttpHandler
         dbs.stream().map(
                 (db) ->
                 {
-                    return DBDAO.getDbProps(db);
+                    if (LocalCachesSingleton.isEnabled())
+                        return LocalCachesSingleton.getInstance().getDBProps(db);
+                    else
+                        return DBDAO.getDbProps(db);
                 }
-        ).forEach((item) -> { data.add(item); });
+        ).forEach((item) ->
+        {
+            data.add(item);
+        });
 
         exchange.setResponseCode(HttpStatus.SC_OK);
         RootRepresentationFactory.sendHal(exchange, context, data, size);
