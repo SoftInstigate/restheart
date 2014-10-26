@@ -318,34 +318,7 @@ public class DBDAO
         else
         {
             db.dropDatabase();
-            return HttpStatus.SC_GONE;
-        }
-    }
-
-    private static int optimisticCheckEtag(DB db, DBCollection coll, DBObject documentIdQuery, DBObject oldDocument, ObjectId requestEtag)
-    {
-        Object oldEtag = RequestHelper.getEtagAsObjectId(oldDocument.get("_etag"));
-
-        if (oldEtag == null) // well we don't had an etag there so fine
-        {
-            db.dropDatabase();
-            return HttpStatus.SC_OK;
-        }
-        else
-        {
-            if (oldEtag.equals(requestEtag))
-            {
-                db.dropDatabase();
-                return HttpStatus.SC_GONE; // ok they match
-
-            }
-            else
-            {
-                // oopps, we need to restore old document
-                // they call it optimistic lock strategy
-                coll.save(oldDocument);
-                return HttpStatus.SC_PRECONDITION_FAILED;
-            }
+            return HttpStatus.SC_NO_CONTENT;
         }
     }
 }

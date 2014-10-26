@@ -225,7 +225,7 @@ public class DocumentDAO
         else
         {
             // check the old etag (in case restore the old document version)
-            return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_GONE);
+            return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_NO_CONTENT);
         }
     }
 

@@ -93,12 +93,19 @@ public class PatchCollectionHandler extends PipedHttpHandler
         
         int SC = CollectionDAO.upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, true, true);
         
-        exchange.setResponseCode(SC);
-        
-        // send the warnings if any
+        // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
         {
+            if (SC == HttpStatus.SC_NO_CONTENT)
+                exchange.setResponseCode(HttpStatus.SC_OK);
+            else
+                exchange.setResponseCode(SC);
+            
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
+        }
+        else
+        {
+            exchange.setResponseCode(SC);
         }
         
         exchange.endExchange();

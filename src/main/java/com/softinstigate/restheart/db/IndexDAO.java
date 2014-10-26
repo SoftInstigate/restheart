@@ -72,6 +72,6 @@ public class IndexDAO
    public static int deleteIndex(String db, String co, String indexId)
    {
         client.getDB(db).getCollection(co).dropIndex(indexId);
-        return HttpStatus.SC_GONE;
+        return HttpStatus.SC_NO_CONTENT;
    }
 }

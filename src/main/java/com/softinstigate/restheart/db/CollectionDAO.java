@@ -346,7 +346,7 @@ public class CollectionDAO
         else
         {
             coll.drop();
-            return HttpStatus.SC_GONE;
+            return HttpStatus.SC_NO_CONTENT;
         }
     }
 
