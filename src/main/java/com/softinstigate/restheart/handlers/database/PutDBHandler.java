@@ -47,7 +47,7 @@ public class PutDBHandler extends PipedHttpHandler
     {
         if (context.getDBName().isEmpty() || context.getDBName().startsWith("_"))
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "db name cannot be empty or start with @");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "db name cannot be empty or start with _");
             return;
         }
 

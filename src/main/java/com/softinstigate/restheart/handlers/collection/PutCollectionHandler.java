@@ -49,7 +49,7 @@ public class PutCollectionHandler extends PipedHttpHandler
     {
         if (context.getCollectionName().isEmpty() || context.getCollectionName().startsWith("_"))
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, collection name cannot be empty or start with @");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, collection name cannot be empty or start with _");
             return;
         }
         
