@@ -72,7 +72,7 @@ public class DocumentRepresentationFactory
         String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
         if (!requestPath.equals("/")) // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link("rh:coll", URLUtilis.getPerentPath(requestPath)));
-        rep.addLink(new Link("rh", "curies", Configuration.DOC_Path + "/#{rel}", true), true);
+        rep.addLink(new Link("rh", "curies", Configuration.DOC_Path + "/#api/doc/{rel}", true), true);
 
         ResponseHelper.injectWarnings(rep, exchange, context);
         

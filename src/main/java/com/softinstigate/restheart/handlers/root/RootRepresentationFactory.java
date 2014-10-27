@@ -114,7 +114,7 @@ public class RootRepresentationFactory
         
         //curies
         rep.addLink(new Link("rh:paging", requestPath + "{?page}{&pagesize}", true));
-        rep.addLink(new Link("rh", "curies", Configuration.DOC_Path + "/#{rel}", true), true);
+        rep.addLink(new Link("rh", "curies", Configuration.DOC_Path + "/#api/root/{rel}", true), true);
 
         ResponseHelper.injectWarnings(rep, exchange, context);
         
