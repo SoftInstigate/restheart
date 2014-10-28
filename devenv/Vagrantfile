@@ -1,6 +1,14 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+require 'yaml'
+
+confs = YAML.load_file 'vagrant-conf.yml'
+
+AWS_KEY = confs['aws_access_key']
+AWS_SECRET = confs['aws_secret_access_key']
+SSH_FILE =  confs['ssh_private_key_path']
+
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"
 
@@ -22,21 +30,22 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   #end
     
   config.vm.provider :aws do |aws, override|
-    aws.access_key_id = "AKIAJAN46ZEXWGG6VIXA"
-    aws.secret_access_key = "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"
+    aws.access_key_id = AWS_KEY
+    aws.secret_access_key = AWS_SECRET
     aws.region = "eu-west-1"
     aws.keypair_name = "uji"
     aws.instance_type = "t2.micro"
     aws.ami = "ami-afcf19d8" # Ubuntu 12.04.4 LTS (Precise Pangolin) [20140717] HVM
 
+    override.hostmanager.ignore_private_ip = true
     override.ssh.username = "ubuntu"
-    override.ssh.private_key_path = "/Users/uji/development/amazon ec2/uji.pem"
+    override.ssh.private_key_path = SSH_FILE
   end
 
   config.vm.provider "virtualbox" do |vb, override|
     override.vm.box = "hashicorp/precise64"
     vb.memory = 512
-    vb.cpus = 4
+    vb.cpus = 2
   end
 
   config.omnibus.chef_version = :latest
