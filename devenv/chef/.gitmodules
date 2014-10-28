@@ -1,0 +1,9 @@
+[submodule "cookbooks/apt"]
+	path = cookbooks/apt
+	url = https://github.com/opscode-cookbooks/apt.git
+[submodule "java"]
+	path = java
+	url = https://github.com/cookbooks/java.git
+[submodule "cookbooks/maven"]
+	path = cookbooks/maven
+	url = https://github.com/opscode-cookbooks/maven.git

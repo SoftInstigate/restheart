@@ -1,0 +1,143 @@
+## RESTHeart configuration file.
+---
+#### listeners
+
+# Listeners allow to specify the protocol, ip, port and to use.
+# The supported protocols are: http, https and ajp. You can setup a listener per protocol (up to 3).
+
+# WARNING: RESTHeart uses basic authentication; usernames and passwords are sent over the net on each request.
+# Using the http listener is not secure: users credentials can be sniffed by a man-in-the-middle attack.
+# Use the http listener only on trusted environments.
+
+https-listener: true
+https-host: 0.0.0.0
+https-port: 4443
+
+http-listener: true
+http-host: 0.0.0.0
+http-port: 8080
+
+ajp-listener: false
+ajp-host: 0.0.0.0
+ajp-port: 8009
+
+#### SSL configuration
+
+# Configure the keystore to enable the https listener.
+
+# RESTHeart comes with a self-signed certificate that makes straightforward enabling https.
+# Specify use-embedded-keystore: true to use it (this is the default setting).
+# Using the self-signed certificate leads to issues with some clients; 
+# for instance, with curl you need to specify the "--insecure" option or you'll get an error message.
+
+use-embedded-keystore: true
+
+# To use your own certificate you need to import it (and eventually the CA certificates chain) into a java keystore
+# and speficy use-embedded-keystore: false and the keystore-file,keystore-password and certpassword configuration properties. 
+# Refer to the java keystore documentation for that.
+
+#keystore-file: /path/to/keystore/file
+#keystore-password: password
+#certpassword: password
+
+#### mongodb 
+
+# Secify the ip and port of mongodb with mongo-servers. For mongodb replica set, specify all your servers.
+
+mongo-servers:
+    - host: 127.0.0.1
+      port: 27017
+      
+# Provide mongodb users credentials with mongo-credentials.
+mongo-credentials:
+    - auth-db: admin
+      user: admin
+      password: adminadmin
+      
+# Use mongo-mounts to bind URls to mongodb resources using the out-of-the-box URL rewrite feature.
+mongo-mounts:
+    - what: "*"
+      where: /
+
+#### application logic
+
+# RESTHeart has a pipeline architecture where specialized undertow handlers are chained to serve the requests.
+# In order to provide additional application logic, custom hanlders pipes can be bound under the /_logic URL.
+# The custom hanlder must extends the com.softinstigate.restheart.handlers.ApplicationLogicHandler class
+# Use application-logic-mounts to configure custom handlers.
+
+# In the following example two built-in application logic handlers are defined:
+# PingHandler bound to /_logic/ping that implements a simple ping service
+# GetRoleHandler bound to /_logic/roles/mine that returns the current user authentication status and eventually its roles
+
+application-logic-mounts:
+    - what: com.softinstigate.restheart.handlers.applicationlogic.PingHandler
+      where: /ping
+      secured: false
+      args:
+          msg: "ciao from the restheart team"
+    - what: com.softinstigate.restheart.handlers.applicationlogic.GetRoleHandler
+      where: /roles/mine
+      secured: false
+      args:
+          idm-implementation-class: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
+          idm-conf-file: ../etc/security-integrationtest.yml
+
+### security 
+
+# The security is configured by setting:
+
+# idm: the Identity Manager responsible of authentication
+# access-manager: the Access Manager responsible of authorization
+# The RESTHeart security is pluggable and you can provide you own implementation of both IDM and AM.
+# the provided default implementations of IDM and AM are SimpleFileIdentityManager and SimpleAccessManager.
+# conf-file paths are relative to the RESTHeart-XXX.jar file directory
+
+idm:    
+    implementation-class: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
+    conf-file: ../etc/security.yml
+access-manager:    
+    implementation-class: com.softinstigate.restheart.security.impl.SimpleAccessManager
+    conf-file: ../etc/security.yml
+    
+#### logging
+
+# enable-log-console: true => log messages to the console (default value: true)
+# enable-log-file: true => log messages to a file (default value: true)
+# log-file-path: to specify the log file path (default value: restheart.log in system temporary directory)
+# log-level: to set the log level. Value can be OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. (default value is INFO)
+
+enable-log-file: false
+#log-file-path: /tmp/restheart.log
+enable-log-console: true
+log-level: INFO
+
+#### performace settings
+
+# In order to save bandwitdth RESTHeart can force requests to support the giz encoding (if not, requests will be rejected)
+force-gzip-encoding: false
+
+# local-cache allows to cache the db and collection properties to drammatically improve performaces. 
+# Without caching, a GET on a document would requires two additional queries to retrieve the db and the collection properties.
+# pay attention to local caching only in case of a multi-node deployments (horizontal scalability). 
+# In this case a change in a db or collection properties would reflect on other nodes at worst after the TTL (cache entries time to live). 
+# In most of the cases Dbs and collections properties only change at development time.
+
+local-cache-enabled: true
+# TTL in milliseconds; specify a value < 0 to never expire cached entries 
+local-cache-ttl: 1000
+
+# to set a limit for the maximum number of concurrent requests being served
+requests-limit: 1000
+
+# the number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
+io-threads: 2 
+
+# the number of threads created for blocking tasks (such as ones involving db access). suggested value: core*16
+worker-threads: 8 
+
+# use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
+buffer-size: 16384
+buffers-per-region: 20
+# should the buffer pool use direct buffers, this instructs the JVM to use native (if possible) I/O operations on the buffers
+direct-buffers: true
