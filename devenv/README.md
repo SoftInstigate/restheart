@@ -44,6 +44,7 @@ before provisioning the VM make sure to build the project (RESTHeart jar is requ
 #### on vitualbox
 
 	$ vagrant up
+	$ vagrant hostmanager
 	
 #### on AWS
 

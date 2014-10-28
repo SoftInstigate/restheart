@@ -16,5 +16,6 @@ cookbook_file "mongod.conf" do
 end
 
 service "mongod" do
-	action [ :enable, :start ]
+	provider Chef::Provider::Service::Upstart
+	action :restart
 end
