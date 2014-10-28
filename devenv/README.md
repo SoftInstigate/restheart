@@ -1,13 +1,10 @@
+## setup
 
-
-##setu
-
-
-####update submodules
+#### update submodules
 
 	$ git submodule update --init --recursive 
 	
-####add required vagrant plugins
+#### add required vagrant plugins
 
 	$ vagrant plugin install vagrant-hostsmanager
 	$ vagrant plugin install vagrant-omnibus
@@ -19,6 +16,8 @@
 	
 ## howto instantiate VMs
 
+note: before starting the VM make sure to build the project (RESTHeart jar is required in target directory)
+
 on vitualbox
 
 	$ vagrant up
@@ -26,4 +25,3 @@ on vitualbox
 on AWS	
 
 	$ vagrant up --provider=aws
-

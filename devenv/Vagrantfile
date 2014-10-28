@@ -57,8 +57,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.define "restheart-1" do |rh|
     rh.vm.hostname = 'restheart-node-1'
     rh.vm.network "private_network", ip: "192.168.50.3"
-    rh.vm.network "forwarded_port", guest: 80, host: 1080
-    rh.vm.network "forwarded_port", guest: 443, host: 1443
+    rh.vm.network "forwarded_port", guest: 8080, host: 8080
+    rh.vm.network "forwarded_port", guest: 4443, host: 4443
     rh.vm.provision "chef_solo" do |chef|
       chef.cookbooks_path = "./chef/cookbooks"
       chef.roles_path = "./chef/roles"
@@ -67,17 +67,18 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
-  config.vm.define "restheart-2" do |rh|
-    rh.vm.hostname = 'restheart-node-2'
-    rh.vm.network "private_network", ip: "192.168.50.4"
-    rh.vm.network "forwarded_port", guest: 80, host: 2080
-    rh.vm.network "forwarded_port", guest: 443, host: 2443
-    rh.vm.provision "chef_solo" do |chef|
-      chef.cookbooks_path = "./chef/cookbooks"
-      chef.roles_path = "./chef/roles"
-      chef.data_bags_path = "./chef/data_bags"
-      chef.add_role "restheart-node"
-    end
-  end
+
+  #config.vm.define "restheart-2" do |rh|
+  #  rh.vm.hostname = 'restheart-node-2'
+  #  rh.vm.network "private_network", ip: "192.168.50.4"
+  #  rh.vm.network "forwarded_port", guest: 8080, host: 9080
+  #  rh.vm.network "forwarded_port", guest: 4443, host: 5443
+  #  rh.vm.provision "chef_solo" do |chef|
+  #    chef.cookbooks_path = "./chef/cookbooks"
+  #    chef.roles_path = "./chef/roles"
+  #    chef.data_bags_path = "./chef/data_bags"
+  #    chef.add_role "restheart-node"
+  #  end
+  # end
 
 end
