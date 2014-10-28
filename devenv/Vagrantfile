@@ -3,11 +3,19 @@
 
 require 'yaml'
 
-confs = YAML.load_file 'vagrant-conf.yml'
+aws_key = ''
+aws_secret = ''
+ssh_file =  ''
 
-AWS_KEY = confs['aws_access_key']
-AWS_SECRET = confs['aws_secret_access_key']
-SSH_FILE =  confs['ssh_private_key_path']
+if File.file?('vagrant-conf.yml')
+    confs = YAML.load_file 'vagrant-conf.yml'
+
+    aws_key = confs['aws_access_key']
+    aws_secret = confs['aws_secret_access_key']
+    ssh_file =  confs['ssh_private_key_path']
+else
+    puts "WARN: vagrant-conf.yml not found. the AWS provider will not work. Instructions in README.md"
+end
 
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"
@@ -30,8 +38,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   #end
     
   config.vm.provider :aws do |aws, override|
-    aws.access_key_id = AWS_KEY
-    aws.secret_access_key = AWS_SECRET
+    aws.access_key_id = aws_key
+    aws.secret_access_key = aws_secret
     aws.region = "eu-west-1"
     aws.keypair_name = "uji"
     aws.instance_type = "t2.micro"
@@ -39,7 +47,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     override.hostmanager.ignore_private_ip = true
     override.ssh.username = "ubuntu"
-    override.ssh.private_key_path = SSH_FILE
+    override.ssh.private_key_path = ssh_file
   end
 
   config.vm.provider "virtualbox" do |vb, override|

@@ -12,7 +12,7 @@
 	
 ### setup AWS
 
-you need this only if you want to provision the VMs on AWS
+only needed if you want to provision the VMs on AWS
 
 #### aws security group
 
@@ -22,11 +22,12 @@ you need to edit the default security group adding the following rules:
 
 #### aws private properties
 
-in order to be able to provision the VMs on AWS, you need to set the following properties on the file called vagrant-conf.yml (you need to create it):
-
-aws_access_key: <your aws accecss key>
-aws_secret_access_key: <your aws secret>
-ssh_private_key_path: <path to your aws ssh key>
+in order to provision the VMs on AWS, you need to set the following properties on vagrant-conf.yml file (you need to create it in the same dir than Vagrantfile):
+	
+	---
+	aws_access_key: <your aws accecss key>
+	aws_secret_access_key: <your aws secret>
+	ssh_private_key_path: <path to your aws ssh key>
 
 #### AWS region and AMI
 
