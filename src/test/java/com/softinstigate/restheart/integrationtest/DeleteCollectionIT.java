@@ -62,7 +62,7 @@ public class DeleteCollectionIT extends AbstactIT
             
             // try to delete with correct etag
             resp = adminExecutor.execute(Request.Delete(collectionTmpUri).addHeader(Headers.IF_MATCH_STRING, etag));
-            check("check delete tmp doc with correct etag", resp, HttpStatus.SC_GONE);
+            check("check delete tmp doc with correct etag", resp, HttpStatus.SC_NO_CONTENT);
 
             resp = adminExecutor.execute(Request.Get(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check get deleted tmp doc", resp, HttpStatus.SC_NOT_FOUND);
