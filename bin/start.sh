@@ -8,6 +8,6 @@ if [ -n "${pid}" ]; then
   echo restheart is already running
 else
   echo "starting restheart"
-  java -server -jar $DIR/../target/restheart-0.9.jar $DIR/../etc/restheart-integrationtest.yml &
+  java -server -jar $DIR/../target/restheart-0.9.1.jar $DIR/../etc/restheart-integrationtest.yml &
   sleep 5
 fi

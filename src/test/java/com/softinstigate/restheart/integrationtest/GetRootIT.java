@@ -132,7 +132,6 @@ public class GetRootIT extends AbstactIT
         JsonObject links = (JsonObject) json.get("_links");
         
         Assert.assertNotNull("check not null self", links.get("self"));
-        Assert.assertNotNull("check not null next", links.get("next"));
         Assert.assertNotNull("check not null rh:paging", links.get("rh:paging"));
         Assert.assertNotNull("check not null curies", links.get("curies"));
     }
