@@ -60,7 +60,7 @@ public class CollectionRepresentationFactory
             HALUtils.addData(rep, collProps);
         }
 
-        if (size > 0)
+        if (size >= 0)
         {
             float _size = size + 0f;
             float _pagesize = context.getPagesize() + 0f;

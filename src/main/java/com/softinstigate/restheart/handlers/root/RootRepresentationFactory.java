@@ -54,7 +54,7 @@ public class RootRepresentationFactory
         
         Representation rep = new Representation(requestPath + queryString);
 
-        if (size > 0)
+        if (size >= 0)
         {
             float _size = size + 0f;
             float _pagesize = context.getPagesize() + 0f;
