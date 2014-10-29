@@ -174,7 +174,7 @@ public class Configuration
         logToFile = true;
         logLevel = Level.INFO;
 
-        localCacheEnabled = false;
+        localCacheEnabled = true;
         localCacheTtl = 1000;
         
         requestsLimit = 100;
@@ -254,7 +254,7 @@ public class Configuration
             logToFile = true;
             logLevel = Level.INFO;
 
-            localCacheEnabled = false;
+            localCacheEnabled = true;
             localCacheTtl = 1000;
             
             requestsLimit = 100;
@@ -335,7 +335,7 @@ public class Configuration
 
             requestsLimit = getAsIntegerOrDefault(conf, REQUESTS_LIMIT, 100);
             
-            localCacheEnabled = getAsBooleanOrDefault(conf, LOCAL_CACHE_ENABLED, false);
+            localCacheEnabled = getAsBooleanOrDefault(conf, LOCAL_CACHE_ENABLED, true);
             localCacheTtl = getAsLongOrDefault(conf, LOCAL_CACHE_TTL, (long)1000);
 
             ioThreads = getAsIntegerOrDefault(conf, IO_THREADS, 2);
