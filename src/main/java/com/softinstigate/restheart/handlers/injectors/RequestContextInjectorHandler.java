@@ -167,6 +167,6 @@ public class RequestContextInjectorHandler extends PipedHttpHandler
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception
     {
-        next.handleRequest(exchange, new RequestContext(exchange, whereUri, whatUri));
+        handleRequest(exchange, new RequestContext(exchange, whereUri, whatUri));
     }
 }

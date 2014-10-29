@@ -51,7 +51,7 @@ public class HALUtils
         int pagesize = context.getPagesize();
         long totalPages = 0;
 
-        if (size > 0)
+        if (size >= 0)
         {
             float _size = size + 0f;
             float _pagesize = pagesize + 0f;
@@ -61,9 +61,10 @@ public class HALUtils
 
         TreeMap<String, String> links = new TreeMap<>();
 
-        if (queryString == null || queryString.isEmpty())
+        if ((queryString == null || queryString.isEmpty()))
         {
-            links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize);
+            if (totalPages > 0 && page < totalPages) // i.e. the url contains the count paramenter and there is a next page
+                links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize);
         }
         else
         {
