@@ -393,11 +393,12 @@ public class Bootstrapper
             logger.info("ajp listener bound at {}:{}", conf.getAjpHost(), conf.getAjpPort());
         }
 
+        LocalCachesSingleton.init(conf);
+        
         if (conf.isLocalCacheEnabled())
-        {
-            LocalCachesSingleton.init(conf);
             logger.info("local cache enabled");
-        }
+        else
+            logger.info("local cache not enabled");
 
         hanldersPipe = getHandlersPipe(identityManager, accessManager);
 
