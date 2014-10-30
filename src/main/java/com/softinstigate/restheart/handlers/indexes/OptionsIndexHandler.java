@@ -8,37 +8,36 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart.handlers.database;
+package com.softinstigate.restheart.handlers.indexes;
 
-import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestContext;
-import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 
 /**
  *
  * @author uji
  */
-public class PostDBHandler extends PipedHttpHandler
+public class OptionsIndexHandler extends PipedHttpHandler
 {
     /**
-     * Creates a new instance of PostDBHandler
+     * Creates a new instance of GetRootHandler
      */
-    public PostDBHandler()
+    public OptionsIndexHandler()
     {
         super(null);
     }
 
-    /**
-     * creating collections via post is not supported by design
-     * @param exchange
-     * @param context
-     * @throws java.lang.Exception
-     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
+        exchange.getResponseHeaders()
+                .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "PUT")
+                .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent");
+
+        exchange.setResponseCode(HttpStatus.SC_OK);
+        exchange.endExchange();
     }
 }

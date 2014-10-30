@@ -45,7 +45,7 @@ public class BodyInjectorHandler extends PipedHttpHandler
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        if (context.getMethod() == RequestContext.METHOD.GET || context.getMethod() == RequestContext.METHOD.DELETE) 
+        if (context.getMethod() == RequestContext.METHOD.GET || context.getMethod() == RequestContext.METHOD.OPTIONS ||context.getMethod() == RequestContext.METHOD.DELETE) 
         {
             next.handleRequest(exchange, context);
             return;

@@ -19,11 +19,7 @@ import com.softinstigate.restheart.handlers.GzipEncodingHandler;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestDispacherHandler;
 import com.softinstigate.restheart.handlers.injectors.RequestContextInjectorHandler;
-import com.softinstigate.restheart.handlers.root.DeleteRootHandler;
 import com.softinstigate.restheart.handlers.root.GetRootHandler;
-import com.softinstigate.restheart.handlers.root.PatchRootHandler;
-import com.softinstigate.restheart.handlers.root.PostRootHandler;
-import com.softinstigate.restheart.handlers.root.PutRootHandler;
 import com.softinstigate.restheart.handlers.collection.DeleteCollectionHandler;
 import com.softinstigate.restheart.handlers.collection.GetCollectionHandler;
 import com.softinstigate.restheart.handlers.injectors.CollectionPropsInjectorHandler;
@@ -35,12 +31,10 @@ import com.softinstigate.restheart.handlers.collection.PutCollectionHandler;
 import com.softinstigate.restheart.handlers.database.DeleteDBHandler;
 import com.softinstigate.restheart.handlers.database.GetDBHandler;
 import com.softinstigate.restheart.handlers.database.PatchDBHandler;
-import com.softinstigate.restheart.handlers.database.PostDBHandler;
 import com.softinstigate.restheart.handlers.database.PutDBHandler;
 import com.softinstigate.restheart.handlers.document.DeleteDocumentHandler;
 import com.softinstigate.restheart.handlers.document.GetDocumentHandler;
 import com.softinstigate.restheart.handlers.document.PatchDocumentHandler;
-import com.softinstigate.restheart.handlers.document.PostDocumentHandler;
 import com.softinstigate.restheart.handlers.document.PutDocumentHandler;
 import com.softinstigate.restheart.handlers.indexes.DeleteIndexHandler;
 import com.softinstigate.restheart.handlers.indexes.GetIndexesHandler;
@@ -51,8 +45,15 @@ import com.softinstigate.restheart.utils.ResourcesExtractor;
 import com.softinstigate.restheart.utils.LoggingInitializer;
 import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.handlers.applicationlogic.ApplicationLogicHandler;
+import com.softinstigate.restheart.handlers.collection.OptionsCollectionHandler;
+import com.softinstigate.restheart.handlers.database.OptionsDBHandler;
+import com.softinstigate.restheart.handlers.document.OptionsDocumentHandler;
+import com.softinstigate.restheart.handlers.indexes.OptionsIndexHandler;
+import com.softinstigate.restheart.handlers.indexes.OptionsIndexesHandler;
 import com.softinstigate.restheart.handlers.injectors.BodyInjectorHandler;
 import com.softinstigate.restheart.handlers.metadata.MetadataEnforcerHandler;
+import com.softinstigate.restheart.handlers.root.OptionsRootHandler;
+import com.softinstigate.restheart.security.handlers.CORSHandler;
 import io.undertow.Undertow;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
@@ -244,7 +245,7 @@ public class Bootstrapper
         {
             logger.info("logging to console with level {}", conf.getLogLevel());
         }
-        
+
         logger.info("restheart started **********************************************");
     }
 
@@ -394,11 +395,15 @@ public class Bootstrapper
         }
 
         LocalCachesSingleton.init(conf);
-        
+
         if (conf.isLocalCacheEnabled())
+        {
             logger.info("local cache enabled");
+        }
         else
+        {
             logger.info("local cache not enabled");
+        }
 
         hanldersPipe = getHandlersPipe(identityManager, accessManager);
 
@@ -416,34 +421,36 @@ public class Bootstrapper
     private static GracefulShutdownHandler getHandlersPipe(IdentityManager identityManager, AccessManager accessManager)
     {
         PipedHttpHandler coreHanlderChain
-                = new DbPropsInjectorHandler(
-                        new CollectionPropsInjectorHandler(
-                                new BodyInjectorHandler(
-                                        new MetadataEnforcerHandler(
-                                                new RequestDispacherHandler(
-                                                        new GetRootHandler(),
-                                                        new PostRootHandler(),
-                                                        new PutRootHandler(),
-                                                        new DeleteRootHandler(),
-                                                        new PatchRootHandler(),
-                                                        new GetDBHandler(),
-                                                        new PostDBHandler(),
-                                                        new PutDBHandler(),
-                                                        new DeleteDBHandler(),
-                                                        new PatchDBHandler(),
-                                                        new GetCollectionHandler(),
-                                                        new PostCollectionHandler(),
-                                                        new PutCollectionHandler(),
-                                                        new DeleteCollectionHandler(),
-                                                        new PatchCollectionHandler(),
-                                                        new GetDocumentHandler(),
-                                                        new PostDocumentHandler(),
-                                                        new PutDocumentHandler(),
-                                                        new DeleteDocumentHandler(),
-                                                        new PatchDocumentHandler(),
-                                                        new GetIndexesHandler(),
-                                                        new PutIndexHandler(),
-                                                        new DeleteIndexHandler()
+                = new CORSHandler(
+                        new DbPropsInjectorHandler(
+                                new CollectionPropsInjectorHandler(
+                                        new BodyInjectorHandler(
+                                                new MetadataEnforcerHandler(
+                                                        new RequestDispacherHandler(
+                                                                new GetRootHandler(),
+                                                                new OptionsRootHandler(),
+                                                                new GetDBHandler(),
+                                                                new PutDBHandler(),
+                                                                new DeleteDBHandler(),
+                                                                new PatchDBHandler(),
+                                                                new OptionsDBHandler(),
+                                                                new GetCollectionHandler(),
+                                                                new PostCollectionHandler(),
+                                                                new PutCollectionHandler(),
+                                                                new DeleteCollectionHandler(),
+                                                                new PatchCollectionHandler(),
+                                                                new OptionsCollectionHandler(),
+                                                                new GetDocumentHandler(),
+                                                                new PutDocumentHandler(),
+                                                                new DeleteDocumentHandler(),
+                                                                new PatchDocumentHandler(),
+                                                                new OptionsDocumentHandler(),
+                                                                new GetIndexesHandler(),
+                                                                new OptionsIndexesHandler(),
+                                                                new PutIndexHandler(),
+                                                                new DeleteIndexHandler(),
+                                                                new OptionsIndexHandler()
+                                                        )
                                                 )
                                         )
                                 )
@@ -462,36 +469,36 @@ public class Bootstrapper
 
             logger.info("url {} bound to resource {}", url, db);
         });
-        
+
         if (conf.getApplicationLogicMounts() != null)
         {
-            conf.getApplicationLogicMounts().stream().forEach(al -> 
+            conf.getApplicationLogicMounts().stream().forEach(al ->
             {
                 try
                 {
                     String alClazz = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHAT);
                     String alWhere = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE);
                     boolean alSecured = (Boolean) al.get(Configuration.APPLICATION_LOGIC_MOUNT_SECURED);
-                    Object alArgs =  al.get(Configuration.APPLICATION_LOGIC_MOUNT_ARGS);
-                    
+                    Object alArgs = al.get(Configuration.APPLICATION_LOGIC_MOUNT_ARGS);
+
                     if (alWhere == null || !alWhere.startsWith("/"))
                     {
                         logger.error("cannot pipe application logic handler {}. parameter 'where' must start with /", alWhere);
                         return;
                     }
-                    
+
                     if (alArgs != null && !(alArgs instanceof Map))
                     {
                         logger.error("cannot pipe application logic handler {}. args are not defined as a map. it is a ", alWhere, alWhere.getClass());
                         return;
                     }
-                    
+
                     Object o = Class.forName(alClazz).getConstructor(PipedHttpHandler.class, Map.class).newInstance(null, (Map) alArgs);
-                    
+
                     if (o instanceof ApplicationLogicHandler)
                     {
                         ApplicationLogicHandler alHandler = (ApplicationLogicHandler) o;
-                        
+
                         if (alSecured)
                         {
                             paths.addPrefixPath("/_logic" + alWhere, addSecurity(alHandler, identityManager, accessManager));
@@ -507,7 +514,7 @@ public class Bootstrapper
                     {
                         logger.error("cannot pipe application logic handler {}. class {} does not extend ApplicationLogicHandler", alWhere, alClazz);
                     }
-                    
+
                 }
                 catch (Throwable t)
                 {
@@ -530,7 +537,8 @@ public class Bootstrapper
                                 HttpString.tryFromString(RequestContext.METHOD.POST.name()),
                                 HttpString.tryFromString(RequestContext.METHOD.PUT.name()),
                                 HttpString.tryFromString(RequestContext.METHOD.DELETE.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.PATCH.name())
+                                HttpString.tryFromString(RequestContext.METHOD.PATCH.name()),
+                                HttpString.tryFromString(RequestContext.METHOD.OPTIONS.name())
                         )
                 )
         );

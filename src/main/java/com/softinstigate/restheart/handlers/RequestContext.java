@@ -29,7 +29,7 @@ import java.util.Deque;
 public class RequestContext
 {
     public enum TYPE { ERROR, ROOT, DB, COLLECTION, DOCUMENT, COLLECTION_INDEXES, INDEX };
-    public enum METHOD { GET, POST, PUT, DELETE, PATCH, OTHER };
+    public enum METHOD { GET, POST, PUT, DELETE, PATCH, OPTIONS, OTHER };
     
     private final String whereUri;
     private final String whatUri;
@@ -101,6 +101,8 @@ public class RequestContext
             this.method = METHOD.DELETE;
         else if ("PATCH".equals(_method.toString()))
             this.method = METHOD.PATCH;
+        else if (Methods.OPTIONS.equals(_method))
+            this.method = METHOD.OPTIONS;
         else
             this.method = METHOD.OTHER;
     }

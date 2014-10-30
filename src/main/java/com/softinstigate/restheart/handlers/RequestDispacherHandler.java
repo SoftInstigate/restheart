@@ -10,11 +10,7 @@
  */
 package com.softinstigate.restheart.handlers;
 
-import com.softinstigate.restheart.handlers.root.DeleteRootHandler;
 import com.softinstigate.restheart.handlers.root.GetRootHandler;
-import com.softinstigate.restheart.handlers.root.PatchRootHandler;
-import com.softinstigate.restheart.handlers.root.PostRootHandler;
-import com.softinstigate.restheart.handlers.root.PutRootHandler;
 import com.softinstigate.restheart.handlers.collection.DeleteCollectionHandler;
 import com.softinstigate.restheart.handlers.collection.GetCollectionHandler;
 import com.softinstigate.restheart.handlers.collection.PatchCollectionHandler;
@@ -23,12 +19,10 @@ import com.softinstigate.restheart.handlers.collection.PutCollectionHandler;
 import com.softinstigate.restheart.handlers.database.DeleteDBHandler;
 import com.softinstigate.restheart.handlers.database.GetDBHandler;
 import com.softinstigate.restheart.handlers.database.PatchDBHandler;
-import com.softinstigate.restheart.handlers.database.PostDBHandler;
 import com.softinstigate.restheart.handlers.database.PutDBHandler;
 import com.softinstigate.restheart.handlers.document.DeleteDocumentHandler;
 import com.softinstigate.restheart.handlers.document.GetDocumentHandler;
 import com.softinstigate.restheart.handlers.document.PatchDocumentHandler;
-import com.softinstigate.restheart.handlers.document.PostDocumentHandler;
 import com.softinstigate.restheart.handlers.document.PutDocumentHandler;
 import com.softinstigate.restheart.handlers.indexes.DeleteIndexHandler;
 import com.softinstigate.restheart.handlers.indexes.GetIndexesHandler;
@@ -37,6 +31,12 @@ import com.softinstigate.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import static com.softinstigate.restheart.handlers.RequestContext.METHOD;
 import static com.softinstigate.restheart.handlers.RequestContext.TYPE;
+import com.softinstigate.restheart.handlers.collection.OptionsCollectionHandler;
+import com.softinstigate.restheart.handlers.database.OptionsDBHandler;
+import com.softinstigate.restheart.handlers.document.OptionsDocumentHandler;
+import com.softinstigate.restheart.handlers.indexes.OptionsIndexHandler;
+import com.softinstigate.restheart.handlers.indexes.OptionsIndexesHandler;
+import com.softinstigate.restheart.handlers.root.OptionsRootHandler;
 import com.softinstigate.restheart.utils.ResponseHelper;
 
 /**
@@ -46,107 +46,107 @@ import com.softinstigate.restheart.utils.ResponseHelper;
 public class RequestDispacherHandler extends PipedHttpHandler
 {
     private final GetRootHandler rootGet;
-    private final PostRootHandler rootPost;
-    private final PutRootHandler rootPut;
-    private final DeleteRootHandler rootDelete;
-    private final PatchRootHandler rootPatch;
+    private final OptionsRootHandler rootOptions;
     private final GetDBHandler dbGet;
-    private final PostDBHandler dbPost;
     private final PutDBHandler dbPut;
     private final DeleteDBHandler dbDelete;
     private final PatchDBHandler dbPatch;
+    private final OptionsDBHandler dbOptions;
     private final GetCollectionHandler collectionGet;
     private final PostCollectionHandler collectionPost;
     private final PutCollectionHandler collectionPut;
     private final DeleteCollectionHandler collectionDelete;
     private final PatchCollectionHandler collectionPatch;
+    private final OptionsCollectionHandler collectionOptions;
     private final GetDocumentHandler documentGet;
-    private final PostDocumentHandler documentPost;
     private final PutDocumentHandler documentPut;
     private final DeleteDocumentHandler documentDelete;
     private final PatchDocumentHandler documentPatch;
+    private final OptionsDocumentHandler documentOptions;
     private final GetIndexesHandler indexesGet;
+    private final OptionsIndexesHandler indexesOptions;
     private final PutIndexHandler indexPut;
     private final DeleteIndexHandler indexDelete;
+    private final OptionsIndexHandler indexOptions;
 
     /**
      * Creates a new instance of RequestDispacherHandler
      *
      * @param rootGet
-     * @param rootPost
-     * @param rootPut
-     * @param rootDelete
-     * @param rootPatch
+     * @param rootOptions
      * @param dbGet
-     * @param dbPost
+     * @param dbOptions
      * @param dbPut
      * @param dbDelete
      * @param dbPatch
      * @param collectionGet
+     * @param collectionOptions
      * @param collectionPost
      * @param collectionPut
      * @param collectionDelete
      * @param collectionPatch
+     * @param documentOptions
      * @param documentGet
-     * @param documentPost
      * @param documentPut
+     * @param indexOptions
      * @param documentDelete
      * @param documentPatch
+     * @param indexesOptions
      * @param indexesGet
      * @param indexDelete
      * @param indexPut
      */
     public RequestDispacherHandler(
             GetRootHandler rootGet,
-            PostRootHandler rootPost,
-            PutRootHandler rootPut,
-            DeleteRootHandler rootDelete,
-            PatchRootHandler rootPatch,
+            OptionsRootHandler rootOptions,
             GetDBHandler dbGet,
-            PostDBHandler dbPost,
             PutDBHandler dbPut,
             DeleteDBHandler dbDelete,
             PatchDBHandler dbPatch,
+            OptionsDBHandler dbOptions,
             GetCollectionHandler collectionGet,
             PostCollectionHandler collectionPost,
             PutCollectionHandler collectionPut,
             DeleteCollectionHandler collectionDelete,
             PatchCollectionHandler collectionPatch,
+            OptionsCollectionHandler collectionOptions,
             GetDocumentHandler documentGet,
-            PostDocumentHandler documentPost,
             PutDocumentHandler documentPut,
             DeleteDocumentHandler documentDelete,
             PatchDocumentHandler documentPatch,
+            OptionsDocumentHandler documentOptions,
             GetIndexesHandler indexesGet,
+            OptionsIndexesHandler indexesOptions,
             PutIndexHandler indexPut,
-            DeleteIndexHandler indexDelete
+            DeleteIndexHandler indexDelete,
+            OptionsIndexHandler indexOptions
     )
     {
+
         super(null);
         this.rootGet = rootGet;
-        this.rootPost = rootPost;
-        this.rootPut = rootPut;
-        this.rootDelete = rootDelete;
-        this.rootPatch = rootPatch;
+        this.rootOptions = rootOptions;
         this.dbGet = dbGet;
-        this.dbPost = dbPost;
         this.dbPut = dbPut;
         this.dbDelete = dbDelete;
         this.dbPatch = dbPatch;
+        this.dbOptions = dbOptions;
         this.collectionGet = collectionGet;
         this.collectionPost = collectionPost;
         this.collectionPut = collectionPut;
         this.collectionDelete = collectionDelete;
         this.collectionPatch = collectionPatch;
+        this.collectionOptions = collectionOptions;
         this.documentGet = documentGet;
-        this.documentPost = documentPost;
         this.documentPut = documentPut;
         this.documentDelete = documentDelete;
         this.documentPatch = documentPatch;
+        this.documentOptions = documentOptions;
         this.indexesGet = indexesGet;
+        this.indexesOptions = indexesOptions;
         this.indexPut = indexPut;
         this.indexDelete = indexDelete;
-
+        this.indexOptions = indexOptions;
     }
 
     @Override
@@ -178,7 +178,7 @@ public class RequestDispacherHandler extends PipedHttpHandler
                     rootGet.handleRequest(exchange, context);
                     return;
                 case DB:
-                        dbGet.handleRequest(exchange, context);
+                    dbGet.handleRequest(exchange, context);
                     return;
                 case COLLECTION:
                     collectionGet.handleRequest(exchange, context);
@@ -198,7 +198,7 @@ public class RequestDispacherHandler extends PipedHttpHandler
             switch (context.getType())
             {
                 case COLLECTION:
-                        collectionPost.handleRequest(exchange, context);
+                    collectionPost.handleRequest(exchange, context);
                     return;
                 default:
                     ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
@@ -212,10 +212,10 @@ public class RequestDispacherHandler extends PipedHttpHandler
                     dbPut.handleRequest(exchange, context);
                     return;
                 case COLLECTION:
-                        collectionPut.handleRequest(exchange, context);
+                    collectionPut.handleRequest(exchange, context);
                     return;
                 case DOCUMENT:
-                        documentPut.handleRequest(exchange, context);
+                    documentPut.handleRequest(exchange, context);
                     return;
                 case INDEX:
                     indexPut.handleRequest(exchange, context);
@@ -229,10 +229,10 @@ public class RequestDispacherHandler extends PipedHttpHandler
             switch (context.getType())
             {
                 case DB:
-                        dbDelete.handleRequest(exchange, context);
+                    dbDelete.handleRequest(exchange, context);
                     return;
                 case COLLECTION:
-                        collectionDelete.handleRequest(exchange, context);
+                    collectionDelete.handleRequest(exchange, context);
                     return;
                 case DOCUMENT:
                     documentDelete.handleRequest(exchange, context);
@@ -249,13 +249,39 @@ public class RequestDispacherHandler extends PipedHttpHandler
             switch (context.getType())
             {
                 case DB:
-                        dbPatch.handleRequest(exchange, context);
+                    dbPatch.handleRequest(exchange, context);
                     return;
                 case COLLECTION:
-                        collectionPatch.handleRequest(exchange, context);
+                    collectionPatch.handleRequest(exchange, context);
                     return;
                 case DOCUMENT:
                     documentPatch.handleRequest(exchange, context);
+                    return;
+                default:
+                    ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
+            }
+        }
+        else if (context.getMethod() == METHOD.OPTIONS)
+        {
+            switch (context.getType())
+            {
+                case ROOT:
+                    rootOptions.handleRequest(exchange, context);
+                    return;
+                case DB:
+                    dbOptions.handleRequest(exchange, context);
+                    return;
+                case COLLECTION:
+                    collectionOptions.handleRequest(exchange, context);
+                    return;
+                case DOCUMENT:
+                    documentOptions.handleRequest(exchange, context);
+                    return;
+                case COLLECTION_INDEXES:
+                    indexesOptions.handleRequest(exchange, context);
+                    return;
+                 case INDEX:
+                    indexOptions.handleRequest(exchange, context);
                     return;
                 default:
                     ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
