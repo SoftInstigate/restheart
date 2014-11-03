@@ -498,14 +498,16 @@ public class Bootstrapper
                     if (o instanceof ApplicationLogicHandler)
                     {
                         ApplicationLogicHandler alHandler = (ApplicationLogicHandler) o;
+                        
+                        PipedHttpHandler handler = new CORSHandler(alHandler);
 
                         if (alSecured)
                         {
-                            paths.addPrefixPath("/_logic" + alWhere, addSecurity(alHandler, identityManager, accessManager));
+                            paths.addPrefixPath("/_logic" + alWhere, addSecurity(handler, identityManager, accessManager));
                         }
                         else
                         {
-                            paths.addPrefixPath("/_logic" + alWhere, alHandler);
+                            paths.addPrefixPath("/_logic" + alWhere, handler);
                         }
 
                         logger.info("url {} bound to application logic handler {}. access manager: {}", "/_logic" + alWhere, alClazz, alSecured);
