@@ -11,6 +11,7 @@
 package com.softinstigate.restheart.handlers.applicationlogic;
 
 import com.softinstigate.restheart.handlers.*;
+import com.softinstigate.restheart.handlers.RequestContext.METHOD;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
@@ -24,8 +25,6 @@ public class PingHandler extends ApplicationLogicHandler
 {
     private String msg;
     
-    
-    
     public PingHandler(PipedHttpHandler next, Map<String, Object> args)
     {
         super(next, args);
@@ -36,6 +35,14 @@ public class PingHandler extends ApplicationLogicHandler
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_OK, msg);
+        if (context.getMethod() == METHOD.GET)
+        {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_OK, msg);
+        }
+        else
+        {
+            exchange.setResponseCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            exchange.endExchange();
+        }
     }
 }

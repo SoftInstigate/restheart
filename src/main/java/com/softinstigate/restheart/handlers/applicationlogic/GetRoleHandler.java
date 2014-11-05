@@ -59,16 +59,16 @@ public class GetRoleHandler extends ApplicationLogicHandler
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
-        String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
-
         if (context.getMethod() == METHOD.OPTIONS)
         {
-            exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Host, Origin, X-Requested-With, User-Agent");
+            exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent");
             exchange.setResponseCode(HttpStatus.SC_OK);
             exchange.endExchange();
         }
         else if (context.getMethod() == METHOD.GET)
         {
+            String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+            
             if (authHeader != null && authHeader.startsWith("Basic "))
             {
                 authHeader = authHeader.replaceAll("^Basic ", "");
