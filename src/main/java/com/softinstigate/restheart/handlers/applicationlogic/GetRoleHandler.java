@@ -14,12 +14,14 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.softinstigate.restheart.hal.Representation;
 import com.softinstigate.restheart.handlers.*;
+import com.softinstigate.restheart.handlers.RequestContext.METHOD;
 import com.softinstigate.restheart.utils.HttpStatus;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import java.util.HashMap;
 import java.util.Map;
 import javax.xml.bind.DatatypeConverter;
@@ -59,64 +61,78 @@ public class GetRoleHandler extends ApplicationLogicHandler
     {
         String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
 
-        if (authHeader != null && authHeader.startsWith("Basic "))
+        if (context.getMethod() == METHOD.OPTIONS)
         {
-            authHeader = authHeader.replaceAll("^Basic ", "");
-            
-            byte[] __idAndPwd = null;
-            
-            try
+            exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Host, Origin, X-Requested-With, User-Agent");
+            exchange.setResponseCode(HttpStatus.SC_OK);
+            exchange.endExchange();
+        }
+        else if (context.getMethod() == METHOD.GET)
+        {
+            if (authHeader != null && authHeader.startsWith("Basic "))
             {
-                __idAndPwd = DatatypeConverter.parseBase64Binary(authHeader);
-            }
-            catch(IllegalArgumentException iae)
-            {
-                __idAndPwd = null;
-            }
-            
-            if (__idAndPwd != null)
-            {
-                String[] idAndPwd = new String(__idAndPwd).split(":");
+                authHeader = authHeader.replaceAll("^Basic ", "");
 
-                if (idAndPwd.length == 2)
+                byte[] __idAndPwd = null;
+
+                try
                 {
-                    Account a = idm.verify(idAndPwd[0], new PasswordCredential(idAndPwd[1].toCharArray()));
+                    __idAndPwd = DatatypeConverter.parseBase64Binary(authHeader);
+                }
+                catch (IllegalArgumentException iae)
+                {
+                    __idAndPwd = null;
+                }
 
-                    if (a != null)
+                if (__idAndPwd != null)
+                {
+                    String[] idAndPwd = new String(__idAndPwd).split(":");
+
+                    if (idAndPwd.length == 2)
                     {
-                        BasicDBList _roles = new BasicDBList();
+                        Account a = idm.verify(idAndPwd[0], new PasswordCredential(idAndPwd[1].toCharArray()));
 
-                        _roles.addAll(a.getRoles());
+                        if (a != null)
+                        {
+                            BasicDBList _roles = new BasicDBList();
 
-                        BasicDBObject root = new BasicDBObject();
+                            _roles.addAll(a.getRoles());
 
-                        root.append("authenticated", true);
-                        root.append("roles", _roles);
+                            BasicDBObject root = new BasicDBObject();
 
-                        Representation rep = new Representation("/_logic/roles/mine");
-                        rep.addProperties(root);
-                        
-                        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
-                        exchange.setResponseCode(HttpStatus.SC_OK);
-                        exchange.getResponseSender().send(rep.toString());
-                        exchange.endExchange();
-                        return;
+                            root.append("authenticated", true);
+                            root.append("roles", _roles);
+
+                            Representation rep = new Representation("/_logic/roles/mine");
+                            rep.addProperties(root);
+
+                            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
+                            exchange.setResponseCode(HttpStatus.SC_OK);
+                            exchange.getResponseSender().send(rep.toString());
+                            exchange.endExchange();
+                            return;
+                        }
                     }
                 }
             }
+
+            BasicDBObject root = new BasicDBObject();
+
+            root.append("authenticated", false);
+            root.append("roles", null);
+
+            Representation rep = new Representation("/_logic/roles/mine");
+            rep.addProperties(root);
+
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
+            exchange.setResponseCode(HttpStatus.SC_OK);
+            exchange.getResponseSender().send(rep.toString());
+            exchange.endExchange();
         }
-
-        BasicDBObject root = new BasicDBObject();
-
-        root.append("authenticated", false);
-        root.append("roles", null);
-
-        Representation rep = new Representation("/_logic/roles/mine");
-        rep.addProperties(root);
-        
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
-        exchange.setResponseCode(HttpStatus.SC_OK);
-        exchange.getResponseSender().send(rep.toString());
-        exchange.endExchange();
+        else
+        {
+            exchange.setResponseCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            exchange.endExchange();
+        }
     }
 }

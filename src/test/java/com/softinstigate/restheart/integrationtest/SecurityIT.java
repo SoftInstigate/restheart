@@ -49,11 +49,11 @@ public class SecurityIT extends AbstactIT
     {
         // *** GET root
         Response resp = unauthExecutor.execute(Request.Get(rootUri));
-        check("check get root unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check get root unauthorized", resp, HttpStatus.SC_FORBIDDEN);
         
         // *** GET db
         resp = unauthExecutor.execute(Request.Get(dbUri));
-        check("check get db unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check get db unauthorized", resp, HttpStatus.SC_FORBIDDEN);
         
         // *** GET coll1
         resp = unauthExecutor.execute(Request.Get(collection1Uri));
@@ -65,11 +65,11 @@ public class SecurityIT extends AbstactIT
         
          // *** GET coll2
         resp = unauthExecutor.execute(Request.Get(collection2Uri));
-        check("check get coll2 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check get coll2 unauthorized", resp, HttpStatus.SC_FORBIDDEN);
         
         // *** GET doc2
         resp = unauthExecutor.execute(Request.Get(document2Uri));
-        check("check get doc2 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check get doc2 unauthorized", resp, HttpStatus.SC_FORBIDDEN);
     }
     
     @Test
@@ -77,11 +77,11 @@ public class SecurityIT extends AbstactIT
     {
         // *** POST coll1
         Response resp = unauthExecutor.execute(Request.Post(collection1Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        check("check post coll1 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check post coll1 unauthorized", resp, HttpStatus.SC_FORBIDDEN);
         
          // *** GET coll2
         resp = unauthExecutor.execute(Request.Post(collection2Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        check("check post coll2b unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check post coll2b unauthorized", resp, HttpStatus.SC_FORBIDDEN);
     }
     
     @Test
@@ -89,27 +89,27 @@ public class SecurityIT extends AbstactIT
     {
         // *** PUT root
         Response resp = unauthExecutor.execute(Request.Put(rootUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        check("check put root unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check put root unauthorized", resp, HttpStatus.SC_FORBIDDEN);
         
         // *** PUT db
         resp = unauthExecutor.execute(Request.Put(dbUri).bodyString("{a:1}", halCT));
-        check("check put db unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check put db unauthorized", resp, HttpStatus.SC_FORBIDDEN);
         
         // *** PUT coll1
         resp = unauthExecutor.execute(Request.Put(collection1Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        check("check put coll1 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check put coll1 unauthorized", resp, HttpStatus.SC_FORBIDDEN);
         
         // *** PUT doc1
         resp = unauthExecutor.execute(Request.Put(document1Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        check("check put doc1 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check put doc1 unauthorized", resp, HttpStatus.SC_FORBIDDEN);
         
          // *** PUT coll2
         resp = unauthExecutor.execute(Request.Put(collection2Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        check("check put coll2 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check put coll2 unauthorized", resp, HttpStatus.SC_FORBIDDEN);
         
         // *** PUT doc2
         resp = unauthExecutor.execute(Request.Put(document2Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        check("check put doc2 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check put doc2 unauthorized", resp, HttpStatus.SC_FORBIDDEN);
     }
     
     @Test
@@ -117,27 +117,27 @@ public class SecurityIT extends AbstactIT
     {
         // *** PATCH root
         Response resp = unauthExecutor.execute(Request.Patch(rootUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        check("check patch root unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check patch root unauthorized", resp, HttpStatus.SC_FORBIDDEN);
         
         // *** PATCH db
         resp = unauthExecutor.execute(Request.Patch(dbUri).bodyString("{a:1}", halCT));
-        check("check patch db unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check patch db unauthorized", resp, HttpStatus.SC_FORBIDDEN);
         
         // *** PATCH coll1
         resp = unauthExecutor.execute(Request.Patch(collection1Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        check("check patch coll1 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check patch coll1 unauthorized", resp, HttpStatus.SC_FORBIDDEN);
         
         // *** PATCH doc1
         resp = unauthExecutor.execute(Request.Patch(document1Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        check("check patch doc1 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check patch doc1 unauthorized", resp, HttpStatus.SC_FORBIDDEN);
         
          // *** PATCH coll2
         resp = unauthExecutor.execute(Request.Patch(collection2Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        check("check patch coll2 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check patch coll2 unauthorized", resp, HttpStatus.SC_FORBIDDEN);
         
         // *** PATCH doc2
         resp = unauthExecutor.execute(Request.Patch(document2Uri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        check("check patch doc2 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check patch doc2 unauthorized", resp, HttpStatus.SC_FORBIDDEN);
     }
     
     @Test
@@ -145,27 +145,27 @@ public class SecurityIT extends AbstactIT
     {
         // *** DELETE root
         Response resp = unauthExecutor.execute(Request.Delete(rootUri));
-        check("check delete root unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check delete root unauthorized", resp, HttpStatus.SC_FORBIDDEN);
         
         // *** DELETE db
         resp = unauthExecutor.execute(Request.Delete(dbUri));
-        check("check delete db unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check delete db unauthorized", resp, HttpStatus.SC_FORBIDDEN);
         
         // *** DELETE coll1
         resp = unauthExecutor.execute(Request.Delete(collection1Uri));
-        check("check delete coll1 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check delete coll1 unauthorized", resp, HttpStatus.SC_FORBIDDEN);
         
         // *** DELETE doc1
         resp = unauthExecutor.execute(Request.Delete(document1Uri));
-        check("check delete doc1 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check delete doc1 unauthorized", resp, HttpStatus.SC_FORBIDDEN);
         
          // *** DELETE coll2
         resp = unauthExecutor.execute(Request.Delete(collection2Uri));
-        check("check delete coll2 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check delete coll2 unauthorized", resp, HttpStatus.SC_FORBIDDEN);
         
         // *** DELETE doc2
         resp = unauthExecutor.execute(Request.Delete(document2Uri));
-        check("check delete doc2 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check delete doc2 unauthorized", resp, HttpStatus.SC_FORBIDDEN);
     }
     
     @Test

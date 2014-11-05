@@ -16,8 +16,6 @@ import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -25,8 +23,6 @@ import org.slf4j.LoggerFactory;
  */
 public class AccessManagerHandler extends PipedHttpHandler
 {
-    private final Logger logger = LoggerFactory.getLogger(AccessManagerHandler.class);
-    
     private final AccessManager accessManager;
 
     /**
@@ -45,8 +41,13 @@ public class AccessManagerHandler extends PipedHttpHandler
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
         if (accessManager.isAllowed(exchange, context))
-            next.handleRequest(exchange, context);
+        {
+            if (next != null)
+                next.handleRequest(exchange, context);
+        }
         else
+        {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_UNAUTHORIZED);
+        }
     }
 }

@@ -12,6 +12,7 @@ package com.softinstigate.restheart.security.handlers;
 
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestContext;
+import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.HttpString;
@@ -22,6 +23,8 @@ import io.undertow.util.HttpString;
  */
 public class CORSHandler extends PipedHttpHandler
 {
+    private  final HttpHandler noPipedNext;
+    
     /**
      * Creates a new instance of GetRootHandler
      * @param next
@@ -29,6 +32,17 @@ public class CORSHandler extends PipedHttpHandler
     public CORSHandler(PipedHttpHandler next)
     {
         super(next);
+        this.noPipedNext = null;
+    }
+    
+    /**
+     * Creates a new instance of GetRootHandler
+     * @param next
+     */
+    public CORSHandler(HttpHandler next)
+    {
+        super(null);
+        this.noPipedNext = next;
     }
 
     @Override
@@ -36,7 +50,10 @@ public class CORSHandler extends PipedHttpHandler
     {
         injectAccessControlAllowHeaders(exchange);
         
-        next.handleRequest(exchange, context);
+        if (noPipedNext != null)
+            noPipedNext.handleRequest(exchange);
+        else
+            next.handleRequest(exchange, context);
     }
     
     private static void injectAccessControlAllowHeaders(HttpServerExchange exchange)
@@ -48,5 +65,6 @@ public class CORSHandler extends PipedHttpHandler
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Origin"), "*");
         
         exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Credentials"), "true");
+        
     }
 }

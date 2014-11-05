@@ -427,9 +427,9 @@ public abstract class AbstactIT
                 .build();
 
 
-        adminExecutor = Executor.newInstance().auth(new HttpHost("127.0.0.1"), "admin", "changeit");
-        user1Executor = Executor.newInstance().auth(new HttpHost("127.0.0.1"), "user1", "changeit");
-        user2Executor = Executor.newInstance().auth(new HttpHost("127.0.0.1"), "user2", "changeit");
+        adminExecutor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "admin", "changeit");
+        user1Executor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "user1", "changeit");
+        user2Executor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "user2", "changeit");
         unauthExecutor= Executor.newInstance();
     }
     

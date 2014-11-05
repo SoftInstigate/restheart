@@ -64,7 +64,6 @@ public class ResponseHelper
         if (t != null)
         {
             nrep.addProperty("exception", t.getClass().getName());
-            rep.addRepresentation("rh:exception", nrep);
         }
         
         if (t!= null && t.getMessage() != null)
@@ -78,6 +77,8 @@ public class ResponseHelper
         {
             nrep.addProperty("stack trace", stackTrace);
         }
+        
+        rep.addRepresentation("rh:exception", nrep);
         
         return rep.toString();
     }

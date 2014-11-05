@@ -45,14 +45,11 @@ import com.softinstigate.restheart.utils.ResourcesExtractor;
 import com.softinstigate.restheart.utils.LoggingInitializer;
 import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.handlers.applicationlogic.ApplicationLogicHandler;
-import com.softinstigate.restheart.handlers.collection.OptionsCollectionHandler;
-import com.softinstigate.restheart.handlers.database.OptionsDBHandler;
-import com.softinstigate.restheart.handlers.document.OptionsDocumentHandler;
-import com.softinstigate.restheart.handlers.indexes.OptionsIndexHandler;
-import com.softinstigate.restheart.handlers.indexes.OptionsIndexesHandler;
+import com.softinstigate.restheart.handlers.OptionsHandler;
+import com.softinstigate.restheart.handlers.PipedWrappingHandler;
 import com.softinstigate.restheart.handlers.injectors.BodyInjectorHandler;
 import com.softinstigate.restheart.handlers.metadata.MetadataEnforcerHandler;
-import com.softinstigate.restheart.handlers.root.OptionsRootHandler;
+import static com.softinstigate.restheart.security.RestheartIdentityManager.RESTHEART_REALM;
 import com.softinstigate.restheart.security.handlers.CORSHandler;
 import io.undertow.Undertow;
 import io.undertow.security.idm.IdentityManager;
@@ -421,36 +418,28 @@ public class Bootstrapper
     private static GracefulShutdownHandler getHandlersPipe(IdentityManager identityManager, AccessManager accessManager)
     {
         PipedHttpHandler coreHanlderChain
-                = new CORSHandler(
-                        new DbPropsInjectorHandler(
-                                new CollectionPropsInjectorHandler(
-                                        new BodyInjectorHandler(
-                                                new MetadataEnforcerHandler(
-                                                        new RequestDispacherHandler(
-                                                                new GetRootHandler(),
-                                                                new OptionsRootHandler(),
-                                                                new GetDBHandler(),
-                                                                new PutDBHandler(),
-                                                                new DeleteDBHandler(),
-                                                                new PatchDBHandler(),
-                                                                new OptionsDBHandler(),
-                                                                new GetCollectionHandler(),
-                                                                new PostCollectionHandler(),
-                                                                new PutCollectionHandler(),
-                                                                new DeleteCollectionHandler(),
-                                                                new PatchCollectionHandler(),
-                                                                new OptionsCollectionHandler(),
-                                                                new GetDocumentHandler(),
-                                                                new PutDocumentHandler(),
-                                                                new DeleteDocumentHandler(),
-                                                                new PatchDocumentHandler(),
-                                                                new OptionsDocumentHandler(),
-                                                                new GetIndexesHandler(),
-                                                                new OptionsIndexesHandler(),
-                                                                new PutIndexHandler(),
-                                                                new DeleteIndexHandler(),
-                                                                new OptionsIndexHandler()
-                                                        )
+                = new DbPropsInjectorHandler(
+                        new CollectionPropsInjectorHandler(
+                                new BodyInjectorHandler(
+                                        new MetadataEnforcerHandler(
+                                                new RequestDispacherHandler(
+                                                        new GetRootHandler(),
+                                                        new GetDBHandler(),
+                                                        new PutDBHandler(),
+                                                        new DeleteDBHandler(),
+                                                        new PatchDBHandler(),
+                                                        new GetCollectionHandler(),
+                                                        new PostCollectionHandler(),
+                                                        new PutCollectionHandler(),
+                                                        new DeleteCollectionHandler(),
+                                                        new PatchCollectionHandler(),
+                                                        new GetDocumentHandler(),
+                                                        new PutDocumentHandler(),
+                                                        new DeleteDocumentHandler(),
+                                                        new PatchDocumentHandler(),
+                                                        new GetIndexesHandler(),
+                                                        new PutIndexHandler(),
+                                                        new DeleteIndexHandler()
                                                 )
                                         )
                                 )
@@ -465,7 +454,7 @@ public class Bootstrapper
             String url = (String) m.get(Configuration.MONGO_MOUNT_WHERE);
             String db = (String) m.get(Configuration.MONGO_MOUNT_WHAT);
 
-            paths.addPrefixPath(url, addSecurity(new RequestContextInjectorHandler(url, db, coreHanlderChain), identityManager, accessManager));
+            paths.addPrefixPath(url, new CORSHandler(new RequestContextInjectorHandler(url, db, new OptionsHandler(addSecurity(coreHanlderChain, identityManager, accessManager)))));
 
             logger.info("url {} bound to resource {}", url, db);
         });
@@ -498,8 +487,8 @@ public class Bootstrapper
                     if (o instanceof ApplicationLogicHandler)
                     {
                         ApplicationLogicHandler alHandler = (ApplicationLogicHandler) o;
-                        
-                        PipedHttpHandler handler = new CORSHandler(alHandler);
+
+                        PipedHttpHandler handler = new CORSHandler(new RequestContextInjectorHandler("/_logic", "*", alHandler));
 
                         if (alSecured)
                         {
@@ -546,29 +535,28 @@ public class Bootstrapper
         );
     }
 
-    private static HttpHandler addSecurity(final PipedHttpHandler toWrap, final IdentityManager identityManager, final AccessManager accessManager)
+    private static PipedHttpHandler addSecurity(final PipedHttpHandler toSecure, final IdentityManager identityManager, final AccessManager accessManager)
     {
-
         if (identityManager != null)
         {
-            HttpHandler handler = toWrap;
-
+            HttpHandler handler = null;
+            
             if (accessManager != null)
             {
-                handler = new AccessManagerHandler(accessManager, toWrap);
+                handler = new AccessManagerHandler(accessManager, null);
             }
 
             handler = new AuthenticationCallHandler(handler);
             handler = new PredicateAuthenticationConstraintHandler(handler, accessManager);
-            final List<AuthenticationMechanism> mechanisms = Collections.<AuthenticationMechanism>singletonList(new BasicAuthenticationMechanism("RestHeart Realm"));
+            final List<AuthenticationMechanism> mechanisms = Collections.<AuthenticationMechanism>singletonList(new BasicAuthenticationMechanism(RESTHEART_REALM, "BASIC", true));
             handler = new AuthenticationMechanismsHandler(handler, mechanisms);
             handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE, identityManager, handler);
 
-            return handler;
+            return new PipedWrappingHandler(toSecure, handler);
         }
         else
         {
-            return toWrap;
+            return toSecure;
         }
     }
 
