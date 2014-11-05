@@ -53,10 +53,16 @@ public class ResourcesExtractor
         }
     }
 
-    public static File extract(String resourcePath) throws IOException, URISyntaxException
+    public static File extract(String resourcePath) throws IOException, URISyntaxException, IllegalStateException
     {
         //File jarFile = new File(ResourcesExtractor.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 
+        if (Bootstrapper.class.getClassLoader().getResource(resourcePath) == null)
+        {
+            logger.warn("no resource to extract from path  {}", resourcePath);
+            throw new IllegalStateException("no resource to extract from path " + resourcePath);
+        }
+        
         URI uri = Bootstrapper.class.getClassLoader().getResource(resourcePath).toURI();
 
         if (isResourceInJar(resourcePath))

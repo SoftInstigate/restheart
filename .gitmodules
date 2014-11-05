@@ -1,33 +1,3 @@
-[submodule "devenv/chef/cookbooks/apt"]
-	path = devenv/chef/cookbooks/apt
-	url = https://github.com/opscode-cookbooks/apt
-[submodule "devenv/chef/cookbooks/java"]
-	path = devenv/chef/cookbooks/java
-	url = https://github.com/opscode-cookbooks/java
-[submodule "devenv/chef/cookbooks/git"]
-	path = devenv/chef/cookbooks/git
-	url = https://github.com/jssjr/git.git
 [submodule "src/main/resources/browser"]
 	path = src/main/resources/browser
 	url = https://github.com/mikekelly/hal-browser.git
-[submodule "devenv/chef/cookbooks/build-essential"]
-	path = devenv/chef/cookbooks/build-essential
-	url = https://github.com/opscode-cookbooks/build-essential.git
-[submodule "devenv/chef/cookbooks/dmg"]
-	path = devenv/chef/cookbooks/dmg
-	url = https://github.com/opscode-cookbooks/dmg.git
-[submodule "devenv/chef/cookbooks/runit"]
-	path = devenv/chef/cookbooks/runit
-	url = https://github.com/cookbooks/runit.git
-[submodule "devenv/chef/cookbooks/windows"]
-	path = devenv/chef/cookbooks/windows
-	url = https://github.com/opscode-cookbooks/windows.git
-[submodule "devenv/chef/cookbooks/chef_handler"]
-	path = devenv/chef/cookbooks/chef_handler
-	url = https://github.com/opscode-cookbooks/chef_handler.git
-[submodule "devenv/chef/cookbooks/yum"]
-	path = devenv/chef/cookbooks/yum
-	url = https://github.com/opscode-cookbooks/yum.git
-[submodule "devenv/chef/cookbooks/yum-epel"]
-	path = devenv/chef/cookbooks/yum-epel
-	url = https://github.com/opscode-cookbooks/yum-epel.git

@@ -365,7 +365,14 @@ public class Bootstrapper
         }
         catch (URISyntaxException | IOException ex)
         {
-            logger.error("error instanitating browser web app. exiting..", ex);
+            logger.error("error instantiating browser web app. exiting..", ex);
+            System.exit(-1);
+        }
+        catch (IllegalStateException ex)
+        {
+            logger.error("error instantiating browser web app. exiting..", ex);
+            logger.error("**** did you downloaded the browser submodule before building?");
+            logger.error("**** to fix, run this command: $ git submodule update --init --recursive");
             System.exit(-1);
         }
 
