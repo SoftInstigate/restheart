@@ -75,7 +75,7 @@ public class GetRoleHandler extends ApplicationLogicHandler
         if (context.getMethod() == METHOD.OPTIONS)
         {
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET");
-            exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent");
+            exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
             exchange.setResponseCode(HttpStatus.SC_OK);
             exchange.endExchange();
         }

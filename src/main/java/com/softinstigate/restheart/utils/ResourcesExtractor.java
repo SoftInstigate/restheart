@@ -124,7 +124,7 @@ public class ResourcesExtractor
         }
         else
         {
-            // used when run as a expanded folder            
+            // used when run from an expanded folder            
             return new File(uri);
         }
     }

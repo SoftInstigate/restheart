@@ -58,6 +58,20 @@ mongo-credentials:
 mongo-mounts:
     - what: "*"
       where: /
+      
+#### static web resources
+
+# static web resources to bound under the /_static URL.
+# the 'what' property is the path of the directory containing the resources. 
+# what path is either absolute (starting with /) or relative to the RESTHeart jar directory
+# if embedded is true, the resources are either included in the RESTHeart jar or classpath
+
+static-resources-mounts:
+    - what: browser
+      where: /browser
+      welcome-file: browser.html
+      secured: false
+      embedded: true
 
 #### application logic
 
@@ -80,6 +94,8 @@ application-logic-mounts:
       where: /roles/mine
       secured: false
       args:
+          url: /_logic/roles/mine
+          send-challenge: false
           idm-implementation-class: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
           idm-conf-file: ../etc/security-integrationtest.yml
     - what: com.softinstigate.restheart.handlers.applicationlogic.AuthChallengeHandler
@@ -94,7 +110,7 @@ application-logic-mounts:
 # access-manager: the Access Manager responsible of authorization
 # The RESTHeart security is pluggable and you can provide you own implementation of both IDM and AM.
 # the provided default implementations of IDM and AM are SimpleFileIdentityManager and SimpleAccessManager.
-# conf-file paths are relative to the RESTHeart-XXX.jar file directory
+# conf-file paths are either absolute (starting with /) or relative to the RESTHeart jar  directory
 
 idm:    
     implementation-class: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager

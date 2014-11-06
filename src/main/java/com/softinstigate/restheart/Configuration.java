@@ -54,6 +54,8 @@ public class Configuration
     private final List<Map<String, Object>> mongoCredentials;
     private final List<Map<String, Object>> mongoMounts;
     
+    private final List<Map<String, Object>> staticResourcesMounts;
+    
     private final List<Map<String, Object>> applicationLogicMounts;
 
     private final String idmImpl;
@@ -109,10 +111,18 @@ public class Configuration
     public static final String MONGO_HOST = "host";
     
     public static final String APPLICATION_LOGIC_MOUNTS = "application-logic-mounts";
-    public static final String APPLICATION_LOGIC_MOUNT_WHAT = "what";
     public static final String APPLICATION_LOGIC_MOUNT_ARGS = "args";
+    public static final String APPLICATION_LOGIC_MOUNT_WHAT = "what";
     public static final String APPLICATION_LOGIC_MOUNT_WHERE = "where";
     public static final String APPLICATION_LOGIC_MOUNT_SECURED = "secured";
+    
+    public static final String STATIC_RESOURCES_MOUNTS = "static-resources-mounts";
+    public static final String STATIC_RESOURCES_MOUNT_WHAT = "what";
+    public static final String STATIC_RESOURCES_MOUNT_WHERE = "where";
+    public static final String STATIC_RESOURCES_MOUNT_WELCOME_FILE = "welcome-file";
+    public static final String STATIC_RESOURCES_MOUNT_EMBEDDED = "embedded";
+    public static final String STATIC_RESOURCES_MOUNT_SECURED = "secured";
+    
 
     public static final String CERT_PASSWORD = "certpassword";
     public static final String KEYSTORE_PASSWORD = "keystore-password";
@@ -162,6 +172,8 @@ public class Configuration
         mongoMounts.add(defaultMongoMounts);
         
         applicationLogicMounts = new ArrayList<>();
+        
+        staticResourcesMounts = new ArrayList<>();
 
         idmImpl = null;
         idmArgs = null;
@@ -240,6 +252,8 @@ public class Configuration
             mongoMounts.add(defaultMongoMounts);
             
             applicationLogicMounts = new ArrayList<>();
+            
+            staticResourcesMounts = new ArrayList<>();
 
             mongoCredentials = null;
 
@@ -304,6 +318,8 @@ public class Configuration
             mongoMounts = getAsListOfMaps(conf, MONGO_MOUNTS, mongoMountsDefault);
             
             applicationLogicMounts = getAsListOfMaps(conf, APPLICATION_LOGIC_MOUNTS, new ArrayList<>());
+            
+            staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS, new ArrayList<>());
 
             Map<String, Object> idm = getAsMap(conf, IDM);
             Map<String, Object> am = getAsMap(conf, ACCESS_MANAGER);
@@ -797,5 +813,13 @@ public class Configuration
     public List<Map<String, Object>> getApplicationLogicMounts()
     {
         return applicationLogicMounts;
+    }
+
+    /**
+     * @return the staticResourcesMounts
+     */
+    public List<Map<String, Object>> getStaticResourcesMounts()
+    {
+        return staticResourcesMounts;
     }
 }

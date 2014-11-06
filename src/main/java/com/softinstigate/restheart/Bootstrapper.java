@@ -13,7 +13,6 @@ package com.softinstigate.restheart;
 import com.mongodb.MongoClient;
 import com.softinstigate.restheart.db.PropsFixer;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
-import com.softinstigate.restheart.security.handlers.AccessManagerHandler;
 import com.softinstigate.restheart.handlers.ErrorHandler;
 import com.softinstigate.restheart.handlers.GzipEncodingHandler;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
@@ -40,7 +39,6 @@ import com.softinstigate.restheart.handlers.indexes.DeleteIndexHandler;
 import com.softinstigate.restheart.handlers.indexes.GetIndexesHandler;
 import com.softinstigate.restheart.handlers.indexes.PutIndexHandler;
 import com.softinstigate.restheart.security.AccessManager;
-import com.softinstigate.restheart.security.handlers.PredicateAuthenticationConstraintHandler;
 import com.softinstigate.restheart.utils.ResourcesExtractor;
 import com.softinstigate.restheart.utils.LoggingInitializer;
 import com.softinstigate.restheart.handlers.RequestContext;
@@ -49,10 +47,9 @@ import com.softinstigate.restheart.handlers.OptionsHandler;
 import com.softinstigate.restheart.handlers.PipedWrappingHandler;
 import com.softinstigate.restheart.handlers.injectors.BodyInjectorHandler;
 import com.softinstigate.restheart.handlers.metadata.MetadataEnforcerHandler;
-import static com.softinstigate.restheart.security.RestheartIdentityManager.RESTHEART_REALM;
 import com.softinstigate.restheart.security.SecurityHandler;
-import com.softinstigate.restheart.security.SilentBasicAuthenticationMechanism;
 import com.softinstigate.restheart.security.handlers.CORSHandler;
+import static io.undertow.Handlers.path;
 import io.undertow.Undertow;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
@@ -71,25 +68,19 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 
 import static io.undertow.Handlers.resource;
-import static io.undertow.Handlers.path;
 import io.undertow.Undertow.Builder;
-import io.undertow.security.api.AuthenticationMechanism;
-import io.undertow.security.api.AuthenticationMode;
-import io.undertow.security.handlers.AuthenticationCallHandler;
-import io.undertow.security.handlers.AuthenticationMechanismsHandler;
-import io.undertow.security.handlers.SecurityInitialHandler;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.AllowedMethodsHandler;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.RequestLimit;
 import io.undertow.server.handlers.RequestLimitingHandler;
+import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.util.HttpString;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
-import java.util.Collections;
-import java.util.List;
+import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,7 +95,7 @@ public class Bootstrapper
 
     private static final Logger logger = LoggerFactory.getLogger(Bootstrapper.class);
 
-    private static File browserRootFile = null;
+    private static final Map<String, File> tmpExtractedFiles = new HashMap<>();
 
     private static GracefulShutdownHandler hanldersPipe = null;
 
@@ -213,17 +204,18 @@ public class Bootstrapper
                     logger.error("error flushing and clonsing the mongo cliet", t);
                 }
 
-                if (browserRootFile != null)
+                tmpExtractedFiles.keySet().forEach(k ->
                 {
                     try
                     {
-                        ResourcesExtractor.deleteTempDir("browser", browserRootFile);
+                        ResourcesExtractor.deleteTempDir(k, tmpExtractedFiles.get(k));
                     }
                     catch (URISyntaxException | IOException ex)
                     {
-                        logger.error("error cleaning up temporary directory {}", browserRootFile.toString(), ex);
+                        logger.error("error cleaning up temporary directory {}", tmpExtractedFiles.get(k).toString(), ex);
                     }
                 }
+                );
 
                 logger.info("restheart stopped");
             }
@@ -360,25 +352,6 @@ public class Bootstrapper
             System.exit(-1);
         }
 
-        try
-        {
-            browserRootFile = ResourcesExtractor.extract("browser");
-        }
-        catch (URISyntaxException | IOException ex)
-        {
-            logger.error("error instantiating browser web app. exiting..", ex);
-            System.exit(-1);
-        }
-        catch (IllegalStateException ex)
-        {
-            logger.error("error instantiating browser web app. exiting..", ex);
-            logger.error("**** did you downloaded the browser submodule before building?");
-            logger.error("**** to fix, run this command: $ git submodule update --init --recursive");
-            System.exit(-1);
-        }
-
-        logger.info("static resources are in {}", browserRootFile.toString());
-
         Builder builder = Undertow.builder();
 
         if (conf.isHttpsListener())
@@ -454,8 +427,7 @@ public class Bootstrapper
                         )
                 );
 
-        PathHandler paths = path()
-                .addPrefixPath("/_browser", resource(new FileResourceManager(browserRootFile, 3)).addWelcomeFiles("browser.html").setDirectoryListingEnabled(false));
+        PathHandler paths = path();
 
         conf.getMongoMounts().stream().forEach(m ->
         {
@@ -464,63 +436,12 @@ public class Bootstrapper
 
             paths.addPrefixPath(url, new CORSHandler(new RequestContextInjectorHandler(url, db, new OptionsHandler(new SecurityHandler(coreHanlderChain, identityManager, accessManager)))));
 
-            logger.info("url {} bound to resource {}", url, db);
+            logger.info("url {} bound to mongodb resource {}", url, db);
         });
 
-        if (conf.getApplicationLogicMounts() != null)
-        {
-            conf.getApplicationLogicMounts().stream().forEach(al ->
-            {
-                try
-                {
-                    String alClazz = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHAT);
-                    String alWhere = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE);
-                    boolean alSecured = (Boolean) al.get(Configuration.APPLICATION_LOGIC_MOUNT_SECURED);
-                    Object alArgs = al.get(Configuration.APPLICATION_LOGIC_MOUNT_ARGS);
+        pipeStaticResourcesHandlers(conf, paths, identityManager, accessManager);
 
-                    if (alWhere == null || !alWhere.startsWith("/"))
-                    {
-                        logger.error("cannot pipe application logic handler {}. parameter 'where' must start with /", alWhere);
-                        return;
-                    }
-
-                    if (alArgs != null && !(alArgs instanceof Map))
-                    {
-                        logger.error("cannot pipe application logic handler {}. args are not defined as a map. it is a ", alWhere, alWhere.getClass());
-                        return;
-                    }
-
-                    Object o = Class.forName(alClazz).getConstructor(PipedHttpHandler.class, Map.class).newInstance(null, (Map) alArgs);
-
-                    if (o instanceof ApplicationLogicHandler)
-                    {
-                        ApplicationLogicHandler alHandler = (ApplicationLogicHandler) o;
-
-                        PipedHttpHandler handler = new CORSHandler(new RequestContextInjectorHandler("/_logic", "*", alHandler));
-
-                        if (alSecured)
-                        {
-                            paths.addPrefixPath("/_logic" + alWhere, new SecurityHandler(handler, identityManager, accessManager));
-                        }
-                        else
-                        {
-                            paths.addPrefixPath("/_logic" + alWhere, handler);
-                        }
-
-                        logger.info("url {} bound to application logic handler {}. access manager: {}", "/_logic" + alWhere, alClazz, alSecured);
-                    }
-                    else
-                    {
-                        logger.error("cannot pipe application logic handler {}. class {} does not extend ApplicationLogicHandler", alWhere, alClazz);
-                    }
-
-                }
-                catch (Throwable t)
-                {
-                    logger.error("cannot pipe application logic handler {}", al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE), t);
-                }
-            });
-        }
+        pipeApplicationLogicHandlers(conf, paths, identityManager, accessManager);
 
         return new GracefulShutdownHandler(
                 new RequestLimitingHandler(new RequestLimit(conf.getRequestLimit()),
@@ -549,5 +470,166 @@ public class Bootstrapper
     public static Configuration getConfiguration()
     {
         return conf;
+    }
+
+    private static void pipeStaticResourcesHandlers(Configuration conf, PathHandler paths, IdentityManager identityManager, AccessManager accessManager)
+    {
+        if (conf.getStaticResourcesMounts() != null)
+        {
+            conf.getStaticResourcesMounts().stream().forEach(sr ->
+            {
+                try
+                {
+                    String path = (String) sr.get(Configuration.STATIC_RESOURCES_MOUNT_WHAT);
+                    String where = (String) sr.get(Configuration.STATIC_RESOURCES_MOUNT_WHERE);
+                    String welcomeFile = (String) sr.get(Configuration.STATIC_RESOURCES_MOUNT_WELCOME_FILE);
+                    boolean embedded = (Boolean) sr.get(Configuration.STATIC_RESOURCES_MOUNT_EMBEDDED);
+                    boolean secured = (Boolean) sr.get(Configuration.STATIC_RESOURCES_MOUNT_SECURED);
+
+                    if (where == null || !where.startsWith("/"))
+                    {
+                        logger.error("cannot bind static resources to {}. parameter 'where' must start with /", where);
+                        return;
+                    }
+
+                    if (welcomeFile == null)
+                    {
+                        welcomeFile = "index.html";
+                    }
+
+                    File file;
+
+                    if (embedded)
+                    {
+                        if (path.startsWith("/"))
+                        {
+                            logger.error("cannot bind embedded static resources to {}. parameter 'where' cannot start with /. the path is relative to the jar root dir or classpath directory", where);
+                            return;
+                        }
+
+                        try
+                        {
+                            file = ResourcesExtractor.extract(path);
+                            
+                            if (ResourcesExtractor.isResourceInJar(path))
+                            {
+                                tmpExtractedFiles.put(path, file);
+                                logger.info("embedded static resources {} extracted in {}", path, file.toString());
+                            }
+                        }
+                        catch (URISyntaxException | IOException ex)
+                        {
+                            logger.error("error extracting embedded static resource {}", path, ex);
+                            return;
+                        }
+                        catch (IllegalStateException ex)
+                        {
+                            logger.error("error extracting embedded static resource {}", path, ex);
+
+                            if ("browser".equals(path))
+                            {
+                                logger.error("**** did you downloaded the browser submodule before building?");
+                                logger.error("**** to fix, run this command: $ git submodule update --init --recursive");
+                            }
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        if (!path.startsWith("/"))
+                        {
+                            // this is to allow specifying the configuration file path relative to the jar (also working when running from classes)
+                            URL location = Bootstrapper.class.getProtectionDomain().getCodeSource().getLocation();
+                            File locationFile = new File(location.getPath());
+                            file = new File(locationFile.getParent() + File.separator + path);
+                        }
+                        else
+                        {
+                            file = new File(path);
+                        }
+                    }
+
+                    ResourceHandler handler = resource(new FileResourceManager(file, 3)).addWelcomeFiles(welcomeFile).setDirectoryListingEnabled(false);
+
+                    if (secured)
+                    {
+                        paths.addPrefixPath("/_static" + where, new SecurityHandler(new PipedWrappingHandler(null, handler), identityManager, accessManager));
+                    }
+                    else
+                    {
+                        paths.addPrefixPath("/_static" + where, handler);
+                    }
+
+                    logger.info("url {} bound to static resources {}. access manager: {}", "/_static" + where, path, secured);
+
+                }
+                catch (Throwable t)
+                {
+                    logger.error("cannot bind static resources to {}", sr.get(Configuration.STATIC_RESOURCES_MOUNT_WHERE), t);
+                }
+            });
+        }
+    }
+
+    private static void pipeApplicationLogicHandlers(Configuration conf, PathHandler paths, IdentityManager identityManager, AccessManager accessManager)
+    {
+        if (conf.getApplicationLogicMounts() != null)
+        {
+            conf.getApplicationLogicMounts().stream().forEach(al ->
+            {
+                try
+                {
+                    String alClazz = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHAT);
+                    String alWhere = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE);
+                    boolean alSecured = (Boolean) al.get(Configuration.APPLICATION_LOGIC_MOUNT_SECURED);
+                    Object alArgs = al.get(Configuration.APPLICATION_LOGIC_MOUNT_ARGS);
+
+                    if (alWhere == null || !alWhere.startsWith("/"))
+                    {
+                        logger.error("cannot pipe application logic handler {}. parameter 'where' must start with /", alWhere);
+                        return;
+                    }
+
+                    if (alArgs != null && !(alArgs instanceof Map))
+                    {
+                        logger.error("cannot pipe application logic handler {}. args are not defined as a map. it is a ", alWhere, alWhere.getClass());
+                        return;
+
+                    }
+
+                    Object o = Class.forName(alClazz).getConstructor(PipedHttpHandler.class, Map.class
+                    ).newInstance(null, (Map) alArgs);
+
+                    if (o instanceof ApplicationLogicHandler)
+                    {
+                        ApplicationLogicHandler alHandler = (ApplicationLogicHandler) o;
+
+                        PipedHttpHandler handler = new CORSHandler(new RequestContextInjectorHandler("/_logic", "*", alHandler));
+
+                        if (alSecured)
+                        {
+                            paths.addPrefixPath("/_logic" + alWhere, new SecurityHandler(handler, identityManager, accessManager));
+                        }
+                        else
+                        {
+                            paths.addPrefixPath("/_logic" + alWhere, handler);
+                        }
+
+                        logger.info("url {} bound to application logic handler {}. access manager: {}", "/_logic" + alWhere, alClazz, alSecured);
+                    }
+
+                    else
+                    {
+                        logger.error("cannot pipe application logic handler {}. class {} does not extend ApplicationLogicHandler", alWhere, alClazz);
+                    }
+
+                }
+                catch (Throwable t)
+                {
+                    logger.error("cannot pipe application logic handler {}", al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE), t);
+                }
+            }
+            );
+        }
     }
 }
