@@ -50,6 +50,8 @@ import com.softinstigate.restheart.handlers.PipedWrappingHandler;
 import com.softinstigate.restheart.handlers.injectors.BodyInjectorHandler;
 import com.softinstigate.restheart.handlers.metadata.MetadataEnforcerHandler;
 import static com.softinstigate.restheart.security.RestheartIdentityManager.RESTHEART_REALM;
+import com.softinstigate.restheart.security.SecurityHandler;
+import com.softinstigate.restheart.security.SilentBasicAuthenticationMechanism;
 import com.softinstigate.restheart.security.handlers.CORSHandler;
 import io.undertow.Undertow;
 import io.undertow.security.idm.IdentityManager;
@@ -76,7 +78,6 @@ import io.undertow.security.api.AuthenticationMode;
 import io.undertow.security.handlers.AuthenticationCallHandler;
 import io.undertow.security.handlers.AuthenticationMechanismsHandler;
 import io.undertow.security.handlers.SecurityInitialHandler;
-import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.AllowedMethodsHandler;
 import io.undertow.server.handlers.BlockingHandler;
@@ -461,7 +462,7 @@ public class Bootstrapper
             String url = (String) m.get(Configuration.MONGO_MOUNT_WHERE);
             String db = (String) m.get(Configuration.MONGO_MOUNT_WHAT);
 
-            paths.addPrefixPath(url, new CORSHandler(new RequestContextInjectorHandler(url, db, new OptionsHandler(addSecurity(coreHanlderChain, identityManager, accessManager)))));
+            paths.addPrefixPath(url, new CORSHandler(new RequestContextInjectorHandler(url, db, new OptionsHandler(new SecurityHandler(coreHanlderChain, identityManager, accessManager)))));
 
             logger.info("url {} bound to resource {}", url, db);
         });
@@ -499,7 +500,7 @@ public class Bootstrapper
 
                         if (alSecured)
                         {
-                            paths.addPrefixPath("/_logic" + alWhere, addSecurity(handler, identityManager, accessManager));
+                            paths.addPrefixPath("/_logic" + alWhere, new SecurityHandler(handler, identityManager, accessManager));
                         }
                         else
                         {
@@ -540,31 +541,6 @@ public class Bootstrapper
                         )
                 )
         );
-    }
-
-    private static PipedHttpHandler addSecurity(final PipedHttpHandler toSecure, final IdentityManager identityManager, final AccessManager accessManager)
-    {
-        if (identityManager != null)
-        {
-            HttpHandler handler = null;
-            
-            if (accessManager != null)
-            {
-                handler = new AccessManagerHandler(accessManager, null);
-            }
-
-            handler = new AuthenticationCallHandler(handler);
-            handler = new PredicateAuthenticationConstraintHandler(handler, accessManager);
-            final List<AuthenticationMechanism> mechanisms = Collections.<AuthenticationMechanism>singletonList(new BasicAuthenticationMechanism(RESTHEART_REALM, "BASIC", true));
-            handler = new AuthenticationMechanismsHandler(handler, mechanisms);
-            handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE, identityManager, handler);
-
-            return new PipedWrappingHandler(toSecure, handler);
-        }
-        else
-        {
-            return toSecure;
-        }
     }
 
     /**

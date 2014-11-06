@@ -92,6 +92,8 @@ application-logic-mounts:
       where: /roles/mine
       secured: false
       args:
+          url: /_logic/roles/mine
+          send-challenge: false
           idm-implementation-class: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
           idm-conf-file: ../etc/security-integrationtest.yml
 

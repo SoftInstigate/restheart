@@ -82,6 +82,9 @@ application-logic-mounts:
       args:
           idm-implementation-class: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
           idm-conf-file: ../etc/security-integrationtest.yml
+    - what: com.softinstigate.restheart.handlers.applicationlogic.AuthChallengeHandler
+      where: /login
+      secured: false
 
 ### security 
 

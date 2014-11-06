@@ -15,12 +15,15 @@ import com.mongodb.BasicDBObject;
 import com.softinstigate.restheart.hal.Representation;
 import com.softinstigate.restheart.handlers.*;
 import com.softinstigate.restheart.handlers.RequestContext.METHOD;
+import static com.softinstigate.restheart.security.RestheartIdentityManager.RESTHEART_REALM;
 import com.softinstigate.restheart.utils.HttpStatus;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import static io.undertow.util.Headers.BASIC;
+import static io.undertow.util.Headers.WWW_AUTHENTICATE;
 import io.undertow.util.HttpString;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,10 +35,17 @@ import javax.xml.bind.DatatypeConverter;
  */
 public class GetRoleHandler extends ApplicationLogicHandler
 {
-    public String idmClazzKey = "idm-implementation-class";
-    public String idmConfFileKey = "idm-conf-file";
-
-    IdentityManager idm = null;
+    public static String idmClazzKey = "idm-implementation-class";
+    public static String idmConfFileKey = "idm-conf-file";
+    public static String urlKey = "url";
+    public static String sendChallengeKey = "send-challenge";
+    
+    private static final String BASIC_PREFIX = BASIC + " ";
+    private static final String challenge = BASIC_PREFIX + "realm=\"" + RESTHEART_REALM + "\"";
+    
+    private IdentityManager idm = null;
+    private String url;
+    private boolean sendChallenge;
 
     public GetRoleHandler(PipedHttpHandler next, Map<String, Object> args) throws Exception
     {
@@ -53,7 +63,10 @@ public class GetRoleHandler extends ApplicationLogicHandler
         idmArgs.put("conf-file", idmConfFile);
 
         Object _idm = Class.forName(idmClazz).getConstructor(Map.class).newInstance(idmArgs);
-        idm = (IdentityManager) _idm;
+        this.idm = (IdentityManager) _idm;
+        
+        this.url = (String) ((Map<String, Object>) args).get(urlKey);
+        this.sendChallenge = (boolean) ((Map<String, Object>) args).get(sendChallengeKey);
     }
 
     @Override
@@ -61,6 +74,7 @@ public class GetRoleHandler extends ApplicationLogicHandler
     {
         if (context.getMethod() == METHOD.OPTIONS)
         {
+            exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET");
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent");
             exchange.setResponseCode(HttpStatus.SC_OK);
             exchange.endExchange();
@@ -103,7 +117,7 @@ public class GetRoleHandler extends ApplicationLogicHandler
                             root.append("authenticated", true);
                             root.append("roles", _roles);
 
-                            Representation rep = new Representation("/_logic/roles/mine");
+                            Representation rep = new Representation(url);
                             rep.addProperties(root);
 
                             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
@@ -124,9 +138,20 @@ public class GetRoleHandler extends ApplicationLogicHandler
             Representation rep = new Representation("/_logic/roles/mine");
             rep.addProperties(root);
 
+            if (sendChallenge)
+            {
+                exchange.getResponseHeaders().add(WWW_AUTHENTICATE, challenge);
+                exchange.setResponseCode(HttpStatus.SC_UNAUTHORIZED);
+            }
+            else
+            {
+                exchange.setResponseCode(HttpStatus.SC_OK);
+            }
+            
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
-            exchange.setResponseCode(HttpStatus.SC_OK);
             exchange.getResponseSender().send(rep.toString());
+            
+            
             exchange.endExchange();
         }
         else
