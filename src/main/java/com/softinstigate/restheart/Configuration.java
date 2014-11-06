@@ -30,7 +30,7 @@ import org.yaml.snakeyaml.Yaml;
 public class Configuration
 {
     public static String DOC_Path = "http://www.restheart.org/docs/v0.9";
-    
+
     private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
 
     private final boolean httpsListener;
@@ -53,9 +53,9 @@ public class Configuration
     private final List<Map<String, Object>> mongoServers;
     private final List<Map<String, Object>> mongoCredentials;
     private final List<Map<String, Object>> mongoMounts;
-    
+
     private final List<Map<String, Object>> staticResourcesMounts;
-    
+
     private final List<Map<String, Object>> applicationLogicMounts;
 
     private final String idmImpl;
@@ -70,7 +70,7 @@ public class Configuration
 
     private final boolean localCacheEnabled;
     private final long localCacheTtl;
-    
+
     private final int requestsLimit;
 
     private final int ioThreads;
@@ -83,7 +83,7 @@ public class Configuration
 
     public static final String LOCAL_CACHE_ENABLED = "local-cache-enabled";
     public static final String LOCAL_CACHE_TTL = "local-cache-ttl";
-    
+
     public static final String FORCE_GZIP_ENCODING = "force-gzip-encoding";
     public static final String DIRECT_BUFFERS = "direct-buffers";
     public static final String BUFFERS_PER_REGION = "buffers-per-region";
@@ -98,7 +98,7 @@ public class Configuration
     public static final String IMPLEMENTATION_CLASS = "implementation-class";
     public static final String ACCESS_MANAGER = "access-manager";
     public static final String IDM = "idm";
-    
+
     public static final String MONGO_SERVERS = "mongo-servers";
     public static final String MONGO_CREDENTIALS = "mongo-credentials";
     public static final String MONGO_MOUNTS = "mongo-mounts";
@@ -109,20 +109,19 @@ public class Configuration
     public static final String MONGO_USER = "user";
     public static final String MONGO_PORT = "port";
     public static final String MONGO_HOST = "host";
-    
+
     public static final String APPLICATION_LOGIC_MOUNTS = "application-logic-mounts";
     public static final String APPLICATION_LOGIC_MOUNT_ARGS = "args";
     public static final String APPLICATION_LOGIC_MOUNT_WHAT = "what";
     public static final String APPLICATION_LOGIC_MOUNT_WHERE = "where";
     public static final String APPLICATION_LOGIC_MOUNT_SECURED = "secured";
-    
+
     public static final String STATIC_RESOURCES_MOUNTS = "static-resources-mounts";
     public static final String STATIC_RESOURCES_MOUNT_WHAT = "what";
     public static final String STATIC_RESOURCES_MOUNT_WHERE = "where";
     public static final String STATIC_RESOURCES_MOUNT_WELCOME_FILE = "welcome-file";
     public static final String STATIC_RESOURCES_MOUNT_EMBEDDED = "embedded";
     public static final String STATIC_RESOURCES_MOUNT_SECURED = "secured";
-    
 
     public static final String CERT_PASSWORD = "certpassword";
     public static final String KEYSTORE_PASSWORD = "keystore-password";
@@ -170,10 +169,20 @@ public class Configuration
         defaultMongoMounts.put(MONGO_MOUNT_WHAT, "*");
         defaultMongoMounts.put(MONGO_MOUNT_WHERE, "/");
         mongoMounts.add(defaultMongoMounts);
-        
+
         applicationLogicMounts = new ArrayList<>();
-        
+
         staticResourcesMounts = new ArrayList<>();
+
+        HashMap<String, Object> browserStaticResourcesMountArgs = new HashMap<>();
+
+        browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WHAT, "browser");
+        browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WHERE, "/browser");
+        browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WELCOME_FILE, "browser.html");
+        browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_SECURED, false);
+        browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_EMBEDDED, true);
+
+        staticResourcesMounts.add(browserStaticResourcesMountArgs);
 
         idmImpl = null;
         idmArgs = null;
@@ -188,7 +197,7 @@ public class Configuration
 
         localCacheEnabled = true;
         localCacheTtl = 1000;
-        
+
         requestsLimit = 100;
         ioThreads = 2;
         workerThreads = 32;
@@ -244,16 +253,26 @@ public class Configuration
             defaultMongoServer.put(MONGO_HOST, "127.0.0.1");
             defaultMongoServer.put(MONGO_PORT, 27017);
             mongoServers.add(defaultMongoServer);
-            
+
             mongoMounts = new ArrayList<>();
             Map<String, Object> defaultMongoMounts = new HashMap<>();
             defaultMongoMounts.put(MONGO_MOUNT_WHAT, "*");
             defaultMongoMounts.put(MONGO_MOUNT_WHERE, "/");
             mongoMounts.add(defaultMongoMounts);
-            
+
             applicationLogicMounts = new ArrayList<>();
-            
+
             staticResourcesMounts = new ArrayList<>();
+
+            HashMap<String, Object> browserStaticResourcesMountArgs = new HashMap<>();
+
+            browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WHAT, "browser");
+            browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WHERE, "/browser");
+            browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WELCOME_FILE, "browser.html");
+            browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_SECURED, false);
+            browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_EMBEDDED, true);
+
+            staticResourcesMounts.add(browserStaticResourcesMountArgs);
 
             mongoCredentials = null;
 
@@ -270,9 +289,9 @@ public class Configuration
 
             localCacheEnabled = true;
             localCacheTtl = 1000;
-            
+
             requestsLimit = 100;
-            
+
             ioThreads = 2;
             workerThreads = 32;
             bufferSize = 16384;
@@ -308,17 +327,17 @@ public class Configuration
 
             mongoServers = getAsListOfMaps(conf, MONGO_SERVERS, mongoServersDefault);
             mongoCredentials = getAsListOfMaps(conf, MONGO_CREDENTIALS, null);
-            
+
             List<Map<String, Object>> mongoMountsDefault = new ArrayList<>();
             Map<String, Object> defaultMongoMounts = new HashMap<>();
             defaultMongoMounts.put(MONGO_MOUNT_WHAT, "*");
             defaultMongoMounts.put(MONGO_MOUNT_WHERE, "/");
             mongoMountsDefault.add(defaultMongoMounts);
-            
+
             mongoMounts = getAsListOfMaps(conf, MONGO_MOUNTS, mongoMountsDefault);
-            
+
             applicationLogicMounts = getAsListOfMaps(conf, APPLICATION_LOGIC_MOUNTS, new ArrayList<>());
-            
+
             staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS, new ArrayList<>());
 
             Map<String, Object> idm = getAsMap(conf, IDM);
@@ -350,9 +369,9 @@ public class Configuration
             logLevel = level;
 
             requestsLimit = getAsIntegerOrDefault(conf, REQUESTS_LIMIT, 100);
-            
+
             localCacheEnabled = getAsBooleanOrDefault(conf, LOCAL_CACHE_ENABLED, true);
-            localCacheTtl = getAsLongOrDefault(conf, LOCAL_CACHE_TTL, (long)1000);
+            localCacheTtl = getAsLongOrDefault(conf, LOCAL_CACHE_TTL, (long) 1000);
 
             ioThreads = getAsIntegerOrDefault(conf, IO_THREADS, 2);
             workerThreads = getAsIntegerOrDefault(conf, WORKER_THREADS, 32);
@@ -496,7 +515,7 @@ public class Configuration
             return defaultValue;
         }
     }
-    
+
     private static Long getAsLongOrDefault(Map<String, Object> conf, String key, Long defaultValue)
     {
         if (conf == null)
@@ -522,7 +541,7 @@ public class Configuration
             {
                 return Long.parseLong(o.toString());
             }
-            catch(NumberFormatException nfe)
+            catch (NumberFormatException nfe)
             {
                 logger.info("wrong value for parameter {}: {}. using its default value {}", key, o, defaultValue);
                 return defaultValue;
