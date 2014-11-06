@@ -39,36 +39,51 @@ public class PostCollectionHandler extends PutCollectionHandler
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
     {
         DBObject content = context.getContent();
-        
+
         if (content == null)
+        {
             content = new BasicDBObject();
-        
+        }
+
         // cannot POST an array
         if (content instanceof BasicDBList)
         {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
             return;
         }
-        
+
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
-        
+
+        if (content.get("_id") != null)
+        {
+            if (content.get("_id") instanceof String && RequestContext.isReservedResourceDocument((String)content.get("_id")))
+            {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "reserved resource");
+                return;
+            }
+        }
+
         int SC = DocumentDAO.upsertDocumentPost(exchange, context.getDBName(), context.getCollectionName(), content, etag);
 
         // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
+        if (context.getWarnings() != null && !context.getWarnings().isEmpty())
         {
             if (SC == HttpStatus.SC_NO_CONTENT)
+            {
                 exchange.setResponseCode(HttpStatus.SC_OK);
+            }
             else
+            {
                 exchange.setResponseCode(SC);
-            
+            }
+
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
         }
         else
         {
             exchange.setResponseCode(SC);
         }
-        
+
         exchange.endExchange();
     }
 }

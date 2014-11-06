@@ -136,7 +136,7 @@ public class RequestDispacherHandler extends PipedHttpHandler
 
         if (context.isReservedResource())
         {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "reserved resource");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "reserved resource");
             return;
         }
 
