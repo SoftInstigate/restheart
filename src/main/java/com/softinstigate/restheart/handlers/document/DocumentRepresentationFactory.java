@@ -41,6 +41,8 @@ public class DocumentRepresentationFactory
             throws IllegalQueryParamenterException
     {
         Representation rep = new Representation(href);
+        
+        rep.addProperty("_type", context.getType().name());
 
         // document properties
         data.keySet().stream().forEach((key) ->
@@ -70,7 +72,7 @@ public class DocumentRepresentationFactory
         
         // link templates and curies
         String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
-        if (!requestPath.equals("/")) // this can happen due to mongo-mounts mapped URL
+        if (context.isParentAccessible()) // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link("rh:coll", URLUtilis.getPerentPath(requestPath)));
         rep.addLink(new Link("rh", "curies", Configuration.DOC_Path + "/#api/doc/{rel}", true), true);
 

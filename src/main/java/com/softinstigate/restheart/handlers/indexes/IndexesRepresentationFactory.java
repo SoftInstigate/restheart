@@ -36,10 +36,12 @@ public class IndexesRepresentationFactory
     static public void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException
     {
-        String requestPath = URLUtilis.removeTrailingSlashes(context.getRequestUri());
+        String requestPath = URLUtilis.removeTrailingSlashes(context.getMappedRequestUri());
         String queryString = (exchange.getQueryString() == null || exchange.getQueryString().isEmpty()) ? "" : "?" + exchange.getQueryString();
         
         Representation rep = new Representation(requestPath + queryString);
+        
+        rep.addProperty("_type", context.getType().name());
 
         if (size > 0)
         {
@@ -63,8 +65,10 @@ public class IndexesRepresentationFactory
 
                     if (_id != null && (_id instanceof String || _id instanceof ObjectId))
                     {
-                        
                         Representation nrep = new Representation(requestPath + "/" + _id.toString());
+                        
+                        nrep.addProperty("_type", RequestContext.TYPE.INDEX.name());
+                        
                         nrep.addProperties(d);
 
                         rep.addRepresentation("rh:index", nrep);
@@ -78,7 +82,8 @@ public class IndexesRepresentationFactory
         }
         
         // link templates and curies
-        rep.addLink(new Link("rh:coll", URLUtilis.getPerentPath(requestPath)));
+        if (context.isParentAccessible()) // this can happen due to mongo-mounts mapped URL
+            rep.addLink(new Link("rh:coll", URLUtilis.getPerentPath(requestPath)));
         rep.addLink(new Link("rh", "curies", Configuration.DOC_Path + "/#api/indexes/{rel}", true), true);
         
         ResponseHelper.injectWarnings(rep, exchange, context);

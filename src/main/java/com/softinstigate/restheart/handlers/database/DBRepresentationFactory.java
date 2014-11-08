@@ -41,6 +41,8 @@ public class DBRepresentationFactory
         String queryString = (exchange.getQueryString() == null || exchange.getQueryString().isEmpty()) ? "" : "?" + exchange.getQueryString();
 
         Representation rep = new Representation(requestPath + queryString);
+        
+        rep.addProperty("_type", context.getType().name());
 
         DBObject dbProps = context.getDbProps();
 
@@ -74,6 +76,8 @@ public class DBRepresentationFactory
                     {
                         Representation nrep = new Representation(requestPath + "/" + _id.toString());
                         
+                        nrep.addProperty("_type", RequestContext.TYPE.COLLECTION.name());
+                        
                         if (d.get("_etag") != null && d.get("_etag") instanceof ObjectId)
                             d.put("_etag", ((ObjectId)d.get("_etag")).toString()); // represent the etag as a string
                         
@@ -103,7 +107,7 @@ public class DBRepresentationFactory
         }
         
         // link templates and curies
-        if (!requestPath.equals("/")) // this can happen due to mongo-mounts mapped URL
+        if (context.isParentAccessible()) // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link("rh:root", URLUtilis.getPerentPath(requestPath)));
         rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
         rep.addLink(new Link("rh", "curies", Configuration.DOC_Path + "/#api/db/{rel}", true), true);

@@ -51,10 +51,12 @@ public class CollectionRepresentationFactory
         String queryString = (exchange.getQueryString() == null || exchange.getQueryString().isEmpty()) ? "" : "?" + exchange.getQueryString();
         
         Representation rep = new Representation(requestPath + queryString);
+        
+        rep.addProperty("_type", context.getType().name());
 
         // add the collection properties
         DBObject collProps = context.getCollectionProps();
-
+        
         if (collProps != null) 
         {
             HALUtils.addData(rep, collProps);
@@ -85,6 +87,8 @@ public class CollectionRepresentationFactory
                     {
                         Representation nrep = DocumentRepresentationFactory.getDocument(requestPath + "/" + _id.toString(), exchange, context, d);
 
+                        nrep.addProperty("_type", RequestContext.TYPE.DOCUMENT.name());
+                        
                         if (d.get("_etag") != null && d.get("_etag") instanceof ObjectId)
                             d.put("_etag", ((ObjectId)d.get("_etag")).toString()); // represent the etag as a string
                         
@@ -112,13 +116,13 @@ public class CollectionRepresentationFactory
         }
         
         // link templates and curies
-        if (!requestPath.equals("/")) // this can happen due to mongo-mounts mapped URL
+        if (context.isParentAccessible()) // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link("rh:db", URLUtilis.getPerentPath(requestPath)));
         rep.addLink(new Link("rh:filter", requestPath + "/{?filter}", true));
         rep.addLink(new Link("rh:sort", requestPath + "/{?sort_by}", true));
         rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
         rep.addLink(new Link("rh:countandpaging", requestPath + "/{?page}{&pagesize}&count", true));
-        rep.addLink(new Link("rh:_indexes", "/_indexes"));
+        rep.addLink(new Link("rh:_indexes", requestPath +  "/_indexes"));
         rep.addLink(new Link("rh", "curies", Configuration.DOC_Path + "/#api/coll/{rel}", true), true);
         
         ResponseHelper.injectWarnings(rep, exchange, context);

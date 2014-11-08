@@ -51,10 +51,32 @@ public class RequestContext
     private Deque<String> filter = null;
     private Deque<String> sortBy = null;
     
-    private String requestUri = null;
+    private String unmappedRequestUri = null;
+    private String mappedRequestUri = null;
     /**
      * 
      * @param exchange
+     * the url rewriting feature is implemented by the whatUri and whereUri parameters
+     * 
+     * the exchange request path is rewritten replacing the whereUri string with the whatUri string
+     * the special whatUri value * means any resource: the whereUri is replaced with /
+     * 
+     * example 1
+     * 
+     * whatUri = /mydb/mycollection
+     * whereUri = /
+     *
+     * then the requestPath / is rewritten to /mydb/mycollection
+     *
+     * example 2 
+     *
+     * whatUri = *
+     * whereUri = /data
+     * 
+     * then the requestPath /data is rewritten to / 
+     * 
+     
+     * 
      * @param whereUri the uri to map to
      * @param whatUri  the uri to map
      */
@@ -62,10 +84,11 @@ public class RequestContext
     {
         this.whereUri = URLUtilis.removeTrailingSlashes(whereUri);
         this.whatUri = whatUri;
-
-        requestUri = unmapUri(exchange.getRequestPath());
         
-        pathTokens = requestUri.split("/"); // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
+        this.unmappedRequestUri = exchange.getRequestPath();
+        this.mappedRequestUri = unmapUri(exchange.getRequestPath());
+        
+        pathTokens = mappedRequestUri.split("/"); // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
         
         if (pathTokens.length < 2)
         {
@@ -109,6 +132,7 @@ public class RequestContext
 
     /**
      * given a mapped uri (/some/mapping/coll) returns the canonical uri (/db/coll)
+     * URLs are mapped to mongodb resources by using the mongo-mounts configuration properties
      * 
      * @param mappedUri
      * @return 
@@ -135,6 +159,7 @@ public class RequestContext
     
     /**
      * given a canonical uri (/db/coll) returns the mapped uri (/db/coll) relative to this context
+     * URLs are mapped to mongodb resources by using the mongo-mounts configuration properties
      * 
      * @param unmappedUri
      * @return 
@@ -157,6 +182,24 @@ public class RequestContext
             ret = "/";
         
         return ret;
+    }
+    
+    /**
+     * check if the parent of the requested resource is accessible in this request context
+     * 
+     * for instance if /mydb/mycollection is mapped to /coll then:
+     * 
+     * the db is accessible from the collection
+     * the root is not accessible from the collection (since / is actually mapped to the db)
+     * 
+     * @return true if parent of the requested resource is accessible 
+     */
+    public final boolean isParentAccessible()
+    {
+        if (type == TYPE.DB)
+            return unmappedRequestUri.split("/").length > 1;
+        else
+            return unmappedRequestUri.split("/").length > 2;
     }
     
     public TYPE getType()
@@ -390,10 +433,18 @@ public class RequestContext
     }
 
     /**
-     * @return the requestUri
+     * @return the mappedRequestUri
      */
-    public String getRequestUri()
+    public String getMappedRequestUri()
     {
-        return requestUri;
+        return mappedRequestUri;
+    }
+    
+    /**
+     * @return the unmappedRequestUri
+     */
+    public String getUnmappedRequestUri()
+    {
+        return unmappedRequestUri;
     }
 }

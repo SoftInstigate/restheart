@@ -54,6 +54,8 @@ public class RootRepresentationFactory
         
         Representation rep = new Representation(requestPath + queryString);
 
+        rep.addProperty("_type", context.getType().name());
+        
         if (size >= 0)
         {
             float _size = size + 0f;
@@ -83,6 +85,8 @@ public class RootRepresentationFactory
                             nrep = new Representation(requestPath + _id.toString());
                         else
                             nrep = new Representation(requestPath + "/" + _id.toString());
+                        
+                        nrep.addProperty("_type", RequestContext.TYPE.DB.name());
                         
                         if (d.get("_etag") != null && d.get("_etag") instanceof ObjectId)
                             d.put("_etag", ((ObjectId)d.get("_etag")).toString()); // represent the etag as a string

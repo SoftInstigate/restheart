@@ -71,6 +71,20 @@ mongo-mounts:
     - what: /mydb/refcoll2/doc2
       where: /remappeddoc2
 
+#### static web resources
+
+# static web resources to bound under the /_static URL.
+# the 'what' property is the path of the directory containing the resources. 
+# what path is either absolute (starting with /) or relative to the RESTHeart jar directory
+# if embedded is true, the resources are either included in the RESTHeart jar or classpath
+
+static-resources-mounts:
+    - what: browser
+      where: /browser
+      welcome-file: browser.html
+      secured: false
+      embedded: true
+
 #### application logic
 
 # RESTHeart has a pipeline architecture where specialized undertow handlers are chained to serve the requests.
