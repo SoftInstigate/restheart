@@ -26,83 +26,72 @@ import org.bson.types.ObjectId;
  *
  * @author uji
  */
-public class PatchDocumentHandler extends PipedHttpHandler
-{
+public class PatchDocumentHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of PatchDocumentHandler
      */
-    public PatchDocumentHandler()
-    {
+    public PatchDocumentHandler() {
         super(null);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
-    {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         DBObject content = context.getContent();
-        
+
         // cannot PATCH with no data
-        if (content == null)
-        {
+        if (content == null) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data is empty");
             return;
         }
-        
+
         // cannot PATCH an array
-        if (content instanceof BasicDBList)
-        {
+        if (content instanceof BasicDBList) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
             return;
         }
-        
+
         String id = context.getDocumentId();
-        
-        if (content.get("_id") == null) 
-        {
+
+        if (content.get("_id") == null) {
             content.put("_id", getId(id));
         }
-        else if (!content.get("_id").equals(id))
-        {
+        else if (!content.get("_id").equals(id)) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in json data cannot be different than id in URL");
             return;
         }
 
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
-        
-        if (etag == null)
-        {
+
+        if (etag == null) {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
             return;
         }
-        
+
         int SC = DocumentDAO.upsertDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), content, etag, true);
-        
+
         // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
-        {
-            if (SC == HttpStatus.SC_NO_CONTENT)
+        if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
+            if (SC == HttpStatus.SC_NO_CONTENT) {
                 exchange.setResponseCode(HttpStatus.SC_OK);
-            else
+            }
+            else {
                 exchange.setResponseCode(SC);
-            
+            }
+
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
         }
-        else
-        {
+        else {
             exchange.setResponseCode(SC);
         }
-        
+
         exchange.endExchange();
     }
-    
-    private static Object getId(String id)
-    {
-        if (ObjectId.isValid(id))
-        {
+
+    private static Object getId(String id) {
+        if (ObjectId.isValid(id)) {
             return new ObjectId(id);
         }
-        else
-        {
+        else {
             // the id is not an object id
             return id;
         }

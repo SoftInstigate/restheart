@@ -29,35 +29,30 @@ import org.slf4j.LoggerFactory;
  *
  * @author uji
  */
-public class GetCollectionHandler extends PipedHttpHandler
-{
+public class GetCollectionHandler extends PipedHttpHandler {
     private static final Logger logger = LoggerFactory.getLogger(GetCollectionHandler.class);
 
     /**
      * Creates a new instance of GetCollectionHandler
      */
-    public GetCollectionHandler()
-    {
+    public GetCollectionHandler() {
         super(null);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
-    {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         DBCollection coll = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName());
-        
+
         long size = -1;
-        
-        if (context.isCount())
-        {
+
+        if (context.isCount()) {
             size = CollectionDAO.getCollectionSize(coll, exchange.getQueryParameters().get("filter"));
         }
-        
+
         // ***** get data
         ArrayList<DBObject> data = null;
 
-        try
-        {
+        try {
             data = CollectionDAO.getCollectionData(coll, context.getPage(), context.getPagesize(), context.getSortBy(), context.getFilter());
         }
         catch (JSONParseException jpe) // the filter expression is not a valid json string
@@ -66,16 +61,14 @@ public class GetCollectionHandler extends PipedHttpHandler
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", jpe);
             return;
         }
-        catch (MongoException me)
-        {
+        catch (MongoException me) {
             if (me.getMessage().matches(".*Can't canonicalize query.*")) // error with the filter expression during query execution
             {
                 logger.error("invalid filter expression {}", context.getFilter(), me);
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", me);
                 return;
             }
-            else
-            {
+            else {
                 throw me;
             }
         }
@@ -87,20 +80,17 @@ public class GetCollectionHandler extends PipedHttpHandler
 
         // ***** return NOT_FOUND from here if collection is not existing 
         // (this is to avoid to check existance via the slow CollectionDAO.checkCollectionExists)
-        if (data.isEmpty() && (context.getCollectionProps() == null || context.getCollectionProps().keySet().isEmpty()))
-        {
+        if (data.isEmpty() && (context.getCollectionProps() == null || context.getCollectionProps().keySet().isEmpty())) {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
             return;
         }
-        
-        try
-        {
+
+        try {
             exchange.setResponseCode(HttpStatus.SC_OK);
             CollectionRepresentationFactory.sendHal(exchange, context, data, size);
             exchange.endExchange();
         }
-        catch (IllegalQueryParamenterException ex)
-        {
+        catch (IllegalQueryParamenterException ex) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
             return;
         }

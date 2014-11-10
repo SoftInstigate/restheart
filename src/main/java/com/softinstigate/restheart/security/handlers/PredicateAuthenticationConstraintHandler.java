@@ -21,27 +21,22 @@ import java.util.Set;
  *
  * @author uji
  */
-public class PredicateAuthenticationConstraintHandler extends AuthenticationConstraintHandler
-{
+public class PredicateAuthenticationConstraintHandler extends AuthenticationConstraintHandler {
     AccessManager am;
 
-    public PredicateAuthenticationConstraintHandler(HttpHandler next, AccessManager am)
-    {
+    public PredicateAuthenticationConstraintHandler(HttpHandler next, AccessManager am) {
         super(next);
         this.am = am;
     }
 
     @Override
-    protected boolean isAuthenticationRequired(final HttpServerExchange exchange)
-    {
+    protected boolean isAuthenticationRequired(final HttpServerExchange exchange) {
         Set<Predicate> ps = am.getAcl().get("$unauthenticated");
 
-        if (ps == null)
-        {
+        if (ps == null) {
             return true;
         }
-        else
-        {
+        else {
             return !ps.stream().anyMatch(p -> p.resolve(exchange));
         }
     }

@@ -23,18 +23,14 @@ import org.junit.Test;
  *
  * @author uji
  */
-public class DeleteDBIT extends AbstactIT
-{
-    
-    public DeleteDBIT()
-    {
+public class DeleteDBIT extends AbstactIT {
+
+    public DeleteDBIT() {
     }
-    
+
     @Test
-    public void testDeleteDB() throws Exception
-    {
-        try
-        {
+    public void testDeleteDB() throws Exception {
+        try {
             Response resp;
 
             // *** PUT tmpdb
@@ -44,18 +40,18 @@ public class DeleteDBIT extends AbstactIT
             // try to delete without etag
             resp = adminExecutor.execute(Request.Delete(dbTmpUri));
             check("check delete tmp doc without etag", resp, HttpStatus.SC_CONFLICT);
-            
+
             // try to delete with wrong etag
             resp = adminExecutor.execute(Request.Delete(dbTmpUri).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
             check("check delete tmp doc with wrong etag", resp, HttpStatus.SC_PRECONDITION_FAILED);
-            
+
             resp = adminExecutor.execute(Request.Get(dbTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             //check("getting etag of tmp doc", resp, HttpStatus.SC_OK);
-            
+
             JsonObject content = JsonObject.readFrom(resp.returnContent().asString());
-            
+
             String etag = content.get("_etag").asString();
-            
+
             // try to delete with correct etag
             resp = adminExecutor.execute(Request.Delete(dbTmpUri).addHeader(Headers.IF_MATCH_STRING, etag));
             check("check delete tmp doc with correct etag", resp, HttpStatus.SC_NO_CONTENT);
@@ -63,8 +59,7 @@ public class DeleteDBIT extends AbstactIT
             resp = adminExecutor.execute(Request.Get(dbTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check get deleted tmp doc", resp, HttpStatus.SC_NOT_FOUND);
         }
-        finally
-        {
+        finally {
             mongoClient.dropDatabase(dbTmpName);
         }
     }

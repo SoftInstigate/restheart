@@ -19,51 +19,45 @@ import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author uji
  */
-public class DeleteDocumentHandler extends PipedHttpHandler
-{
+public class DeleteDocumentHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of DeleteDocumentHandler
      */
-    public DeleteDocumentHandler()
-    {
+    public DeleteDocumentHandler() {
         super(null);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
-    {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
-        
-        if (etag == null)
-        {
+
+        if (etag == null) {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
             return;
         }
-        
+
         int SC = DocumentDAO.deleteDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), etag);
-        
+
         // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
-        {
-            if (SC == HttpStatus.SC_NO_CONTENT)
+        if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
+            if (SC == HttpStatus.SC_NO_CONTENT) {
                 exchange.setResponseCode(HttpStatus.SC_OK);
-            else
+            }
+            else {
                 exchange.setResponseCode(SC);
-            
+            }
+
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
         }
-        else
-        {
+        else {
             exchange.setResponseCode(SC);
         }
-        
+
         exchange.endExchange();
     }
 }

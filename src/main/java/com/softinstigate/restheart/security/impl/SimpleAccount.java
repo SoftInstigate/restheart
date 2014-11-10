@@ -19,43 +19,40 @@ import java.util.Set;
  *
  * @author uji
  */
-public class SimpleAccount implements Account
-{
+public class SimpleAccount implements Account {
     private Principal principal;
     private PasswordCredential credential;
     private Set<String> roles;
-    
-    public SimpleAccount(String name, char[] password, Set<String> roles)
-    {
-        if (name == null)
+
+    public SimpleAccount(String name, char[] password, Set<String> roles) {
+        if (name == null) {
             throw new IllegalArgumentException("argument principal cannot be null");
-        
-        if (password == null)
+        }
+
+        if (password == null) {
             throw new IllegalArgumentException("argument password cannot be null");
-        
-        if (roles == null || roles.isEmpty())
+        }
+
+        if (roles == null || roles.isEmpty()) {
             throw new IllegalArgumentException("argument roles cannot be null nor empty");
-        
-        
+        }
+
         this.principal = new SimplePrincipal(name);
         this.credential = new PasswordCredential(password);
         this.roles = roles;
     }
 
     @Override
-    public Principal getPrincipal()
-    {
+    public Principal getPrincipal() {
         return principal;
     }
-    
-    public PasswordCredential getCredentials()
-    {
+
+    public PasswordCredential getCredentials() {
         return credential;
     }
 
     @Override
-    public Set<String> getRoles()
-    {
+    public Set<String> getRoles() {
         return roles;
     }
 }

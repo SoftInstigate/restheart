@@ -16,7 +16,6 @@ import io.undertow.security.idm.IdentityManager;
  *
  * @author uji
  */
-public abstract class RestheartIdentityManager  implements IdentityManager
-{
+public abstract class RestheartIdentityManager implements IdentityManager {
     public static final String RESTHEART_REALM = "RestHeart Realm";
 }

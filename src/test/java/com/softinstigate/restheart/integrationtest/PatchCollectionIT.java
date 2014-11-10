@@ -24,18 +24,14 @@ import org.junit.Test;
  *
  * @author uji
  */
-public class PatchCollectionIT extends AbstactIT
-{
-    
-    public PatchCollectionIT()
-    {
+public class PatchCollectionIT extends AbstactIT {
+
+    public PatchCollectionIT() {
     }
-    
+
     @Test
-    public void testPatchCollection() throws Exception
-    {
-        try
-        {
+    public void testPatchCollection() throws Exception {
+        try {
             Response resp;
 
             // *** PUT tmpdb
@@ -49,40 +45,39 @@ public class PatchCollectionIT extends AbstactIT
             // try to patch without body
             resp = adminExecutor.execute(Request.Patch(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check patch tmp doc without etag", resp, HttpStatus.SC_NOT_ACCEPTABLE);
-            
+
             // try to patch without etag
             resp = adminExecutor.execute(Request.Patch(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check patch tmp doc without etag", resp, HttpStatus.SC_CONFLICT);
-            
+
             // try to patch with wrong etag
             resp = adminExecutor.execute(Request.Patch(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
             check("check patch tmp doc with wrong etag", resp, HttpStatus.SC_PRECONDITION_FAILED);
-            
+
             resp = adminExecutor.execute(Request.Get(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-            
+
             JsonObject content = JsonObject.readFrom(resp.returnContent().asString());
-            
+
             String etag = content.get("_etag").asString();
-            
+
             // try to patch with correct etag
             resp = adminExecutor.execute(Request.Patch(collectionTmpUri).bodyString("{b:2}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
             check("check patch tmp doc with correct etag", resp, HttpStatus.SC_OK);
 
             resp = adminExecutor.execute(Request.Get(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-            
+
             content = JsonObject.readFrom(resp.returnContent().asString());
             Assert.assertNotNull("check patched content", content.get("a"));
             Assert.assertNotNull("check patched content", content.get("b"));
-            Assert.assertTrue("check patched content", content.get("a").asInt() == 1 && content.get("b").asInt() == 2 );
+            Assert.assertTrue("check patched content", content.get("a").asInt() == 1 && content.get("b").asInt() == 2);
             etag = content.get("_etag").asString();
-            
+
             // try to patch reserved field name
             resp = adminExecutor.execute(Request.Patch(collectionTmpUri).bodyString("{_embedded:\"a\"}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
             content = JsonObject.readFrom(resp.returnContent().asString());
             Assert.assertNotNull("check patched content", content.get("_embedded").asObject().get("rh:warnings").asArray());
         }
-        finally
-        {
+        finally {
             mongoClient.dropDatabase(dbTmpName);
         }
     }

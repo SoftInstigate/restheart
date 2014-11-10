@@ -23,18 +23,14 @@ import org.junit.Test;
  *
  * @author uji
  */
-public class DeleteDocumentIT extends AbstactIT
-{
+public class DeleteDocumentIT extends AbstactIT {
 
-    public DeleteDocumentIT()
-    {
+    public DeleteDocumentIT() {
     }
 
     @Test
-    public void testDeleteDocument() throws Exception
-    {
-        try
-        {
+    public void testDeleteDocument() throws Exception {
+        try {
             Response resp;
 
             // *** PUT tmpdb
@@ -52,18 +48,18 @@ public class DeleteDocumentIT extends AbstactIT
             // try to delete without etag
             resp = adminExecutor.execute(Request.Delete(documentTmpUri));
             check("check delete tmp doc without etag", resp, HttpStatus.SC_CONFLICT);
-            
+
             // try to delete with wrong etag
             resp = adminExecutor.execute(Request.Delete(documentTmpUri).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
             check("check delete tmp doc with wrong etag", resp, HttpStatus.SC_PRECONDITION_FAILED);
-            
+
             resp = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             //check("getting etag of tmp doc", resp, HttpStatus.SC_OK);
-            
+
             JsonObject content = JsonObject.readFrom(resp.returnContent().asString());
-            
+
             String etag = content.get("_etag").asString();
-            
+
             // try to delete with correct etag
             resp = adminExecutor.execute(Request.Delete(documentTmpUri).addHeader(Headers.IF_MATCH_STRING, etag));
             check("check delete tmp doc with correct etag", resp, HttpStatus.SC_NO_CONTENT);
@@ -71,8 +67,7 @@ public class DeleteDocumentIT extends AbstactIT
             resp = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check get deleted tmp doc", resp, HttpStatus.SC_NOT_FOUND);
         }
-        finally
-        {
+        finally {
             mongoClient.dropDatabase(dbTmpName);
         }
     }

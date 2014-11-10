@@ -10,18 +10,16 @@
  */
 package com.softinstigate.restheart.unittest;
 
-import org.junit.Test;
-import static org.junit.Assert.*;
+//import org.junit.Test;
+//import static org.junit.Assert.*;
 
 /**
  *
  * @author uji
  */
-public class RepresentationTest
-{
-    
-    public RepresentationTest()
-    {
+public class RepresentationTest {
+
+    public RepresentationTest() {
     }
 
     // TODO add test methods here.

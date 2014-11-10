@@ -27,75 +27,64 @@ import org.bson.types.ObjectId;
  *
  * @author uji
  */
-public class GetDocumentHandler extends PipedHttpHandler
-{
+public class GetDocumentHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of GetDocumentHandler
      */
-    public GetDocumentHandler()
-    {
+    public GetDocumentHandler() {
         super(null);
     }
 
-
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
-    {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         ObjectId oid;
-        String   sid;
-        
-        if (ObjectId.isValid(context.getDocumentId()))
-        {
+        String sid;
+
+        if (ObjectId.isValid(context.getDocumentId())) {
             sid = null;
             oid = new ObjectId(context.getDocumentId());
         }
-        else
-        {
+        else {
             // the id is not an object id
             sid = context.getDocumentId();
             oid = null;
         }
-        
+
         BasicDBObject query;
-        
-        if (oid != null)
-        {
+
+        if (oid != null) {
             query = new BasicDBObject("_id", oid);
         }
-        else
-        {
+        else {
             query = new BasicDBObject("_id", sid);
         }
-        
+
         DBObject document = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName()).findOne(query);
 
-        if (document == null)
-        {
+        if (document == null) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "document does not exist");
             return;
         }
-        
+
         Object etag = document.get("_etag");
-        
-        if (etag != null && ObjectId.isValid("" + etag))
-        {
+
+        if (etag != null && ObjectId.isValid("" + etag)) {
             ObjectId _etag = new ObjectId("" + etag);
-            
+
             document.put("_lastupdated_on", Instant.ofEpochSecond(_etag.getTimestamp()).toString());
-            
+
             // in case the request contains the IF_NONE_MATCH header with the current etag value, just return 304 NOT_MODIFIED code
-            if (false && RequestHelper.checkReadEtag(exchange, etag.toString()))
-            {
+            if (false && RequestHelper.checkReadEtag(exchange, etag.toString())) {
                 ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_MODIFIED);
                 return;
             }
         }
-        
+
         String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
 
         ResponseHelper.injectEtagHeader(exchange, document);
         exchange.setResponseCode(HttpStatus.SC_OK);
-        
+
         DocumentRepresentationFactory.sendDocument(requestPath, exchange, context, document);
         exchange.endExchange();
     }

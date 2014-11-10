@@ -33,26 +33,21 @@ import org.junit.Test;
  *
  * @author uji
  */
-public class ContentEncodingIT extends AbstactIT
-{
+public class ContentEncodingIT extends AbstactIT {
     protected static Executor notDecompressingExecutor = null;
-    
-    public ContentEncodingIT()
-    {
+
+    public ContentEncodingIT() {
     }
-    
+
     @Before
     @Override
-    public void setUp() throws Exception
-    {
+    public void setUp() throws Exception {
         super.setUp();
         notDecompressingExecutor = Executor.newInstance(HttpClients.custom().disableContentCompression().build()).authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "admin", "changeit");
     }
-            
 
     @Test
-    public void testGzipAcceptEncoding() throws Exception
-    {
+    public void testGzipAcceptEncoding() throws Exception {
         Response resp = notDecompressingExecutor.execute(Request.Get(rootUri).addHeader(Headers.ACCEPT_ENCODING_STRING, Headers.GZIP.toString()));
 
         HttpResponse httpResp = resp.returnResponse();
@@ -71,17 +66,14 @@ public class ContentEncodingIT extends AbstactIT
 
         Assert.assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
 
-        try
-        {
+        try {
             GZIPInputStream gzipis = new GZIPInputStream(new ByteArrayInputStream(content.getBytes(StandardCharsets.ISO_8859_1)));
 
-            while (gzipis.read() > 0)
-            {
+            while (gzipis.read() > 0) {
 
             }
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             Assert.fail("check decompressing content");
         }
     }

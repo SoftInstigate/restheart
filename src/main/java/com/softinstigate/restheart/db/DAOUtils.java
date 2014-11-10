@@ -23,28 +23,23 @@ import java.util.TreeMap;
  *
  * @author uji
  */
-public class DAOUtils
-{
+public class DAOUtils {
     /**
      * @param rows list of DBObject rows as returned by getDataFromCursor()
      * @return
      */
-    public static List<Map<String, Object>> getDataFromRows(List<DBObject> rows)
-    {
-        if (rows == null)
-        {
+    public static List<Map<String, Object>> getDataFromRows(List<DBObject> rows) {
+        if (rows == null) {
             return null;
         }
 
         List<Map<String, Object>> data = new ArrayList<>();
 
-        rows.stream().map((row) ->
-        {
+        rows.stream().map((row) -> {
             TreeMap<String, Object> properties = getDataFromRow(row);
 
             return properties;
-        }).forEach((item) ->
-        {
+        }).forEach((item) -> {
             data.add(item);
         });
 
@@ -56,15 +51,12 @@ public class DAOUtils
      * @param fieldsToFilter list of field names to filter
      * @return
      */
-    public static TreeMap<String, Object> getDataFromRow(DBObject row, String... fieldsToFilter)
-    {
-        if (row == null)
-        {
+    public static TreeMap<String, Object> getDataFromRow(DBObject row, String... fieldsToFilter) {
+        if (row == null) {
             return null;
         }
 
-        if (row instanceof BasicDBList)
-        {
+        if (row instanceof BasicDBList) {
             throw new IllegalArgumentException("cannot convert an array to a map");
         }
 
@@ -72,10 +64,8 @@ public class DAOUtils
 
         TreeMap<String, Object> properties = new TreeMap<>();
 
-        row.keySet().stream().forEach((key) ->
-        {
-            if (!_fieldsToFilter.contains(key))
-            {
+        row.keySet().stream().forEach((key) -> {
+            if (!_fieldsToFilter.contains(key)) {
                 properties.put(key, getElement(row.get(key)));
             }
         });
@@ -88,41 +78,34 @@ public class DAOUtils
      * @param fieldsToFilter list of field names to filter
      * @return
      */
-    private static Object getElement(Object element)
-    {
-        if (element == null)
-        {
+    private static Object getElement(Object element) {
+        if (element == null) {
             return null;
         }
-        
-        if (element instanceof BasicDBList)
-        {
+
+        if (element instanceof BasicDBList) {
             ArrayList<Object> ret = new ArrayList<>();
-            
+
             BasicDBList dblist = (BasicDBList) element;
-            
-            dblist.stream().forEach((subel) ->
-            {
+
+            dblist.stream().forEach((subel) -> {
                 ret.add(getElement(subel));
             });
-            
+
             return ret;
         }
-        else if (element instanceof BasicDBObject)
-        {
+        else if (element instanceof BasicDBObject) {
             TreeMap<String, Object> ret = new TreeMap<>();
-            
+
             BasicDBObject el = (BasicDBObject) element;
-            
-            el.keySet().stream().forEach((key) ->
-            {
+
+            el.keySet().stream().forEach((key) -> {
                 ret.put(key, el.get(key));
             });
-            
+
             return ret;
         }
-        else
-        {
+        else {
             return element;
         }
     }

@@ -20,53 +20,46 @@ import io.undertow.server.HttpServerExchange;
 
 /**
  *
- * this handler injects the db properties in the RequestContext
- * this handler is also responsible of sending NOT_FOUND in case of requests involving not existing dbs (that are not PUT)
+ * this handler injects the db properties in the RequestContext this handler is
+ * also responsible of sending NOT_FOUND in case of requests involving not
+ * existing dbs (that are not PUT)
+ *
  * @author uji
  */
-public class DbPropsInjectorHandler extends PipedHttpHandler
-{
+public class DbPropsInjectorHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of MetadataInjecterHandler
      *
      * @param next
      */
-    public DbPropsInjectorHandler(PipedHttpHandler next)
-    {
+    public DbPropsInjectorHandler(PipedHttpHandler next) {
         super(next);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
-    {
-        if (context.getDBName() != null)
-        {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (context.getDBName() != null) {
             DBObject dbProps;
 
-            if (!LocalCachesSingleton.isEnabled())
-            {
+            if (!LocalCachesSingleton.isEnabled()) {
                 dbProps = DBDAO.getDbProps(context.getDBName());
 
-                if (dbProps != null)
-                {
+                if (dbProps != null) {
                     dbProps.put("_db-props-cached", false);
                 }
                 else if (!(context.getType() == RequestContext.TYPE.DB && context.getMethod() == RequestContext.METHOD.PUT)
-                        && (context.getType() != RequestContext.TYPE.ROOT))
-                {
+                        && context.getType() != RequestContext.TYPE.ROOT) {
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "db does not exist");
                     return;
                 }
             }
-            else
-            {
+            else {
                 dbProps = LocalCachesSingleton.getInstance().getDBProps(context.getDBName());
             }
 
-            if (dbProps == null 
-                    && (!(context.getType() == RequestContext.TYPE.DB && context.getMethod() == RequestContext.METHOD.PUT)
-                    && (context.getType() != RequestContext.TYPE.ROOT)))
-            {
+            if (dbProps == null
+                    && !(context.getType() == RequestContext.TYPE.DB && context.getMethod() == RequestContext.METHOD.PUT)
+                    && context.getType() != RequestContext.TYPE.ROOT) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "db does not exis");
                 return;
             }

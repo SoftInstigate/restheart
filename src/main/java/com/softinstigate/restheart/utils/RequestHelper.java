@@ -19,33 +19,33 @@ import org.bson.types.ObjectId;
  *
  * @author uji
  */
-public class RequestHelper
-{
-    public static boolean checkReadEtag(HttpServerExchange exchange, String etag)
-    {
-        if (etag == null)
+public class RequestHelper {
+    public static boolean checkReadEtag(HttpServerExchange exchange, String etag) {
+        if (etag == null) {
             return false;
-        
+        }
+
         HeaderValues vs = exchange.getRequestHeaders().get(Headers.IF_NONE_MATCH);
-        
-        return (vs == null || vs.getFirst() == null) ? false : vs.getFirst().equals(etag);
+
+        return vs == null || vs.getFirst() == null ? false : vs.getFirst().equals(etag);
     }
-    
-    public static ObjectId getWriteEtag(HttpServerExchange exchange)
-    {
+
+    public static ObjectId getWriteEtag(HttpServerExchange exchange) {
         HeaderValues vs = exchange.getRequestHeaders().get(Headers.IF_MATCH);
-        
-        return (vs == null || vs.getFirst() == null) ? null : getEtagAsObjectId(vs.getFirst());
+
+        return vs == null || vs.getFirst() == null ? null : getEtagAsObjectId(vs.getFirst());
     }
-    
-    public static ObjectId getEtagAsObjectId(Object etag)
-    {
-        if (etag == null)
+
+    public static ObjectId getEtagAsObjectId(Object etag) {
+        if (etag == null) {
             return null;
-        
-        if (ObjectId.isValid("" + etag))
+        }
+
+        if (ObjectId.isValid("" + etag)) {
             return new ObjectId("" + etag);
-        else
+        }
+        else {
             return new ObjectId();
+        }
     }
 }

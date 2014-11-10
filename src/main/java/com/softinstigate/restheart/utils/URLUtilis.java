@@ -18,55 +18,43 @@ import java.util.Deque;
  *
  * @author uji
  */
-public class URLUtilis
-{
-    static public String removeTrailingSlashes(String s)
-    {
-        if (s == null || s.length() < 2)
-        {
+public class URLUtilis {
+    static public String removeTrailingSlashes(String s) {
+        if (s == null || s.length() < 2) {
             return s;
         }
 
-        if (s.trim().charAt(s.length() - 1) == '/')
-        {
+        if (s.trim().charAt(s.length() - 1) == '/') {
             return removeTrailingSlashes(s.substring(0, s.length() - 1));
         }
-        else
-        {
+        else {
             return s.trim();
         }
     }
 
-    static public String getPerentPath(String path)
-    {
-        if ((path == null) || path.equals("") || path.equals("/"))
-        {
+    static public String getPerentPath(String path) {
+        if (path == null || path.equals("") || path.equals("/")) {
             return path;
         }
 
         int lastSlashPos = path.lastIndexOf('/');
 
-        if (lastSlashPos > 0)
-        {
+        if (lastSlashPos > 0) {
             return path.substring(0, lastSlashPos); //strip off the slash
         }
-        else if (lastSlashPos == 0)
-        {
+        else if (lastSlashPos == 0) {
             return "/";
         }
-        else
-        {
+        else {
             return ""; //we expect people to add  + "/somedir on their own
         }
     }
 
-    static public String getPrefixUrl(HttpServerExchange exchange)
-    {
+    static public String getPrefixUrl(HttpServerExchange exchange) {
         return exchange.getRequestURL().replaceAll(exchange.getRelativePath(), "");
     }
 
-    static public String getUriWithDocId(RequestContext context, String dbName, String collName, String documentId)
-    {
+    static public String getUriWithDocId(RequestContext context, String dbName, String collName, String documentId) {
         StringBuilder sb = new StringBuilder();
 
         sb.append("/").append(dbName).append("/").append(collName).append("/").append(documentId);
@@ -74,8 +62,7 @@ public class URLUtilis
         return context.mapUri(sb.toString().replaceAll(" ", ""));
     }
 
-    static public String getUriWithFilterMany(RequestContext context, String dbName, String collName, String referenceField, String ids)
-    {
+    static public String getUriWithFilterMany(RequestContext context, String dbName, String collName, String referenceField, String ids) {
         StringBuilder sb = new StringBuilder();
 
         ///db/coll/?filter={"ref":{"$in":{"a","b","c"}}
@@ -85,8 +72,7 @@ public class URLUtilis
         return context.mapUri(sb.toString().replaceAll(" ", ""));
     }
 
-    static public String getUriWithFilterOne(RequestContext context, String dbName, String collName, String referenceField, String ids)
-    {
+    static public String getUriWithFilterOne(RequestContext context, String dbName, String collName, String referenceField, String ids) {
         StringBuilder sb = new StringBuilder();
 
         ///db/coll/?filter={"ref":{"$in":{"a","b","c"}}
@@ -96,8 +82,7 @@ public class URLUtilis
         return context.mapUri(sb.toString().replaceAll(" ", ""));
     }
 
-    static public String getUriWithFilterManyInverse(RequestContext context, String dbName, String collName, String referenceField, String ids)
-    {
+    static public String getUriWithFilterManyInverse(RequestContext context, String dbName, String collName, String referenceField, String ids) {
         StringBuilder sb = new StringBuilder();
 
         ///db/coll/?filter={'referenceField':{"$elemMatch":{'ids'}}}
@@ -107,28 +92,22 @@ public class URLUtilis
         return context.mapUri(sb.toString().replaceAll(" ", ""));
     }
 
-    public static String getQueryStringRemovingParams(HttpServerExchange exchange, String... paramsToRemove)
-    {
+    public static String getQueryStringRemovingParams(HttpServerExchange exchange, String... paramsToRemove) {
         String ret = exchange.getQueryString();
 
-        if (ret == null || ret.isEmpty())
-        {
+        if (ret == null || ret.isEmpty()) {
             return ret;
         }
 
-        if (paramsToRemove == null)
-        {
+        if (paramsToRemove == null) {
             return ret;
         }
 
-        for (String key : paramsToRemove)
-        {
+        for (String key : paramsToRemove) {
             Deque<String> values = exchange.getQueryParameters().get(key);
 
-            if (values != null)
-            {
-                for (String value : values)
-                {
+            if (values != null) {
+                for (String value : values) {
                     ret = ret.replaceAll(key + "=" + value + "&", "");
                     ret = ret.replaceAll(key + "=" + value + "$", "");
                 }

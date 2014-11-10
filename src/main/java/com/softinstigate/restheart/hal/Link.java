@@ -17,45 +17,40 @@ import com.mongodb.DBObject;
  *
  * @author uji
  */
-public class Link
-{
+public class Link {
     private final BasicDBObject dbObject = new BasicDBObject();
-    
-    public Link(String ref, String href)
-    {
-        if (ref == null || href == null || ref.isEmpty() || href.isEmpty())
+
+    public Link(String ref, String href) {
+        if (ref == null || href == null || ref.isEmpty() || href.isEmpty()) {
             throw new IllegalArgumentException("constructor args cannot be null or empty");
-        
+        }
+
         dbObject.put(ref, new BasicDBObject("href", href));
     }
-    
-    public Link(String ref, String href, boolean templated)
-    {
+
+    public Link(String ref, String href, boolean templated) {
         this(ref, href);
-        
-        if (templated)
-            ((BasicDBObject)dbObject.get(ref)).put("templated", true);
+
+        if (templated) {
+            ((BasicDBObject) dbObject.get(ref)).put("templated", true);
+        }
     }
-    
-    public Link(String name, String ref, String href, boolean templated)
-    {
+
+    public Link(String name, String ref, String href, boolean templated) {
         this(ref, href, templated);
-        
-        ((BasicDBObject)dbObject.get(ref)).put("name", name);
+
+        ((BasicDBObject) dbObject.get(ref)).put("name", name);
     }
-    
-    public String getRef()
-    {
+
+    public String getRef() {
         return (String) dbObject.keySet().toArray()[0];
     }
-    
-    public String getHref()
-    {
-        return (String) ((DBObject)dbObject.get(getRef())).get("href");
+
+    public String getHref() {
+        return (String) ((DBObject) dbObject.get(getRef())).get("href");
     }
-    
-    BasicDBObject getDBObject()
-    {
+
+    BasicDBObject getDBObject() {
         return dbObject;
     }
 }

@@ -24,18 +24,14 @@ import org.junit.Test;
  *
  * @author uji
  */
-public class PutDocumentIT extends AbstactIT
-{
-    
-    public PutDocumentIT()
-    {
+public class PutDocumentIT extends AbstactIT {
+
+    public PutDocumentIT() {
     }
-    
+
     @Test
-    public void testPutDocument() throws Exception
-    {
-        try
-        {
+    public void testPutDocument() throws Exception {
+        try {
             Response resp;
 
             // *** PUT tmpdb
@@ -53,30 +49,29 @@ public class PutDocumentIT extends AbstactIT
             // try to put without etag
             resp = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check put tmp doc without etag", resp, HttpStatus.SC_CONFLICT);
-            
+
             // try to put with wrong etag
             resp = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
             check("check put tmp doc with wrong etag", resp, HttpStatus.SC_PRECONDITION_FAILED);
-            
+
             resp = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-            
+
             JsonObject content = JsonObject.readFrom(resp.returnContent().asString());
-            
+
             String etag = content.get("_etag").asString();
-            
+
             // try to put with correct etag
             resp = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{b:2}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
             check("check put tmp doc with correct etag", resp, HttpStatus.SC_OK);
 
             resp = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-            
+
             content = JsonObject.readFrom(resp.returnContent().asString());
             Assert.assertNull("check put content", content.get("a"));
             Assert.assertNotNull("check put content", content.get("b"));
-            Assert.assertTrue("check put content", content.get("b").asInt() == 2 );
+            Assert.assertTrue("check put content", content.get("b").asInt() == 2);
         }
-        finally
-        {
+        finally {
             mongoClient.dropDatabase(dbTmpName);
         }
     }

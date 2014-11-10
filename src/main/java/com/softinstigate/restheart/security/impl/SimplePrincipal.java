@@ -16,21 +16,19 @@ import java.security.Principal;
  *
  * @author uji
  */
-public class SimplePrincipal implements Principal
-{
+public class SimplePrincipal implements Principal {
     private String name;
-    
-    public SimplePrincipal(String name) 
-    {
-        if (name == null)
+
+    public SimplePrincipal(String name) {
+        if (name == null) {
             throw new IllegalArgumentException("argument name cannot be null");
-        
+        }
+
         this.name = name;
     }
-    
+
     @Override
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 }

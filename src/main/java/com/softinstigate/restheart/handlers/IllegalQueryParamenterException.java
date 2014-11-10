@@ -14,15 +14,12 @@ package com.softinstigate.restheart.handlers;
  *
  * @author uji
  */
-public class IllegalQueryParamenterException extends Exception
-{
-    public IllegalQueryParamenterException(String message)
-    {
+public class IllegalQueryParamenterException extends Exception {
+    public IllegalQueryParamenterException(String message) {
         super(message);
     }
-    
-    public IllegalQueryParamenterException(String message, Throwable cause)
-    {
+
+    public IllegalQueryParamenterException(String message, Throwable cause) {
         super(message, cause);
     }
 }

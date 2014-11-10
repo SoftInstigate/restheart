@@ -20,23 +20,20 @@ import org.xnio.channels.StreamSourceChannel;
  *
  * @author uji
  */
-public class ChannelReader
-{
+public class ChannelReader {
     final static Charset charset = Charset.forName("utf-8");
 
-    public static String read(StreamSourceChannel channel) throws IOException
-    {
+    public static String read(StreamSourceChannel channel) throws IOException {
         StringBuilder content = new StringBuilder();
 
         ByteBuffer buf = ByteBuffer.allocate(128);
 
-        while (Channels.readBlocking(channel, buf) != -1)
-        {
+        while (Channels.readBlocking(channel, buf) != -1) {
             buf.flip();
             content.append(charset.decode(buf));
             buf.clear();
         }
-        
+
         return content.toString();
     }
 }

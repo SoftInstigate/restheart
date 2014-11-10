@@ -25,80 +25,69 @@ import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author uji
  */
-public class PutCollectionHandler extends PipedHttpHandler
-{
-    private static final Logger logger = LoggerFactory.getLogger(PutCollectionHandler.class);
-
+public class PutCollectionHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of PutCollectionHandler
      */
-    public PutCollectionHandler()
-    {
+    public PutCollectionHandler() {
         super(null);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
-    {
-        if (context.getCollectionName().isEmpty() || context.getCollectionName().startsWith("_"))
-        {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (context.getCollectionName().isEmpty() || context.getCollectionName().startsWith("_")) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, collection name cannot be empty or start with _");
             return;
         }
-        
+
         DBObject content = context.getContent();
-        
-        if (content == null)
+
+        if (content == null) {
             content = new BasicDBObject();
-        
+        }
+
         // cannot PUT an array
-        if (content instanceof BasicDBList)
-        {
+        if (content instanceof BasicDBList) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
             return;
         }
-        
-        if (content.containsField(Relationship.RELATIONSHIPS_ELEMENT_NAME))
-        {
-            try
-            {
+
+        if (content.containsField(Relationship.RELATIONSHIPS_ELEMENT_NAME)) {
+            try {
                 Relationship.getFromJson(content);
             }
-            catch(InvalidMetadataException ex)
-            {
+            catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong relationships definition. " + ex.getMessage(), ex);
                 return;
             }
         }
-        
+
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
-        
+
         boolean updating = context.getCollectionProps() != null;
-        
+
         int SC = CollectionDAO.upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, updating, false);
-        
+
         // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
-        {
-            if (SC == HttpStatus.SC_NO_CONTENT)
+        if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
+            if (SC == HttpStatus.SC_NO_CONTENT) {
                 exchange.setResponseCode(HttpStatus.SC_OK);
-            else
+            }
+            else {
                 exchange.setResponseCode(SC);
-            
+            }
+
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
         }
-        else
-        {
+        else {
             exchange.setResponseCode(SC);
         }
-        
+
         exchange.endExchange();
         LocalCachesSingleton.getInstance().invalidateCollection(context.getDBName(), context.getCollectionName());
     }

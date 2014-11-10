@@ -20,26 +20,22 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.rolling.FixedWindowRollingPolicy;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
-import java.io.File;
 import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author uji
  */
-public class LoggingInitializer
-{
-    public static void setLogLevel(Level level)
-    {
-        LoggerContext loggerContext = (LoggerContext) org.slf4j.LoggerFactory.getILoggerFactory();
+public class LoggingInitializer {
+    public static void setLogLevel(Level level) {
+        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
         Logger logger = loggerContext.getLogger("com.softinstigate");
 
         logger.setLevel(level);
     }
-    
-    public static void stopConsoleLogging()
-    {
-        LoggerContext loggerContext = (LoggerContext) org.slf4j.LoggerFactory.getILoggerFactory();
+
+    public static void stopConsoleLogging() {
+        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
         Logger rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
 
         Appender<ILoggingEvent> appender = rootLogger.getAppender("STDOUT");
@@ -48,12 +44,11 @@ public class LoggingInitializer
         //rootLogger.detachAppender("STDOUT");
     }
 
-    public static void startFileLogging(String logFilePath)
-    {
+    public static void startFileLogging(String logFilePath) {
         Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
         LoggerContext loggerContext = logger.getLoggerContext();
-        
+
         RollingFileAppender<ILoggingEvent> rfAppender = new RollingFileAppender<>();
         rfAppender.setContext(loggerContext);
         rfAppender.setFile(logFilePath);
@@ -70,21 +65,14 @@ public class LoggingInitializer
 
         PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setContext(loggerContext);
-        encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"); 
+        encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n");
         encoder.start();
 
         rfAppender.setEncoder(encoder);
         rfAppender.setRollingPolicy(fwRollingPolicy);
         rfAppender.setTriggeringPolicy(triggeringPolicy);
         rfAppender.start();
-        
+
         logger.addAppender(rfAppender);
-    }
-    
-    private static String getFileNameFromPath(String filePath)
-    {
-        String[] tokens = filePath.split(File.separator);
-        
-        return tokens[tokens.length -1];
     }
 }

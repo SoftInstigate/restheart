@@ -17,20 +17,17 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author uji
  */
-public abstract class PipedHttpHandler implements HttpHandler
-{
+public abstract class PipedHttpHandler implements HttpHandler {
     protected final PipedHttpHandler next;
 
-    public PipedHttpHandler(PipedHttpHandler next)
-    {
+    public PipedHttpHandler(PipedHttpHandler next) {
         this.next = next;
     }
 
     public abstract void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception;
-    
+
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception
-    {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         handleRequest(exchange, null);
     }
 }

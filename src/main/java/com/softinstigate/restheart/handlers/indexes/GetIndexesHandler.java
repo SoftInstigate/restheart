@@ -22,21 +22,18 @@ import java.util.List;
  *
  * @author uji
  */
-public class GetIndexesHandler extends PipedHttpHandler
-{
+public class GetIndexesHandler extends PipedHttpHandler {
     /**
-     * Creates a new instance of GetCollectionHandler
+     * Creates a new instance of GetIndexesHandler
      */
-    public GetIndexesHandler()
-    {
+    public GetIndexesHandler() {
         super(null);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
-    {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         List<DBObject> indexes = IndexDAO.getCollectionIndexes(context.getDBName(), context.getCollectionName());
-        
+
         exchange.setResponseCode(HttpStatus.SC_OK);
         IndexesRepresentationFactory.sendHal(exchange, context, indexes, indexes.size());
         exchange.endExchange();

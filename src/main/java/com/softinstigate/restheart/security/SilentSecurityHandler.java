@@ -34,21 +34,16 @@ import java.util.List;
  *
  * @author uji
  */
-public class SilentSecurityHandler extends PipedWrappingHandler
-{
-    public SilentSecurityHandler(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager)
-    {
+public class SilentSecurityHandler extends PipedWrappingHandler {
+    public SilentSecurityHandler(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager) {
         super(next, getSecurityHandlerChain(identityManager, accessManager));
     }
 
-    private static HttpHandler getSecurityHandlerChain(final IdentityManager identityManager, final AccessManager accessManager)
-    {
-        if (identityManager != null)
-        {
+    private static HttpHandler getSecurityHandlerChain(final IdentityManager identityManager, final AccessManager accessManager) {
+        if (identityManager != null) {
             HttpHandler handler = null;
 
-            if (accessManager != null)
-            {
+            if (accessManager != null) {
                 handler = new AccessManagerHandler(accessManager, null);
             }
 
@@ -60,8 +55,7 @@ public class SilentSecurityHandler extends PipedWrappingHandler
 
             return handler;
         }
-        else
-        {
+        else {
             return null;
         }
     }

@@ -17,12 +17,10 @@ import java.util.Map;
  *
  * @author uji
  */
-public abstract class ApplicationLogicHandler extends PipedHttpHandler
-{
-    Map<String, Object> args = null;
-    
-    public ApplicationLogicHandler(PipedHttpHandler next, Map<String, Object> args)
-    {
+public abstract class ApplicationLogicHandler extends PipedHttpHandler {
+    protected final Map<String, Object> args;
+
+    public ApplicationLogicHandler(PipedHttpHandler next, Map<String, Object> args) {
         super(next);
         this.args = args;
     }

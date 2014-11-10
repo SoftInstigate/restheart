@@ -33,101 +33,88 @@ import org.slf4j.Logger;
  *
  * @author uji
  */
-public class DocumentRepresentationFactory
-{
+public class DocumentRepresentationFactory {
     private static final Logger logger = LoggerFactory.getLogger(DocumentRepresentationFactory.class);
 
     public static Representation getDocument(String href, HttpServerExchange exchange, RequestContext context, DBObject data)
-            throws IllegalQueryParamenterException
-    {
+            throws IllegalQueryParamenterException {
         Representation rep = new Representation(href);
-        
+
         rep.addProperty("_type", context.getType().name());
 
         // document properties
-        data.keySet().stream().forEach((key) ->
-        {
+        data.keySet().stream().forEach((key) -> {
             Object value = data.get(key);
 
-            if (value instanceof ObjectId)
-            {
+            if (value instanceof ObjectId) {
                 value = value.toString();
             }
 
             rep.addProperty(key, value);
         });
-        
+
         // document links
         TreeMap<String, String> links;
 
         links = getRelationshipsLinks(context, data);
 
-        if (links != null)
-        {
-            links.keySet().stream().forEach((k) ->
-            {
+        if (links != null) {
+            links.keySet().stream().forEach((k) -> {
                 rep.addLink(new Link(k, links.get(k)));
             });
         }
-        
+
         // link templates and curies
         String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
         if (context.isParentAccessible()) // this can happen due to mongo-mounts mapped URL
+        {
             rep.addLink(new Link("rh:coll", URLUtilis.getPerentPath(requestPath)));
-        rep.addLink(new Link("rh", "curies", Configuration.DOC_Path + "/#api/doc/{rel}", true), true);
+        }
+        rep.addLink(new Link("rh", "curies", Configuration.DOC_URL + "/#api/doc/{rel}", true), true);
 
         ResponseHelper.injectWarnings(rep, exchange, context);
-        
+
         return rep;
     }
-    
+
     public static void sendDocument(String href, HttpServerExchange exchange, RequestContext context, DBObject data)
-            throws IllegalQueryParamenterException, URISyntaxException
-    {
+            throws IllegalQueryParamenterException, URISyntaxException {
         Representation rep = getDocument(href, exchange, context, data);
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
     }
 
-    private static TreeMap<String, String> getRelationshipsLinks(RequestContext context, DBObject data)
-    {
+    private static TreeMap<String, String> getRelationshipsLinks(RequestContext context, DBObject data) {
         TreeMap<String, String> links = new TreeMap<>();
 
         List<Relationship> rels = null;
 
-        try
-        {
+        try {
             rels = Relationship.getFromJson((DBObject) context.getCollectionProps());
         }
-        catch (InvalidMetadataException ex)
-        {
-            context.addWarning("collection " + context.getDBName() + "/" +context.getCollectionName() + " has invalid relationships definition");
+        catch (InvalidMetadataException ex) {
+            context.addWarning("collection " + context.getDBName() + "/" + context.getCollectionName() + " has invalid relationships definition");
         }
 
-        if (rels == null)
-        {
+        if (rels == null) {
             return links;
         }
 
-        for (Relationship rel : rels)
-        {
-            try
-            {
+        for (Relationship rel : rels) {
+            try {
                 String link = rel.getRelationshipLink(context, context.getDBName(), context.getCollectionName(), data);
 
-                if (link != null)
-                {
+                if (link != null) {
                     links.put(rel.getRel(), link);
                 }
             }
-            catch (IllegalArgumentException ex)
-            {
+            catch (IllegalArgumentException ex) {
                 context.addWarning(ex.getMessage());
                 logger.warn(ex.getMessage(), ex);
             }
         }
-        
+
         return links;
     }
 }

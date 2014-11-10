@@ -21,26 +21,21 @@ import java.util.Map;
  *
  * @author uji
  */
-public class PingHandler extends ApplicationLogicHandler
-{
+public class PingHandler extends ApplicationLogicHandler {
     private String msg;
-    
-    public PingHandler(PipedHttpHandler next, Map<String, Object> args)
-    {
+
+    public PingHandler(PipedHttpHandler next, Map<String, Object> args) {
         super(next, args);
-        
+
         this.msg = (String) args.get("msg");
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
-    {
-        if (context.getMethod() == METHOD.GET)
-        {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (context.getMethod() == METHOD.GET) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_OK, msg);
         }
-        else
-        {
+        else {
             exchange.setResponseCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             exchange.endExchange();
         }

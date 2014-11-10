@@ -24,28 +24,27 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author uji
  */
-public class SecurityHandler extends PipedHttpHandler
-{
-    public static String SILENT_HEADER_KEY = "No-Auth-Challenge";
-    public static String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
-    
+public class SecurityHandler extends PipedHttpHandler {
+    public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
+    public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
+
     private final SilentSecurityHandler silentHandler;
     private final ChallengingSecurityHandler challengingHandler;
-    
-    public SecurityHandler(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager)
-    {
+
+    public SecurityHandler(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager) {
         super(null);
-        
+
         silentHandler = new SilentSecurityHandler(next, identityManager, accessManager);
         challengingHandler = new ChallengingSecurityHandler(next, identityManager, accessManager);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
-    {
-        if (exchange.getRequestHeaders().contains(SILENT_HEADER_KEY) || exchange.getQueryParameters().containsKey(SILENT_QUERY_PARAM_KEY))
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (exchange.getRequestHeaders().contains(SILENT_HEADER_KEY) || exchange.getQueryParameters().containsKey(SILENT_QUERY_PARAM_KEY)) {
             silentHandler.handleRequest(exchange, context);
-        else
+        }
+        else {
             challengingHandler.handleRequest(exchange, context);
+        }
     }
 }

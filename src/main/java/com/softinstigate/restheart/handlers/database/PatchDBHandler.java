@@ -28,13 +28,11 @@ import org.bson.types.ObjectId;
  *
  * @author uji
  */
-public class PatchDBHandler extends PipedHttpHandler
-{
+public class PatchDBHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of PatchDBHandler
      */
-    public PatchDBHandler()
-    {
+    public PatchDBHandler() {
         super(null);
     }
 
@@ -46,56 +44,51 @@ public class PatchDBHandler extends PipedHttpHandler
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
-    {
-        if (context.getDBName().isEmpty() || context.getDBName().startsWith("_"))
-        {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (context.getDBName().isEmpty() || context.getDBName().startsWith("_")) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, db name cannot be empty or start with _");
             return;
         }
 
         DBObject content = context.getContent();
-        
-        if (content == null)
-        {
+
+        if (content == null) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data is empty");
             return;
         }
-        
+
         // cannot PATCH an array
-        if (content instanceof BasicDBList)
-        {
+        if (content instanceof BasicDBList) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
             return;
         }
-        
+
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
-        
-        if (etag == null)
-        {
+
+        if (etag == null) {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
             return;
         }
 
         int SC = DBDAO.upsertDB(context.getDBName(), content, etag, true);
-        
+
         // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
-        {
-            if (SC == HttpStatus.SC_NO_CONTENT)
+        if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
+            if (SC == HttpStatus.SC_NO_CONTENT) {
                 exchange.setResponseCode(HttpStatus.SC_OK);
-            else
+            }
+            else {
                 exchange.setResponseCode(SC);
-            
+            }
+
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
         }
-        else
-        {
+        else {
             exchange.setResponseCode(SC);
         }
-        
+
         exchange.endExchange();
-        
+
         LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());
     }
 }

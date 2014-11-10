@@ -29,51 +29,47 @@ import org.slf4j.LoggerFactory;
  *
  * @author uji
  */
-public class DeleteDBHandler extends PipedHttpHandler
-{
+public class DeleteDBHandler extends PipedHttpHandler {
     private static final Logger logger = LoggerFactory.getLogger(DeleteDBHandler.class);
-    
+
     /**
      * Creates a new instance of DeleteDBHandler
      */
-    public DeleteDBHandler()
-    {
+    public DeleteDBHandler() {
         super(null);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
-    {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
-        
-        if (etag == null)
-        {
+
+        if (etag == null) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT, "the " + Headers.ETAG + " header must be provided");
             logger.warn("error. you must provide the {} header", Headers.ETAG);
             return;
         }
-        
+
         int SC = DBDAO.deleteDB(context.getDBName(), etag);
-        
+
         exchange.setResponseCode(SC);
-        
+
         // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings() != null && ! context.getWarnings().isEmpty())
-        {
-            if (SC == HttpStatus.SC_NO_CONTENT)
+        if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
+            if (SC == HttpStatus.SC_NO_CONTENT) {
                 exchange.setResponseCode(HttpStatus.SC_OK);
-            else
+            }
+            else {
                 exchange.setResponseCode(SC);
-            
+            }
+
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
         }
-        else
-        {
+        else {
             exchange.setResponseCode(SC);
         }
-        
+
         exchange.endExchange();
-        
+
         LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());
     }
 }

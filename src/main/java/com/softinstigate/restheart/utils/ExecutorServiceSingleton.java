@@ -8,7 +8,6 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-
 package com.softinstigate.restheart.utils;
 
 import java.util.concurrent.ExecutorService;
@@ -18,30 +17,25 @@ import java.util.concurrent.Executors;
  *
  * @author uji
  */
-public class ExecutorServiceSingleton
-{
+public class ExecutorServiceSingleton {
     private final ExecutorService executorService;
-    
-    private ExecutorServiceSingleton()
-    {
+
+    private ExecutorServiceSingleton() {
         this.executorService = Executors.newFixedThreadPool(100);
     }
-    
-    public static ExecutorServiceSingleton getInstance()
-    {
+
+    public static ExecutorServiceSingleton getInstance() {
         return ExecutorServiceSingletonHolder.INSTANCE;
     }
 
     /**
      * @return the executorService
      */
-    public ExecutorService getExecutorService()
-    {
+    public ExecutorService getExecutorService() {
         return executorService;
     }
-    
-    private static class ExecutorServiceSingletonHolder
-    {
+
+    private static class ExecutorServiceSingletonHolder {
         private static final ExecutorServiceSingleton INSTANCE = new ExecutorServiceSingleton();
     }
 }

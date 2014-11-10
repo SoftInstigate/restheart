@@ -18,64 +18,56 @@ import io.undertow.util.HttpString;
  *
  * @author uji
  */
-public class OptionsHandler extends PipedHttpHandler
-{
+public class OptionsHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of OptionsHandler
-     * 
-     * OPTIONS is used in CORS preflight phase and needs to be outside the security zone (i.e. not Authorization header required)
-     * It is important that OPTIONS responds to any resource URL, regardless its existance:
-     * This is because OPTIONS http://restheart/employees/tofire/andrea shall not give any information
-     * 
+     *
+     * OPTIONS is used in CORS preflight phase and needs to be outside the
+     * security zone (i.e. not Authorization header required) It is important
+     * that OPTIONS responds to any resource URL, regardless its existance: This
+     * is because OPTIONS http://restheart/employees/tofire/andrea shall not
+     * give any information
+     *
      * @param next
      */
-    public OptionsHandler(PipedHttpHandler next)
-    {
+    public OptionsHandler(PipedHttpHandler next) {
         super(next);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
-    {
-        if (!(context.getMethod() == RequestContext.METHOD.OPTIONS))
-        {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (!(context.getMethod() == RequestContext.METHOD.OPTIONS)) {
             next.handleRequest(exchange, context);
             return;
         }
 
-        if (context.getType() == RequestContext.TYPE.ROOT)
-        {
+        if (context.getType() == RequestContext.TYPE.ROOT) {
             exchange.getResponseHeaders()
-                .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET")
-                .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET")
+                    .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
 
         }
-        else if (context.getType() == RequestContext.TYPE.DB)
-        {
+        else if (context.getType() == RequestContext.TYPE.DB) {
             exchange.getResponseHeaders()
                     .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, PATCH, DELETE, OPTIONS")
                     .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
         }
-        else if (context.getType() == RequestContext.TYPE.COLLECTION)
-        {
+        else if (context.getType() == RequestContext.TYPE.COLLECTION) {
             exchange.getResponseHeaders()
                     .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, POST, PATCH, DELETE, OPTIONS")
                     .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
         }
-        else if (context.getType() == RequestContext.TYPE.DOCUMENT)
-        {
+        else if (context.getType() == RequestContext.TYPE.DOCUMENT) {
             exchange.getResponseHeaders()
                     .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, PATCH, DELETE, OPTIONS")
                     .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, If-None-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
         }
-        else if (context.getType() == RequestContext.TYPE.INDEX)
-        {
+        else if (context.getType() == RequestContext.TYPE.INDEX) {
             exchange.getResponseHeaders()
                     .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "PUT")
                     .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
         }
-        else if (context.getType() == RequestContext.TYPE.COLLECTION_INDEXES)
-        {
+        else if (context.getType() == RequestContext.TYPE.COLLECTION_INDEXES) {
             exchange.getResponseHeaders()
                     .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET")
                     .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");

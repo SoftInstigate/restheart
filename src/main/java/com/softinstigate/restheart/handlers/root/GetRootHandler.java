@@ -23,36 +23,29 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author uji
  */
-public class GetRootHandler extends PipedHttpHandler
-{
+public class GetRootHandler extends PipedHttpHandler {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-
-    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(GetRootHandler.class);
 
     /**
      * Creates a new instance of GetRootHandler
      */
-    public GetRootHandler()
-    {
+    public GetRootHandler() {
         super(null);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
-    {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         List<String> _dbs = client.getDatabaseNames();
 
         // filter out reserved resources
         List<String> dbs = _dbs.stream().filter(db -> !RequestContext.isReservedResourceDb(db)).collect(Collectors.toList());
 
-        if (dbs == null)
-        {
+        if (dbs == null) {
             dbs = new ArrayList<>();
         }
 
@@ -66,15 +59,15 @@ public class GetRootHandler extends PipedHttpHandler
         List<DBObject> data = new ArrayList<>();
 
         dbs.stream().map(
-                (db) ->
-                {
-                    if (LocalCachesSingleton.isEnabled())
+                (db) -> {
+                    if (LocalCachesSingleton.isEnabled()) {
                         return LocalCachesSingleton.getInstance().getDBProps(db);
-                    else
+                    }
+                    else {
                         return DBDAO.getDbProps(db);
+                    }
                 }
-        ).forEach((item) ->
-        {
+        ).forEach((item) -> {
             data.add(item);
         });
 

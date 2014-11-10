@@ -15,6 +15,7 @@ import com.softinstigate.restheart.utils.URLUtilis;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,9 +28,8 @@ import org.yaml.snakeyaml.Yaml;
  *
  * @author uji
  */
-public class Configuration
-{
-    public static String DOC_Path = "http://www.restheart.org/docs/v0.9";
+public class Configuration {
+    public static final String DOC_URL = "http://www.restheart.org/docs/v0.9";
 
     private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
 
@@ -80,6 +80,15 @@ public class Configuration
     private final boolean directBuffers;
 
     private final boolean forceGzipEncoding;
+    
+    public static final int DEFAULT_MONGO_PORT = 27017;
+    public static final String DEFAULT_MONGO_HOST = "127.0.0.1";
+    public static final String DEFAULT_AJP_HOST = "0.0.0.0";
+    public static final int DEFAULT_AJP_PORT = 8009;
+    public static final String DEFAULT_HTTP_HOST = "0.0.0.0";
+    public static final int DEFAULT_HTTP_PORT = 8080;
+    public static final String DEFAULT_HTTPS_HOST = "0.0.0.0";
+    public static final int DEFAULT_HTTPS_PORT = 4443;
 
     public static final String LOCAL_CACHE_ENABLED = "local-cache-enabled";
     public static final String LOCAL_CACHE_TTL = "local-cache-ttl";
@@ -137,19 +146,18 @@ public class Configuration
     public static final String HTTPS_PORT = "https-port";
     public static final String HTTPS_LISTENER = "https-listener";
 
-    public Configuration()
-    {
+    public Configuration() {
         httpsListener = true;
-        httpsPort = 4443;
-        httpsHost = "0.0.0.0";
+        httpsPort = DEFAULT_HTTPS_PORT;
+        httpsHost = DEFAULT_HTTPS_HOST;
 
         httpListener = true;
-        httpPort = 8080;
-        httpHost = "0.0.0.0";
+        httpPort = DEFAULT_HTTP_PORT;
+        httpHost = DEFAULT_HTTP_HOST;
 
         ajpListener = false;
-        ajpPort = 8009;
-        ajpHost = "0.0.0.0";
+        ajpPort = DEFAULT_AJP_PORT;
+        ajpHost = DEFAULT_AJP_HOST;
 
         useEmbeddedKeystore = true;
         keystoreFile = null;
@@ -158,8 +166,8 @@ public class Configuration
 
         mongoServers = new ArrayList<>();
         Map<String, Object> defaultMongoServer = new HashMap<>();
-        defaultMongoServer.put(MONGO_HOST, "127.0.0.1");
-        defaultMongoServer.put(MONGO_PORT, 27017);
+        defaultMongoServer.put(MONGO_HOST, DEFAULT_MONGO_HOST);
+        defaultMongoServer.put(MONGO_PORT, DEFAULT_MONGO_PORT);
         mongoServers.add(defaultMongoServer);
 
         mongoCredentials = null;
@@ -208,40 +216,48 @@ public class Configuration
         forceGzipEncoding = false;
     }
 
-    public Configuration(String confFilePath)
-    {
+    public Configuration(String confFilePath) {
         Yaml yaml = new Yaml();
 
         Map<String, Object> conf = null;
 
-        try
-        {
-            conf = (Map<String, Object>) yaml.load(new FileInputStream(new File(confFilePath)));
+        FileInputStream fis = null;
+
+        try {
+            fis = new FileInputStream(new File(confFilePath));
+            conf = (Map<String, Object>) yaml.load(fis);
         }
-        catch (FileNotFoundException fnef)
-        {
+        catch (FileNotFoundException fnef) {
             logger.error("configuration file not found. starting with default parameters.");
             conf = null;
         }
-        catch (Throwable t)
-        {
+        catch (Throwable t) {
             logger.error("wrong configuration file format. starting with default parameters.", t);
             conf = null;
         }
+        finally {
+            if (fis != null) {
+                try {
+                    fis.close();
+                }
+                catch (IOException ioe) {
+                    logger.warn("error closing the configuration file", ioe);
+                }
+            }
+        }
 
-        if (conf == null)
-        {
+        if (conf == null) {
             httpsListener = true;
-            httpsPort = 8443;
-            httpsHost = "0.0.0.0";
+            httpsPort = DEFAULT_HTTPS_PORT;
+            httpsHost = DEFAULT_HTTPS_HOST;
 
             httpListener = true;
-            httpPort = 8080;
-            httpHost = "0.0.0.0";
+            httpPort = DEFAULT_HTTP_PORT;
+            httpHost = DEFAULT_HTTP_HOST;
 
             ajpListener = false;
-            ajpPort = 8009;
-            ajpHost = "0.0.0.0";
+            ajpPort = DEFAULT_AJP_PORT;
+            ajpHost = DEFAULT_AJP_HOST;
 
             useEmbeddedKeystore = true;
             keystoreFile = null;
@@ -300,19 +316,18 @@ public class Configuration
 
             forceGzipEncoding = false;
         }
-        else
-        {
+        else {
             httpsListener = getAsBooleanOrDefault(conf, HTTPS_LISTENER, true);
-            httpsPort = getAsIntegerOrDefault(conf, HTTPS_PORT, 8443);
-            httpsHost = getAsStringOrDefault(conf, HTTPS_HOST, "0.0.0.0");
+            httpsPort = getAsIntegerOrDefault(conf, HTTPS_PORT, DEFAULT_HTTPS_PORT);
+            httpsHost = getAsStringOrDefault(conf, HTTPS_HOST, DEFAULT_HTTPS_HOST);
 
             httpListener = getAsBooleanOrDefault(conf, HTTP_LISTENER, false);
-            httpPort = getAsIntegerOrDefault(conf, HTTP_PORT, 8080);
-            httpHost = getAsStringOrDefault(conf, HTTP_HOST, "0.0.0.0");
+            httpPort = getAsIntegerOrDefault(conf, HTTP_PORT, DEFAULT_HTTP_PORT);
+            httpHost = getAsStringOrDefault(conf, HTTP_HOST, DEFAULT_HTTP_HOST);
 
             ajpListener = getAsBooleanOrDefault(conf, AJP_LISTENER, false);
-            ajpPort = getAsIntegerOrDefault(conf, AJP_PORT, 8009);
-            ajpHost = getAsStringOrDefault(conf, AJP_HOST, "0.0.0.0");
+            ajpPort = getAsIntegerOrDefault(conf, AJP_PORT, DEFAULT_AJP_PORT);
+            ajpHost = getAsStringOrDefault(conf, AJP_HOST, DEFAULT_AJP_HOST);
 
             useEmbeddedKeystore = getAsBooleanOrDefault(conf, USE_EMBEDDED_KEYSTORE, true);
             keystoreFile = getAsStringOrDefault(conf, KEYSTORE_FILE, null);
@@ -356,12 +371,10 @@ public class Configuration
 
             Level level;
 
-            try
-            {
+            try {
                 level = Level.valueOf(_logLevel);
             }
-            catch (Exception e)
-            {
+            catch (Exception e) {
                 logger.info("wrong value for parameter {}: {}. using its default value {}", "log-level", _logLevel, "WARN");
                 level = Level.WARN;
             }
@@ -383,10 +396,8 @@ public class Configuration
         }
     }
 
-    private static List<Map<String, Object>> getAsListOfMaps(Map<String, Object> conf, String key, List<Map<String, Object>> defaultValue)
-    {
-        if (conf == null)
-        {
+    private static List<Map<String, Object>> getAsListOfMaps(Map<String, Object> conf, String key, List<Map<String, Object>> defaultValue) {
+        if (conf == null) {
             logger.warn("parameters group {} not specified in the configuration file. using its default value {}", key, defaultValue);
 
             return defaultValue;
@@ -394,161 +405,133 @@ public class Configuration
 
         Object o = conf.get(key);
 
-        if (o instanceof List)
-        {
+        if (o instanceof List) {
             return (List<Map<String, Object>>) o;
         }
-        else
-        {
+        else {
             logger.warn("parameters group {} not specified in the configuration file, using its default value {}", key, defaultValue);
             return defaultValue;
         }
     }
 
-    private static Map<String, Object> getAsMap(Map<String, Object> conf, String key)
-    {
-        if (conf == null)
-        {
+    private static Map<String, Object> getAsMap(Map<String, Object> conf, String key) {
+        if (conf == null) {
             logger.warn("parameters group {} not specified in the configuration file.", key);
             return null;
         }
 
         Object o = conf.get(key);
 
-        if (o instanceof Map)
-        {
+        if (o instanceof Map) {
             return (Map<String, Object>) o;
         }
-        else
-        {
+        else {
             logger.warn("parameters group {} not specified in the configuration file.", key);
             return null;
         }
     }
 
-    private static Boolean getAsBooleanOrDefault(Map<String, Object> conf, String key, Boolean defaultValue)
-    {
-        if (conf == null)
-        {
+    private static Boolean getAsBooleanOrDefault(Map<String, Object> conf, String key, Boolean defaultValue) {
+        if (conf == null) {
             logger.error("tried to get paramenter {} from a null configuration map. using its default value {}", key, defaultValue);
             return defaultValue;
         }
 
         Object o = conf.get(key);
 
-        if (o == null)
-        {
+        if (o == null) {
             if (defaultValue != null) // if default value is null there is no default value actually
             {
                 logger.info("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
             }
             return defaultValue;
         }
-        else if (o instanceof Boolean)
-        {
+        else if (o instanceof Boolean) {
             logger.debug("paramenter {} set to {}", key, o);
             return (Boolean) o;
         }
-        else
-        {
+        else {
             logger.info("wrong value for parameter {}: {}. using its default value {}", key, o, defaultValue);
             return defaultValue;
         }
     }
 
-    private static String getAsStringOrDefault(Map<String, Object> conf, String key, String defaultValue)
-    {
-        if (conf == null)
-        {
+    private static String getAsStringOrDefault(Map<String, Object> conf, String key, String defaultValue) {
+        if (conf == null) {
             logger.error("tried to get paramenter {} from a null configuration map. using its default value {}", key, defaultValue);
             return null;
         }
 
         Object o = conf.get(key);
 
-        if (o == null)
-        {
+        if (o == null) {
             if (defaultValue != null) // if default value is null there is no default value actually
             {
                 logger.info("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
             }
             return defaultValue;
         }
-        else if (o instanceof String)
-        {
+        else if (o instanceof String) {
             logger.debug("paramenter {} set to {}", key, o);
             return (String) o;
         }
-        else
-        {
+        else {
             logger.info("wrong value for parameter {}: {}. using its default value {}", key, o, defaultValue);
             return defaultValue;
         }
     }
 
-    private static Integer getAsIntegerOrDefault(Map<String, Object> conf, String key, Integer defaultValue)
-    {
-        if (conf == null)
-        {
+    private static Integer getAsIntegerOrDefault(Map<String, Object> conf, String key, Integer defaultValue) {
+        if (conf == null) {
             logger.error("tried to get paramenter {} from a null configuration map. using its default value {}", key, defaultValue);
             return null;
         }
 
         Object o = conf.get(key);
 
-        if (o == null)
-        {
+        if (o == null) {
             if (defaultValue != null) // if default value is null there is no default value actually
             {
                 logger.info("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
             }
             return defaultValue;
         }
-        else if (o instanceof Integer)
-        {
+        else if (o instanceof Integer) {
             logger.debug("paramenter {} set to {}", key, o);
             return (Integer) o;
         }
-        else
-        {
+        else {
             logger.info("wrong value for parameter {}: {}. using its default value {}", key, o, defaultValue);
             return defaultValue;
         }
     }
 
-    private static Long getAsLongOrDefault(Map<String, Object> conf, String key, Long defaultValue)
-    {
-        if (conf == null)
-        {
+    private static Long getAsLongOrDefault(Map<String, Object> conf, String key, Long defaultValue) {
+        if (conf == null) {
             logger.error("tried to get paramenter {} from a null configuration map. using its default value {}", key, defaultValue);
             return null;
         }
 
         Object o = conf.get(key);
 
-        if (o == null)
-        {
+        if (o == null) {
             if (defaultValue != null) // if default value is null there is no default value actually
             {
                 logger.info("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
             }
             return defaultValue;
         }
-        else if (o instanceof Number)
-        {
+        else if (o instanceof Number) {
             logger.debug("paramenter {} set to {}", key, o);
-            try
-            {
+            try {
                 return Long.parseLong(o.toString());
             }
-            catch (NumberFormatException nfe)
-            {
+            catch (NumberFormatException nfe) {
                 logger.info("wrong value for parameter {}: {}. using its default value {}", key, o, defaultValue);
                 return defaultValue;
             }
         }
-        else
-        {
+        else {
             logger.info("wrong value for parameter {}: {}. using its default value {}", key, o, defaultValue);
             return defaultValue;
         }
@@ -557,288 +540,252 @@ public class Configuration
     /**
      * @return the httpsListener
      */
-    public boolean isHttpsListener()
-    {
+    public boolean isHttpsListener() {
         return httpsListener;
     }
 
     /**
      * @return the httpsPort
      */
-    public int getHttpsPort()
-    {
+    public int getHttpsPort() {
         return httpsPort;
     }
 
     /**
      * @return the httpsHost
      */
-    public String getHttpsHost()
-    {
+    public String getHttpsHost() {
         return httpsHost;
     }
 
     /**
      * @return the httpListener
      */
-    public boolean isHttpListener()
-    {
+    public boolean isHttpListener() {
         return httpListener;
     }
 
     /**
      * @return the httpPort
      */
-    public int getHttpPort()
-    {
+    public int getHttpPort() {
         return httpPort;
     }
 
     /**
      * @return the httpHost
      */
-    public String getHttpHost()
-    {
+    public String getHttpHost() {
         return httpHost;
     }
 
     /**
      * @return the ajpListener
      */
-    public boolean isAjpListener()
-    {
+    public boolean isAjpListener() {
         return ajpListener;
     }
 
     /**
      * @return the ajpPort
      */
-    public int getAjpPort()
-    {
+    public int getAjpPort() {
         return ajpPort;
     }
 
     /**
      * @return the ajpHost
      */
-    public String getAjpHost()
-    {
+    public String getAjpHost() {
         return ajpHost;
     }
 
     /**
      * @return the useEmbeddedKeystore
      */
-    public boolean isUseEmbeddedKeystore()
-    {
+    public boolean isUseEmbeddedKeystore() {
         return useEmbeddedKeystore;
     }
 
     /**
      * @return the keystoreFile
      */
-    public String getKeystoreFile()
-    {
+    public String getKeystoreFile() {
         return keystoreFile;
     }
 
     /**
      * @return the keystorePassword
      */
-    public String getKeystorePassword()
-    {
+    public String getKeystorePassword() {
         return keystorePassword;
     }
 
     /**
      * @return the certPassword
      */
-    public String getCertPassword()
-    {
+    public String getCertPassword() {
         return certPassword;
     }
 
     /**
      * @return the logFilePath
      */
-    public String getLogFilePath()
-    {
+    public String getLogFilePath() {
         return logFilePath;
     }
 
     /**
      * @return the logLevel
      */
-    public Level getLogLevel()
-    {
+    public Level getLogLevel() {
         return logLevel;
     }
 
     /**
      * @return the logToConsole
      */
-    public boolean isLogToConsole()
-    {
+    public boolean isLogToConsole() {
         return logToConsole;
     }
 
     /**
      * @return the logToFile
      */
-    public boolean isLogToFile()
-    {
+    public boolean isLogToFile() {
         return logToFile;
     }
 
     /**
      * @return the ioThreads
      */
-    public int getIoThreads()
-    {
+    public int getIoThreads() {
         return ioThreads;
     }
 
     /**
      * @return the workerThreads
      */
-    public int getWorkerThreads()
-    {
+    public int getWorkerThreads() {
         return workerThreads;
     }
 
     /**
      * @return the bufferSize
      */
-    public int getBufferSize()
-    {
+    public int getBufferSize() {
         return bufferSize;
     }
 
     /**
      * @return the buffersPerRegion
      */
-    public int getBuffersPerRegion()
-    {
+    public int getBuffersPerRegion() {
         return buffersPerRegion;
     }
 
     /**
      * @return the directBuffers
      */
-    public boolean isDirectBuffers()
-    {
+    public boolean isDirectBuffers() {
         return directBuffers;
     }
 
     /**
      * @return the forceGzipEncoding
      */
-    public boolean isForceGzipEncoding()
-    {
+    public boolean isForceGzipEncoding() {
         return forceGzipEncoding;
     }
 
     /**
      * @return the idmImpl
      */
-    public String getIdmImpl()
-    {
+    public String getIdmImpl() {
         return idmImpl;
     }
 
     /**
      * @return the idmArgs
      */
-    public Map<String, Object> getIdmArgs()
-    {
+    public Map<String, Object> getIdmArgs() {
         return idmArgs;
     }
 
     /**
      * @return the amImpl
      */
-    public String getAmImpl()
-    {
+    public String getAmImpl() {
         return amImpl;
     }
 
     /**
      * @return the amArgs
      */
-    public Map<String, Object> getAmArgs()
-    {
+    public Map<String, Object> getAmArgs() {
         return amArgs;
     }
 
     /**
      * @return the requestsLimit
      */
-    public int getRequestLimit()
-    {
+    public int getRequestLimit() {
         return getRequestsLimit();
     }
 
     /**
      * @return the mongoServers
      */
-    public List<Map<String, Object>> getMongoServers()
-    {
+    public List<Map<String, Object>> getMongoServers() {
         return mongoServers;
     }
 
     /**
      * @return the mongoCredentials
      */
-    public List<Map<String, Object>> getMongoCredentials()
-    {
+    public List<Map<String, Object>> getMongoCredentials() {
         return mongoCredentials;
     }
 
     /**
      * @return the mongoMountsDefault
      */
-    public List<Map<String, Object>> getMongoMounts()
-    {
+    public List<Map<String, Object>> getMongoMounts() {
         return mongoMounts;
     }
 
     /**
      * @return the localCacheEnabled
      */
-    public boolean isLocalCacheEnabled()
-    {
+    public boolean isLocalCacheEnabled() {
         return localCacheEnabled;
     }
 
     /**
      * @return the localCacheTtl
      */
-    public long getLocalCacheTtl()
-    {
+    public long getLocalCacheTtl() {
         return localCacheTtl;
     }
 
     /**
      * @return the requestsLimit
      */
-    public int getRequestsLimit()
-    {
+    public int getRequestsLimit() {
         return requestsLimit;
     }
 
     /**
      * @return the applicationLogicMounts
      */
-    public List<Map<String, Object>> getApplicationLogicMounts()
-    {
+    public List<Map<String, Object>> getApplicationLogicMounts() {
         return applicationLogicMounts;
     }
 
     /**
      * @return the staticResourcesMounts
      */
-    public List<Map<String, Object>> getStaticResourcesMounts()
-    {
+    public List<Map<String, Object>> getStaticResourcesMounts() {
         return staticResourcesMounts;
     }
 }

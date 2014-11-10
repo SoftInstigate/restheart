@@ -27,18 +27,15 @@ import org.slf4j.LoggerFactory;
  *
  * @author uji
  */
-public class PropsFixer
-{
+public class PropsFixer {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
 
     private static final Logger logger = LoggerFactory.getLogger(PropsFixer.class);
 
-    public static boolean addCollectionProps(String dbName, String collName) throws MongoException
-    {
+    public static boolean addCollectionProps(String dbName, String collName) throws MongoException {
         DBObject dbmd = DBDAO.getDbProps(dbName);
 
-        if (dbmd == null)
-        {
+        if (dbmd == null) {
             // db must exists with properties
             return false;
         }
@@ -53,8 +50,7 @@ public class PropsFixer
         // check if collection has data
         DB db = DBDAO.getDB(dbName);
 
-        if (!db.collectionExists(collName))
-        {
+        if (!db.collectionExists(collName)) {
             return false;
         }
 
@@ -71,15 +67,13 @@ public class PropsFixer
         DBCollection coll = CollectionDAO.getCollection(dbName, collName);
 
         coll.insert(properties);
-            
+
         logger.info("properties added to {}/{}", dbName, collName);
         return true;
     }
 
-    public static boolean addDbProps(String dbName)
-    {
-        if (!DBDAO.doesDbExists(dbName))
-        {
+    public static boolean addDbProps(String dbName) {
+        if (!DBDAO.doesDbExists(dbName)) {
             return false;
         }
 
@@ -89,8 +83,6 @@ public class PropsFixer
         {
             return false;
         }
-
-        DB db = DBDAO.getDB(dbName);
 
         // ok, create the properties
         DBObject properties = new BasicDBObject();
@@ -109,50 +101,41 @@ public class PropsFixer
         return true;
     }
 
-    public static void fixAllMissingProps()
-    {
-        try
-            {
-            client.getDatabaseNames().stream().filter((dbName) -> (!RequestContext.isReservedResourceDb(dbName))).map((dbName) ->
-            {
-                try
-                {
+    public static void fixAllMissingProps() {
+        try {
+            client.getDatabaseNames().stream().filter(dbName -> !RequestContext.isReservedResourceDb(dbName)).map(dbName -> {
+                try {
                     addDbProps(dbName);
                 }
-                catch (Throwable t)
-                {
+                catch (Throwable t) {
                     logger.error("error fixing _properties of db {}", dbName, t);
                 }
                 return dbName;
-            }).forEach((dbName) ->
-            {
+            }).forEach(dbName -> {
                 DB db = DBDAO.getDB(dbName);
 
-                DBDAO.getDbCollections(db).stream().filter((collectionName) -> (!RequestContext.isReservedResourceCollection(collectionName))).forEach((collectionName) ->
-                        {
-                            try
-                            {
-                                addCollectionProps(dbName, collectionName);
-                            }
-                            catch (Throwable t)
-                            {
-                                logger.error("error checking the collection {}/{} for valid _properties. note that a request to it will result on NOT_FOUND", dbName, collectionName, t);
-                            }
-                        }
+                DBDAO.getDbCollections(db).stream().filter(collectionName -> !RequestContext.isReservedResourceCollection(collectionName)).forEach(collectionName -> {
+                    try {
+                        addCollectionProps(dbName, collectionName);
+                    }
+                    catch (Throwable t) {
+                        logger.error("error checking the collection {}/{} for valid _properties. note that a request to it will result on NOT_FOUND", dbName, collectionName, t);
+                    }
+                }
                 );
             });
         }
-        catch(CommandFailureException cfe)
-        {
+        catch (CommandFailureException cfe) {
             Object errmsg = cfe.getCommandResult().get("errmsg");
-            
-            if (errmsg != null && errmsg instanceof String && ("unauthorized".equals(errmsg) || ((String)errmsg).contains("not authorized")))
+
+            if (errmsg != null && errmsg instanceof String && ("unauthorized".equals(errmsg) || ((String) errmsg).contains("not authorized"))) {
                 logger.error("error looking for dbs and collections with missing _properties due to insuffient mongo user privileges. note that requests to dbs and collections with no _properties result on NOT_FOUND", cfe);
-            else
+            }
+            else {
                 logger.error("eorro looking for dbs and collections with missing _properties. note that requests to dbs and collections with no _properties result on NOT_FOUND", cfe);
+            }
         }
-        catch(MongoException mex)
-        {
+        catch (MongoException mex) {
             logger.error("eorro looking for dbs and collections with missing _properties. note that requests to dbs and collections with no _properties result on NOT_FOUND", mex);
         }
     }

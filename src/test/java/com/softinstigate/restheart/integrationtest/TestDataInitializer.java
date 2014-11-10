@@ -26,47 +26,41 @@ import org.slf4j.LoggerFactory;
  *
  * @author uji
  */
-public class TestDataInitializer extends AbstactIT
-{
+public class TestDataInitializer extends AbstactIT {
     private static final Logger logger = LoggerFactory.getLogger(TestDataInitializer.class);
-    
-    public static void main(String[] args) throws Throwable
-    {
+
+    public static void main(String[] args) throws Throwable {
         TestDataInitializer me = new TestDataInitializer();
-        
+
         me.setUp();
         me.deleteExistingData();
         logger.info("existing data deleted");
         me.createTestData();
         logger.info("test data created");
     }
-    
-    private void deleteExistingData()
-    {
+
+    private void deleteExistingData() {
         MongoDBClientSingleton.init(conf);
-        
+
         MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbName);
         MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbTmpName);
     }
-    
-    private void createTestData()
-    {
+
+    private void createTestData() {
         DBDAO.upsertDB(dbName, dbProps, new ObjectId(), false);
         CollectionDAO.upsertCollection(dbName, collection1Name, coll1Props, new ObjectId(), false, false);
         CollectionDAO.upsertCollection(dbName, collection2Name, coll2Props, new ObjectId(), false, false);
         CollectionDAO.upsertCollection(dbName, docsCollectionName, docsCollectionProps, new ObjectId(), false, false);
-        
-        for (String index: docsCollectionIndexesStrings)
-        {
-            IndexDAO.createIndex(dbName, docsCollectionName, ((DBObject)JSON.parse(index)), null);
+
+        for (String index : docsCollectionIndexesStrings) {
+            IndexDAO.createIndex(dbName, docsCollectionName, ((DBObject) JSON.parse(index)), null);
         }
-        
+
         DocumentDAO.upsertDocument(dbName, collection1Name, document1Id, document1Props, new ObjectId(), false);
         DocumentDAO.upsertDocument(dbName, collection2Name, document2Id, document2Props, new ObjectId(), false);
-        
-        for (String doc: docsPropsStrings)
-        {
-            DocumentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), ((DBObject)JSON.parse(doc)), new ObjectId(), false);
+
+        for (String doc : docsPropsStrings) {
+            DocumentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), ((DBObject) JSON.parse(doc)), new ObjectId(), false);
         }
     }
 }

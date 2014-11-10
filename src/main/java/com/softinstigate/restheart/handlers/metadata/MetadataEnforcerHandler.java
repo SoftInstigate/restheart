@@ -18,21 +18,18 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author uji
  */
-public class MetadataEnforcerHandler extends PipedHttpHandler
-{
+public class MetadataEnforcerHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of MetadataEnforcerHandler
      *
      * @param next
      */
-    public MetadataEnforcerHandler(PipedHttpHandler next)
-    {
+    public MetadataEnforcerHandler(PipedHttpHandler next) {
         super(next);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
-    {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         next.handleRequest(exchange, context);
     }
 }

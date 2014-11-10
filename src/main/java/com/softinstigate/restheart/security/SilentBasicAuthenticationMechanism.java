@@ -37,24 +37,19 @@ import static io.undertow.util.StatusCodes.UNAUTHORIZED;
  *
  *
  */
-public class SilentBasicAuthenticationMechanism extends BasicAuthenticationMechanism
-{
-    public SilentBasicAuthenticationMechanism(String realmName)
-    {
+public class SilentBasicAuthenticationMechanism extends BasicAuthenticationMechanism {
+    public SilentBasicAuthenticationMechanism(String realmName) {
         super(realmName, "BASIC", true);
     }
 
     @Override
-    public ChallengeResult sendChallenge(HttpServerExchange exchange, SecurityContext securityContext)
-    {
+    public ChallengeResult sendChallenge(HttpServerExchange exchange, SecurityContext securityContext) {
         String authHeader = exchange.getRequestHeaders().getFirst(AUTHORIZATION);
-        
-        if (authHeader == null)
-        {
+
+        if (authHeader == null) {
             return new ChallengeResult(false); // --> FORBIDDEN
         }
-        else
-        {
+        else {
             return new ChallengeResult(true, UNAUTHORIZED);
         }
     }

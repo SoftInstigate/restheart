@@ -25,51 +25,42 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author uji
  */
-public class CollectionPropsInjectorHandler extends PipedHttpHandler
-{
+public class CollectionPropsInjectorHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of MetadataInjecterHandler
      *
      * @param next
      */
-    public CollectionPropsInjectorHandler(PipedHttpHandler next)
-    {
+    public CollectionPropsInjectorHandler(PipedHttpHandler next) {
         super(next);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
-    {
-        if (context.getDBName() != null && context.getCollectionName() != null)
-        {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (context.getDBName() != null && context.getCollectionName() != null) {
             DBObject collProps;
 
-            if (!LocalCachesSingleton.isEnabled())
-            {
+            if (!LocalCachesSingleton.isEnabled()) {
                 collProps = CollectionDAO.getCollectionProps(context.getDBName(), context.getCollectionName());
 
-                if (collProps != null)
-                {
+                if (collProps != null) {
                     collProps.put("_collection-props-cached", false);
                 }
                 else if (!(context.getType() == RequestContext.TYPE.COLLECTION && context.getMethod() == RequestContext.METHOD.PUT)
-                        && (context.getType() != RequestContext.TYPE.ROOT)
-                        && (context.getType() != RequestContext.TYPE.DB))
-                {
+                        && context.getType() != RequestContext.TYPE.ROOT
+                        && context.getType() != RequestContext.TYPE.DB) {
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "collection does not exist");
                     return;
                 }
             }
-            else
-            {
+            else {
                 collProps = LocalCachesSingleton.getInstance().getCollectionProps(context.getDBName(), context.getCollectionName());
             }
 
             if (collProps == null
-                    && (!(context.getType() == RequestContext.TYPE.COLLECTION && context.getMethod() == RequestContext.METHOD.PUT)
-                    && (context.getType() != RequestContext.TYPE.ROOT)
-                    && (context.getType() != RequestContext.TYPE.DB)))
-            {
+                    && !(context.getType() == RequestContext.TYPE.COLLECTION && context.getMethod() == RequestContext.METHOD.PUT)
+                    && context.getType() != RequestContext.TYPE.ROOT
+                    && context.getType() != RequestContext.TYPE.DB) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "collection does not exist");
                 return;
             }

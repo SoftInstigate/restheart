@@ -15,33 +15,26 @@ import com.softinstigate.restheart.hal.Representation;
 import static com.softinstigate.restheart.integrationtest.AbstactIT.adminExecutor;
 import com.softinstigate.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
-import java.net.URI;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.util.EntityUtils;
-import org.junit.Assert;
 import org.junit.Test;
 
 /**
  *
  * @author uji
  */
-public class PutIndexIT extends AbstactIT
-{
+public class PutIndexIT extends AbstactIT {
 
-    public PutIndexIT()
-    {
+    public PutIndexIT() {
     }
 
     @Test
-    public void testPutDocument() throws Exception
-    {
-        try
-        {
+    public void testPutDocument() throws Exception {
+        try {
             Response resp;
 
             // *** PUT tmpdb
@@ -51,12 +44,10 @@ public class PutIndexIT extends AbstactIT
             // *** PUT tmpcoll
             resp = adminExecutor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check put coll1", resp, HttpStatus.SC_CREATED);
-            
-            
+
             // *** PUT wrong index
             //resp = adminExecutor.execute(Request.Put(indexTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             //check("check put wrong index", resp, HttpStatus.SC_NOT_ACCEPTABLE);
-
             // try to put without etag
             resp = adminExecutor.execute(Request.Put(indexTmpUri).bodyString("{ keys: {a:1,b:2}, ops: { name: \"ciao\"} }", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check put correct index", resp, HttpStatus.SC_CREATED);
@@ -80,12 +71,10 @@ public class PutIndexIT extends AbstactIT
 
             JsonObject json = null;
 
-            try
-            {
+            try {
                 json = JsonObject.readFrom(content);
             }
-            catch (Throwable t)
-            {
+            catch (Throwable t) {
                 junit.framework.Assert.fail("parsing received json");
             }
 
@@ -95,8 +84,7 @@ public class PutIndexIT extends AbstactIT
             junit.framework.Assert.assertEquals("check _size value to be 5", 5, json.get("_size").asInt());
             junit.framework.Assert.assertEquals("check _returned value to be 5", 5, json.get("_returned").asInt());
         }
-        finally
-        {
+        finally {
             mongoClient.dropDatabase(dbTmpName);
         }
     }

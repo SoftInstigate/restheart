@@ -8,7 +8,6 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-
 package com.softinstigate.restheart.handlers;
 
 import com.mongodb.DBObject;
@@ -26,425 +25,410 @@ import java.util.Deque;
  *
  * @author uji
  */
-public class RequestContext
-{
-    public enum TYPE { ERROR, ROOT, DB, COLLECTION, DOCUMENT, COLLECTION_INDEXES, INDEX };
-    public enum METHOD { GET, POST, PUT, DELETE, PATCH, OPTIONS, OTHER };
-    
+public class RequestContext {
+    public enum TYPE {
+        ERROR, ROOT, DB, COLLECTION, DOCUMENT, COLLECTION_INDEXES, INDEX
+    };
+
+    public enum METHOD {
+        GET, POST, PUT, DELETE, PATCH, OPTIONS, OTHER
+    };
+
     private final String whereUri;
     private final String whatUri;
-    
+
     private final TYPE type;
     private final METHOD method;
     private final String[] pathTokens;
-    
+
     private DBObject dbProps;
     private DBObject collectionProps;
-    
+
     private DBObject content;
-    
+
     private final ArrayList<String> warnings = new ArrayList<>();
-    
+
     private int page = 1;
     private int pagesize = 100;
     private boolean count = false;
     private Deque<String> filter = null;
     private Deque<String> sortBy = null;
-    
+
     private String unmappedRequestUri = null;
     private String mappedRequestUri = null;
+
     /**
-     * 
-     * @param exchange
-     * the url rewriting feature is implemented by the whatUri and whereUri parameters
-     * 
-     * the exchange request path is rewritten replacing the whereUri string with the whatUri string
-     * the special whatUri value * means any resource: the whereUri is replaced with /
-     * 
+     *
+     * @param exchange the url rewriting feature is implemented by the whatUri
+     * and whereUri parameters
+     *
+     * the exchange request path is rewritten replacing the whereUri string with
+     * the whatUri string the special whatUri value * means any resource: the
+     * whereUri is replaced with /
+     *
      * example 1
-     * 
-     * whatUri = /mydb/mycollection
-     * whereUri = /
+     *
+     * whatUri = /mydb/mycollection whereUri = /
      *
      * then the requestPath / is rewritten to /mydb/mycollection
      *
-     * example 2 
+     * example 2
      *
-     * whatUri = *
-     * whereUri = /data
-     * 
-     * then the requestPath /data is rewritten to / 
-     * 
-     
-     * 
+     * whatUri = * whereUri = /data
+     *
+     * then the requestPath /data is rewritten to /
+     *
+     *
+     *
      * @param whereUri the uri to map to
-     * @param whatUri  the uri to map
+     * @param whatUri the uri to map
      */
-    public RequestContext(HttpServerExchange exchange, String whereUri, String whatUri)
-    {
+    public RequestContext(HttpServerExchange exchange, String whereUri, String whatUri) {
         this.whereUri = URLUtilis.removeTrailingSlashes(whereUri);
         this.whatUri = whatUri;
-        
+
         this.unmappedRequestUri = exchange.getRequestPath();
         this.mappedRequestUri = unmapUri(exchange.getRequestPath());
-        
+
         pathTokens = mappedRequestUri.split("/"); // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
-        
-        if (pathTokens.length < 2)
-        {
+
+        if (pathTokens.length < 2) {
             type = TYPE.ROOT;
-        } else if (pathTokens.length < 3)
-        {
+        }
+        else if (pathTokens.length < 3) {
             type = TYPE.DB;
-        } else if (pathTokens.length < 4)
-        {
+        }
+        else if (pathTokens.length < 4) {
             type = TYPE.COLLECTION;
-        } else if (pathTokens.length == 4 && pathTokens[3].equals("_indexes"))
-        {
+        }
+        else if (pathTokens.length == 4 && pathTokens[3].equals("_indexes")) {
             type = TYPE.COLLECTION_INDEXES;
         }
-        else if (pathTokens.length > 4 && pathTokens[3].equals("_indexes"))
-        {
+        else if (pathTokens.length > 4 && pathTokens[3].equals("_indexes")) {
             type = TYPE.INDEX;
         }
-        else
-        {
+        else {
             type = TYPE.DOCUMENT;
         }
-        
+
         HttpString _method = exchange.getRequestMethod();
-        
-        if (Methods.GET.equals(_method))
+
+        if (Methods.GET.equals(_method)) {
             this.method = METHOD.GET;
-        else if (Methods.POST.equals(_method))
+        }
+        else if (Methods.POST.equals(_method)) {
             this.method = METHOD.POST;
-        else if (Methods.PUT.equals(_method))
+        }
+        else if (Methods.PUT.equals(_method)) {
             this.method = METHOD.PUT;
-        else if (Methods.DELETE.equals(_method))
+        }
+        else if (Methods.DELETE.equals(_method)) {
             this.method = METHOD.DELETE;
-        else if ("PATCH".equals(_method.toString()))
+        }
+        else if ("PATCH".equals(_method.toString())) {
             this.method = METHOD.PATCH;
-        else if (Methods.OPTIONS.equals(_method))
+        }
+        else if (Methods.OPTIONS.equals(_method)) {
             this.method = METHOD.OPTIONS;
-        else
+        }
+        else {
             this.method = METHOD.OTHER;
+        }
     }
 
     /**
-     * given a mapped uri (/some/mapping/coll) returns the canonical uri (/db/coll)
-     * URLs are mapped to mongodb resources by using the mongo-mounts configuration properties
-     * 
+     * given a mapped uri (/some/mapping/coll) returns the canonical uri
+     * (/db/coll) URLs are mapped to mongodb resources by using the mongo-mounts
+     * configuration properties
+     *
      * @param mappedUri
-     * @return 
+     * @return
      */
-    public final String unmapUri(String mappedUri)
-    {
+    public final String unmapUri(String mappedUri) {
         String ret = URLUtilis.removeTrailingSlashes(mappedUri);
-        
-        if (whatUri.equals("*"))
-        {
-            if (!this.whereUri.equals("/"))
+
+        if (whatUri.equals("*")) {
+            if (!this.whereUri.equals("/")) {
                 ret = ret.replaceFirst("^" + this.whereUri, "");
+            }
         }
-        else
-        {
+        else {
             ret = URLUtilis.removeTrailingSlashes(ret.replaceFirst("^" + this.whereUri, this.whatUri));
         }
-        
-        if (ret.isEmpty())
+
+        if (ret.isEmpty()) {
             ret = "/";
-        
+        }
+
         return ret;
     }
-    
+
     /**
-     * given a canonical uri (/db/coll) returns the mapped uri (/db/coll) relative to this context
-     * URLs are mapped to mongodb resources by using the mongo-mounts configuration properties
-     * 
+     * given a canonical uri (/db/coll) returns the mapped uri (/db/coll)
+     * relative to this context URLs are mapped to mongodb resources by using
+     * the mongo-mounts configuration properties
+     *
      * @param unmappedUri
-     * @return 
+     * @return
      */
-    public final String mapUri(String unmappedUri)
-    {
+    public final String mapUri(String unmappedUri) {
         String ret = URLUtilis.removeTrailingSlashes(unmappedUri);
-        
-        if (whatUri.equals("*"))
-        {
-            if (!this.whereUri.equals("/"))
+
+        if (whatUri.equals("*")) {
+            if (!this.whereUri.equals("/")) {
                 return this.whereUri + unmappedUri;
+            }
         }
-        else
-        {
+        else {
             ret = URLUtilis.removeTrailingSlashes(ret.replaceFirst("^" + this.whatUri, this.whereUri));
         }
-        
-        if (ret.isEmpty())
+
+        if (ret.isEmpty()) {
             ret = "/";
-        
+        }
+
         return ret;
     }
-    
+
     /**
-     * check if the parent of the requested resource is accessible in this request context
-     * 
+     * check if the parent of the requested resource is accessible in this
+     * request context
+     *
      * for instance if /mydb/mycollection is mapped to /coll then:
-     * 
-     * the db is accessible from the collection
-     * the root is not accessible from the collection (since / is actually mapped to the db)
-     * 
-     * @return true if parent of the requested resource is accessible 
+     *
+     * the db is accessible from the collection the root is not accessible from
+     * the collection (since / is actually mapped to the db)
+     *
+     * @return true if parent of the requested resource is accessible
      */
-    public final boolean isParentAccessible()
-    {
-        if (type == TYPE.DB)
+    public final boolean isParentAccessible() {
+        if (type == TYPE.DB) {
             return unmappedRequestUri.split("/").length > 1;
-        else
+        }
+        else {
             return unmappedRequestUri.split("/").length > 2;
+        }
     }
-    
-    public TYPE getType()
-    {
+
+    public TYPE getType() {
         return type;
     }
-    
-    public String getDBName()
-    {
-        if (pathTokens.length > 1)
+
+    public String getDBName() {
+        if (pathTokens.length > 1) {
             return pathTokens[1];
-        else
+        }
+        else {
             return null;
+        }
     }
-    
-    public String getCollectionName()
-    {
-        if (pathTokens.length > 2)
+
+    public String getCollectionName() {
+        if (pathTokens.length > 2) {
             return pathTokens[2];
-        else
+        }
+        else {
             return null;
+        }
     }
-    
-    public String getDocumentId()
-    {
-        if (pathTokens.length > 3)
+
+    public String getDocumentId() {
+        if (pathTokens.length > 3) {
             return pathTokens[3];
-        else
+        }
+        else {
             return null;
+        }
     }
-    
-    public String getIndexId()
-    {
-        if (pathTokens.length > 4)
+
+    public String getIndexId() {
+        if (pathTokens.length > 4) {
             return pathTokens[4];
-        else
+        }
+        else {
             return null;
+        }
     }
-    
-    public URI getUri() throws URISyntaxException
-    {
-        return new URI(Arrays.asList(pathTokens).stream().reduce("/", (t1,t2) -> t1 + "/" + t2));
+
+    public URI getUri() throws URISyntaxException {
+        return new URI(Arrays.asList(pathTokens).stream().reduce("/", (t1, t2) -> t1 + "/" + t2));
     }
-    
-    public METHOD getMethod()
-    {
+
+    public METHOD getMethod() {
         return method;
     }
-    
-    public static boolean isReservedResourceDb(String dbName)
-    {
-        return dbName.equals("admin") || dbName.equals("local") ||dbName.startsWith("system.") || dbName.startsWith("_");
+
+    public static boolean isReservedResourceDb(String dbName) {
+        return dbName.equals("admin") || dbName.equals("local") || dbName.startsWith("system.") || dbName.startsWith("_");
     }
-    
-    public static boolean isReservedResourceCollection(String collectionName)
-    {
-        return collectionName!= null && (collectionName.startsWith("system.") || collectionName.startsWith("_") );
+
+    public static boolean isReservedResourceCollection(String collectionName) {
+        return collectionName != null && (collectionName.startsWith("system.") || collectionName.startsWith("_"));
     }
-    
-    public static boolean isReservedResourceDocument(String documentId)
-    {
-        return documentId != null && (documentId.startsWith("_") && !documentId.equals("_indexes"));
+
+    public static boolean isReservedResourceDocument(String documentId) {
+        return documentId != null && documentId.startsWith("_") && !documentId.equals("_indexes");
     }
-    
-    public boolean isReservedResource()
-    {
-        if (type == TYPE.ROOT)
+
+    public boolean isReservedResource() {
+        if (type == TYPE.ROOT) {
             return false;
-        
+        }
+
         return isReservedResourceDb(getDBName()) || isReservedResourceCollection(getCollectionName()) || isReservedResourceDocument(getDocumentId());
     }
 
     /**
      * @return the whereUri
      */
-    public String getUriPrefix()
-    {
+    public String getUriPrefix() {
         return whereUri;
     }
 
     /**
      * @return the whatUri
      */
-    public String getMappingUri()
-    {
+    public String getMappingUri() {
         return whatUri;
     }
 
     /**
      * @return the page
      */
-    public int getPage()
-    {
+    public int getPage() {
         return page;
     }
 
     /**
      * @param page the page to set
      */
-    public void setPage(int page)
-    {
+    public void setPage(int page) {
         this.page = page;
     }
 
     /**
      * @return the pagesize
      */
-    public int getPagesize()
-    {
+    public int getPagesize() {
         return pagesize;
     }
 
     /**
      * @param pagesize the pagesize to set
      */
-    public void setPagesize(int pagesize)
-    {
+    public void setPagesize(int pagesize) {
         this.pagesize = pagesize;
     }
 
     /**
      * @return the count
      */
-    public boolean isCount()
-    {
+    public boolean isCount() {
         return count;
     }
 
     /**
      * @param count the count to set
      */
-    public void setCount(boolean count)
-    {
+    public void setCount(boolean count) {
         this.count = count;
     }
 
     /**
      * @return the filter
      */
-    public Deque<String> getFilter()
-    {
+    public Deque<String> getFilter() {
         return filter;
     }
 
     /**
      * @param filter the filter to set
      */
-    public void setFilter(Deque<String> filter)
-    {
+    public void setFilter(Deque<String> filter) {
         this.filter = filter;
     }
 
     /**
      * @return the sortBy
      */
-    public Deque<String> getSortBy()
-    {
+    public Deque<String> getSortBy() {
         return sortBy;
     }
 
     /**
      * @param sortBy the sortBy to set
      */
-    public void setSortBy(Deque<String> sortBy)
-    {
+    public void setSortBy(Deque<String> sortBy) {
         this.sortBy = sortBy;
     }
-    
+
     /**
      * @return the collectionProps
      */
-    public DBObject getCollectionProps()
-    {
+    public DBObject getCollectionProps() {
         return collectionProps;
     }
 
     /**
      * @param collectionProps the collectionProps to set
      */
-    public void setCollectionProps(DBObject collectionProps)
-    {
+    public void setCollectionProps(DBObject collectionProps) {
         this.collectionProps = collectionProps;
     }
 
     /**
      * @return the dbProps
      */
-    public DBObject getDbProps()
-    {
+    public DBObject getDbProps() {
         return dbProps;
     }
 
     /**
      * @param dbProps the dbProps to set
      */
-    public void setDbProps(DBObject dbProps)
-    {
+    public void setDbProps(DBObject dbProps) {
         this.dbProps = dbProps;
     }
 
     /**
      * @return the content
      */
-    public DBObject getContent()
-    {
+    public DBObject getContent() {
         return content;
     }
 
     /**
      * @param content the content to set
      */
-    public void setContent(DBObject content)
-    {
+    public void setContent(DBObject content) {
         this.content = content;
     }
 
     /**
      * @return the warnings
      */
-    public ArrayList<String> getWarnings()
-    {
+    public ArrayList<String> getWarnings() {
         return warnings;
     }
-    
+
     /**
      * @param warning
      */
-    public void addWarning(String warning)
-    {
+    public void addWarning(String warning) {
         warnings.add(warning);
     }
 
     /**
      * @return the mappedRequestUri
      */
-    public String getMappedRequestUri()
-    {
+    public String getMappedRequestUri() {
         return mappedRequestUri;
     }
-    
+
     /**
      * @return the unmappedRequestUri
      */
-    public String getUnmappedRequestUri()
-    {
+    public String getUnmappedRequestUri() {
         return unmappedRequestUri;
     }
 }

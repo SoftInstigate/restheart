@@ -25,6 +25,7 @@ import io.undertow.util.Headers;
 import static io.undertow.util.Headers.BASIC;
 import static io.undertow.util.Headers.WWW_AUTHENTICATE;
 import io.undertow.util.HttpString;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import javax.xml.bind.DatatypeConverter;
@@ -33,26 +34,23 @@ import javax.xml.bind.DatatypeConverter;
  *
  * @author uji
  */
-public class GetRoleHandler extends ApplicationLogicHandler
-{
-    public static String idmClazzKey = "idm-implementation-class";
-    public static String idmConfFileKey = "idm-conf-file";
-    public static String urlKey = "url";
-    public static String sendChallengeKey = "send-challenge";
-    
+public class GetRoleHandler extends ApplicationLogicHandler {
+    public static final String idmClazzKey = "idm-implementation-class";
+    public static final String idmConfFileKey = "idm-conf-file";
+    public static final String urlKey = "url";
+    public static final String sendChallengeKey = "send-challenge";
+
     private static final String BASIC_PREFIX = BASIC + " ";
     private static final String challenge = BASIC_PREFIX + "realm=\"" + RESTHEART_REALM + "\"";
-    
+
     private IdentityManager idm = null;
     private String url;
     private boolean sendChallenge;
 
-    public GetRoleHandler(PipedHttpHandler next, Map<String, Object> args) throws Exception
-    {
+    public GetRoleHandler(PipedHttpHandler next, Map<String, Object> args) throws Exception {
         super(next, args);
 
-        if (args == null)
-        {
+        if (args == null) {
             throw new IllegalArgumentException("args cannot be null");
         }
 
@@ -64,50 +62,41 @@ public class GetRoleHandler extends ApplicationLogicHandler
 
         Object _idm = Class.forName(idmClazz).getConstructor(Map.class).newInstance(idmArgs);
         this.idm = (IdentityManager) _idm;
-        
+
         this.url = (String) ((Map<String, Object>) args).get(urlKey);
         this.sendChallenge = (boolean) ((Map<String, Object>) args).get(sendChallengeKey);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception
-    {
-        if (context.getMethod() == METHOD.OPTIONS)
-        {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (context.getMethod() == METHOD.OPTIONS) {
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET");
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
             exchange.setResponseCode(HttpStatus.SC_OK);
             exchange.endExchange();
         }
-        else if (context.getMethod() == METHOD.GET)
-        {
+        else if (context.getMethod() == METHOD.GET) {
             String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
-            
-            if (authHeader != null && authHeader.startsWith("Basic "))
-            {
+
+            if (authHeader != null && authHeader.startsWith("Basic ")) {
                 authHeader = authHeader.replaceAll("^Basic ", "");
 
-                byte[] __idAndPwd = null;
+                byte[] __idAndPwd;
 
-                try
-                {
+                try {
                     __idAndPwd = DatatypeConverter.parseBase64Binary(authHeader);
                 }
-                catch (IllegalArgumentException iae)
-                {
+                catch (IllegalArgumentException iae) {
                     __idAndPwd = null;
                 }
 
-                if (__idAndPwd != null)
-                {
-                    String[] idAndPwd = new String(__idAndPwd).split(":");
+                if (__idAndPwd != null) {
+                    String[] idAndPwd = new String(__idAndPwd, StandardCharsets.UTF_8).split(":");
 
-                    if (idAndPwd.length == 2)
-                    {
+                    if (idAndPwd.length == 2) {
                         Account a = idm.verify(idAndPwd[0], new PasswordCredential(idAndPwd[1].toCharArray()));
 
-                        if (a != null)
-                        {
+                        if (a != null) {
                             BasicDBList _roles = new BasicDBList();
 
                             _roles.addAll(a.getRoles());
@@ -138,24 +127,20 @@ public class GetRoleHandler extends ApplicationLogicHandler
             Representation rep = new Representation("/_logic/roles/mine");
             rep.addProperties(root);
 
-            if (sendChallenge)
-            {
+            if (sendChallenge) {
                 exchange.getResponseHeaders().add(WWW_AUTHENTICATE, challenge);
                 exchange.setResponseCode(HttpStatus.SC_UNAUTHORIZED);
             }
-            else
-            {
+            else {
                 exchange.setResponseCode(HttpStatus.SC_OK);
             }
-            
+
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
             exchange.getResponseSender().send(rep.toString());
-            
-            
+
             exchange.endExchange();
         }
-        else
-        {
+        else {
             exchange.setResponseCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             exchange.endExchange();
         }

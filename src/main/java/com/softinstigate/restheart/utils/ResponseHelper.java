@@ -26,126 +26,113 @@ import org.bson.types.ObjectId;
  *
  * @author uji
  */
-public class ResponseHelper
-{
-    public static void endExchange(HttpServerExchange exchange, int code)
-    {
+public class ResponseHelper {
+    public static void endExchange(HttpServerExchange exchange, int code) {
         exchange.setResponseCode(code);
         exchange.endExchange();
     }
 
-    public static void endExchangeWithMessage(HttpServerExchange exchange, int code, String message)
-    {
+    public static void endExchangeWithMessage(HttpServerExchange exchange, int code, String message) {
         endExchangeWithMessage(exchange, code, message, null);
     }
-    
-    public static void endExchangeWithMessage(HttpServerExchange exchange, int code, String message, Throwable t)
-    {
+
+    public static void endExchangeWithMessage(HttpServerExchange exchange, int code, String message, Throwable t) {
         exchange.setResponseCode(code);
 
         String httpStatuText = HttpStatus.getStatusText(code);
-            
+
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(getErrorJsonDocument(exchange.getRequestPath(), code, httpStatuText, message, t));
         exchange.endExchange();
     }
-    
-    private static String getErrorJsonDocument(String href, int code, String httpStatusText, String message, Throwable t)
-    {
+
+    private static String getErrorJsonDocument(String href, int code, String httpStatusText, String message, Throwable t) {
         Representation rep = new Representation(href);
-        
+
         rep.addProperty("http status code", code);
         rep.addProperty("http status description", httpStatusText);
-        if (message != null)
+        if (message != null) {
             rep.addProperty("message", message);
+        }
 
         Representation nrep = new Representation("#");
-        
-        if (t != null)
-        {
+
+        if (t != null) {
             nrep.addProperty("exception", t.getClass().getName());
         }
-        
-        if (t!= null && t.getMessage() != null)
-        {
+
+        if (t != null && t.getMessage() != null) {
             nrep.addProperty("exception message", t.getMessage());
         }
-            
+
         BasicDBList stackTrace = getStackTraceJson(t);
-        
-        if (stackTrace != null)
-        {
+
+        if (stackTrace != null) {
             nrep.addProperty("stack trace", stackTrace);
         }
-        
+
         rep.addRepresentation("rh:exception", nrep);
-        
+
         return rep.toString();
     }
-    
-    private static BasicDBList getStackTraceJson(Throwable t)
-    {
-        if (t == null || t.getStackTrace() == null)
+
+    private static BasicDBList getStackTraceJson(Throwable t) {
+        if (t == null || t.getStackTrace() == null) {
             return null;
-        
+        }
+
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
-        
+
         t.printStackTrace(pw);
-        
+
         String st = sw.toString();
-        
+
         st = st.replaceAll("\t", "  ");
-        
+
         String[] lines = st.split("\n");
-        
+
         BasicDBList list = new BasicDBList();
-        
+
         list.addAll(Arrays.asList(lines));
         return list;
     }
-    
-    public static void injectEtagHeader(HttpServerExchange exchange, Map<String, Object> properties)
-    {
-        if (properties == null)
+
+    public static void injectEtagHeader(HttpServerExchange exchange, Map<String, Object> properties) {
+        if (properties == null) {
             return;
-        
+        }
+
         Object _etag = properties.get("_etag");
-        
-        if (ObjectId.isValid("" + _etag))
-        {
+
+        if (ObjectId.isValid("" + _etag)) {
             ObjectId etag = (ObjectId) _etag;
-            
+
             exchange.getResponseHeaders().put(Headers.ETAG, etag.toString());
         }
     }
-    
-    public static void injectEtagHeader(HttpServerExchange exchange, DBObject properties)
-    {
-        if (properties == null)
+
+    public static void injectEtagHeader(HttpServerExchange exchange, DBObject properties) {
+        if (properties == null) {
             return;
-        
+        }
+
         Object _etag = properties.get("_etag");
-        
-        if (ObjectId.isValid("" + _etag))
-        {
+
+        if (ObjectId.isValid("" + _etag)) {
             ObjectId etag = (ObjectId) _etag;
-            
+
             exchange.getResponseHeaders().put(Headers.ETAG, etag.toString());
         }
     }
-    
-    public static void injectWarnings(Representation rep, HttpServerExchange exchange, RequestContext context)
-    {
-        if (context.getWarnings() != null && !context.getWarnings().isEmpty())
-        {
-            context.getWarnings().stream().map((warning) ->
-            {
+
+    public static void injectWarnings(Representation rep, HttpServerExchange exchange, RequestContext context) {
+        if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
+            context.getWarnings().stream().map((warning) -> {
                 Representation nrep = new Representation("#warnings");
                 nrep.addProperty("message", warning);
                 return nrep;
-            }).forEach((nrep) ->
-            {
+            }).forEach((nrep) -> {
                 rep.addRepresentation("rh:warnings", nrep);
             });
         }

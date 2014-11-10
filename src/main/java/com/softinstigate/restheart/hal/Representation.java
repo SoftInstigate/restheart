@@ -19,86 +19,78 @@ import org.bson.BSONObject;
  *
  * @author uji
  */
-public class Representation
-{
+public class Representation {
     public static final String HAL_JSON_MEDIA_TYPE = "application/hal+json";
-    
+
     private final BasicDBObject properties;
     private final BasicDBObject embedded;
     private final BasicDBObject links;
-    
-    public Representation(String href)
-    {
+
+    public Representation(String href) {
         properties = new BasicDBObject();
         embedded = new BasicDBObject();
         links = new BasicDBObject();
-        
+
         links.put("self", new BasicDBObject("href", href));
     }
-        
-    BasicDBObject getDBObject()
-    {
+
+    BasicDBObject getDBObject() {
         BasicDBObject ret = new BasicDBObject(properties);
-        
-        if (!embedded.isEmpty())
+
+        if (!embedded.isEmpty()) {
             ret.append("_embedded", embedded);
-        
-        if (!links.isEmpty())
-            ret.append("_links", links); 
-        
+        }
+
+        if (!links.isEmpty()) {
+            ret.append("_links", links);
+        }
+
         return ret;
     }
-    
-    public void addLink(Link link)
-    {
-        links.putAll((BSONObject)((Link)link).getDBObject());
+
+    public void addLink(Link link) {
+        links.putAll((BSONObject) ((Link) link).getDBObject());
     }
-    
-    public void addLink(Link link, boolean inArray)
-    {
+
+    public void addLink(Link link, boolean inArray) {
         BasicDBList linkArray = (BasicDBList) links.get(link.getRef());
-        
-        if (linkArray == null)
-        {
+
+        if (linkArray == null) {
             linkArray = new BasicDBList();
             links.append(link.getRef(), linkArray);
         }
-        
+
         linkArray.add(link.getDBObject().get(link.getRef()));
-        
+
         links.put(link.getRef(), linkArray);
     }
-    
-    public void addProperty(String key, Object value)
-    {
+
+    public void addProperty(String key, Object value) {
         properties.append(key, value);
     }
-    
-    public void addProperties(DBObject props)
-    {
-        if (props == null)
+
+    public void addProperties(DBObject props) {
+        if (props == null) {
             return;
-        
+        }
+
         properties.putAll(props);
     }
-    
-    public void addRepresentation(String rel, Representation rep)
-    {
+
+    public void addRepresentation(String rel, Representation rep) {
         BasicDBList repArray = (BasicDBList) embedded.get(rel);
-        
-        if (repArray == null)
-        {
+
+        if (repArray == null) {
             repArray = new BasicDBList();
-            
+
             embedded.append(rel, repArray);
         }
-        
+
         repArray.add(rep.getDBObject());
     }
-    
+
     @Override
-    public String toString()
-    {
+    public String toString() {
         return getDBObject().toString();
     }
 }

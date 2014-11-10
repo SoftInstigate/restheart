@@ -33,45 +33,36 @@ import org.slf4j.LoggerFactory;
  *
  * @author uji
  */
-public class ResourcesExtractor
-{
+public class ResourcesExtractor {
     private static final Logger logger = LoggerFactory.getLogger(ResourcesExtractor.class);
 
-    public static boolean isResourceInJar(String resourcePath) throws URISyntaxException
-    {
+    public static boolean isResourceInJar(String resourcePath) throws URISyntaxException {
         URI uri = Bootstrapper.class.getClassLoader().getResource(resourcePath).toURI();
 
         return uri.toString().startsWith("jar:");
     }
 
-    public static void deleteTempDir(String resourcePath, File tempDir) throws URISyntaxException, IOException
-    {
-        if (isResourceInJar(resourcePath))
-        {
-            if (tempDir.exists())
-                delete(tempDir);
+    public static void deleteTempDir(String resourcePath, File tempDir) throws URISyntaxException, IOException {
+        if (isResourceInJar(resourcePath) && tempDir.exists()) {
+            delete(tempDir);
         }
     }
 
-    public static File extract(String resourcePath) throws IOException, URISyntaxException, IllegalStateException
-    {
+    public static File extract(String resourcePath) throws IOException, URISyntaxException, IllegalStateException {
         //File jarFile = new File(ResourcesExtractor.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 
-        if (Bootstrapper.class.getClassLoader().getResource(resourcePath) == null)
-        {
+        if (Bootstrapper.class.getClassLoader().getResource(resourcePath) == null) {
             logger.warn("no resource to extract from path  {}", resourcePath);
             throw new IllegalStateException("no resource to extract from path " + resourcePath);
         }
-        
+
         URI uri = Bootstrapper.class.getClassLoader().getResource(resourcePath).toURI();
 
-        if (isResourceInJar(resourcePath))
-        {
+        if (isResourceInJar(resourcePath)) {
             FileSystem fs = null;
             File ret = null;
 
-            try
-            {
+            try {
                 // used when run as a JAR file
                 Path destinationDir = Files.createTempDirectory("restheart-");
 
@@ -84,24 +75,19 @@ public class ResourcesExtractor
 
                 Path sourceDir = fs.getPath(resourcePath);
 
-                Files.walkFileTree(sourceDir, new SimpleFileVisitor<Path>()
-                {
+                Files.walkFileTree(sourceDir, new SimpleFileVisitor<Path>() {
                     @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
-                    {
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                         return copy(file);
                     }
 
                     @Override
-                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
-                    {
+                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
                         return copy(dir);
                     }
 
-                    private FileVisitResult copy(Path fileOrDir) throws IOException
-                    {
-                        if (fileOrDir.equals(sourceDir))
-                        {
+                    private FileVisitResult copy(Path fileOrDir) throws IOException {
+                        if (fileOrDir.equals(sourceDir)) {
                             return FileVisitResult.CONTINUE;
                         }
 
@@ -112,39 +98,35 @@ public class ResourcesExtractor
                     }
                 });
             }
-            finally
-            {
-                if (fs != null)
-                {
+            finally {
+                if (fs != null) {
                     fs.close();
                 }
             }
 
             return ret;
         }
-        else
-        {
+        else {
             // used when run from an expanded folder            
             return new File(uri);
         }
     }
 
-    private static void delete(File file) throws IOException
-    {
-        if (file.isDirectory())
-        {
+    private static void delete(File file) throws IOException {
+        if (file.isDirectory()) {
             //directory is empty, then delete it
-            if (file.list().length == 0)
-            {
-                file.delete();
+            if (file.list().length == 0) {
+                boolean deleted = file.delete();
+
+                if (!deleted) {
+                    logger.warn("failted to delete directory " + file.getPath());
+                }
             }
-            else
-            {
+            else {
                 //list all the directory contents
                 String files[] = file.list();
 
-                for (String temp : files)
-                {
+                for (String temp : files) {
                     //construct the file structure
                     File fileDelete = new File(file, temp);
 
@@ -153,17 +135,23 @@ public class ResourcesExtractor
                 }
 
                 //check the directory again, if empty then delete it
-                if (file.list().length == 0)
-                {
-                    file.delete();
+                if (file.list().length == 0) {
+                    boolean deleted = file.delete();
+
+                    if (!deleted) {
+                        logger.warn("failted to delete file " + file.getPath());
+                    }
                 }
             }
 
         }
-        else
-        {
+        else {
             //if file, then delete it
-            file.delete();
+            boolean deleted = file.delete();
+
+            if (!deleted) {
+                logger.warn("failted to delete file " + file.getPath());
+            }
         }
     }
 }
