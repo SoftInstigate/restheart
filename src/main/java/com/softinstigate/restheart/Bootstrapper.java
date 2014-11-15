@@ -162,14 +162,14 @@ public class Bootstrapper {
         try {
             start();
         } catch (Throwable t) {
-            logger.error("error starting restheart. exiting..", t);
+            logger.error("error starting RESTHeart. exiting..", t);
             System.exit(-2);
         }
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                logger.info("restheart stopping");
+                logger.info("stopping RESTHeart");
                 logger.info("waiting for pending request to complete (up to 1 minute)");
 
                 try {
@@ -204,7 +204,7 @@ public class Bootstrapper {
                 }
                 );
 
-                logger.info("restheart stopped");
+                logger.info("RESTHeart stopped");
             }
         });
 
@@ -219,7 +219,7 @@ public class Bootstrapper {
             logger.info("logging to console with level {}", conf.getLogLevel());
         }
 
-        logger.info("restheart started **********************************************");
+        logger.info("RESTHeart started **********************************************");
     }
 
     private static void start() {
@@ -302,13 +302,13 @@ public class Bootstrapper {
                 }
             }
         } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException ex) {
-            logger.error("couldn't start restheart, error with specified keystore. exiting..", ex);
+            logger.error("couldn't start RESTHeart, error with specified keystore. exiting..", ex);
             System.exit(-1);
         } catch (FileNotFoundException ex) {
-            logger.error("couldn't start restheart, keystore file not found. exiting..", ex);
+            logger.error("couldn't start RESTHeart, keystore file not found. exiting..", ex);
             System.exit(-1);
         } catch (IOException ex) {
-            logger.error("couldn't start restheart, error reading the keystore file. exiting..", ex);
+            logger.error("couldn't start RESTHeart, error reading the keystore file. exiting..", ex);
             System.exit(-1);
         }
 
