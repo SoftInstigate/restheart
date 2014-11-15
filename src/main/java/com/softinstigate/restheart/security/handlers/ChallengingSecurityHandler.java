@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.softinstigate.restheart.security;
+package com.softinstigate.restheart.security.handlers;
 
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.PipedWrappingHandler;
+import com.softinstigate.restheart.security.AccessManager;
 import static com.softinstigate.restheart.security.RestheartIdentityManager.RESTHEART_REALM;
 import com.softinstigate.restheart.security.handlers.AccessManagerHandler;
 import com.softinstigate.restheart.security.handlers.PredicateAuthenticationConstraintHandler;
@@ -26,16 +27,24 @@ import io.undertow.security.handlers.AuthenticationCallHandler;
 import io.undertow.security.handlers.AuthenticationMechanismsHandler;
 import io.undertow.security.handlers.SecurityInitialHandler;
 import io.undertow.security.idm.IdentityManager;
+import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpHandler;
 import java.util.Collections;
 import java.util.List;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
-public class SilentSecurityHandler extends PipedWrappingHandler {
-    public SilentSecurityHandler(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager) {
+public class ChallengingSecurityHandler extends PipedWrappingHandler {
+
+    /**
+     *
+     * @param next
+     * @param identityManager
+     * @param accessManager
+     */
+    public ChallengingSecurityHandler(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager) {
         super(next, getSecurityHandlerChain(identityManager, accessManager));
     }
 
@@ -49,13 +58,12 @@ public class SilentSecurityHandler extends PipedWrappingHandler {
 
             handler = new AuthenticationCallHandler(handler);
             handler = new PredicateAuthenticationConstraintHandler(handler, accessManager);
-            final List<AuthenticationMechanism> mechanisms = Collections.<AuthenticationMechanism>singletonList(new SilentBasicAuthenticationMechanism(RESTHEART_REALM));
+            final List<AuthenticationMechanism> mechanisms = Collections.<AuthenticationMechanism>singletonList(new BasicAuthenticationMechanism(RESTHEART_REALM));
             handler = new AuthenticationMechanismsHandler(handler, mechanisms);
             handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE, identityManager, handler);
 
             return handler;
-        }
-        else {
+        } else {
             return null;
         }
     }

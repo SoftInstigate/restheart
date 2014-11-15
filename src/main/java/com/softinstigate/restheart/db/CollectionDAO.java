@@ -19,8 +19,6 @@ import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import com.softinstigate.restheart.utils.HttpStatus;
-import com.softinstigate.restheart.utils.ResponseHelper;
-import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -30,8 +28,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * The Data Access Object for the mongodb Collection resource.
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class CollectionDAO {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
@@ -58,90 +57,107 @@ public class CollectionDAO {
     }
 
     /**
+     * Checks if the collection exists.
+     *
      * WARNING: slow method. perf tests show this can take up to 35% overall
      * requests processing time when getting data from a collection
      *
      * @deprecated
-     * @param exchange
-     * @param dbName
-     * @param collectionName
+     * @param dbName the database name of the collection
+     * @param collName the collection name
      * @return true if the specified collection exits in the db dbName
      */
-    public static boolean checkCollectionExists(HttpServerExchange exchange, String dbName, String collectionName) {
-        if (!doesCollectionExist(dbName, collectionName)) {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * WARNING: quite method. perf tests show this can take up to 35% overall
-     * requests processing time when getting data from a collection
-     *
-     * @deprecated
-     * @param dbName
-     * @param collectionName
-     * @return true if the specified collection exits in the db dbName
-     */
-    public static boolean doesCollectionExist(String dbName, String collectionName) {
+    public static boolean doesCollectionExist(String dbName, String collName) {
         if (dbName == null || dbName.isEmpty() || dbName.contains(" ")) {
             return false;
         }
 
-        BasicDBObject query = new BasicDBObject("name", dbName + "." + collectionName);
+        BasicDBObject query = new BasicDBObject("name", dbName + "." + collName);
 
         return client.getDB(dbName).getCollection("system.namespaces").findOne(query) != null;
     }
 
+    /**
+     * Returns the mongodb DBCollection object for the collection in db dbName.
+     *
+     * @param dbName the database name of the collection the database name of
+     * the collection
+     * @param collName the collection name
+     * @return the mongodb DBCollection object for the collection in db dbName
+     */
     public static DBCollection getCollection(String dbName, String collName) {
         return client.getDB(dbName).getCollection(collName);
     }
 
+    /**
+     * Checks if the given collection is empty. 
+     * Note that RESTHeart creates a
+     * reserved properties document in every collection (with _id
+     * '_properties'). This method returns true even if the collection contains
+     * such document.
+     *
+     * @param coll the mongodb DBCollection object
+     * @return true if the commection is empty
+     */
     public static boolean isCollectionEmpty(DBCollection coll) {
         return coll.count(DOCUMENTS_QUERY) == 0;
     }
 
-    public static void dropCollection(DBCollection coll) {
-        coll.drop();
-    }
-
-    public static long getCollectionSize(DBCollection coll, Deque<String> filter) {
+    /**
+     * Returns the number of documents in the given collection (taking into
+     * account the filters in case).
+     *
+     * @param coll the mongodb DBCollection object.
+     * @param filters the filters to apply. it is a Deque collection of mongodb
+     * query conditions.
+     * @return the number of documents in the given collection (taking into
+     * account the filters in case)
+     */
+    public static long getCollectionSize(DBCollection coll, Deque<String> filters) {
         final BasicDBObject query = DOCUMENTS_QUERY;
 
-        if (filter != null) {
+        if (filters != null) {
             try {
-                filter.stream().forEach(f -> {
+                filters.stream().forEach(f -> {
                     query.putAll((BSONObject) JSON.parse(f));  // this can throw JSONParseException for invalid filter parameters
                 });
-            }
-            catch (JSONParseException jpe) {
-                logger.warn("****** error parsing filter expression {}", filter, jpe);
+            } catch (JSONParseException jpe) {
+                logger.warn("****** error parsing filter expression {}", filters, jpe);
             }
         }
 
         return coll.count(query);
     }
 
-    public static ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filter) throws JSONParseException {
+    /**
+     * Returs the documents of the collection applying, sorting, pagination and
+     * filtering.
+     *
+     * @param coll the mongodb DBCollection object
+     * @param page the page number
+     * @param pagesize the size of the page
+     * @param sortBy the Deque collection of fields to use for sorting (prepend
+     * field name with - for descending sorting)
+     * @param filters the filters to apply. it is a Deque collection of mongodb
+     * query conditions.
+     * @return
+     * @throws JSONParseException
+     */
+    public static ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filters) throws JSONParseException {
         // apply sort_by
         DBObject sort = new BasicDBObject();
 
         if (sortBy == null || sortBy.isEmpty()) {
             sort.put("_id", 1);
-        }
-        else {
+        } else {
             sortBy.stream().forEach((sf) -> {
                 sf = sf.replaceAll("_lastupdated_on", "_etag"); // _lastupdated is not stored and actually generated from @tag
 
                 if (sf.startsWith("-")) {
                     sort.put(sf.substring(1), -1);
-                }
-                else if (sf.startsWith("+")) {
+                } else if (sf.startsWith("+")) {
                     sort.put(sf.substring(1), -1);
-                }
-                else {
+                } else {
                     sort.put(sf, 1);
                 }
             });
@@ -150,8 +166,8 @@ public class CollectionDAO {
         // apply filter
         final BasicDBObject query = new BasicDBObject(DOCUMENTS_QUERY);
 
-        if (filter != null) {
-            filter.stream().forEach((String f) -> {
+        if (filters != null) {
+            filters.stream().forEach((String f) -> {
                 BSONObject filterQuery = (BSONObject) JSON.parse(f);
                 replaceObjectIds(filterQuery);
 
@@ -175,6 +191,13 @@ public class CollectionDAO {
         return data;
     }
 
+    /**
+     * Returns the collection properties document.
+     *
+     * @param dbName the database name of the collection
+     * @param collName the collection name
+     * @return the collection properties document
+     */
     public static DBObject getCollectionProps(String dbName, String collName) {
         DBCollection coll = CollectionDAO.getCollection(dbName, collName);
 
@@ -196,15 +219,16 @@ public class CollectionDAO {
     }
 
     /**
+     * Upsert the collection properties.
      *
-     *
-     * @param dbName
-     * @param collName
-     * @param content
-     * @param etag
-     * @param updating
-     * @param patching
-     * @return the HttpStatus code to retrun
+     * @param dbName the database name of the collection
+     * @param collName the collection name
+     * @param content the new collection properties
+     * @param etag the entity tag. must match to allow actual write (otherwise
+     * http error code is returned)
+     * @param updating true if updating existing document
+     * @param patching true if use patch semantic (update only specified fields)
+     * @return the HttpStatus code to set in the http response
      */
     public static int upsertCollection(String dbName, String collName, DBObject content, ObjectId etag, boolean updating, boolean patching) {
         DB db = DBDAO.getDB(dbName);
@@ -240,8 +264,7 @@ public class CollectionDAO {
         if (updating) {
             content.removeField("_crated_on"); // don't allow to update this field
             content.put("_etag", timestamp);
-        }
-        else {
+        } else {
             content.put("_id", "_properties");
             content.put("_created_on", now.toString());
             content.put("_etag", timestamp);
@@ -250,8 +273,7 @@ public class CollectionDAO {
         if (patching) {
             coll.update(PROPS_QUERY, new BasicDBObject("$set", content), true, false);
             return HttpStatus.SC_OK;
-        }
-        else {
+        } else {
             // we use findAndModify to get the @created_on field value from the existing properties document
             // we need to put this field back using a second update 
             // it is not possible in a single update even using $setOnInsert update operator
@@ -273,8 +295,7 @@ public class CollectionDAO {
                 coll.update(PROPS_QUERY, new BasicDBObject("$set", createdContet), true, false);
 
                 return HttpStatus.SC_OK;
-            }
-            else {
+            } else {
                 // need to readd the @created_on field 
                 BasicDBObject createdContet = new BasicDBObject("_created_on", now.toString());
                 createdContet.markAsPartialObject();
@@ -287,24 +308,32 @@ public class CollectionDAO {
         }
     }
 
-    public static int deleteCollection(String dbName, String collName, ObjectId requestEtag) {
+    /**
+     * Deletes a collection.
+     *
+     * @param dbName the database name of the collection
+     * @param collName the collection name
+     * @param etag the entity tag. must match to allow actual write (otherwise
+     * http error code is returned)
+     * @return the HttpStatus code to set in the http response
+     */
+    public static int deleteCollection(String dbName, String collName, ObjectId etag) {
         DBCollection coll = getCollection(dbName, collName);
 
         BasicDBObject checkEtag = new BasicDBObject("_id", "_properties");
-        checkEtag.append("_etag", requestEtag);
+        checkEtag.append("_etag", etag);
 
         DBObject exists = coll.findOne(checkEtag, fieldsToReturn);
 
         if (exists == null) {
             return HttpStatus.SC_PRECONDITION_FAILED;
-        }
-        else {
+        } else {
             coll.drop();
             return HttpStatus.SC_NO_CONTENT;
         }
     }
 
-    public static ArrayList<DBObject> getDataFromCursor(DBCursor cursor) {
+    private static ArrayList<DBObject> getDataFromCursor(DBCursor cursor) {
         return new ArrayList<>(cursor.toArray());
     }
 
@@ -315,7 +344,7 @@ public class CollectionDAO {
     }
 
     /**
-     * this replaces string that are valid ObjectIds with ObjectIds objects
+     * this replaces string that are valid ObjectIds with ObjectIds objects.
      *
      * @param source
      * @return
@@ -330,8 +359,7 @@ public class CollectionDAO {
 
             if (o instanceof BSONObject) {
                 replaceObjectIds((BSONObject) o);
-            }
-            else if (ObjectId.isValid(o.toString())) {
+            } else if (ObjectId.isValid(o.toString())) {
                 source.put(key, new ObjectId(o.toString()));
             }
         });

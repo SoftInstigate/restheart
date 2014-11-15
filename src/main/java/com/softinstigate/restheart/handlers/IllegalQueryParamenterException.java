@@ -12,13 +12,23 @@ package com.softinstigate.restheart.handlers;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class IllegalQueryParamenterException extends Exception {
+
+    /**
+     *
+     * @param message
+     */
     public IllegalQueryParamenterException(String message) {
         super(message);
     }
 
+    /**
+     *
+     * @param message
+     * @param cause
+     */
     public IllegalQueryParamenterException(String message, Throwable cause) {
         super(message, cause);
     }

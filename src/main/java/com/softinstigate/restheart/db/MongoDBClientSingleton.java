@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class MongoDBClientSingleton {
     private static boolean initialized = false;
@@ -44,23 +44,25 @@ public class MongoDBClientSingleton {
         }
 
         try {
-            setup(); }
-        catch (UnknownHostException ex) {
+            setup();
+        } catch (UnknownHostException ex) {
             logger.error("error initializing mongodb client", ex);
-        }
-        catch (Throwable tr) {
+        } catch (Throwable tr) {
             logger.error("error initializing mongodb client", tr);
         }
     }
 
+    /**
+     *
+     * @param conf
+     */
     public static void init(Configuration conf) {
         mongoServers = conf.getMongoServers();
         mongoCredentials = conf.getMongoCredentials();
 
         if (mongoServers != null && !mongoServers.isEmpty()) {
             initialized = true;
-        }
-        else {
+        } else {
             logger.error("error initializing mongodb client, no servers found in configuration");
         }
     }
@@ -71,8 +73,8 @@ public class MongoDBClientSingleton {
             List<MongoCredential> credentials = new ArrayList<>();
 
             for (Map<String, Object> mongoServer : mongoServers) {
-                Object mongoHost = mongoServer.get(Configuration.MONGO_HOST);
-                Object mongoPort = mongoServer.get(Configuration.MONGO_PORT);
+                Object mongoHost = mongoServer.get(Configuration.MONGO_HOST_KEY);
+                Object mongoPort = mongoServer.get(Configuration.MONGO_PORT_KEY);
 
                 if (mongoHost != null && mongoHost instanceof String && mongoPort != null && mongoPort instanceof Integer) {
                     servers.add(new ServerAddress((String) mongoHost, (int) mongoPort));
@@ -81,9 +83,9 @@ public class MongoDBClientSingleton {
 
             if (mongoCredentials != null) {
                 for (Map<String, Object> mongoCredential : mongoCredentials) {
-                    Object mongoAuthDb = mongoCredential.get(Configuration.MONGO_AUTH_DB);
-                    Object mongoUser = mongoCredential.get(Configuration.MONGO_USER);
-                    Object mongoPwd = mongoCredential.get(Configuration.MONGO_PASSWORD);
+                    Object mongoAuthDb = mongoCredential.get(Configuration.MONGO_AUTH_DB_KEY);
+                    Object mongoUser = mongoCredential.get(Configuration.MONGO_USER_KEY);
+                    Object mongoPwd = mongoCredential.get(Configuration.MONGO_PASSWORD_KEY);
 
                     if (mongoAuthDb != null && mongoAuthDb instanceof String && mongoUser != null && mongoUser instanceof String && mongoPwd != null && mongoPwd instanceof String) {
                         credentials.add(MongoCredential.createMongoCRCredential((String) mongoUser, (String) mongoAuthDb, ((String) mongoPwd).toCharArray()));
@@ -97,6 +99,10 @@ public class MongoDBClientSingleton {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     public static MongoDBClientSingleton getInstance() {
         return MongoDBClientSingletonHolder.INSTANCE;
     }
@@ -105,6 +111,10 @@ public class MongoDBClientSingleton {
         private static final MongoDBClientSingleton INSTANCE = new MongoDBClientSingleton();
     }
 
+    /**
+     *
+     * @return
+     */
     public MongoClient getClient() {
         if (this.mongoClient == null) {
             throw new IllegalStateException("mongo client not initialized");

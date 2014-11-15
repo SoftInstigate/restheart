@@ -22,7 +22,7 @@ import org.junit.Test;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class PatchDBIT extends AbstactIT {
 

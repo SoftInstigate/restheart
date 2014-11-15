@@ -13,24 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.softinstigate.restheart.security;
+package com.softinstigate.restheart.security.handlers;
 
+import com.softinstigate.restheart.security.handlers.SilentSecurityHandler;
+import com.softinstigate.restheart.security.handlers.ChallengingSecurityHandler;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestContext;
+import com.softinstigate.restheart.security.AccessManager;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpServerExchange;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class SecurityHandler extends PipedHttpHandler {
+
+    /**
+     *
+     */
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
+
+    /**
+     *
+     */
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
 
     private final SilentSecurityHandler silentHandler;
     private final ChallengingSecurityHandler challengingHandler;
 
+    /**
+     *
+     * @param next
+     * @param identityManager
+     * @param accessManager
+     */
     public SecurityHandler(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager) {
         super(null);
 
@@ -38,12 +55,17 @@ public class SecurityHandler extends PipedHttpHandler {
         challengingHandler = new ChallengingSecurityHandler(next, identityManager, accessManager);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (exchange.getRequestHeaders().contains(SILENT_HEADER_KEY) || exchange.getQueryParameters().containsKey(SILENT_QUERY_PARAM_KEY)) {
             silentHandler.handleRequest(exchange, context);
-        }
-        else {
+        } else {
             challengingHandler.handleRequest(exchange, context);
         }
     }

@@ -32,12 +32,28 @@ import javax.xml.bind.DatatypeConverter;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class GetRoleHandler extends ApplicationLogicHandler {
+
+    /**
+     * the key for the idm-implementation-class property.
+     */
     public static final String idmClazzKey = "idm-implementation-class";
+
+    /**
+     * the key for the dm-conf-file property.
+     */
     public static final String idmConfFileKey = "idm-conf-file";
+
+    /**
+     * the key for the url property.
+     */
     public static final String urlKey = "url";
+
+    /**
+     * the key for the send-challenge property.
+     */
     public static final String sendChallengeKey = "send-challenge";
 
     private static final String BASIC_PREFIX = BASIC + " ";
@@ -47,6 +63,12 @@ public class GetRoleHandler extends ApplicationLogicHandler {
     private String url;
     private boolean sendChallenge;
 
+    /**
+     * Creates a new instance of GetRoleHandler
+     * @param next
+     * @param args
+     * @throws Exception
+     */
     public GetRoleHandler(PipedHttpHandler next, Map<String, Object> args) throws Exception {
         super(next, args);
 
@@ -67,6 +89,13 @@ public class GetRoleHandler extends ApplicationLogicHandler {
         this.sendChallenge = (boolean) ((Map<String, Object>) args).get(sendChallengeKey);
     }
 
+    /**
+     * Handles the request.
+     * 
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getMethod() == METHOD.OPTIONS) {
@@ -74,8 +103,7 @@ public class GetRoleHandler extends ApplicationLogicHandler {
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
             exchange.setResponseCode(HttpStatus.SC_OK);
             exchange.endExchange();
-        }
-        else if (context.getMethod() == METHOD.GET) {
+        } else if (context.getMethod() == METHOD.GET) {
             String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
 
             if (authHeader != null && authHeader.startsWith("Basic ")) {
@@ -85,8 +113,7 @@ public class GetRoleHandler extends ApplicationLogicHandler {
 
                 try {
                     __idAndPwd = DatatypeConverter.parseBase64Binary(authHeader);
-                }
-                catch (IllegalArgumentException iae) {
+                } catch (IllegalArgumentException iae) {
                     __idAndPwd = null;
                 }
 
@@ -130,8 +157,7 @@ public class GetRoleHandler extends ApplicationLogicHandler {
             if (sendChallenge) {
                 exchange.getResponseHeaders().add(WWW_AUTHENTICATE, challenge);
                 exchange.setResponseCode(HttpStatus.SC_UNAUTHORIZED);
-            }
-            else {
+            } else {
                 exchange.setResponseCode(HttpStatus.SC_OK);
             }
 
@@ -139,8 +165,7 @@ public class GetRoleHandler extends ApplicationLogicHandler {
             exchange.getResponseSender().send(rep.toString());
 
             exchange.endExchange();
-        }
-        else {
+        } else {
             exchange.setResponseCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             exchange.endExchange();
         }

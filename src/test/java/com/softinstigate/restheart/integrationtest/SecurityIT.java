@@ -11,7 +11,7 @@
 package com.softinstigate.restheart.integrationtest;
 
 import com.softinstigate.restheart.hal.Representation;
-import com.softinstigate.restheart.security.SecurityHandler;
+import com.softinstigate.restheart.security.handlers.SecurityHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
 import junit.framework.Assert;
@@ -23,7 +23,7 @@ import org.junit.Test;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class SecurityIT extends AbstactIT {
     public SecurityIT() {

@@ -22,7 +22,7 @@ import io.undertow.server.HttpServerExchange;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class PutIndexHandler extends PipedHttpHandler {
     private static final BasicDBObject fieldsToReturn;
@@ -40,6 +40,12 @@ public class PutIndexHandler extends PipedHttpHandler {
         super(null);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         String db = context.getDBName();
@@ -69,8 +75,7 @@ public class PutIndexHandler extends PipedHttpHandler {
 
         try {
             IndexDAO.createIndex(db, co, keys, ops);
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "error creating the index", t);
             return;
         }

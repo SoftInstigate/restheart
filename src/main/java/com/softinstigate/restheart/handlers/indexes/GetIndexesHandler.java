@@ -20,7 +20,7 @@ import java.util.List;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class GetIndexesHandler extends PipedHttpHandler {
     /**
@@ -30,6 +30,12 @@ public class GetIndexesHandler extends PipedHttpHandler {
         super(null);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         List<DBObject> indexes = IndexDAO.getCollectionIndexes(context.getDBName(), context.getCollectionName());

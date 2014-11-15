@@ -26,7 +26,7 @@ import org.bson.types.ObjectId;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class PatchDBHandler extends PipedHttpHandler {
     /**
@@ -76,14 +76,12 @@ public class PatchDBHandler extends PipedHttpHandler {
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             if (SC == HttpStatus.SC_NO_CONTENT) {
                 exchange.setResponseCode(HttpStatus.SC_OK);
-            }
-            else {
+            } else {
                 exchange.setResponseCode(SC);
             }
 
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
-        }
-        else {
+        } else {
             exchange.setResponseCode(SC);
         }
 

@@ -27,11 +27,19 @@ import org.slf4j.Logger;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class IndexesRepresentationFactory {
     private static final Logger logger = LoggerFactory.getLogger(IndexesRepresentationFactory.class);
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param embeddedData
+     * @param size
+     * @throws IllegalQueryParamenterException
+     */
     static public void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
         String requestPath = URLUtilis.removeTrailingSlashes(context.getMappedRequestUri());
@@ -63,8 +71,7 @@ public class IndexesRepresentationFactory {
                         nrep.addProperties(d);
 
                         rep.addRepresentation("rh:index", nrep);
-                    }
-                    else {
+                    } else {
                         logger.error("index missing string _id field", d);
                     }
                 });

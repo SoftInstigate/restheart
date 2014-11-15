@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class PutDocumentHandler extends PipedHttpHandler {
     private static final Logger logger = LoggerFactory.getLogger(PutCollectionHandler.class);
@@ -47,6 +47,12 @@ public class PutDocumentHandler extends PipedHttpHandler {
         super(null);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         DBObject content = context.getContent();
@@ -65,8 +71,7 @@ public class PutDocumentHandler extends PipedHttpHandler {
 
         if (content.get("_id") == null) {
             content.put("_id", getId(id));
-        }
-        else if (!content.get("_id").equals(id)) {
+        } else if (!content.get("_id").equals(id)) {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
             logger.warn("not acceptable: _id in content body is different than id in URL");
             return;
@@ -80,14 +85,12 @@ public class PutDocumentHandler extends PipedHttpHandler {
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             if (SC == HttpStatus.SC_NO_CONTENT) {
                 exchange.setResponseCode(HttpStatus.SC_OK);
-            }
-            else {
+            } else {
                 exchange.setResponseCode(SC);
             }
 
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
-        }
-        else {
+        } else {
             exchange.setResponseCode(SC);
         }
 
@@ -97,8 +100,7 @@ public class PutDocumentHandler extends PipedHttpHandler {
     private static Object getId(String id) {
         if (ObjectId.isValid(id)) {
             return new ObjectId(id);
-        }
-        else {
+        } else {
             // the id is not an object id
             return id;
         }

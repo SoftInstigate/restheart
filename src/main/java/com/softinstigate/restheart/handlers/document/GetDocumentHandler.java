@@ -25,7 +25,7 @@ import org.bson.types.ObjectId;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class GetDocumentHandler extends PipedHttpHandler {
     /**
@@ -35,6 +35,12 @@ public class GetDocumentHandler extends PipedHttpHandler {
         super(null);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         ObjectId oid;
@@ -43,8 +49,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
         if (ObjectId.isValid(context.getDocumentId())) {
             sid = null;
             oid = new ObjectId(context.getDocumentId());
-        }
-        else {
+        } else {
             // the id is not an object id
             sid = context.getDocumentId();
             oid = null;
@@ -54,8 +59,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
 
         if (oid != null) {
             query = new BasicDBObject("_id", oid);
-        }
-        else {
+        } else {
             query = new BasicDBObject("_id", sid);
         }
 

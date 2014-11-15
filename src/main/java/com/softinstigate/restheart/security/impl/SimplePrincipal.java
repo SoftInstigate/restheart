@@ -14,11 +14,15 @@ import java.security.Principal;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class SimplePrincipal implements Principal {
     private String name;
 
+    /**
+     *
+     * @param name
+     */
     public SimplePrincipal(String name) {
         if (name == null) {
             throw new IllegalArgumentException("argument name cannot be null");

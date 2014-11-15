@@ -30,11 +30,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
+/**
+ *
+ * @author Andrea Di Cesare
+ */
 public class SimpleFileIdentityManager implements IdentityManager {
     private static final Logger logger = LoggerFactory.getLogger(SimpleFileIdentityManager.class);
 
     private final Map<String, SimpleAccount> accounts;
 
+    /**
+     *
+     * @param arguments
+     */
     public SimpleFileIdentityManager(Map<String, Object> arguments) {
         if (arguments == null) {
             logger.error("missing required argument conf-file");
@@ -58,27 +66,23 @@ public class SimpleFileIdentityManager implements IdentityManager {
         }
 
         this.accounts = new HashMap<>();
-        
+
         FileInputStream fis = null;
 
         try {
             fis = new FileInputStream(new File(confFilePath));
             init((Map<String, Object>) new Yaml().load(fis));
-        }
-        catch (FileNotFoundException fnef) {
+        } catch (FileNotFoundException fnef) {
             logger.error("configuration file not found.", fnef);
             throw new IllegalArgumentException("configuration file not found.", fnef);
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             logger.error("wrong configuration file format.", t);
             throw new IllegalArgumentException("wrong configuration file format.", t);
-        }
-        finally {
+        } finally {
             if (fis != null) {
                 try {
                     fis.close();
-                }
-                catch (IOException ex) {
+                } catch (IOException ex) {
                     logger.warn("error closing the configuration file {}", confFilePath);
                 }
             }

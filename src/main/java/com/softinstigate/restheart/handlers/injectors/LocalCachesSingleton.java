@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class LocalCachesSingleton {
     private static final String SEPARATOR = "_@_@_";
@@ -42,6 +42,10 @@ public class LocalCachesSingleton {
         setup();
     }
 
+    /**
+     *
+     * @param conf
+     */
     public static void init(Configuration conf) {
         ttl = conf.getLocalCacheTtl();
         enabled = conf.isLocalCacheEnabled();
@@ -81,6 +85,10 @@ public class LocalCachesSingleton {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     public static LocalCachesSingleton getInstance() {
         return LocalCachesSingletonHolder.INSTANCE;
     }
@@ -89,6 +97,11 @@ public class LocalCachesSingleton {
         private static final LocalCachesSingleton INSTANCE = new LocalCachesSingleton();
     }
 
+    /**
+     *
+     * @param dbName
+     * @return
+     */
     public DBObject getDBProps(String dbName) {
         if (!enabled) {
             throw new IllegalStateException("tried to use disabled cache");
@@ -102,20 +115,16 @@ public class LocalCachesSingleton {
             if (_dbProps.isPresent()) {
                 dbProps = _dbProps.get();
                 dbProps.put("_db-props-cached", true);
-            }
-            else {
+            } else {
                 dbProps = null;
             }
-        }
-        else {
+        } else {
             try {
                 _dbProps = dbPropsCache.getUnchecked(dbName);
-            }
-            catch (UncheckedExecutionException uex) {
+            } catch (UncheckedExecutionException uex) {
                 if (uex.getCause() instanceof MongoException) {
                     throw (MongoException) uex.getCause();
-                }
-                else {
+                } else {
                     throw uex;
                 }
             }
@@ -123,8 +132,7 @@ public class LocalCachesSingleton {
             if (_dbProps != null && _dbProps.isPresent()) {
                 dbProps = _dbProps.get();
                 dbProps.put("_db-props-cached", false);
-            }
-            else {
+            } else {
                 dbProps = null;
             }
         }
@@ -132,6 +140,12 @@ public class LocalCachesSingleton {
         return dbProps;
     }
 
+    /**
+     *
+     * @param dbName
+     * @param collName
+     * @return
+     */
     public DBObject getCollectionProps(String dbName, String collName) {
         if (!enabled) {
             throw new IllegalStateException("tried to use disabled cache");
@@ -145,20 +159,16 @@ public class LocalCachesSingleton {
             if (_collProps.isPresent()) {
                 collProps = _collProps.get();
                 collProps.put("_collection-props-cached", true);
-            }
-            else {
+            } else {
                 collProps = null;
             }
-        }
-        else {
+        } else {
             try {
                 _collProps = collectionPropsCache.getUnchecked(dbName + SEPARATOR + collName);
-            }
-            catch (UncheckedExecutionException uex) {
+            } catch (UncheckedExecutionException uex) {
                 if (uex.getCause() instanceof MongoException) {
                     throw (MongoException) uex.getCause();
-                }
-                else {
+                } else {
                     throw uex;
                 }
             }
@@ -166,8 +176,7 @@ public class LocalCachesSingleton {
             if (_collProps.isPresent()) {
                 collProps = _collProps.get();
                 collProps.put("_collection-props-cached", false);
-            }
-            else {
+            } else {
                 collProps = null;
             }
         }
@@ -175,12 +184,21 @@ public class LocalCachesSingleton {
         return collProps;
     }
 
+    /**
+     *
+     * @param dbName
+     */
     public void invalidateDb(String dbName) {
         if (enabled && dbPropsCache != null) {
             dbPropsCache.invalidate(dbName);
         }
     }
 
+    /**
+     *
+     * @param dbName
+     * @param collName
+     */
     public void invalidateCollection(String dbName, String collName) {
         if (enabled && collectionPropsCache != null) {
             collectionPropsCache.invalidate(dbName + SEPARATOR + collName);

@@ -35,7 +35,7 @@ import com.softinstigate.restheart.utils.ResponseHelper;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class RequestDispacherHandler extends PipedHttpHandler {
     private final GetRootHandler rootGet;
@@ -117,6 +117,12 @@ public class RequestDispacherHandler extends PipedHttpHandler {
         this.indexDelete = indexDelete;
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getType() == TYPE.ERROR) {
@@ -154,8 +160,7 @@ public class RequestDispacherHandler extends PipedHttpHandler {
                 default:
                     ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
             }
-        }
-        else if (context.getMethod() == METHOD.POST) {
+        } else if (context.getMethod() == METHOD.POST) {
             switch (context.getType()) {
                 case COLLECTION:
                     collectionPost.handleRequest(exchange, context);
@@ -163,8 +168,7 @@ public class RequestDispacherHandler extends PipedHttpHandler {
                 default:
                     ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
             }
-        }
-        else if (context.getMethod() == METHOD.PUT) {
+        } else if (context.getMethod() == METHOD.PUT) {
             switch (context.getType()) {
                 case DB:
                     dbPut.handleRequest(exchange, context);
@@ -181,8 +185,7 @@ public class RequestDispacherHandler extends PipedHttpHandler {
                 default:
                     ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
             }
-        }
-        else if (context.getMethod() == METHOD.DELETE) {
+        } else if (context.getMethod() == METHOD.DELETE) {
             switch (context.getType()) {
                 case DB:
                     dbDelete.handleRequest(exchange, context);
@@ -199,8 +202,7 @@ public class RequestDispacherHandler extends PipedHttpHandler {
                 default:
                     ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
             }
-        }
-        else if (context.getMethod() == METHOD.PATCH) {
+        } else if (context.getMethod() == METHOD.PATCH) {
             switch (context.getType()) {
                 case DB:
                     dbPatch.handleRequest(exchange, context);
@@ -214,8 +216,7 @@ public class RequestDispacherHandler extends PipedHttpHandler {
                 default:
                     ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
             }
-        }
-        else {
+        } else {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
     }

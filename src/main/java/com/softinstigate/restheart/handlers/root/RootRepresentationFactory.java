@@ -29,11 +29,20 @@ import org.slf4j.Logger;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class RootRepresentationFactory {
     private static final Logger logger = LoggerFactory.getLogger(RootRepresentationFactory.class);
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param embeddedData
+     * @param size
+     * @throws IllegalQueryParamenterException
+     * @throws URISyntaxException
+     */
     public static void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException, URISyntaxException {
         Representation rep = getDbs(exchange, context, embeddedData, size);
@@ -76,8 +85,7 @@ public class RootRepresentationFactory {
 
                         if (trailingSlash) {
                             nrep = new Representation(requestPath + _id.toString());
-                        }
-                        else {
+                        } else {
                             nrep = new Representation(requestPath + "/" + _id.toString());
                         }
 
@@ -89,8 +97,7 @@ public class RootRepresentationFactory {
                         nrep.addProperties(d);
 
                         rep.addRepresentation("rh:db", nrep);
-                    }
-                    else {
+                    } else {
                         logger.error("db missing string _id field", d);
                     }
                 });

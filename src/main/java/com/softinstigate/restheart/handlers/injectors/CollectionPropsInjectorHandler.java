@@ -23,7 +23,7 @@ import io.undertow.server.HttpServerExchange;
  * handler is also responsible of sending NOT_FOUND in case of requests
  * involving not existing collections (that are not PUT)
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class CollectionPropsInjectorHandler extends PipedHttpHandler {
     /**
@@ -35,6 +35,12 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
         super(next);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getDBName() != null && context.getCollectionName() != null) {
@@ -45,15 +51,13 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
 
                 if (collProps != null) {
                     collProps.put("_collection-props-cached", false);
-                }
-                else if (!(context.getType() == RequestContext.TYPE.COLLECTION && context.getMethod() == RequestContext.METHOD.PUT)
+                } else if (!(context.getType() == RequestContext.TYPE.COLLECTION && context.getMethod() == RequestContext.METHOD.PUT)
                         && context.getType() != RequestContext.TYPE.ROOT
                         && context.getType() != RequestContext.TYPE.DB) {
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "collection does not exist");
                     return;
                 }
-            }
-            else {
+            } else {
                 collProps = LocalCachesSingleton.getInstance().getCollectionProps(context.getDBName(), context.getCollectionName());
             }
 

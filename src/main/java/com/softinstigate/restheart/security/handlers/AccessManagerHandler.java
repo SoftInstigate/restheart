@@ -19,7 +19,7 @@ import io.undertow.server.HttpServerExchange;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class AccessManagerHandler extends PipedHttpHandler {
     private final AccessManager accessManager;
@@ -35,14 +35,19 @@ public class AccessManagerHandler extends PipedHttpHandler {
         this.accessManager = accessManager;
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (accessManager.isAllowed(exchange, context)) {
             if (next != null) {
                 next.handleRequest(exchange, context);
             }
-        }
-        else {
+        } else {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_UNAUTHORIZED);
         }
     }

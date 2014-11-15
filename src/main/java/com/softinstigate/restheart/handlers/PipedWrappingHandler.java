@@ -15,7 +15,7 @@ import io.undertow.server.HttpServerExchange;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class PipedWrappingHandler extends PipedHttpHandler {
     private final HttpHandler wrapped;
@@ -31,12 +31,17 @@ public class PipedWrappingHandler extends PipedHttpHandler {
         wrapped = toWrap;
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (wrapped == null) {
             next.handleRequest(exchange, context);
-        }
-        else {
+        } else {
             wrapped.handleRequest(exchange);
 
             if (!exchange.isResponseComplete()) {

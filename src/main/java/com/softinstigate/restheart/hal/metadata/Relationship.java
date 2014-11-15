@@ -22,25 +22,86 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class Relationship {
     private static final Logger logger = LoggerFactory.getLogger(Relationship.class);
 
+    /**
+     *
+     */
     public enum TYPE {
-        ONE_TO_ONE, ONE_TO_MANY, MANY_TO_ONE, MANY_TO_MANY
+
+        /**
+         *
+         */
+        ONE_TO_ONE,
+
+        /**
+         *
+         */
+        ONE_TO_MANY,
+
+        /**
+         *
+         */
+        MANY_TO_ONE,
+
+        /**
+         *
+         */
+        MANY_TO_MANY
     };
 
+    /**
+     *
+     */
     public enum ROLE {
-        OWNING, INVERSE
+
+        /**
+         *
+         */
+        OWNING,
+
+        /**
+         *
+         */
+        INVERSE
     };
 
+    /**
+     *
+     */
     public static final String RELATIONSHIPS_ELEMENT_NAME = "rels";
+
+    /**
+     *
+     */
     public static final String REL_ELEMENT_NAME = "rel";
+
+    /**
+     *
+     */
     public static final String TYPE_ELEMENT_NAME = "type";
+
+    /**
+     *
+     */
     public static final String ROLE_ELEMENT_NAME = "role";
+
+    /**
+     *
+     */
     public static final String TARGET_DB_ELEMENT_NAME = "target-db";
+
+    /**
+     *
+     */
     public static final String TARGET_COLLECTION_ELEMENT_NAME = "target-coll";
+
+    /**
+     *
+     */
     public static final String REF_ELEMENT_NAME = "ref-field";
 
     private final String rel;
@@ -50,6 +111,15 @@ public class Relationship {
     private final String targetCollection;
     private final String referenceField;
 
+    /**
+     *
+     * @param rel
+     * @param type
+     * @param role
+     * @param targetDb
+     * @param targetCollection
+     * @param referenceField
+     */
     public Relationship(String rel, TYPE type, ROLE role, String targetDb, String targetCollection, String referenceField) {
         this.rel = rel;
         this.type = type;
@@ -59,6 +129,16 @@ public class Relationship {
         this.referenceField = referenceField;
     }
 
+    /**
+     *
+     * @param rel
+     * @param type
+     * @param role
+     * @param targetDb
+     * @param targetCollection
+     * @param referenceField
+     * @throws InvalidMetadataException
+     */
     public Relationship(String rel, String type, String role, String targetDb, String targetCollection, String referenceField) throws InvalidMetadataException {
         this.rel = rel;
 
@@ -81,6 +161,12 @@ public class Relationship {
         this.referenceField = referenceField;
     }
 
+    /**
+     *
+     * @param collProps
+     * @return
+     * @throws InvalidMetadataException
+     */
     public static List<Relationship> getFromJson(DBObject collProps) throws InvalidMetadataException {
         if (collProps == null) {
             return null;
@@ -154,6 +240,15 @@ public class Relationship {
         return new Relationship(rel, type, role, targetDb, targetCollection, referenceField);
     }
 
+    /**
+     *
+     * @param context
+     * @param dbName
+     * @param collName
+     * @param data
+     * @return
+     * @throws IllegalArgumentException
+     */
     public String getRelationshipLink(RequestContext context, String dbName, String collName, DBObject data) throws IllegalArgumentException {
         Object _referenceValue = data.get(referenceField);
         String reference;

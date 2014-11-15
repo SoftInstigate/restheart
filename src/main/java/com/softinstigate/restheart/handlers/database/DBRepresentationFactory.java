@@ -28,11 +28,19 @@ import org.slf4j.Logger;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class DBRepresentationFactory {
     private static final Logger logger = LoggerFactory.getLogger(DBRepresentationFactory.class);
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param embeddedData
+     * @param size
+     * @throws IllegalQueryParamenterException
+     */
     static public void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
         String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
@@ -77,8 +85,7 @@ public class DBRepresentationFactory {
                         nrep.addProperties(d);
 
                         rep.addRepresentation("rh:coll", nrep);
-                    }
-                    else {
+                    } else {
                         logger.error("document missing string _id field", d);
                     }
                 });

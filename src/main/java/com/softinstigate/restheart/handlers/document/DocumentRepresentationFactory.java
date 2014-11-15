@@ -31,11 +31,20 @@ import org.slf4j.Logger;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class DocumentRepresentationFactory {
     private static final Logger logger = LoggerFactory.getLogger(DocumentRepresentationFactory.class);
 
+    /**
+     *
+     * @param href
+     * @param exchange
+     * @param context
+     * @param data
+     * @return
+     * @throws IllegalQueryParamenterException
+     */
     public static Representation getDocument(String href, HttpServerExchange exchange, RequestContext context, DBObject data)
             throws IllegalQueryParamenterException {
         Representation rep = new Representation(href);
@@ -77,6 +86,15 @@ public class DocumentRepresentationFactory {
         return rep;
     }
 
+    /**
+     *
+     * @param href
+     * @param exchange
+     * @param context
+     * @param data
+     * @throws IllegalQueryParamenterException
+     * @throws URISyntaxException
+     */
     public static void sendDocument(String href, HttpServerExchange exchange, RequestContext context, DBObject data)
             throws IllegalQueryParamenterException, URISyntaxException {
         Representation rep = getDocument(href, exchange, context, data);
@@ -92,8 +110,7 @@ public class DocumentRepresentationFactory {
 
         try {
             rels = Relationship.getFromJson((DBObject) context.getCollectionProps());
-        }
-        catch (InvalidMetadataException ex) {
+        } catch (InvalidMetadataException ex) {
             context.addWarning("collection " + context.getDBName() + "/" + context.getCollectionName() + " has invalid relationships definition");
         }
 
@@ -108,8 +125,7 @@ public class DocumentRepresentationFactory {
                 if (link != null) {
                     links.put(rel.getRel(), link);
                 }
-            }
-            catch (IllegalArgumentException ex) {
+            } catch (IllegalArgumentException ex) {
                 context.addWarning(ex.getMessage());
                 logger.warn(ex.getMessage(), ex);
             }

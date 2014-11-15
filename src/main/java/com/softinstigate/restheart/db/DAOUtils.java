@@ -21,7 +21,7 @@ import java.util.TreeMap;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class DAOUtils {
     /**
@@ -93,8 +93,7 @@ public class DAOUtils {
             });
 
             return ret;
-        }
-        else if (element instanceof BasicDBObject) {
+        } else if (element instanceof BasicDBObject) {
             TreeMap<String, Object> ret = new TreeMap<>();
 
             BasicDBObject el = (BasicDBObject) element;
@@ -104,8 +103,7 @@ public class DAOUtils {
             });
 
             return ret;
-        }
-        else {
+        } else {
             return element;
         }
     }

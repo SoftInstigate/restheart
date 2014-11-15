@@ -16,9 +16,15 @@ import java.util.Deque;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class URLUtilis {
+
+    /**
+     *
+     * @param s
+     * @return
+     */
     static public String removeTrailingSlashes(String s) {
         if (s == null || s.length() < 2) {
             return s;
@@ -26,12 +32,16 @@ public class URLUtilis {
 
         if (s.trim().charAt(s.length() - 1) == '/') {
             return removeTrailingSlashes(s.substring(0, s.length() - 1));
-        }
-        else {
+        } else {
             return s.trim();
         }
     }
 
+    /**
+     *
+     * @param path
+     * @return
+     */
     static public String getPerentPath(String path) {
         if (path == null || path.equals("") || path.equals("/")) {
             return path;
@@ -41,19 +51,30 @@ public class URLUtilis {
 
         if (lastSlashPos > 0) {
             return path.substring(0, lastSlashPos); //strip off the slash
-        }
-        else if (lastSlashPos == 0) {
+        } else if (lastSlashPos == 0) {
             return "/";
-        }
-        else {
+        } else {
             return ""; //we expect people to add  + "/somedir on their own
         }
     }
 
+    /**
+     *
+     * @param exchange
+     * @return
+     */
     static public String getPrefixUrl(HttpServerExchange exchange) {
         return exchange.getRequestURL().replaceAll(exchange.getRelativePath(), "");
     }
 
+    /**
+     *
+     * @param context
+     * @param dbName
+     * @param collName
+     * @param documentId
+     * @return
+     */
     static public String getUriWithDocId(RequestContext context, String dbName, String collName, String documentId) {
         StringBuilder sb = new StringBuilder();
 
@@ -62,6 +83,15 @@ public class URLUtilis {
         return context.mapUri(sb.toString().replaceAll(" ", ""));
     }
 
+    /**
+     *
+     * @param context
+     * @param dbName
+     * @param collName
+     * @param referenceField
+     * @param ids
+     * @return
+     */
     static public String getUriWithFilterMany(RequestContext context, String dbName, String collName, String referenceField, String ids) {
         StringBuilder sb = new StringBuilder();
 
@@ -72,6 +102,15 @@ public class URLUtilis {
         return context.mapUri(sb.toString().replaceAll(" ", ""));
     }
 
+    /**
+     *
+     * @param context
+     * @param dbName
+     * @param collName
+     * @param referenceField
+     * @param ids
+     * @return
+     */
     static public String getUriWithFilterOne(RequestContext context, String dbName, String collName, String referenceField, String ids) {
         StringBuilder sb = new StringBuilder();
 
@@ -82,6 +121,15 @@ public class URLUtilis {
         return context.mapUri(sb.toString().replaceAll(" ", ""));
     }
 
+    /**
+     *
+     * @param context
+     * @param dbName
+     * @param collName
+     * @param referenceField
+     * @param ids
+     * @return
+     */
     static public String getUriWithFilterManyInverse(RequestContext context, String dbName, String collName, String referenceField, String ids) {
         StringBuilder sb = new StringBuilder();
 
@@ -92,6 +140,12 @@ public class URLUtilis {
         return context.mapUri(sb.toString().replaceAll(" ", ""));
     }
 
+    /**
+     *
+     * @param exchange
+     * @param paramsToRemove
+     * @return
+     */
     public static String getQueryStringRemovingParams(HttpServerExchange exchange, String... paramsToRemove) {
         String ret = exchange.getQueryString();
 

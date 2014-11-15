@@ -15,7 +15,7 @@ import java.util.concurrent.Executors;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class ExecutorServiceSingleton {
     private final ExecutorService executorService;
@@ -24,6 +24,10 @@ public class ExecutorServiceSingleton {
         this.executorService = Executors.newFixedThreadPool(100);
     }
 
+    /**
+     *
+     * @return
+     */
     public static ExecutorServiceSingleton getInstance() {
         return ExecutorServiceSingletonHolder.INSTANCE;
     }

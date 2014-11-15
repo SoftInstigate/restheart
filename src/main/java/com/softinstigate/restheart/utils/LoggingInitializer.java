@@ -24,9 +24,14 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class LoggingInitializer {
+
+    /**
+     *
+     * @param level
+     */
     public static void setLogLevel(Level level) {
         LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
         Logger logger = loggerContext.getLogger("com.softinstigate");
@@ -34,6 +39,9 @@ public class LoggingInitializer {
         logger.setLevel(level);
     }
 
+    /**
+     *
+     */
     public static void stopConsoleLogging() {
         LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
         Logger rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
@@ -44,6 +52,10 @@ public class LoggingInitializer {
         //rootLogger.detachAppender("STDOUT");
     }
 
+    /**
+     *
+     * @param logFilePath
+     */
     public static void startFileLogging(String logFilePath) {
         Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 

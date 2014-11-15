@@ -23,15 +23,78 @@ import java.util.Deque;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class RequestContext {
+
+    /**
+     *
+     */
     public enum TYPE {
-        ERROR, ROOT, DB, COLLECTION, DOCUMENT, COLLECTION_INDEXES, INDEX
+
+        /**
+         *
+         */
+        ERROR,
+        /**
+         *
+         */
+        ROOT,
+        /**
+         *
+         */
+        DB,
+        /**
+         *
+         */
+        COLLECTION,
+        /**
+         *
+         */
+        DOCUMENT,
+        /**
+         *
+         */
+        COLLECTION_INDEXES,
+        /**
+         *
+         */
+        INDEX
     };
 
+    /**
+     *
+     */
     public enum METHOD {
-        GET, POST, PUT, DELETE, PATCH, OPTIONS, OTHER
+
+        /**
+         *
+         */
+        GET,
+        /**
+         *
+         */
+        POST,
+        /**
+         *
+         */
+        PUT,
+        /**
+         *
+         */
+        DELETE,
+        /**
+         *
+         */
+        PATCH,
+        /**
+         *
+         */
+        OPTIONS,
+        /**
+         *
+         */
+        OTHER
     };
 
     private final String whereUri;
@@ -94,20 +157,15 @@ public class RequestContext {
 
         if (pathTokens.length < 2) {
             type = TYPE.ROOT;
-        }
-        else if (pathTokens.length < 3) {
+        } else if (pathTokens.length < 3) {
             type = TYPE.DB;
-        }
-        else if (pathTokens.length < 4) {
+        } else if (pathTokens.length < 4) {
             type = TYPE.COLLECTION;
-        }
-        else if (pathTokens.length == 4 && pathTokens[3].equals("_indexes")) {
+        } else if (pathTokens.length == 4 && pathTokens[3].equals("_indexes")) {
             type = TYPE.COLLECTION_INDEXES;
-        }
-        else if (pathTokens.length > 4 && pathTokens[3].equals("_indexes")) {
+        } else if (pathTokens.length > 4 && pathTokens[3].equals("_indexes")) {
             type = TYPE.INDEX;
-        }
-        else {
+        } else {
             type = TYPE.DOCUMENT;
         }
 
@@ -115,23 +173,17 @@ public class RequestContext {
 
         if (Methods.GET.equals(_method)) {
             this.method = METHOD.GET;
-        }
-        else if (Methods.POST.equals(_method)) {
+        } else if (Methods.POST.equals(_method)) {
             this.method = METHOD.POST;
-        }
-        else if (Methods.PUT.equals(_method)) {
+        } else if (Methods.PUT.equals(_method)) {
             this.method = METHOD.PUT;
-        }
-        else if (Methods.DELETE.equals(_method)) {
+        } else if (Methods.DELETE.equals(_method)) {
             this.method = METHOD.DELETE;
-        }
-        else if ("PATCH".equals(_method.toString())) {
+        } else if ("PATCH".equals(_method.toString())) {
             this.method = METHOD.PATCH;
-        }
-        else if (Methods.OPTIONS.equals(_method)) {
+        } else if (Methods.OPTIONS.equals(_method)) {
             this.method = METHOD.OPTIONS;
-        }
-        else {
+        } else {
             this.method = METHOD.OTHER;
         }
     }
@@ -151,8 +203,7 @@ public class RequestContext {
             if (!this.whereUri.equals("/")) {
                 ret = ret.replaceFirst("^" + this.whereUri, "");
             }
-        }
-        else {
+        } else {
             ret = URLUtilis.removeTrailingSlashes(ret.replaceFirst("^" + this.whereUri, this.whatUri));
         }
 
@@ -178,8 +229,7 @@ public class RequestContext {
             if (!this.whereUri.equals("/")) {
                 return this.whereUri + unmappedUri;
             }
-        }
-        else {
+        } else {
             ret = URLUtilis.removeTrailingSlashes(ret.replaceFirst("^" + this.whatUri, this.whereUri));
         }
 
@@ -204,72 +254,114 @@ public class RequestContext {
     public final boolean isParentAccessible() {
         if (type == TYPE.DB) {
             return unmappedRequestUri.split("/").length > 1;
-        }
-        else {
+        } else {
             return unmappedRequestUri.split("/").length > 2;
         }
     }
 
+    /**
+     *
+     * @return
+     */
     public TYPE getType() {
         return type;
     }
 
+    /**
+     *
+     * @return
+     */
     public String getDBName() {
         if (pathTokens.length > 1) {
             return pathTokens[1];
-        }
-        else {
+        } else {
             return null;
         }
     }
 
+    /**
+     *
+     * @return
+     */
     public String getCollectionName() {
         if (pathTokens.length > 2) {
             return pathTokens[2];
-        }
-        else {
+        } else {
             return null;
         }
     }
 
+    /**
+     *
+     * @return
+     */
     public String getDocumentId() {
         if (pathTokens.length > 3) {
             return pathTokens[3];
-        }
-        else {
+        } else {
             return null;
         }
     }
 
+    /**
+     *
+     * @return
+     */
     public String getIndexId() {
         if (pathTokens.length > 4) {
             return pathTokens[4];
-        }
-        else {
+        } else {
             return null;
         }
     }
 
+    /**
+     *
+     * @return @throws URISyntaxException
+     */
     public URI getUri() throws URISyntaxException {
         return new URI(Arrays.asList(pathTokens).stream().reduce("/", (t1, t2) -> t1 + "/" + t2));
     }
 
+    /**
+     *
+     * @return
+     */
     public METHOD getMethod() {
         return method;
     }
 
+    /**
+     *
+     * @param dbName
+     * @return
+     */
     public static boolean isReservedResourceDb(String dbName) {
         return dbName.equals("admin") || dbName.equals("local") || dbName.startsWith("system.") || dbName.startsWith("_");
     }
 
+    /**
+     *
+     * @param collectionName
+     * @return
+     */
     public static boolean isReservedResourceCollection(String collectionName) {
         return collectionName != null && (collectionName.startsWith("system.") || collectionName.startsWith("_"));
     }
 
+    /**
+     *
+     * @param documentId
+     * @return
+     */
     public static boolean isReservedResourceDocument(String documentId) {
         return documentId != null && documentId.startsWith("_") && !documentId.equals("_indexes");
     }
 
+    /**
+     *
+     * @return
+     */
     public boolean isReservedResource() {
         if (type == TYPE.ROOT) {
             return false;

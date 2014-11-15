@@ -18,11 +18,17 @@ import org.xnio.channels.StreamSourceChannel;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class ChannelReader {
     final static Charset charset = Charset.forName("utf-8");
 
+    /**
+     *
+     * @param channel
+     * @return
+     * @throws IOException
+     */
     public static String read(StreamSourceChannel channel) throws IOException {
         StringBuilder content = new StringBuilder();
 

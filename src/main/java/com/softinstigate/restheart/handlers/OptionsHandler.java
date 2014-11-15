@@ -16,7 +16,7 @@ import io.undertow.util.HttpString;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class OptionsHandler extends PipedHttpHandler {
     /**
@@ -34,6 +34,12 @@ public class OptionsHandler extends PipedHttpHandler {
         super(next);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (!(context.getMethod() == RequestContext.METHOD.OPTIONS)) {
@@ -46,28 +52,23 @@ public class OptionsHandler extends PipedHttpHandler {
                     .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET")
                     .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
 
-        }
-        else if (context.getType() == RequestContext.TYPE.DB) {
+        } else if (context.getType() == RequestContext.TYPE.DB) {
             exchange.getResponseHeaders()
                     .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, PATCH, DELETE, OPTIONS")
                     .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
-        }
-        else if (context.getType() == RequestContext.TYPE.COLLECTION) {
+        } else if (context.getType() == RequestContext.TYPE.COLLECTION) {
             exchange.getResponseHeaders()
                     .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, POST, PATCH, DELETE, OPTIONS")
                     .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
-        }
-        else if (context.getType() == RequestContext.TYPE.DOCUMENT) {
+        } else if (context.getType() == RequestContext.TYPE.DOCUMENT) {
             exchange.getResponseHeaders()
                     .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, PATCH, DELETE, OPTIONS")
                     .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, If-None-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
-        }
-        else if (context.getType() == RequestContext.TYPE.INDEX) {
+        } else if (context.getType() == RequestContext.TYPE.INDEX) {
             exchange.getResponseHeaders()
                     .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "PUT")
                     .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
-        }
-        else if (context.getType() == RequestContext.TYPE.COLLECTION_INDEXES) {
+        } else if (context.getType() == RequestContext.TYPE.COLLECTION_INDEXES) {
             exchange.getResponseHeaders()
                     .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET")
                     .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");

@@ -14,17 +14,30 @@ import com.softinstigate.restheart.hal.InvalidHalException;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class InvalidMetadataException extends InvalidHalException {
+
+    /**
+     *
+     */
     public InvalidMetadataException() {
         super();
     }
 
+    /**
+     *
+     * @param message
+     */
     public InvalidMetadataException(String message) {
         super(message);
     }
 
+    /**
+     *
+     * @param message
+     * @param cause
+     */
     public InvalidMetadataException(String message, Throwable cause) {
         super(message, cause);
     }

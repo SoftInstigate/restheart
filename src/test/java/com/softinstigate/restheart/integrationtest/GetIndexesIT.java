@@ -26,7 +26,7 @@ import org.junit.Test;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class GetIndexesIT extends AbstactIT {
     public GetIndexesIT() {

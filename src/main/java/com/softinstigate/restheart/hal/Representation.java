@@ -17,15 +17,23 @@ import org.bson.BSONObject;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class Representation {
+
+    /**
+     *
+     */
     public static final String HAL_JSON_MEDIA_TYPE = "application/hal+json";
 
     private final BasicDBObject properties;
     private final BasicDBObject embedded;
     private final BasicDBObject links;
 
+    /**
+     *
+     * @param href
+     */
     public Representation(String href) {
         properties = new BasicDBObject();
         embedded = new BasicDBObject();
@@ -48,10 +56,19 @@ public class Representation {
         return ret;
     }
 
+    /**
+     *
+     * @param link
+     */
     public void addLink(Link link) {
         links.putAll((BSONObject) ((Link) link).getDBObject());
     }
 
+    /**
+     *
+     * @param link
+     * @param inArray
+     */
     public void addLink(Link link, boolean inArray) {
         BasicDBList linkArray = (BasicDBList) links.get(link.getRef());
 
@@ -65,10 +82,19 @@ public class Representation {
         links.put(link.getRef(), linkArray);
     }
 
+    /**
+     *
+     * @param key
+     * @param value
+     */
     public void addProperty(String key, Object value) {
         properties.append(key, value);
     }
 
+    /**
+     *
+     * @param props
+     */
     public void addProperties(DBObject props) {
         if (props == null) {
             return;
@@ -77,6 +103,11 @@ public class Representation {
         properties.putAll(props);
     }
 
+    /**
+     *
+     * @param rel
+     * @param rep
+     */
     public void addRepresentation(String rel, Representation rep) {
         BasicDBList repArray = (BasicDBList) embedded.get(rel);
 

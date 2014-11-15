@@ -24,7 +24,7 @@ import io.undertow.server.HttpServerExchange;
  * also responsible of sending NOT_FOUND in case of requests involving not
  * existing dbs (that are not PUT)
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class DbPropsInjectorHandler extends PipedHttpHandler {
     /**
@@ -36,6 +36,12 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
         super(next);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getDBName() != null) {
@@ -46,14 +52,12 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
 
                 if (dbProps != null) {
                     dbProps.put("_db-props-cached", false);
-                }
-                else if (!(context.getType() == RequestContext.TYPE.DB && context.getMethod() == RequestContext.METHOD.PUT)
+                } else if (!(context.getType() == RequestContext.TYPE.DB && context.getMethod() == RequestContext.METHOD.PUT)
                         && context.getType() != RequestContext.TYPE.ROOT) {
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "db does not exist");
                     return;
                 }
-            }
-            else {
+            } else {
                 dbProps = LocalCachesSingleton.getInstance().getDBProps(context.getDBName());
             }
 

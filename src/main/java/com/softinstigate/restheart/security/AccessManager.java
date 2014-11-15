@@ -18,10 +18,21 @@ import java.util.Set;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public interface AccessManager {
+
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @return
+     */
     boolean isAllowed(HttpServerExchange exchange, RequestContext context);
 
+    /**
+     *
+     * @return
+     */
     HashMap<String, Set<Predicate>> getAcl();
 }

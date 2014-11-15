@@ -23,7 +23,7 @@ import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  *
  * this extends the undertow BasicAuthenticationMechanism setting it to silent
  * and avoiding to send the Authorization header when authentication fails this
@@ -38,6 +38,11 @@ import static io.undertow.util.StatusCodes.UNAUTHORIZED;
  *
  */
 public class SilentBasicAuthenticationMechanism extends BasicAuthenticationMechanism {
+
+    /**
+     *
+     * @param realmName
+     */
     public SilentBasicAuthenticationMechanism(String realmName) {
         super(realmName, "BASIC", true);
     }
@@ -48,8 +53,7 @@ public class SilentBasicAuthenticationMechanism extends BasicAuthenticationMecha
 
         if (authHeader == null) {
             return new ChallengeResult(false); // --> FORBIDDEN
-        }
-        else {
+        } else {
             return new ChallengeResult(true, UNAUTHORIZED);
         }
     }

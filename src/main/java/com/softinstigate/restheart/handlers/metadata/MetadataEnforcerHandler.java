@@ -16,7 +16,7 @@ import io.undertow.server.HttpServerExchange;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class MetadataEnforcerHandler extends PipedHttpHandler {
     /**
@@ -28,6 +28,12 @@ public class MetadataEnforcerHandler extends PipedHttpHandler {
         super(next);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         next.handleRequest(exchange, context);

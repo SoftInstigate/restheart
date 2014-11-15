@@ -19,23 +19,33 @@ import java.util.Map;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class PingHandler extends ApplicationLogicHandler {
-    private String msg;
+    private final String msg;
 
+    /**
+     *
+     * @param next
+     * @param args
+     */
     public PingHandler(PipedHttpHandler next, Map<String, Object> args) {
         super(next, args);
 
         this.msg = (String) args.get("msg");
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getMethod() == METHOD.GET) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_OK, msg);
-        }
-        else {
+        } else {
             exchange.setResponseCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             exchange.endExchange();
         }

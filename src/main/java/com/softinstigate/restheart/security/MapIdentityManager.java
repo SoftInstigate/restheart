@@ -21,9 +21,17 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ *
+ * @author Andrea Di Cesare
+ */
 public class MapIdentityManager implements IdentityManager {
     private final Map<String, char[]> users;
 
+    /**
+     *
+     * @param users
+     */
     public MapIdentityManager(final Map<String, char[]> users) {
         this.users = users;
     }

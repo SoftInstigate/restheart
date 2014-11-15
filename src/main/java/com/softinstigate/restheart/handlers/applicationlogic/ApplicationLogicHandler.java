@@ -15,11 +15,20 @@ import java.util.Map;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public abstract class ApplicationLogicHandler extends PipedHttpHandler {
+
+    /**
+     * The configuration properties passed to this handler.
+     */
     protected final Map<String, Object> args;
 
+    /**
+     * Creates a new instance of the ApplicationLogicHandler
+     * @param next
+     * @param args
+     */
     public ApplicationLogicHandler(PipedHttpHandler next, Map<String, Object> args) {
         super(next);
         this.args = args;

@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class GetRootHandler extends PipedHttpHandler {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
@@ -38,6 +38,12 @@ public class GetRootHandler extends PipedHttpHandler {
         super(null);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         List<String> _dbs = client.getDatabaseNames();
@@ -62,8 +68,7 @@ public class GetRootHandler extends PipedHttpHandler {
                 (db) -> {
                     if (LocalCachesSingleton.isEnabled()) {
                         return LocalCachesSingleton.getInstance().getDBProps(db);
-                    }
-                    else {
+                    } else {
                         return DBDAO.getDbProps(db);
                     }
                 }

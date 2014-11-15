@@ -24,18 +24,37 @@ import org.bson.types.ObjectId;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class ResponseHelper {
+
+    /**
+     *
+     * @param exchange
+     * @param code
+     */
     public static void endExchange(HttpServerExchange exchange, int code) {
         exchange.setResponseCode(code);
         exchange.endExchange();
     }
 
+    /**
+     *
+     * @param exchange
+     * @param code
+     * @param message
+     */
     public static void endExchangeWithMessage(HttpServerExchange exchange, int code, String message) {
         endExchangeWithMessage(exchange, code, message, null);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param code
+     * @param message
+     * @param t
+     */
     public static void endExchangeWithMessage(HttpServerExchange exchange, int code, String message, Throwable t) {
         exchange.setResponseCode(code);
 
@@ -98,6 +117,11 @@ public class ResponseHelper {
         return list;
     }
 
+    /**
+     *
+     * @param exchange
+     * @param properties
+     */
     public static void injectEtagHeader(HttpServerExchange exchange, Map<String, Object> properties) {
         if (properties == null) {
             return;
@@ -112,6 +136,11 @@ public class ResponseHelper {
         }
     }
 
+    /**
+     *
+     * @param exchange
+     * @param properties
+     */
     public static void injectEtagHeader(HttpServerExchange exchange, DBObject properties) {
         if (properties == null) {
             return;
@@ -126,6 +155,12 @@ public class ResponseHelper {
         }
     }
 
+    /**
+     *
+     * @param rep
+     * @param exchange
+     * @param context
+     */
     public static void injectWarnings(Representation rep, HttpServerExchange exchange, RequestContext context) {
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             context.getWarnings().stream().map((warning) -> {

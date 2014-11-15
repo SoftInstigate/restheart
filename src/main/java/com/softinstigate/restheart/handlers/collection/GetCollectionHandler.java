@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class GetCollectionHandler extends PipedHttpHandler {
     private static final Logger logger = LoggerFactory.getLogger(GetCollectionHandler.class);
@@ -39,6 +39,12 @@ public class GetCollectionHandler extends PipedHttpHandler {
         super(null);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         DBCollection coll = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName());
@@ -54,21 +60,18 @@ public class GetCollectionHandler extends PipedHttpHandler {
 
         try {
             data = CollectionDAO.getCollectionData(coll, context.getPage(), context.getPagesize(), context.getSortBy(), context.getFilter());
-        }
-        catch (JSONParseException jpe) // the filter expression is not a valid json string
+        } catch (JSONParseException jpe) // the filter expression is not a valid json string
         {
             logger.error("invalid filter expression {}", context.getFilter(), jpe);
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", jpe);
             return;
-        }
-        catch (MongoException me) {
+        } catch (MongoException me) {
             if (me.getMessage().matches(".*Can't canonicalize query.*")) // error with the filter expression during query execution
             {
                 logger.error("invalid filter expression {}", context.getFilter(), me);
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", me);
                 return;
-            }
-            else {
+            } else {
                 throw me;
             }
         }
@@ -89,8 +92,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
             exchange.setResponseCode(HttpStatus.SC_OK);
             CollectionRepresentationFactory.sendHal(exchange, context, data, size);
             exchange.endExchange();
-        }
-        catch (IllegalQueryParamenterException ex) {
+        } catch (IllegalQueryParamenterException ex) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
             return;
         }

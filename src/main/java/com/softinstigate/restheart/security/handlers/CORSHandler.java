@@ -19,7 +19,7 @@ import io.undertow.util.HttpString;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class CORSHandler extends PipedHttpHandler {
     private final HttpHandler noPipedNext;
@@ -44,14 +44,19 @@ public class CORSHandler extends PipedHttpHandler {
         this.noPipedNext = next;
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         injectAccessControlAllowHeaders(exchange);
 
         if (noPipedNext != null) {
             noPipedNext.handleRequest(exchange);
-        }
-        else {
+        } else {
             next.handleRequest(exchange, context);
         }
     }
@@ -60,8 +65,7 @@ public class CORSHandler extends PipedHttpHandler {
         HeaderValues vals = exchange.getRequestHeaders().get(HttpString.tryFromString("Origin"));
         if (vals != null && !vals.isEmpty()) {
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Origin"), vals.getFirst());
-        }
-        else {
+        } else {
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Origin"), "*");
         }
 

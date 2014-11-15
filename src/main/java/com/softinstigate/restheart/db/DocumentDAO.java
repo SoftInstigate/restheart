@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class DocumentDAO {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
@@ -46,6 +46,12 @@ public class DocumentDAO {
         fieldsToReturn.put("_created_on", 1);
     }
 
+    /**
+     *
+     * @param dbName
+     * @param collName
+     * @return
+     */
     public static DBCollection getCollection(String dbName, String collName) {
         return client.getDB(dbName).getCollection(collName);
     }
@@ -84,13 +90,11 @@ public class DocumentDAO {
 
             if (oldDocument == null) {
                 return HttpStatus.SC_NOT_FOUND;
-            }
-            else {
+            } else {
                 // check the old etag (in case restore the old document version)
                 return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_OK);
             }
-        }
-        else {
+        } else {
             content.put("_created_on", now.toString()); // let's assume this is an insert. in case we'll set it back with a second update
 
             // we use findAndModify to get the @created_on field value from the existing document
@@ -114,8 +118,7 @@ public class DocumentDAO {
 
                 // check the old etag (in case restore the old document version)
                 return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_OK);
-            }
-            else {  // insert
+            } else {  // insert
                 return HttpStatus.SC_CREATED;
             }
         }
@@ -183,12 +186,19 @@ public class DocumentDAO {
 
             // check the old etag (in case restore the old document version)
             return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_OK);
-        }
-        else { // insert
+        } else { // insert
             return HttpStatus.SC_CREATED;
         }
     }
 
+    /**
+     *
+     * @param dbName
+     * @param collName
+     * @param documentId
+     * @param requestEtag
+     * @return
+     */
     public static int deleteDocument(String dbName, String collName, String documentId, ObjectId requestEtag) {
         DB db = DBDAO.getDB(dbName);
 
@@ -200,13 +210,17 @@ public class DocumentDAO {
 
         if (oldDocument == null) {
             return HttpStatus.SC_NOT_FOUND;
-        }
-        else {
+        } else {
             // check the old etag (in case restore the old document version)
             return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_NO_CONTENT);
         }
     }
 
+    /**
+     *
+     * @param cursor
+     * @return
+     */
     public static ArrayList<DBObject> getDataFromCursor(DBCursor cursor) {
         return new ArrayList<>(cursor.toArray());
     }
@@ -218,8 +232,7 @@ public class DocumentDAO {
 
         if (ObjectId.isValid(id)) {
             return new ObjectId(id);
-        }
-        else {
+        } else {
             // the id is not an object id
             return id;
         }
@@ -235,12 +248,10 @@ public class DocumentDAO {
 
         if (oldEtag == null) {  // well we don't had an etag there so fine
             return HttpStatus.SC_NO_CONTENT;
-        }
-        else {
+        } else {
             if (oldEtag.equals(requestEtag)) {
                 return httpStatusIfOk; // ok they match
-            }
-            else {
+            } else {
                 // oopps, we need to restore old document
                 // they call it optimistic lock strategy
                 coll.save(oldDocument);
@@ -252,8 +263,7 @@ public class DocumentDAO {
     static private URI getReferenceLink(String parentUrl, String referencedName) {
         try {
             return new URI(URLUtilis.removeTrailingSlashes(parentUrl) + "/" + referencedName);
-        }
-        catch (URISyntaxException ex) {
+        } catch (URISyntaxException ex) {
             logger.error("error creating URI from {} + / + {}", parentUrl, referencedName, ex);
         }
 

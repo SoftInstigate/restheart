@@ -19,11 +19,16 @@ import java.util.Set;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class PredicateAuthenticationConstraintHandler extends AuthenticationConstraintHandler {
     AccessManager am;
 
+    /**
+     *
+     * @param next
+     * @param am
+     */
     public PredicateAuthenticationConstraintHandler(HttpHandler next, AccessManager am) {
         super(next);
         this.am = am;
@@ -35,8 +40,7 @@ public class PredicateAuthenticationConstraintHandler extends AuthenticationCons
 
         if (ps == null) {
             return true;
-        }
-        else {
+        } else {
             return !ps.stream().anyMatch(p -> p.resolve(exchange));
         }
     }

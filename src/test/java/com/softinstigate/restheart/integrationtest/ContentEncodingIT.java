@@ -31,7 +31,7 @@ import org.junit.Test;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class ContentEncodingIT extends AbstactIT {
     protected static Executor notDecompressingExecutor = null;

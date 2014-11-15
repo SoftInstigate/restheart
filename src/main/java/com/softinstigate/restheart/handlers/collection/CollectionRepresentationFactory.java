@@ -29,11 +29,19 @@ import org.slf4j.Logger;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class CollectionRepresentationFactory {
     private static final Logger logger = LoggerFactory.getLogger(CollectionRepresentationFactory.class);
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param embeddedData
+     * @param size
+     * @throws IllegalQueryParamenterException
+     */
     public static void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
         Representation rep = getCollection(exchange, context, embeddedData, size);
@@ -42,6 +50,15 @@ public class CollectionRepresentationFactory {
         exchange.getResponseSender().send(rep.toString());
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param embeddedData
+     * @param size
+     * @return
+     * @throws IllegalQueryParamenterException
+     */
     static public Representation getCollection(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
         String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
@@ -85,8 +102,7 @@ public class CollectionRepresentationFactory {
                             d.put("_etag", ((ObjectId) d.get("_etag")).toString()); // represent the etag as a string
                         }
                         rep.addRepresentation("rh:doc", nrep);
-                    }
-                    else {
+                    } else {
                         logger.error("collection missing string _id field", d);
                     }
                 }

@@ -21,12 +21,18 @@ import java.util.Deque;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class RequestContextInjectorHandler extends PipedHttpHandler {
     private final String whereUri;
     private final String whatUri;
 
+    /**
+     *
+     * @param whereUri
+     * @param whatUri
+     * @param next
+     */
     public RequestContextInjectorHandler(String whereUri, String whatUri, PipedHttpHandler next) {
         super(next);
 
@@ -46,6 +52,12 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         this.whatUri = whatUri;
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         RequestContext rcontext = new RequestContext(exchange, whereUri, whatUri);
@@ -58,8 +70,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         if (__pagesize != null && !(__pagesize.isEmpty())) {
             try {
                 pagesize = Integer.parseInt(__pagesize.getFirst());
-            }
-            catch (NumberFormatException ex) {
+            } catch (NumberFormatException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal pagesize paramenter, it is not a number", ex);
                 return;
             }
@@ -68,8 +79,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         if (pagesize < 1 || pagesize > 1000) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal page parameter, pagesize must be >= 0 and <= 1000");
             return;
-        }
-        else {
+        } else {
             rcontext.setPagesize(pagesize);
         }
 
@@ -78,8 +88,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         if (__page != null && !(__page.isEmpty())) {
             try {
                 page = Integer.parseInt(__page.getFirst());
-            }
-            catch (NumberFormatException ex) {
+            } catch (NumberFormatException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal page paramenter, it is not a number", ex);
                 return;
             }
@@ -88,8 +97,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         if (page < 1) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal page paramenter, it is < 1");
             return;
-        }
-        else {
+        } else {
             rcontext.setPage(page);
         }
 
@@ -122,8 +130,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
                 try {
                     JSON.parse(f);
-                }
-                catch (Throwable t) {
+                } catch (Throwable t) {
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal filter paramenter: " + f, t);
                     return true;
                 }

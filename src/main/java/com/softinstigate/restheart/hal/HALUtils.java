@@ -20,9 +20,15 @@ import org.bson.types.ObjectId;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class HALUtils {
+
+    /**
+     *
+     * @param rep
+     * @param data
+     */
     public static void addData(Representation rep, DBObject data) {
         // collection properties
         data.keySet().stream().forEach((key) -> {
@@ -30,13 +36,20 @@ public class HALUtils {
 
             if (value instanceof ObjectId) {
                 rep.addProperty(key, value.toString());
-            }
-            else {
+            } else {
                 rep.addProperty(key, value);
             }
         });
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param size
+     * @return
+     * @throws IllegalQueryParamenterException
+     */
     public static TreeMap<String, String> getPaginationLinks(HttpServerExchange exchange, RequestContext context, long size) throws IllegalQueryParamenterException {
         String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
         String queryString = exchange.getQueryString();
@@ -59,8 +72,7 @@ public class HALUtils {
             {
                 links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize);
             }
-        }
-        else {
+        } else {
             String queryStringNoPagingProps = URLUtilis.getQueryStringRemovingParams(exchange, "page", "pagesize");
 
             if (queryStringNoPagingProps == null || queryStringNoPagingProps.isEmpty()) {
@@ -72,8 +84,7 @@ public class HALUtils {
                     if (page < totalPages) {
                         links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize);
                         links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
-                    }
-                    else {
+                    } else {
                         links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize);
                     }
                 }
@@ -81,8 +92,7 @@ public class HALUtils {
                 if (page > 1) {
                     links.put("previous", requestPath + (page >= 2 ? "?page=" + (page - 1) : "") + (page > 2 ? "&pagesize=" + pagesize : "?pagesize=" + pagesize));
                 }
-            }
-            else {
+            } else {
                 links.put("first", requestPath + "?pagesize=" + pagesize + "&" + queryStringNoPagingProps);
 
                 if (totalPages <= 0) {
@@ -94,8 +104,7 @@ public class HALUtils {
                     if (page < totalPages) {
                         links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
                         links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
-                    }
-                    else {
+                    } else {
                         links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
                     }
                 }

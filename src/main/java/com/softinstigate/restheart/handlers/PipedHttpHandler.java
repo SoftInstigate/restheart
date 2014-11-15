@@ -15,15 +15,29 @@ import io.undertow.server.HttpServerExchange;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public abstract class PipedHttpHandler implements HttpHandler {
+
+    /**
+     *
+     */
     protected final PipedHttpHandler next;
 
+    /**
+     *
+     * @param next
+     */
     public PipedHttpHandler(PipedHttpHandler next) {
         this.next = next;
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     public abstract void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception;
 
     @Override

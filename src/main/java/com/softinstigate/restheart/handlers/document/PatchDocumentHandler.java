@@ -24,7 +24,7 @@ import org.bson.types.ObjectId;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class PatchDocumentHandler extends PipedHttpHandler {
     /**
@@ -34,6 +34,12 @@ public class PatchDocumentHandler extends PipedHttpHandler {
         super(null);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         DBObject content = context.getContent();
@@ -54,8 +60,7 @@ public class PatchDocumentHandler extends PipedHttpHandler {
 
         if (content.get("_id") == null) {
             content.put("_id", getId(id));
-        }
-        else if (!content.get("_id").equals(id)) {
+        } else if (!content.get("_id").equals(id)) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in json data cannot be different than id in URL");
             return;
         }
@@ -73,14 +78,12 @@ public class PatchDocumentHandler extends PipedHttpHandler {
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             if (SC == HttpStatus.SC_NO_CONTENT) {
                 exchange.setResponseCode(HttpStatus.SC_OK);
-            }
-            else {
+            } else {
                 exchange.setResponseCode(SC);
             }
 
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
-        }
-        else {
+        } else {
             exchange.setResponseCode(SC);
         }
 
@@ -90,8 +93,7 @@ public class PatchDocumentHandler extends PipedHttpHandler {
     private static Object getId(String id) {
         if (ObjectId.isValid(id)) {
             return new ObjectId(id);
-        }
-        else {
+        } else {
             // the id is not an object id
             return id;
         }

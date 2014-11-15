@@ -32,7 +32,7 @@ import org.junit.BeforeClass;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public abstract class AbstactIT {
     protected static final String confFilePath = "etc/restheart-integrationtest.yml";

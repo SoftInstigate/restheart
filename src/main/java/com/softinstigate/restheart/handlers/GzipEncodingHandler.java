@@ -23,7 +23,7 @@ import java.util.Arrays;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class GzipEncodingHandler extends EncodingHandler {
     private boolean forceCompression = false;
@@ -54,8 +54,7 @@ public class GzipEncodingHandler extends EncodingHandler {
             }
 
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "Accept-Encoding header must include gzip");
-        }
-        else {
+        } else {
             super.handleRequest(exchange);
         }
     }

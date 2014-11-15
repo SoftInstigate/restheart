@@ -28,7 +28,7 @@ import org.bson.types.ObjectId;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class PutCollectionHandler extends PipedHttpHandler {
     /**
@@ -38,6 +38,12 @@ public class PutCollectionHandler extends PipedHttpHandler {
         super(null);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getCollectionName().isEmpty() || context.getCollectionName().startsWith("_")) {
@@ -60,8 +66,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
         if (content.containsField(Relationship.RELATIONSHIPS_ELEMENT_NAME)) {
             try {
                 Relationship.getFromJson(content);
-            }
-            catch (InvalidMetadataException ex) {
+            } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong relationships definition. " + ex.getMessage(), ex);
                 return;
             }
@@ -77,14 +82,12 @@ public class PutCollectionHandler extends PipedHttpHandler {
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             if (SC == HttpStatus.SC_NO_CONTENT) {
                 exchange.setResponseCode(HttpStatus.SC_OK);
-            }
-            else {
+            } else {
                 exchange.setResponseCode(SC);
             }
 
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
-        }
-        else {
+        } else {
             exchange.setResponseCode(SC);
         }
 

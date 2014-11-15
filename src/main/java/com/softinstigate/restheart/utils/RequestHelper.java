@@ -17,9 +17,16 @@ import org.bson.types.ObjectId;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class RequestHelper {
+
+    /**
+     *
+     * @param exchange
+     * @param etag
+     * @return
+     */
     public static boolean checkReadEtag(HttpServerExchange exchange, String etag) {
         if (etag == null) {
             return false;
@@ -30,12 +37,22 @@ public class RequestHelper {
         return vs == null || vs.getFirst() == null ? false : vs.getFirst().equals(etag);
     }
 
+    /**
+     *
+     * @param exchange
+     * @return
+     */
     public static ObjectId getWriteEtag(HttpServerExchange exchange) {
         HeaderValues vs = exchange.getRequestHeaders().get(Headers.IF_MATCH);
 
         return vs == null || vs.getFirst() == null ? null : getEtagAsObjectId(vs.getFirst());
     }
 
+    /**
+     *
+     * @param etag
+     * @return
+     */
     public static ObjectId getEtagAsObjectId(Object etag) {
         if (etag == null) {
             return null;
@@ -43,8 +60,7 @@ public class RequestHelper {
 
         if (ObjectId.isValid("" + etag)) {
             return new ObjectId("" + etag);
-        }
-        else {
+        } else {
             return new ObjectId();
         }
     }

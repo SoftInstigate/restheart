@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class ErrorHandler implements HttpHandler {
     private final HttpHandler next;
@@ -40,21 +40,18 @@ public class ErrorHandler implements HttpHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         try {
             next.handleRequest(exchange);
-        }
-        catch (CommandFailureException cfe) {
+        } catch (CommandFailureException cfe) {
             logger.error("mongodb command failure handling the request", cfe);
 
             Object errmsg = cfe.getCommandResult().get("errmsg");
 
             if (errmsg != null && errmsg instanceof String && ("unauthorized".equals(errmsg) || ((String) errmsg).contains("not authorized"))) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "not authorized to access the resource in mongodb. check mongo-credentials in the configuration.", cfe);
-            }
-            else {
+            } else {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error handling the request", cfe);
             }
 
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             logger.error("error handling the request", t);
 
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error handling the request", t);

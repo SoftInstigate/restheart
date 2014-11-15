@@ -26,7 +26,7 @@ import java.util.HashSet;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class BodyInjectorHandler extends PipedHttpHandler {
     private final static String JSON_MEDIA_TYPE = "application/json";
@@ -40,6 +40,12 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         super(next);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getMethod() == RequestContext.METHOD.GET || context.getMethod() == RequestContext.METHOD.OPTIONS || context.getMethod() == RequestContext.METHOD.DELETE) {
@@ -63,8 +69,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
         try {
             content = (DBObject) JSON.parse(_content);
-        }
-        catch (JSONParseException ex) {
+        } catch (JSONParseException ex) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "invalid data", ex);
             return;
         }
@@ -73,8 +78,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
         if (content == null) {
             context.setContent(null);
-        }
-        else {
+        } else {
             // filter out reserved keys
             content.keySet().stream().filter(key -> key.startsWith("_") && !key.equals("_id")).forEach(key -> {
                 keysToRemove.add(key);

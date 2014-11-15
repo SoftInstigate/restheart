@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class TestDataInitializer extends AbstactIT {
     private static final Logger logger = LoggerFactory.getLogger(TestDataInitializer.class);

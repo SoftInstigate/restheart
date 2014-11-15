@@ -15,7 +15,7 @@ package com.softinstigate.restheart.unittest;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class RepresentationTest {
 

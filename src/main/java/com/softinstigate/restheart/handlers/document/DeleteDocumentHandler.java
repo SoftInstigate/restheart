@@ -22,7 +22,7 @@ import org.bson.types.ObjectId;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class DeleteDocumentHandler extends PipedHttpHandler {
     /**
@@ -32,6 +32,12 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
         super(null);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
@@ -47,14 +53,12 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             if (SC == HttpStatus.SC_NO_CONTENT) {
                 exchange.setResponseCode(HttpStatus.SC_OK);
-            }
-            else {
+            } else {
                 exchange.setResponseCode(SC);
             }
 
             DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
-        }
-        else {
+        } else {
             exchange.setResponseCode(SC);
         }
 

@@ -32,13 +32,17 @@ import org.yaml.snakeyaml.Yaml;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class SimpleAccessManager implements AccessManager {
     private static final Logger logger = LoggerFactory.getLogger(SimpleAccessManager.class);
 
     private HashMap<String, Set<Predicate>> acl;
 
+    /**
+     *
+     * @param arguments
+     */
     public SimpleAccessManager(Map<String, Object> arguments) {
         if (arguments == null) {
             logger.error("missing required argument conf-file");
@@ -68,22 +72,18 @@ public class SimpleAccessManager implements AccessManager {
         try {
             fis = new FileInputStream(new File(confFilePath));
             init((Map<String, Object>) new Yaml().load(fis));
-        }
-        catch (FileNotFoundException fnef) {
+        } catch (FileNotFoundException fnef) {
             logger.error("configuration file not found.", fnef);
             throw new IllegalArgumentException("configuration file not found.", fnef);
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             logger.error("wrong configuration file format.", t);
             throw new IllegalArgumentException("wrong configuration file format.", t);
-        }
-        finally {
+        } finally {
             if (fis != null) {
                 try {
                     fis.close();
-                }
-                catch (IOException ex) {
-                   logger.warn("error closing the configuration file {}", confFilePath);
+                } catch (IOException ex) {
+                    logger.warn("error closing the configuration file {}", confFilePath);
                 }
             }
         }
@@ -117,8 +117,7 @@ public class SimpleAccessManager implements AccessManager {
 
             try {
                 predicate = PredicateParser.parse((String) _predicate, this.getClass().getClassLoader());
-            }
-            catch (Throwable t) {
+            } catch (Throwable t) {
                 throw new IllegalArgumentException("wrong configuration file format. wrong predictate" + (String) _predicate, t);
             }
 
@@ -134,6 +133,12 @@ public class SimpleAccessManager implements AccessManager {
         );
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @return
+     */
     @Override
     public boolean isAllowed(HttpServerExchange exchange, RequestContext context) {
         Account account = exchange.getSecurityContext().getAuthenticatedAccount();
@@ -141,11 +146,9 @@ public class SimpleAccessManager implements AccessManager {
         if (account == null && getAcl().get("$unauthenticated") != null) {
             // not authenticated, let's get the permission set given to the $unauthenticated group
             return getAcl() == null ? false : getAcl().get("$unauthenticated").stream().anyMatch(p -> p.resolve(exchange));
-        }
-        else if (account != null && account.getRoles() != null) {
+        } else if (account != null && account.getRoles() != null) {
             return account.getRoles().stream().anyMatch(r -> getAcl() == null ? false : getAcl().get(r).stream().anyMatch(p -> p.resolve(exchange)));
-        }
-        else {
+        } else {
             return false;
         }
     }

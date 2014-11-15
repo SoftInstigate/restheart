@@ -32,13 +32,16 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class DBDAO {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
 
     private static final Logger logger = LoggerFactory.getLogger(DBDAO.class);
 
+    /**
+     *
+     */
     public static final BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "_properties");
 
     private static final BasicDBObject fieldsToReturn;
@@ -63,8 +66,9 @@ public class DBDAO {
      *
      * @param exchange
      * @param dbName
+     * @return
      * @deprecated
-    *
+     *
      */
     public static boolean checkDbExists(HttpServerExchange exchange, String dbName) {
         if (!doesDbExists(dbName)) {
@@ -79,18 +83,28 @@ public class DBDAO {
      * WARNING: slow method.
      *
      * @param dbName
-     * @return 
-    *
+     * @return
+     *
      */
     public static boolean doesDbExists(String dbName) {
 
         return client.getDatabaseNames().contains(dbName);
     }
 
+    /**
+     *
+     * @param dbName
+     * @return
+     */
     public static DB getDB(String dbName) {
         return client.getDB(dbName);
     }
 
+    /**
+     *
+     * @param db
+     * @return
+     */
     public static List<String> getDbCollections(DB db) {
         List<String> _colls = new ArrayList(db.getCollectionNames());
 
@@ -187,8 +201,7 @@ public class DBDAO {
 
                     if (LocalCachesSingleton.isEnabled()) {
                         collProperties = LocalCachesSingleton.getInstance().getCollectionProps(dbName, collName);
-                    }
-                    else {
+                    } else {
                         collProperties = CollectionDAO.getCollectionProps(dbName, collName);
                     }
 
@@ -205,6 +218,14 @@ public class DBDAO {
         return data;
     }
 
+    /**
+     *
+     * @param dbName
+     * @param content
+     * @param etag
+     * @param patching
+     * @return
+     */
     public static int upsertDB(String dbName, DBObject content, ObjectId etag, boolean patching) {
         DB db = client.getDB(dbName);
 
@@ -246,8 +267,7 @@ public class DBDAO {
             coll.update(METADATA_QUERY, new BasicDBObject("$set", content), true, false);
 
             return HttpStatus.SC_OK;
-        }
-        else {
+        } else {
             // we use findAndModify to get the @created_on field value from the existing document
             // we need to put this field back using a second update 
             // it is not possible in a single update even using $setOnInsert update operator
@@ -268,8 +288,7 @@ public class DBDAO {
                 coll.update(METADATA_QUERY, new BasicDBObject("$set", createdContet), true, false);
 
                 return HttpStatus.SC_OK;
-            }
-            else {
+            } else {
                 // need to readd the @created_on field 
                 BasicDBObject createdContet = new BasicDBObject("_created_on", now.toString());
                 createdContet.markAsPartialObject();
@@ -280,6 +299,12 @@ public class DBDAO {
         }
     }
 
+    /**
+     *
+     * @param dbName
+     * @param requestEtag
+     * @return
+     */
     public static int deleteDB(String dbName, ObjectId requestEtag) {
         DB db = DBDAO.getDB(dbName);
 
@@ -292,8 +317,7 @@ public class DBDAO {
 
         if (exists == null) {
             return HttpStatus.SC_PRECONDITION_FAILED;
-        }
-        else {
+        } else {
             db.dropDatabase();
             return HttpStatus.SC_NO_CONTENT;
         }

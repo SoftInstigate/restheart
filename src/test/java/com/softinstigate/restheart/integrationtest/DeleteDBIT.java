@@ -21,7 +21,7 @@ import org.junit.Test;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class DeleteDBIT extends AbstactIT {
 

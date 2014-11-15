@@ -31,23 +31,44 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class ResourcesExtractor {
     private static final Logger logger = LoggerFactory.getLogger(ResourcesExtractor.class);
 
+    /**
+     *
+     * @param resourcePath
+     * @return
+     * @throws URISyntaxException
+     */
     public static boolean isResourceInJar(String resourcePath) throws URISyntaxException {
         URI uri = Bootstrapper.class.getClassLoader().getResource(resourcePath).toURI();
 
         return uri.toString().startsWith("jar:");
     }
 
+    /**
+     *
+     * @param resourcePath
+     * @param tempDir
+     * @throws URISyntaxException
+     * @throws IOException
+     */
     public static void deleteTempDir(String resourcePath, File tempDir) throws URISyntaxException, IOException {
         if (isResourceInJar(resourcePath) && tempDir.exists()) {
             delete(tempDir);
         }
     }
 
+    /**
+     *
+     * @param resourcePath
+     * @return
+     * @throws IOException
+     * @throws URISyntaxException
+     * @throws IllegalStateException
+     */
     public static File extract(String resourcePath) throws IOException, URISyntaxException, IllegalStateException {
         //File jarFile = new File(ResourcesExtractor.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 
@@ -97,16 +118,14 @@ public class ResourcesExtractor {
                         return FileVisitResult.CONTINUE;
                     }
                 });
-            }
-            finally {
+            } finally {
                 if (fs != null) {
                     fs.close();
                 }
             }
 
             return ret;
-        }
-        else {
+        } else {
             // used when run from an expanded folder            
             return new File(uri);
         }
@@ -121,8 +140,7 @@ public class ResourcesExtractor {
                 if (!deleted) {
                     logger.warn("failted to delete directory " + file.getPath());
                 }
-            }
-            else {
+            } else {
                 //list all the directory contents
                 String files[] = file.list();
 
@@ -144,8 +162,7 @@ public class ResourcesExtractor {
                 }
             }
 
-        }
-        else {
+        } else {
             //if file, then delete it
             boolean deleted = file.delete();
 

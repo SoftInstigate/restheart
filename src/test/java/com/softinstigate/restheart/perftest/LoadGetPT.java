@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.softinstigate.restheart;
+package com.softinstigate.restheart.perftest;
 
 /**
  * install ldt from https://github.com/bazhenov/load-test-tool run it from
@@ -17,10 +17,11 @@ package com.softinstigate.restheart;
  * com.softinstigate.restheart.LoadTestRestHeartTask#get -c 20 -n 500 -w 5 -p
  * "url=http://127.0.0.1:8080/testdb/testcoll?page=10&pagesize=5,id=a,pwd=a"
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
+import com.softinstigate.restheart.Configuration;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import java.io.BufferedReader;
@@ -35,6 +36,10 @@ import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
+/**
+ *
+ * @author Andrea Di Cesare
+ */
 public class LoadGetPT {
     private URL url;
 
@@ -44,10 +49,18 @@ public class LoadGetPT {
     private String db;
     private String coll;
 
+    /**
+     *
+     * @param url
+     * @throws MalformedURLException
+     */
     public void setUrl(String url) throws MalformedURLException {
         this.url = new URL(url);
     }
 
+    /**
+     *
+     */
     public void prepare() {
         Authenticator.setDefault(new Authenticator() {
             @Override
@@ -59,6 +72,10 @@ public class LoadGetPT {
         MongoDBClientSingleton.init(new Configuration("./etc/restheart-integrationtest.yml"));
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     public void get() throws IOException {
         URLConnection connection = url.openConnection();
 
@@ -77,6 +94,10 @@ public class LoadGetPT {
         }
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     public void dbdirect() throws IOException {
         DBCollection dbcoll = CollectionDAO.getCollection(db, coll);
 

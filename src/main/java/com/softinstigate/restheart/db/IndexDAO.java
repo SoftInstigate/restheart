@@ -18,11 +18,14 @@ import java.util.List;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class IndexDAO {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
 
+    /**
+     *
+     */
     public static final BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "_properties");
 
     private static final BasicDBObject fieldsToReturn;
@@ -41,6 +44,12 @@ public class IndexDAO {
         fieldsToReturnIndexes.put("name", 1);
     }
 
+    /**
+     *
+     * @param dbName
+     * @param collName
+     * @return
+     */
     public static List<DBObject> getCollectionIndexes(String dbName, String collName) {
         List<DBObject> indexes = client.getDB(dbName).getCollection("system.indexes").find(new BasicDBObject("ns", dbName + "." + collName), fieldsToReturnIndexes).sort(new BasicDBObject("name", 1)).toArray();
 
@@ -52,15 +61,28 @@ public class IndexDAO {
         return indexes;
     }
 
+    /**
+     *
+     * @param db
+     * @param co
+     * @param keys
+     * @param ops
+     */
     public static void createIndex(String db, String co, DBObject keys, DBObject ops) {
         if (ops == null) {
             client.getDB(db).getCollection(co).createIndex(keys);
-        }
-        else {
+        } else {
             client.getDB(db).getCollection(co).createIndex(keys, ops);
         }
     }
 
+    /**
+     *
+     * @param db
+     * @param co
+     * @param indexId
+     * @return
+     */
     public static int deleteIndex(String db, String co, String indexId) {
         client.getDB(db).getCollection(co).dropIndex(indexId);
         return HttpStatus.SC_NO_CONTENT;

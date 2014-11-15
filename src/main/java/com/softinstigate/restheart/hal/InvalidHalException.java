@@ -12,17 +12,30 @@ package com.softinstigate.restheart.hal;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class InvalidHalException extends Exception {
+
+    /**
+     *
+     */
     public InvalidHalException() {
         super();
     }
 
+    /**
+     *
+     * @param message
+     */
     public InvalidHalException(String message) {
         super(message);
     }
 
+    /**
+     *
+     * @param message
+     * @param cause
+     */
     public InvalidHalException(String message, Throwable cause) {
         super(message, cause);
     }

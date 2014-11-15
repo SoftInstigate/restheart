@@ -17,13 +17,19 @@ import java.util.Set;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
 public class SimpleAccount implements Account {
     private Principal principal;
     private PasswordCredential credential;
     private Set<String> roles;
 
+    /**
+     *
+     * @param name
+     * @param password
+     * @param roles
+     */
     public SimpleAccount(String name, char[] password, Set<String> roles) {
         if (name == null) {
             throw new IllegalArgumentException("argument principal cannot be null");
@@ -42,11 +48,19 @@ public class SimpleAccount implements Account {
         this.roles = roles;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public Principal getPrincipal() {
         return principal;
     }
 
+    /**
+     *
+     * @return
+     */
     public PasswordCredential getCredentials() {
         return credential;
     }
