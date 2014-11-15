@@ -90,7 +90,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare
  */
 public class Bootstrapper {
-    private static final String RESTHEART_VERSION = "0.9.3-SNAPSHOT";
+    private static final String RESTHEART_VERSION = "0.9.2-SNAPSHOT";
 
     private static Undertow server;
 
