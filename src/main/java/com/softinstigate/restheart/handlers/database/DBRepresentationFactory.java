@@ -116,7 +116,7 @@ public class DBRepresentationFactory {
             rep.addLink(new Link("rh:root", URLUtilis.getPerentPath(requestPath)));
         }
         rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
-        rep.addLink(new Link("rh", "curies", Configuration.DOC_URL + "/#api/db/{rel}", true), true);
+        rep.addLink(new Link("rh", "curies", "/_doc/?ln=" + Configuration.RESTHEART_ONLINE_DOC_URL + "/%23api/db/{rel}", true), true);
 
         ResponseHelper.injectWarnings(rep, exchange, context);
 

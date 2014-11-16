@@ -37,12 +37,16 @@ import org.yaml.snakeyaml.Yaml;
  * @author Andrea Di Cesare
  */
 public class Configuration {
+    /**
+     * the restheart version
+     */
+    public static final String RESTHEART_VERSION = "0.9.2-SNAPSHOT";
 
     /**
      * URL pointing to the online documentation specific for this version.
      */
-    public static final String DOC_URL = "http://www.restheart.org/docs/v0.9";
-
+    public static final String RESTHEART_ONLINE_DOC_URL = "http://www.restheart.org/docs/v0.9";
+    
     private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
 
     private final boolean httpsListener;
