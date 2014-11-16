@@ -1,12 +1,19 @@
 /*
- * Copyright SoftInstigate srl. All Rights Reserved.
- *
- *
- * The copyright to the computer program(s) herein is the property of
- * SoftInstigate srl, Italy. The program(s) may be used and/or copied only
- * with the written permission of SoftInstigate srl or in accordance with the
- * terms and conditions stipulated in the agreement/contract under which the
- * program(s) have been supplied. This copyright notice must not be removed.
+ * RESTHeart - the data REST API server
+ * Copyright (C) 2014 SoftInstigate Srl
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.softinstigate.restheart.db;
 
@@ -25,20 +32,24 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
-public class PropsFixer
-{
+public class PropsFixer {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
 
     private static final Logger logger = LoggerFactory.getLogger(PropsFixer.class);
 
-    public static boolean addCollectionProps(String dbName, String collName) throws MongoException
-    {
+    /**
+     *
+     * @param dbName
+     * @param collName
+     * @return
+     * @throws MongoException
+     */
+    public static boolean addCollectionProps(String dbName, String collName) throws MongoException {
         DBObject dbmd = DBDAO.getDbProps(dbName);
 
-        if (dbmd == null)
-        {
+        if (dbmd == null) {
             // db must exists with properties
             return false;
         }
@@ -53,8 +64,7 @@ public class PropsFixer
         // check if collection has data
         DB db = DBDAO.getDB(dbName);
 
-        if (!db.collectionExists(collName))
-        {
+        if (!db.collectionExists(collName)) {
             return false;
         }
 
@@ -71,15 +81,18 @@ public class PropsFixer
         DBCollection coll = CollectionDAO.getCollection(dbName, collName);
 
         coll.insert(properties);
-            
+
         logger.info("properties added to {}/{}", dbName, collName);
         return true;
     }
 
-    public static boolean addDbProps(String dbName)
-    {
-        if (!DBDAO.doesDbExists(dbName))
-        {
+    /**
+     *
+     * @param dbName
+     * @return
+     */
+    public static boolean addDbProps(String dbName) {
+        if (!DBDAO.doesDbExists(dbName)) {
             return false;
         }
 
@@ -89,8 +102,6 @@ public class PropsFixer
         {
             return false;
         }
-
-        DB db = DBDAO.getDB(dbName);
 
         // ok, create the properties
         DBObject properties = new BasicDBObject();
@@ -109,50 +120,39 @@ public class PropsFixer
         return true;
     }
 
-    public static void fixAllMissingProps()
-    {
-        try
-            {
-            client.getDatabaseNames().stream().filter((dbName) -> (!RequestContext.isReservedResourceDb(dbName))).map((dbName) ->
-            {
-                try
-                {
+    /**
+     *
+     */
+    public static void fixAllMissingProps() {
+        try {
+            client.getDatabaseNames().stream().filter(dbName -> !RequestContext.isReservedResourceDb(dbName)).map(dbName -> {
+                try {
                     addDbProps(dbName);
-                }
-                catch (Throwable t)
-                {
+                } catch (Throwable t) {
                     logger.error("error fixing _properties of db {}", dbName, t);
                 }
                 return dbName;
-            }).forEach((dbName) ->
-            {
+            }).forEach(dbName -> {
                 DB db = DBDAO.getDB(dbName);
 
-                DBDAO.getDbCollections(db).stream().filter((collectionName) -> (!RequestContext.isReservedResourceCollection(collectionName))).forEach((collectionName) ->
-                        {
-                            try
-                            {
-                                addCollectionProps(dbName, collectionName);
-                            }
-                            catch (Throwable t)
-                            {
-                                logger.error("error checking the collection {}/{} for valid _properties. note that a request to it will result on NOT_FOUND", dbName, collectionName, t);
-                            }
-                        }
+                DBDAO.getDbCollections(db).stream().filter(collectionName -> !RequestContext.isReservedResourceCollection(collectionName)).forEach(collectionName -> {
+                    try {
+                        addCollectionProps(dbName, collectionName);
+                    } catch (Throwable t) {
+                        logger.error("error checking the collection {}/{} for valid _properties. note that a request to it will result on NOT_FOUND", dbName, collectionName, t);
+                    }
+                }
                 );
             });
-        }
-        catch(CommandFailureException cfe)
-        {
+        } catch (CommandFailureException cfe) {
             Object errmsg = cfe.getCommandResult().get("errmsg");
-            
-            if (errmsg != null && errmsg instanceof String && ("unauthorized".equals(errmsg) || ((String)errmsg).contains("not authorized")))
+
+            if (errmsg != null && errmsg instanceof String && ("unauthorized".equals(errmsg) || ((String) errmsg).contains("not authorized"))) {
                 logger.error("error looking for dbs and collections with missing _properties due to insuffient mongo user privileges. note that requests to dbs and collections with no _properties result on NOT_FOUND", cfe);
-            else
+            } else {
                 logger.error("eorro looking for dbs and collections with missing _properties. note that requests to dbs and collections with no _properties result on NOT_FOUND", cfe);
-        }
-        catch(MongoException mex)
-        {
+            }
+        } catch (MongoException mex) {
             logger.error("eorro looking for dbs and collections with missing _properties. note that requests to dbs and collections with no _properties result on NOT_FOUND", mex);
         }
     }

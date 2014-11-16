@@ -1,12 +1,19 @@
 /*
- * Copyright SoftInstigate srl. All Rights Reserved.
- *
- *
- * The copyright to the computer program(s) herein is the property of
- * SoftInstigate srl, Italy. The program(s) may be used and/or copied only
- * with the written permission of SoftInstigate srl or in accordance with the
- * terms and conditions stipulated in the agreement/contract under which the
- * program(s) have been supplied. This copyright notice must not be removed.
+ * RESTHeart - the data REST API server
+ * Copyright (C) 2014 SoftInstigate Srl
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.softinstigate.restheart.utils;
 
@@ -17,35 +24,51 @@ import org.bson.types.ObjectId;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
-public class RequestHelper
-{
-    public static boolean checkReadEtag(HttpServerExchange exchange, String etag)
-    {
-        if (etag == null)
+public class RequestHelper {
+
+    /**
+     *
+     * @param exchange
+     * @param etag
+     * @return
+     */
+    public static boolean checkReadEtag(HttpServerExchange exchange, String etag) {
+        if (etag == null) {
             return false;
-        
+        }
+
         HeaderValues vs = exchange.getRequestHeaders().get(Headers.IF_NONE_MATCH);
-        
-        return (vs == null || vs.getFirst() == null) ? false : vs.getFirst().equals(etag);
+
+        return vs == null || vs.getFirst() == null ? false : vs.getFirst().equals(etag);
     }
-    
-    public static ObjectId getWriteEtag(HttpServerExchange exchange)
-    {
+
+    /**
+     *
+     * @param exchange
+     * @return
+     */
+    public static ObjectId getWriteEtag(HttpServerExchange exchange) {
         HeaderValues vs = exchange.getRequestHeaders().get(Headers.IF_MATCH);
-        
-        return (vs == null || vs.getFirst() == null) ? null : getEtagAsObjectId(vs.getFirst());
+
+        return vs == null || vs.getFirst() == null ? null : getEtagAsObjectId(vs.getFirst());
     }
-    
-    public static ObjectId getEtagAsObjectId(Object etag)
-    {
-        if (etag == null)
+
+    /**
+     *
+     * @param etag
+     * @return
+     */
+    public static ObjectId getEtagAsObjectId(Object etag) {
+        if (etag == null) {
             return null;
-        
-        if (ObjectId.isValid("" + etag))
+        }
+
+        if (ObjectId.isValid("" + etag)) {
             return new ObjectId("" + etag);
-        else
+        } else {
             return new ObjectId();
+        }
     }
 }

@@ -1,12 +1,19 @@
 /*
- * Copyright SoftInstigate srl. All Rights Reserved.
- *
- *
- * The copyright to the computer program(s) herein is the property of
- * SoftInstigate srl, Italy. The program(s) may be used and/or copied only
- * with the written permission of SoftInstigate srl or in accordance with the
- * terms and conditions stipulated in the agreement/contract under which the
- * program(s) have been supplied. This copyright notice must not be removed.
+ * RESTHeart - the data REST API server
+ * Copyright (C) 2014 SoftInstigate Srl
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.softinstigate.restheart.handlers.document;
 
@@ -31,101 +38,106 @@ import org.slf4j.Logger;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
-public class DocumentRepresentationFactory
-{
+public class DocumentRepresentationFactory {
     private static final Logger logger = LoggerFactory.getLogger(DocumentRepresentationFactory.class);
 
+    /**
+     *
+     * @param href
+     * @param exchange
+     * @param context
+     * @param data
+     * @return
+     * @throws IllegalQueryParamenterException
+     */
     public static Representation getDocument(String href, HttpServerExchange exchange, RequestContext context, DBObject data)
-            throws IllegalQueryParamenterException
-    {
+            throws IllegalQueryParamenterException {
         Representation rep = new Representation(href);
 
+        rep.addProperty("_type", context.getType().name());
+
         // document properties
-        data.keySet().stream().forEach((key) ->
-        {
+        data.keySet().stream().forEach((key) -> {
             Object value = data.get(key);
 
-            if (value instanceof ObjectId)
-            {
+            if (value instanceof ObjectId) {
                 value = value.toString();
             }
 
             rep.addProperty(key, value);
         });
-        
+
         // document links
         TreeMap<String, String> links;
 
         links = getRelationshipsLinks(context, data);
 
-        if (links != null)
-        {
-            links.keySet().stream().forEach((k) ->
-            {
+        if (links != null) {
+            links.keySet().stream().forEach((k) -> {
                 rep.addLink(new Link(k, links.get(k)));
             });
         }
-        
+
         // link templates and curies
         String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
-        if (!requestPath.equals("/")) // this can happen due to mongo-mounts mapped URL
+        if (context.isParentAccessible()) // this can happen due to mongo-mounts mapped URL
+        {
             rep.addLink(new Link("rh:coll", URLUtilis.getPerentPath(requestPath)));
-        rep.addLink(new Link("rh", "curies", Configuration.DOC_Path + "/#api/doc/{rel}", true), true);
+        }
+        rep.addLink(new Link("rh", "curies", "/_doc/?ln=" + Configuration.RESTHEART_ONLINE_DOC_URL + "/%23api/doc/{rel}", true), true);
 
         ResponseHelper.injectWarnings(rep, exchange, context);
-        
+
         return rep;
     }
-    
+
+    /**
+     *
+     * @param href
+     * @param exchange
+     * @param context
+     * @param data
+     * @throws IllegalQueryParamenterException
+     * @throws URISyntaxException
+     */
     public static void sendDocument(String href, HttpServerExchange exchange, RequestContext context, DBObject data)
-            throws IllegalQueryParamenterException, URISyntaxException
-    {
+            throws IllegalQueryParamenterException, URISyntaxException {
         Representation rep = getDocument(href, exchange, context, data);
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
     }
 
-    private static TreeMap<String, String> getRelationshipsLinks(RequestContext context, DBObject data)
-    {
+    private static TreeMap<String, String> getRelationshipsLinks(RequestContext context, DBObject data) {
         TreeMap<String, String> links = new TreeMap<>();
 
         List<Relationship> rels = null;
 
-        try
-        {
+        try {
             rels = Relationship.getFromJson((DBObject) context.getCollectionProps());
-        }
-        catch (InvalidMetadataException ex)
-        {
-            context.addWarning("collection " + context.getDBName() + "/" +context.getCollectionName() + " has invalid relationships definition");
+        } catch (InvalidMetadataException ex) {
+            context.addWarning("collection " + context.getDBName() + "/" + context.getCollectionName() + " has invalid relationships definition");
         }
 
-        if (rels == null)
-        {
+        if (rels == null) {
             return links;
         }
 
-        for (Relationship rel : rels)
-        {
-            try
-            {
+        for (Relationship rel : rels) {
+            try {
                 String link = rel.getRelationshipLink(context, context.getDBName(), context.getCollectionName(), data);
 
-                if (link != null)
-                {
+                if (link != null) {
                     links.put(rel.getRel(), link);
                 }
-            }
-            catch (IllegalArgumentException ex)
-            {
+            } catch (IllegalArgumentException ex) {
                 context.addWarning(ex.getMessage());
                 logger.warn(ex.getMessage(), ex);
             }
         }
-        
+
         return links;
     }
 }

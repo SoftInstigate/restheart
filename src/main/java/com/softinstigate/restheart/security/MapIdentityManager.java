@@ -1,12 +1,19 @@
 /*
- * Copyright SoftInstigate srl. All Rights Reserved.
- *
- *
- * The copyright to the computer program(s) herein is the property of
- * SoftInstigate srl, Italy. The program(s) may be used and/or copied only
- * with the written permission of SoftInstigate srl or in accordance with the
- * terms and conditions stipulated in the agreement/contract under which the
- * program(s) have been supplied. This copyright notice must not be removed.
+ * RESTHeart - the data REST API server
+ * Copyright (C) 2014 SoftInstigate Srl
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.softinstigate.restheart.security;
 
@@ -21,27 +28,30 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-public class MapIdentityManager implements IdentityManager
-{
+/**
+ *
+ * @author Andrea Di Cesare
+ */
+public class MapIdentityManager implements IdentityManager {
     private final Map<String, char[]> users;
 
-    public MapIdentityManager(final Map<String, char[]> users)
-    {
+    /**
+     *
+     * @param users
+     */
+    public MapIdentityManager(final Map<String, char[]> users) {
         this.users = users;
     }
 
     @Override
-    public Account verify(Account account)
-    {
+    public Account verify(Account account) {
         return account;
     }
 
     @Override
-    public Account verify(String id, Credential credential)
-    {
+    public Account verify(String id, Credential credential) {
         Account account = getAccount(id);
-        if (account != null && verifyCredential(account, credential))
-        {
+        if (account != null && verifyCredential(account, credential)) {
             return account;
         }
 
@@ -49,16 +59,13 @@ public class MapIdentityManager implements IdentityManager
     }
 
     @Override
-    public Account verify(Credential credential)
-    {
+    public Account verify(Credential credential) {
         // Auto-generated method stub
         return null;
     }
 
-    private boolean verifyCredential(Account account, Credential credential)
-    {
-        if (credential instanceof PasswordCredential)
-        {
+    private boolean verifyCredential(Account account, Credential credential) {
+        if (credential instanceof PasswordCredential) {
             char[] password = ((PasswordCredential) credential).getPassword();
             char[] expectedPassword = users.get(account.getPrincipal().getName());
 
@@ -67,30 +74,23 @@ public class MapIdentityManager implements IdentityManager
         return false;
     }
 
-    private Account getAccount(final String id)
-    {
-        if (users.containsKey(id))
-        {
-            return new Account()
-            {
-                private final Principal principal = new Principal()
-                {
+    private Account getAccount(final String id) {
+        if (users.containsKey(id)) {
+            return new Account() {
+                private final Principal principal = new Principal() {
                     @Override
-                    public String getName()
-                    {
+                    public String getName() {
                         return id;
                     }
                 };
 
                 @Override
-                public Principal getPrincipal()
-                {
+                public Principal getPrincipal() {
                     return principal;
                 }
 
                 @Override
-                public Set<String> getRoles()
-                {
+                public Set<String> getRoles() {
                     return Collections.emptySet();
                 }
 

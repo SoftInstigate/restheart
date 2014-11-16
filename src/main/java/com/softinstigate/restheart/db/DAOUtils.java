@@ -1,12 +1,19 @@
 /*
- * Copyright SoftInstigate srl. All Rights Reserved.
- *
- *
- * The copyright to the computer program(s) herein is the property of
- * SoftInstigate srl, Italy. The program(s) may be used and/or copied only
- * with the written permission of SoftInstigate srl or in accordance with the
- * terms and conditions stipulated in the agreement/contract under which the
- * program(s) have been supplied. This copyright notice must not be removed.
+ * RESTHeart - the data REST API server
+ * Copyright (C) 2014 SoftInstigate Srl
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.softinstigate.restheart.db;
 
@@ -21,30 +28,25 @@ import java.util.TreeMap;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
-public class DAOUtils
-{
+public class DAOUtils {
     /**
      * @param rows list of DBObject rows as returned by getDataFromCursor()
      * @return
      */
-    public static List<Map<String, Object>> getDataFromRows(List<DBObject> rows)
-    {
-        if (rows == null)
-        {
+    public static List<Map<String, Object>> getDataFromRows(List<DBObject> rows) {
+        if (rows == null) {
             return null;
         }
 
         List<Map<String, Object>> data = new ArrayList<>();
 
-        rows.stream().map((row) ->
-        {
+        rows.stream().map((row) -> {
             TreeMap<String, Object> properties = getDataFromRow(row);
 
             return properties;
-        }).forEach((item) ->
-        {
+        }).forEach((item) -> {
             data.add(item);
         });
 
@@ -56,15 +58,12 @@ public class DAOUtils
      * @param fieldsToFilter list of field names to filter
      * @return
      */
-    public static TreeMap<String, Object> getDataFromRow(DBObject row, String... fieldsToFilter)
-    {
-        if (row == null)
-        {
+    public static TreeMap<String, Object> getDataFromRow(DBObject row, String... fieldsToFilter) {
+        if (row == null) {
             return null;
         }
 
-        if (row instanceof BasicDBList)
-        {
+        if (row instanceof BasicDBList) {
             throw new IllegalArgumentException("cannot convert an array to a map");
         }
 
@@ -72,10 +71,8 @@ public class DAOUtils
 
         TreeMap<String, Object> properties = new TreeMap<>();
 
-        row.keySet().stream().forEach((key) ->
-        {
-            if (!_fieldsToFilter.contains(key))
-            {
+        row.keySet().stream().forEach((key) -> {
+            if (!_fieldsToFilter.contains(key)) {
                 properties.put(key, getElement(row.get(key)));
             }
         });
@@ -88,41 +85,32 @@ public class DAOUtils
      * @param fieldsToFilter list of field names to filter
      * @return
      */
-    private static Object getElement(Object element)
-    {
-        if (element == null)
-        {
+    private static Object getElement(Object element) {
+        if (element == null) {
             return null;
         }
-        
-        if (element instanceof BasicDBList)
-        {
+
+        if (element instanceof BasicDBList) {
             ArrayList<Object> ret = new ArrayList<>();
-            
+
             BasicDBList dblist = (BasicDBList) element;
-            
-            dblist.stream().forEach((subel) ->
-            {
+
+            dblist.stream().forEach((subel) -> {
                 ret.add(getElement(subel));
             });
-            
+
             return ret;
-        }
-        else if (element instanceof BasicDBObject)
-        {
+        } else if (element instanceof BasicDBObject) {
             TreeMap<String, Object> ret = new TreeMap<>();
-            
+
             BasicDBObject el = (BasicDBObject) element;
-            
-            el.keySet().stream().forEach((key) ->
-            {
+
+            el.keySet().stream().forEach((key) -> {
                 ret.put(key, el.get(key));
             });
-            
+
             return ret;
-        }
-        else
-        {
+        } else {
             return element;
         }
     }

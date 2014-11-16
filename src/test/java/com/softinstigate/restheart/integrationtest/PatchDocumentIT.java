@@ -1,12 +1,19 @@
 /*
- * Copyright SoftInstigate srl. All Rights Reserved.
- *
- *
- * The copyright to the computer program(s) herein is the property of
- * SoftInstigate srl, Italy. The program(s) may be used and/or copied only
- * with the written permission of SoftInstigate srl or in accordance with the
- * terms and conditions stipulated in the agreement/contract under which the
- * program(s) have been supplied. This copyright notice must not be removed.
+ * RESTHeart - the data REST API server
+ * Copyright (C) 2014 SoftInstigate Srl
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.softinstigate.restheart.integrationtest;
 
@@ -22,20 +29,16 @@ import org.junit.Test;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
-public class PatchDocumentIT  extends AbstactIT
-{
-    
-    public PatchDocumentIT()
-    {
+public class PatchDocumentIT extends AbstactIT {
+
+    public PatchDocumentIT() {
     }
-    
+
     @Test
-    public void testPatchDocument() throws Exception
-    {
-        try
-        {
+    public void testPatchDocument() throws Exception {
+        try {
             Response resp;
 
             // *** PUT tmpdb
@@ -53,34 +56,33 @@ public class PatchDocumentIT  extends AbstactIT
             // try to patch without body
             resp = adminExecutor.execute(Request.Patch(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check patch tmp doc without etag", resp, HttpStatus.SC_NOT_ACCEPTABLE);
-            
+
             // try to patch without etag
             resp = adminExecutor.execute(Request.Patch(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check patch tmp doc without etag", resp, HttpStatus.SC_CONFLICT);
-            
+
             // try to patch with wrong etag
             resp = adminExecutor.execute(Request.Patch(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
             check("check patch tmp doc with wrong etag", resp, HttpStatus.SC_PRECONDITION_FAILED);
-            
+
             resp = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-            
+
             JsonObject content = JsonObject.readFrom(resp.returnContent().asString());
-            
+
             String etag = content.get("_etag").asString();
-            
+
             // try to patch with correct etag
             resp = adminExecutor.execute(Request.Patch(documentTmpUri).bodyString("{b:2}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
             check("check patch tmp doc with correct etag", resp, HttpStatus.SC_OK);
 
             resp = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-            
+
             content = JsonObject.readFrom(resp.returnContent().asString());
             Assert.assertNotNull("check patched content", content.get("a"));
             Assert.assertNotNull("check patched content", content.get("b"));
-            Assert.assertTrue("check patched content", content.get("a").asInt() == 1 && content.get("b").asInt() == 2 );
+            Assert.assertTrue("check patched content", content.get("a").asInt() == 1 && content.get("b").asInt() == 2);
         }
-        finally
-        {
+        finally {
             mongoClient.dropDatabase(dbTmpName);
         }
     }

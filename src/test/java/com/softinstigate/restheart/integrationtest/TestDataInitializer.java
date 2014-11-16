@@ -1,12 +1,19 @@
 /*
- * Copyright SoftInstigate srl. All Rights Reserved.
- *
- *
- * The copyright to the computer program(s) herein is the property of
- * SoftInstigate srl, Italy. The program(s) may be used and/or copied only
- * with the written permission of SoftInstigate srl or in accordance with the
- * terms and conditions stipulated in the agreement/contract under which the
- * program(s) have been supplied. This copyright notice must not be removed.
+ * RESTHeart - the data REST API server
+ * Copyright (C) 2014 SoftInstigate Srl
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.softinstigate.restheart.integrationtest;
 
@@ -24,49 +31,43 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
-public class TestDataInitializer extends AbstactIT
-{
+public class TestDataInitializer extends AbstactIT {
     private static final Logger logger = LoggerFactory.getLogger(TestDataInitializer.class);
-    
-    public static void main(String[] args) throws Throwable
-    {
+
+    public static void main(String[] args) throws Throwable {
         TestDataInitializer me = new TestDataInitializer();
-        
+
         me.setUp();
         me.deleteExistingData();
         logger.info("existing data deleted");
         me.createTestData();
         logger.info("test data created");
     }
-    
-    private void deleteExistingData()
-    {
+
+    private void deleteExistingData() {
         MongoDBClientSingleton.init(conf);
-        
+
         MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbName);
         MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbTmpName);
     }
-    
-    private void createTestData()
-    {
+
+    private void createTestData() {
         DBDAO.upsertDB(dbName, dbProps, new ObjectId(), false);
         CollectionDAO.upsertCollection(dbName, collection1Name, coll1Props, new ObjectId(), false, false);
         CollectionDAO.upsertCollection(dbName, collection2Name, coll2Props, new ObjectId(), false, false);
         CollectionDAO.upsertCollection(dbName, docsCollectionName, docsCollectionProps, new ObjectId(), false, false);
-        
-        for (String index: docsCollectionIndexesStrings)
-        {
-            IndexDAO.createIndex(dbName, docsCollectionName, ((DBObject)JSON.parse(index)), null);
+
+        for (String index : docsCollectionIndexesStrings) {
+            IndexDAO.createIndex(dbName, docsCollectionName, ((DBObject) JSON.parse(index)), null);
         }
-        
+
         DocumentDAO.upsertDocument(dbName, collection1Name, document1Id, document1Props, new ObjectId(), false);
         DocumentDAO.upsertDocument(dbName, collection2Name, document2Id, document2Props, new ObjectId(), false);
-        
-        for (String doc: docsPropsStrings)
-        {
-            DocumentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), ((DBObject)JSON.parse(doc)), new ObjectId(), false);
+
+        for (String doc : docsPropsStrings) {
+            DocumentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), ((DBObject) JSON.parse(doc)), new ObjectId(), false);
         }
     }
 }

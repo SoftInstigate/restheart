@@ -1,12 +1,19 @@
 /*
- * Copyright SoftInstigate srl. All Rights Reserved.
- *
- *
- * The copyright to the computer program(s) herein is the property of
- * SoftInstigate srl, Italy. The program(s) may be used and/or copied only
- * with the written permission of SoftInstigate srl or in accordance with the
- * terms and conditions stipulated in the agreement/contract under which the
- * program(s) have been supplied. This copyright notice must not be removed.
+ * RESTHeart - the data REST API server
+ * Copyright (C) 2014 SoftInstigate Srl
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.softinstigate.restheart.handlers.indexes;
 
@@ -27,60 +34,64 @@ import org.slf4j.Logger;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
-public class IndexesRepresentationFactory
-{
+public class IndexesRepresentationFactory {
     private static final Logger logger = LoggerFactory.getLogger(IndexesRepresentationFactory.class);
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param embeddedData
+     * @param size
+     * @throws IllegalQueryParamenterException
+     */
     static public void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
-            throws IllegalQueryParamenterException
-    {
-        String requestPath = URLUtilis.removeTrailingSlashes(context.getRequestUri());
-        String queryString = (exchange.getQueryString() == null || exchange.getQueryString().isEmpty()) ? "" : "?" + exchange.getQueryString();
-        
+            throws IllegalQueryParamenterException {
+        String requestPath = URLUtilis.removeTrailingSlashes(context.getMappedRequestUri());
+        String queryString = exchange.getQueryString() == null || exchange.getQueryString().isEmpty() ? "" : "?" + exchange.getQueryString();
+
         Representation rep = new Representation(requestPath + queryString);
 
-        if (size > 0)
-        {
-            float _size = size + 0f;
-            float _pagesize = context.getPagesize() + 0f;
+        rep.addProperty("_type", context.getType().name());
 
+        if (size >= 0) {
             rep.addProperty("_size", size);
         }
 
-        if (embeddedData != null)
-        {
+        if (embeddedData != null) {
             long count = embeddedData.stream().filter((props) -> props.keySet().stream().anyMatch((k) -> k.equals("id") || k.equals("_id"))).count();
 
             rep.addProperty("_returned", count);
 
             if (!embeddedData.isEmpty()) // embedded documents
             {
-                embeddedData.stream().forEach((d) ->
-                {
+                embeddedData.stream().forEach((d) -> {
                     Object _id = d.get("_id");
 
-                    if (_id != null && (_id instanceof String || _id instanceof ObjectId))
-                    {
-                        
+                    if (_id != null && (_id instanceof String || _id instanceof ObjectId)) {
                         Representation nrep = new Representation(requestPath + "/" + _id.toString());
+
+                        nrep.addProperty("_type", RequestContext.TYPE.INDEX.name());
+
                         nrep.addProperties(d);
 
                         rep.addRepresentation("rh:index", nrep);
-                    }
-                    else
-                    {
+                    } else {
                         logger.error("index missing string _id field", d);
                     }
                 });
             }
         }
-        
+
         // link templates and curies
-        rep.addLink(new Link("rh:coll", URLUtilis.getPerentPath(requestPath)));
-        rep.addLink(new Link("rh", "curies", Configuration.DOC_Path + "/#api/indexes/{rel}", true), true);
-        
+        if (context.isParentAccessible()) // this can happen due to mongo-mounts mapped URL
+        {
+            rep.addLink(new Link("rh:coll", URLUtilis.getPerentPath(requestPath)));
+        }
+        rep.addLink(new Link("rh", "curies", "/_doc/?ln=" + Configuration.RESTHEART_ONLINE_DOC_URL + "/%23api/indexes/{rel}", true), true);
+
         ResponseHelper.injectWarnings(rep, exchange, context);
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);

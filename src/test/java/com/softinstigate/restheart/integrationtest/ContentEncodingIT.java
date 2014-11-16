@@ -1,12 +1,19 @@
 /*
- * Copyright SoftInstigate srl. All Rights Reserved.
- *
- *
- * The copyright to the computer program(s) herein is the property of
- * SoftInstigate srl, Italy. The program(s) may be used and/or copied only
- * with the written permission of SoftInstigate srl or in accordance with the
- * terms and conditions stipulated in the agreement/contract under which the
- * program(s) have been supplied. This copyright notice must not be removed.
+ * RESTHeart - the data REST API server
+ * Copyright (C) 2014 SoftInstigate Srl
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.softinstigate.restheart.integrationtest;
 
@@ -31,28 +38,23 @@ import org.junit.Test;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
-public class ContentEncodingIT extends AbstactIT
-{
+public class ContentEncodingIT extends AbstactIT {
     protected static Executor notDecompressingExecutor = null;
-    
-    public ContentEncodingIT()
-    {
+
+    public ContentEncodingIT() {
     }
-    
+
     @Before
     @Override
-    public void setUp() throws Exception
-    {
+    public void setUp() throws Exception {
         super.setUp();
-        notDecompressingExecutor = Executor.newInstance(HttpClients.custom().disableContentCompression().build()).auth(new HttpHost("127.0.0.1"), "admin", "changeit");
+        notDecompressingExecutor = Executor.newInstance(HttpClients.custom().disableContentCompression().build()).authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "admin", "changeit");
     }
-            
 
     @Test
-    public void testGzipAcceptEncoding() throws Exception
-    {
+    public void testGzipAcceptEncoding() throws Exception {
         Response resp = notDecompressingExecutor.execute(Request.Get(rootUri).addHeader(Headers.ACCEPT_ENCODING_STRING, Headers.GZIP.toString()));
 
         HttpResponse httpResp = resp.returnResponse();
@@ -71,17 +73,14 @@ public class ContentEncodingIT extends AbstactIT
 
         Assert.assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
 
-        try
-        {
+        try {
             GZIPInputStream gzipis = new GZIPInputStream(new ByteArrayInputStream(content.getBytes(StandardCharsets.ISO_8859_1)));
 
-            while (gzipis.read() > 0)
-            {
+            while (gzipis.read() > 0) {
 
             }
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             Assert.fail("check decompressing content");
         }
     }

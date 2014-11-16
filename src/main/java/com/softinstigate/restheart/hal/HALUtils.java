@@ -1,12 +1,19 @@
 /*
- * Copyright SoftInstigate srl. All Rights Reserved.
- *
- *
- * The copyright to the computer program(s) herein is the property of
- * SoftInstigate srl, Italy. The program(s) may be used and/or copied only
- * with the written permission of SoftInstigate srl or in accordance with the
- * terms and conditions stipulated in the agreement/contract under which the
- * program(s) have been supplied. This copyright notice must not be removed.
+ * RESTHeart - the data REST API server
+ * Copyright (C) 2014 SoftInstigate Srl
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.softinstigate.restheart.hal;
 
@@ -20,30 +27,37 @@ import org.bson.types.ObjectId;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
-public class HALUtils
-{
-    public static void addData(Representation rep, DBObject data)
-    {
+public class HALUtils {
+
+    /**
+     *
+     * @param rep
+     * @param data
+     */
+    public static void addData(Representation rep, DBObject data) {
         // collection properties
-        data.keySet().stream().forEach((key) ->
-        {
+        data.keySet().stream().forEach((key) -> {
             Object value = data.get(key);
 
-            if (value instanceof ObjectId)
-            {
+            if (value instanceof ObjectId) {
                 rep.addProperty(key, value.toString());
-            }
-            else
-            {
+            } else {
                 rep.addProperty(key, value);
             }
         });
     }
 
-    public static TreeMap<String, String> getPaginationLinks(HttpServerExchange exchange, RequestContext context, long size) throws IllegalQueryParamenterException
-    {
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param size
+     * @return
+     * @throws IllegalQueryParamenterException
+     */
+    public static TreeMap<String, String> getPaginationLinks(HttpServerExchange exchange, RequestContext context, long size) throws IllegalQueryParamenterException {
         String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
         String queryString = exchange.getQueryString();
 
@@ -51,8 +65,7 @@ public class HALUtils
         int pagesize = context.getPagesize();
         long totalPages = 0;
 
-        if (size >= 0)
-        {
+        if (size >= 0) {
             float _size = size + 0f;
             float _pagesize = pagesize + 0f;
 
@@ -61,62 +74,49 @@ public class HALUtils
 
         TreeMap<String, String> links = new TreeMap<>();
 
-        if ((queryString == null || queryString.isEmpty()))
-        {
+        if (queryString == null || queryString.isEmpty()) {
             if (totalPages > 0 && page < totalPages) // i.e. the url contains the count paramenter and there is a next page
+            {
                 links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize);
-        }
-        else
-        {
+            }
+        } else {
             String queryStringNoPagingProps = URLUtilis.getQueryStringRemovingParams(exchange, "page", "pagesize");
 
-            if (queryStringNoPagingProps == null || queryStringNoPagingProps.isEmpty())
-            {
+            if (queryStringNoPagingProps == null || queryStringNoPagingProps.isEmpty()) {
                 links.put("first", requestPath + "?pagesize=" + pagesize);
                 links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize);
 
                 if (totalPages > 0) // i.e. the url contains the count paramenter
                 {
-                    if (page < totalPages)
-                    {
+                    if (page < totalPages) {
                         links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize);
                         links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
-                    }
-                    else
-                    {
+                    } else {
                         links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize);
                     }
                 }
 
-                if (page > 1)
-                {
+                if (page > 1) {
                     links.put("previous", requestPath + (page >= 2 ? "?page=" + (page - 1) : "") + (page > 2 ? "&pagesize=" + pagesize : "?pagesize=" + pagesize));
                 }
-            }
-            else
-            {
+            } else {
                 links.put("first", requestPath + "?pagesize=" + pagesize + "&" + queryStringNoPagingProps);
 
-                if (totalPages <= 0)
-                {
+                if (totalPages <= 0) {
                     links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
                 }
 
                 if (totalPages > 0) // i.e. the url contains the count paramenter
                 {
-                    if (page < totalPages)
-                    {
+                    if (page < totalPages) {
                         links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
                         links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
-                    }
-                    else
-                    {
+                    } else {
                         links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
                     }
                 }
 
-                if (page > 1)
-                {
+                if (page > 1) {
                     links.put("previous", requestPath + (page >= 2 ? "?page=" + (page - 1) : "") + (page >= 2 ? "&pagesize=" + pagesize : "?pagesize=" + pagesize) + "&" + queryStringNoPagingProps);
                 }
             }

@@ -1,12 +1,19 @@
 /*
- * Copyright SoftInstigate srl. All Rights Reserved.
- *
- *
- * The copyright to the computer program(s) herein is the property of
- * SoftInstigate srl, Italy. The program(s) may be used and/or copied only
- * with the written permission of SoftInstigate srl or in accordance with the
- * terms and conditions stipulated in the agreement/contract under which the
- * program(s) have been supplied. This copyright notice must not be removed.
+ * RESTHeart - the data REST API server
+ * Copyright (C) 2014 SoftInstigate Srl
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.softinstigate.restheart.db;
 
@@ -20,7 +27,6 @@ import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -32,25 +38,28 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
-public class DocumentDAO
-{
+public class DocumentDAO {
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
 
     private static final Logger logger = LoggerFactory.getLogger(DocumentDAO.class);
 
     private static final BasicDBObject fieldsToReturn;
 
-    static
-    {
+    static {
         fieldsToReturn = new BasicDBObject();
         fieldsToReturn.put("_id", 1);
         fieldsToReturn.put("_created_on", 1);
     }
 
-    public static DBCollection getCollection(String dbName, String collName)
-    {
+    /**
+     *
+     * @param dbName
+     * @param collName
+     * @return
+     */
+    public static DBCollection getCollection(String dbName, String collName) {
         return client.getDB(dbName).getCollection(collName);
     }
 
@@ -65,8 +74,7 @@ public class DocumentDAO
      * @param patching
      * @return the HttpStatus code to retrun
      */
-    public static int upsertDocument(String dbName, String collName, String documentId, DBObject content, ObjectId requestEtag, boolean patching)
-    {
+    public static int upsertDocument(String dbName, String collName, String documentId, DBObject content, ObjectId requestEtag, boolean patching) {
         DB db = DBDAO.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
@@ -74,8 +82,7 @@ public class DocumentDAO
         ObjectId timestamp = new ObjectId();
         Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
 
-        if (content == null)
-        {
+        if (content == null) {
             content = new BasicDBObject();
         }
 
@@ -83,38 +90,30 @@ public class DocumentDAO
 
         BasicDBObject idQuery = new BasicDBObject("_id", getId(documentId));
 
-        if (patching)
-        {
+        if (patching) {
             content.removeField("_created_on"); // make sure we don't change this field
-            
+
             DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, new BasicDBObject("$set", content), false, false);
 
-            if (oldDocument == null)
-            {
+            if (oldDocument == null) {
                 return HttpStatus.SC_NOT_FOUND;
-            }
-            else
-            {
+            } else {
                 // check the old etag (in case restore the old document version)
                 return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_OK);
             }
-        }
-        else
-        {
+        } else {
             content.put("_created_on", now.toString()); // let's assume this is an insert. in case we'll set it back with a second update
-            
+
             // we use findAndModify to get the @created_on field value from the existing document
             // in case this is an update well need to put it back using a second update 
             // it is not possible to do it with a single update
             // (even using $setOnInsert update because we'll need to use the $set operator for other data and this would make it a partial update (patch semantic) 
             DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, content, false, true);
 
-            if (oldDocument != null) // upsert
-            {
+            if (oldDocument != null) { // upsert
                 Object oldTimestamp = oldDocument.get("_created_on");
 
-                if (oldTimestamp == null)
-                {
+                if (oldTimestamp == null) {
                     oldTimestamp = now.toString();
                     logger.warn("properties of document /{}/{}/{} had no @created_on field. set to now", dbName, collName, documentId);
                 }
@@ -126,9 +125,7 @@ public class DocumentDAO
 
                 // check the old etag (in case restore the old document version)
                 return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_OK);
-            }
-            else // insert
-            {
+            } else {  // insert
                 return HttpStatus.SC_CREATED;
             }
         }
@@ -144,8 +141,7 @@ public class DocumentDAO
      * @param requestEtag
      * @return the HttpStatus code to retrun
      */
-    public static int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, DBObject content, ObjectId requestEtag)
-    {
+    public static int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, DBObject content, ObjectId requestEtag) {
         DB db = DBDAO.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
@@ -153,8 +149,7 @@ public class DocumentDAO
         ObjectId timestamp = new ObjectId();
         Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
 
-        if (content == null)
-        {
+        if (content == null) {
             content = new BasicDBObject();
         }
 
@@ -163,19 +158,18 @@ public class DocumentDAO
 
         Object _id = content.get("_id");
         content.removeField("_id");
-        
-        if (_id == null)
-        {
+
+        if (_id == null) {
             ObjectId id = new ObjectId();
             content.put("_id", id);
-            
+
             coll.insert(content);
-            
+
             exchange.getResponseHeaders().add(HttpString.tryFromString("Location"), getReferenceLink(exchange.getRequestURL(), id.toString()).toString());
-        
+
             return HttpStatus.SC_CREATED;
         }
-        
+
         BasicDBObject idQuery = new BasicDBObject("_id", getId("" + _id));
 
         // we use findAndModify to get the @created_on field value from the existing document
@@ -184,12 +178,10 @@ public class DocumentDAO
         // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
         DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, content, false, true);
 
-        if (oldDocument != null) // upsert
-        {
+        if (oldDocument != null) {  // upsert
             Object oldTimestamp = oldDocument.get("_created_on");
 
-            if (oldTimestamp == null)
-            {
+            if (oldTimestamp == null) {
                 oldTimestamp = now.toString();
                 logger.warn("properties of document /{}/{}/{} had no @created_on field. set to now", dbName, collName, _id.toString());
             }
@@ -201,15 +193,20 @@ public class DocumentDAO
 
             // check the old etag (in case restore the old document version)
             return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_OK);
-        }
-        else // insert
-        {
+        } else { // insert
             return HttpStatus.SC_CREATED;
         }
     }
 
-    public static int deleteDocument(String dbName, String collName, String documentId, ObjectId requestEtag)
-    {
+    /**
+     *
+     * @param dbName
+     * @param collName
+     * @param documentId
+     * @param requestEtag
+     * @return
+     */
+    public static int deleteDocument(String dbName, String collName, String documentId, ObjectId requestEtag) {
         DB db = DBDAO.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
@@ -218,60 +215,50 @@ public class DocumentDAO
 
         DBObject oldDocument = coll.findAndModify(idQuery, null, null, true, null, false, false);
 
-        if (oldDocument == null)
-        {
+        if (oldDocument == null) {
             return HttpStatus.SC_NOT_FOUND;
-        }
-        else
-        {
+        } else {
             // check the old etag (in case restore the old document version)
             return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_NO_CONTENT);
         }
     }
 
-    public static ArrayList<DBObject> getDataFromCursor(DBCursor cursor)
-    {
+    /**
+     *
+     * @param cursor
+     * @return
+     */
+    public static ArrayList<DBObject> getDataFromCursor(DBCursor cursor) {
         return new ArrayList<>(cursor.toArray());
     }
 
-    private static Object getId(String id)
-    {
-        if (id == null)
+    private static Object getId(String id) {
+        if (id == null) {
             return new ObjectId();
-        
-        if (ObjectId.isValid(id))
-        {
-            return new ObjectId(id);
         }
-        else
-        {
+
+        if (ObjectId.isValid(id)) {
+            return new ObjectId(id);
+        } else {
             // the id is not an object id
             return id;
         }
     }
 
-    private static int optimisticCheckEtag(DBCollection coll, DBObject oldDocument, ObjectId requestEtag, int httpStatusIfOk)
-    {
-        if (requestEtag == null)
-        {
+    private static int optimisticCheckEtag(DBCollection coll, DBObject oldDocument, ObjectId requestEtag, int httpStatusIfOk) {
+        if (requestEtag == null) {
             coll.save(oldDocument);
             return HttpStatus.SC_CONFLICT;
         }
-        
+
         Object oldEtag = RequestHelper.getEtagAsObjectId(oldDocument.get("_etag"));
 
-        if (oldEtag == null) // well we don't had an etag there so fine
-        {
+        if (oldEtag == null) {  // well we don't had an etag there so fine
             return HttpStatus.SC_NO_CONTENT;
-        }
-        else
-        {
-            if (oldEtag.equals(requestEtag))
-            {
+        } else {
+            if (oldEtag.equals(requestEtag)) {
                 return httpStatusIfOk; // ok they match
-            }
-            else
-            {
+            } else {
                 // oopps, we need to restore old document
                 // they call it optimistic lock strategy
                 coll.save(oldDocument);
@@ -279,15 +266,11 @@ public class DocumentDAO
             }
         }
     }
-    
-    static private URI getReferenceLink(String parentUrl, String referencedName)
-    {
-        try
-        {
+
+    static private URI getReferenceLink(String parentUrl, String referencedName) {
+        try {
             return new URI(URLUtilis.removeTrailingSlashes(parentUrl) + "/" + referencedName);
-        }
-        catch (URISyntaxException ex)
-        {
+        } catch (URISyntaxException ex) {
             logger.error("error creating URI from {} + / + {}", parentUrl, referencedName, ex);
         }
 

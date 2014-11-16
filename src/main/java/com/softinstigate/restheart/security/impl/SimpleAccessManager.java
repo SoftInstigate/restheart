@@ -1,12 +1,19 @@
 /*
- * Copyright SoftInstigate srl. All Rights Reserved.
- *
- *
- * The copyright to the computer program(s) herein is the property of
- * SoftInstigate srl, Italy. The program(s) may be used and/or copied only
- * with the written permission of SoftInstigate srl or in accordance with the
- * terms and conditions stipulated in the agreement/contract under which the
- * program(s) have been supplied. This copyright notice must not be removed.
+ * RESTHeart - the data REST API server
+ * Copyright (C) 2014 SoftInstigate Srl
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.softinstigate.restheart.security.impl;
 
@@ -19,6 +26,7 @@ import io.undertow.server.HttpServerExchange;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,34 +39,33 @@ import org.yaml.snakeyaml.Yaml;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
-public class SimpleAccessManager implements AccessManager
-{
+public class SimpleAccessManager implements AccessManager {
     private static final Logger logger = LoggerFactory.getLogger(SimpleAccessManager.class);
 
     private HashMap<String, Set<Predicate>> acl;
 
-    public SimpleAccessManager(Map<String, Object> arguments)
-    {
-        if (arguments == null)
-        {
+    /**
+     *
+     * @param arguments
+     */
+    public SimpleAccessManager(Map<String, Object> arguments) {
+        if (arguments == null) {
             logger.error("missing required argument conf-file");
             throw new IllegalArgumentException("\"missing required arguments conf-file");
         }
 
         Object _confFilePath = arguments.getOrDefault("conf-file", "security.yml");
 
-        if (_confFilePath == null || !(_confFilePath instanceof String))
-        {
+        if (_confFilePath == null || !(_confFilePath instanceof String)) {
             logger.error("missing required argument conf-file");
             throw new IllegalArgumentException("\"missing required arguments conf-file");
         }
 
         String confFilePath = (String) _confFilePath;
 
-        if (!confFilePath.startsWith("/"))
-        {
+        if (!confFilePath.startsWith("/")) {
             // this is to allow specifying the configuration file path relative to the jar (also working when running from classes)
             URL location = this.getClass().getProtectionDomain().getCodeSource().getLocation();
             File locationFile = new File(location.getPath());
@@ -67,66 +74,63 @@ public class SimpleAccessManager implements AccessManager
 
         this.acl = new HashMap<>();
 
-        try
-        {
-            init((Map<String, Object>) new Yaml().load(new FileInputStream(new File(confFilePath))));
-        }
-        catch (FileNotFoundException fnef)
-        {
+        FileInputStream fis = null;
+
+        try {
+            fis = new FileInputStream(new File(confFilePath));
+            init((Map<String, Object>) new Yaml().load(fis));
+        } catch (FileNotFoundException fnef) {
             logger.error("configuration file not found.", fnef);
             throw new IllegalArgumentException("configuration file not found.", fnef);
-        }
-        catch (Throwable t)
-        {
+        } catch (Throwable t) {
             logger.error("wrong configuration file format.", t);
             throw new IllegalArgumentException("wrong configuration file format.", t);
+        } finally {
+            if (fis != null) {
+                try {
+                    fis.close();
+                } catch (IOException ex) {
+                    logger.warn("error closing the configuration file {}", confFilePath);
+                }
+            }
         }
     }
 
-    private void init(Map<String, Object> conf)
-    {
+    private void init(Map<String, Object> conf) {
         Object _users = conf.get("permissions");
 
-        if (_users == null || !(_users instanceof List))
-        {
+        if (_users == null || !(_users instanceof List)) {
             logger.error("wrong configuration file format. missing mandatory permissions section.");
             throw new IllegalArgumentException("wrong configuration file format. missing mandatory permissions section.");
         }
 
         List<Map<String, Object>> users = (List<Map<String, Object>>) _users;
 
-        users.stream().forEach(u ->
-        {
+        users.stream().forEach(u -> {
             Object _role = u.get("role");
             Object _predicate = u.get("predicate");
 
-            if (_role == null || !(_role instanceof String))
-            {
+            if (_role == null || !(_role instanceof String)) {
                 throw new IllegalArgumentException("wrong configuration file format. a permission entry is missing the role");
             }
 
             String role = (String) _role;
 
-            if (_predicate == null || !(_predicate instanceof String))
-            {
+            if (_predicate == null || !(_predicate instanceof String)) {
                 throw new IllegalArgumentException("wrong configuration file format. a permission entry is missing the predicate");
             }
 
             Predicate predicate = null;
 
-            try
-            {
+            try {
                 predicate = PredicateParser.parse((String) _predicate, this.getClass().getClassLoader());
-            }
-            catch (Throwable t)
-            {
+            } catch (Throwable t) {
                 throw new IllegalArgumentException("wrong configuration file format. wrong predictate" + (String) _predicate, t);
             }
 
             Set<Predicate> perms = getAcl().get(role);
 
-            if (perms == null)
-            {
+            if (perms == null) {
                 perms = new HashSet<>();
                 getAcl().put(role, perms);
             }
@@ -136,23 +140,22 @@ public class SimpleAccessManager implements AccessManager
         );
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @return
+     */
     @Override
-    public boolean isAllowed(HttpServerExchange exchange, RequestContext context)
-    {
+    public boolean isAllowed(HttpServerExchange exchange, RequestContext context) {
         Account account = exchange.getSecurityContext().getAuthenticatedAccount();
 
-        if (account == null && getAcl().get("$unauthenticated") != null)
-        {
+        if (account == null && getAcl().get("$unauthenticated") != null) {
             // not authenticated, let's get the permission set given to the $unauthenticated group
             return getAcl() == null ? false : getAcl().get("$unauthenticated").stream().anyMatch(p -> p.resolve(exchange));
-        }
-        else
-        if (account != null && account.getRoles() != null)
-        {
+        } else if (account != null && account.getRoles() != null) {
             return account.getRoles().stream().anyMatch(r -> getAcl() == null ? false : getAcl().get(r).stream().anyMatch(p -> p.resolve(exchange)));
-        }
-        else
-        {
+        } else {
             return false;
         }
     }
@@ -161,8 +164,7 @@ public class SimpleAccessManager implements AccessManager
      * @return the acl
      */
     @Override
-    public HashMap<String, Set<Predicate>> getAcl()
-    {
+    public HashMap<String, Set<Predicate>> getAcl() {
         return acl;
     }
 }

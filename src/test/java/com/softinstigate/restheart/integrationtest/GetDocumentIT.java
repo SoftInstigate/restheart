@@ -1,12 +1,19 @@
 /*
- * Copyright SoftInstigate srl. All Rights Reserved.
- *
- *
- * The copyright to the computer program(s) herein is the property of
- * SoftInstigate srl, Italy. The program(s) may be used and/or copied only
- * with the written permission of SoftInstigate srl or in accordance with the
- * terms and conditions stipulated in the agreement/contract under which the
- * program(s) have been supplied. This copyright notice must not be removed.
+ * RESTHeart - the data REST API server
+ * Copyright (C) 2014 SoftInstigate Srl
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.softinstigate.restheart.integrationtest;
 
@@ -26,69 +33,60 @@ import org.junit.Test;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
-public class GetDocumentIT extends AbstactIT
-{
-    
-    public GetDocumentIT()
-    {
+public class GetDocumentIT extends AbstactIT {
+
+    public GetDocumentIT() {
     }
-    
+
     @Test
-    public void testGetDocumentRemappedAll() throws Exception
-    {
+    public void testGetDocumentRemappedAll() throws Exception {
         testGetDocument(document1UriRemappedAll);
     }
-    
+
     @Test
-    public void testGetDocumentRemappedDb() throws Exception
-    {
+    public void testGetDocumentRemappedDb() throws Exception {
         testGetDocument(document1UriRemappedDb);
     }
-    
+
     @Test
-    public void testGetDocumentRemappedCollection() throws Exception
-    {
+    public void testGetDocumentRemappedCollection() throws Exception {
         testGetDocument(document1UriRemappedCollection);
     }
-    
+
     @Test
-    public void testGetDocumentRemappedDoc() throws Exception
-    {
+    public void testGetDocumentRemappedDoc() throws Exception {
         testGetDocument(document1UriRemappedDocument);
     }
-    
-    private void testGetDocument(URI uri) throws Exception
-    {
+
+    private void testGetDocument(URI uri) throws Exception {
         Response resp = adminExecutor.execute(Request.Get(uri));
-        
-        HttpResponse    httpResp    = resp.returnResponse();
+
+        HttpResponse httpResp = resp.returnResponse();
         Assert.assertNotNull(httpResp);
-        HttpEntity      entity      = httpResp.getEntity();
+        HttpEntity entity = httpResp.getEntity();
         Assert.assertNotNull(entity);
-        StatusLine      statusLine  = httpResp.getStatusLine();
+        StatusLine statusLine = httpResp.getStatusLine();
         Assert.assertNotNull(statusLine);
-        
+
         Assert.assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
         Assert.assertNotNull("content type not null", entity.getContentType());
         Assert.assertEquals("check content type", Representation.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
-        
+
         String content = EntityUtils.toString(entity);
-        
+
         Assert.assertNotNull("", content);
-        
+
         JsonObject json = null;
-        
-        try
-        {
+
+        try {
             json = JsonObject.readFrom(content);
         }
-        catch(Throwable t)
-        {
+        catch (Throwable t) {
             Assert.fail("parsing received json");
         }
-        
+
         Assert.assertNotNull("check json not null", json);
         Assert.assertNotNull("check not null @etag property", json.get("_etag"));
         Assert.assertNotNull("check not null @lastupdated_on property", json.get("_lastupdated_on"));
@@ -101,25 +99,24 @@ public class GetDocumentIT extends AbstactIT
         Assert.assertNotNull("check not null mto links", json.get("_links").asObject().get("mto"));
         Assert.assertNotNull("check not null otm links", json.get("_links").asObject().get("otm"));
         Assert.assertNotNull("check not null oto links", json.get("_links").asObject().get("oto"));
-        
+
         Assert.assertTrue("check mtm link", json.get("_links").asObject().get("mtm").asObject().get("href").asString().endsWith("?filter={'mtm':{'$in':['doc2']}}"));
         Assert.assertTrue("check mto link", json.get("_links").asObject().get("mto").asObject().get("href").asString().endsWith("/doc2"));
         Assert.assertTrue("check otm link", json.get("_links").asObject().get("otm").asObject().get("href").asString().endsWith("?filter={'otm':{'$in':['doc2']}}"));
         Assert.assertTrue("check oto link", json.get("_links").asObject().get("oto").asObject().get("href").asString().endsWith("/doc2"));
-        
+
         String mtm = json.get("_links").asObject().get("mtm").asObject().get("href").asString();
         String mto = json.get("_links").asObject().get("mto").asObject().get("href").asString();
         String otm = json.get("_links").asObject().get("otm").asObject().get("href").asString();
         String oto = json.get("_links").asObject().get("oto").asObject().get("href").asString();
 
-        
         URIBuilder ub = new URIBuilder();
-        
+
         String[] mtms = mtm.split("\\?");
         String[] mtos = mtm.split("\\?");
         String[] otms = mtm.split("\\?");
         String[] otos = mtm.split("\\?");
-        
+
         URI _mtm = ub
                 .setScheme(uri.getScheme())
                 .setHost(uri.getHost())
@@ -127,7 +124,7 @@ public class GetDocumentIT extends AbstactIT
                 .setPath(mtms[0])
                 .setCustomQuery(mtms[1])
                 .build();
-        
+
         URI _mto = ub
                 .setScheme(uri.getScheme())
                 .setHost(uri.getHost())
@@ -135,7 +132,7 @@ public class GetDocumentIT extends AbstactIT
                 .setPath(mtos[0])
                 .setCustomQuery(mtos[1])
                 .build();
-        
+
         URI _otm = ub
                 .setScheme(uri.getScheme())
                 .setHost(uri.getHost())
@@ -143,7 +140,7 @@ public class GetDocumentIT extends AbstactIT
                 .setPath(otms[0])
                 .setCustomQuery(otms[1])
                 .build();
-        
+
         URI _oto = ub
                 .setScheme(uri.getScheme())
                 .setHost(uri.getHost())
@@ -151,24 +148,24 @@ public class GetDocumentIT extends AbstactIT
                 .setPath(otos[0])
                 .setCustomQuery(otos[1])
                 .build();
-        
+
         Response respMtm = adminExecutor.execute(Request.Get(_mtm));
-        HttpResponse    httpRespMtm    = respMtm.returnResponse();
+        HttpResponse httpRespMtm = respMtm.returnResponse();
         Assert.assertNotNull("check not null get mtm response", httpRespMtm);
         Assert.assertEquals("check get mtm response status code", HttpStatus.SC_OK, httpRespMtm.getStatusLine().getStatusCode());
-        
+
         Response respMto = adminExecutor.execute(Request.Get(_mto));
-        HttpResponse    httpRespMto    = respMto.returnResponse();
+        HttpResponse httpRespMto = respMto.returnResponse();
         Assert.assertNotNull("check not null get mto response", httpRespMto);
         Assert.assertEquals("check get mto response status code", HttpStatus.SC_OK, httpRespMto.getStatusLine().getStatusCode());
-        
+
         Response respOtm = adminExecutor.execute(Request.Get(_otm));
-        HttpResponse    httpRespOtm    = respOtm.returnResponse();
+        HttpResponse httpRespOtm = respOtm.returnResponse();
         Assert.assertNotNull("check not null get otm response", httpRespOtm);
         Assert.assertEquals("check get otm response status code", HttpStatus.SC_OK, httpRespOtm.getStatusLine().getStatusCode());
-        
+
         Response respOto = adminExecutor.execute(Request.Get(_oto));
-        HttpResponse    httpRespOto    = respOto.returnResponse();
+        HttpResponse httpRespOto = respOto.returnResponse();
         Assert.assertNotNull("check not null get oto response", httpRespOto);
         Assert.assertEquals("check get oto response status code", HttpStatus.SC_OK, httpRespOto.getStatusLine().getStatusCode());
     }

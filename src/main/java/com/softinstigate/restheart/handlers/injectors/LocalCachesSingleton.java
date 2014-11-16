@@ -1,12 +1,19 @@
 /*
- * Copyright SoftInstigate srl. All Rights Reserved.
- *
- *
- * The copyright to the computer program(s) herein is the property of
- * SoftInstigate srl, Italy. The program(s) may be used and/or copied only
- * with the written permission of SoftInstigate srl or in accordance with the
- * terms and conditions stipulated in the agreement/contract under which the
- * program(s) have been supplied. This copyright notice must not be removed.
+ * RESTHeart - the data REST API server
+ * Copyright (C) 2014 SoftInstigate Srl
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.softinstigate.restheart.handlers.injectors;
 
@@ -24,10 +31,9 @@ import java.util.concurrent.TimeUnit;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare
  */
-public class LocalCachesSingleton
-{
+public class LocalCachesSingleton {
     private static final String SEPARATOR = "_@_@_";
 
     private static boolean initialized = false;
@@ -39,22 +45,22 @@ public class LocalCachesSingleton
     private static boolean enabled = false;
     private static final long maxCacheSize = 1000;
 
-    private LocalCachesSingleton()
-    {
+    private LocalCachesSingleton() {
         setup();
     }
 
-    public static void init(Configuration conf)
-    {
+    /**
+     *
+     * @param conf
+     */
+    public static void init(Configuration conf) {
         ttl = conf.getLocalCacheTtl();
         enabled = conf.isLocalCacheEnabled();
         initialized = true;
     }
 
-    private void setup()
-    {
-        if (!initialized)
-        {
+    private void setup() {
+        if (!initialized) {
             throw new IllegalStateException("not initialized");
         }
 
@@ -62,29 +68,23 @@ public class LocalCachesSingleton
 
         builder.maximumSize(maxCacheSize);
 
-        if (ttl > 0)
-        {
+        if (ttl > 0) {
             builder.expireAfterWrite(ttl, TimeUnit.MILLISECONDS);
         }
 
-        if (enabled)
-        {
+        if (enabled) {
             this.dbPropsCache = builder.build(
-                    new CacheLoader<String, Optional<DBObject>>()
-                    {
+                    new CacheLoader<String, Optional<DBObject>>() {
                         @Override
-                        public Optional<DBObject> load(String key) throws Exception
-                        {
+                        public Optional<DBObject> load(String key) throws Exception {
                             return Optional.ofNullable(DBDAO.getDbProps(key));
                         }
                     });
 
             this.collectionPropsCache = builder.build(
-                    new CacheLoader<String, Optional<DBObject>>()
-                    {
+                    new CacheLoader<String, Optional<DBObject>>() {
                         @Override
-                        public Optional<DBObject> load(String key) throws Exception
-                        {
+                        public Optional<DBObject> load(String key) throws Exception {
                             String[] dbNameAndCollectionName = key.split(SEPARATOR);
                             return Optional.ofNullable(CollectionDAO.getCollectionProps(dbNameAndCollectionName[0], dbNameAndCollectionName[1]));
                         }
@@ -92,20 +92,25 @@ public class LocalCachesSingleton
         }
     }
 
-    public static LocalCachesSingleton getInstance()
-    {
+    /**
+     *
+     * @return
+     */
+    public static LocalCachesSingleton getInstance() {
         return LocalCachesSingletonHolder.INSTANCE;
     }
 
-    private static class LocalCachesSingletonHolder
-    {
+    private static class LocalCachesSingletonHolder {
         private static final LocalCachesSingleton INSTANCE = new LocalCachesSingleton();
     }
 
-    public DBObject getDBProps(String dbName)
-    {
-        if (!enabled)
-        {
+    /**
+     *
+     * @param dbName
+     * @return
+     */
+    public DBObject getDBProps(String dbName) {
+        if (!enabled) {
             throw new IllegalStateException("tried to use disabled cache");
         }
 
@@ -113,43 +118,28 @@ public class LocalCachesSingleton
 
         Optional<DBObject> _dbProps = dbPropsCache.getIfPresent(dbName);
 
-        if (_dbProps != null)
-        {
-            if (_dbProps.isPresent())
-            {
+        if (_dbProps != null) {
+            if (_dbProps.isPresent()) {
                 dbProps = _dbProps.get();
                 dbProps.put("_db-props-cached", true);
-            }
-            else
-            {
+            } else {
                 dbProps = null;
             }
-        }
-        else
-        {
-            try
-            {
+        } else {
+            try {
                 _dbProps = dbPropsCache.getUnchecked(dbName);
-            }
-            catch (UncheckedExecutionException uex)
-            {
-                if (uex.getCause() instanceof MongoException)
-                {
+            } catch (UncheckedExecutionException uex) {
+                if (uex.getCause() instanceof MongoException) {
                     throw (MongoException) uex.getCause();
-                }
-                else
-                {
+                } else {
                     throw uex;
                 }
             }
 
-            if (_dbProps != null && _dbProps.isPresent())
-            {
+            if (_dbProps != null && _dbProps.isPresent()) {
                 dbProps = _dbProps.get();
                 dbProps.put("_db-props-cached", false);
-            }
-            else
-            {
+            } else {
                 dbProps = null;
             }
         }
@@ -157,73 +147,67 @@ public class LocalCachesSingleton
         return dbProps;
     }
 
-    public DBObject getCollectionProps(String dbName, String collName)
-    {
-        if (!enabled)
-        {
+    /**
+     *
+     * @param dbName
+     * @param collName
+     * @return
+     */
+    public DBObject getCollectionProps(String dbName, String collName) {
+        if (!enabled) {
             throw new IllegalStateException("tried to use disabled cache");
         }
-        
+
         DBObject collProps;
 
         Optional<DBObject> _collProps = collectionPropsCache.getIfPresent(dbName + SEPARATOR + collName);
 
-        if (_collProps != null)
-        {
-            if (_collProps.isPresent())
-            {
+        if (_collProps != null) {
+            if (_collProps.isPresent()) {
                 collProps = _collProps.get();
                 collProps.put("_collection-props-cached", true);
-            }
-            else
-            {
+            } else {
                 collProps = null;
             }
-        }
-        else
-        {
-            try
-            {
+        } else {
+            try {
                 _collProps = collectionPropsCache.getUnchecked(dbName + SEPARATOR + collName);
-            }
-            catch (UncheckedExecutionException uex)
-            {
-                if (uex.getCause() instanceof MongoException)
-                {
+            } catch (UncheckedExecutionException uex) {
+                if (uex.getCause() instanceof MongoException) {
                     throw (MongoException) uex.getCause();
-                }
-                else
-                {
+                } else {
                     throw uex;
                 }
             }
 
-            if (_collProps.isPresent())
-            {
+            if (_collProps.isPresent()) {
                 collProps = _collProps.get();
                 collProps.put("_collection-props-cached", false);
-            }
-            else
-            {
+            } else {
                 collProps = null;
             }
         }
-        
+
         return collProps;
     }
 
-    public void invalidateDb(String dbName)
-    {
-        if (enabled && dbPropsCache != null)
-        {
+    /**
+     *
+     * @param dbName
+     */
+    public void invalidateDb(String dbName) {
+        if (enabled && dbPropsCache != null) {
             dbPropsCache.invalidate(dbName);
         }
     }
 
-    public void invalidateCollection(String dbName, String collName)
-    {
-        if (enabled && collectionPropsCache != null)
-        {
+    /**
+     *
+     * @param dbName
+     * @param collName
+     */
+    public void invalidateCollection(String dbName, String collName) {
+        if (enabled && collectionPropsCache != null) {
             collectionPropsCache.invalidate(dbName + SEPARATOR + collName);
         }
     }
@@ -231,8 +215,7 @@ public class LocalCachesSingleton
     /**
      * @return the enabled
      */
-    public static boolean isEnabled()
-    {
+    public static boolean isEnabled() {
         return enabled;
     }
 }
