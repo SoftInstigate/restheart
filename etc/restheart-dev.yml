@@ -49,10 +49,10 @@ mongo-servers:
       port: 27017
       
 # Provide mongodb users credentials with mongo-credentials.
-#mongo-credentials:
-#    - auth-db: admin
-#      user: admin
-#      password: adminadmin
+mongo-credentials:
+    - auth-db: admin
+      user: admin
+      password: adminadmin
       
 # Use mongo-mounts to bind URls to mongodb resources using the out-of-the-box URL rewrite feature.
 mongo-mounts:
@@ -89,7 +89,7 @@ application-logic-mounts:
       where: /ping
       secured: false
       args:
-          msg: "greetings from the restheart team"
+          msg: "ciao from the restheart team"
     - what: com.softinstigate.restheart.handlers.applicationlogic.GetRoleHandler
       where: /roles/mine
       secured: false
@@ -97,7 +97,7 @@ application-logic-mounts:
           url: /_logic/roles/mine
           send-challenge: false
           idm-implementation-class: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
-          idm-conf-file: ./etc/security.yml
+          idm-conf-file: ../etc/security-integrationtest.yml
 
 ### security 
 
@@ -111,10 +111,10 @@ application-logic-mounts:
 
 idm:    
     implementation-class: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
-    conf-file: ./etc/security.yml
+    conf-file: ../etc/security.yml
 access-manager:    
     implementation-class: com.softinstigate.restheart.security.impl.SimpleAccessManager
-    conf-file: ./etc/security.yml
+    conf-file: ../etc/security.yml
     
 #### logging
 
