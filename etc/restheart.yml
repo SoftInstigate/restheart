@@ -61,7 +61,7 @@ mongo-mounts:
       
 #### static web resources
 
-# static web resources to bound under the /_static URL.
+# static web resources to bind to the specified URL.
 # the 'what' property is the path of the directory containing the resources. 
 # the path is either absolute (starting with /) or relative to the restheart.jar directory
 # if embedded is true, the resources are either included in the restheart.jar or in the classpath

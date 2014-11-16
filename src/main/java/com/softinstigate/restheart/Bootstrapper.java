@@ -483,12 +483,12 @@ public class Bootstrapper {
                     ResourceHandler handler = resource(new FileResourceManager(file, 3)).addWelcomeFiles(welcomeFile).setDirectoryListingEnabled(false);
 
                     if (secured) {
-                        paths.addPrefixPath("/_static" + where, new SecurityHandler(new PipedWrappingHandler(null, handler), identityManager, accessManager));
+                        paths.addPrefixPath(where, new SecurityHandler(new PipedWrappingHandler(null, handler), identityManager, accessManager));
                     } else {
-                        paths.addPrefixPath("/_static" + where, handler);
+                        paths.addPrefixPath(where, handler);
                     }
 
-                    logger.info("url {} bound to static resources {}. access manager: {}", "/_static" + where, path, secured);
+                    logger.info("url {} bound to static resources {}. access manager: {}", where, path, secured);
 
                 } catch (Throwable t) {
                     logger.error("cannot bind static resources to {}", sr.get(Configuration.STATIC_RESOURCES_MOUNT_WHERE_KEY), t);
