@@ -423,21 +423,6 @@ public class Bootstrapper {
     }
 
     private static void pipeStaticResourcesHandlers(Configuration conf, PathHandler paths, IdentityManager identityManager, AccessManager accessManager) {
-        // pipe the _doc that is used for the curies links
-        try {
-            File onlinedocFile = ResourcesExtractor.extract("onlinedoc");
-
-            if (ResourcesExtractor.isResourceInJar("onlinedoc")) {
-                tmpExtractedFiles.put("onlinedoc", onlinedocFile);
-                logger.info("embedded static resources {} extracted in {}", "onlinedoc", onlinedocFile.toString());
-            }
-            
-            paths.addPrefixPath("/_doc", resource(new FileResourceManager(onlinedocFile, 3)).setWelcomeFiles("index.html").setDirectoryListingEnabled(false));
-        } catch (URISyntaxException | IOException | IllegalStateException ex) {
-            logger.error("error extracting embedded static resource {}", "onlinedoc", ex);
-            return;
-        }
-
         // pipe the static resources specified in the configuration file
         if (conf.getStaticResourcesMounts() != null) {
             conf.getStaticResourcesMounts().stream().forEach(sr -> {

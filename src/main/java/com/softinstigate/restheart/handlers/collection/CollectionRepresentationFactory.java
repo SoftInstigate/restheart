@@ -136,8 +136,8 @@ public class CollectionRepresentationFactory {
         rep.addLink(new Link("rh:sort", requestPath + "/{?sort_by}", true));
         rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
         rep.addLink(new Link("rh:countandpaging", requestPath + "/{?page}{&pagesize}&count", true));
-        rep.addLink(new Link("rh:_indexes", requestPath + "/_indexes"));
-        rep.addLink(new Link("rh", "curies", "/_doc/?ln=" + Configuration.RESTHEART_ONLINE_DOC_URL + "/%23api/coll/{rel}", true), true);
+        rep.addLink(new Link("rh:indexes", requestPath + "/_indexes"));
+        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-coll-{rel}", true), true);
 
         ResponseHelper.injectWarnings(rep, exchange, context);
 
