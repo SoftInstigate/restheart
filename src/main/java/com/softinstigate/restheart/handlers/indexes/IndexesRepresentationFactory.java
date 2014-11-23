@@ -90,7 +90,7 @@ public class IndexesRepresentationFactory {
         {
             rep.addLink(new Link("rh:coll", URLUtilis.getPerentPath(requestPath)));
         }
-        rep.addLink(new Link("rh", "curies", "/_doc/?ln=" + Configuration.RESTHEART_ONLINE_DOC_URL + "/%23api/indexes/{rel}", true), true);
+        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-indexes-{rel}", false), true);
 
         ResponseHelper.injectWarnings(rep, exchange, context);
 

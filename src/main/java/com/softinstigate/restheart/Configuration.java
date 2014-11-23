@@ -40,7 +40,7 @@ public class Configuration {
     /**
      * the restheart version
      */
-    public static final String RESTHEART_VERSION = "0.9.2";
+    public static final String RESTHEART_VERSION = "0.9.3";
 
     /**
      * URL pointing to the online documentation specific for this version.
