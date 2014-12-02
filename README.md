@@ -22,7 +22,7 @@ You find the full documentation at [http://www.restheart.org](http://www.resthea
 
 > RESTHeart requires java 1.8, make sure you have it and available on your path.
 
-Download the latest release from [github releases page](https://github.com/SoftInstigate/restheart/releases), unpack the archive and just run the jar.
+Download the latest release from [github releases page](https://github.com/SoftInstigate/restheart/releases/latest), unpack the archive and just run the jar.
 
 	$ java -server -jar restheart.jar
 	
@@ -30,8 +30,8 @@ You might also want to specify a configuration file:
 
 	$ java -server -jar restheart.jar etc/restheart.yml
 	
-* configuration file [documentation](http://www.restheart.org/docs/v0.9/#/configuration)
-* example configuration file [restheart.yml](http://www.restheart.org/docs/v0.9/#/configuration/example)
+* configuration file [documentation](http://restheart.org/docs/configuration.html)
+* example configuration file [restheart.yml](http://restheart.org/docs/configuration.html#conf-example)
 	
 ### How to build it
 
