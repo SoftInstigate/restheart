@@ -2,7 +2,7 @@
 
 Open your data, quickly build HATEOAS applications, use it as your mobile apps back-end,...
 
-You find the full documentation at [http://www.restheart.org](http://www.restheart.org).
+__You'll find the full documentation at [http://www.restheart.org](http://www.restheart.org).__
 
 ## RESTHeart is the REST API server for [MongoDB](http://www.mongodb.org/).
 
