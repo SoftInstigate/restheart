@@ -148,22 +148,25 @@ public class CollectionDAO {
      * @return
      * @throws JSONParseException
      */
-    public static DBCursor getCollectionDBCursor(DBCollection coll, Deque<String> sortBy, Deque<String> filters) throws JSONParseException {
+    protected static DBCursor getCollectionDBCursor(DBCollection coll, Deque<String> sortBy, Deque<String> filters) throws JSONParseException {
         // apply sort_by
         DBObject sort = new BasicDBObject();
 
         if (sortBy == null || sortBy.isEmpty()) {
-            sort.put("_id", 1);
+            sort.put("_created_on", -1);
         } else {
-            sortBy.stream().forEach((sf) -> {
-                sf = sf.replaceAll("_lastupdated_on", "_etag"); // _lastupdated is not stored and actually generated from @tag
+            sortBy.stream().forEach((s) -> {
+                
+                String _s = s.trim();
+                
+                _s = _s.replaceAll("_lastupdated_on", "_etag"); // _lastupdated is not stored and actually generated from @etag
 
-                if (sf.startsWith("-")) {
-                    sort.put(sf.substring(1), -1);
-                } else if (sf.startsWith("+")) {
-                    sort.put(sf.substring(1), -1);
+                if (_s.startsWith("-")) {
+                    sort.put(_s.substring(1), -1);
+                } else if (_s.startsWith("+")) {
+                    sort.put(_s.substring(1), 1);
                 } else {
-                    sort.put(sf, 1);
+                    sort.put(_s, 1);
                 }
             });
         }
@@ -188,9 +191,9 @@ public class CollectionDAO {
         ArrayList<DBObject> ret = new ArrayList<>();
         
         int toskip = pagesize * (page - 1);
-                
-        DBCursor cursor = null;
-        SkippedDBCursor _cursor = null;
+        
+        DBCursor cursor;
+        SkippedDBCursor _cursor;
         
         _cursor = DBCursorPool.getInstance().lease(new DBCursorPoolEntryKey(coll, sortBy, filters, toskip));
         
@@ -369,10 +372,6 @@ public class CollectionDAO {
             coll.drop();
             return HttpStatus.SC_NO_CONTENT;
         }
-    }
-
-    private static ArrayList<DBObject> getDataFromCursor(DBCursor cursor) {
-        return new ArrayList<>(cursor.toArray());
     }
 
     private static void initDefaultIndexes(DBCollection coll) {

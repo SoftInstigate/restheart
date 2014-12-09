@@ -52,7 +52,7 @@ public class DBCursorPool {
 
         cache = builder.build();
 
-        if (LOGGER.isDebugEnabled()) {
+        if (LOGGER.isInfoEnabled()) {
             // print stats every 1 minute
             Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
                 LOGGER.debug("stats: {}", stats());
