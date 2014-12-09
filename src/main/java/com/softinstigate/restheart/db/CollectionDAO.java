@@ -157,7 +157,7 @@ public class CollectionDAO {
         } else {
             sortBy.stream().forEach((s) -> {
                 
-                String _s = s.trim();
+                String _s = s.trim(); // the + sign is decoded into a space, in case remove it
                 
                 _s = _s.replaceAll("_lastupdated_on", "_etag"); // _lastupdated is not stored and actually generated from @etag
 
