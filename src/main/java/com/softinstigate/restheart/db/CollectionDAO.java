@@ -40,9 +40,9 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare
  */
 public class CollectionDAO {
-    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
+    private static final MongoClient CLIENT = MongoDBClientSingleton.getInstance().getClient();
 
-    private static final Logger logger = LoggerFactory.getLogger(CollectionDAO.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CollectionDAO.class);
 
     private static final BasicDBObject PROPS_QUERY = new BasicDBObject("_id", "_properties");
     private static final BasicDBObject DOCUMENTS_QUERY = new BasicDBObject("_id", new BasicDBObject("$ne", "_properties"));
@@ -81,7 +81,7 @@ public class CollectionDAO {
 
         BasicDBObject query = new BasicDBObject("name", dbName + "." + collName);
 
-        return client.getDB(dbName).getCollection("system.namespaces").findOne(query) != null;
+        return CLIENT.getDB(dbName).getCollection("system.namespaces").findOne(query) != null;
     }
 
     /**
@@ -93,7 +93,7 @@ public class CollectionDAO {
      * @return the mongodb DBCollection object for the collection in db dbName
      */
     public static DBCollection getCollection(String dbName, String collName) {
-        return client.getDB(dbName).getCollection(collName);
+        return CLIENT.getDB(dbName).getCollection(collName);
     }
 
     /**
@@ -129,7 +129,7 @@ public class CollectionDAO {
                     query.putAll((BSONObject) JSON.parse(f));  // this can throw JSONParseException for invalid filter parameters
                 });
             } catch (JSONParseException jpe) {
-                logger.warn("****** error parsing filter expression {}", filters, jpe);
+                LOGGER.warn("****** error parsing filter expression {}", filters, jpe);
             }
         }
 
@@ -137,12 +137,10 @@ public class CollectionDAO {
     }
 
     /**
-     * Returs the documents of the collection applying, sorting, pagination and
+     * Returs the DBCursor of the collection applying sorting and
      * filtering.
      *
      * @param coll the mongodb DBCollection object
-     * @param page the page number
-     * @param pagesize the size of the page
      * @param sortBy the Deque collection of fields to use for sorting (prepend
      * field name with - for descending sorting)
      * @param filters the filters to apply. it is a Deque collection of mongodb
@@ -150,7 +148,7 @@ public class CollectionDAO {
      * @return
      * @throws JSONParseException
      */
-    public static ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filters) throws JSONParseException {
+    public static DBCursor getCollectionDBCursor(DBCollection coll, Deque<String> sortBy, Deque<String> filters) throws JSONParseException {
         // apply sort_by
         DBObject sort = new BasicDBObject();
 
@@ -182,9 +180,42 @@ public class CollectionDAO {
             });
         }
 
-        ArrayList<DBObject> data = getDataFromCursor(coll.find(query).sort(sort).limit(pagesize).skip(pagesize * (page - 1)));
-
-        data.forEach(row -> {
+        return  coll.find(query).sort(sort);
+    }
+    
+    
+    public static ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filters) throws JSONParseException {
+        ArrayList<DBObject> ret = new ArrayList<>();
+        
+        int toskip = pagesize * (page - 1);
+                
+        DBCursor cursor = null;
+        SkippedDBCursor _cursor = null;
+        
+        _cursor = DBCursorPool.getInstance().lease(new DBCursorPoolEntryKey(coll, sortBy, filters, toskip));
+        
+        int alreadySkipped;
+        
+        // in case there is not cursor in the pool to reuse
+        if (_cursor == null) {
+            cursor = getCollectionDBCursor(coll, sortBy, filters);
+            alreadySkipped = 0;
+        }
+        else {
+            cursor = _cursor.getCursor();
+            alreadySkipped = _cursor.getAlreadySkipped();
+        }
+        
+        if (toskip - alreadySkipped >0) {
+            cursor.skip(toskip - alreadySkipped);
+        }
+        
+        while (pagesize > 0 && cursor.hasNext()) {
+            ret.add(cursor.next());
+            pagesize--;
+        }
+        
+        ret.forEach(row -> {
             Object etag = row.get("_etag");
 
             if (etag != null && ObjectId.isValid("" + etag)) {
@@ -195,9 +226,9 @@ public class CollectionDAO {
         }
         );
 
-        return data;
+        return ret;
     }
-
+    
     /**
      * Returns the collection properties document.
      *
@@ -281,7 +312,7 @@ public class CollectionDAO {
             coll.update(PROPS_QUERY, new BasicDBObject("$set", content), true, false);
             return HttpStatus.SC_OK;
         } else {
-            // we use findAndModify to get the @created_on field value from the existing properties document
+            // we use findAndModify to lease the @created_on field value from the existing properties document
             // we need to put this field back using a second update 
             // it is not possible in a single update even using $setOnInsert update operator
             // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
@@ -293,7 +324,7 @@ public class CollectionDAO {
 
                 if (oldTimestamp == null) {
                     oldTimestamp = now.toString();
-                    logger.warn("properties of collection {} had no @created_on field. set to now", coll.getFullName());
+                    LOGGER.warn("properties of collection {} had no @created_on field. set to now", coll.getFullName());
                 }
 
                 // need to readd the @created_on field 
