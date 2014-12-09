@@ -17,9 +17,9 @@
  */
 package com.softinstigate.restheart.db;
 
-import com.google.common.base.Objects;
 import com.mongodb.DBCollection;
 import java.util.Deque;
+import java.util.Objects;
 
 /**
  *
@@ -68,7 +68,7 @@ public class DBCursorPoolEntryKey {
     
     @Override
     public int hashCode() {
-        return Objects.hashCode(collection, filter, sort, skipped);
+        return Objects.hash(collection, filter, sort, skipped);
     }
 
     @Override
@@ -80,16 +80,16 @@ public class DBCursorPoolEntryKey {
             return false;
         }
         final DBCursorPoolEntryKey other = (DBCursorPoolEntryKey) obj;
-        if (!java.util.Objects.equals(this.collection, other.collection)) {
+        if (!Objects.equals(this.collection, other.collection)) {
             return false;
         }
-        if (!java.util.Objects.equals(this.filter, other.filter)) {
+        if (!Objects.equals(this.filter, other.filter)) {
             return false;
         }
-        if (!java.util.Objects.equals(this.sort, other.sort)) {
+        if (!Objects.equals(this.sort, other.sort)) {
             return false;
         }
-        if (!java.util.Objects.equals(this.skipped, other.skipped)) {
+        if (!Objects.equals(this.skipped, other.skipped)) {
             return false;
         }
         return true;

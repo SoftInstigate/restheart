@@ -3,11 +3,11 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.softinstigate</groupId>
     <artifactId>restheart</artifactId>
-    <version>0.9.3</version>
+    <version>0.9.4-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Restheart</name>
     <description>
-        RESTHeart is the REST API server for mongodb.
+        RESTHeart is the REST data API server for mongodb.
         Open your data, quickly build HATEOAS applications, use it as your mobile apps back-end,...
     </description>
     <url>http://www.restheart.org</url>
@@ -139,6 +139,20 @@
     <build>
         <finalName>${project.artifactId}-${project.version}-nodeps</finalName>
         <plugins>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>

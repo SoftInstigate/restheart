@@ -17,11 +17,12 @@
  */
 package com.softinstigate.restheart.db;
 
-import com.google.common.base.Objects;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.mongodb.DBCursor;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -64,10 +65,10 @@ public class DBCursorPool {
     public synchronized SkippedDBCursor lease(DBCursorPoolEntryKey key) {
         // return the dbursor closer to the request
         Optional<DBCursorPoolEntryKey> _bestKey = cache.asMap().keySet().stream().filter(k
-                -> Objects.equal(k.getCollection().getDB().getName(), key.getCollection().getDB().getName())
-                && Objects.equal(k.getCollection().getName(), key.getCollection().getName())
-                && Objects.equal(k.getFilter(), key.getFilter())
-                && Objects.equal(k.getSort(), key.getSort())
+                -> Objects.equals(k.getCollection().getDB().getName(), key.getCollection().getDB().getName())
+                && Objects.equals(k.getCollection().getName(), key.getCollection().getName())
+                && Arrays.equals(k.getFilter() != null ? k.getFilter().toArray() : null, key.getFilter() != null ?key.getFilter().toArray(): null)
+                && Arrays.equals(k.getSort() != null ? k.getSort().toArray() : null, key.getSort() != null ? key.getSort().toArray() : null)
                 && k.getSkipped() <= key.getSkipped()
         ).sorted(Comparator.comparingInt(DBCursorPoolEntryKey::getSkipped).reversed()).findFirst();
 
