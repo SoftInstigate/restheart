@@ -19,6 +19,8 @@ package com.softinstigate.restheart.utils;
 
 import com.softinstigate.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.Deque;
 
 /**
@@ -28,9 +30,10 @@ import java.util.Deque;
 public class URLUtilis {
 
     /**
-     *
+     * given string /ciao/this/has/trailings///// returns /ciao/this/has/trailings
+     * 
      * @param s
-     * @return
+     * @return the string s without the trailing slashes
      */
     static public String removeTrailingSlashes(String s) {
         if (s == null || s.length() < 2) {
@@ -41,6 +44,20 @@ public class URLUtilis {
             return removeTrailingSlashes(s.substring(0, s.length() - 1));
         } else {
             return s.trim();
+        }
+    }
+    
+    /**
+     * decode the percent encoded query string
+     * 
+     * @param qs
+     * @return the undecoded string
+     */
+    static public String decodeQueryString(String qs) {
+        try {
+            return URLDecoder.decode(qs.replace("+", "%2B"), "UTF-8").replace("%2B", "+");
+        } catch (UnsupportedEncodingException ex) {
+            return null;
         }
     }
 
