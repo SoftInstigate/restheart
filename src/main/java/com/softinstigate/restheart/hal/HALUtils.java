@@ -97,7 +97,7 @@ public class HALUtils {
                 }
 
                 if (page > 1) {
-                    links.put("previous", requestPath + (page >= 2 ? "?page=" + (page - 1) : "") + (page > 2 ? "&pagesize=" + pagesize : "?pagesize=" + pagesize));
+                    links.put("previous", requestPath + (page >= 2 ? "?page=" + (page - 1) : "") + (page >= 2 ? "&pagesize=" + pagesize : "?pagesize=" + pagesize));
                 }
             } else {
                 links.put("first", requestPath + "?pagesize=" + pagesize + "&" + queryStringNoPagingProps);
