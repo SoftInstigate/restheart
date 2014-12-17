@@ -47,5 +47,5 @@ Build the project with maven
     
 Optionally run the integration test suite (make sure mongod is running on localhost on default port 27017 without authentication, i.e. no --auth option specified)
 
-    $ mvn integration-test
+    $ mvn verify
    
