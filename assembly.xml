@@ -37,6 +37,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <include>NOTICE*</include>
                 <include>etc/restheart.yml</include>
                 <include>etc/security.yml</include>
+                <include>etc/restheartd.conf</include>
             </includes>
         </fileSet>
         <fileSet>
