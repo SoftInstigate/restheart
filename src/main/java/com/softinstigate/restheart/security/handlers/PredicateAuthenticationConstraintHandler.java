@@ -29,6 +29,7 @@ import java.util.Set;
  * @author Andrea Di Cesare
  */
 public class PredicateAuthenticationConstraintHandler extends AuthenticationConstraintHandler {
+
     AccessManager am;
 
     /**

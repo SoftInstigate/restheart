@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare
  */
 public class PutDocumentHandler extends PipedHttpHandler {
+
     private static final Logger logger = LoggerFactory.getLogger(PutCollectionHandler.class);
 
     private static final BasicDBObject fieldsToReturn;

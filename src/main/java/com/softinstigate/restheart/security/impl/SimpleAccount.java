@@ -27,6 +27,7 @@ import java.util.Set;
  * @author Andrea Di Cesare
  */
 public class SimpleAccount implements Account {
+
     private Principal principal;
     private PasswordCredential credential;
     private Set<String> roles;

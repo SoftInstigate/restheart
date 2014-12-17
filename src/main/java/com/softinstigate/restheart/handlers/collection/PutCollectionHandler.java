@@ -38,6 +38,7 @@ import org.bson.types.ObjectId;
  * @author Andrea Di Cesare
  */
 public class PutCollectionHandler extends PipedHttpHandler {
+
     /**
      * Creates a new instance of PutCollectionHandler
      */

@@ -26,6 +26,7 @@ import io.undertow.util.HttpString;
  * @author Andrea Di Cesare
  */
 public class OptionsHandler extends PipedHttpHandler {
+
     /**
      * Creates a new instance of OptionsHandler
      *

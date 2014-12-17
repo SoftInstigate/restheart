@@ -74,11 +74,10 @@ public class PutDocumentIT extends AbstactIT {
             resp = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
             content = JsonObject.readFrom(resp.returnContent().asString());
-           assertNull("check put content", content.get("a"));
-           assertNotNull("check put content", content.get("b"));
-           assertTrue("check put content", content.get("b").asInt() == 2);
-        }
-        finally {
+            assertNull("check put content", content.get("a"));
+            assertNotNull("check put content", content.get("b"));
+            assertTrue("check put content", content.get("b").asInt() == 2);
+        } finally {
             mongoClient.dropDatabase(dbTmpName);
         }
     }

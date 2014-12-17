@@ -15,11 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 /**
-* Handlers in charge of injecting data in the request context.
-* 
+ * Handlers in charge of injecting data in the request context.
+ * 
 * @author Andrea Di Cesare
-*/
-
+ */
 package com.softinstigate.restheart.handlers.injectors;

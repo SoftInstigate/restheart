@@ -33,6 +33,7 @@ import org.junit.Test;
  * @author Andrea Di Cesare
  */
 public class SecurityIT extends AbstactIT {
+
     public SecurityIT() {
     }
 
@@ -41,12 +42,12 @@ public class SecurityIT extends AbstactIT {
         Response resp = adminExecutor.execute(Request.Get(rootUri));
 
         HttpResponse httpResp = resp.returnResponse();
-       assertNotNull(httpResp);
+        assertNotNull(httpResp);
 
         StatusLine statusLine = httpResp.getStatusLine();
-       assertNotNull(statusLine);
+        assertNotNull(statusLine);
 
-       assertEquals("check authorized", HttpStatus.SC_OK, statusLine.getStatusCode());
+        assertEquals("check authorized", HttpStatus.SC_OK, statusLine.getStatusCode());
     }
 
     @Test
@@ -82,7 +83,7 @@ public class SecurityIT extends AbstactIT {
         resp = unauthExecutor.execute(Request.Get(rootUri).addHeader(SecurityHandler.SILENT_HEADER_KEY, ""));
         HttpResponse httpResp = resp.returnResponse();
 
-       assertTrue("check get root unauthorized silent", httpResp.getHeaders(Headers.WWW_AUTHENTICATE_STRING).length == 0);
+        assertTrue("check get root unauthorized silent", httpResp.getHeaders(Headers.WWW_AUTHENTICATE_STRING).length == 0);
     }
 
     @Test
@@ -233,8 +234,7 @@ public class SecurityIT extends AbstactIT {
             // *** PUT doc1
             resp = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check put doc1 as admin", resp, HttpStatus.SC_CREATED);
-        }
-        finally {
+        } finally {
             mongoClient.dropDatabase(dbTmpName);
         }
     }
@@ -288,8 +288,7 @@ public class SecurityIT extends AbstactIT {
             // *** PUT doc1
             resp = user1Executor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check put doc1 as user1", resp, HttpStatus.SC_CREATED);
-        }
-        finally {
+        } finally {
             mongoClient.dropDatabase(dbTmpName);
         }
     }

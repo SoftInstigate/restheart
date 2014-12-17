@@ -61,8 +61,8 @@ public class PostCollectionIT extends AbstactIT {
 
             Header[] headers = httpResp.getHeaders(Headers.LOCATION_STRING);
 
-           assertNotNull("check loocation header", headers);
-           assertTrue("check loocation header", headers.length > 0);
+            assertNotNull("check loocation header", headers);
+            assertTrue("check loocation header", headers.length > 0);
 
             Header locationH = headers[0];
             String location = locationH.getValue();
@@ -72,10 +72,10 @@ public class PostCollectionIT extends AbstactIT {
             resp = adminExecutor.execute(Request.Get(createdDocUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
             JsonObject content = JsonObject.readFrom(resp.returnContent().asString());
-           assertNotNull("check created doc content", content.get("_id"));
-           assertNotNull("check created doc content", content.get("_etag"));
-           assertNotNull("check created doc content", content.get("a"));
-           assertTrue("check created doc content", content.get("a").asInt() == 1);
+            assertNotNull("check created doc content", content.get("_id"));
+            assertNotNull("check created doc content", content.get("_etag"));
+            assertNotNull("check created doc content", content.get("a"));
+            assertTrue("check created doc content", content.get("a").asInt() == 1);
 
             String _id = content.get("_id").asString();
             String _etag = content.get("_etag").asString();
@@ -91,8 +91,7 @@ public class PostCollectionIT extends AbstactIT {
             // try to post with correct etag
             resp = adminExecutor.execute(Request.Post(collectionTmpUri).bodyString("{_id:\"" + _id + "\", a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, _etag));
             check("check post created doc with correct etag", resp, HttpStatus.SC_OK);
-        }
-        finally {
+        } finally {
             mongoClient.dropDatabase(dbTmpName);
         }
     }

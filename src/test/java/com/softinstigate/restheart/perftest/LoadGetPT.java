@@ -48,6 +48,7 @@ import java.util.ArrayList;
  * @author Andrea Di Cesare
  */
 public class LoadGetPT {
+
     private URL url;
 
     private String id;

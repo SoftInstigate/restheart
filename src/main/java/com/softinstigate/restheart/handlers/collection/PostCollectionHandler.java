@@ -34,6 +34,7 @@ import org.bson.types.ObjectId;
  * @author Andrea Di Cesare
  */
 public class PostCollectionHandler extends PutCollectionHandler {
+
     /**
      * Creates a new instance of PostCollectionHandler
      */

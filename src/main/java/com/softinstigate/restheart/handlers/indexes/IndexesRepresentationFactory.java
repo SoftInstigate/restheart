@@ -37,6 +37,7 @@ import org.slf4j.Logger;
  * @author Andrea Di Cesare
  */
 public class IndexesRepresentationFactory {
+
     private static final Logger logger = LoggerFactory.getLogger(IndexesRepresentationFactory.class);
 
     /**

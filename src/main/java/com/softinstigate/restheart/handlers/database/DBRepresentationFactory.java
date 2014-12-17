@@ -38,6 +38,7 @@ import org.slf4j.Logger;
  * @author Andrea Di Cesare
  */
 public class DBRepresentationFactory {
+
     private static final Logger logger = LoggerFactory.getLogger(DBRepresentationFactory.class);
 
     /**

@@ -28,6 +28,7 @@ import java.util.List;
  * @author Andrea Di Cesare
  */
 public class IndexDAO {
+
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
 
     /**

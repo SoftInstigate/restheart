@@ -33,6 +33,7 @@ import java.util.Set;
  * @author Andrea Di Cesare
  */
 public class MapIdentityManager implements IdentityManager {
+
     private final Map<String, char[]> users;
 
     /**

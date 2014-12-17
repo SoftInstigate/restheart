@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare
  */
 public class DeleteDBHandler extends PipedHttpHandler {
+
     private static final Logger logger = LoggerFactory.getLogger(DeleteDBHandler.class);
 
     /**

@@ -45,6 +45,7 @@ import com.softinstigate.restheart.utils.ResponseHelper;
  * @author Andrea Di Cesare
  */
 public class RequestDispacherHandler extends PipedHttpHandler {
+
     private final GetRootHandler rootGet;
     private final GetDBHandler dbGet;
     private final PutDBHandler dbPut;

@@ -37,6 +37,7 @@ import org.yaml.snakeyaml.Yaml;
  * @author Andrea Di Cesare
  */
 public class Configuration {
+
     /**
      * the restheart version
      */
@@ -46,7 +47,7 @@ public class Configuration {
      * URL pointing to the online documentation specific for this version.
      */
     public static final String RESTHEART_ONLINE_DOC_URL = "http://www.restheart.org/docs/v0.9";
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
 
     private final boolean httpsListener;
@@ -141,12 +142,12 @@ public class Configuration {
      * default am implementation class.
      */
     public static final String DEFAULT_AM_IMPLEMENTATION_CLASS = "com.softinstigate.restheart.security.impl.SimpleAccessManager";
-    
+
     /**
      * default idm implementation class.
      */
     public static final String DEFAULT_IDM_IMPLEMENTATION_CLASS = "com.softinstigate.restheart.security.impl.SimpleFileIdentityManager";
-    
+
     /**
      * the key for the local-cache-enabled property.
      */
@@ -550,7 +551,7 @@ public class Configuration {
         amImpl = getAsStringOrDefault(am, IMPLEMENTATION_CLASS_KEY, DEFAULT_AM_IMPLEMENTATION_CLASS);
         amArgs = am;
 
-        logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH_KEY, 
+        logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH_KEY,
                 URLUtilis.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
                 .concat(File.separator + "restheart.log"));
         String _logLevel = getAsStringOrDefault(conf, LOG_LEVEL_KEY, "WARN");

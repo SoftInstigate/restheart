@@ -29,6 +29,7 @@ import java.util.Map;
  * @author Andrea Di Cesare
  */
 public class PingHandler extends ApplicationLogicHandler {
+
     private final String msg;
 
     /**

@@ -42,6 +42,7 @@ import org.yaml.snakeyaml.Yaml;
  * @author Andrea Di Cesare
  */
 public class SimpleAccessManager implements AccessManager {
+
     private static final Logger logger = LoggerFactory.getLogger(SimpleAccessManager.class);
 
     private HashMap<String, Set<Predicate>> acl;

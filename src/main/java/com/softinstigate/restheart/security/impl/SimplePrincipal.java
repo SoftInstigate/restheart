@@ -24,6 +24,7 @@ import java.security.Principal;
  * @author Andrea Di Cesare
  */
 public class SimplePrincipal implements Principal {
+
     private String name;
 
     /**

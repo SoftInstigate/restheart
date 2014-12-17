@@ -33,6 +33,7 @@ import java.util.Arrays;
  * @author Andrea Di Cesare
  */
 public class GzipEncodingHandler extends EncodingHandler {
+
     private boolean forceCompression = false;
 
     /**

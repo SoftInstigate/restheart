@@ -30,6 +30,7 @@ import java.util.List;
  * @author Andrea Di Cesare
  */
 public class GetIndexesHandler extends PipedHttpHandler {
+
     /**
      * Creates a new instance of GetIndexesHandler
      */
