@@ -18,6 +18,7 @@
 package com.softinstigate.restheart;
 
 import com.mongodb.MongoClient;
+import com.mongodb.MongoException;
 import static com.softinstigate.restheart.Configuration.RESTHEART_VERSION;
 import com.softinstigate.restheart.db.PropsFixer;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
@@ -98,6 +99,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare
  */
 public class Bootstrapper {
+
     private static Undertow server;
 
     private static final Logger logger = LoggerFactory.getLogger(Bootstrapper.class);
@@ -109,37 +111,36 @@ public class Bootstrapper {
     private static Configuration conf;
 
     /**
+     * main method
+     *
+     * @param args command line arguments
+     */
+    public static void main(final String[] args) {
+        startServer(args);
+    }
+
+    /**
      * Startups the RESTHeart server
      *
      * @param confFilePath the path of the configuration file
      */
     public static void startup(String confFilePath) {
-        String[] args = new String[1];
-
-        args[0] = confFilePath;
-
-        main(args);
+        startServer(new String[]{confFilePath});
     }
 
     /**
      * Shutdown the RESTHeart server
      */
     public static void shutdown() {
-        System.exit(0);
+        stopServer();
     }
 
-    /**
-     * main method
-     *
-     * @param args command line arguments
-     */
-    public static void main(final String[] args) {
+    private static void startServer(final String[] args) {
         if (args == null || args.length < 1) {
             conf = new Configuration();
         } else {
             conf = new Configuration(args[0]);
         }
-
         LoggingInitializer.setLogLevel(conf.getLogLevel());
 
         if (conf.isLogToFile()) {
@@ -166,7 +167,7 @@ public class Bootstrapper {
         }
 
         try {
-            start();
+            startCoreSystem();
         } catch (Throwable t) {
             logger.error("error starting RESTHeart. exiting..", t);
             System.exit(-2);
@@ -175,42 +176,7 @@ public class Bootstrapper {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                logger.info("stopping RESTHeart");
-                logger.info("waiting for pending request to complete (up to 1 minute)");
-
-                try {
-                    hanldersPipe.shutdown();
-                    hanldersPipe.awaitShutdown(60 * 1000); // up to 1 minute
-                } catch (InterruptedException ie) {
-                    logger.error("error while waiting for pending request to complete", ie);
-                }
-
-                if (server != null) {
-                    try {
-                        server.stop();
-                    } catch (Throwable t) {
-                        logger.error("error stopping undertow server", t);
-                    }
-                }
-
-                try {
-                    MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-                    client.fsync(false);
-                    client.close();
-                } catch (Throwable t) {
-                    logger.error("error flushing and clonsing the mongo cliet", t);
-                }
-
-                tmpExtractedFiles.keySet().forEach(k -> {
-                    try {
-                        ResourcesExtractor.deleteTempDir(k, tmpExtractedFiles.get(k));
-                    } catch (URISyntaxException | IOException ex) {
-                        logger.error("error cleaning up temporary directory {}", tmpExtractedFiles.get(k).toString(), ex);
-                    }
-                }
-                );
-
-                logger.info("RESTHeart stopped");
+                stopServer();
             }
         });
 
@@ -228,7 +194,46 @@ public class Bootstrapper {
         logger.info("RESTHeart started **********************************************");
     }
 
-    private static void start() {
+    private static void stopServer() {
+        logger.info("stopping RESTHeart");
+        logger.info("waiting for pending request to complete (up to 1 minute)");
+
+        try {
+            hanldersPipe.shutdown();
+            hanldersPipe.awaitShutdown(60 * 1000); // up to 1 minute
+        } catch (InterruptedException ie) {
+            logger.error("error while waiting for pending request to complete", ie);
+        }
+
+        if (server != null) {
+            try {
+                server.stop();
+            } catch (Throwable t) {
+                logger.error("error stopping undertow server", t);
+            }
+        }
+
+        try {
+            MongoClient client = MongoDBClientSingleton.getInstance().getClient();
+            client.fsync(false);
+            client.close();
+        } catch (Throwable t) {
+            logger.error("error flushing and clonsing the mongo cliet", t);
+        }
+
+        tmpExtractedFiles.keySet().forEach(k -> {
+            try {
+                ResourcesExtractor.deleteTempDir(k, tmpExtractedFiles.get(k));
+            } catch (URISyntaxException | IOException ex) {
+                logger.error("error cleaning up temporary directory {}", tmpExtractedFiles.get(k).toString(), ex);
+            }
+        }
+        );
+
+        logger.info("RESTHeart stopped");
+    }
+
+    private static void startCoreSystem() {
         if (conf == null) {
             logger.error("no configuration found. exiting..");
             System.exit(-1);
@@ -296,15 +301,11 @@ public class Bootstrapper {
                 kmf = KeyManagerFactory.getInstance("SunX509");
                 ks = KeyStore.getInstance("JKS");
 
-                FileInputStream fis = new FileInputStream(new File(conf.getKeystoreFile()));
-
-                try {
+                try (FileInputStream fis = new FileInputStream(new File(conf.getKeystoreFile()))) {
                     ks.load(fis, conf.getKeystorePassword().toCharArray());
 
                     kmf.init(ks, conf.getCertPassword().toCharArray());
                     sslContext.init(kmf.getKeyManagers(), null, null);
-                } finally {
-                    fis.close();
                 }
             }
         } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException ex) {
