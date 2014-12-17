@@ -53,8 +53,6 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstactIT {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstactIT.class);
-    
-    private static boolean isServerStarted = false;
 
     protected static final String confFilePath = "etc/restheart-integrationtest.yml";
     protected static MongoClient mongoClient;
