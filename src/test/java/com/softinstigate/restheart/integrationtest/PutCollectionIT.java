@@ -24,7 +24,7 @@ import com.softinstigate.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
-import org.junit.Assert;
+import static org.junit.Assert.*;
 import org.junit.Test;
 
 /**
@@ -70,9 +70,9 @@ public class PutCollectionIT extends AbstactIT {
             resp = adminExecutor.execute(Request.Get(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
             content = JsonObject.readFrom(resp.returnContent().asString());
-            Assert.assertNull("check put content", content.get("a"));
-            Assert.assertNotNull("check put content", content.get("b"));
-            Assert.assertTrue("check put content", content.get("b").asInt() == 2);
+           assertNull("check put content", content.get("a"));
+           assertNotNull("check put content", content.get("b"));
+           assertTrue("check put content", content.get("b").asInt() == 2);
         }
         finally {
             mongoClient.dropDatabase(dbTmpName);

@@ -24,7 +24,7 @@ import com.softinstigate.restheart.Configuration;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.hal.Representation;
 import java.net.URI;
-import junit.framework.Assert;
+import static org.junit.Assert.*;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
@@ -446,12 +446,12 @@ public abstract class AbstactIT {
 
     protected HttpResponse check(String message, Response resp, int expectedCode) throws Exception {
         HttpResponse httpResp = resp.returnResponse();
-        Assert.assertNotNull(httpResp);
+       assertNotNull(httpResp);
 
         StatusLine statusLine = httpResp.getStatusLine();
-        Assert.assertNotNull(statusLine);
+       assertNotNull(statusLine);
 
-        Assert.assertEquals(message, expectedCode, statusLine.getStatusCode());
+       assertEquals(message, expectedCode, statusLine.getStatusCode());
 
         return httpResp;
     }

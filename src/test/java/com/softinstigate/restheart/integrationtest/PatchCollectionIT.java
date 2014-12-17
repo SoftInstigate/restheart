@@ -24,7 +24,7 @@ import com.softinstigate.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
-import org.junit.Assert;
+import static org.junit.Assert.*;
 import org.junit.Test;
 
 /**
@@ -74,15 +74,15 @@ public class PatchCollectionIT extends AbstactIT {
             resp = adminExecutor.execute(Request.Get(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
             content = JsonObject.readFrom(resp.returnContent().asString());
-            Assert.assertNotNull("check patched content", content.get("a"));
-            Assert.assertNotNull("check patched content", content.get("b"));
-            Assert.assertTrue("check patched content", content.get("a").asInt() == 1 && content.get("b").asInt() == 2);
+           assertNotNull("check patched content", content.get("a"));
+           assertNotNull("check patched content", content.get("b"));
+           assertTrue("check patched content", content.get("a").asInt() == 1 && content.get("b").asInt() == 2);
             etag = content.get("_etag").asString();
 
             // try to patch reserved field name
             resp = adminExecutor.execute(Request.Patch(collectionTmpUri).bodyString("{_embedded:\"a\"}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
             content = JsonObject.readFrom(resp.returnContent().asString());
-            Assert.assertNotNull("check patched content", content.get("_embedded").asObject().get("rh:warnings").asArray());
+           assertNotNull("check patched content", content.get("_embedded").asObject().get("rh:warnings").asArray());
         }
         finally {
             mongoClient.dropDatabase(dbTmpName);

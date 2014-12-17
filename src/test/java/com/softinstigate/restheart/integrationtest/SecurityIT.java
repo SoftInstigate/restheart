@@ -21,7 +21,7 @@ import com.softinstigate.restheart.hal.Representation;
 import com.softinstigate.restheart.security.handlers.SecurityHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
-import junit.framework.Assert;
+import static org.junit.Assert.*;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
@@ -41,12 +41,12 @@ public class SecurityIT extends AbstactIT {
         Response resp = adminExecutor.execute(Request.Get(rootUri));
 
         HttpResponse httpResp = resp.returnResponse();
-        Assert.assertNotNull(httpResp);
+       assertNotNull(httpResp);
 
         StatusLine statusLine = httpResp.getStatusLine();
-        Assert.assertNotNull(statusLine);
+       assertNotNull(statusLine);
 
-        Assert.assertEquals("check authorized", HttpStatus.SC_OK, statusLine.getStatusCode());
+       assertEquals("check authorized", HttpStatus.SC_OK, statusLine.getStatusCode());
     }
 
     @Test
@@ -82,7 +82,7 @@ public class SecurityIT extends AbstactIT {
         resp = unauthExecutor.execute(Request.Get(rootUri).addHeader(SecurityHandler.SILENT_HEADER_KEY, ""));
         HttpResponse httpResp = resp.returnResponse();
 
-        Assert.assertTrue("check get root unauthorized silent", httpResp.getHeaders(Headers.WWW_AUTHENTICATE_STRING).length == 0);
+       assertTrue("check get root unauthorized silent", httpResp.getHeaders(Headers.WWW_AUTHENTICATE_STRING).length == 0);
     }
 
     @Test
