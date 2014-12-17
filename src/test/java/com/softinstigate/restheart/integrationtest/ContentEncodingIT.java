@@ -33,7 +33,7 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -41,15 +41,14 @@ import org.junit.Test;
  * @author Andrea Di Cesare
  */
 public class ContentEncodingIT extends AbstactIT {
+
     protected static Executor notDecompressingExecutor = null;
 
     public ContentEncodingIT() {
     }
 
-    @Before
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
+    @BeforeClass
+    public static void init() throws Exception {
         notDecompressingExecutor = Executor.newInstance(HttpClients.custom().disableContentCompression().build()).authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "admin", "changeit");
     }
 
@@ -58,20 +57,20 @@ public class ContentEncodingIT extends AbstactIT {
         Response resp = notDecompressingExecutor.execute(Request.Get(rootUri).addHeader(Headers.ACCEPT_ENCODING_STRING, Headers.GZIP.toString()));
 
         HttpResponse httpResp = resp.returnResponse();
-       assertNotNull(httpResp);
+        assertNotNull(httpResp);
         HttpEntity entity = httpResp.getEntity();
-       assertNotNull(entity);
+        assertNotNull(entity);
         StatusLine statusLine = httpResp.getStatusLine();
-       assertNotNull(statusLine);
+        assertNotNull(statusLine);
 
         String content = EntityUtils.toString(entity);
 
         Header h = httpResp.getFirstHeader("Content-Encoding");
 
-       assertNotNull("check accept encoding header not null", h);
-       assertEquals("check accept encoding header value", Headers.GZIP.toString(), h.getValue());
+        assertNotNull("check accept encoding header not null", h);
+        assertEquals("check accept encoding header value", Headers.GZIP.toString(), h.getValue());
 
-       assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
+        assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
 
         try {
             GZIPInputStream gzipis = new GZIPInputStream(new ByteArrayInputStream(content.getBytes(StandardCharsets.ISO_8859_1)));
@@ -79,9 +78,8 @@ public class ContentEncodingIT extends AbstactIT {
             while (gzipis.read() > 0) {
 
             }
-        }
-        catch (Exception ex) {
-           fail("check decompressing content");
+        } catch (Exception ex) {
+            fail("check decompressing content");
         }
     }
 }

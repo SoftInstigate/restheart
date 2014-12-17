@@ -21,9 +21,15 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
 import com.softinstigate.restheart.Configuration;
+import com.softinstigate.restheart.db.CollectionDAO;
+import com.softinstigate.restheart.db.DBDAO;
+import com.softinstigate.restheart.db.DocumentDAO;
+import com.softinstigate.restheart.db.IndexDAO;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.hal.Representation;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
 import static org.junit.Assert.*;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
@@ -32,16 +38,24 @@ import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
+import org.bson.types.ObjectId;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare
  */
 public abstract class AbstactIT {
+
+    private static final Logger logger = LoggerFactory.getLogger(AbstactIT.class);
+    
+    private static boolean isServerStarted = false;
+
     protected static final String confFilePath = "etc/restheart-integrationtest.yml";
     protected static MongoClient mongoClient;
     protected static Configuration conf = null;
@@ -148,14 +162,88 @@ public abstract class AbstactIT {
         "{ \"ranking\": 1 }"
     };
 
-    @Before
-    public void setUp() throws Exception {
+    public AbstactIT() {
+    }
+
+    @BeforeClass
+    public static void setUpClass() throws Exception {
+        logger.info("@@@ Initializing integration tests");
+
         conf = new Configuration(confFilePath);
-
         MongoDBClientSingleton.init(conf);
-
         mongoClient = MongoDBClientSingleton.getInstance().getClient();
 
+        initializeTestData();
+
+        createURIs();
+
+        adminExecutor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "admin", "changeit");
+        user1Executor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "user1", "changeit");
+        user2Executor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "user2", "changeit");
+        unauthExecutor = Executor.newInstance();
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+        logger.info("@@@ Cleaning-up integration tests");
+    }
+
+    @Before
+    public void setUp() {
+    }
+
+    @After
+    public void tearDown() {
+    }
+
+    protected HttpResponse check(String message, Response resp, int expectedCode) throws Exception {
+        HttpResponse httpResp = resp.returnResponse();
+        assertNotNull(httpResp);
+
+        StatusLine statusLine = httpResp.getStatusLine();
+        assertNotNull(statusLine);
+
+        assertEquals(message, expectedCode, statusLine.getStatusCode());
+
+        return httpResp;
+    }
+
+    private static void initializeTestData() {
+        deleteExistingData();
+        createTestData();
+    }
+
+    private static void deleteExistingData() {
+        List<String> databases = MongoDBClientSingleton.getInstance().getClient().getDatabaseNames();
+        if (databases.contains(dbName)) {
+            MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbName);
+        }
+        if (databases.contains(dbTmpName)) {
+            MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbTmpName);
+        }
+        logger.info("existing data deleted");
+    }
+
+    private static void createTestData() {
+        DBDAO.upsertDB(dbName, dbProps, new ObjectId(), false);
+        CollectionDAO.upsertCollection(dbName, collection1Name, coll1Props, new ObjectId(), false, false);
+        CollectionDAO.upsertCollection(dbName, collection2Name, coll2Props, new ObjectId(), false, false);
+        CollectionDAO.upsertCollection(dbName, docsCollectionName, docsCollectionProps, new ObjectId(), false, false);
+
+        for (String index : docsCollectionIndexesStrings) {
+            IndexDAO.createIndex(dbName, docsCollectionName, ((DBObject) JSON.parse(index)), null);
+        }
+
+        DocumentDAO.upsertDocument(dbName, collection1Name, document1Id, document1Props, new ObjectId(), false);
+        DocumentDAO.upsertDocument(dbName, collection2Name, document2Id, document2Props, new ObjectId(), false);
+
+        for (String doc : docsPropsStrings) {
+            DocumentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), ((DBObject) JSON.parse(doc)), new ObjectId(), false);
+        }
+        logger.info("test data created");
+    }
+
+    private static void createURIs() throws URISyntaxException {
         rootUri = new URIBuilder()
                 .setScheme("http")
                 .setHost("127.0.0.1")
@@ -422,37 +510,5 @@ public abstract class AbstactIT {
                 .setPort(conf.getHttpPort())
                 .setPath("/remappeddoc2")
                 .build();
-
-        adminExecutor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "admin", "changeit");
-        user1Executor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "user1", "changeit");
-        user2Executor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "user2", "changeit");
-        unauthExecutor = Executor.newInstance();
-    }
-
-    public AbstactIT() {
-    }
-
-    @BeforeClass
-    public static void setUpClass() {
-    }
-
-    @AfterClass
-    public static void tearDownClass() {
-    }
-
-    @After
-    public void tearDown() {
-    }
-
-    protected HttpResponse check(String message, Response resp, int expectedCode) throws Exception {
-        HttpResponse httpResp = resp.returnResponse();
-       assertNotNull(httpResp);
-
-        StatusLine statusLine = httpResp.getStatusLine();
-       assertNotNull(statusLine);
-
-       assertEquals(message, expectedCode, statusLine.getStatusCode());
-
-        return httpResp;
     }
 }
