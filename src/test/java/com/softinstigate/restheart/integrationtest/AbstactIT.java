@@ -55,27 +55,27 @@ public abstract class AbstactIT {
     protected static URI dbUri;
     protected static URI dbUriRemappedAll;
     protected static URI dbUriRemappedDb;
-    protected static String dbName = "mydb";
+    protected static final String dbName = "mydb";
     protected static URI dbTmpUri;
-    protected static String dbTmpName = "mytmpdb";
+    protected static final String dbTmpName = "mytmpdb";
     protected static URI collection1Uri;
     protected static URI collection1UriRemappedAll;
     protected static URI collection1UriRemappedDb;
     protected static URI collection1UriRemappedCollection;
-    protected static String collection1Name = "refcoll1";
+    protected static final String collection1Name = "refcoll1";
     protected static URI collection2Uri;
     protected static URI collection2UriRemappedAll;
     protected static URI collection2UriRemappedDb;
     protected static URI collection2UriRemappedCollection;
-    protected static String collection2Name = "refcoll2";
+    protected static final String collection2Name = "refcoll2";
     protected static URI collectionTmpUri;
-    protected static String collectionTmpName = "tmpcoll";
+    protected static final String collectionTmpName = "tmpcoll";
     protected static URI docsCollectionUri;
     protected static URI docsCollectionUriPaging;
     protected static URI docsCollectionUriCountAndPaging;
     protected static URI docsCollectionUriSort;
     protected static URI docsCollectionUriFilter;
-    protected static String docsCollectionName = "bandleaders";
+    protected static final String docsCollectionName = "bandleaders";
     protected static URI indexesUri;
     protected static URI indexesUriRemappedAll;
     protected static URI indexesUriRemappedDb;
@@ -93,36 +93,32 @@ public abstract class AbstactIT {
     protected static URI documentTmpUri;
     protected static URI indexesTmpUri;
     protected static URI indexTmpUri;
-    protected static String document1Id = "doc1";
-    protected static String document2Id = "doc2";
-    protected static String documentTmpId = "tmpdoc";
+    protected static final String document1Id = "doc1";
+    protected static final String document2Id = "doc2";
+    protected static final String documentTmpId = "tmpdoc";
 
-    protected static String dbPropsString = "{ \"a\": 1, \"b\": \"two\", \"c\": { \"d\": 3, \"f\": [\"g\",\"h\",4,{\"i\":5, \"l\":\"six\"}]}}";
-    protected static String coll1PropsString = "{ \"a\":1, \"rels\" :  ["
+    protected static final String dbPropsString = "{ \"a\": 1, \"b\": \"two\", \"c\": { \"d\": 3, \"f\": [\"g\",\"h\",4,{\"i\":5, \"l\":\"six\"}]}}";
+    protected static final String coll1PropsString = "{ \"a\":1, \"rels\" :  ["
             + "{ \"rel\": \"oto\", \"type\": \"ONE_TO_ONE\",  \"role\": \"OWNING\", \"target-coll\": \"refcoll2\", \"ref-field\": \"oto\" },"
             + "{ \"rel\": \"otm\", \"type\": \"ONE_TO_MANY\", \"role\": \"OWNING\", \"target-coll\": \"refcoll2\", \"ref-field\": \"otm\" },"
             + "{ \"rel\": \"mto\", \"type\": \"MANY_TO_ONE\", \"role\": \"OWNING\", \"target-coll\": \"refcoll2\", \"ref-field\": \"mto\" },"
             + "{ \"rel\": \"mtm\", \"type\": \"MANY_TO_MANY\", \"role\": \"OWNING\", \"target-coll\": \"refcoll2\", \"ref-field\": \"mtm\" }"
             + "]}";
-    protected static String coll2PropsString = "{ \"a\":2, \"rels\" :  ["
+    protected static final String coll2PropsString = "{ \"a\":2, \"rels\" :  ["
             + "{ \"rel\": \"oto\", \"type\": \"ONE_TO_ONE\",  \"role\": \"INVERSE\", \"target-coll\": \"refcoll1\", \"ref-field\": \"oto\" },"
             + "{ \"rel\": \"mto\", \"type\": \"MANY_TO_ONE\", \"role\": \"INVERSE\", \"target-coll\": \"refcoll1\", \"ref-field\": \"otm\" },"
             + "{ \"rel\": \"otm\", \"type\": \"ONE_TO_MANY\", \"role\": \"INVERSE\", \"target-coll\": \"refcoll1\", \"ref-field\": \"mto\" },"
             + "{ \"rel\": \"mtm\", \"type\": \"MANY_TO_MANY\", \"role\": \"INVERSE\", \"target-coll\": \"refcoll1\", \"ref-field\": \"mtm\" }"
             + "]}";
 
-    protected static final ContentType halCT;
-
-    static {
-        halCT = ContentType.create(Representation.HAL_JSON_MEDIA_TYPE);
-    }
+    protected static final ContentType halCT = ContentType.create(Representation.HAL_JSON_MEDIA_TYPE);
 
     protected static String docsCollectionPropsStrings = "{}";
 
-    protected static String collTmpPropsString = "{ \"a\":1 }";
+    protected static final String collTmpPropsString = "{ \"a\":1 }";
 
-    protected static String document1PropsString = "{ \"a\": 1, \"oto\": \"doc2\", \"otm\" : [ \"doc2\" ], \"mto\" : \"doc2\", \"mtm\" : [ \"doc2\" ] }";
-    protected static String document2PropsString = "{ \"a\": 2 }";
+    protected static final String document1PropsString = "{ \"a\": 1, \"oto\": \"doc2\", \"otm\" : [ \"doc2\" ], \"mto\" : \"doc2\", \"mtm\" : [ \"doc2\" ] }";
+    protected static final String document2PropsString = "{ \"a\": 2 }";
 
     protected static DBObject dbProps = (DBObject) JSON.parse(AbstactIT.dbPropsString);
     protected static DBObject coll1Props = (DBObject) JSON.parse(AbstactIT.coll1PropsString);
@@ -133,7 +129,7 @@ public abstract class AbstactIT {
     protected static DBObject document1Props = (DBObject) JSON.parse(AbstactIT.document1PropsString);
     protected static DBObject document2Props = (DBObject) JSON.parse(AbstactIT.document2PropsString);
 
-    protected static String[] docsPropsStrings = {
+    protected static final String[] docsPropsStrings = {
         "{ \"ranking\": 1, \"name\": \"Nick\", \"surname\": \"Cave\", \"band\": \"Nick Cave & the Bad Seeds\"}",
         "{ \"ranking\": 2, \"name\": \"Robert\", \"surname\": \"Smith\", \"band\": \"The Cure\"}",
         "{ \"ranking\": 3, \"name\": \"Leonard\", \"surname\": \"Cohen\", \"band\": \"Leonard Cohen\"}",
@@ -145,7 +141,7 @@ public abstract class AbstactIT {
         "{ \"ranking\": 9, \"name\": \"Ian\", \"surname\": \"Astbury\", \"band\": \"The Cult\"}",
         "{ \"ranking\": 10, \"name\": \"Polly Jean\", \"surname\": \"Harvey\", \"band\": \"PJ Harvey\"}",};
     // { keys: {a:1, b:-1} }
-    protected static String[] docsCollectionIndexesStrings = {
+    protected static final String[] docsCollectionIndexesStrings = {
         "{ \"name\": 1 }",
         "{ \"surname\": 1 }",
         "{ \"band\": 1 }",

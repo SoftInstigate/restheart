@@ -25,6 +25,7 @@ import com.softinstigate.restheart.db.DocumentDAO;
 import com.softinstigate.restheart.db.IndexDAO;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import static com.softinstigate.restheart.integrationtest.AbstactIT.conf;
+import java.util.List;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare
  */
 public class TestDataInitializer extends AbstactIT {
+
     private static final Logger logger = LoggerFactory.getLogger(TestDataInitializer.class);
 
     public static void main(String[] args) throws Throwable {
@@ -49,8 +51,15 @@ public class TestDataInitializer extends AbstactIT {
     private void deleteExistingData() {
         MongoDBClientSingleton.init(conf);
 
-        MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbName);
-        MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbTmpName);
+        List<String> databases = MongoDBClientSingleton.getInstance().getClient().getDatabaseNames();
+        
+        if (databases.contains(dbName)) {
+            MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbName);
+        }
+
+        if (databases.contains(dbTmpName)) {
+            MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbTmpName);
+        }
     }
 
     private void createTestData() {
