@@ -173,8 +173,6 @@ public abstract class AbstactIT {
         MongoDBClientSingleton.init(conf);
         mongoClient = MongoDBClientSingleton.getInstance().getClient();
 
-        initializeTestData();
-
         createURIs();
 
         adminExecutor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "admin", "changeit");
@@ -190,6 +188,7 @@ public abstract class AbstactIT {
 
     @Before
     public void setUp() {
+        initializeTestData();
     }
 
     @After
