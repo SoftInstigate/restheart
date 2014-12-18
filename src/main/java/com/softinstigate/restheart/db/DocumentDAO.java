@@ -27,6 +27,7 @@ import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -166,7 +167,8 @@ public class DocumentDAO {
 
             coll.insert(content);
 
-            exchange.getResponseHeaders().add(HttpString.tryFromString("Location"), getReferenceLink(exchange.getRequestURL(), id.toString()).toString());
+            exchange.getResponseHeaders().add(HttpString.tryFromString(Headers.LOCATION_STRING), getReferenceLink(exchange.getRequestURL(), id.toString()).toString());
+            makeHeaderReadableByBrowsers(exchange, Headers.LOCATION_STRING);
 
             return HttpStatus.SC_CREATED;
         }
@@ -197,6 +199,10 @@ public class DocumentDAO {
         } else { // insert
             return HttpStatus.SC_CREATED;
         }
+    }
+
+    private static void makeHeaderReadableByBrowsers(HttpServerExchange exchange, String header) {
+        exchange.getResponseHeaders().add(HttpString.tryFromString("Access-Control-Expose-Headers"), header);
     }
 
     /**
