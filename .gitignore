@@ -33,6 +33,9 @@ nbdist/
 nbactions.xml
 nb-configuration.xml
 
+### Idea ###
+.idea/*
+*iml
 
 ### Java ###
 *.class
