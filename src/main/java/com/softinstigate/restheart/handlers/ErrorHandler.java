@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare
  */
 public class ErrorHandler implements HttpHandler {
+
     private final HttpHandler next;
 
     private Logger logger = LoggerFactory.getLogger(ErrorHandler.class);

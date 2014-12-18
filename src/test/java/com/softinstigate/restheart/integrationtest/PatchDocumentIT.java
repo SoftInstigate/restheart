@@ -24,7 +24,7 @@ import com.softinstigate.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
-import org.junit.Assert;
+import static org.junit.Assert.*;
 import org.junit.Test;
 
 /**
@@ -78,11 +78,10 @@ public class PatchDocumentIT extends AbstactIT {
             resp = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
             content = JsonObject.readFrom(resp.returnContent().asString());
-            Assert.assertNotNull("check patched content", content.get("a"));
-            Assert.assertNotNull("check patched content", content.get("b"));
-            Assert.assertTrue("check patched content", content.get("a").asInt() == 1 && content.get("b").asInt() == 2);
-        }
-        finally {
+            assertNotNull("check patched content", content.get("a"));
+            assertNotNull("check patched content", content.get("b"));
+            assertTrue("check patched content", content.get("a").asInt() == 1 && content.get("b").asInt() == 2);
+        } finally {
             mongoClient.dropDatabase(dbTmpName);
         }
     }

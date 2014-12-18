@@ -29,6 +29,7 @@ import io.undertow.util.HttpString;
  * @author Andrea Di Cesare
  */
 public class CORSHandler extends PipedHttpHandler {
+
     private final HttpHandler noPipedNext;
 
     /**

@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
  * @author Andrea Di Cesare
  */
 public class LocalCachesSingleton {
+
     private static final String SEPARATOR = "_@_@_";
 
     private static boolean initialized = false;
@@ -101,6 +102,7 @@ public class LocalCachesSingleton {
     }
 
     private static class LocalCachesSingletonHolder {
+
         private static final LocalCachesSingleton INSTANCE = new LocalCachesSingleton();
     }
 

@@ -73,8 +73,7 @@ public class DeleteDocumentIT extends AbstactIT {
 
             resp = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check get deleted tmp doc", resp, HttpStatus.SC_NOT_FOUND);
-        }
-        finally {
+        } finally {
             mongoClient.dropDatabase(dbTmpName);
         }
     }

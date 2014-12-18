@@ -25,6 +25,7 @@ import io.undertow.server.HttpServerExchange;
  * @author Andrea Di Cesare
  */
 public class PipedWrappingHandler extends PipedHttpHandler {
+
     private final HttpHandler wrapped;
 
     /**

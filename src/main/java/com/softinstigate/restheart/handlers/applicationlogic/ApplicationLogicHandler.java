@@ -33,6 +33,7 @@ public abstract class ApplicationLogicHandler extends PipedHttpHandler {
 
     /**
      * Creates a new instance of the ApplicationLogicHandler
+     *
      * @param next
      * @param args
      */

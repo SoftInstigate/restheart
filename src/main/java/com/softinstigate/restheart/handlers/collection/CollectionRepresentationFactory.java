@@ -39,6 +39,7 @@ import org.slf4j.Logger;
  * @author Andrea Di Cesare
  */
 public class CollectionRepresentationFactory {
+
     private static final Logger logger = LoggerFactory.getLogger(CollectionRepresentationFactory.class);
 
     /**

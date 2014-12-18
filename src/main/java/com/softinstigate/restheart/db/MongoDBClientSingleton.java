@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare
  */
 public class MongoDBClientSingleton {
+
     private static boolean initialized = false;
 
     private static transient List<Map<String, Object>> mongoServers;
@@ -115,6 +116,7 @@ public class MongoDBClientSingleton {
     }
 
     private static class MongoDBClientSingletonHolder {
+
         private static final MongoDBClientSingleton INSTANCE = new MongoDBClientSingleton();
     }
 

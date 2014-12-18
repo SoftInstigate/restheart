@@ -36,6 +36,7 @@ import java.util.HashSet;
  * @author Andrea Di Cesare
  */
 public class BodyInjectorHandler extends PipedHttpHandler {
+
     private final static String JSON_MEDIA_TYPE = "application/json";
 
     /**

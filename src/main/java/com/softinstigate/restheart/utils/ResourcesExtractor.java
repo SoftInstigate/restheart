@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare
  */
 public class ResourcesExtractor {
+
     private static final Logger logger = LoggerFactory.getLogger(ResourcesExtractor.class);
 
     /**

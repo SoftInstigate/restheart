@@ -28,6 +28,7 @@ import org.xnio.channels.StreamSourceChannel;
  * @author Andrea Di Cesare
  */
 public class ChannelReader {
+
     final static Charset charset = Charset.forName("utf-8");
 
     /**

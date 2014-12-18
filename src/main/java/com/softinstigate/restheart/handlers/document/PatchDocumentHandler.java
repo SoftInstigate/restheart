@@ -34,6 +34,7 @@ import org.bson.types.ObjectId;
  * @author Andrea Di Cesare
  */
 public class PatchDocumentHandler extends PipedHttpHandler {
+
     /**
      * Creates a new instance of PatchDocumentHandler
      */

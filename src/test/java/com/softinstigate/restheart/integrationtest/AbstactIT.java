@@ -21,10 +21,16 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
 import com.softinstigate.restheart.Configuration;
+import com.softinstigate.restheart.db.CollectionDAO;
+import com.softinstigate.restheart.db.DBDAO;
+import com.softinstigate.restheart.db.DocumentDAO;
+import com.softinstigate.restheart.db.IndexDAO;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.hal.Representation;
 import java.net.URI;
-import junit.framework.Assert;
+import java.net.URISyntaxException;
+import java.util.List;
+import static org.junit.Assert.*;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
@@ -32,16 +38,22 @@ import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
+import org.bson.types.ObjectId;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare
  */
 public abstract class AbstactIT {
+
+    private static final Logger logger = LoggerFactory.getLogger(AbstactIT.class);
+
     protected static final String confFilePath = "etc/restheart-integrationtest.yml";
     protected static MongoClient mongoClient;
     protected static Configuration conf = null;
@@ -55,27 +67,27 @@ public abstract class AbstactIT {
     protected static URI dbUri;
     protected static URI dbUriRemappedAll;
     protected static URI dbUriRemappedDb;
-    protected static String dbName = "mydb";
+    protected static final String dbName = "mydb";
     protected static URI dbTmpUri;
-    protected static String dbTmpName = "mytmpdb";
+    protected static final String dbTmpName = "mytmpdb";
     protected static URI collection1Uri;
     protected static URI collection1UriRemappedAll;
     protected static URI collection1UriRemappedDb;
     protected static URI collection1UriRemappedCollection;
-    protected static String collection1Name = "refcoll1";
+    protected static final String collection1Name = "refcoll1";
     protected static URI collection2Uri;
     protected static URI collection2UriRemappedAll;
     protected static URI collection2UriRemappedDb;
     protected static URI collection2UriRemappedCollection;
-    protected static String collection2Name = "refcoll2";
+    protected static final String collection2Name = "refcoll2";
     protected static URI collectionTmpUri;
-    protected static String collectionTmpName = "tmpcoll";
+    protected static final String collectionTmpName = "tmpcoll";
     protected static URI docsCollectionUri;
     protected static URI docsCollectionUriPaging;
     protected static URI docsCollectionUriCountAndPaging;
     protected static URI docsCollectionUriSort;
     protected static URI docsCollectionUriFilter;
-    protected static String docsCollectionName = "bandleaders";
+    protected static final String docsCollectionName = "bandleaders";
     protected static URI indexesUri;
     protected static URI indexesUriRemappedAll;
     protected static URI indexesUriRemappedDb;
@@ -93,36 +105,32 @@ public abstract class AbstactIT {
     protected static URI documentTmpUri;
     protected static URI indexesTmpUri;
     protected static URI indexTmpUri;
-    protected static String document1Id = "doc1";
-    protected static String document2Id = "doc2";
-    protected static String documentTmpId = "tmpdoc";
+    protected static final String document1Id = "doc1";
+    protected static final String document2Id = "doc2";
+    protected static final String documentTmpId = "tmpdoc";
 
-    protected static String dbPropsString = "{ \"a\": 1, \"b\": \"two\", \"c\": { \"d\": 3, \"f\": [\"g\",\"h\",4,{\"i\":5, \"l\":\"six\"}]}}";
-    protected static String coll1PropsString = "{ \"a\":1, \"rels\" :  ["
+    protected static final String dbPropsString = "{ \"a\": 1, \"b\": \"two\", \"c\": { \"d\": 3, \"f\": [\"g\",\"h\",4,{\"i\":5, \"l\":\"six\"}]}}";
+    protected static final String coll1PropsString = "{ \"a\":1, \"rels\" :  ["
             + "{ \"rel\": \"oto\", \"type\": \"ONE_TO_ONE\",  \"role\": \"OWNING\", \"target-coll\": \"refcoll2\", \"ref-field\": \"oto\" },"
             + "{ \"rel\": \"otm\", \"type\": \"ONE_TO_MANY\", \"role\": \"OWNING\", \"target-coll\": \"refcoll2\", \"ref-field\": \"otm\" },"
             + "{ \"rel\": \"mto\", \"type\": \"MANY_TO_ONE\", \"role\": \"OWNING\", \"target-coll\": \"refcoll2\", \"ref-field\": \"mto\" },"
             + "{ \"rel\": \"mtm\", \"type\": \"MANY_TO_MANY\", \"role\": \"OWNING\", \"target-coll\": \"refcoll2\", \"ref-field\": \"mtm\" }"
             + "]}";
-    protected static String coll2PropsString = "{ \"a\":2, \"rels\" :  ["
+    protected static final String coll2PropsString = "{ \"a\":2, \"rels\" :  ["
             + "{ \"rel\": \"oto\", \"type\": \"ONE_TO_ONE\",  \"role\": \"INVERSE\", \"target-coll\": \"refcoll1\", \"ref-field\": \"oto\" },"
             + "{ \"rel\": \"mto\", \"type\": \"MANY_TO_ONE\", \"role\": \"INVERSE\", \"target-coll\": \"refcoll1\", \"ref-field\": \"otm\" },"
             + "{ \"rel\": \"otm\", \"type\": \"ONE_TO_MANY\", \"role\": \"INVERSE\", \"target-coll\": \"refcoll1\", \"ref-field\": \"mto\" },"
             + "{ \"rel\": \"mtm\", \"type\": \"MANY_TO_MANY\", \"role\": \"INVERSE\", \"target-coll\": \"refcoll1\", \"ref-field\": \"mtm\" }"
             + "]}";
 
-    protected static final ContentType halCT;
-
-    static {
-        halCT = ContentType.create(Representation.HAL_JSON_MEDIA_TYPE);
-    }
+    protected static final ContentType halCT = ContentType.create(Representation.HAL_JSON_MEDIA_TYPE);
 
     protected static String docsCollectionPropsStrings = "{}";
 
-    protected static String collTmpPropsString = "{ \"a\":1 }";
+    protected static final String collTmpPropsString = "{ \"a\":1 }";
 
-    protected static String document1PropsString = "{ \"a\": 1, \"oto\": \"doc2\", \"otm\" : [ \"doc2\" ], \"mto\" : \"doc2\", \"mtm\" : [ \"doc2\" ] }";
-    protected static String document2PropsString = "{ \"a\": 2 }";
+    protected static final String document1PropsString = "{ \"a\": 1, \"oto\": \"doc2\", \"otm\" : [ \"doc2\" ], \"mto\" : \"doc2\", \"mtm\" : [ \"doc2\" ] }";
+    protected static final String document2PropsString = "{ \"a\": 2 }";
 
     protected static DBObject dbProps = (DBObject) JSON.parse(AbstactIT.dbPropsString);
     protected static DBObject coll1Props = (DBObject) JSON.parse(AbstactIT.coll1PropsString);
@@ -133,7 +141,7 @@ public abstract class AbstactIT {
     protected static DBObject document1Props = (DBObject) JSON.parse(AbstactIT.document1PropsString);
     protected static DBObject document2Props = (DBObject) JSON.parse(AbstactIT.document2PropsString);
 
-    protected static String[] docsPropsStrings = {
+    protected static final String[] docsPropsStrings = {
         "{ \"ranking\": 1, \"name\": \"Nick\", \"surname\": \"Cave\", \"band\": \"Nick Cave & the Bad Seeds\"}",
         "{ \"ranking\": 2, \"name\": \"Robert\", \"surname\": \"Smith\", \"band\": \"The Cure\"}",
         "{ \"ranking\": 3, \"name\": \"Leonard\", \"surname\": \"Cohen\", \"band\": \"Leonard Cohen\"}",
@@ -145,21 +153,94 @@ public abstract class AbstactIT {
         "{ \"ranking\": 9, \"name\": \"Ian\", \"surname\": \"Astbury\", \"band\": \"The Cult\"}",
         "{ \"ranking\": 10, \"name\": \"Polly Jean\", \"surname\": \"Harvey\", \"band\": \"PJ Harvey\"}",};
     // { keys: {a:1, b:-1} }
-    protected static String[] docsCollectionIndexesStrings = {
+    protected static final String[] docsCollectionIndexesStrings = {
         "{ \"name\": 1 }",
         "{ \"surname\": 1 }",
         "{ \"band\": 1 }",
         "{ \"ranking\": 1 }"
     };
 
-    @Before
-    public void setUp() throws Exception {
+    public AbstactIT() {
+    }
+
+    @BeforeClass
+    public static void setUpClass() throws Exception {
+        logger.info("@@@ Initializing integration tests");
+
         conf = new Configuration(confFilePath);
-
         MongoDBClientSingleton.init(conf);
-
         mongoClient = MongoDBClientSingleton.getInstance().getClient();
 
+        createURIs();
+
+        adminExecutor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "admin", "changeit");
+        user1Executor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "user1", "changeit");
+        user2Executor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "user2", "changeit");
+        unauthExecutor = Executor.newInstance();
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+        logger.info("@@@ Cleaning-up integration tests");
+    }
+
+    @Before
+    public void setUp() {
+        initializeTestData();
+    }
+
+    @After
+    public void tearDown() {
+    }
+
+    protected HttpResponse check(String message, Response resp, int expectedCode) throws Exception {
+        HttpResponse httpResp = resp.returnResponse();
+        assertNotNull(httpResp);
+
+        StatusLine statusLine = httpResp.getStatusLine();
+        assertNotNull(statusLine);
+
+        assertEquals(message, expectedCode, statusLine.getStatusCode());
+
+        return httpResp;
+    }
+
+    private static void initializeTestData() {
+        deleteExistingData();
+        createTestData();
+    }
+
+    private static void deleteExistingData() {
+        List<String> databases = MongoDBClientSingleton.getInstance().getClient().getDatabaseNames();
+        if (databases.contains(dbName)) {
+            MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbName);
+        }
+        if (databases.contains(dbTmpName)) {
+            MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbTmpName);
+        }
+        logger.info("existing data deleted");
+    }
+
+    private static void createTestData() {
+        DBDAO.upsertDB(dbName, dbProps, new ObjectId(), false);
+        CollectionDAO.upsertCollection(dbName, collection1Name, coll1Props, new ObjectId(), false, false);
+        CollectionDAO.upsertCollection(dbName, collection2Name, coll2Props, new ObjectId(), false, false);
+        CollectionDAO.upsertCollection(dbName, docsCollectionName, docsCollectionProps, new ObjectId(), false, false);
+
+        for (String index : docsCollectionIndexesStrings) {
+            IndexDAO.createIndex(dbName, docsCollectionName, ((DBObject) JSON.parse(index)), null);
+        }
+
+        DocumentDAO.upsertDocument(dbName, collection1Name, document1Id, document1Props, new ObjectId(), false);
+        DocumentDAO.upsertDocument(dbName, collection2Name, document2Id, document2Props, new ObjectId(), false);
+
+        for (String doc : docsPropsStrings) {
+            DocumentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), ((DBObject) JSON.parse(doc)), new ObjectId(), false);
+        }
+        logger.info("test data created");
+    }
+
+    private static void createURIs() throws URISyntaxException {
         rootUri = new URIBuilder()
                 .setScheme("http")
                 .setHost("127.0.0.1")
@@ -426,37 +507,5 @@ public abstract class AbstactIT {
                 .setPort(conf.getHttpPort())
                 .setPath("/remappeddoc2")
                 .build();
-
-        adminExecutor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "admin", "changeit");
-        user1Executor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "user1", "changeit");
-        user2Executor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "user2", "changeit");
-        unauthExecutor = Executor.newInstance();
-    }
-
-    public AbstactIT() {
-    }
-
-    @BeforeClass
-    public static void setUpClass() {
-    }
-
-    @AfterClass
-    public static void tearDownClass() {
-    }
-
-    @After
-    public void tearDown() {
-    }
-
-    protected HttpResponse check(String message, Response resp, int expectedCode) throws Exception {
-        HttpResponse httpResp = resp.returnResponse();
-        Assert.assertNotNull(httpResp);
-
-        StatusLine statusLine = httpResp.getStatusLine();
-        Assert.assertNotNull(statusLine);
-
-        Assert.assertEquals(message, expectedCode, statusLine.getStatusCode());
-
-        return httpResp;
     }
 }

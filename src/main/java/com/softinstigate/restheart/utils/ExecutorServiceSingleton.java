@@ -25,6 +25,7 @@ import java.util.concurrent.Executors;
  * @author Andrea Di Cesare
  */
 public class ExecutorServiceSingleton {
+
     private final ExecutorService executorService;
 
     private ExecutorServiceSingleton() {
@@ -47,6 +48,7 @@ public class ExecutorServiceSingleton {
     }
 
     private static class ExecutorServiceSingletonHolder {
+
         private static final ExecutorServiceSingleton INSTANCE = new ExecutorServiceSingleton();
     }
 }

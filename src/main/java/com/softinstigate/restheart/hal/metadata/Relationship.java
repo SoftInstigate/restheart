@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare
  */
 public class Relationship {
+
     private static final Logger logger = LoggerFactory.getLogger(Relationship.class);
 
     /**
@@ -43,17 +44,14 @@ public class Relationship {
          *
          */
         ONE_TO_ONE,
-
         /**
          *
          */
         ONE_TO_MANY,
-
         /**
          *
          */
         MANY_TO_ONE,
-
         /**
          *
          */
@@ -69,7 +67,6 @@ public class Relationship {
          *
          */
         OWNING,
-
         /**
          *
          */
@@ -151,15 +148,13 @@ public class Relationship {
 
         try {
             this.type = TYPE.valueOf(type);
-        }
-        catch (IllegalArgumentException iae) {
+        } catch (IllegalArgumentException iae) {
             throw new InvalidMetadataException("invalid type value: " + type + ". valid values are " + Arrays.toString(TYPE.values()), iae);
         }
 
         try {
             this.role = ROLE.valueOf(role);
-        }
-        catch (IllegalArgumentException iae) {
+        } catch (IllegalArgumentException iae) {
             throw new InvalidMetadataException("invalid role value " + role + ". valid values are " + Arrays.toString(ROLE.values()), iae);
         }
 
@@ -273,8 +268,7 @@ public class Relationship {
                 }
 
                 reference = (String) _referenceValue;
-            }
-            else {
+            } else {
                 if (!(_referenceValue instanceof BasicDBList)) {
                     throw new IllegalArgumentException("in resource " + dbName + "/" + collName + "/" + data.get("_id")
                             + " the " + type.name() + " relationship ref-field " + this.referenceField + " should be an array, but is " + _referenceValue);
@@ -288,8 +282,7 @@ public class Relationship {
 
                 reference = Arrays.toString(ids);
             }
-        }
-        else // INVERSE
+        } else // INVERSE
         {
             reference = "'" + data.get("_id").toString() + "'";
         }
@@ -299,16 +292,13 @@ public class Relationship {
         if (role == ROLE.OWNING) {
             if (type == TYPE.ONE_TO_ONE || type == TYPE.MANY_TO_ONE) {
                 return URLUtilis.getUriWithDocId(context, db, targetCollection, reference);
-            }
-            else if (type == TYPE.ONE_TO_MANY || type == TYPE.MANY_TO_MANY) {
+            } else if (type == TYPE.ONE_TO_MANY || type == TYPE.MANY_TO_MANY) {
                 return URLUtilis.getUriWithFilterMany(context, db, targetCollection, referenceField, reference);
             }
-        }
-        else {
+        } else {
             if (type == TYPE.ONE_TO_ONE || type == TYPE.ONE_TO_MANY) {
                 return URLUtilis.getUriWithFilterOne(context, db, targetCollection, referenceField, reference);
-            }
-            else if (type == TYPE.MANY_TO_ONE || type == TYPE.MANY_TO_MANY) {
+            } else if (type == TYPE.MANY_TO_ONE || type == TYPE.MANY_TO_MANY) {
                 return URLUtilis.getUriWithFilterManyInverse(context, db, targetCollection, referenceField, reference);
             }
         }

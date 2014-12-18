@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
  * @author Andrea Di Cesare
  */
 public class GetRootHandler extends PipedHttpHandler {
+
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
 
     /**

@@ -35,6 +35,7 @@ import org.bson.types.ObjectId;
  * @author Andrea Di Cesare
  */
 public class GetDocumentHandler extends PipedHttpHandler {
+
     /**
      * Creates a new instance of GetDocumentHandler
      */

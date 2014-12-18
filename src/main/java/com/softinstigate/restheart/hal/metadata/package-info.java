@@ -15,12 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 /**
-* Classes to deal with HAL documents properties that have a special semantic
-* in RESTHeart and thus are called metadata
-*
+ * Classes to deal with HAL documents properties that have a special semantic in
+ * RESTHeart and thus are called metadata
+ * 
 * @author Andrea Di Cesare
-*/
-
+ */
 package com.softinstigate.restheart.hal.metadata;

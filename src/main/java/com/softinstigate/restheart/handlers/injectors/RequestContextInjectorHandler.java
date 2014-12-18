@@ -31,6 +31,7 @@ import java.util.Deque;
  * @author Andrea Di Cesare
  */
 public class RequestContextInjectorHandler extends PipedHttpHandler {
+
     private final String whereUri;
     private final String whatUri;
 

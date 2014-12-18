@@ -15,11 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 /**
-* Abstract handler to define custom application logic services and some generic example implementations
-*
+ * Abstract handler to define custom application logic services and some generic
+ * example implementations
+ * 
 * @author Andrea Di Cesare
-*/
-
+ */
 package com.softinstigate.restheart.handlers.applicationlogic;

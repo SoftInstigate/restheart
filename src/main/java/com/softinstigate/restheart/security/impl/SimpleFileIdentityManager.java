@@ -42,6 +42,7 @@ import org.yaml.snakeyaml.Yaml;
  * @author Andrea Di Cesare
  */
 public class SimpleFileIdentityManager implements IdentityManager {
+
     private static final Logger logger = LoggerFactory.getLogger(SimpleFileIdentityManager.class);
 
     private final Map<String, SimpleAccount> accounts;

@@ -32,6 +32,7 @@ import io.undertow.server.HttpServerExchange;
  * @author Andrea Di Cesare
  */
 public class PutIndexHandler extends PipedHttpHandler {
+
     private static final BasicDBObject fieldsToReturn;
 
     static {

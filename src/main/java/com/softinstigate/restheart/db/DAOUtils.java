@@ -31,6 +31,7 @@ import java.util.TreeMap;
  * @author Andrea Di Cesare
  */
 public class DAOUtils {
+
     /**
      * @param rows list of DBObject rows as returned by getDataFromCursor()
      * @return

@@ -80,8 +80,7 @@ public class PutIndexIT extends AbstactIT {
 
             try {
                 json = JsonObject.readFrom(content);
-            }
-            catch (Throwable t) {
+            } catch (Throwable t) {
                 junit.framework.Assert.fail("parsing received json");
             }
 
@@ -90,8 +89,7 @@ public class PutIndexIT extends AbstactIT {
             junit.framework.Assert.assertNotNull("check not null _size property", json.get("_size"));
             junit.framework.Assert.assertEquals("check _size value to be 5", 5, json.get("_size").asInt());
             junit.framework.Assert.assertEquals("check _returned value to be 5", 5, json.get("_returned").asInt());
-        }
-        finally {
+        } finally {
             mongoClient.dropDatabase(dbTmpName);
         }
     }

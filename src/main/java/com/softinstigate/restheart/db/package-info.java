@@ -15,11 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 /**
-* Data Access Object Classes to decouple the handling logic from the db 
-*
+ * Data Access Object Classes to decouple the handling logic from the db
+ * 
 * @author Andrea Di Cesare
-*/
-
+ */
 package com.softinstigate.restheart.db;

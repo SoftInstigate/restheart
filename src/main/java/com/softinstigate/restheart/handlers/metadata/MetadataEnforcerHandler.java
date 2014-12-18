@@ -26,6 +26,7 @@ import io.undertow.server.HttpServerExchange;
  * @author Andrea Di Cesare
  */
 public class MetadataEnforcerHandler extends PipedHttpHandler {
+
     /**
      * Creates a new instance of MetadataEnforcerHandler
      *

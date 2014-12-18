@@ -31,6 +31,7 @@ import io.undertow.server.HttpServerExchange;
  * @author Andrea Di Cesare
  */
 public class DeleteIndexHandler extends PipedHttpHandler {
+
     /**
      * Creates a new instance of DeleteIndexHandler
      */

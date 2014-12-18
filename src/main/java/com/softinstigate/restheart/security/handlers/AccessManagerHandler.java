@@ -29,6 +29,7 @@ import io.undertow.server.HttpServerExchange;
  * @author Andrea Di Cesare
  */
 public class AccessManagerHandler extends PipedHttpHandler {
+
     private final AccessManager accessManager;
 
     /**

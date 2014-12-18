@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare
  */
 public class CollectionDAO {
+
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
 
     private static final Logger logger = LoggerFactory.getLogger(CollectionDAO.class);
@@ -97,8 +98,7 @@ public class CollectionDAO {
     }
 
     /**
-     * Checks if the given collection is empty. 
-     * Note that RESTHeart creates a
+     * Checks if the given collection is empty. Note that RESTHeart creates a
      * reserved properties document in every collection (with _id
      * '_properties'). This method returns true even if the collection contains
      * such document.

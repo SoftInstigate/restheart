@@ -72,6 +72,7 @@ public class GetRoleHandler extends ApplicationLogicHandler {
 
     /**
      * Creates a new instance of GetRoleHandler
+     *
      * @param next
      * @param args
      * @throws Exception
@@ -98,7 +99,7 @@ public class GetRoleHandler extends ApplicationLogicHandler {
 
     /**
      * Handles the request.
-     * 
+     *
      * @param exchange
      * @param context
      * @throws Exception

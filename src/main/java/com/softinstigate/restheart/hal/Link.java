@@ -25,6 +25,7 @@ import com.mongodb.DBObject;
  * @author Andrea Di Cesare
  */
 public class Link {
+
     private final BasicDBObject dbObject = new BasicDBObject();
 
     /**
