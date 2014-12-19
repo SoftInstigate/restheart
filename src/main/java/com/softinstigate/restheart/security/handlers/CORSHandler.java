@@ -24,6 +24,10 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.HttpString;
 
+import static com.softinstigate.restheart.security.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_EXPOSE_HEADERS;
+import static io.undertow.util.Headers.LOCATION;
+import static io.undertow.util.Headers.LOCATION_STRING;
+
 /**
  *
  * @author Andrea Di Cesare
@@ -79,5 +83,29 @@ public class CORSHandler extends PipedHttpHandler {
 
         exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Credentials"), "true");
 
+        if (locationHeaderIsSet(exchange)) {
+            addLocationToExposedHeaders(exchange);
+        }
     }
+
+    private static void addLocationToExposedHeaders(HttpServerExchange exchange) {
+        exchange.getResponseHeaders().addLast(ACCESS_CONTROL_EXPOSE_HEADERS, LOCATION_STRING);
+    }
+
+    private static boolean locationHeaderIsSet(HttpServerExchange exchange) {
+        return isNotEmpty(getHeaderValue(exchange, LOCATION));
+    }
+
+    private static HeaderValues getHeaderValue(HttpServerExchange exchange, HttpString httpString) {
+        return exchange.getRequestHeaders().get(httpString);
+    }
+
+    private static boolean isNotEmpty(HeaderValues vals) {
+        return vals != null && !vals.isEmpty();
+    }
+
+    interface CORSHeaders {
+        HttpString ACCESS_CONTROL_EXPOSE_HEADERS = HttpString.tryFromString("Access-Control-Expose-Headers");
+    }
+
 }
