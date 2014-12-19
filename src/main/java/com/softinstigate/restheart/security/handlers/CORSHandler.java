@@ -21,8 +21,14 @@ import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestContext;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderValues;
 import io.undertow.util.HttpString;
+
+import static com.softinstigate.restheart.security.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_CREDENTIAL;
+import static com.softinstigate.restheart.security.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
+import static com.softinstigate.restheart.security.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_EXPOSE_HEADERS;
+import static io.undertow.util.Headers.LOCATION_STRING;
+import static io.undertow.util.Headers.ORIGIN;
+import static java.lang.Boolean.TRUE;
 
 /**
  *
@@ -30,6 +36,7 @@ import io.undertow.util.HttpString;
  */
 public class CORSHandler extends PipedHttpHandler {
 
+    public static final String ALL_ORIGINS = "*";
     private final HttpHandler noPipedNext;
 
     /**
@@ -60,7 +67,7 @@ public class CORSHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        injectAccessControlAllowHeaders(exchange);
+        injectAccessControlAllowHeaders(new HeadersManager(exchange));
 
         if (noPipedNext != null) {
             noPipedNext.handleRequest(exchange);
@@ -69,15 +76,23 @@ public class CORSHandler extends PipedHttpHandler {
         }
     }
 
-    private static void injectAccessControlAllowHeaders(HttpServerExchange exchange) {
-        HeaderValues vals = exchange.getRequestHeaders().get(HttpString.tryFromString("Origin"));
-        if (vals != null && !vals.isEmpty()) {
-            exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Origin"), vals.getFirst());
+    private void injectAccessControlAllowHeaders(HeadersManager headers) {
+
+        if (headers.isRequestHeaderSet(ORIGIN)) {
+            headers.addResponseHeader(ACCESS_CONTROL_ALLOW_ORIGIN, headers.getRequestHeader(ORIGIN).getFirst());
         } else {
-            exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Origin"), "*");
+            headers.addResponseHeader(ACCESS_CONTROL_ALLOW_ORIGIN, ALL_ORIGINS);
         }
 
-        exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Credentials"), "true");
+        headers.addResponseHeader(ACCESS_CONTROL_ALLOW_CREDENTIAL, TRUE);
 
+        headers.addResponseHeader(ACCESS_CONTROL_EXPOSE_HEADERS, LOCATION_STRING);
     }
+
+    interface CORSHeaders {
+        HttpString ACCESS_CONTROL_EXPOSE_HEADERS = HttpString.tryFromString("Access-Control-Expose-Headers");
+        HttpString ACCESS_CONTROL_ALLOW_CREDENTIAL = HttpString.tryFromString("Access-Control-Allow-Credentials");
+        HttpString ACCESS_CONTROL_ALLOW_ORIGIN = HttpString.tryFromString("Access-Control-Allow-Origin");
+    }
+
 }
