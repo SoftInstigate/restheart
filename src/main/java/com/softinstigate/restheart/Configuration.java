@@ -41,7 +41,7 @@ public class Configuration {
     /**
      * the restheart version
      */
-    public static final String RESTHEART_VERSION = "0.9.3";
+    public static final String RESTHEART_VERSION = Configuration.class.getPackage().getImplementationVersion();
 
     /**
      * URL pointing to the online documentation specific for this version.
