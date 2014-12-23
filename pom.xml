@@ -160,6 +160,8 @@
                                 <manifest>
                                     <addClasspath>true</addClasspath>
                                     <mainClass>com.softinstigate.restheart.Bootstrapper</mainClass>
+                                    <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                                    <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                                 </manifest>
                             </archive>
                         </configuration>
@@ -177,10 +179,26 @@
                             <descriptors>
                                 <descriptor>assembly.xml</descriptor>
                             </descriptors>
-                            <attach>false</attach>
+                            <attach>true</attach>
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.5</version>
+                <configuration>
+                    <archive>                   
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>com.softinstigate.restheart.Bootstrapper</mainClass>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                        </manifest>
+                    </archive>
+                </configuration>
             </plugin>
             
             <plugin>
