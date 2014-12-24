@@ -52,7 +52,10 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstactIT {
 
-    private static final Logger logger = LoggerFactory.getLogger(AbstactIT.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstactIT.class);
+
+    private static final String HOST = "127.0.0.1";
+    private static final String HTTP = "http";
 
     protected static final String confFilePath = "etc/restheart-integrationtest.yml";
     protected static MongoClient mongoClient;
@@ -165,7 +168,7 @@ public abstract class AbstactIT {
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        logger.info("@@@ Initializing integration tests");
+        LOG.info("@@@ Initializing integration tests");
 
         conf = new Configuration(confFilePath);
         MongoDBClientSingleton.init(conf);
@@ -173,15 +176,15 @@ public abstract class AbstactIT {
 
         createURIs();
 
-        adminExecutor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "admin", "changeit");
-        user1Executor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "user1", "changeit");
-        user2Executor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "user2", "changeit");
+        adminExecutor = Executor.newInstance().authPreemptive(new HttpHost(HOST, 8080, HTTP)).auth(new HttpHost(HOST), "admin", "changeit");
+        user1Executor = Executor.newInstance().authPreemptive(new HttpHost(HOST, 8080, HTTP)).auth(new HttpHost(HOST), "user1", "changeit");
+        user2Executor = Executor.newInstance().authPreemptive(new HttpHost(HOST, 8080, HTTP)).auth(new HttpHost(HOST), "user2", "changeit");
         unauthExecutor = Executor.newInstance();
     }
 
     @AfterClass
     public static void tearDownClass() {
-        logger.info("@@@ Cleaning-up integration tests");
+        LOG.info("@@@ Cleaning-up integration tests");
     }
 
     @Before
@@ -218,7 +221,7 @@ public abstract class AbstactIT {
         if (databases.contains(dbTmpName)) {
             MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbTmpName);
         }
-        logger.info("existing data deleted");
+        LOG.info("existing data deleted");
     }
 
     private static void createTestData() {
@@ -237,141 +240,141 @@ public abstract class AbstactIT {
         for (String doc : docsPropsStrings) {
             DocumentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), ((DBObject) JSON.parse(doc)), new ObjectId(), false);
         }
-        logger.info("test data created");
+        LOG.info("test data created");
     }
 
     private static void createURIs() throws URISyntaxException {
         rootUri = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
                 .setPath("/")
                 .build();
 
         rootUriRemapped = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/remappedall")
+                .setPath(REMAPPEDALL)
                 .build();
 
         dbUri = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
                 .setPath("/" + dbName)
                 .build();
 
         dbUriPaging = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
                 .setPath("/" + dbName)
                 .addParameter("pagesize", "1")
                 .build();
 
         dbUriRemappedAll = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/remappedall/" + dbName)
+                .setPath(REMAPPEDALL + "/" + dbName)
                 .build();
 
         dbUriRemappedDb = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/remappeddb")
+                .setPath(REMAPPEDDB)
                 .build();
 
         dbTmpUri = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
                 .setPath("/" + dbTmpName)
                 .build();
 
         collection1Uri = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
                 .setPath("/" + dbName + "/" + collection1Name)
                 .build();
 
         collection1UriRemappedAll = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/remappedall/" + dbName + "/" + collection1Name)
+                .setPath(REMAPPEDALL + "/" + dbName + "/" + collection1Name)
                 .build();
 
         collection1UriRemappedDb = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/remappeddb/" + collection1Name)
+                .setPath(REMAPPEDDB + "/" + collection1Name)
                 .build();
 
         collection1UriRemappedCollection = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/remappedrefcoll1")
+                .setPath(REMAPPEDREFCOLL1)
                 .build();
 
         collection2Uri = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
                 .setPath("/" + dbName + "/" + collection2Name)
                 .build();
 
         collection2UriRemappedAll = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/remappedall/" + dbName + "/" + collection2Name)
+                .setPath(REMAPPEDALL + "/" + dbName + "/" + collection2Name)
                 .build();
 
         collection2UriRemappedDb = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/remappeddb/" + collection2Name)
+                .setPath(REMAPPEDDB + "/" + collection2Name)
                 .build();
 
         collection2UriRemappedCollection = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/remappedrefcoll2")
+                .setPath(REMAPPEDREFCOLL2)
                 .build();
 
         collectionTmpUri = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
                 .setPath("/" + dbTmpName + "/" + collectionTmpName)
                 .build();
 
         docsCollectionUri = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
                 .setPath("/" + dbName + "/" + docsCollectionName)
                 .build();
 
         docsCollectionUriPaging = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
                 .setPath("/" + dbName + "/" + docsCollectionName)
                 .addParameter("pagesize", "2")
                 .build();
 
         docsCollectionUriCountAndPaging = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
                 .setPath("/" + dbName + "/" + docsCollectionName)
                 .addParameter("count", null)
@@ -380,16 +383,16 @@ public abstract class AbstactIT {
                 .build();
 
         docsCollectionUriSort = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
                 .setPath("/" + dbName + "/" + docsCollectionName)
                 .addParameter("sort_by", "surname")
                 .build();
 
         docsCollectionUriFilter = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
                 .setPath("/" + dbName + "/" + docsCollectionName)
                 .addParameter("filter", "{'name':{'$regex' : '.*k$'}}")
@@ -398,114 +401,122 @@ public abstract class AbstactIT {
                 .build();
 
         indexesUri = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/" + dbName + "/" + docsCollectionName + "/_indexes")
+                .setPath("/" + dbName + "/" + docsCollectionName + _INDEXES)
                 .build();
 
         indexesUriRemappedAll = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/remappedall/" + dbName + "/" + docsCollectionName + "/_indexes")
+                .setPath(REMAPPEDALL + "/" + dbName + "/" + docsCollectionName + _INDEXES)
                 .build();
 
         indexesUriRemappedDb = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/remappeddb/" + docsCollectionName + "/_indexes")
+                .setPath(REMAPPEDDB + "/" + docsCollectionName + _INDEXES)
                 .build();
 
         documentTmpUri = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
                 .setPath("/" + dbTmpName + "/" + collectionTmpName + "/" + documentTmpId)
                 .build();
 
         indexesTmpUri = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/" + dbTmpName + "/" + collectionTmpName + "/_indexes")
+                .setPath("/" + dbTmpName + "/" + collectionTmpName + _INDEXES)
                 .build();
         indexTmpUri = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/" + dbTmpName + "/" + collectionTmpName + "/_indexes/new-index")
+                .setPath("/" + dbTmpName + "/" + collectionTmpName + _INDEXES + "/new-index")
                 .build();
 
         document1Uri = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
                 .setPath("/" + dbName + "/" + collection1Name + "/" + document1Id)
                 .build();
 
         document1UriRemappedAll = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/remappedall/" + dbName + "/" + collection1Name + "/" + document1Id)
+                .setPath(REMAPPEDALL + "/" + dbName + "/" + collection1Name + "/" + document1Id)
                 .build();
 
         document1UriRemappedDb = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/remappeddb/" + collection1Name + "/" + document1Id)
+                .setPath(REMAPPEDDB + "/" + collection1Name + "/" + document1Id)
                 .build();
 
         document1UriRemappedCollection = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/remappedrefcoll1" + "/" + document1Id)
+                .setPath(REMAPPEDREFCOLL1 + "/" + document1Id)
                 .build();
 
         document1UriRemappedDocument = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/remappeddoc1")
+                .setPath(REMAPPEDDOC1)
                 .build();
 
         document2Uri = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
                 .setPath("/" + dbName + "/" + collection2Name + "/" + document2Id)
                 .build();
 
         document2UriRemappedAll = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/remappedall/" + dbName + "/" + collection1Name + "/" + document2Id)
+                .setPath(REMAPPEDALL + "/" + dbName + "/" + collection1Name + "/" + document2Id)
                 .build();
 
         document2UriRemappedDb = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/remappeddb/" + collection2Name + "/" + document2Id)
+                .setPath(REMAPPEDDB + "/" + collection2Name + "/" + document2Id)
                 .build();
 
         document2UriRemappedCollection = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/remappedrefcoll2" + "/" + document2Id)
+                .setPath(REMAPPEDREFCOLL2 + "/" + document2Id)
                 .build();
 
         document2UriRemappedDocument = new URIBuilder()
-                .setScheme("http")
-                .setHost("127.0.0.1")
+                .setScheme(HTTP)
+                .setHost(HOST)
                 .setPort(conf.getHttpPort())
-                .setPath("/remappeddoc2")
+                .setPath(REMAPPEDDOC2)
                 .build();
     }
+    
+    private static final String _INDEXES = "/_indexes";
+    private static final String REMAPPEDDOC1 = "/remappeddoc1";
+    private static final String REMAPPEDALL = "/remappedall";
+    private static final String REMAPPEDDB = "/remappeddb";
+    private static final String REMAPPEDREFCOLL2 = "/remappedrefcoll2";
+    private static final String REMAPPEDDOC2 = "/remappeddoc2";
+    private static final String REMAPPEDREFCOLL1 = "/remappedrefcoll1";
 }

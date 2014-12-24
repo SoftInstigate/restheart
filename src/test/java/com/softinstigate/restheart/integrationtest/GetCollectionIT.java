@@ -30,14 +30,16 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Andrea Di Cesare
  */
-@Ignore
 public class GetCollectionIT extends AbstactIT {
+    
+    private static final Logger LOG = LoggerFactory.getLogger(GetCollectionIT.class);
 
     public GetCollectionIT() {
     }
@@ -46,23 +48,23 @@ public class GetCollectionIT extends AbstactIT {
     public void testGetCollection() throws Exception {
         testGetCollection(collection1Uri);
     }
+//
+//    @Test
+//    public void testGetCollectionRemappedAll() throws Exception {
+//        testGetCollection(collection1UriRemappedAll);
+//    }
+//
+//    @Test
+//    public void testGetCollectionRemappedDb() throws Exception {
+//        testGetCollection(collection1UriRemappedDb);
+//    }
+//
+//    @Test
+//    public void testGetCollectionRemappedCollection() throws Exception {
+//        testGetCollection(collection1UriRemappedCollection);
+//    }
 
-    @Test
-    public void testGetCollectionRemappedAll() throws Exception {
-        testGetCollection(collection1UriRemappedAll);
-    }
-
-    @Test
-    public void testGetCollectionRemappedDb() throws Exception {
-        testGetCollection(collection1UriRemappedDb);
-    }
-
-    @Test
-    public void testGetCollectionRemappedCollection() throws Exception {
-        testGetCollection(collection1UriRemappedCollection);
-    }
-
-    @Test
+    //@Test
     public void testGetCollectionCountAndPaging() throws Exception {
         Response resp = adminExecutor.execute(Request.Get(docsCollectionUriCountAndPaging));
 
@@ -143,7 +145,7 @@ public class GetCollectionIT extends AbstactIT {
         assertEquals("check get last response status code", HttpStatus.SC_OK, httpRespLast.getStatusLine().getStatusCode());
     }
 
-    @Test
+    //@Test
     public void testGetCollectionPaging() throws Exception {
         Response resp = adminExecutor.execute(Request.Get(docsCollectionUriPaging));
 
@@ -208,6 +210,8 @@ public class GetCollectionIT extends AbstactIT {
     }
 
     private void testGetCollection(URI uri) throws Exception {
+        LOG.info("@@@ testGetCollection URI: " + uri);
+        
         Response resp = adminExecutor.execute(Request.Get(uri));
 
         HttpResponse httpResp = resp.returnResponse();
@@ -229,8 +233,10 @@ public class GetCollectionIT extends AbstactIT {
 
         try {
             json = JsonObject.readFrom(content);
+            LOG.info(json.asString());
         } catch (Throwable t) {
-            fail("parsing received json");
+            LOG.error("@@@ Exception ", t);
+            fail("@@@ Failed parsing received json for URI: " + uri);
         }
 
         assertNotNull("check json not null", json);
@@ -301,7 +307,7 @@ public class GetCollectionIT extends AbstactIT {
         assertNotNull("check not null curies", links.get("curies"));
     }
 
-    @Test
+    //@Test
     public void testGetCollectionSort() throws Exception {
         Response resp = adminExecutor.execute(Request.Get(docsCollectionUriSort));
 
@@ -359,7 +365,7 @@ public class GetCollectionIT extends AbstactIT {
         assertEquals("check not null _embedded.rh:doc[1].name", "Ian", rhdoc1.get("name").asString());
     }
 
-    @Test
+    //@Test
     public void testGetCollectionFilter() throws Exception {
         Response resp = adminExecutor.execute(Request.Get(docsCollectionUriFilter));
 
