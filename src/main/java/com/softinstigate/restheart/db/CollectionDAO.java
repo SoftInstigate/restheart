@@ -121,7 +121,7 @@ public class CollectionDAO {
      * account the filters in case)
      */
     public static long getCollectionSize(DBCollection coll, Deque<String> filters) {
-        final BasicDBObject query = DOCUMENTS_QUERY;
+        final BasicDBObject query = new BasicDBObject(DOCUMENTS_QUERY);
 
         if (filters != null) {
             try {

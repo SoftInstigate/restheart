@@ -189,11 +189,12 @@ public abstract class AbstactIT {
 
     @Before
     public void setUp() {
-        initializeTestData();
+        createTestData();
     }
 
     @After
     public void tearDown() {
+        deleteTestData();
     }
 
     protected HttpResponse check(String message, Response resp, int expectedCode) throws Exception {
@@ -208,23 +209,7 @@ public abstract class AbstactIT {
         return httpResp;
     }
 
-    private static void initializeTestData() {
-        deleteExistingData();
-        createTestData();
-    }
-
-    private static void deleteExistingData() {
-        List<String> databases = MongoDBClientSingleton.getInstance().getClient().getDatabaseNames();
-        if (databases.contains(dbName)) {
-            MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbName);
-        }
-        if (databases.contains(dbTmpName)) {
-            MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbTmpName);
-        }
-        LOG.info("existing data deleted");
-    }
-
-    private static void createTestData() {
+    private void createTestData() {
         DBDAO.upsertDB(dbName, dbProps, new ObjectId(), false);
         CollectionDAO.upsertCollection(dbName, collection1Name, coll1Props, new ObjectId(), false, false);
         CollectionDAO.upsertCollection(dbName, collection2Name, coll2Props, new ObjectId(), false, false);
@@ -241,6 +226,17 @@ public abstract class AbstactIT {
             DocumentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), ((DBObject) JSON.parse(doc)), new ObjectId(), false);
         }
         LOG.info("test data created");
+    }
+
+    private void deleteTestData() {
+        List<String> databases = MongoDBClientSingleton.getInstance().getClient().getDatabaseNames();
+        if (databases.contains(dbName)) {
+            MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbName);
+        }
+        if (databases.contains(dbTmpName)) {
+            MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbTmpName);
+        }
+        LOG.info("existing data deleted");
     }
 
     private static void createURIs() throws URISyntaxException {
@@ -511,7 +507,7 @@ public abstract class AbstactIT {
                 .setPath(REMAPPEDDOC2)
                 .build();
     }
-    
+
     private static final String _INDEXES = "/_indexes";
     private static final String REMAPPEDDOC1 = "/remappeddoc1";
     private static final String REMAPPEDALL = "/remappedall";
