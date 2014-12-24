@@ -30,14 +30,16 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Andrea Di Cesare
  */
-@Ignore
 public class GetCollectionIT extends AbstactIT {
+
+    private static final Logger LOG = LoggerFactory.getLogger(GetCollectionIT.class);
 
     public GetCollectionIT() {
     }
@@ -64,6 +66,8 @@ public class GetCollectionIT extends AbstactIT {
 
     @Test
     public void testGetCollectionCountAndPaging() throws Exception {
+        LOG.info("@@@ testGetCollectionCountAndPaging URI: " + docsCollectionUriCountAndPaging);
+
         Response resp = adminExecutor.execute(Request.Get(docsCollectionUriCountAndPaging));
 
         HttpResponse httpResp = resp.returnResponse();
@@ -86,17 +90,11 @@ public class GetCollectionIT extends AbstactIT {
         try {
             json = JsonObject.readFrom(content);
         } catch (Throwable t) {
-            fail("parsing received json");
+            fail("@@@ Failed parsing received json");
         }
-
-        assertNotNull("check json not null", json);
 
         assertNotNull("check not null _link", json.get("_links"));
         assertTrue("check _link to be a json object", (json.get("_links") instanceof JsonObject));
-
-        assertNotNull("check not null _returned property", json.get("_returned"));
-        assertNotNull("check not null _size value", json.get("_size"));
-        assertNotNull("check not null _total_pages", json.get("_total_pages"));
 
         assertEquals("check _returned value to be 2", 2, json.get("_returned").asInt());
         assertEquals("check _size value to be 10", 10, json.get("_size").asInt());
@@ -145,6 +143,8 @@ public class GetCollectionIT extends AbstactIT {
 
     @Test
     public void testGetCollectionPaging() throws Exception {
+        LOG.info("@@@ testGetCollectionPaging URI: " + docsCollectionUriPaging);
+
         Response resp = adminExecutor.execute(Request.Get(docsCollectionUriPaging));
 
         HttpResponse httpResp = resp.returnResponse();
@@ -167,7 +167,7 @@ public class GetCollectionIT extends AbstactIT {
         try {
             json = JsonObject.readFrom(content);
         } catch (Throwable t) {
-            fail("parsing received json");
+            fail("@@@ Failed parsing received json");
         }
 
         assertNotNull("check json not null", json);
@@ -208,6 +208,8 @@ public class GetCollectionIT extends AbstactIT {
     }
 
     private void testGetCollection(URI uri) throws Exception {
+        LOG.info("@@@ testGetCollection URI: " + uri);
+
         Response resp = adminExecutor.execute(Request.Get(uri));
 
         HttpResponse httpResp = resp.returnResponse();
@@ -223,14 +225,14 @@ public class GetCollectionIT extends AbstactIT {
 
         String content = EntityUtils.toString(entity);
 
-        assertNotNull("", content);
+        assertNotNull(content);
 
         JsonObject json = null;
 
         try {
             json = JsonObject.readFrom(content);
         } catch (Throwable t) {
-            fail("parsing received json");
+            fail("@@@ Failed parsing received json");
         }
 
         assertNotNull("check json not null", json);
@@ -303,6 +305,8 @@ public class GetCollectionIT extends AbstactIT {
 
     @Test
     public void testGetCollectionSort() throws Exception {
+        LOG.info("@@@ testGetCollectionSort URI: " + docsCollectionUriSort);
+
         Response resp = adminExecutor.execute(Request.Get(docsCollectionUriSort));
 
         HttpResponse httpResp = resp.returnResponse();
@@ -325,7 +329,7 @@ public class GetCollectionIT extends AbstactIT {
         try {
             json = JsonObject.readFrom(content);
         } catch (Throwable t) {
-            fail("parsing received json");
+            fail("@@@ Failed parsing received json");
         }
 
         assertNotNull("check json not null", json);
@@ -361,6 +365,8 @@ public class GetCollectionIT extends AbstactIT {
 
     @Test
     public void testGetCollectionFilter() throws Exception {
+        LOG.info("@@@ testGetCollectionFilter URI: " + docsCollectionUriFilter);
+
         Response resp = adminExecutor.execute(Request.Get(docsCollectionUriFilter));
 
         HttpResponse httpResp = resp.returnResponse();
@@ -383,7 +389,7 @@ public class GetCollectionIT extends AbstactIT {
         try {
             json = JsonObject.readFrom(content);
         } catch (Throwable t) {
-            fail("parsing received json");
+            fail("@@@ Failed parsing received json");
         }
 
         assertNotNull("check json not null", json);
