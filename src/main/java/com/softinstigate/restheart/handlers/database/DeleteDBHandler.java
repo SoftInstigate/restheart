@@ -17,13 +17,11 @@
  */
 package com.softinstigate.restheart.handlers.database;
 
-import com.mongodb.BasicDBObject;
 import com.softinstigate.restheart.db.DBDAO;
 import com.softinstigate.restheart.handlers.injectors.LocalCachesSingleton;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.RequestContext;
-import com.softinstigate.restheart.handlers.document.DocumentRepresentationFactory;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
@@ -69,13 +67,7 @@ public class DeleteDBHandler extends PipedHttpHandler {
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            if (SC == HttpStatus.SC_NO_CONTENT) {
-                exchange.setResponseCode(HttpStatus.SC_OK);
-            } else {
-                exchange.setResponseCode(SC);
-            }
-
-            DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
+            sendWarnings(SC, exchange, context);
         } else {
             exchange.setResponseCode(SC);
         }

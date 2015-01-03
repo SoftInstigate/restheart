@@ -17,9 +17,11 @@
  */
 package com.softinstigate.restheart.handlers.database;
 
-import com.softinstigate.restheart.hal.*;
 import com.mongodb.DBObject;
 import com.softinstigate.restheart.Configuration;
+import com.softinstigate.restheart.hal.HALUtils;
+import com.softinstigate.restheart.hal.Link;
+import com.softinstigate.restheart.hal.Representation;
 import static com.softinstigate.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
@@ -77,26 +79,8 @@ public class DBRepresentationFactory {
 
             rep.addProperty("_returned", count);
 
-            if (!embeddedData.isEmpty()) // embedded collections
-            {
-                embeddedData.stream().forEach((d) -> {
-                    Object _id = d.get("_id");
-
-                    if (_id != null && (_id instanceof String || _id instanceof ObjectId)) {
-                        Representation nrep = new Representation(requestPath + "/" + _id.toString());
-
-                        nrep.addProperty("_type", RequestContext.TYPE.COLLECTION.name());
-
-                        if (d.get("_etag") != null && d.get("_etag") instanceof ObjectId) {
-                            d.put("_etag", ((ObjectId) d.get("_etag")).toString()); // represent the etag as a string
-                        }
-                        nrep.addProperties(d);
-
-                        rep.addRepresentation("rh:coll", nrep);
-                    } else {
-                        logger.error("document missing string _id field", d);
-                    }
-                });
+            if (!embeddedData.isEmpty()) {
+                embeddedCollections(embeddedData, requestPath, rep);
             }
         }
 
@@ -112,8 +96,8 @@ public class DBRepresentationFactory {
         }
 
         // link templates and curies
-        if (context.isParentAccessible()) // this can happen due to mongo-mounts mapped URL
-        {
+        if (context.isParentAccessible()) {
+            // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link("rh:root", URLUtilis.getPerentPath(requestPath)));
         }
         rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
@@ -123,5 +107,26 @@ public class DBRepresentationFactory {
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
+    }
+
+    private static void embeddedCollections(List<DBObject> embeddedData, String requestPath, Representation rep) {
+        embeddedData.stream().forEach((d) -> {
+            Object _id = d.get("_id");
+
+            if (_id != null && (_id instanceof String || _id instanceof ObjectId)) {
+                Representation nrep = new Representation(requestPath + "/" + _id.toString());
+
+                nrep.addProperty("_type", RequestContext.TYPE.COLLECTION.name());
+
+                if (d.get("_etag") != null && d.get("_etag") instanceof ObjectId) {
+                    d.put("_etag", ((ObjectId) d.get("_etag")).toString()); // represent the etag as a string
+                }
+                nrep.addProperties(d);
+
+                rep.addRepresentation("rh:coll", nrep);
+            } else {
+                logger.error("document missing string _id field", d);
+            }
+        });
     }
 }

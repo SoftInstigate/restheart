@@ -18,7 +18,6 @@
 package com.softinstigate.restheart.handlers.document;
 
 import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.softinstigate.restheart.db.DocumentDAO;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
@@ -84,13 +83,7 @@ public class PatchDocumentHandler extends PipedHttpHandler {
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            if (SC == HttpStatus.SC_NO_CONTENT) {
-                exchange.setResponseCode(HttpStatus.SC_OK);
-            } else {
-                exchange.setResponseCode(SC);
-            }
-
-            DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
+            sendWarnings(SC, exchange, context);
         } else {
             exchange.setResponseCode(SC);
         }
