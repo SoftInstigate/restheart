@@ -23,16 +23,13 @@ import com.mongodb.DBObject;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.hal.metadata.InvalidMetadataException;
 import com.softinstigate.restheart.hal.metadata.Relationship;
-import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.injectors.LocalCachesSingleton;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.RequestContext;
-import com.softinstigate.restheart.handlers.document.DocumentRepresentationFactory;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import java.net.URISyntaxException;
 import org.bson.types.ObjectId;
 
 /**
@@ -95,15 +92,5 @@ public class PutCollectionHandler extends PipedHttpHandler {
 
         exchange.endExchange();
         LocalCachesSingleton.getInstance().invalidateCollection(context.getDBName(), context.getCollectionName());
-    }
-
-    private void sendWarnings(int SC, HttpServerExchange exchange, RequestContext context) throws IllegalQueryParamenterException, URISyntaxException {
-        if (SC == HttpStatus.SC_NO_CONTENT) {
-            exchange.setResponseCode(HttpStatus.SC_OK);
-        } else {
-            exchange.setResponseCode(SC);
-        }
-        
-        DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
     }
 }

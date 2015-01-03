@@ -17,19 +17,15 @@
  */
 package com.softinstigate.restheart.handlers.collection;
 
-import com.mongodb.BasicDBObject;
 import com.softinstigate.restheart.db.CollectionDAO;
-import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.injectors.LocalCachesSingleton;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.RequestContext;
-import com.softinstigate.restheart.handlers.document.DocumentRepresentationFactory;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import java.net.URISyntaxException;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,13 +75,4 @@ public class DeleteCollectionHandler extends PipedHttpHandler {
         LocalCachesSingleton.getInstance().invalidateCollection(context.getDBName(), context.getCollectionName());
     }
 
-    private void sendWarnings(int SC, HttpServerExchange exchange, RequestContext context) throws IllegalQueryParamenterException, URISyntaxException {
-        if (SC == HttpStatus.SC_NO_CONTENT) {
-            exchange.setResponseCode(HttpStatus.SC_OK);
-        } else {
-            exchange.setResponseCode(SC);
-        }
-        
-        DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
-    }
 }

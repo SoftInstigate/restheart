@@ -17,8 +17,12 @@
  */
 package com.softinstigate.restheart.handlers;
 
+import com.mongodb.BasicDBObject;
+import com.softinstigate.restheart.handlers.document.DocumentRepresentationFactory;
+import com.softinstigate.restheart.utils.HttpStatus;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import java.net.URISyntaxException;
 
 /**
  *
@@ -43,5 +47,15 @@ public abstract class PipedHttpHandler implements HttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         handleRequest(exchange, null);
+    }
+
+    protected static void sendWarnings(int SC, HttpServerExchange exchange, RequestContext context) throws IllegalQueryParamenterException, URISyntaxException {
+        if (SC == HttpStatus.SC_NO_CONTENT) {
+            exchange.setResponseCode(HttpStatus.SC_OK);
+        } else {
+            exchange.setResponseCode(SC);
+        }
+
+        DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
     }
 }
