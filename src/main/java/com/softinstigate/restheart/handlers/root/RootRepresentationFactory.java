@@ -17,9 +17,11 @@
  */
 package com.softinstigate.restheart.handlers.root;
 
-import com.softinstigate.restheart.hal.*;
 import com.mongodb.DBObject;
 import com.softinstigate.restheart.Configuration;
+import com.softinstigate.restheart.hal.HALUtils;
+import com.softinstigate.restheart.hal.Link;
+import com.softinstigate.restheart.hal.Representation;
 import static com.softinstigate.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
@@ -83,32 +85,8 @@ public class RootRepresentationFactory {
 
             rep.addProperty("_returned", count);
 
-            if (!embeddedData.isEmpty()) // embedded documents
-            {
-                embeddedData.stream().forEach((d) -> {
-                    Object _id = d.get("_id");
-
-                    if (_id != null && (_id instanceof String || _id instanceof ObjectId)) {
-                        Representation nrep;
-
-                        if (trailingSlash) {
-                            nrep = new Representation(requestPath + _id.toString());
-                        } else {
-                            nrep = new Representation(requestPath + "/" + _id.toString());
-                        }
-
-                        nrep.addProperty("_type", RequestContext.TYPE.DB.name());
-
-                        if (d.get("_etag") != null && d.get("_etag") instanceof ObjectId) {
-                            d.put("_etag", ((ObjectId) d.get("_etag")).toString()); // represent the etag as a string
-                        }
-                        nrep.addProperties(d);
-
-                        rep.addRepresentation("rh:db", nrep);
-                    } else {
-                        logger.error("db missing string _id field", d);
-                    }
-                });
+            if (!embeddedData.isEmpty()) {
+                embeddedDocuments(embeddedData, trailingSlash, requestPath, rep);
             }
         }
 
@@ -130,5 +108,32 @@ public class RootRepresentationFactory {
         ResponseHelper.injectWarnings(rep, exchange, context);
 
         return rep;
+    }
+
+    private static void embeddedDocuments(List<DBObject> embeddedData, boolean trailingSlash, String requestPath, Representation rep) {
+        embeddedData.stream().forEach((d) -> {
+            Object _id = d.get("_id");
+            
+            if (_id != null && (_id instanceof String || _id instanceof ObjectId)) {
+                Representation nrep;
+                
+                if (trailingSlash) {
+                    nrep = new Representation(requestPath + _id.toString());
+                } else {
+                    nrep = new Representation(requestPath + "/" + _id.toString());
+                }
+                
+                nrep.addProperty("_type", RequestContext.TYPE.DB.name());
+                
+                if (d.get("_etag") != null && d.get("_etag") instanceof ObjectId) {
+                    d.put("_etag", ((ObjectId) d.get("_etag")).toString()); // represent the etag as a string
+                }
+                nrep.addProperties(d);
+                
+                rep.addRepresentation("rh:db", nrep);
+            } else {
+                logger.error("db missing string _id field", d);
+            }
+        });
     }
 }

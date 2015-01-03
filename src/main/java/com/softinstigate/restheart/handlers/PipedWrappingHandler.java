@@ -17,8 +17,18 @@
  */
 package com.softinstigate.restheart.handlers;
 
+import com.softinstigate.restheart.security.AccessManager;
+import com.softinstigate.restheart.security.handlers.AccessManagerHandler;
+import com.softinstigate.restheart.security.handlers.PredicateAuthenticationConstraintHandler;
+import io.undertow.security.api.AuthenticationMechanism;
+import io.undertow.security.api.AuthenticationMode;
+import io.undertow.security.handlers.AuthenticationCallHandler;
+import io.undertow.security.handlers.AuthenticationMechanismsHandler;
+import io.undertow.security.handlers.SecurityInitialHandler;
+import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import java.util.List;
 
 /**
  *
@@ -57,4 +67,17 @@ public class PipedWrappingHandler extends PipedHttpHandler {
             }
         }
     }
+
+    protected static HttpHandler buildSecurityHandlerChain(final AccessManager accessManager, HttpHandler handler, final IdentityManager identityManager, final List<AuthenticationMechanism> mechanisms) {
+        if (accessManager != null) {
+            handler = new AccessManagerHandler(accessManager, null);
+        }
+        handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE,
+                identityManager,
+                new AuthenticationMechanismsHandler(
+                        new PredicateAuthenticationConstraintHandler(
+                                new AuthenticationCallHandler(handler), accessManager), mechanisms));
+        return handler;
+    }
+
 }

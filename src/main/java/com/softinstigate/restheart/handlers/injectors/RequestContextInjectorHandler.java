@@ -79,13 +79,15 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             try {
                 pagesize = Integer.parseInt(__pagesize.getFirst());
             } catch (NumberFormatException ex) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal pagesize paramenter, it is not a number", ex);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                        "illegal pagesize paramenter, it is not a number", ex);
                 return;
             }
         }
 
         if (pagesize < 1 || pagesize > 1000) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal page parameter, pagesize must be >= 0 and <= 1000");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                    "illegal page parameter, pagesize must be >= 0 and <= 1000");
             return;
         } else {
             rcontext.setPagesize(pagesize);
@@ -97,13 +99,15 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             try {
                 page = Integer.parseInt(__page.getFirst());
             } catch (NumberFormatException ex) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal page paramenter, it is not a number", ex);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                        "illegal page paramenter, it is not a number", ex);
                 return;
             }
         }
 
         if (page < 1) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal page paramenter, it is < 1");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                    "illegal page paramenter, it is < 1");
             return;
         } else {
             rcontext.setPage(page);
@@ -119,7 +123,8 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
         if (sort_by != null) {
             if (sort_by.stream().anyMatch(s -> s == null || s.isEmpty())) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal sort_by paramenter");
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                        "illegal sort_by paramenter");
                 return;
             }
 
@@ -132,14 +137,16 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         if (filters != null) {
             if (filters.stream().anyMatch(f -> {
                 if (f == null || f.isEmpty()) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal filter paramenter (empty)");
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                            "illegal filter paramenter (empty)");
                     return true;
                 }
 
                 try {
                     JSON.parse(f);
                 } catch (Throwable t) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal filter paramenter: " + f, t);
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                            "illegal filter paramenter: " + f, t);
                     return true;
                 }
 

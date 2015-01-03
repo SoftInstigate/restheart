@@ -56,7 +56,6 @@ public class LoggingInitializer {
         Appender<ILoggingEvent> appender = rootLogger.getAppender("STDOUT");
 
         appender.stop();
-        //rootLogger.detachAppender("STDOUT");
     }
 
     /**

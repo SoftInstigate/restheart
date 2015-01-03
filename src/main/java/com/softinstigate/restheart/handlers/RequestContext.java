@@ -35,6 +35,7 @@ import java.util.Deque;
 public class RequestContext {
 
     public enum TYPE {
+
         ERROR,
         ROOT,
         DB,
@@ -45,6 +46,7 @@ public class RequestContext {
     };
 
     public enum METHOD {
+
         GET,
         POST,
         PUT,
@@ -207,16 +209,14 @@ public class RequestContext {
      * @return true if parent of the requested resource is accessible
      */
     public final boolean isParentAccessible() {
-        if (type == TYPE.DB) {
-            return unmappedRequestUri.split("/").length > 1;
-        } else {
-            return unmappedRequestUri.split("/").length > 2;
-        }
+        return type == TYPE.DB
+                ? unmappedRequestUri.split("/").length > 1
+                : unmappedRequestUri.split("/").length > 2;
     }
 
     /**
      *
-     * @return
+     * @return type
      */
     public TYPE getType() {
         return type;
@@ -224,55 +224,40 @@ public class RequestContext {
 
     /**
      *
-     * @return
+     * @return DB Name
      */
     public String getDBName() {
-        if (pathTokens.length > 1) {
-            return pathTokens[1];
-        } else {
-            return null;
-        }
+        return getPathTokenAt(1);
     }
 
     /**
      *
-     * @return
+     * @return collection name
      */
     public String getCollectionName() {
-        if (pathTokens.length > 2) {
-            return pathTokens[2];
-        } else {
-            return null;
-        }
+        return getPathTokenAt(2);
     }
 
     /**
      *
-     * @return
+     * @return document id
      */
     public String getDocumentId() {
-        if (pathTokens.length > 3) {
-            return pathTokens[3];
-        } else {
-            return null;
-        }
+        return getPathTokenAt(3);
     }
 
     /**
      *
-     * @return
+     * @return index id
      */
     public String getIndexId() {
-        if (pathTokens.length > 4) {
-            return pathTokens[4];
-        } else {
-            return null;
-        }
+        return getPathTokenAt(4);
     }
 
     /**
      *
-     * @return @throws URISyntaxException
+     * @return URI
+     * @throws URISyntaxException
      */
     public URI getUri() throws URISyntaxException {
         return new URI(Arrays.asList(pathTokens).stream().reduce("/", (t1, t2) -> t1 + "/" + t2));
@@ -280,7 +265,7 @@ public class RequestContext {
 
     /**
      *
-     * @return
+     * @return method
      */
     public METHOD getMethod() {
         return method;
@@ -289,7 +274,7 @@ public class RequestContext {
     /**
      *
      * @param dbName
-     * @return
+     * @return isReservedResourceDb
      */
     public static boolean isReservedResourceDb(String dbName) {
         return dbName.equals("admin") || dbName.equals("local") || dbName.startsWith("system.") || dbName.startsWith("_");
@@ -298,7 +283,7 @@ public class RequestContext {
     /**
      *
      * @param collectionName
-     * @return
+     * @return isReservedResourceCollection
      */
     public static boolean isReservedResourceCollection(String collectionName) {
         return collectionName != null && (collectionName.startsWith("system.") || collectionName.startsWith("_"));
@@ -307,7 +292,7 @@ public class RequestContext {
     /**
      *
      * @param documentId
-     * @return
+     * @return isReservedResourceDocument
      */
     public static boolean isReservedResourceDocument(String documentId) {
         return documentId != null && documentId.startsWith("_") && !documentId.equals("_indexes");
@@ -315,7 +300,7 @@ public class RequestContext {
 
     /**
      *
-     * @return
+     * @return isReservedResource
      */
     public boolean isReservedResource() {
         if (type == TYPE.ROOT) {
@@ -477,5 +462,14 @@ public class RequestContext {
      */
     public String getUnmappedRequestUri() {
         return unmappedRequestUri;
+    }
+
+    /**
+     * 
+     * @param index
+     * @return pathTokens[index] if pathTokens.length > index, else null
+     */
+    private String getPathTokenAt(int index) {
+        return pathTokens.length > index ? pathTokens[index] : null;
     }
 }

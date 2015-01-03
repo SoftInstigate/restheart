@@ -106,18 +106,12 @@ public class ResponseHelper {
         if (t == null || t.getStackTrace() == null) {
             return null;
         }
-
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
-
         t.printStackTrace(pw);
-
         String st = sw.toString();
-
         st = st.replaceAll("\t", "  ");
-
         String[] lines = st.split("\n");
-
         BasicDBList list = new BasicDBList();
 
         list.addAll(Arrays.asList(lines));

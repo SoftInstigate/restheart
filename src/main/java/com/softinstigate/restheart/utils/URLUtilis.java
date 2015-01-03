@@ -104,7 +104,8 @@ public class URLUtilis {
 
         ///db/coll/?filter={"ref":{"$in":{"a","b","c"}}
         sb.append("/").append(dbName).append("/").append(collName).append("?")
-                .append("filter={").append("'").append(referenceField).append("'").append(":").append("{'$in'").append(":").append(ids).append("}}");
+                .append("filter={").append("'").append(referenceField).append("'").append(":")
+                .append("{'$in'").append(":").append(ids).append("}}");
 
         return context.mapUri(sb.toString().replaceAll(" ", ""));
     }
@@ -123,7 +124,8 @@ public class URLUtilis {
 
         ///db/coll/?filter={"ref":{"$in":{"a","b","c"}}
         sb.append("/").append(dbName).append("/").append(collName).append("?")
-                .append("filter={").append("'").append(referenceField).append("'").append(":").append(ids).append("}");
+                .append("filter={").append("'").append(referenceField).append("'")
+                .append(":").append(ids).append("}");
 
         return context.mapUri(sb.toString().replaceAll(" ", ""));
     }
@@ -142,7 +144,8 @@ public class URLUtilis {
 
         ///db/coll/?filter={'referenceField':{"$elemMatch":{'ids'}}}
         sb.append("/").append(dbName).append("/").append(collName).append("?")
-                .append("filter={'").append(referenceField).append("':{").append("'$elemMatch':{'$eq':").append(ids).append("}}}");
+                .append("filter={'").append(referenceField)
+                .append("':{").append("'$elemMatch':{'$eq':").append(ids).append("}}}");
 
         return context.mapUri(sb.toString().replaceAll(" ", ""));
     }

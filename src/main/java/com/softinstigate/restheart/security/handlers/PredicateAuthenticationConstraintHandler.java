@@ -45,11 +45,6 @@ public class PredicateAuthenticationConstraintHandler extends AuthenticationCons
     @Override
     protected boolean isAuthenticationRequired(final HttpServerExchange exchange) {
         Set<Predicate> ps = am.getAcl().get("$unauthenticated");
-
-        if (ps == null) {
-            return true;
-        } else {
-            return !ps.stream().anyMatch(p -> p.resolve(exchange));
-        }
+        return ps == null ? true : !ps.stream().anyMatch(p -> p.resolve(exchange));
     }
 }

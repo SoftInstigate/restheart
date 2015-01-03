@@ -15,8 +15,6 @@
  */
 package com.softinstigate.restheart.security.handlers;
 
-import com.softinstigate.restheart.security.handlers.SilentSecurityHandler;
-import com.softinstigate.restheart.security.handlers.ChallengingSecurityHandler;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.security.AccessManager;
@@ -29,14 +27,7 @@ import io.undertow.server.HttpServerExchange;
  */
 public class SecurityHandler extends PipedHttpHandler {
 
-    /**
-     *
-     */
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
-
-    /**
-     *
-     */
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
 
     private final SilentSecurityHandler silentHandler;

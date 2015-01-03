@@ -19,13 +19,7 @@ import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.PipedWrappingHandler;
 import com.softinstigate.restheart.security.AccessManager;
 import static com.softinstigate.restheart.security.RestheartIdentityManager.RESTHEART_REALM;
-import com.softinstigate.restheart.security.handlers.AccessManagerHandler;
-import com.softinstigate.restheart.security.handlers.PredicateAuthenticationConstraintHandler;
 import io.undertow.security.api.AuthenticationMechanism;
-import io.undertow.security.api.AuthenticationMode;
-import io.undertow.security.handlers.AuthenticationCallHandler;
-import io.undertow.security.handlers.AuthenticationMechanismsHandler;
-import io.undertow.security.handlers.SecurityInitialHandler;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpHandler;
@@ -49,22 +43,12 @@ public class ChallengingSecurityHandler extends PipedWrappingHandler {
     }
 
     private static HttpHandler getSecurityHandlerChain(final IdentityManager identityManager, final AccessManager accessManager) {
+        HttpHandler handler = null;
         if (identityManager != null) {
-            HttpHandler handler = null;
-
-            if (accessManager != null) {
-                handler = new AccessManagerHandler(accessManager, null);
-            }
-
-            handler = new AuthenticationCallHandler(handler);
-            handler = new PredicateAuthenticationConstraintHandler(handler, accessManager);
-            final List<AuthenticationMechanism> mechanisms = Collections.<AuthenticationMechanism>singletonList(new BasicAuthenticationMechanism(RESTHEART_REALM));
-            handler = new AuthenticationMechanismsHandler(handler, mechanisms);
-            handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE, identityManager, handler);
-
-            return handler;
-        } else {
-            return null;
+            final List<AuthenticationMechanism> mechanisms = Collections.<AuthenticationMechanism>singletonList(
+                    new BasicAuthenticationMechanism(RESTHEART_REALM));
+            handler = buildSecurityHandlerChain(accessManager, handler, identityManager, mechanisms);
         }
+        return handler;
     }
 }

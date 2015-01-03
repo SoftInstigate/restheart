@@ -60,7 +60,8 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
 
                 if (dbProps != null) {
                     dbProps.put("_db-props-cached", false);
-                } else if (!(context.getType() == RequestContext.TYPE.DB && context.getMethod() == RequestContext.METHOD.PUT)
+                } else if (!(context.getType() == RequestContext.TYPE.DB
+                        && context.getMethod() == RequestContext.METHOD.PUT)
                         && context.getType() != RequestContext.TYPE.ROOT) {
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "db does not exist");
                     return;
@@ -70,7 +71,8 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
             }
 
             if (dbProps == null
-                    && !(context.getType() == RequestContext.TYPE.DB && context.getMethod() == RequestContext.METHOD.PUT)
+                    && !(context.getType() == RequestContext.TYPE.DB
+                    && context.getMethod() == RequestContext.METHOD.PUT)
                     && context.getType() != RequestContext.TYPE.ROOT) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "db does not exis");
                 return;

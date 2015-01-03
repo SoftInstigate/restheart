@@ -17,9 +17,10 @@
  */
 package com.softinstigate.restheart.handlers.indexes;
 
-import com.softinstigate.restheart.hal.*;
 import com.mongodb.DBObject;
 import com.softinstigate.restheart.Configuration;
+import com.softinstigate.restheart.hal.Link;
+import com.softinstigate.restheart.hal.Representation;
 import static com.softinstigate.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
@@ -66,29 +67,14 @@ public class IndexesRepresentationFactory {
 
             rep.addProperty("_returned", count);
 
-            if (!embeddedData.isEmpty()) // embedded documents
-            {
-                embeddedData.stream().forEach((d) -> {
-                    Object _id = d.get("_id");
-
-                    if (_id != null && (_id instanceof String || _id instanceof ObjectId)) {
-                        Representation nrep = new Representation(requestPath + "/" + _id.toString());
-
-                        nrep.addProperty("_type", RequestContext.TYPE.INDEX.name());
-
-                        nrep.addProperties(d);
-
-                        rep.addRepresentation("rh:index", nrep);
-                    } else {
-                        logger.error("index missing string _id field", d);
-                    }
-                });
+            if (!embeddedData.isEmpty()) {
+                embeddedDocuments(embeddedData, requestPath, rep);
             }
         }
 
         // link templates and curies
-        if (context.isParentAccessible()) // this can happen due to mongo-mounts mapped URL
-        {
+        if (context.isParentAccessible()) {
+            // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link("rh:coll", URLUtilis.getPerentPath(requestPath)));
         }
         rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-indexes-{rel}", false), true);
@@ -97,5 +83,23 @@ public class IndexesRepresentationFactory {
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
+    }
+
+    private static void embeddedDocuments(List<DBObject> embeddedData, String requestPath, Representation rep) {
+        embeddedData.stream().forEach((d) -> {
+            Object _id = d.get("_id");
+            
+            if (_id != null && (_id instanceof String || _id instanceof ObjectId)) {
+                Representation nrep = new Representation(requestPath + "/" + _id.toString());
+                
+                nrep.addProperty("_type", RequestContext.TYPE.INDEX.name());
+                
+                nrep.addProperties(d);
+                
+                rep.addRepresentation("rh:index", nrep);
+            } else {
+                logger.error("index missing string _id field", d);
+            }
+        });
     }
 }
