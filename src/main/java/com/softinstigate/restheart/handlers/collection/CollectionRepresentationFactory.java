@@ -17,9 +17,11 @@
  */
 package com.softinstigate.restheart.handlers.collection;
 
-import com.softinstigate.restheart.hal.*;
 import com.mongodb.DBObject;
 import com.softinstigate.restheart.Configuration;
+import com.softinstigate.restheart.hal.HALUtils;
+import com.softinstigate.restheart.hal.Link;
+import com.softinstigate.restheart.hal.Representation;
 import static com.softinstigate.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
@@ -96,24 +98,8 @@ public class CollectionRepresentationFactory {
 
             rep.addProperty("_returned", count);
 
-            if (!embeddedData.isEmpty()) // embedded documents
-            {
-                for (DBObject d : embeddedData) {
-                    Object _id = d.get("_id");
-
-                    if (_id != null && (_id instanceof String || _id instanceof ObjectId)) {
-                        Representation nrep = DocumentRepresentationFactory.getDocument(requestPath + "/" + _id.toString(), exchange, context, d);
-
-                        nrep.addProperty("_type", RequestContext.TYPE.DOCUMENT.name());
-
-                        if (d.get("_etag") != null && d.get("_etag") instanceof ObjectId) {
-                            d.put("_etag", ((ObjectId) d.get("_etag")).toString()); // represent the etag as a string
-                        }
-                        rep.addRepresentation("rh:doc", nrep);
-                    } else {
-                        logger.error("collection missing string _id field", d);
-                    }
-                }
+            if (!embeddedData.isEmpty()) {
+                embeddedDocuments(embeddedData, requestPath, exchange, context, rep);
             }
         }
 
@@ -129,8 +115,8 @@ public class CollectionRepresentationFactory {
         }
 
         // link templates and curies
-        if (context.isParentAccessible()) // this can happen due to mongo-mounts mapped URL
-        {
+        if (context.isParentAccessible()) {
+            // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link("rh:db", URLUtilis.getPerentPath(requestPath)));
         }
         rep.addLink(new Link("rh:filter", requestPath + "/{?filter}", true));
@@ -143,5 +129,24 @@ public class CollectionRepresentationFactory {
         ResponseHelper.injectWarnings(rep, exchange, context);
 
         return rep;
+    }
+
+    private static void embeddedDocuments(List<DBObject> embeddedData, String requestPath, HttpServerExchange exchange, RequestContext context, Representation rep) throws IllegalQueryParamenterException {
+        for (DBObject d : embeddedData) {
+            Object _id = d.get("_id");
+            
+            if (_id != null && (_id instanceof String || _id instanceof ObjectId)) {
+                Representation nrep = DocumentRepresentationFactory.getDocument(requestPath + "/" + _id.toString(), exchange, context, d);
+                
+                nrep.addProperty("_type", RequestContext.TYPE.DOCUMENT.name());
+                
+                if (d.get("_etag") != null && d.get("_etag") instanceof ObjectId) {
+                    d.put("_etag", ((ObjectId) d.get("_etag")).toString()); // represent the etag as a string
+                }
+                rep.addRepresentation("rh:doc", nrep);
+            } else {
+                logger.error("collection missing string _id field", d);
+            }
+        }
     }
 }

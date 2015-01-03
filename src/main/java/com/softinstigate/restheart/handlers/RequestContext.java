@@ -34,73 +34,23 @@ import java.util.Deque;
  */
 public class RequestContext {
 
-    /**
-     *
-     */
     public enum TYPE {
-
-        /**
-         *
-         */
         ERROR,
-        /**
-         *
-         */
         ROOT,
-        /**
-         *
-         */
         DB,
-        /**
-         *
-         */
         COLLECTION,
-        /**
-         *
-         */
         DOCUMENT,
-        /**
-         *
-         */
         COLLECTION_INDEXES,
-        /**
-         *
-         */
         INDEX
     };
 
-    /**
-     *
-     */
     public enum METHOD {
-
-        /**
-         *
-         */
         GET,
-        /**
-         *
-         */
         POST,
-        /**
-         *
-         */
         PUT,
-        /**
-         *
-         */
         DELETE,
-        /**
-         *
-         */
         PATCH,
-        /**
-         *
-         */
         OPTIONS,
-        /**
-         *
-         */
         OTHER
     };
 
@@ -147,8 +97,6 @@ public class RequestContext {
      * whatUri = * whereUri = /data
      *
      * then the requestPath /data is rewritten to /
-     *
-     *
      *
      * @param whereUri the uri to map to
      * @param whatUri the uri to map

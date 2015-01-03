@@ -75,8 +75,8 @@ public class HALUtils {
         TreeMap<String, String> links = new TreeMap<>();
 
         if (queryString == null || queryString.isEmpty()) {
-            if (totalPages > 0 && page < totalPages) // i.e. the url contains the count paramenter and there is a next page
-            {
+            // i.e. the url contains the count paramenter and there is a next page
+            if (totalPages > 0 && page < totalPages) {
                 links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize);
             }
         } else {
@@ -86,8 +86,8 @@ public class HALUtils {
                 links.put("first", requestPath + "?pagesize=" + pagesize);
                 links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize);
 
-                if (totalPages > 0) // i.e. the url contains the count paramenter
-                {
+                // i.e. the url contains the count paramenter
+                if (totalPages > 0) {
                     if (page < totalPages) {
                         links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize);
                         links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
@@ -106,8 +106,8 @@ public class HALUtils {
                     links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
                 }
 
-                if (totalPages > 0) // i.e. the url contains the count paramenter
-                {
+                // i.e. the url contains the count paramenter
+                if (totalPages > 0) {
                     if (page < totalPages) {
                         links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
                         links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);

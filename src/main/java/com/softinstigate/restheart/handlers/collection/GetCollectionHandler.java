@@ -68,14 +68,14 @@ public class GetCollectionHandler extends PipedHttpHandler {
 
         try {
             data = CollectionDAO.getCollectionData(coll, context.getPage(), context.getPagesize(), context.getSortBy(), context.getFilter());
-        } catch (JSONParseException jpe) // the filter expression is not a valid json string
-        {
+        } catch (JSONParseException jpe) {
+            // the filter expression is not a valid json string
             logger.error("invalid filter expression {}", context.getFilter(), jpe);
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", jpe);
             return;
         } catch (MongoException me) {
-            if (me.getMessage().matches(".*Can't canonicalize query.*")) // error with the filter expression during query execution
-            {
+            if (me.getMessage().matches(".*Can't canonicalize query.*")) {
+                // error with the filter expression during query execution
                 logger.error("invalid filter expression {}", context.getFilter(), me);
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", me);
                 return;
@@ -84,8 +84,8 @@ public class GetCollectionHandler extends PipedHttpHandler {
             }
         }
 
-        if (exchange.isComplete()) // if an error occured getting data, the exchange is already closed
-        {
+        if (exchange.isComplete()) {
+            // if an error occured getting data, the exchange is already closed
             return;
         }
 
@@ -102,7 +102,6 @@ public class GetCollectionHandler extends PipedHttpHandler {
             exchange.endExchange();
         } catch (IllegalQueryParamenterException ex) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
-            return;
         }
     }
 }

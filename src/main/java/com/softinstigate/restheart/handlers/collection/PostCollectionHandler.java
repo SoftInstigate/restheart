@@ -21,12 +21,14 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.softinstigate.restheart.db.DocumentDAO;
+import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
 import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.handlers.document.DocumentRepresentationFactory;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.RequestHelper;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import java.net.URISyntaxException;
 import org.bson.types.ObjectId;
 
 /**
@@ -71,19 +73,22 @@ public class PostCollectionHandler extends PutCollectionHandler {
         int SC = DocumentDAO.upsertDocumentPost(exchange, context.getDBName(), context.getCollectionName(), content, etag);
 
         // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings()
-                != null && !context.getWarnings().isEmpty()) {
-            if (SC == HttpStatus.SC_NO_CONTENT) {
-                exchange.setResponseCode(HttpStatus.SC_OK);
-            } else {
-                exchange.setResponseCode(SC);
-            }
-
-            DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
+        if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
+            sendWarnings(SC, exchange, context);
         } else {
             exchange.setResponseCode(SC);
         }
 
         exchange.endExchange();
+    }
+
+    private void sendWarnings(int SC, HttpServerExchange exchange, RequestContext context) throws URISyntaxException, IllegalQueryParamenterException {
+        if (SC == HttpStatus.SC_NO_CONTENT) {
+            exchange.setResponseCode(HttpStatus.SC_OK);
+        } else {
+            exchange.setResponseCode(SC);
+        }
+        
+        DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
     }
 }

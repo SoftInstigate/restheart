@@ -26,15 +26,8 @@ import io.undertow.server.HttpServerExchange;
  */
 public abstract class PipedHttpHandler implements HttpHandler {
 
-    /**
-     *
-     */
     protected final PipedHttpHandler next;
 
-    /**
-     *
-     * @param next
-     */
     public PipedHttpHandler(PipedHttpHandler next) {
         this.next = next;
     }

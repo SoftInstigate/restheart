@@ -45,7 +45,6 @@ public class GzipEncodingHandler extends EncodingHandler {
      */
     public GzipEncodingHandler(HttpHandler next, boolean forceCompression) {
         super(next, new ContentEncodingRepository().addEncodingHandler("gzip", new GzipEncodingProvider(), 50));
-
         this.forceCompression = forceCompression;
     }
 

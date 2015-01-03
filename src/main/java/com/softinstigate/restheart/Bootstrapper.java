@@ -18,7 +18,6 @@
 package com.softinstigate.restheart;
 
 import com.mongodb.MongoClient;
-import com.mongodb.MongoException;
 import static com.softinstigate.restheart.Configuration.RESTHEART_VERSION;
 import com.softinstigate.restheart.db.PropsFixer;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;

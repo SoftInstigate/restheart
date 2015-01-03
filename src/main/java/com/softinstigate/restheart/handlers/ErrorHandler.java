@@ -33,7 +33,7 @@ public class ErrorHandler implements HttpHandler {
 
     private final HttpHandler next;
 
-    private Logger logger = LoggerFactory.getLogger(ErrorHandler.class);
+    private final Logger logger = LoggerFactory.getLogger(ErrorHandler.class);
 
     /**
      * Creates a new instance of ErrorHandler
