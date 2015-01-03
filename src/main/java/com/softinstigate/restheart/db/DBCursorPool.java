@@ -100,12 +100,6 @@ public class DBCursorPool {
         return ret;
     }
 
-    /*
-    public void release(DBCursorPoolEntryKey key, DBCursor cursor) {
-        cache.put(key, cursor);
-        LOGGER.debug("released cursor {} to the pool.", key);
-    }*/
-
     public String stats() {
         return cache.stats().toString();
     }
