@@ -16,6 +16,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <checkstyle.file.path>checkstyle-checker.xml</checkstyle.file.path>
     </properties>
     
     <prerequisites>
@@ -264,6 +265,22 @@
                 <artifactId>maven-project-info-reports-plugin</artifactId>
                 <version>2.7</version>
             </plugin>
+            
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>2.13</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>6.1.1</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <configLocation>${checkstyle.file.path}</configLocation>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -301,7 +318,7 @@
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>2.13</version>
                 <configuration>
-                    <configLocation>checkstyle-checker.xml</configLocation>
+                    <configLocation>${checkstyle.file.path}</configLocation>
                 </configuration>
                 <reportSets>
                     <reportSet>
