@@ -17,7 +17,7 @@
  */
 package com.softinstigate.restheart.handlers.applicationlogic;
 
-import com.softinstigate.restheart.handlers.*;
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import java.util.Map;
 
 /**
