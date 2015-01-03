@@ -85,8 +85,9 @@ public class GetDocumentHandler extends PipedHttpHandler {
 
             document.put("_lastupdated_on", Instant.ofEpochSecond(_etag.getTimestamp()).toString());
 
-            // in case the request contains the IF_NONE_MATCH header with the current etag value, just return 304 NOT_MODIFIED code
-            if (false && RequestHelper.checkReadEtag(exchange, etag.toString())) {
+            // in case the request contains the IF_NONE_MATCH header with the current etag value,
+            // just return 304 NOT_MODIFIED code
+            if (RequestHelper.checkReadEtag(exchange, etag.toString())) {
                 ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_MODIFIED);
                 return;
             }
