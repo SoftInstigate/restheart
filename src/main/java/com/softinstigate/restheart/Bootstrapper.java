@@ -57,6 +57,7 @@ import com.softinstigate.restheart.handlers.injectors.BodyInjectorHandler;
 import com.softinstigate.restheart.handlers.metadata.MetadataEnforcerHandler;
 import com.softinstigate.restheart.security.handlers.SecurityHandler;
 import com.softinstigate.restheart.security.handlers.CORSHandler;
+import com.sun.akuma.Daemon;
 import static io.undertow.Handlers.path;
 import io.undertow.Undertow;
 import io.undertow.security.idm.IdentityManager;
@@ -88,6 +89,7 @@ import io.undertow.util.HttpString;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.FileSystems;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -115,7 +117,35 @@ public final class Bootstrapper {
      * @param args command line arguments
      */
     public static void main(final String[] args) {
-        startServer(args);
+        configuration = getConfiguration(args);
+
+        Daemon d = new Daemon.WithoutChdir();
+
+        if (!d.isDaemonized()) {
+            if (!shouldDemonize(args)) {
+                LOGGER.info("starting RESTHeart ********************************************");
+            } else {
+                LOGGER.info("starting RESTHeart ********************************************");
+                LOGGER.info("stopping logging to console ");
+                LOGGER.info("logging to {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
+                LOGGER.info("RESTHeart forked **********************************************");
+            }
+        } 
+        
+        initLogging(args, d);
+        
+        if (d.isDaemonized()) {
+            LOGGER.info("starting forked RESTHeart *************************************");
+            
+            try {
+                d.init("/var/run/restheart.pid");
+            } catch (Exception ex) {
+                LOGGER.error("error writing pid file to {}", "/var/run/restheart.pid", ex);
+            }
+        }
+
+        demonizeInCase(args, d);
+        startServer(d);
     }
 
     /**
@@ -124,7 +154,8 @@ public final class Bootstrapper {
      * @param confFilePath the path of the configuration file
      */
     public static void startup(final String confFilePath) {
-        startServer(new String[]{confFilePath});
+        configuration = getConfiguration(new String[]{confFilePath});
+        startServer(null);
     }
 
     /**
@@ -134,20 +165,76 @@ public final class Bootstrapper {
         stopServer();
     }
 
-    private static void startServer(final String[] args) {
-        if (args == null || args.length < 1) {
-            configuration = new Configuration();
-        } else {
-            configuration = new Configuration(args[0]);
+    private static Configuration getConfiguration(String[] args) {
+        if (args != null) {
+            for (String arg : args) {
+                if (!arg.equals("--fork")) {
+                    configuration = new Configuration(arg);
+                    break;
+                }
+            }
         }
+
+        if (configuration == null) {
+            configuration = new Configuration();
+        }
+
+        return configuration;
+    }
+
+    private static void initLogging(final String[] args, final Daemon d) {
         LoggingInitializer.setLogLevel(configuration.getLogLevel());
 
-        if (configuration.isLogToFile()) {
+        if (d != null && d.isDaemonized()) {
+            LoggingInitializer.stopConsoleLogging();
             LoggingInitializer.startFileLogging(configuration.getLogFilePath());
+        } else if (!shouldDemonize(args)) {
+            if (configuration.isLogToFile()) {
+                LOGGER.info("logging to {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
+            }
+
+            if (!configuration.isLogToConsole()) {
+                LOGGER.info("stopping logging to console ");
+                LOGGER.info("***************************************************************");
+                LoggingInitializer.stopConsoleLogging();
+            } else {
+                LOGGER.info("logging to console with level {}", configuration.getLogLevel());
+            }
+        }
+    }
+
+    private static boolean shouldDemonize(final String[] args) {
+        for (String arg : args) {
+            if (arg.equals("--fork")) {
+                return true;
+            }
         }
 
-        LOGGER.info("starting RESTHeart ********************************************");
+        return false;
+    }
 
+    private static void demonizeInCase(final String[] args, Daemon d) {
+        if (d.isDaemonized() || args == null || args.length < 1) {
+            return;
+        }
+
+        if (shouldDemonize(args)) {
+            // Daemon only works on POSIX OSes
+            final boolean isPosix = FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
+            if (isPosix) {
+                try {
+                    d.daemonize();
+                    System.exit(0);
+                } catch (Exception ex) {
+                    LOGGER.warn("unable to fork process. forking is only supported on Linux (x86, amd64), Solaris (x86, amd64, sparc, sparcv9) and Mac OS X", ex);
+                }
+            } else {
+                LOGGER.info("unable to fork process, this is only supported on POSIX compliant OSes");
+            }
+        }
+    }
+
+    private static void startServer(Daemon d) {
         LOGGER.info("RESTHeart version {}", RESTHEART_VERSION);
 
         String mongoHosts = configuration.getMongoServers().stream()
@@ -180,17 +267,6 @@ public final class Bootstrapper {
                 stopServer();
             }
         });
-
-        if (configuration.isLogToFile()) {
-            LOGGER.info("logging to {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
-        }
-
-        if (!configuration.isLogToConsole()) {
-            LOGGER.info("stopping logging to console ");
-            LoggingInitializer.stopConsoleLogging();
-        } else {
-            LOGGER.info("logging to console with level {}", configuration.getLogLevel());
-        }
 
         LOGGER.info("RESTHeart started **********************************************");
     }
@@ -254,14 +330,7 @@ public final class Bootstrapper {
             try {
                 Object idm = Class.forName(configuration.getIdmImpl()).getConstructor(Map.class).newInstance(configuration.getIdmArgs());
                 identityManager = (IdentityManager) idm;
-            } catch (ClassCastException
-                    | NoSuchMethodException
-                    | SecurityException
-                    | ClassNotFoundException
-                    | IllegalArgumentException
-                    | InstantiationException
-                    | IllegalAccessException
-                    | InvocationTargetException ex) {
+            } catch (ClassCastException | NoSuchMethodException | SecurityException | ClassNotFoundException | IllegalArgumentException | InstantiationException | IllegalAccessException | InvocationTargetException ex) {
                 LOGGER.error("error configuring idm implementation {}", configuration.getIdmImpl(), ex);
                 System.exit(-3);
             }
@@ -279,14 +348,7 @@ public final class Bootstrapper {
             try {
                 Object am = Class.forName(configuration.getAmImpl()).getConstructor(Map.class).newInstance(configuration.getAmArgs());
                 accessManager = (AccessManager) am;
-            } catch (ClassCastException
-                    | NoSuchMethodException
-                    | SecurityException
-                    | ClassNotFoundException
-                    | IllegalArgumentException
-                    | InstantiationException
-                    | IllegalAccessException
-                    | InvocationTargetException ex) {
+            } catch (ClassCastException | NoSuchMethodException | SecurityException | ClassNotFoundException | IllegalArgumentException | InstantiationException | IllegalAccessException | InvocationTargetException ex) {
                 LOGGER.error("error configuring acess manager implementation {}", configuration.getAmImpl(), ex);
                 System.exit(-3);
             }
@@ -323,11 +385,7 @@ public final class Bootstrapper {
                     sslContext.init(kmf.getKeyManagers(), null, null);
                 }
             }
-        } catch (KeyManagementException
-                | NoSuchAlgorithmException
-                | KeyStoreException
-                | CertificateException
-                | UnrecoverableKeyException ex) {
+        } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException ex) {
             LOGGER.error("couldn't start RESTHeart, error with specified keystore. exiting..", ex);
             System.exit(-1);
         } catch (FileNotFoundException ex) {
@@ -414,7 +472,7 @@ public final class Bootstrapper {
 
             paths.addPrefixPath(url,
                     new CORSHandler(
-                            new RequestContextInjectorHandler(url, db, 
+                            new RequestContextInjectorHandler(url, db,
                                     new OptionsHandler(
                                             new SecurityHandler(coreHanlderChain, identityManager, accessManager)))));
 

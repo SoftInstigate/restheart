@@ -586,7 +586,7 @@ public class Configuration {
 
     private static List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key, final List<Map<String, Object>> defaultValue) {
         if (conf == null) {
-            LOGGER.warn("parameters group {} not specified in the configuration file. using its default value {}", key, defaultValue);
+            LOGGER.debug("parameters group {} not specified in the configuration file. using its default value {}", key, defaultValue);
 
             return defaultValue;
         }
@@ -596,14 +596,14 @@ public class Configuration {
         if (o instanceof List) {
             return (List<Map<String, Object>>) o;
         } else {
-            LOGGER.warn("parameters group {} not specified in the configuration file, using its default value {}", key, defaultValue);
+            LOGGER.debug("parameters group {} not specified in the configuration file, using its default value {}", key, defaultValue);
             return defaultValue;
         }
     }
 
     private static Map<String, Object> getAsMap(final Map<String, Object> conf, final String key) {
         if (conf == null) {
-            LOGGER.warn("parameters group {} not specified in the configuration file.", key);
+            LOGGER.debug("parameters group {} not specified in the configuration file.", key);
             return null;
         }
 
@@ -612,14 +612,14 @@ public class Configuration {
         if (o instanceof Map) {
             return (Map<String, Object>) o;
         } else {
-            LOGGER.warn("parameters group {} not specified in the configuration file.", key);
+            LOGGER.debug("parameters group {} not specified in the configuration file.", key);
             return null;
         }
     }
 
     private static Boolean getAsBooleanOrDefault(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
         if (conf == null) {
-            LOGGER.error("tried to get paramenter {} from a null configuration map. using its default value {}", key, defaultValue);
+            LOGGER.warn("tried to get paramenter {} from a null configuration map. using its default value {}", key, defaultValue);
             return defaultValue;
         }
 
@@ -628,14 +628,14 @@ public class Configuration {
         if (o == null) {
             if (defaultValue != null) // if default value is null there is no default value actually
             {
-                LOGGER.info("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
+                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
             }
             return defaultValue;
         } else if (o instanceof Boolean) {
             LOGGER.debug("paramenter {} set to {}", key, o);
             return (Boolean) o;
         } else {
-            LOGGER.info("wrong value for parameter {}: {}. using its default value {}", key, o, defaultValue);
+            LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, o, defaultValue);
             return defaultValue;
         }
     }
@@ -645,14 +645,14 @@ public class Configuration {
         if (conf == null || conf.get(key) == null) {
             if (defaultValue != null) // if default value is null there is no default value actually
             {
-                LOGGER.info("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
+                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
             }
             return defaultValue;
         } else if (conf.get(key) instanceof String) {
             LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
             return (String) conf.get(key);
         } else {
-            LOGGER.info("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
+            LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
             return defaultValue;
         }
     }
@@ -661,14 +661,14 @@ public class Configuration {
         if (conf == null || conf.get(key) == null) {
             if (defaultValue != null) // if default value is null there is no default value actually
             {
-                LOGGER.info("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
+                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
             }
             return defaultValue;
         } else if (conf.get(key) instanceof Integer) {
             LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
             return (Integer) conf.get(key);
         } else {
-            LOGGER.info("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
+            LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
             return defaultValue;
         }
     }
@@ -677,7 +677,7 @@ public class Configuration {
         if (conf == null || conf.get(key) == null) {
             if (defaultValue != null) // if default value is null there is no default value actually
             {
-                LOGGER.info("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
+                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
             }
             return defaultValue;
         } else if (conf.get(key) instanceof Number) {
@@ -685,11 +685,11 @@ public class Configuration {
             try {
                 return Long.parseLong(conf.get(key).toString());
             } catch (NumberFormatException nfe) {
-                LOGGER.info("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
+                LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
                 return defaultValue;
             }
         } else {
-            LOGGER.info("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
+            LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
             return defaultValue;
         }
     }
