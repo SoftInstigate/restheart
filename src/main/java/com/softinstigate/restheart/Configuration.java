@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -142,12 +143,12 @@ public class Configuration {
     /**
      * default am implementation class.
      */
-    public static final String DEFAULT_AM_IMPLEMENTATION_CLASS = "com.softinstigate.restheart.security.impl.SimpleAccessManager";
+    public static final String DEFAULT_AM_IMPLEMENTATION_CLASS = null;
 
     /**
      * default idm implementation class.
      */
-    public static final String DEFAULT_IDM_IMPLEMENTATION_CLASS = "com.softinstigate.restheart.security.impl.SimpleFileIdentityManager";
+    public static final String DEFAULT_IDM_IMPLEMENTATION_CLASS = null;
 
     /**
      * the key for the local-cache-enabled property.
@@ -479,7 +480,7 @@ public class Configuration {
      *
      * @param confFilePath the path of the configuration file
      */
-    public Configuration(final String confFilePath) {
+    public Configuration(final Path confFilePath) {
         Yaml yaml = new Yaml();
 
         Map<String, Object> conf = null;
@@ -487,14 +488,17 @@ public class Configuration {
         FileInputStream fis = null;
 
         try {
-            fis = new FileInputStream(new File(confFilePath));
+            fis = new FileInputStream(confFilePath.toFile());
             conf = (Map<String, Object>) yaml.load(fis);
         } catch (FileNotFoundException fnef) {
-            LOGGER.error("configuration file not found. starting with default parameters.");
-            conf = null;
+            LOGGER.error("configuration file not found, exiting.");
+            Bootstrapper.shutdown();
+            System.exit(-2);
         } catch (Throwable t) {
-            LOGGER.error("wrong configuration file format. starting with default parameters.", t);
-            conf = null;
+            
+            LOGGER.error("wrong configuration file format, exiting.", t);
+            Bootstrapper.shutdown();
+            System.exit(-3);
         } finally {
             if (fis != null) {
                 try {
@@ -555,7 +559,7 @@ public class Configuration {
         logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH_KEY,
                 URLUtilis.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
                 .concat(File.separator + "restheart.log"));
-        String _logLevel = getAsStringOrDefault(conf, LOG_LEVEL_KEY, "WARN");
+        String _logLevel = getAsStringOrDefault(conf, LOG_LEVEL_KEY, "INFO");
         logToConsole = getAsBooleanOrDefault(conf, ENABLE_LOG_CONSOLE_KEY, true);
         logToFile = getAsBooleanOrDefault(conf, ENABLE_LOG_FILE_KEY, true);
 
@@ -564,8 +568,8 @@ public class Configuration {
         try {
             level = Level.valueOf(_logLevel);
         } catch (Exception e) {
-            LOGGER.info("wrong value for parameter {}: {}. using its default value {}", "log-level", _logLevel, "WARN");
-            level = Level.WARN;
+            LOGGER.info("wrong value for parameter {}: {}. using its default value {}", "log-level", _logLevel, "INFO");
+            level = Level.INFO;
         }
 
         logLevel = level;
@@ -619,7 +623,7 @@ public class Configuration {
 
     private static Boolean getAsBooleanOrDefault(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
         if (conf == null) {
-            LOGGER.warn("tried to get paramenter {} from a null configuration map. using its default value {}", key, defaultValue);
+            LOGGER.debug("tried to get paramenter {} from a null configuration map. using its default value {}", key, defaultValue);
             return defaultValue;
         }
 

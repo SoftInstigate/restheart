@@ -53,15 +53,13 @@ public class SimpleFileIdentityManager implements IdentityManager {
      */
     public SimpleFileIdentityManager(Map<String, Object> arguments) {
         if (arguments == null) {
-            logger.error("missing required argument conf-file");
-            throw new IllegalArgumentException("\"missing required arguments conf-file");
+            throw new IllegalArgumentException("missing required arguments conf-file");
         }
 
         Object _confFilePath = arguments.getOrDefault("conf-file", "security.yml");
 
         if (_confFilePath == null || !(_confFilePath instanceof String)) {
-            logger.error("missing required argument conf-file");
-            throw new IllegalArgumentException("\"missing required arguments conf-file");
+            throw new IllegalArgumentException("missing required arguments conf-file");
         }
 
         String confFilePath = (String) _confFilePath;
@@ -81,10 +79,8 @@ public class SimpleFileIdentityManager implements IdentityManager {
             fis = new FileInputStream(new File(confFilePath));
             init((Map<String, Object>) new Yaml().load(fis));
         } catch (FileNotFoundException fnef) {
-            logger.error("configuration file not found.", fnef);
             throw new IllegalArgumentException("configuration file not found.", fnef);
         } catch (Throwable t) {
-            logger.error("wrong configuration file format.", t);
             throw new IllegalArgumentException("wrong configuration file format.", t);
         } finally {
             if (fis != null) {
@@ -101,7 +97,6 @@ public class SimpleFileIdentityManager implements IdentityManager {
         Object _users = conf.get("users");
 
         if (_users == null || !(_users instanceof List)) {
-            logger.error("wrong configuration file format.");
             throw new IllegalArgumentException("wrong configuration file format. missing mandatory users section");
         }
 

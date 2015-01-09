@@ -57,6 +57,8 @@ import com.softinstigate.restheart.handlers.injectors.BodyInjectorHandler;
 import com.softinstigate.restheart.handlers.metadata.MetadataEnforcerHandler;
 import com.softinstigate.restheart.security.handlers.SecurityHandler;
 import com.softinstigate.restheart.security.handlers.CORSHandler;
+import com.softinstigate.restheart.utils.FileUtils;
+import com.softinstigate.restheart.utils.OSChecker;
 import com.sun.akuma.Daemon;
 import static io.undertow.Handlers.path;
 import io.undertow.Undertow;
@@ -90,6 +92,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -107,6 +111,7 @@ public final class Bootstrapper {
     private static Undertow server;
     private static GracefulShutdownHandler hanldersPipe = null;
     private static Configuration configuration;
+    private static Path pidFilePath;
 
     private Bootstrapper() {
     }
@@ -117,35 +122,71 @@ public final class Bootstrapper {
      * @param args command line arguments
      */
     public static void main(final String[] args) {
-        configuration = getConfiguration(args);
+        if (!OSChecker.isWindows()) {
+            
+            // pid file name include the hash of the configuration file so that for each configuration we can have just one instance running
+            // in we would proceed we get a BindException for same port being already used by the running instance
+            pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsoultePathHash(FileUtils.getConfigurationFilePath(args)));
 
-        Daemon d = new Daemon.WithoutChdir();
+            if (Files.exists(pidFilePath)) {
+                LOGGER.info("starting RESTHeart ********************************************");
+                LOGGER.error("this instance is already running, exiting. {}", FileUtils.getConfigurationFilePath(args) == null ? "No configuration file specified" : "Configuration file is " + FileUtils.getConfigurationFilePath(args));
+                LOGGER.error("running instance pid is {}", FileUtils.getPidFromFile(pidFilePath));
+                LOGGER.error("if it is not actually running, remove the pid file {} and retry", pidFilePath);
+                LOGGER.info("RESTHeart stopped *********************************************");
+                
+                // do not stopServer() here, since this might delete other running instace pid file and tmp resources
+                System.exit(-1);
+            }
+        }
 
-        if (!d.isDaemonized()) {
-            if (!shouldDemonize(args)) {
-                LOGGER.info("starting RESTHeart ********************************************");
-            } else {
-                LOGGER.info("starting RESTHeart ********************************************");
-                LOGGER.info("stopping logging to console ");
+        Daemon d;
+
+        if (!OSChecker.isWindows()) {
+            d = new Daemon.WithoutChdir();
+        } else {
+            d = null;
+        }
+
+        if (d == null || !d.isDaemonized()) {
+            LOGGER.info("starting RESTHeart ********************************************");
+            configuration = FileUtils.getConfiguration(args);
+
+            if (shouldDemonize(args) && OSChecker.isWindows()) {
+                LOGGER.warn("fork is not supported on Windows");
+            }
+            
+            if (d != null && shouldDemonize(args)) {
+                LOGGER.info("stopping logging to console");
                 LOGGER.info("logging to {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
                 LOGGER.info("RESTHeart forked **********************************************");
+            } else {
+                LOGGER.info("pid file {}", pidFilePath);
+                FileUtils.createPidFile(pidFilePath);
             }
-        } 
-        
-        initLogging(args, d);
-        
-        if (d.isDaemonized()) {
-            LOGGER.info("starting forked RESTHeart *************************************");
-            
+
+            initLogging(args, d);
+        }
+
+        if (d != null && d.isDaemonized()) {
+            configuration = FileUtils.getConfiguration(args);
+
+            pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsoultePathHash(FileUtils.getConfigurationFilePath(args)));
+
+            initLogging(args, d);
+
+            LOGGER.info("forking RESTHeart ********************************************");
+
             try {
-                d.init("/var/run/restheart.pid");
+                LOGGER.info("pid file {}", pidFilePath);
+                d.init(pidFilePath.toString());
             } catch (Exception ex) {
-                LOGGER.error("error writing pid file to {}", "/var/run/restheart.pid", ex);
+                LOGGER.error("error writing pid file to {}", pidFilePath, ex);
             }
         }
 
         demonizeInCase(args, d);
-        startServer(d);
+        startServer();
     }
 
     /**
@@ -154,8 +195,8 @@ public final class Bootstrapper {
      * @param confFilePath the path of the configuration file
      */
     public static void startup(final String confFilePath) {
-        configuration = getConfiguration(new String[]{confFilePath});
-        startServer(null);
+        configuration = FileUtils.getConfiguration(new String[]{confFilePath});
+        startServer();
     }
 
     /**
@@ -163,23 +204,6 @@ public final class Bootstrapper {
      */
     public static void shutdown() {
         stopServer();
-    }
-
-    private static Configuration getConfiguration(String[] args) {
-        if (args != null) {
-            for (String arg : args) {
-                if (!arg.equals("--fork")) {
-                    configuration = new Configuration(arg);
-                    break;
-                }
-            }
-        }
-
-        if (configuration == null) {
-            configuration = new Configuration();
-        }
-
-        return configuration;
     }
 
     private static void initLogging(final String[] args, final Daemon d) {
@@ -214,7 +238,7 @@ public final class Bootstrapper {
     }
 
     private static void demonizeInCase(final String[] args, Daemon d) {
-        if (d.isDaemonized() || args == null || args.length < 1) {
+        if (d == null || d.isDaemonized() || args == null || args.length < 1) {
             return;
         }
 
@@ -224,6 +248,7 @@ public final class Bootstrapper {
             if (isPosix) {
                 try {
                     d.daemonize();
+                    stopServer(true);
                     System.exit(0);
                 } catch (Exception ex) {
                     LOGGER.warn("unable to fork process. forking is only supported on Linux (x86, amd64), Solaris (x86, amd64, sparc, sparcv9) and Mac OS X", ex);
@@ -234,7 +259,7 @@ public final class Bootstrapper {
         }
     }
 
-    private static void startServer(Daemon d) {
+    private static void startServer() {
         LOGGER.info("RESTHeart version {}", RESTHEART_VERSION);
 
         String mongoHosts = configuration.getMongoServers().stream()
@@ -251,6 +276,7 @@ public final class Bootstrapper {
             PropsFixer.fixAllMissingProps();
         } catch (Throwable t) {
             LOGGER.error("error connecting to mongodb. exiting..", t);
+            stopServer();
             System.exit(-1);
         }
 
@@ -258,6 +284,7 @@ public final class Bootstrapper {
             startCoreSystem();
         } catch (Throwable t) {
             LOGGER.error("error starting RESTHeart. exiting..", t);
+            stopServer();
             System.exit(-2);
         }
 
@@ -272,14 +299,24 @@ public final class Bootstrapper {
     }
 
     private static void stopServer() {
-        LOGGER.info("stopping RESTHeart");
-        LOGGER.info("waiting for pending request to complete (up to 1 minute)");
+        stopServer(false);
+    }
 
-        try {
-            hanldersPipe.shutdown();
-            hanldersPipe.awaitShutdown(60 * 1000); // up to 1 minute
-        } catch (InterruptedException ie) {
-            LOGGER.error("error while waiting for pending request to complete", ie);
+    private static void stopServer(boolean silent) {
+        if (!silent) {
+            LOGGER.info("stopping RESTHeart");
+        }
+        if (!silent) {
+            LOGGER.info("waiting for pending request to complete (up to 1 minute)");
+        }
+
+        if (hanldersPipe != null) {
+            try {
+                hanldersPipe.shutdown();
+                hanldersPipe.awaitShutdown(60 * 1000); // up to 1 minute
+            } catch (InterruptedException ie) {
+                LOGGER.error("error while waiting for pending request to complete", ie);
+            }
         }
 
         if (server != null) {
@@ -291,11 +328,13 @@ public final class Bootstrapper {
         }
 
         try {
-            MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-            client.fsync(false);
-            client.close();
+            if (MongoDBClientSingleton.isInitialized()) {
+                MongoClient client = MongoDBClientSingleton.getInstance().getClient();
+                client.fsync(false);
+                client.close();
+            }
         } catch (Throwable t) {
-            LOGGER.error("error flushing and clonsing the mongo cliet", t);
+            LOGGER.error("error flushing and clonsing the mongo client", t);
         }
 
         TMP_EXTRACTED_FILES.keySet().forEach(k -> {
@@ -307,17 +346,25 @@ public final class Bootstrapper {
         }
         );
 
-        LOGGER.info("RESTHeart stopped");
+        if (pidFilePath != null) {
+            pidFilePath.toFile().delete();
+        }
+
+        if (!silent) {
+            LOGGER.info("RESTHeart stopped *********************************************");
+        }
     }
 
     private static void startCoreSystem() {
         if (configuration == null) {
             LOGGER.error("no configuration found. exiting..");
+            stopServer();
             System.exit(-1);
         }
 
         if (!configuration.isHttpsListener() && !configuration.isHttpListener() && !configuration.isAjpListener()) {
             LOGGER.error("no listener specified. exiting..");
+            stopServer();
             System.exit(-1);
         }
 
@@ -332,6 +379,7 @@ public final class Bootstrapper {
                 identityManager = (IdentityManager) idm;
             } catch (ClassCastException | NoSuchMethodException | SecurityException | ClassNotFoundException | IllegalArgumentException | InstantiationException | IllegalAccessException | InvocationTargetException ex) {
                 LOGGER.error("error configuring idm implementation {}", configuration.getIdmImpl(), ex);
+                stopServer();
                 System.exit(-3);
             }
         }
@@ -350,6 +398,7 @@ public final class Bootstrapper {
                 accessManager = (AccessManager) am;
             } catch (ClassCastException | NoSuchMethodException | SecurityException | ClassNotFoundException | IllegalArgumentException | InstantiationException | IllegalAccessException | InvocationTargetException ex) {
                 LOGGER.error("error configuring acess manager implementation {}", configuration.getAmImpl(), ex);
+                stopServer();
                 System.exit(-3);
             }
         }
@@ -387,12 +436,15 @@ public final class Bootstrapper {
             }
         } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException ex) {
             LOGGER.error("couldn't start RESTHeart, error with specified keystore. exiting..", ex);
+            stopServer();
             System.exit(-1);
         } catch (FileNotFoundException ex) {
             LOGGER.error("couldn't start RESTHeart, keystore file not found. exiting..", ex);
+            stopServer();
             System.exit(-1);
         } catch (IOException ex) {
             LOGGER.error("couldn't start RESTHeart, error reading the keystore file. exiting..", ex);
+            stopServer();
             System.exit(-1);
         }
 

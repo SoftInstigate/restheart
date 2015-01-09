@@ -76,7 +76,7 @@ public class MongoDBClientSingleton {
     }
 
     private void setup() throws UnknownHostException {
-        if (initialized) {
+        if (isInitialized()) {
             List<ServerAddress> servers = new ArrayList<>();
             List<MongoCredential> credentials = new ArrayList<>();
 
@@ -130,5 +130,12 @@ public class MongoDBClientSingleton {
         }
 
         return this.mongoClient;
+    }
+
+    /**
+     * @return the initialized
+     */
+    public static boolean isInitialized() {
+        return initialized;
     }
 }
