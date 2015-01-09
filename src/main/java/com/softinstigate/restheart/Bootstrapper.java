@@ -123,7 +123,7 @@ public final class Bootstrapper {
      */
     public static void main(final String[] args) {
         if (!OSChecker.isWindows()) {
-            
+
             // pid file name include the hash of the configuration file so that for each configuration we can have just one instance running
             // in we would proceed we get a BindException for same port being already used by the running instance
             pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsoultePathHash(FileUtils.getConfigurationFilePath(args)));
@@ -134,40 +134,47 @@ public final class Bootstrapper {
                 LOGGER.error("running instance pid is {}", FileUtils.getPidFromFile(pidFilePath));
                 LOGGER.error("if it is not actually running, remove the pid file {} and retry", pidFilePath);
                 LOGGER.info("RESTHeart stopped *********************************************");
-                
+
                 // do not stopServer() here, since this might delete other running instace pid file and tmp resources
                 System.exit(-1);
             }
         }
 
-        Daemon d;
-
+        Daemon d = null;
+        
         if (!OSChecker.isWindows()) {
             d = new Daemon.WithoutChdir();
         } else {
-            d = null;
-        }
-
-        if (d == null || !d.isDaemonized()) {
             LOGGER.info("starting RESTHeart ********************************************");
             configuration = FileUtils.getConfiguration(args);
 
             if (shouldDemonize(args) && OSChecker.isWindows()) {
                 LOGGER.warn("fork is not supported on Windows");
             }
-            
-            if (d != null && shouldDemonize(args)) {
-                LOGGER.info("stopping logging to console");
-                LOGGER.info("logging to {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
-                LOGGER.info("RESTHeart forked **********************************************");
-            } else {
-                LOGGER.info("pid file {}", pidFilePath);
-                FileUtils.createPidFile(pidFilePath);
-            }
 
             initLogging(args, d);
         }
 
+        // we are not on windows and this process is not daemonizer
+        if (d != null && !d.isDaemonized()) {
+            LOGGER.info("starting RESTHeart ********************************************");
+            configuration = FileUtils.getConfiguration(args);
+            // we have to fork, this is done later by demonizeInCase(args, d), now just log some message
+            if (shouldDemonize(args)) {
+                LOGGER.info("stopping logging to console");
+                LOGGER.info("logging to {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
+                LOGGER.info("RESTHeart forked **********************************************");
+            } 
+            // we don't have to fork, let's create the pid file (otherwise done by Daemon.init() call in demonizeInCase())
+            else {
+                LOGGER.info("pid file {}", pidFilePath);
+                FileUtils.createPidFile(pidFilePath);
+            }
+            
+            initLogging(args, d);
+        }
+
+        // we are not on windows and this process is daemonizer
         if (d != null && d.isDaemonized()) {
             configuration = FileUtils.getConfiguration(args);
 

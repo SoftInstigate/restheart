@@ -11,11 +11,11 @@
 
 https-listener: true
 https-host: 0.0.0.0
-https-port: 4443
+https-port: 14443
 
 http-listener: true
 http-host: 0.0.0.0
-http-port: 8080
+http-port: 18080
 
 ajp-listener: false
 ajp-host: 0.0.0.0

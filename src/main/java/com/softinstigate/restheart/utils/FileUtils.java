@@ -21,6 +21,7 @@ import com.softinstigate.restheart.Configuration;
 import static com.sun.akuma.CLibrary.LIBC;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -125,13 +126,17 @@ public class FileUtils {
 
                 return Integer.parseInt(line);
             }
-        } catch (IOException e) {
-            LOGGER.warn("error reading the pid file", e);
+        } catch(FileNotFoundException fne) {
+            LOGGER.debug("pid file not found", fne);
             return -1;
         }
+        catch (IOException e) {
+            LOGGER.debug("error reading the pid file", e);
+            return -2;
+        }
         catch (NumberFormatException e) {
-            LOGGER.warn("unexpected content in pid file", e);
-            return -1;
+            LOGGER.debug("unexpected content in pid file", e);
+            return -3;
         }
     }
 }

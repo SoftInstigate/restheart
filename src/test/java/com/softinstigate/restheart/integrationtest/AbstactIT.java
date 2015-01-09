@@ -27,8 +27,10 @@ import com.softinstigate.restheart.db.DocumentDAO;
 import com.softinstigate.restheart.db.IndexDAO;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.hal.Representation;
+import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.util.List;
 import static org.junit.Assert.*;
 import org.apache.http.HttpHost;
@@ -57,7 +59,7 @@ public abstract class AbstactIT {
     private static final String HOST = "127.0.0.1";
     private static final String HTTP = "http";
 
-    protected static final String confFilePath = "etc/restheart-integrationtest.yml";
+    protected static final Path confFilePath = new File("etc/restheart-integrationtest.yml").toPath();
     protected static MongoClient mongoClient;
     protected static Configuration conf = null;
     protected static Executor adminExecutor = null;

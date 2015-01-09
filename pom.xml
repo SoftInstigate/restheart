@@ -241,8 +241,11 @@
                         <phase>pre-integration-test</phase>
                         <configuration>
                             <target>
-                                <echo>***** NOTE: in order to execute the integration test suite you need mongodb db started on default port without authentication enabled (no --auth option)</echo>
+                                <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
+                                <echo>1 - Linux, OSX or Solaris (server is started via bash scripts)</echo>
+                                <echo>2 - mongodb already started on default port without authentication enabled (no --auth option)</echo>
                                 <exec dir="${basedir}" executable="${basedir}/bin/start.sh">
+                                    <arg value="${basedir}/etc/restheart-integrationtest.yml"/>
                                 </exec>
                             </target>
                         </configuration>
@@ -256,6 +259,7 @@
                         <configuration>
                             <target>
                                 <exec dir="${basedir}" executable="${basedir}/bin/stop.sh">
+                                    <arg value="${basedir}/etc/restheart-integrationtest.yml"/>
                                 </exec>
                             </target>
                         </configuration>

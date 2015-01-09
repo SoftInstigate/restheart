@@ -28,10 +28,11 @@ package com.softinstigate.restheart.perftest;
  */
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.softinstigate.restheart.Configuration;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
+import com.softinstigate.restheart.utils.FileUtils;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -41,6 +42,7 @@ import java.net.PasswordAuthentication;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 
 /**
@@ -56,6 +58,8 @@ public class LoadGetPT {
     private boolean printData = false;
     private String db;
     private String coll;
+    
+    private final Path CONF_FILE = new File("./etc/restheart-integrationtest.yml").toPath();
 
     /**
      *
@@ -77,7 +81,7 @@ public class LoadGetPT {
             }
         });
 
-        MongoDBClientSingleton.init(new Configuration("./etc/restheart-integrationtest.yml"));
+        MongoDBClientSingleton.init(FileUtils.getConfiguration(CONF_FILE));
     }
 
     /**
