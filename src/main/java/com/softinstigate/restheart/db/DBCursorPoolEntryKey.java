@@ -30,12 +30,14 @@ public class DBCursorPoolEntryKey {
     private final Deque<String> sort;
     private final Deque<String> filter;
     private final int skipped;
+    private final long cursorId;
 
-    public DBCursorPoolEntryKey(DBCollection collection, Deque<String> sort, Deque<String> filter, int skipped) {
+    public DBCursorPoolEntryKey(DBCollection collection, Deque<String> sort, Deque<String> filter, int skipped, long cursorId) {
         this.collection = collection;
         this.filter = filter;
         this.sort = sort;
         this.skipped = skipped;
+        this.cursorId = cursorId;
     }
 
     /**
@@ -66,9 +68,16 @@ public class DBCursorPoolEntryKey {
         return skipped;
     }
     
+    /**
+     * @return the cursorId
+     */
+    public long getCursorId() {
+        return cursorId;
+    }
+    
     @Override
     public int hashCode() {
-        return Objects.hash(collection, filter, sort, skipped);
+        return Objects.hash(collection, filter, sort, skipped, cursorId);
     }
 
     @Override
@@ -92,6 +101,9 @@ public class DBCursorPoolEntryKey {
         if (!Objects.equals(this.skipped, other.skipped)) {
             return false;
         }
+        if (!Objects.equals(this.cursorId, other.cursorId)) {
+            return false;
+        }
         return true;
     }
 
@@ -100,6 +112,7 @@ public class DBCursorPoolEntryKey {
         return "{ collection: " + collection.getName() + ", " +
                 "filter: " + (filter == null ? "null": filter.toString()) + ", " + 
                 "sort: " + (sort == null ? "null": sort.toString()) + ", "  +
-                "skipped: " + skipped + "}"; 
+                "skipped: " + skipped + ", "  +
+                "cursorId: " + cursorId + "}"; 
     }
 }

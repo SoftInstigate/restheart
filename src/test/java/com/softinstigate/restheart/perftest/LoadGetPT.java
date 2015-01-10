@@ -128,7 +128,7 @@ public class LoadGetPT {
 
         //CollectionDAO.getCollectionSize(coll, null);
         //CollectionDAO.getCollectionProps(coll);
-        ArrayList<DBObject> data = CollectionDAO.getCollectionData(dbcoll, 1, 5, null, null);
+        ArrayList<DBObject> data = CollectionDAO.getCollectionData(dbcoll, 5000, 100, null, null);
 
         if (printData) {
             System.out.println(data);
@@ -139,8 +139,8 @@ public class LoadGetPT {
         Integer page = threadPages.get(Thread.currentThread().getId());
 
         if (page == null) {
-             threadPages.put(Thread.currentThread().getId(), 2);
-             page = 1;
+             threadPages.put(Thread.currentThread().getId(), 5000);
+             page = 5000;
         }
         
         String pagedUrl = url + "?page=" + (page % 10000);
@@ -148,7 +148,8 @@ public class LoadGetPT {
         page++;
         threadPages.put(Thread.currentThread().getId(), page);
         
-        //System.out.println(Thread.currentThread().getId() + " -> " + pagedUrl);
+        if (printData)
+            System.out.println(Thread.currentThread().getId() + " -> " + pagedUrl);
         
         Response resp = httpExecutor.execute(Request.Get(new URI(pagedUrl)));
 

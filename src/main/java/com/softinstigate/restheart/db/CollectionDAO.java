@@ -195,7 +195,7 @@ public class CollectionDAO {
         DBCursor cursor;
         SkippedDBCursor _cursor;
         
-        _cursor = DBCursorPool.getInstance().lease(new DBCursorPoolEntryKey(coll, sortBy, filters, toskip));
+        _cursor = DBCursorPool.getInstance().get(new DBCursorPoolEntryKey(coll, sortBy, filters, toskip, 0));
         
         int alreadySkipped;
         
@@ -212,7 +212,7 @@ public class CollectionDAO {
         if (toskip - alreadySkipped >0) {
             cursor.skip(toskip - alreadySkipped);
         }
-        
+
         while (pagesize > 0 && cursor.hasNext()) {
             ret.add(cursor.next());
             pagesize--;
@@ -315,7 +315,7 @@ public class CollectionDAO {
             coll.update(PROPS_QUERY, new BasicDBObject("$set", content), true, false);
             return HttpStatus.SC_OK;
         } else {
-            // we use findAndModify to lease the @created_on field value from the existing properties document
+            // we use findAndModify to get the @created_on field value from the existing properties document
             // we need to put this field back using a second update 
             // it is not possible in a single update even using $setOnInsert update operator
             // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
