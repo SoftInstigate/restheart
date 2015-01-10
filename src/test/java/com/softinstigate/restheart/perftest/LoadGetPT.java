@@ -30,6 +30,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.softinstigate.restheart.Configuration;
 import com.softinstigate.restheart.db.CollectionDAO;
+import com.softinstigate.restheart.db.DBCursorPool;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.utils.HttpStatus;
 import java.io.BufferedReader;
@@ -128,7 +129,7 @@ public class LoadGetPT {
 
         //CollectionDAO.getCollectionSize(coll, null);
         //CollectionDAO.getCollectionProps(coll);
-        ArrayList<DBObject> data = CollectionDAO.getCollectionData(dbcoll, 5000, 100, null, null);
+        ArrayList<DBObject> data = CollectionDAO.getCollectionData(dbcoll, 5000, 100, null, null, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE);
 
         if (printData) {
             System.out.println(data);

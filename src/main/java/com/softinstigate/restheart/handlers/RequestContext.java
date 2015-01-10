@@ -18,6 +18,7 @@
 package com.softinstigate.restheart.handlers;
 
 import com.mongodb.DBObject;
+import com.softinstigate.restheart.db.DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import com.softinstigate.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
@@ -103,6 +104,13 @@ public class RequestContext {
          */
         OTHER
     };
+    
+    public static final String PAGE_QPARAM_KEY = "page";
+    public static final String PAGESIZE_QPARAM_KEY = "pagesize";
+    public static final String COUNT_QPARAM_KEY = "count";
+    public static final String SORT_BY_QPARAM_KEY = "sort_by";
+    public static final String FILTER_QPARAM_KEY = "filter";
+    public static final String EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY = "eager";
 
     private final String whereUri;
     private final String whatUri;
@@ -121,6 +129,7 @@ public class RequestContext {
     private int page = 1;
     private int pagesize = 100;
     private boolean count = false;
+    private EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy;
     private Deque<String> filter = null;
     private Deque<String> sortBy = null;
 
@@ -529,5 +538,19 @@ public class RequestContext {
      */
     public String getUnmappedRequestUri() {
         return unmappedRequestUri;
+    }
+
+    /**
+     * @return the cursorAllocationPolicy
+     */
+    public EAGER_CURSOR_ALLOCATION_POLICY getCursorAllocationPolicy() {
+        return cursorAllocationPolicy;
+    }
+
+    /**
+     * @param cursorAllocationPolicy the cursorAllocationPolicy to set
+     */
+    public void setCursorAllocationPolicy(EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
+        this.cursorAllocationPolicy = cursorAllocationPolicy;
     }
 }

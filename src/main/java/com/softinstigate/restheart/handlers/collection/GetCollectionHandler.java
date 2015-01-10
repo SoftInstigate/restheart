@@ -66,7 +66,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
         ArrayList<DBObject> data = null;
 
         try {
-            data = CollectionDAO.getCollectionData(coll, context.getPage(), context.getPagesize(), context.getSortBy(), context.getFilter());
+            data = CollectionDAO.getCollectionData(coll, context.getPage(), context.getPagesize(), context.getSortBy(), context.getFilter(), context.getCursorAllocationPolicy());
         } catch (JSONParseException jpe) // the filter expression is not a valid json string
         {
             logger.error("invalid filter expression {}", context.getFilter(), jpe);

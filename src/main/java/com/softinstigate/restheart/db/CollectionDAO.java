@@ -97,8 +97,7 @@ public class CollectionDAO {
     }
 
     /**
-     * Checks if the given collection is empty. 
-     * Note that RESTHeart creates a
+     * Checks if the given collection is empty. Note that RESTHeart creates a
      * reserved properties document in every collection (with _id
      * '_properties'). This method returns true even if the collection contains
      * such document.
@@ -137,8 +136,7 @@ public class CollectionDAO {
     }
 
     /**
-     * Returs the DBCursor of the collection applying sorting and
-     * filtering.
+     * Returs the DBCursor of the collection applying sorting and filtering.
      *
      * @param coll the mongodb DBCollection object
      * @param sortBy the Deque collection of fields to use for sorting (prepend
@@ -156,9 +154,9 @@ public class CollectionDAO {
             sort.put("_created_on", -1);
         } else {
             sortBy.stream().forEach((s) -> {
-                
+
                 String _s = s.trim(); // the + sign is decoded into a space, in case remove it
-                
+
                 _s = _s.replaceAll("_lastupdated_on", "_etag"); // _lastupdated is not stored and actually generated from @etag
 
                 if (_s.startsWith("-")) {
@@ -183,33 +181,34 @@ public class CollectionDAO {
             });
         }
 
-        return  coll.find(query).sort(sort);
+        return coll.find(query).sort(sort);
     }
-    
-    
-    public static ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filters) throws JSONParseException {
+
+    public static ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filters, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager) throws JSONParseException {
         ArrayList<DBObject> ret = new ArrayList<>();
-        
+
         int toskip = pagesize * (page - 1);
-        
+
         DBCursor cursor;
-        SkippedDBCursor _cursor;
-        
-        _cursor = DBCursorPool.getInstance().get(new DBCursorPoolEntryKey(coll, sortBy, filters, toskip, 0));
-        
+        SkippedDBCursor _cursor = null;
+
+        if (eager != DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE) {
+
+            _cursor = DBCursorPool.getInstance().get(new DBCursorPoolEntryKey(coll, sortBy, filters, toskip, 0), eager);
+        }
+
         int alreadySkipped;
-        
+
         // in case there is not cursor in the pool to reuse
         if (_cursor == null) {
             cursor = getCollectionDBCursor(coll, sortBy, filters);
             alreadySkipped = 0;
-        }
-        else {
+        } else {
             cursor = _cursor.getCursor();
             alreadySkipped = _cursor.getAlreadySkipped();
         }
-        
-        if (toskip - alreadySkipped >0) {
+
+        if (toskip - alreadySkipped > 0) {
             cursor.skip(toskip - alreadySkipped);
         }
 
@@ -217,7 +216,7 @@ public class CollectionDAO {
             ret.add(cursor.next());
             pagesize--;
         }
-        
+
         ret.forEach(row -> {
             Object etag = row.get("_etag");
 
@@ -231,7 +230,7 @@ public class CollectionDAO {
 
         return ret;
     }
-    
+
     /**
      * Returns the collection properties document.
      *

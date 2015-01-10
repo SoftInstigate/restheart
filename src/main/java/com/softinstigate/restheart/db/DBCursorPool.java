@@ -41,10 +41,10 @@ public class DBCursorPool {
     private final int SKIP_SLICE_DELTA = 100;
     private final int SKIP_SLICE_WIDTH = 1000;
 
-    private final int[] LINEAR_SLICES_HEIGHT = new int[]{5, 2, 1};
+    private final int[] LINEAR_SLICES_HEIGHTS = new int[]{5, 2, 1};
     private final int RND_SLICE_HEIGHT = 2;
 
-    public enum EAGER_ALLOCATION_POLICY {
+    public enum EAGER_CURSOR_ALLOCATION_POLICY {
         LINEAR, RANDOM, NONE
     };
 
@@ -73,11 +73,7 @@ public class DBCursorPool {
         }
     }
 
-    public synchronized SkippedDBCursor get(DBCursorPoolEntryKey key) {
-        return get(key, EAGER_ALLOCATION_POLICY.LINEAR);
-    }
-
-    public synchronized SkippedDBCursor get(DBCursorPoolEntryKey key, EAGER_ALLOCATION_POLICY allocationPolicy) {
+    public synchronized SkippedDBCursor get(DBCursorPoolEntryKey key, EAGER_CURSOR_ALLOCATION_POLICY allocationPolicy) {
         if (key.getSkipped() < SKIP_SLICE_WIDTH) {
             LOGGER.debug("no cursor to reuse found with skipped {} that is less than SKIP_SLICE_WIDTH {}", key.getSkipped(), SKIP_SLICE_WIDTH);
             return null;
@@ -110,10 +106,10 @@ public class DBCursorPool {
         return ret;
     }
 
-    private void populateCache(DBCursorPoolEntryKey key, EAGER_ALLOCATION_POLICY allocationPolicy) {
-        if (allocationPolicy == EAGER_ALLOCATION_POLICY.LINEAR) {
+    private void populateCache(DBCursorPoolEntryKey key, EAGER_CURSOR_ALLOCATION_POLICY allocationPolicy) {
+        if (allocationPolicy == EAGER_CURSOR_ALLOCATION_POLICY.LINEAR) {
             populateCacheLinear(key);
-        } else if (allocationPolicy == EAGER_ALLOCATION_POLICY.RANDOM) {
+        } else if (allocationPolicy == EAGER_CURSOR_ALLOCATION_POLICY.RANDOM) {
             populateCacheRandom(key);
         }
     }
@@ -127,7 +123,7 @@ public class DBCursorPool {
         executor.submit(() -> {
             int slice = firstSlice;
 
-            for (int tohave : LINEAR_SLICES_HEIGHT) {
+            for (int tohave : LINEAR_SLICES_HEIGHTS) {
                 int sliceSkips = slice * SKIP_SLICE_WIDTH - SKIP_SLICE_DELTA;
                 DBCursorPoolEntryKey sliceKey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), sliceSkips, -1);
                 
