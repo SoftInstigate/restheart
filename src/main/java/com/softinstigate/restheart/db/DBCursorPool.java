@@ -23,6 +23,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalNotification;
 import com.mongodb.DBCursor;
+import com.softinstigate.restheart.Bootstrapper;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
@@ -43,12 +44,12 @@ public class DBCursorPool {
     private static final Logger LOGGER = LoggerFactory.getLogger(DBCursorPool.class);
 
     //TODO make those configurable
-    private final int SKIP_SLICE_LINEAR_DELTA = 100;
-    private final int SKIP_SLICE_LINEAR_WIDTH = 1000;
-    private final int[] SKIP_SLICES_HEIGHTS = new int[]{5, 2, 1};
+    private final int SKIP_SLICE_LINEAR_DELTA = Bootstrapper.getConf().getEagerLinearSliceDelta();
+    private final int SKIP_SLICE_LINEAR_WIDTH = Bootstrapper.getConf().getEagerLinearSliceWidht();
+    private final int[] SKIP_SLICES_HEIGHTS = Bootstrapper.getConf().getEagerLinearSliceHeights();
     
-    private final int SKIP_SLICE_RND_MIN_WIDTH = 1000;
-    private final int SKIP_SLICE_RND_MAX_CURSORS = 50;
+    private final int SKIP_SLICE_RND_MIN_WIDTH = Bootstrapper.getConf().getEagerRndSliceMinWidht();
+    private final int SKIP_SLICE_RND_MAX_CURSORS = Bootstrapper.getConf().getEagerRndMaxCursors();
     
     public enum EAGER_CURSOR_ALLOCATION_POLICY {
         LINEAR, RANDOM, NONE

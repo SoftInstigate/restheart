@@ -96,6 +96,13 @@ public class Configuration {
     private final boolean directBuffers;
 
     private final boolean forceGzipEncoding;
+    
+    private final int eagerPoolSize;
+    private final int eagerLinearSliceWidht;
+    private final int eagerLinearSliceDelta;
+    private final int[] eagerLinearSliceHeights;
+    private final int eagerRndSliceMinWidht;
+    private final int eagerRndMaxCursors;
 
     /**
      * default mongodb port 27017.
@@ -396,6 +403,37 @@ public class Configuration {
      * the key for the https-listener property.
      */
     public static final String HTTPS_LISTENER = "https-listener";
+    
+    /**
+     * the key for the eager-cursor-allocation-pool-size property.
+     */
+    public static final String EAGER_POOL_SIZE = "eager-cursor-allocation-pool-size";
+            
+    /**
+     * the key for the eager-cursor-allocation-linear-slice-width property.
+     */
+    public static final String EAGER_LINEAR_SLICE_WIDHT = "eager-cursor-allocation-linear-slice-width";
+    
+    /**
+     * the key for the eager-cursor-allocation-linear-slice-delta property.
+     */
+    public static final String EAGER_LINEAR_SLICE_DELTA = "eager-cursor-allocation-linear-slice-delta";
+    
+    /**
+     * the key for the eager-cursor-allocation-linear-slice-heights property.
+     */
+    public static final String EAGER_LINEAR_HEIGHTS = "eager-cursor-allocation-linear-slice-heights";
+    
+    /**
+     * the key for the eager-cursor-allocation-random-slice-min-width property.
+     */
+    public static final String EAGER_RND_SLICE_MIN_WIDHT= "eager-cursor-allocation-random-slice-min-width";
+    
+    /**
+     * the key for the eager-cursor-allocation-random-slice-max-cursors property.
+     */
+    public static final String EAGER_RND_MAX_CURSORS = "eager-cursor-allocation-random-max-cursors";
+    
 
     /**
      * Creates a new instance of ErrorHandler with defaults values.
@@ -469,6 +507,13 @@ public class Configuration {
         directBuffers = true;
 
         forceGzipEncoding = false;
+        
+        eagerPoolSize = 100;
+        eagerLinearSliceWidht = 1000;
+        eagerLinearSliceDelta = 100;
+        eagerLinearSliceHeights  = new int[]{5, 2, 1};;
+        eagerRndSliceMinWidht = 1000;
+        eagerRndMaxCursors = 50;
     }
 
     /**
@@ -580,6 +625,13 @@ public class Configuration {
         directBuffers = getAsBooleanOrDefault(conf, DIRECT_BUFFERS_KEY, true);
 
         forceGzipEncoding = getAsBooleanOrDefault(conf, FORCE_GZIP_ENCODING_KEY, false);
+        
+        eagerPoolSize = getAsIntegerOrDefault(conf, EAGER_POOL_SIZE, 100);
+        eagerLinearSliceWidht = getAsIntegerOrDefault(conf, EAGER_LINEAR_SLICE_WIDHT, 1000);
+        eagerLinearSliceDelta = getAsIntegerOrDefault(conf, EAGER_LINEAR_SLICE_DELTA, 100);
+        eagerLinearSliceHeights  = getAsArrayOfInts(conf, EAGER_LINEAR_HEIGHTS, new int[]{5, 2, 1});
+        eagerRndSliceMinWidht = getAsIntegerOrDefault(conf, EAGER_RND_SLICE_MIN_WIDHT, 1000);
+        eagerRndMaxCursors = getAsIntegerOrDefault(conf, EAGER_RND_MAX_CURSORS, 50);
     }
 
     private static List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key, final List<Map<String, Object>> defaultValue) {
@@ -688,6 +740,23 @@ public class Configuration {
             }
         } else {
             LOGGER.info("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
+            return defaultValue;
+        }
+    }
+    
+    private static int[] getAsArrayOfInts(final Map<String, Object> conf, final String key, final int[] defaultValue) {
+        if (conf == null || conf.get(key) == null) {
+            if (defaultValue != null) // if default value is null there is no default value actually
+            {
+                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
+            }
+            
+            return defaultValue;
+        } else if (conf.get(key) instanceof Integer[]) {
+            LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
+            return (int[]) conf.get(key);
+        } else {
+            LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
             return defaultValue;
         }
     }
@@ -942,5 +1011,47 @@ public class Configuration {
      */
     public final List<Map<String, Object>> getStaticResourcesMounts() {
         return staticResourcesMounts;
+    }
+
+    /**
+     * @return the eagerLinearSliceWidht
+     */
+    public int getEagerLinearSliceWidht() {
+        return eagerLinearSliceWidht;
+    }
+
+    /**
+     * @return the eagerLinearSliceDelta
+     */
+    public int getEagerLinearSliceDelta() {
+        return eagerLinearSliceDelta;
+    }
+
+    /**
+     * @return the eagerLinearSliceHeights
+     */
+    public int[] getEagerLinearSliceHeights() {
+        return eagerLinearSliceHeights;
+    }
+
+    /**
+     * @return the eagerRndSliceMinWidht
+     */
+    public int getEagerRndSliceMinWidht() {
+        return eagerRndSliceMinWidht;
+    }
+
+    /**
+     * @return the eagerRndMaxCursors
+     */
+    public int getEagerRndMaxCursors() {
+        return eagerRndMaxCursors;
+    }
+
+    /**
+     * @return the eagerPoolSize
+     */
+    public int getEagerPoolSize() {
+        return eagerPoolSize;
     }
 }

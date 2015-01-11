@@ -140,22 +140,22 @@ public class Bootstrapper {
             conf = new Configuration(args[0]);
         }
 
-        LoggingInitializer.setLogLevel(conf.getLogLevel());
+        LoggingInitializer.setLogLevel(getConf().getLogLevel());
 
-        if (conf.isLogToFile()) {
-            LoggingInitializer.startFileLogging(conf.getLogFilePath());
+        if (getConf().isLogToFile()) {
+            LoggingInitializer.startFileLogging(getConf().getLogFilePath());
         }
 
         logger.info("starting RESTHeart ********************************************");
 
         logger.info("RESTHeart version {}", RESTHEART_VERSION);
 
-        String mongoHosts = conf.getMongoServers().stream().map(s -> s.get(Configuration.MONGO_HOST_KEY) + ":" + s.get(Configuration.MONGO_PORT_KEY) + " ").reduce("", String::concat);
+        String mongoHosts = getConf().getMongoServers().stream().map(s -> s.get(Configuration.MONGO_HOST_KEY) + ":" + s.get(Configuration.MONGO_PORT_KEY) + " ").reduce("", String::concat);
 
         logger.info("initializing mongodb connection pool to {}", mongoHosts);
 
         try {
-            MongoDBClientSingleton.init(conf);
+            MongoDBClientSingleton.init(getConf());
 
             logger.info("mongodb connection pool initialized");
 
@@ -214,22 +214,22 @@ public class Bootstrapper {
             }
         });
 
-        if (conf.isLogToFile()) {
-            logger.info("logging to {} with level {}", conf.getLogFilePath(), conf.getLogLevel());
+        if (getConf().isLogToFile()) {
+            logger.info("logging to {} with level {}", getConf().getLogFilePath(), getConf().getLogLevel());
         }
 
         if (!conf.isLogToConsole()) {
             logger.info("stopping logging to console ");
             LoggingInitializer.stopConsoleLogging();
         } else {
-            logger.info("logging to console with level {}", conf.getLogLevel());
+            logger.info("logging to console with level {}", getConf().getLogLevel());
         }
 
         logger.info("RESTHeart started **********************************************");
     }
 
     private static void start() {
-        if (conf == null) {
+        if (getConf() == null) {
             logger.error("no configuration found. exiting..");
             System.exit(-1);
         }
@@ -241,33 +241,33 @@ public class Bootstrapper {
 
         IdentityManager identityManager = null;
 
-        if (conf.getIdmImpl() == null) {
+        if (getConf().getIdmImpl() == null) {
             logger.warn("***** no identity manager specified. authentication disabled.");
             identityManager = null;
         } else {
             try {
-                Object idm = Class.forName(conf.getIdmImpl()).getConstructor(Map.class).newInstance(conf.getIdmArgs());
+                Object idm = Class.forName(getConf().getIdmImpl()).getConstructor(Map.class).newInstance(getConf().getIdmArgs());
                 identityManager = (IdentityManager) idm;
             } catch (ClassCastException | NoSuchMethodException | SecurityException | ClassNotFoundException | IllegalArgumentException | InstantiationException | IllegalAccessException | InvocationTargetException ex) {
-                logger.error("error configuring idm implementation {}", conf.getIdmImpl(), ex);
+                logger.error("error configuring idm implementation {}", getConf().getIdmImpl(), ex);
                 System.exit(-3);
             }
         }
 
         AccessManager accessManager = null;
 
-        if (conf.getAmImpl() == null && conf.getIdmImpl() != null) {
+        if (getConf().getAmImpl() == null && getConf().getIdmImpl() != null) {
             logger.warn("***** no access manager specified. authenticated users can do anything.");
             accessManager = null;
-        } else if (conf.getAmImpl() == null && conf.getIdmImpl() == null) {
+        } else if (getConf().getAmImpl() == null && getConf().getIdmImpl() == null) {
             logger.warn("***** no access manager specified. users can do anything.");
             accessManager = null;
         } else {
             try {
-                Object am = Class.forName(conf.getAmImpl()).getConstructor(Map.class).newInstance(conf.getAmArgs());
+                Object am = Class.forName(getConf().getAmImpl()).getConstructor(Map.class).newInstance(getConf().getAmArgs());
                 accessManager = (AccessManager) am;
             } catch (ClassCastException | NoSuchMethodException | SecurityException | ClassNotFoundException | IllegalArgumentException | InstantiationException | IllegalAccessException | InvocationTargetException ex) {
-                logger.error("error configuring acess manager implementation {}", conf.getAmImpl(), ex);
+                logger.error("error configuring acess manager implementation {}", getConf().getAmImpl(), ex);
                 System.exit(-3);
             }
         }
@@ -278,7 +278,7 @@ public class Bootstrapper {
             KeyManagerFactory kmf;
             KeyStore ks;
 
-            if (conf.isUseEmbeddedKeystore()) {
+            if (getConf().isUseEmbeddedKeystore()) {
                 char[] storepass = "restheart".toCharArray();
                 char[] keypass = "restheart".toCharArray();
 
@@ -296,12 +296,12 @@ public class Bootstrapper {
                 kmf = KeyManagerFactory.getInstance("SunX509");
                 ks = KeyStore.getInstance("JKS");
 
-                FileInputStream fis = new FileInputStream(new File(conf.getKeystoreFile()));
+                FileInputStream fis = new FileInputStream(new File(getConf().getKeystoreFile()));
 
                 try {
-                    ks.load(fis, conf.getKeystorePassword().toCharArray());
+                    ks.load(fis, getConf().getKeystorePassword().toCharArray());
 
-                    kmf.init(ks, conf.getCertPassword().toCharArray());
+                    kmf.init(ks, getConf().getCertPassword().toCharArray());
                     sslContext.init(kmf.getKeyManagers(), null, null);
                 } finally {
                     fis.close();
@@ -320,24 +320,24 @@ public class Bootstrapper {
 
         Builder builder = Undertow.builder();
 
-        if (conf.isHttpsListener()) {
-            builder.addHttpsListener(conf.getHttpsPort(), conf.getHttpHost(), sslContext);
-            logger.info("https listener bound at {}:{}", conf.getHttpsHost(), conf.getHttpsPort());
+        if (getConf().isHttpsListener()) {
+            builder.addHttpsListener(getConf().getHttpsPort(), getConf().getHttpHost(), sslContext);
+            logger.info("https listener bound at {}:{}", getConf().getHttpsHost(), getConf().getHttpsPort());
         }
 
-        if (conf.isHttpListener()) {
-            builder.addHttpListener(conf.getHttpPort(), conf.getHttpsHost());
-            logger.info("http listener bound at {}:{}", conf.getHttpHost(), conf.getHttpPort());
+        if (getConf().isHttpListener()) {
+            builder.addHttpListener(getConf().getHttpPort(), getConf().getHttpsHost());
+            logger.info("http listener bound at {}:{}", getConf().getHttpHost(), getConf().getHttpPort());
         }
 
-        if (conf.isAjpListener()) {
-            builder.addAjpListener(conf.getAjpPort(), conf.getAjpHost());
-            logger.info("ajp listener bound at {}:{}", conf.getAjpHost(), conf.getAjpPort());
+        if (getConf().isAjpListener()) {
+            builder.addAjpListener(getConf().getAjpPort(), getConf().getAjpHost());
+            logger.info("ajp listener bound at {}:{}", getConf().getAjpHost(), getConf().getAjpPort());
         }
 
-        LocalCachesSingleton.init(conf);
+        LocalCachesSingleton.init(getConf());
 
-        if (conf.isLocalCacheEnabled()) {
+        if (getConf().isLocalCacheEnabled()) {
             logger.info("local cache enabled");
         } else {
             logger.info("local cache not enabled");
@@ -346,11 +346,11 @@ public class Bootstrapper {
         hanldersPipe = getHandlersPipe(identityManager, accessManager);
 
         builder
-                .setIoThreads(conf.getIoThreads())
-                .setWorkerThreads(conf.getWorkerThreads())
-                .setDirectBuffers(conf.isDirectBuffers())
-                .setBufferSize(conf.getBufferSize())
-                .setBuffersPerRegion(conf.getBuffersPerRegion())
+                .setIoThreads(getConf().getIoThreads())
+                .setWorkerThreads(getConf().getWorkerThreads())
+                .setDirectBuffers(getConf().isDirectBuffers())
+                .setBufferSize(getConf().getBufferSize())
+                .setBuffersPerRegion(getConf().getBuffersPerRegion())
                 .setHandler(hanldersPipe);
 
         builder.build().start();
@@ -388,7 +388,7 @@ public class Bootstrapper {
 
         PathHandler paths = path();
 
-        conf.getMongoMounts().stream().forEach(m -> {
+        getConf().getMongoMounts().stream().forEach(m -> {
             String url = (String) m.get(Configuration.MONGO_MOUNT_WHERE_KEY);
             String db = (String) m.get(Configuration.MONGO_MOUNT_WHAT_KEY);
 
@@ -397,18 +397,18 @@ public class Bootstrapper {
             logger.info("url {} bound to mongodb resource {}", url, db);
         });
 
-        pipeStaticResourcesHandlers(conf, paths, identityManager, accessManager);
+        pipeStaticResourcesHandlers(getConf(), paths, identityManager, accessManager);
 
-        pipeApplicationLogicHandlers(conf, paths, identityManager, accessManager);
+        pipeApplicationLogicHandlers(getConf(), paths, identityManager, accessManager);
 
         return new GracefulShutdownHandler(
-                new RequestLimitingHandler(new RequestLimit(conf.getRequestLimit()),
+                new RequestLimitingHandler(new RequestLimit(getConf().getRequestLimit()),
                         new AllowedMethodsHandler(
                                 new BlockingHandler(
                                         new GzipEncodingHandler(
                                                 new ErrorHandler(
                                                         new HttpContinueAcceptingHandler(paths)
-                                                ), conf.isForceGzipEncoding()
+                                                ), getConf().isForceGzipEncoding()
                                         )
                                 ), // allowed methods
                                 HttpString.tryFromString(RequestContext.METHOD.GET.name()),
@@ -542,5 +542,12 @@ public class Bootstrapper {
             }
             );
         }
+    }
+
+    /**
+     * @return the conf
+     */
+    public static Configuration getConf() {
+        return conf;
     }
 }
