@@ -22,11 +22,15 @@ import com.google.common.cache.CacheBuilder;
 import com.mongodb.DBCursor;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +71,11 @@ public class DBCursorPool {
             // print stats every 1 minute
             Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
                 LOGGER.info("db cursor pool stats: {}", stats());
-                LOGGER.info("db cursor pool size: {} ", cache.size());
+                
+                getCacheSizes().forEach((s,c) ->  {
+                    LOGGER.info("db cursor pool size: {}\t{}", s,c);
+                });
+                
                 LOGGER.debug("db cursor pool entries: {}", cache.asMap().keySet());
             }, 1, 1, TimeUnit.MINUTES);
         }
@@ -162,6 +170,10 @@ public class DBCursorPool {
 
     public final String stats() {
         return cache.stats().toString();
+    }
+    
+    private TreeMap<String, Long> getCacheSizes() {
+        return new TreeMap<>(cache.asMap().keySet().stream().collect(Collectors.groupingBy(DBCursorPoolEntryKey::getCacheStatsGroup, Collectors.counting())));
     }
 
     /**

@@ -115,4 +115,8 @@ public class DBCursorPoolEntryKey {
                 "skipped: " + skipped + ", "  +
                 "cursorId: " + cursorId + "}"; 
     }
+    
+    String getCacheStatsGroup() {
+        return (filter == null ? "no filter" : filter.toString()) + " - " + (sort == null ? "no sort_by" : sort.toString()) + " - " + getSkipped();
+    }
 }
