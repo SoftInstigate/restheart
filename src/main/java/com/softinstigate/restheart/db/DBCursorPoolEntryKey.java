@@ -19,6 +19,7 @@ package com.softinstigate.restheart.db;
 
 import com.mongodb.DBCollection;
 import java.util.Deque;
+import java.util.Formatter;
 import java.util.Objects;
 
 /**
@@ -117,6 +118,8 @@ public class DBCursorPoolEntryKey {
     }
     
     String getCacheStatsGroup() {
-        return (filter == null ? "no filter" : filter.toString()) + " - " + (sort == null ? "no sort_by" : sort.toString()) + " - " + getSkipped();
+        Formatter f = new Formatter();
+        
+        return (filter == null ? "no filter" : filter.toString()) + " - " + (sort == null ? "no sort_by" : sort.toString()) + " - " + f.format("%10d", getSkipped());
     }
 }
