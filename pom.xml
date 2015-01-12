@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.softinstigate</groupId>
+    <groupId>org.restheart</groupId>
     <artifactId>restheart</artifactId>
     <version>0.9.8-SNAPSHOT</version>
     <packaging>jar</packaging>
@@ -180,7 +180,7 @@
                             <archive>
                                 <manifest>
                                     <addClasspath>true</addClasspath>
-                                    <mainClass>com.softinstigate.restheart.Bootstrapper</mainClass>
+                                    <mainClass>org.restheart.Bootstrapper</mainClass>
                                     <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                                     <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                                 </manifest>
@@ -214,7 +214,7 @@
                     <archive>                   
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>com.softinstigate.restheart.Bootstrapper</mainClass>
+                            <mainClass>org.restheart.Bootstrapper</mainClass>
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                             <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                         </manifest>
