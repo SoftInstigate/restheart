@@ -20,6 +20,7 @@ package com.softinstigate.restheart;
 import com.softinstigate.restheart.utils.FileUtils;
 import com.softinstigate.restheart.utils.OSChecker;
 import com.sun.akuma.CLibrary;
+import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,11 +62,16 @@ public class Shutdowner {
         
         CLibrary.LIBC.kill(pid, 15); // 15 is SIGTERM
         
-        Configuration conf = FileUtils.getConfiguration(args);
-
         LOGGER.info("SIGTERM signal sent to RESTHeart instance with pid {} ", pid);
         
-        LOGGER.info("you can check the log file {}", conf.getLogFilePath());
+        Configuration conf;
+        
+        try {
+            conf = FileUtils.getConfiguration(args, true);
+            LOGGER.info("you can check the log file {}", conf.getLogFilePath());
+        } catch (ConfigurationException ex) {
+            LOGGER.warn(ex.getMessage());
+        }
     }
 
     private static boolean askingForHelp(final String[] args) {

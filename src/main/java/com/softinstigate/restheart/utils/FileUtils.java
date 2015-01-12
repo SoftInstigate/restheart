@@ -18,6 +18,7 @@
 package com.softinstigate.restheart.utils;
 
 import com.softinstigate.restheart.Configuration;
+import com.softinstigate.restheart.ConfigurationException;
 import static com.sun.akuma.CLibrary.LIBC;
 import java.io.BufferedReader;
 import java.io.File;
@@ -58,14 +59,18 @@ public class FileUtils {
 
         return Objects.hash(path.toString());
     }
-
-    public static Configuration getConfiguration(String[] args) {
-        return getConfiguration(getConfigurationFilePath(args));
+    
+    public static Configuration getConfiguration(String[] args) throws ConfigurationException {
+        return getConfiguration(getConfigurationFilePath(args), false);
     }
 
-    public static Configuration getConfiguration(Path configurationFilePath) {
+    public static Configuration getConfiguration(String[] args, boolean silent) throws ConfigurationException {
+        return getConfiguration(getConfigurationFilePath(args), silent);
+    }
+
+    public static Configuration getConfiguration(Path configurationFilePath, boolean silent) throws ConfigurationException {
         if (configurationFilePath != null) {
-            return new Configuration(configurationFilePath);
+            return new Configuration(configurationFilePath, silent);
         } else {
             return new Configuration();
         }

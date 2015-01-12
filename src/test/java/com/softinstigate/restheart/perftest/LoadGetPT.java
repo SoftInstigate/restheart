@@ -28,9 +28,12 @@ package com.softinstigate.restheart.perftest;
  */
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
+import com.softinstigate.restheart.ConfigurationException;
 import com.softinstigate.restheart.db.CollectionDAO;
+import com.softinstigate.restheart.db.DBCursorPool;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
 import com.softinstigate.restheart.utils.FileUtils;
+import com.softinstigate.restheart.utils.HttpStatus;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -39,11 +42,22 @@ import java.io.InputStreamReader;
 import java.net.Authenticator;
 import java.net.MalformedURLException;
 import java.net.PasswordAuthentication;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
+import org.apache.http.client.fluent.Executor;
+import org.apache.http.client.fluent.Request;
+import org.apache.http.client.fluent.Response;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  *
@@ -51,15 +65,18 @@ import java.util.ArrayList;
  */
 public class LoadGetPT {
 
-    private URL url;
+    private String url;
 
     private String id;
     private String pwd;
     private boolean printData = false;
     private String db;
     private String coll;
-    
+
     private final Path CONF_FILE = new File("./etc/restheart-integrationtest.yml").toPath();
+    private Executor httpExecutor;
+
+    private final ConcurrentHashMap<Long, Integer> threadPages = new ConcurrentHashMap<>();
 
     /**
      *
@@ -67,7 +84,7 @@ public class LoadGetPT {
      * @throws MalformedURLException
      */
     public void setUrl(String url) throws MalformedURLException {
-        this.url = new URL(url);
+        this.url = url;
     }
 
     /**
@@ -81,7 +98,14 @@ public class LoadGetPT {
             }
         });
 
-        MongoDBClientSingleton.init(FileUtils.getConfiguration(CONF_FILE));
+        try {
+            MongoDBClientSingleton.init(FileUtils.getConfiguration(CONF_FILE, false));
+        } catch (ConfigurationException ex) {
+            System.out.println(ex.getMessage() + ", exiting...");
+            System.exit(-1);
+        }
+
+        httpExecutor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), id, pwd);
     }
 
     /**
@@ -89,7 +113,7 @@ public class LoadGetPT {
      * @throws IOException
      */
     public void get() throws IOException {
-        URLConnection connection = url.openConnection();
+        URLConnection connection = new URL(url).openConnection();
 
         //connection.setRequestProperty("Accept-Encoding", "gzip");
         InputStream stream = connection.getInputStream();
@@ -115,11 +139,59 @@ public class LoadGetPT {
 
         //CollectionDAO.getCollectionSize(coll, null);
         //CollectionDAO.getCollectionProps(coll);
-        ArrayList<DBObject> data = CollectionDAO.getCollectionData(dbcoll, 1, 5, null, null);
+        ArrayList<DBObject> data = CollectionDAO.getCollectionData(dbcoll, 5000, 100, null, null, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE);
 
         if (printData) {
             System.out.println(data);
         }
+    }
+
+    public void getPagesLinearly() throws Exception {
+        Integer page = threadPages.get(Thread.currentThread().getId());
+
+        if (page == null) {
+            threadPages.put(Thread.currentThread().getId(), 5000);
+            page = 5000;
+        }
+
+        String pagedUrl = url + "?page=" + (page % 10000);
+
+        page++;
+        threadPages.put(Thread.currentThread().getId(), page);
+
+        if (printData) {
+            System.out.println(Thread.currentThread().getId() + " -> " + pagedUrl);
+        }
+
+        Response resp = httpExecutor.execute(Request.Get(new URI(pagedUrl)));
+
+        HttpResponse httpResp = resp.returnResponse();
+        assertNotNull(httpResp);
+        HttpEntity entity = httpResp.getEntity();
+        assertNotNull(entity);
+        StatusLine statusLine = httpResp.getStatusLine();
+        assertNotNull(statusLine);
+
+        assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
+    }
+
+    public void getPagesRandomly() throws Exception {
+
+        long rpage = Math.round(Math.random() * 10000);
+
+        String pagedUrl = url + "?page=" + rpage;
+
+        //System.out.println(pagedUrl);
+        Response resp = httpExecutor.execute(Request.Get(new URI(pagedUrl)));
+
+        HttpResponse httpResp = resp.returnResponse();
+        assertNotNull(httpResp);
+        HttpEntity entity = httpResp.getEntity();
+        assertNotNull(entity);
+        StatusLine statusLine = httpResp.getStatusLine();
+        assertNotNull(statusLine);
+
+        assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
     }
 
     /**

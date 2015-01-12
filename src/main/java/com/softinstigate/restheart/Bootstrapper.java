@@ -96,6 +96,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,7 +123,19 @@ public final class Bootstrapper {
      * @param args command line arguments
      */
     public static void main(final String[] args) {
+        try {
+            // read configuration silently, to avoid logging before initializing the logging
+            configuration = FileUtils.getConfiguration(args, true);
+        } catch (ConfigurationException ex) {
+            LOGGER.error(ex.getMessage() + ", exiting...", ex);
+            stopServer();
+            System.exit(-1);
+        }
+        
+        Daemon d = null;
+
         if (!OSChecker.isWindows()) {
+            d = new Daemon.WithoutChdir();
 
             // pid file name include the hash of the configuration file so that for each configuration we can have just one instance running
             // in we would proceed we get a BindException for same port being already used by the running instance
@@ -139,50 +152,71 @@ public final class Bootstrapper {
                 System.exit(-1);
             }
         }
-
-        Daemon d = null;
         
+        initLogging(args, d);
+
         if (!OSChecker.isWindows()) {
             d = new Daemon.WithoutChdir();
         } else {
             LOGGER.info("starting RESTHeart ********************************************");
-            configuration = FileUtils.getConfiguration(args);
+
+            try {
+                configuration = FileUtils.getConfiguration(args);
+            } catch (ConfigurationException ex) {
+                LOGGER.error(ex.getMessage() + ", exiting...", ex);
+                stopServer();
+                System.exit(-1);
+            }
 
             if (shouldDemonize(args) && OSChecker.isWindows()) {
                 LOGGER.warn("fork is not supported on Windows");
             }
 
-            initLogging(args, d);
+            logLoggingConfiguration(args, d);
         }
 
-        // we are not on windows and this process is not daemonizer
+        // we are not on windows and this process is not daemonized
         if (d != null && !d.isDaemonized()) {
             LOGGER.info("starting RESTHeart ********************************************");
-            configuration = FileUtils.getConfiguration(args);
+
+            try {
+                configuration = FileUtils.getConfiguration(args);
+            } catch (ConfigurationException ex) {
+                LOGGER.error(ex.getMessage() + ", exiting...", ex);
+                stopServer();
+                System.exit(-1);
+            }
+
             // we have to fork, this is done later by demonizeInCase(args, d), now just log some message
             if (shouldDemonize(args)) {
                 LOGGER.info("stopping logging to console");
                 LOGGER.info("logging to {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
                 LOGGER.info("RESTHeart forked **********************************************");
-            } 
-            // we don't have to fork, let's create the pid file (otherwise done by Daemon.init() call in demonizeInCase())
+            } // we don't have to fork, let's create the pid file (otherwise done by Daemon.init() call in demonizeInCase())
             else {
                 LOGGER.info("pid file {}", pidFilePath);
                 FileUtils.createPidFile(pidFilePath);
             }
-            
-            initLogging(args, d);
+
+            logLoggingConfiguration(args, d);
         }
 
-        // we are not on windows and this process is daemonizer
+        // we are not on windows and this process is daemonized
         if (d != null && d.isDaemonized()) {
-            configuration = FileUtils.getConfiguration(args);
-
             pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsoultePathHash(FileUtils.getConfigurationFilePath(args)));
 
-            initLogging(args, d);
-
             LOGGER.info("forking RESTHeart ********************************************");
+
+            logLoggingConfiguration(args, d);
+
+            // re-read configuration, to have warnings and errors logged to file
+            try {
+                configuration = FileUtils.getConfiguration(args);
+            } catch (ConfigurationException ex) {
+                LOGGER.error(ex.getMessage() + ", exiting...", ex);
+                stopServer();
+                System.exit(-1);
+            }
 
             try {
                 LOGGER.info("pid file {}", pidFilePath);
@@ -202,7 +236,14 @@ public final class Bootstrapper {
      * @param confFilePath the path of the configuration file
      */
     public static void startup(final String confFilePath) {
-        configuration = FileUtils.getConfiguration(new String[]{confFilePath});
+        try {
+            configuration = FileUtils.getConfiguration(new String[]{confFilePath});
+        } catch (ConfigurationException ex) {
+            LOGGER.error(ex.getMessage() + ", exiting...", ex);
+            stopServer();
+            System.exit(-1);
+        }
+
         startServer();
     }
 
@@ -220,16 +261,32 @@ public final class Bootstrapper {
             LoggingInitializer.stopConsoleLogging();
             LoggingInitializer.startFileLogging(configuration.getLogFilePath());
         } else if (!shouldDemonize(args)) {
-            if (configuration.isLogToFile()) {
-                LOGGER.info("logging to {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
+            if (!configuration.isLogToConsole()) {
+                LoggingInitializer.stopConsoleLogging();
+            } else {
             }
 
+            if (configuration.isLogToFile()) {
+                LoggingInitializer.startFileLogging(configuration.getLogFilePath());
+            }
+        }
+    }
+
+    private static void logLoggingConfiguration(final String[] args, final Daemon d) {
+        if (d == null || !d.isDaemonized()) {
+            return;
+        }
+
+        if (!shouldDemonize(args)) {
             if (!configuration.isLogToConsole()) {
                 LOGGER.info("stopping logging to console ");
                 LOGGER.info("***************************************************************");
-                LoggingInitializer.stopConsoleLogging();
             } else {
                 LOGGER.info("logging to console with level {}", configuration.getLogLevel());
+            }
+
+            if (configuration.isLogToFile()) {
+                LOGGER.info("logging to {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
             }
         }
     }
@@ -258,7 +315,7 @@ public final class Bootstrapper {
                     stopServer(true);
                     System.exit(0);
                 } catch (Exception ex) {
-                    LOGGER.warn("unable to fork process. forking is only supported on Linux (x86, amd64), Solaris (x86, amd64, sparc, sparcv9) and Mac OS X", ex);
+                    LOGGER.warn("unable to fork process. Note that forking is only supported on Linux (x86, amd64), Solaris (x86, amd64, sparc, sparcv9) and Mac OS X", ex);
                 }
             } else {
                 LOGGER.info("unable to fork process, this is only supported on POSIX compliant OSes");
@@ -350,11 +407,16 @@ public final class Bootstrapper {
             } catch (URISyntaxException | IOException ex) {
                 LOGGER.error("error cleaning up temporary directory {}", TMP_EXTRACTED_FILES.get(k).toString(), ex);
             }
-        }
-        );
+        });
 
         if (pidFilePath != null) {
-            pidFilePath.toFile().delete();
+            try {
+                if (Files.exists(pidFilePath)) {
+                    Files.delete(pidFilePath);
+                }
+            } catch (IOException ex) {
+                LOGGER.error("failed to delete pid file {}", pidFilePath.toString(), ex);
+            }
         }
 
         if (!silent) {
@@ -380,9 +442,11 @@ public final class Bootstrapper {
         if (configuration.getIdmImpl() == null) {
             LOGGER.warn("***** no identity manager specified. authentication disabled.");
             identityManager = null;
+
         } else {
             try {
-                Object idm = Class.forName(configuration.getIdmImpl()).getConstructor(Map.class).newInstance(configuration.getIdmArgs());
+                Object idm = Class.forName(configuration.getIdmImpl()).getConstructor(Map.class
+                ).newInstance(configuration.getIdmArgs());
                 identityManager = (IdentityManager) idm;
             } catch (ClassCastException | NoSuchMethodException | SecurityException | ClassNotFoundException | IllegalArgumentException | InstantiationException | IllegalAccessException | InvocationTargetException ex) {
                 LOGGER.error("error configuring idm implementation {}", configuration.getIdmImpl(), ex);
@@ -399,9 +463,11 @@ public final class Bootstrapper {
         } else if (configuration.getAmImpl() == null && configuration.getIdmImpl() == null) {
             LOGGER.warn("***** no access manager specified. users can do anything.");
             accessManager = null;
+
         } else {
             try {
-                Object am = Class.forName(configuration.getAmImpl()).getConstructor(Map.class).newInstance(configuration.getAmArgs());
+                Object am = Class.forName(configuration.getAmImpl()).getConstructor(Map.class
+                ).newInstance(configuration.getAmArgs());
                 accessManager = (AccessManager) am;
             } catch (ClassCastException | NoSuchMethodException | SecurityException | ClassNotFoundException | IllegalArgumentException | InstantiationException | IllegalAccessException | InvocationTargetException ex) {
                 LOGGER.error("error configuring acess manager implementation {}", configuration.getAmImpl(), ex);
@@ -416,7 +482,7 @@ public final class Bootstrapper {
             KeyManagerFactory kmf;
             KeyStore ks;
 
-            if (configuration.isUseEmbeddedKeystore()) {
+            if (getConf().isUseEmbeddedKeystore()) {
                 char[] storepass = "restheart".toCharArray();
                 char[] keypass = "restheart".toCharArray();
 
@@ -425,9 +491,12 @@ public final class Bootstrapper {
                 sslContext = SSLContext.getInstance("TLS");
                 kmf = KeyManagerFactory.getInstance("SunX509");
                 ks = KeyStore.getInstance("JKS");
-                ks.load(Bootstrapper.class.getClassLoader().getResourceAsStream(storename), storepass);
+                ks
+                        .load(Bootstrapper.class
+                                .getClassLoader().getResourceAsStream(storename), storepass);
 
                 kmf.init(ks, keypass);
+
                 sslContext.init(kmf.getKeyManagers(), null, null);
             } else {
                 sslContext = SSLContext.getInstance("TLS");
@@ -614,11 +683,13 @@ public final class Bootstrapper {
                                 LOGGER.error("**** to fix, run this command: $ git submodule update --init --recursive");
                             }
                             return;
+
                         }
                     } else {
                         if (!path.startsWith("/")) {
                             // this is to allow specifying the configuration file path relative to the jar (also working when running from classes)
-                            URL location = Bootstrapper.class.getProtectionDomain().getCodeSource().getLocation();
+                            URL location = Bootstrapper.class
+                                    .getProtectionDomain().getCodeSource().getLocation();
                             File locationFile = new File(location.getPath());
                             file = new File(locationFile.getParent() + File.separator + path);
                         } else {
@@ -700,5 +771,12 @@ public final class Bootstrapper {
             }
             );
         }
+    }
+
+    /**
+     * @return the conf
+     */
+    public static Configuration getConf() {
+        return configuration;
     }
 }

@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  */
 public class GetCollectionHandler extends PipedHttpHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(GetCollectionHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GetCollectionHandler.class);
 
     /**
      * Creates a new instance of GetCollectionHandler
@@ -67,16 +67,16 @@ public class GetCollectionHandler extends PipedHttpHandler {
         ArrayList<DBObject> data = null;
 
         try {
-            data = CollectionDAO.getCollectionData(coll, context.getPage(), context.getPagesize(), context.getSortBy(), context.getFilter());
-        } catch (JSONParseException jpe) {
-            // the filter expression is not a valid json string
-            logger.error("invalid filter expression {}", context.getFilter(), jpe);
+            data = CollectionDAO.getCollectionData(coll, context.getPage(), context.getPagesize(), context.getSortBy(), context.getFilter(), context.getCursorAllocationPolicy());
+        } catch (JSONParseException jpe) // the filter expression is not a valid json string
+        {
+            LOGGER.error("invalid filter expression {}", context.getFilter(), jpe);
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", jpe);
             return;
         } catch (MongoException me) {
             if (me.getMessage().matches(".*Can't canonicalize query.*")) {
                 // error with the filter expression during query execution
-                logger.error("invalid filter expression {}", context.getFilter(), me);
+                LOGGER.error("invalid filter expression {}", context.getFilter(), me);
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", me);
                 return;
             } else {

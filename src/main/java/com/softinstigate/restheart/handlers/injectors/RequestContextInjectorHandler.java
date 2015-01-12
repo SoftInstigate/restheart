@@ -18,8 +18,14 @@
 package com.softinstigate.restheart.handlers.injectors;
 
 import com.mongodb.util.JSON;
+import com.softinstigate.restheart.db.DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestContext;
+import static com.softinstigate.restheart.handlers.RequestContext.EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY;
+import static com.softinstigate.restheart.handlers.RequestContext.FILTER_QPARAM_KEY;
+import static com.softinstigate.restheart.handlers.RequestContext.PAGESIZE_QPARAM_KEY;
+import static com.softinstigate.restheart.handlers.RequestContext.PAGE_QPARAM_KEY;
+import static com.softinstigate.restheart.handlers.RequestContext.SORT_BY_QPARAM_KEY;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import com.softinstigate.restheart.utils.URLUtilis;
@@ -70,7 +76,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         RequestContext rcontext = new RequestContext(exchange, whereUri, whatUri);
 
-        Deque<String> __pagesize = exchange.getQueryParameters().get("pagesize");
+        Deque<String> __pagesize = exchange.getQueryParameters().get(PAGESIZE_QPARAM_KEY);
 
         int page = 1; // default page
         int pagesize = 100; // default pagesize
@@ -93,7 +99,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             rcontext.setPagesize(pagesize);
         }
 
-        Deque<String> __page = exchange.getQueryParameters().get("page");
+        Deque<String> __page = exchange.getQueryParameters().get(PAGE_QPARAM_KEY);
 
         if (__page != null && !(__page.isEmpty())) {
             try {
@@ -128,11 +134,11 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 return;
             }
 
-            rcontext.setSortBy(exchange.getQueryParameters().get("sort_by"));
+            rcontext.setSortBy(exchange.getQueryParameters().get(SORT_BY_QPARAM_KEY));
         }
 
         // get and check filter parameter
-        Deque<String> filters = exchange.getQueryParameters().get("filter");
+        Deque<String> filters = exchange.getQueryParameters().get(FILTER_QPARAM_KEY);
 
         if (filters != null) {
             if (filters.stream().anyMatch(f -> {
@@ -155,8 +161,29 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 return; // an error occurred
             }
 
-            rcontext.setFilter(exchange.getQueryParameters().get("filter"));
+            rcontext.setFilter(exchange.getQueryParameters().get(FILTER_QPARAM_KEY));
         }
+        
+        // get and check eager parameter
+        Deque<String> __eager = exchange.getQueryParameters().get(EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY);
+
+        // default value
+        EAGER_CURSOR_ALLOCATION_POLICY eager = EAGER_CURSOR_ALLOCATION_POLICY.LINEAR; 
+        
+        if (__eager != null && !__eager.isEmpty()) {
+            String _eager = __eager.getFirst();
+            
+            if (_eager != null && !_eager.isEmpty()) {
+                try {
+                    eager = EAGER_CURSOR_ALLOCATION_POLICY.valueOf(_eager.trim().toUpperCase());
+                } catch (IllegalArgumentException iae) {
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal eager paramenter (must be LINEAR, RANDOM or NONE)");
+                    return;
+                }
+            }
+        } 
+
+        rcontext.setCursorAllocationPolicy(eager);
 
         next.handleRequest(exchange, rcontext);
     }

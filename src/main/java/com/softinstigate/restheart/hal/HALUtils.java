@@ -59,7 +59,7 @@ public class HALUtils {
      */
     public static TreeMap<String, String> getPaginationLinks(HttpServerExchange exchange, RequestContext context, long size) throws IllegalQueryParamenterException {
         String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
-        String queryString = exchange.getQueryString();
+        String queryString = URLUtilis.decodeQueryString(exchange.getQueryString());
 
         int page = context.getPage();
         int pagesize = context.getPagesize();
@@ -80,7 +80,7 @@ public class HALUtils {
                 links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize);
             }
         } else {
-            String queryStringNoPagingProps = URLUtilis.getQueryStringRemovingParams(exchange, "page", "pagesize");
+            String queryStringNoPagingProps = URLUtilis.decodeQueryString(URLUtilis.getQueryStringRemovingParams(exchange, "page", "pagesize"));
 
             if (queryStringNoPagingProps == null || queryStringNoPagingProps.isEmpty()) {
                 links.put("first", requestPath + "?pagesize=" + pagesize);
@@ -97,7 +97,7 @@ public class HALUtils {
                 }
 
                 if (page > 1) {
-                    links.put("previous", requestPath + (page >= 2 ? "?page=" + (page - 1) : "") + (page > 2 ? "&pagesize=" + pagesize : "?pagesize=" + pagesize));
+                    links.put("previous", requestPath + (page >= 2 ? "?page=" + (page - 1) : "") + (page >= 2 ? "&pagesize=" + pagesize : "?pagesize=" + pagesize));
                 }
             } else {
                 links.put("first", requestPath + "?pagesize=" + pagesize + "&" + queryStringNoPagingProps);
