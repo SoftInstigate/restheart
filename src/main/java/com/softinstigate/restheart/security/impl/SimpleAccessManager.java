@@ -30,10 +30,12 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.net.URL;
 import java.security.Principal;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Sets.newHashSet;
@@ -74,25 +76,14 @@ public class SimpleAccessManager implements AccessManager {
 
         this.acl = new HashMap<>();
 
-        FileInputStream fis = null;
-
         try {
-            fis = new FileInputStream(new File(confFilePath));
-            init((Map<String, Object>) new Yaml().load(fis));
+            init((Map<String, Object>) new Yaml().load(new FileInputStream(new File(confFilePath))));
         } catch (FileNotFoundException fnef) {
             logger.error("configuration file not found.", fnef);
             throw new IllegalArgumentException("configuration file not found.", fnef);
         } catch (Throwable t) {
             logger.error("wrong configuration file format.", t);
             throw new IllegalArgumentException("wrong configuration file format.", t);
-        } finally {
-            if (fis != null) {
-                try {
-                    fis.close();
-                } catch (IOException ex) {
-                    logger.warn("error closing the configuration file {}", confFilePath);
-                }
-            }
         }
     }
 
