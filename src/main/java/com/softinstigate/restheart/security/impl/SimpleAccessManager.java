@@ -155,7 +155,7 @@ public class SimpleAccessManager implements AccessManager {
             // not authenticated, let's get the permission set given to the $unauthenticated group
             return getAcl() == null ? false : getAcl().get("$unauthenticated").stream().anyMatch(p -> p.resolve(exchange));
         } else if (account != null && account.getRoles() != null) {
-            return account.getRoles().stream().anyMatch(r -> getAcl() == null ? false : getAcl().get(r).stream().anyMatch(p -> p.resolve(exchange)));
+            return account.getRoles().stream().anyMatch(r -> getAcl() == null || getAcl().get(r) == null  ? false : getAcl().get(r).stream().anyMatch(p -> p.resolve(exchange)));
         } else {
             return false;
         }
