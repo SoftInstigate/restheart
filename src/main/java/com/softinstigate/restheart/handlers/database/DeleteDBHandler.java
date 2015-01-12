@@ -27,17 +27,12 @@ import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.bson.types.ObjectId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare
  */
 public class DeleteDBHandler extends PipedHttpHandler {
-
-    private static final Logger logger = LoggerFactory.getLogger(DeleteDBHandler.class);
-
     /**
      * Creates a new instance of DeleteDBHandler
      */
@@ -57,7 +52,6 @@ public class DeleteDBHandler extends PipedHttpHandler {
 
         if (etag == null) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT, "the " + Headers.ETAG + " header must be provided");
-            logger.warn("error. you must provide the {} header", Headers.ETAG);
             return;
         }
 
