@@ -17,28 +17,30 @@
  */
 package com.softinstigate.restheart.security.impl;
 
-import com.softinstigate.restheart.security.AccessManager;
 import com.softinstigate.restheart.handlers.RequestContext;
+import com.softinstigate.restheart.security.AccessManager;
 import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateParser;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.net.URL;
+import java.security.Principal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
+
+import static com.google.common.collect.Sets.newHashSet;
+
 /**
- *
  * @author Andrea Di Cesare
  */
 public class SimpleAccessManager implements AccessManager {
@@ -48,7 +50,6 @@ public class SimpleAccessManager implements AccessManager {
     private HashMap<String, Set<Predicate>> acl;
 
     /**
-     *
      * @param arguments
      */
     public SimpleAccessManager(Map<String, Object> arguments) {
@@ -73,23 +74,12 @@ public class SimpleAccessManager implements AccessManager {
 
         this.acl = new HashMap<>();
 
-        FileInputStream fis = null;
-
         try {
-            fis = new FileInputStream(new File(confFilePath));
-            init((Map<String, Object>) new Yaml().load(fis));
+            init((Map<String, Object>) new Yaml().load(new FileInputStream(new File(confFilePath))));
         } catch (FileNotFoundException fnef) {
             throw new IllegalArgumentException("configuration file not found.", fnef);
         } catch (Throwable t) {
             throw new IllegalArgumentException("wrong configuration file format.", t);
-        } finally {
-            if (fis != null) {
-                try {
-                    fis.close();
-                } catch (IOException ex) {
-                    logger.warn("error closing the configuration file {}", confFilePath);
-                }
-            }
         }
     }
 
@@ -103,57 +93,74 @@ public class SimpleAccessManager implements AccessManager {
         List<Map<String, Object>> users = (List<Map<String, Object>>) _users;
 
         users.stream().forEach(u -> {
-            Object _role = u.get("role");
-            Object _predicate = u.get("predicate");
+                    Object _role = u.get("role");
+                    Object _predicate = u.get("predicate");
 
-            if (_role == null || !(_role instanceof String)) {
-                throw new IllegalArgumentException("wrong configuration file format. a permission entry is missing the role");
-            }
+                    if (_role == null || !(_role instanceof String)) {
+                        throw new IllegalArgumentException("wrong configuration file format. a permission entry is missing the role");
+                    }
 
-            String role = (String) _role;
+                    String role = (String) _role;
 
-            if (_predicate == null || !(_predicate instanceof String)) {
-                throw new IllegalArgumentException("wrong configuration file format. a permission entry is missing the predicate");
-            }
+                    if (_predicate == null || !(_predicate instanceof String)) {
+                        throw new IllegalArgumentException("wrong configuration file format. a permission entry is missing the predicate");
+                    }
 
-            Predicate predicate = null;
+                    Predicate predicate = null;
 
-            try {
-                predicate = PredicateParser.parse((String) _predicate, this.getClass().getClassLoader());
-            } catch (Throwable t) {
-                throw new IllegalArgumentException("wrong configuration file format. wrong predictate" + (String) _predicate, t);
-            }
+                    try {
+                        predicate = PredicateParser.parse((String) _predicate, this.getClass().getClassLoader());
+                    } catch (Throwable t) {
+                        throw new IllegalArgumentException("wrong configuration file format. wrong predictate" + (String) _predicate, t);
+                    }
 
-            Set<Predicate> perms = getAcl().get(role);
-
-            if (perms == null) {
-                perms = new HashSet<>();
-                getAcl().put(role, perms);
-            }
-
-            perms.add(predicate);
-        }
+                    aclForRole(role).add(predicate);
+                }
         );
     }
 
     /**
-     *
      * @param exchange
      * @param context
      * @return
      */
     @Override
     public boolean isAllowed(HttpServerExchange exchange, RequestContext context) {
-        Account account = exchange.getSecurityContext().getAuthenticatedAccount();
-
-        if (account == null && getAcl().get("$unauthenticated") != null) {
-            // not authenticated, let's get the permission set given to the $unauthenticated group
-            return getAcl() == null ? false : getAcl().get("$unauthenticated").stream().anyMatch(p -> p.resolve(exchange));
-        } else if (account != null && account.getRoles() != null) {
-            return account.getRoles().stream().anyMatch(r -> getAcl() == null ? false : getAcl().get(r).stream().anyMatch(p -> p.resolve(exchange)));
-        } else {
+        if (noAclDefined()) {
             return false;
         }
+
+        return roles(exchange).anyMatch(role -> aclForRole(role).stream().anyMatch(p -> p.resolve(exchange)));
+    }
+
+    private Stream<String> roles(HttpServerExchange exchange) {
+        return account(exchange).getRoles().stream();
+    }
+
+    private boolean noAclDefined() {
+        return getAcl() == null;
+    }
+
+    private Set<Predicate> aclForRole(String role) {
+
+        Set<Predicate> predicates = getAcl().get(role);
+        if (predicates == null) {
+            predicates = newHashSet();
+            getAcl().put(role, predicates);
+        }
+
+        return predicates;
+    }
+
+    private Account account(HttpServerExchange exchange) {
+        Account account = exchange.getSecurityContext().getAuthenticatedAccount();
+
+        if (isAuthenticated(account)) return account;
+        else return new NotAuthenticatedAccount();
+    }
+
+    private boolean isAuthenticated(Account authenticatedAccount) {
+        return authenticatedAccount != null;
     }
 
     /**
@@ -162,5 +169,17 @@ public class SimpleAccessManager implements AccessManager {
     @Override
     public HashMap<String, Set<Predicate>> getAcl() {
         return acl;
+    }
+
+    private static class NotAuthenticatedAccount implements Account {
+        @Override
+        public Principal getPrincipal() {
+            return null;
+        }
+
+        @Override
+        public Set<String> getRoles() {
+            return newHashSet("$unauthenticated");
+        }
     }
 }
