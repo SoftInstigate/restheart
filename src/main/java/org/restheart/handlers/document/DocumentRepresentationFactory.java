@@ -86,7 +86,7 @@ public class DocumentRepresentationFactory {
         String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
         if (context.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
-            rep.addLink(new Link("rh:coll", URLUtilis.getPerentPath(requestPath)));
+            rep.addLink(new Link("rh:coll", URLUtilis.getParentPath(requestPath)));
         }
         rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-doc-{rel}", false), true);
 

@@ -66,7 +66,7 @@ public class URLUtilis {
      * @param path
      * @return
      */
-    static public String getPerentPath(String path) {
+    static public String getParentPath(String path) {
         if (path == null || path.equals("") || path.equals("/")) {
             return path;
         }
