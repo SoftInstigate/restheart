@@ -99,7 +99,7 @@ public final class SimpleFileIdentityManager extends AbstractSecurityManager imp
     @Override
     public Account verify(String id, Credential credential) {
         final Account account = accounts.get(id);
-        return (account != null && verifyCredential(account, credential)) ? account : null;
+        return account != null && verifyCredential(account, credential) ? account : null;
     }
 
     @Override

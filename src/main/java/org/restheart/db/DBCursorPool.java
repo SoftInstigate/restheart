@@ -149,7 +149,7 @@ public class DBCursorPool {
             return;
         }
 
-        int firstSlice = (key.getSkipped() / SKIP_SLICE_LINEAR_WIDTH);
+        int firstSlice = key.getSkipped() / SKIP_SLICE_LINEAR_WIDTH;
 
         executor.submit(() -> {
             int slice = firstSlice;

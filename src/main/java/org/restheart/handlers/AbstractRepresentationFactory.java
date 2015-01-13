@@ -72,7 +72,9 @@ public abstract class AbstractRepresentationFactory {
     }
 
     protected Representation createRepresentation(final HttpServerExchange exchange, final RequestContext context, final String requestPath) {
-        String queryString = (exchange.getQueryString() == null || exchange.getQueryString().isEmpty()) ? "" : "?" + URLUtilis.decodeQueryString(exchange.getQueryString());
+        String queryString = exchange.getQueryString() == null || exchange.getQueryString().isEmpty()
+                ? ""
+                : "?" + URLUtilis.decodeQueryString(exchange.getQueryString());
         Representation rep = new Representation(requestPath + queryString);
         rep.addProperty("_type", context.getType().name());
         return rep;

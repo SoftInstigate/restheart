@@ -114,7 +114,7 @@ public final class SimpleAccessManager extends AbstractSecurityManager implement
 
     private Account account(HttpServerExchange exchange) {
         final Account account = exchange.getSecurityContext().getAuthenticatedAccount();
-        return (isAuthenticated(account)) ? account : new NotAuthenticatedAccount();
+        return isAuthenticated(account) ? account : new NotAuthenticatedAccount();
     }
 
     private boolean isAuthenticated(Account authenticatedAccount) {

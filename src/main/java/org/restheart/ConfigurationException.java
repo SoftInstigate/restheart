@@ -27,7 +27,7 @@ public class ConfigurationException extends Exception {
     }
     
     public ConfigurationException(String message) {
-        super();
+        super(message);
     }
     
     public ConfigurationException(String message, Throwable cause) {
