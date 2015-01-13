@@ -23,59 +23,29 @@ import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateParser;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.yaml.snakeyaml.Yaml;
-
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.net.URL;
 import java.security.Principal;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Sets.newHashSet;
+import java.util.function.Consumer;
 
 /**
  * @author Andrea Di Cesare
  */
-public class SimpleAccessManager implements AccessManager {
+public final class SimpleAccessManager extends AbstractSecurityManager implements AccessManager {
 
-    private static final Logger logger = LoggerFactory.getLogger(SimpleAccessManager.class);
-
-    private HashMap<String, Set<Predicate>> acl;
+    private final HashMap<String, Set<Predicate>> acl = new HashMap<>();
 
     /**
      * @param arguments
      */
     public SimpleAccessManager(Map<String, Object> arguments) {
-        if (arguments == null) {
-            throw new IllegalArgumentException("missing required arguments conf-file");
-        }
-
-        Object _confFilePath = arguments.getOrDefault("conf-file", "security.yml");
-
-        if (_confFilePath == null || !(_confFilePath instanceof String)) {
-            throw new IllegalArgumentException("missing required arguments conf-file");
-        }
-
-        String confFilePath = (String) _confFilePath;
-
-        if (!confFilePath.startsWith("/")) {
-            // this is to allow specifying the configuration file path relative to the jar (also working when running from classes)
-            URL location = this.getClass().getProtectionDomain().getCodeSource().getLocation();
-            File locationFile = new File(location.getPath());
-            confFilePath = locationFile.getParent() + File.separator + confFilePath;
-        }
-
-        this.acl = new HashMap<>();
-
         try {
-            init((Map<String, Object>) new Yaml().load(new FileInputStream(new File(confFilePath))));
+            init(arguments, "permissions");
         } catch (FileNotFoundException fnef) {
             throw new IllegalArgumentException("configuration file not found.", fnef);
         } catch (Throwable t) {
@@ -83,40 +53,32 @@ public class SimpleAccessManager implements AccessManager {
         }
     }
 
-    private void init(Map<String, Object> conf) {
-        Object _users = conf.get("permissions");
+    @Override
+    Consumer<? super Map<String, Object>> consumeConfiguration() {
+        return u -> {
+            Object _role = u.get("role");
+            Object _predicate = u.get("predicate");
 
-        if (_users == null || !(_users instanceof List)) {
-            throw new IllegalArgumentException("wrong configuration file format. missing mandatory permissions section.");
-        }
+            if (_role == null || !(_role instanceof String)) {
+                throw new IllegalArgumentException("wrong configuration file format. a permission entry is missing the role");
+            }
 
-        List<Map<String, Object>> users = (List<Map<String, Object>>) _users;
+            String role = (String) _role;
 
-        users.stream().forEach(u -> {
-                    Object _role = u.get("role");
-                    Object _predicate = u.get("predicate");
+            if (_predicate == null || !(_predicate instanceof String)) {
+                throw new IllegalArgumentException("wrong configuration file format. a permission entry is missing the predicate");
+            }
 
-                    if (_role == null || !(_role instanceof String)) {
-                        throw new IllegalArgumentException("wrong configuration file format. a permission entry is missing the role");
-                    }
+            Predicate predicate = null;
 
-                    String role = (String) _role;
+            try {
+                predicate = PredicateParser.parse((String) _predicate, this.getClass().getClassLoader());
+            } catch (Throwable t) {
+                throw new IllegalArgumentException("wrong configuration file format. wrong predictate" + (String) _predicate, t);
+            }
 
-                    if (_predicate == null || !(_predicate instanceof String)) {
-                        throw new IllegalArgumentException("wrong configuration file format. a permission entry is missing the predicate");
-                    }
-
-                    Predicate predicate = null;
-
-                    try {
-                        predicate = PredicateParser.parse((String) _predicate, this.getClass().getClassLoader());
-                    } catch (Throwable t) {
-                        throw new IllegalArgumentException("wrong configuration file format. wrong predictate" + (String) _predicate, t);
-                    }
-
-                    aclForRole(role).add(predicate);
-                }
-        );
+            aclForRole(role).add(predicate);
+        };
     }
 
     /**
@@ -129,7 +91,6 @@ public class SimpleAccessManager implements AccessManager {
         if (noAclDefined()) {
             return false;
         }
-
         return roles(exchange).anyMatch(role -> aclForRole(role).stream().anyMatch(p -> p.resolve(exchange)));
     }
 
@@ -142,7 +103,6 @@ public class SimpleAccessManager implements AccessManager {
     }
 
     private Set<Predicate> aclForRole(String role) {
-
         Set<Predicate> predicates = getAcl().get(role);
         if (predicates == null) {
             predicates = newHashSet();
@@ -153,10 +113,8 @@ public class SimpleAccessManager implements AccessManager {
     }
 
     private Account account(HttpServerExchange exchange) {
-        Account account = exchange.getSecurityContext().getAuthenticatedAccount();
-
-        if (isAuthenticated(account)) return account;
-        else return new NotAuthenticatedAccount();
+        final Account account = exchange.getSecurityContext().getAuthenticatedAccount();
+        return (isAuthenticated(account)) ? account : new NotAuthenticatedAccount();
     }
 
     private boolean isAuthenticated(Account authenticatedAccount) {
