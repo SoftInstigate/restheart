@@ -72,9 +72,18 @@
         </developer>
     </developers>
     
-    <!-- TODO: Issue Management -->
+    <issueManagement>
+        <url>https://github.com/SoftInstigate/restheart/issues</url>
+        <system>GitHub Issues</system>
+    </issueManagement>
+    
+    <scm>
+        <url>https://github.com/SoftInstigate/restheart</url>
+        <connection>scm:git:git@github.com:SoftInstigate/restheart.git</connection>
+        <developerConnection>scm:git:git@github.com:SoftInstigate/restheart.git</developerConnection>
+    </scm>
+    
     <!-- TODO: Continuous Integration Management -->
-    <!-- TODO: Version Control (SCM) -->
     
     <dependencies>
         <dependency>
