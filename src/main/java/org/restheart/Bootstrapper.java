@@ -96,7 +96,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -263,9 +262,7 @@ public final class Bootstrapper {
         } else if (!shouldDemonize(args)) {
             if (!configuration.isLogToConsole()) {
                 LoggingInitializer.stopConsoleLogging();
-            } else {
             }
-
             if (configuration.isLogToFile()) {
                 LoggingInitializer.startFileLogging(configuration.getLogFilePath());
             }
