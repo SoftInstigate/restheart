@@ -27,45 +27,50 @@ package org.restheart.test.performance;
  * @author Andrea Di Cesare
  */
 import com.mongodb.BasicDBObject;
-import org.restheart.Configuration;
+import io.undertow.util.Headers;
 import org.restheart.db.DocumentDAO;
 import org.restheart.db.MongoDBClientSingleton;
 import java.io.File;
 import java.io.IOException;
 import java.net.Authenticator;
-import java.net.MalformedURLException;
 import java.net.PasswordAuthentication;
-import java.net.URL;
 import java.nio.file.Path;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
+import org.apache.http.client.fluent.Executor;
+import org.apache.http.client.fluent.Request;
+import org.apache.http.client.fluent.Response;
+import org.apache.http.entity.ContentType;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import org.restheart.ConfigurationException;
+import org.restheart.hal.Representation;
+import org.restheart.utils.FileUtils;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
  * @author Andrea Di Cesare
  */
 public class LoadPutPT {
-    private URL url;
+    private String url;
 
     private String id;
     private String pwd;
-    private boolean printData = false;
     private String db;
     private String coll;
     
-    private final Path CONF_FILE = new File("./etc/restheart-integrationtest.yml").toPath();
-
-    /**
-     *
-     * @param url
-     * @throws MalformedURLException
-     */
-    public void setUrl(String url) throws MalformedURLException {
-        this.url = new URL(url);
-    }
+    private static final ContentType halCT = ContentType.create(Representation.HAL_JSON_MEDIA_TYPE);
+    
+    private Executor httpExecutor;
+    
+    private final Path CONF_FILE = new File("./etc/restheart-perftest.yml").toPath();
 
     /**
      *
      */
-    public void prepare() throws Exception {
+    public void prepare() {
         Authenticator.setDefault(new Authenticator() {
             @Override
             protected PasswordAuthentication getPasswordAuthentication() {
@@ -73,15 +78,35 @@ public class LoadPutPT {
             }
         });
 
-        MongoDBClientSingleton.init(new Configuration(CONF_FILE));
-    }
+        try {
+            MongoDBClientSingleton.init(FileUtils.getConfiguration(CONF_FILE, false));
+        } catch (ConfigurationException ex) {
+            System.out.println(ex.getMessage() + ", exiting...");
+            System.exit(-1);
+        }
 
+        httpExecutor = Executor.newInstance();
+            // for perf test we disable the restheart security
+            //.authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), id, pwd);
+    }
+    
     /**
      *
      * @throws IOException
      */
-    public void put() throws IOException {
-        throw new RuntimeException("not yet implemented");
+    public void put() throws Exception {
+        BasicDBObject content = new BasicDBObject("random", Math.random()); 
+        
+        Response resp = httpExecutor.execute(Request.Post(url).bodyString(content.toString(), halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        
+        HttpResponse httpResp = resp.returnResponse();
+        assertNotNull(httpResp);
+        HttpEntity entity = httpResp.getEntity();
+        assertNotNull(entity);
+        StatusLine statusLine = httpResp.getStatusLine();
+        assertNotNull(statusLine);
+
+        assertEquals("check status code", HttpStatus.SC_CREATED, statusLine.getStatusCode());
     }
 
     /**
@@ -109,13 +134,6 @@ public class LoadPutPT {
     }
 
     /**
-     * @param printData the printData to set
-     */
-    public void setPrintData(String printData) {
-        this.printData = Boolean.valueOf(printData);
-    }
-
-    /**
      * @param db the db to set
      */
     public void setDb(String db) {
@@ -127,5 +145,13 @@ public class LoadPutPT {
      */
     public void setColl(String coll) {
         this.coll = coll;
+    }
+    
+    /**
+     *
+     * @param url
+     */
+    public void setUrl(String url) {
+        this.url = url;
     }
 }

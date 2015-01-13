@@ -47,16 +47,18 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 /**
@@ -72,8 +74,10 @@ public class LoadGetPT {
     private boolean printData = false;
     private String db;
     private String coll;
+    private String filter = null;
+    private int page = 1;
 
-    private final Path CONF_FILE = new File("./etc/restheart-integrationtest.yml").toPath();
+    private final Path CONF_FILE = new File("./etc/restheart-perftest.yml").toPath();
     private Executor httpExecutor;
 
     private final ConcurrentHashMap<Long, Integer> threadPages = new ConcurrentHashMap<>();
@@ -105,7 +109,9 @@ public class LoadGetPT {
             System.exit(-1);
         }
 
-        httpExecutor = Executor.newInstance().authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), id, pwd);
+        httpExecutor = Executor.newInstance();
+            // for perf test we disable the restheart security
+        //.authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), id, pwd);
     }
 
     /**
@@ -132,14 +138,30 @@ public class LoadGetPT {
 
     /**
      *
-     * @throws IOException
      */
-    public void dbdirect() throws IOException {
+    public void dbdirect() {
         DBCollection dbcoll = CollectionDAO.getCollection(db, coll);
 
-        //CollectionDAO.getCollectionSize(coll, null);
-        //CollectionDAO.getCollectionProps(coll);
-        ArrayList<DBObject> data = CollectionDAO.getCollectionData(dbcoll, 5000, 100, null, null, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE);
+        Deque<String> _filter;
+
+        if (filter == null) {
+            _filter = null;
+        } else {
+            _filter = new ArrayDeque<>();
+            _filter.add(filter);
+        }
+
+        ArrayList<DBObject> data;
+        
+        try {
+            data = CollectionDAO.getCollectionData(dbcoll, page, 100, null, _filter, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE);
+        } catch(Exception e) {
+            System.out.println("error: " + e.getMessage());
+            return;
+        }
+        
+        assertNotNull(data);
+        assertFalse(data.isEmpty());
 
         if (printData) {
             System.out.println(data);
@@ -147,17 +169,17 @@ public class LoadGetPT {
     }
 
     public void getPagesLinearly() throws Exception {
-        Integer page = threadPages.get(Thread.currentThread().getId());
+        Integer _page = threadPages.get(Thread.currentThread().getId());
 
-        if (page == null) {
-            threadPages.put(Thread.currentThread().getId(), 5000);
-            page = 5000;
+        if (_page == null) {
+            threadPages.put(Thread.currentThread().getId(), page);
+            _page = page;
         }
 
-        String pagedUrl = url + "?page=" + (page % 10000);
+        String pagedUrl = url + "?page=" + (_page % 10000);
 
-        page++;
-        threadPages.put(Thread.currentThread().getId(), page);
+        _page++;
+        threadPages.put(Thread.currentThread().getId(), _page);
 
         if (printData) {
             System.out.println(Thread.currentThread().getId() + " -> " + pagedUrl);
@@ -227,5 +249,19 @@ public class LoadGetPT {
      */
     public void setColl(String coll) {
         this.coll = coll;
+    }
+
+    /**
+     * @param filter the filter to set
+     */
+    public void setFilter(String filter) {
+        this.filter = filter;
+    }
+
+    /**
+     * @param page the page to set
+     */
+    public void setPage(int page) {
+        this.page = page;
     }
 }
