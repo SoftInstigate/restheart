@@ -442,8 +442,9 @@ public final class Bootstrapper {
 
         } else {
             try {
-                Object idm = Class.forName(configuration.getIdmImpl()).getConstructor(Map.class
-                ).newInstance(configuration.getIdmArgs());
+                Object idm = Class.forName(configuration.getIdmImpl())
+                        .getConstructor(Map.class)
+                        .newInstance(configuration.getIdmArgs());
                 identityManager = (IdentityManager) idm;
             } catch (ClassCastException | NoSuchMethodException | SecurityException | ClassNotFoundException | IllegalArgumentException | InstantiationException | IllegalAccessException | InvocationTargetException ex) {
                 LOGGER.error("error configuring idm implementation {}", configuration.getIdmImpl(), ex);
@@ -463,8 +464,9 @@ public final class Bootstrapper {
 
         } else {
             try {
-                Object am = Class.forName(configuration.getAmImpl()).getConstructor(Map.class
-                ).newInstance(configuration.getAmArgs());
+                Object am = Class.forName(configuration.getAmImpl())
+                        .getConstructor(Map.class)
+                        .newInstance(configuration.getAmArgs());
                 accessManager = (AccessManager) am;
             } catch (ClassCastException | NoSuchMethodException | SecurityException | ClassNotFoundException | IllegalArgumentException | InstantiationException | IllegalAccessException | InvocationTargetException ex) {
                 LOGGER.error("error configuring acess manager implementation {}", configuration.getAmImpl(), ex);
@@ -488,9 +490,7 @@ public final class Bootstrapper {
                 sslContext = SSLContext.getInstance("TLS");
                 kmf = KeyManagerFactory.getInstance("SunX509");
                 ks = KeyStore.getInstance("JKS");
-                ks
-                        .load(Bootstrapper.class
-                                .getClassLoader().getResourceAsStream(storename), storepass);
+                ks.load(Bootstrapper.class.getClassLoader().getResourceAsStream(storename), storepass);
 
                 kmf.init(ks, keypass);
 
@@ -740,8 +740,9 @@ public final class Bootstrapper {
 
                     }
 
-                    Object o = Class.forName(alClazz).getConstructor(PipedHttpHandler.class, Map.class
-                    ).newInstance(null, (Map) alArgs);
+                    Object o = Class.forName(alClazz)
+                            .getConstructor(PipedHttpHandler.class, Map.class)
+                            .newInstance(null, (Map) alArgs);
 
                     if (o instanceof ApplicationLogicHandler) {
                         ApplicationLogicHandler alHandler = (ApplicationLogicHandler) o;
