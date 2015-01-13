@@ -91,12 +91,4 @@ public class PatchDocumentHandler extends PipedHttpHandler {
         exchange.endExchange();
     }
 
-    private static Object getId(String id) {
-        if (ObjectId.isValid(id)) {
-            return new ObjectId(id);
-        } else {
-            // the id is not an object id
-            return id;
-        }
-    }
 }

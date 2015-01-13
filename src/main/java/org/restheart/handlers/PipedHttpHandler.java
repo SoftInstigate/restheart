@@ -23,6 +23,7 @@ import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import java.net.URISyntaxException;
+import org.bson.types.ObjectId;
 
 /**
  *
@@ -57,5 +58,14 @@ public abstract class PipedHttpHandler implements HttpHandler {
         }
 
         DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
+    }
+
+    protected static Object getId(String id) {
+        if (ObjectId.isValid(id)) {
+            return new ObjectId(id);
+        } else {
+            // the id is not an object id
+            return id;
+        }
     }
 }
