@@ -43,7 +43,8 @@ public class RequestContext {
         COLLECTION,
         DOCUMENT,
         COLLECTION_INDEXES,
-        INDEX
+        INDEX,
+        FILE
     };
 
     public enum METHOD {
@@ -120,7 +121,34 @@ public class RequestContext {
         this.mappedRequestUri = unmapUri(exchange.getRequestPath());
 
         pathTokens = mappedRequestUri.split("/"); // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
+        this.type = selectRequestType(pathTokens);
 
+        HttpString _method = exchange.getRequestMethod();
+        this.method = selectRequestMethod(_method);
+    }
+
+    protected static METHOD selectRequestMethod(HttpString _method) {
+        METHOD method;
+        if (Methods.GET.equals(_method)) {
+            method = METHOD.GET;
+        } else if (Methods.POST.equals(_method)) {
+            method = METHOD.POST;
+        } else if (Methods.PUT.equals(_method)) {
+            method = METHOD.PUT;
+        } else if (Methods.DELETE.equals(_method)) {
+            method = METHOD.DELETE;
+        } else if ("PATCH".equals(_method.toString())) {
+            method = METHOD.PATCH;
+        } else if (Methods.OPTIONS.equals(_method)) {
+            method = METHOD.OPTIONS;
+        } else {
+            method = METHOD.OTHER;
+        }
+        return method;
+    }
+
+    protected static TYPE selectRequestType(String[] pathTokens) {
+        TYPE type;
         if (pathTokens.length < 2) {
             type = TYPE.ROOT;
         } else if (pathTokens.length < 3) {
@@ -134,24 +162,7 @@ public class RequestContext {
         } else {
             type = TYPE.DOCUMENT;
         }
-
-        HttpString _method = exchange.getRequestMethod();
-
-        if (Methods.GET.equals(_method)) {
-            this.method = METHOD.GET;
-        } else if (Methods.POST.equals(_method)) {
-            this.method = METHOD.POST;
-        } else if (Methods.PUT.equals(_method)) {
-            this.method = METHOD.PUT;
-        } else if (Methods.DELETE.equals(_method)) {
-            this.method = METHOD.DELETE;
-        } else if ("PATCH".equals(_method.toString())) {
-            this.method = METHOD.PATCH;
-        } else if (Methods.OPTIONS.equals(_method)) {
-            this.method = METHOD.OPTIONS;
-        } else {
-            this.method = METHOD.OTHER;
-        }
+        return type;
     }
 
     /**

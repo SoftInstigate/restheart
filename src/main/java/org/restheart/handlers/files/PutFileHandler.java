@@ -1,6 +1,6 @@
 /*
  * RESTHeart - the data REST API server
- * Copyright (C) 2014 - 2015 SoftInstigate Srl
+ * Copyright (C) SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,22 +15,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.test.unit;
+package org.restheart.handlers.files;
 
-//import org.junit.Test;
-//import static org.junit.Assert.*;
+import io.undertow.server.HttpServerExchange;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.RequestContext;
+
 /**
  *
- * @author Andrea Di Cesare
+ * @author Maurizio Turatti <info@maurizioturatti.com>
  */
-public class RepresentationTest {
+public class PutFileHandler extends PipedHttpHandler {
 
-    public RepresentationTest() {
+    public PutFileHandler() {
+        super(null);
     }
 
-    // TODO add test methods here.
-    // The methods must be annotated with annotation @Test. For example:
-    //
-    // @Test
-    // public void hello() {}
+    @Override
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
 }
