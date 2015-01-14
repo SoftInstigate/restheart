@@ -17,6 +17,7 @@
  */
 package org.restheart.handlers;
 
+import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -24,7 +25,8 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 /**
  *
  * @author Maurizio Turatti <info@maurizioturatti.com>
@@ -56,9 +58,15 @@ public class RequestContextTest {
     @Test
     public void testSelectRequestMethod() {
         System.out.println("selectRequestMethod");
-        
+
         HttpString _method = new HttpString("UNKNOWN");
         assertEquals(RequestContext.METHOD.OTHER, RequestContext.selectRequestMethod(_method));
+        
+        _method = new HttpString("GET");
+        assertEquals(RequestContext.METHOD.GET, RequestContext.selectRequestMethod(_method));
+        
+        _method = new HttpString("PATCH");
+        assertEquals(RequestContext.METHOD.PATCH, RequestContext.selectRequestMethod(_method));
     }
 
     /**
@@ -67,26 +75,45 @@ public class RequestContextTest {
     @Test
     public void testSelectRequestType() {
         System.out.println("selectRequestType");
-                
+
         String[] pathTokens = "/".split("/");
         assertEquals(RequestContext.TYPE.ROOT, RequestContext.selectRequestType(pathTokens));
-        
+
         pathTokens = "/db".split("/");
         assertEquals(RequestContext.TYPE.DB, RequestContext.selectRequestType(pathTokens));
-        
+
         pathTokens = "/db/collection".split("/");
         assertEquals(RequestContext.TYPE.COLLECTION, RequestContext.selectRequestType(pathTokens));
-        
+
         pathTokens = "/db/collection/document".split("/");
         assertEquals(RequestContext.TYPE.DOCUMENT, RequestContext.selectRequestType(pathTokens));
-        
+
         pathTokens = "/db/collection/_indexes".split("/");
         assertEquals(RequestContext.TYPE.COLLECTION_INDEXES, RequestContext.selectRequestType(pathTokens));
-        
+
         pathTokens = "/db/collection/_indexes/123".split("/");
         assertEquals(RequestContext.TYPE.INDEX, RequestContext.selectRequestType(pathTokens));
     }
-    
-    
+
+    @Test
+    public void testGetMappedRequestUri() {
+        System.out.println("getMappedRequestUri");
+        
+        HttpServerExchange exchange = new HttpServerExchange(null);
+        exchange.setRequestPath("/");
+        exchange.setRequestMethod(HttpString.EMPTY);
+
+        String whatUri = "/mydb/mycollection";
+        String whereUri = "/";
+        
+        RequestContext context = new RequestContext(exchange, whereUri, whatUri);
+        assertEquals("/mydb/mycollection", context.getMappedRequestUri());
+        
+        whatUri = "*";
+        whereUri = "/data";
+        
+        context = new RequestContext(exchange, whereUri, whatUri);
+        assertEquals("/", context.getMappedRequestUri());
+    }
 
 }

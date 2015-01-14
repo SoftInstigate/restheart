@@ -65,6 +65,14 @@ public class RequestContext {
     public static final String FILTER_QPARAM_KEY = "filter";
     public static final String EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY = "eager";
 
+    public static final String SLASH = "/";
+    public static final String PATCH = "PATCH";
+    public static final String UNDERSCORE = "_";
+    public static final String SYSTEM = "system.";
+    public static final String LOCAL = "local";
+    public static final String ADMIN = "admin";
+    public static final String _INDEXES = "_indexes";
+
     private final String whereUri;
     private final String whatUri;
 
@@ -120,11 +128,11 @@ public class RequestContext {
         this.unmappedRequestUri = exchange.getRequestPath();
         this.mappedRequestUri = unmapUri(exchange.getRequestPath());
 
-        pathTokens = mappedRequestUri.split("/"); // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
+        // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
+        pathTokens = mappedRequestUri.split(SLASH); 
         this.type = selectRequestType(pathTokens);
 
-        HttpString _method = exchange.getRequestMethod();
-        this.method = selectRequestMethod(_method);
+        this.method = selectRequestMethod(exchange.getRequestMethod());
     }
 
     protected static METHOD selectRequestMethod(HttpString _method) {
@@ -137,7 +145,7 @@ public class RequestContext {
             method = METHOD.PUT;
         } else if (Methods.DELETE.equals(_method)) {
             method = METHOD.DELETE;
-        } else if ("PATCH".equals(_method.toString())) {
+        } else if (PATCH.equals(_method.toString())) {
             method = METHOD.PATCH;
         } else if (Methods.OPTIONS.equals(_method)) {
             method = METHOD.OPTIONS;
@@ -155,9 +163,9 @@ public class RequestContext {
             type = TYPE.DB;
         } else if (pathTokens.length < 4) {
             type = TYPE.COLLECTION;
-        } else if (pathTokens.length == 4 && pathTokens[3].equals("_indexes")) {
+        } else if (pathTokens.length == 4 && pathTokens[3].equals(_INDEXES)) {
             type = TYPE.COLLECTION_INDEXES;
-        } else if (pathTokens.length > 4 && pathTokens[3].equals("_indexes")) {
+        } else if (pathTokens.length > 4 && pathTokens[3].equals(_INDEXES)) {
             type = TYPE.INDEX;
         } else {
             type = TYPE.DOCUMENT;
@@ -177,7 +185,7 @@ public class RequestContext {
         String ret = URLUtilis.removeTrailingSlashes(mappedUri);
 
         if (whatUri.equals("*")) {
-            if (!this.whereUri.equals("/")) {
+            if (!this.whereUri.equals(SLASH)) {
                 ret = ret.replaceFirst("^" + this.whereUri, "");
             }
         } else {
@@ -185,7 +193,7 @@ public class RequestContext {
         }
 
         if (ret.isEmpty()) {
-            ret = "/";
+            ret = SLASH;
         }
 
         return ret;
@@ -203,7 +211,7 @@ public class RequestContext {
         String ret = URLUtilis.removeTrailingSlashes(unmappedUri);
 
         if (whatUri.equals("*")) {
-            if (!this.whereUri.equals("/")) {
+            if (!this.whereUri.equals(SLASH)) {
                 return this.whereUri + unmappedUri;
             }
         } else {
@@ -211,7 +219,7 @@ public class RequestContext {
         }
 
         if (ret.isEmpty()) {
-            ret = "/";
+            ret = SLASH;
         }
 
         return ret;
@@ -230,8 +238,8 @@ public class RequestContext {
      */
     public final boolean isParentAccessible() {
         return type == TYPE.DB
-                ? unmappedRequestUri.split("/").length > 1
-                : unmappedRequestUri.split("/").length > 2;
+                ? unmappedRequestUri.split(SLASH).length > 1
+                : unmappedRequestUri.split(SLASH).length > 2;
     }
 
     /**
@@ -280,7 +288,7 @@ public class RequestContext {
      * @throws URISyntaxException
      */
     public URI getUri() throws URISyntaxException {
-        return new URI(Arrays.asList(pathTokens).stream().reduce("/", (t1, t2) -> t1 + "/" + t2));
+        return new URI(Arrays.asList(pathTokens).stream().reduce(SLASH, (t1, t2) -> t1 + SLASH + t2));
     }
 
     /**
@@ -297,7 +305,10 @@ public class RequestContext {
      * @return isReservedResourceDb
      */
     public static boolean isReservedResourceDb(String dbName) {
-        return dbName.equals("admin") || dbName.equals("local") || dbName.startsWith("system.") || dbName.startsWith("_");
+        return dbName.equals(ADMIN) 
+                || dbName.equals(LOCAL) 
+                || dbName.startsWith(SYSTEM) 
+                || dbName.startsWith(UNDERSCORE);
     }
 
     /**
@@ -306,7 +317,7 @@ public class RequestContext {
      * @return isReservedResourceCollection
      */
     public static boolean isReservedResourceCollection(String collectionName) {
-        return collectionName != null && (collectionName.startsWith("system.") || collectionName.startsWith("_"));
+        return collectionName != null && (collectionName.startsWith(SYSTEM) || collectionName.startsWith(UNDERSCORE));
     }
 
     /**
@@ -315,7 +326,7 @@ public class RequestContext {
      * @return isReservedResourceDocument
      */
     public static boolean isReservedResourceDocument(String documentId) {
-        return documentId != null && documentId.startsWith("_") && !documentId.equals("_indexes");
+        return documentId != null && documentId.startsWith(UNDERSCORE) && !documentId.equals(_INDEXES);
     }
 
     /**
@@ -327,7 +338,9 @@ public class RequestContext {
             return false;
         }
 
-        return isReservedResourceDb(getDBName()) || isReservedResourceCollection(getCollectionName()) || isReservedResourceDocument(getDocumentId());
+        return isReservedResourceDb(getDBName())
+                || isReservedResourceCollection(getCollectionName()) 
+                || isReservedResourceDocument(getDocumentId());
     }
 
     /**
