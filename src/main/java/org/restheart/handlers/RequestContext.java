@@ -129,7 +129,7 @@ public class RequestContext {
         this.mappedRequestUri = unmapUri(exchange.getRequestPath());
 
         // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
-        pathTokens = mappedRequestUri.split(SLASH); 
+        pathTokens = mappedRequestUri.split(SLASH);
         this.type = selectRequestType(pathTokens);
 
         this.method = selectRequestMethod(exchange.getRequestMethod());
@@ -167,6 +167,8 @@ public class RequestContext {
             type = TYPE.COLLECTION_INDEXES;
         } else if (pathTokens.length > 4 && pathTokens[3].equals(_INDEXES)) {
             type = TYPE.INDEX;
+        } else if (pathTokens.length == 4 && pathTokens[3].equals("_files")) {
+            type = TYPE.FILE;
         } else {
             type = TYPE.DOCUMENT;
         }
@@ -305,9 +307,9 @@ public class RequestContext {
      * @return isReservedResourceDb
      */
     public static boolean isReservedResourceDb(String dbName) {
-        return dbName.equals(ADMIN) 
-                || dbName.equals(LOCAL) 
-                || dbName.startsWith(SYSTEM) 
+        return dbName.equals(ADMIN)
+                || dbName.equals(LOCAL)
+                || dbName.startsWith(SYSTEM)
                 || dbName.startsWith(UNDERSCORE);
     }
 
@@ -339,7 +341,7 @@ public class RequestContext {
         }
 
         return isReservedResourceDb(getDBName())
-                || isReservedResourceCollection(getCollectionName()) 
+                || isReservedResourceCollection(getCollectionName())
                 || isReservedResourceDocument(getDocumentId());
     }
 

@@ -25,8 +25,6 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 /**
  *
  * @author Maurizio Turatti <info@maurizioturatti.com>
@@ -52,12 +50,9 @@ public class RequestContextTest {
     public void tearDown() {
     }
 
-    /**
-     * Test of selectRequestMethod method, of class RequestContext.
-     */
     @Test
     public void testSelectRequestMethod() {
-        System.out.println("selectRequestMethod");
+        System.out.println("testSelectRequestMethod");
 
         HttpString _method = new HttpString("UNKNOWN");
         assertEquals(RequestContext.METHOD.OTHER, RequestContext.selectRequestMethod(_method));
@@ -69,12 +64,9 @@ public class RequestContextTest {
         assertEquals(RequestContext.METHOD.PATCH, RequestContext.selectRequestMethod(_method));
     }
 
-    /**
-     * Test of selectRequestType method, of class RequestContext.
-     */
     @Test
     public void testSelectRequestType() {
-        System.out.println("selectRequestType");
+        System.out.println("testSelectRequestType");
 
         String[] pathTokens = "/".split("/");
         assertEquals(RequestContext.TYPE.ROOT, RequestContext.selectRequestType(pathTokens));
@@ -94,10 +86,18 @@ public class RequestContextTest {
         pathTokens = "/db/collection/_indexes/123".split("/");
         assertEquals(RequestContext.TYPE.INDEX, RequestContext.selectRequestType(pathTokens));
     }
+    
+    @Test
+    public void testSelectRequestType_File() {
+        System.out.println("testSelectRequestType_File");
+        
+        String[] pathTokens = "/db/collection/_files".split("/");
+        assertEquals(RequestContext.TYPE.FILE, RequestContext.selectRequestType(pathTokens));
+    }
 
     @Test
     public void testGetMappedRequestUri() {
-        System.out.println("getMappedRequestUri");
+        System.out.println("testGetMappedRequestUri");
         
         HttpServerExchange exchange = new HttpServerExchange(null);
         exchange.setRequestPath("/");
