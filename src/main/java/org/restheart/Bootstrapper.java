@@ -565,25 +565,7 @@ public final class Bootstrapper {
                         new CollectionPropsInjectorHandler(
                                 new BodyInjectorHandler(
                                         new MetadataEnforcerHandler(
-                                                new RequestDispacherHandler(
-                                                        new GetRootHandler(),
-                                                        new GetDBHandler(),
-                                                        new PutDBHandler(),
-                                                        new DeleteDBHandler(),
-                                                        new PatchDBHandler(),
-                                                        new GetCollectionHandler(),
-                                                        new PostCollectionHandler(),
-                                                        new PutCollectionHandler(),
-                                                        new DeleteCollectionHandler(),
-                                                        new PatchCollectionHandler(),
-                                                        new GetDocumentHandler(),
-                                                        new PutDocumentHandler(),
-                                                        new DeleteDocumentHandler(),
-                                                        new PatchDocumentHandler(),
-                                                        new GetIndexesHandler(),
-                                                        new PutIndexHandler(),
-                                                        new DeleteIndexHandler()
-                                                )
+                                                new RequestDispacherHandler()
                                         )
                                 )
                         )
