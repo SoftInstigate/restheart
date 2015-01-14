@@ -63,7 +63,7 @@ public class DBRepresentationFactory {
         DBObject dbProps = context.getDbProps();
 
         if (dbProps != null) {
-            HALUtils.addData(rep, dbProps);
+            rep.addProperties(dbProps);
         }
 
         if (size >= 0) {

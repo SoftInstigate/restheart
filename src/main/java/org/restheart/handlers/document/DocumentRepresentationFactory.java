@@ -61,15 +61,7 @@ public class DocumentRepresentationFactory {
         rep.addProperty("_type", context.getType().name());
 
         // document properties
-        data.keySet().stream().forEach((key) -> {
-            Object value = data.get(key);
-
-            if (value instanceof ObjectId) {
-                value = value.toString();
-            }
-
-            rep.addProperty(key, value);
-        });
+        data.keySet().stream().forEach((key) -> rep.addProperty(key, data.get(key)));
 
         // document links
         TreeMap<String, String> links;

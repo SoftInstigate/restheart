@@ -17,12 +17,12 @@
  */
 package org.restheart.hal;
 
-import com.mongodb.DBObject;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
 import java.util.TreeMap;
+import org.bson.BSONObject;
 import org.bson.types.ObjectId;
 
 /**
@@ -30,21 +30,44 @@ import org.bson.types.ObjectId;
  * @author Andrea Di Cesare
  */
 public class HALUtils {
-
     /**
+     * this replaces string that are valid ObjectIds with ObjectIds objects.
      *
-     * @param rep
-     * @param data
+     * @param source
      */
-    public static void addData(Representation rep, DBObject data) {
-        // collection properties
-        data.keySet().stream().forEach((key) -> {
-            Object value = data.get(key);
+    public static void replaceStringsWithObjectIds(BSONObject source) {
+        if (source == null) {
+            return;
+        }
 
-            if (value instanceof ObjectId) {
-                rep.addProperty(key, value.toString());
-            } else {
-                rep.addProperty(key, value);
+        source.keySet().stream().forEach((key) -> {
+            Object value = source.get(key);
+
+            if (value instanceof BSONObject) {
+                replaceStringsWithObjectIds((BSONObject) value);
+            } else if (ObjectId.isValid(value.toString())) {
+                source.put(key, new ObjectId(value.toString()));
+            }
+        });
+    }
+    
+    /**
+     * this replaces ObjectIds with Strings
+     *
+     * @param source
+     */
+    public static void replaceObjectIdsWithStrings(BSONObject source) {
+        if (source == null) {
+            return;
+        }
+
+        source.keySet().stream().forEach((key) -> {
+            Object value = source.get(key);
+
+            if (value instanceof BSONObject) {
+                replaceObjectIdsWithStrings((BSONObject) value);
+            } else if (value instanceof ObjectId) {
+                source.put(key, value.toString());
             }
         });
     }

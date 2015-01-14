@@ -82,7 +82,7 @@ public class CollectionRepresentationFactory {
         DBObject collProps = context.getCollectionProps();
 
         if (collProps != null) {
-            HALUtils.addData(rep, collProps);
+            rep.addProperties(collProps);
         }
 
         if (size >= 0) {

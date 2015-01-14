@@ -169,6 +169,8 @@ public class DocumentDAO {
             exchange.getResponseHeaders().add(HttpString.tryFromString("Location"), getReferenceLink(exchange.getRequestURL(), id.toString()).toString());
 
             return HttpStatus.SC_CREATED;
+        } else {
+            exchange.getResponseHeaders().add(HttpString.tryFromString("Location"), getReferenceLink(exchange.getRequestURL(), _id.toString()).toString());
         }
 
         BasicDBObject idQuery = new BasicDBObject("_id", getId("" + _id));

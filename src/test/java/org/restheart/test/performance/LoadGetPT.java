@@ -76,6 +76,7 @@ public class LoadGetPT {
     private String coll;
     private String filter = null;
     private int page = 1;
+    private int pagesize = 5;
 
     private final Path CONF_FILE = new File("./etc/restheart-perftest.yml").toPath();
     private Executor httpExecutor;
@@ -154,7 +155,7 @@ public class LoadGetPT {
         ArrayList<DBObject> data;
         
         try {
-            data = CollectionDAO.getCollectionData(dbcoll, page, 100, null, _filter, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE);
+            data = CollectionDAO.getCollectionData(dbcoll, page, pagesize, null, _filter, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE);
         } catch(Exception e) {
             System.out.println("error: " + e.getMessage());
             return;
@@ -263,5 +264,12 @@ public class LoadGetPT {
      */
     public void setPage(int page) {
         this.page = page;
+    }
+
+    /**
+     * @param pagesize the pagesize to set
+     */
+    public void setPagesize(int pagesize) {
+        this.pagesize = pagesize;
     }
 }

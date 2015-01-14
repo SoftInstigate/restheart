@@ -30,6 +30,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import java.util.HashSet;
+import org.restheart.hal.HALUtils;
 
 /**
  *
@@ -103,6 +104,9 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             }).forEach(keyToRemove -> {
                 context.addWarning("the reserved field " + keyToRemove + " was filtered out from the request");
             });
+            
+            //replace string that are valid ObjectIds with ObjectIds objects.
+            HALUtils.replaceStringsWithObjectIds(content);
 
             // inject the request content in the context
             context.setContent(content);

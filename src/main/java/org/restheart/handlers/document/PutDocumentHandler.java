@@ -71,7 +71,7 @@ public class PutDocumentHandler extends PipedHttpHandler {
 
         // cannot PUT an array
         if (content instanceof BasicDBList) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, " data cannot be an array");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
             return;
         }
 
@@ -80,8 +80,7 @@ public class PutDocumentHandler extends PipedHttpHandler {
         if (content.get("_id") == null) {
             content.put("_id", getId(id));
         } else if (!content.get("_id").equals(id)) {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_ACCEPTABLE);
-            logger.warn("not acceptable: _id in content body is different than id in URL");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is different than id in URL");
             return;
         }
 

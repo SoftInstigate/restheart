@@ -21,6 +21,7 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.bson.BSONObject;
+import org.bson.types.ObjectId;
 
 /**
  *
@@ -95,7 +96,14 @@ public class Representation {
      * @param value
      */
     public void addProperty(String key, Object value) {
-        properties.append(key, value);
+        if (value instanceof ObjectId) {
+            properties.append(key, value.toString());
+        } else if (value instanceof BSONObject) {
+            HALUtils.replaceObjectIdsWithStrings((BSONObject)value);
+            properties.append(key, value);
+        } else {
+            properties.append(key, value);
+        }
     }
 
     /**
@@ -106,6 +114,8 @@ public class Representation {
         if (props == null) {
             return;
         }
+
+        HALUtils.replaceObjectIdsWithStrings(props);
 
         properties.putAll(props);
     }
