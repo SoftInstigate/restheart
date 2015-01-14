@@ -22,16 +22,14 @@ import org.restheart.Configuration;
 import org.restheart.hal.HALUtils;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
-import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 import java.util.List;
-import java.util.TreeMap;
 import org.bson.types.ObjectId;
+import org.restheart.handlers.AbstractRepresentationFactory;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -39,77 +37,56 @@ import org.slf4j.Logger;
  *
  * @author Andrea Di Cesare
  */
-public class DBRepresentationFactory {
+public class DBRepresentationFactory extends AbstractRepresentationFactory {
 
     private static final Logger logger = LoggerFactory.getLogger(DBRepresentationFactory.class);
 
-    /**
-     *
-     * @param exchange
-     * @param context
-     * @param embeddedData
-     * @param size
-     * @throws IllegalQueryParamenterException
-     */
-    static public void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
+    public DBRepresentationFactory() {
+    }
+
+    @Override
+    protected Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
-        String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
-        String queryString = exchange.getQueryString() == null || exchange.getQueryString().isEmpty() ? "" : "?" + URLUtilis.decodeQueryString(exchange.getQueryString());
-
-        Representation rep = new Representation(requestPath + queryString);
-
-        rep.addProperty("_type", context.getType().name());
-
-        DBObject dbProps = context.getDbProps();
+        final String requestPath = buildRequestPath(exchange);
+        final Representation rep = createRepresentation(exchange, context, requestPath);
+        final DBObject dbProps = context.getDbProps();
 
         if (dbProps != null) {
             rep.addProperties(dbProps);
         }
 
-        if (size >= 0) {
-            float _size = size + 0f;
-            float _pagesize = context.getPagesize() + 0f;
+        addSizeAndTotalPagesProperties(size, context, rep);
 
-            rep.addProperty("_size", size);
-            rep.addProperty("_total_pages", Math.max(1, Math.round(Math.ceil(_size / _pagesize))));
-        }
+        addEmbeddedData(embeddedData, rep, requestPath);
+        
+        addPaginationLinks(exchange, context, size, rep);
+        
+        addLinkTemplatesAndCuries(exchange, context, rep, requestPath);
+        
+        return rep;
+    }
 
+    private void addEmbeddedData(List<DBObject> embeddedData, final Representation rep, final String requestPath) {
         if (embeddedData != null) {
-            long count = embeddedData.stream().filter((props) -> props.keySet().stream().anyMatch((k) -> k.equals("id") || k.equals("_id"))).count();
-
-            rep.addProperty("_returned", count);
-
+            addReturnedProperty(embeddedData, rep);
             if (!embeddedData.isEmpty()) {
                 embeddedCollections(embeddedData, requestPath, rep);
             }
         }
+    }
 
-        // collection links
-        TreeMap<String, String> links;
-
-        links = HALUtils.getPaginationLinks(exchange, context, size);
-
-        if (links != null) {
-            links.keySet().stream().forEach((k) -> {
-                rep.addLink(new Link(k, links.get(k)));
-            });
-        }
-
+    private void addLinkTemplatesAndCuries(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath) {
         // link templates and curies
         if (context.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
-            rep.addLink(new Link("rh:root", URLUtilis.getPerentPath(requestPath)));
+            rep.addLink(new Link("rh:root", URLUtilis.getParentPath(requestPath)));
         }
         rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
         rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-db-{rel}", false), true);
-
         ResponseHelper.injectWarnings(rep, exchange, context);
-
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
-        exchange.getResponseSender().send(rep.toString());
     }
 
-    private static void embeddedCollections(List<DBObject> embeddedData, String requestPath, Representation rep) {
+    private void embeddedCollections(List<DBObject> embeddedData, String requestPath, Representation rep) {
         embeddedData.stream().forEach((d) -> {
             Object _id = d.get("_id");
 

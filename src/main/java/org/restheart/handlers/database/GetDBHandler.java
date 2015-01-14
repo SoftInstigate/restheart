@@ -51,7 +51,7 @@ public class GetDBHandler extends PipedHttpHandler {
         List<DBObject> data = DBDAO.getData(context.getDBName(), colls, context.getPage(), context.getPagesize());
 
         exchange.setResponseCode(HttpStatus.SC_OK);
-        DBRepresentationFactory.sendHal(exchange, context, data, DBDAO.getDBSize(colls));
+        new DBRepresentationFactory().sendHal(exchange, context, data, DBDAO.getDBSize(colls));
         exchange.endExchange();
     }
 }

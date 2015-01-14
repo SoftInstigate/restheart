@@ -32,6 +32,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,18 +42,21 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare
  */
 public class DBCursorPool {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DBCursorPool.class);
 
     //TODO make those configurable
     private final int SKIP_SLICE_LINEAR_DELTA = Bootstrapper.getConf().getEagerLinearSliceDelta();
     private final int SKIP_SLICE_LINEAR_WIDTH = Bootstrapper.getConf().getEagerLinearSliceWidht();
     private final int[] SKIP_SLICES_HEIGHTS = Bootstrapper.getConf().getEagerLinearSliceHeights();
-    
+
     private final int SKIP_SLICE_RND_MIN_WIDTH = Bootstrapper.getConf().getEagerRndSliceMinWidht();
     private final int SKIP_SLICE_RND_MAX_CURSORS = Bootstrapper.getConf().getEagerRndMaxCursors();
-    
+
     public enum EAGER_CURSOR_ALLOCATION_POLICY {
-        LINEAR, RANDOM, NONE
+        LINEAR,
+        RANDOM,
+        NONE
     };
 
     private final Cache<DBCursorPoolEntryKey, DBCursor> cache;
@@ -63,21 +67,26 @@ public class DBCursorPool {
 
     ExecutorService executor = Executors.newSingleThreadExecutor();
 
+    public static DBCursorPool getInstance() {
+        return DBCursorPoolSingletonHolder.INSTANCE;
+    }
+
     private DBCursorPool() {
         CacheBuilder builder = CacheBuilder.newBuilder()
                 .maximumSize(POOL_SIZE)
                 .expireAfterAccess(TTL, TimeUnit.MINUTES)
                 .removalListener((RemovalNotification<DBCursorPoolEntryKey, DBCursor> notification) -> {
-                    if (notification != null && notification.getValue() != null)
+                    if (notification != null && notification.getValue() != null) {
                         notification.getValue().close();
+                    }
                 });
-        
+
         if (LOGGER.isDebugEnabled()) {
-                builder.recordStats();
+            builder.recordStats();
         }
 
         cache = builder.build();
-        
+
         CacheBuilder builder2 = CacheBuilder.newBuilder()
                 .maximumSize(100)
                 .expireAfterAccess(5, TimeUnit.MINUTES);
@@ -87,7 +96,7 @@ public class DBCursorPool {
             public Long load(DBCursorPoolEntryKey key) throws Exception {
                 return CollectionDAO.getCollectionSize(key.getCollection(), key.getFilter());
             }
-        }) ;
+        });
 
         if (LOGGER.isDebugEnabled()) {
             // print stats every 1 minute
@@ -103,6 +112,10 @@ public class DBCursorPool {
         }
     }
 
+    public final String stats() {
+        return cache.stats().toString();
+    }
+
     public synchronized SkippedDBCursor get(DBCursorPoolEntryKey key, EAGER_CURSOR_ALLOCATION_POLICY allocationPolicy) {
         if (key.getSkipped() < SKIP_SLICE_LINEAR_WIDTH) {
             LOGGER.debug("no cursor to reuse found with skipped {} that is less than SKIP_SLICE_WIDTH {}", key.getSkipped(), SKIP_SLICE_LINEAR_WIDTH);
@@ -110,13 +123,10 @@ public class DBCursorPool {
         }
 
         // return the dbcursor with the closest skips to the request
-        Optional<DBCursorPoolEntryKey> _bestKey = cache.asMap().keySet().stream().filter(k
-                -> Objects.equals(k.getCollection().getDB().getName(), key.getCollection().getDB().getName())
-                && Objects.equals(k.getCollection().getName(), key.getCollection().getName())
-                && Arrays.equals(k.getFilter() != null ? k.getFilter().toArray() : null, key.getFilter() != null ? key.getFilter().toArray() : null)
-                && Arrays.equals(k.getSort() != null ? k.getSort().toArray() : null, key.getSort() != null ? key.getSort().toArray() : null)
-                && k.getSkipped() <= key.getSkipped()
-        ).sorted(Comparator.comparingInt(DBCursorPoolEntryKey::getSkipped).reversed()).findFirst();
+        Optional<DBCursorPoolEntryKey> _bestKey = cache.asMap().keySet().stream()
+                .filter(cursorsPoolFilter(key))
+                .sorted(Comparator.comparingInt(DBCursorPoolEntryKey::getSkipped).reversed())
+                .findFirst();
 
         SkippedDBCursor ret;
 
@@ -149,7 +159,7 @@ public class DBCursorPool {
             return;
         }
 
-        int firstSlice = (key.getSkipped() / SKIP_SLICE_LINEAR_WIDTH);
+        int firstSlice = key.getSkipped() / SKIP_SLICE_LINEAR_WIDTH;
 
         executor.submit(() -> {
             int slice = firstSlice;
@@ -176,11 +186,11 @@ public class DBCursorPool {
     private void populateCacheRandom(DBCursorPoolEntryKey key) {
         executor.submit(() -> {
             Long size = collSizes.getUnchecked(key);
-            
+
             int sliceWidht;
             int slices = 0;
             int totalSlices = size.intValue() / SKIP_SLICE_RND_MIN_WIDTH + 1;
-            
+
             if (totalSlices <= SKIP_SLICE_RND_MAX_CURSORS) {
                 slices = totalSlices;
                 sliceWidht = SKIP_SLICE_RND_MIN_WIDTH;
@@ -191,7 +201,7 @@ public class DBCursorPool {
 
             for (int slice = 1; slice < slices; slice++) {
                 int sliceSkips = (int) slice * sliceWidht;
-                
+
                 DBCursorPoolEntryKey sliceKey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), sliceSkips, -1);
 
                 long existing = getSliceHeight(sliceKey);
@@ -208,37 +218,31 @@ public class DBCursorPool {
     }
 
     private long getSliceHeight(DBCursorPoolEntryKey key) {
-        long ret = cache.asMap().keySet().stream().filter(k
-                -> Objects.equals(k.getCollection().getDB().getName(), key.getCollection().getDB().getName())
-                && Objects.equals(k.getCollection().getName(), key.getCollection().getName())
-                && Arrays.equals(k.getFilter() != null ? k.getFilter().toArray() : null, key.getFilter() != null ? key.getFilter().toArray() : null)
-                && Arrays.equals(k.getSort() != null ? k.getSort().toArray() : null, key.getSort() != null ? key.getSort().toArray() : null)
-                && k.getSkipped() == key.getSkipped()
-        ).count();
+        long ret = cache.asMap().keySet().stream()
+                .filter(cursorsPoolFilter(key))
+                .count();
 
         LOGGER.debug("cursor in pool with skips {} are {}", key.getSkipped(), ret);
 
         return ret;
     }
 
-    public final String stats() {
-        return cache.stats().toString();
+    private Predicate<? super DBCursorPoolEntryKey> cursorsPoolFilter(DBCursorPoolEntryKey key) {
+        return k
+                -> Objects.equals(k.getCollection().getDB().getName(), key.getCollection().getDB().getName())
+                && Objects.equals(k.getCollection().getName(), key.getCollection().getName())
+                && Arrays.equals(k.getFilter() != null ? k.getFilter().toArray() : null, key.getFilter() != null ? key.getFilter().toArray() : null)
+                && Arrays.equals(k.getSort() != null ? k.getSort().toArray() : null, key.getSort() != null ? key.getSort().toArray() : null)
+                && k.getSkipped() <= key.getSkipped();
     }
 
     private TreeMap<String, Long> getCacheSizes() {
         return new TreeMap<>(cache.asMap().keySet().stream().collect(Collectors.groupingBy(DBCursorPoolEntryKey::getCacheStatsGroup, Collectors.counting())));
     }
 
-    /**
-     *
-     * @return
-     */
-    public static DBCursorPool getInstance() {
-        return DBCursorPoolSingletonHolder.INSTANCE;
-
-    }
-
     private static class DBCursorPoolSingletonHolder {
+
         private static final DBCursorPool INSTANCE = new DBCursorPool();
-    }
+        
+    };
 }

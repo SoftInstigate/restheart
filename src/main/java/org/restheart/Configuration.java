@@ -25,7 +25,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -54,7 +53,7 @@ public class Configuration {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
 
-    private static boolean silent = false;
+    private boolean silent = false;
 
     private final boolean httpsListener;
     private final int httpsPort;
@@ -518,7 +517,7 @@ public class Configuration {
         eagerPoolSize = 100;
         eagerLinearSliceWidht = 1000;
         eagerLinearSliceDelta = 100;
-        eagerLinearSliceHeights = new int[]{4, 2, 1};;
+        eagerLinearSliceHeights = new int[]{4, 2, 1};
         eagerRndSliceMinWidht = 1000;
         eagerRndMaxCursors = 50;
     }
@@ -543,7 +542,7 @@ public class Configuration {
      * @throws org.restheart.ConfigurationException
      */
     public Configuration(final Path confFilePath, boolean silent) throws ConfigurationException {
-        Configuration.silent = silent;
+        this.silent = silent;
 
         Yaml yaml = new Yaml();
 
@@ -563,7 +562,7 @@ public class Configuration {
                 try {
                     fis.close();
                 } catch (IOException ioe) {
-                    // nothing to do
+                    LOGGER.warn("Can't close the FileInputStream", ioe);
                 }
             }
         }
@@ -656,7 +655,7 @@ public class Configuration {
         eagerRndMaxCursors = getAsIntegerOrDefault(conf, EAGER_RND_MAX_CURSORS, 50);
     }
 
-    private static List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key, final List<Map<String, Object>> defaultValue) {
+    private List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key, final List<Map<String, Object>> defaultValue) {
         if (conf == null) {
             if (!silent) {
                 LOGGER.debug("parameters group {} not specified in the configuration file. using its default value {}", key, defaultValue);
@@ -677,7 +676,7 @@ public class Configuration {
         }
     }
 
-    private static Map<String, Object> getAsMap(final Map<String, Object> conf, final String key) {
+    private Map<String, Object> getAsMap(final Map<String, Object> conf, final String key) {
         if (conf == null) {
             if (!silent) {
                 LOGGER.debug("parameters group {} not specified in the configuration file.", key);
@@ -697,7 +696,7 @@ public class Configuration {
         }
     }
 
-    private static Boolean getAsBooleanOrDefault(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
+    private Boolean getAsBooleanOrDefault(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
         if (conf == null) {
             if (!silent) {
                 LOGGER.debug("tried to get paramenter {} from a null configuration map. using its default value {}", key, defaultValue);
@@ -708,11 +707,9 @@ public class Configuration {
         Object o = conf.get(key);
 
         if (o == null) {
-            if (defaultValue != null) // if default value is null there is no default value actually
-            {
-                if (!silent) {
-                    LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
-                }
+            // if default value is null there is no default value actually
+            if (defaultValue && !silent) {
+                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
             }
             return defaultValue;
         } else if (o instanceof Boolean) {
@@ -728,14 +725,12 @@ public class Configuration {
         }
     }
 
-    private static String getAsStringOrDefault(final Map<String, Object> conf, final String key, final String defaultValue) {
+    private String getAsStringOrDefault(final Map<String, Object> conf, final String key, final String defaultValue) {
 
         if (conf == null || conf.get(key) == null) {
-            if (defaultValue != null) // if default value is null there is no default value actually
-            {
-                if (!silent) {
-                    LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
-                }
+            // if default value is null there is no default value actually
+            if (defaultValue != null && !silent) {
+                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
             }
             return defaultValue;
         } else if (conf.get(key) instanceof String) {
@@ -751,13 +746,11 @@ public class Configuration {
         }
     }
 
-    private static Integer getAsIntegerOrDefault(final Map<String, Object> conf, final String key, final Integer defaultValue) {
+    private Integer getAsIntegerOrDefault(final Map<String, Object> conf, final String key, final Integer defaultValue) {
         if (conf == null || conf.get(key) == null) {
-            if (defaultValue != null) // if default value is null there is no default value actually
-            {
-                if (!silent) {
-                    LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
-                }
+            // if default value is null there is no default value actually
+            if (defaultValue != null && !silent) {
+                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
             }
             return defaultValue;
         } else if (conf.get(key) instanceof Integer) {
@@ -773,13 +766,11 @@ public class Configuration {
         }
     }
 
-    private static Long getAsLongOrDefault(final Map<String, Object> conf, final String key, final Long defaultValue) {
+    private Long getAsLongOrDefault(final Map<String, Object> conf, final String key, final Long defaultValue) {
         if (conf == null || conf.get(key) == null) {
-            if (defaultValue != null) // if default value is null there is no default value actually
-            {
-                if (!silent) {
-                    LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
-                }
+            // if default value is null there is no default value actually
+            if (defaultValue != null && !silent) {
+                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
             }
             return defaultValue;
         } else if (conf.get(key) instanceof Number) {
@@ -802,15 +793,12 @@ public class Configuration {
         }
     }
 
-    private static int[] getAsArrayOfInts(final Map<String, Object> conf, final String key, final int[] defaultValue) {
+    private int[] getAsArrayOfInts(final Map<String, Object> conf, final String key, final int[] defaultValue) {
         if (conf == null || conf.get(key) == null) {
-            if (defaultValue != null) // if default value is null there is no default value actually
-            {
-                if (!silent) {
-                    LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
-                }
+            // if default value is null there is no default value actually
+            if (defaultValue != null && !silent) {
+                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
             }
-
             return defaultValue;
         } else if (conf.get(key) instanceof List) {
             if (!silent) {

@@ -66,63 +66,27 @@ public class RequestDispacherHandler extends PipedHttpHandler {
 
     /**
      * Creates a new instance of RequestDispacherHandler
-     *
-     * @param rootGet
-     * @param dbGet
-     * @param dbPut
-     * @param dbDelete
-     * @param dbPatch
-     * @param collectionGet
-     * @param collectionPost
-     * @param collectionPut
-     * @param collectionDelete
-     * @param collectionPatch
-     * @param documentGet
-     * @param documentPut
-     * @param documentDelete
-     * @param documentPatch
-     * @param indexesGet
-     * @param indexDelete
-     * @param indexPut
      */
-    public RequestDispacherHandler(
-            GetRootHandler rootGet,
-            GetDBHandler dbGet,
-            PutDBHandler dbPut,
-            DeleteDBHandler dbDelete,
-            PatchDBHandler dbPatch,
-            GetCollectionHandler collectionGet,
-            PostCollectionHandler collectionPost,
-            PutCollectionHandler collectionPut,
-            DeleteCollectionHandler collectionDelete,
-            PatchCollectionHandler collectionPatch,
-            GetDocumentHandler documentGet,
-            PutDocumentHandler documentPut,
-            DeleteDocumentHandler documentDelete,
-            PatchDocumentHandler documentPatch,
-            GetIndexesHandler indexesGet,
-            PutIndexHandler indexPut,
-            DeleteIndexHandler indexDelete
-    ) {
-
+    public RequestDispacherHandler() {
         super(null);
-        this.rootGet = rootGet;
-        this.dbGet = dbGet;
-        this.dbPut = dbPut;
-        this.dbDelete = dbDelete;
-        this.dbPatch = dbPatch;
-        this.collectionGet = collectionGet;
-        this.collectionPost = collectionPost;
-        this.collectionPut = collectionPut;
-        this.collectionDelete = collectionDelete;
-        this.collectionPatch = collectionPatch;
-        this.documentGet = documentGet;
-        this.documentPut = documentPut;
-        this.documentDelete = documentDelete;
-        this.documentPatch = documentPatch;
-        this.indexesGet = indexesGet;
-        this.indexPut = indexPut;
-        this.indexDelete = indexDelete;
+                                    
+        this.rootGet = new GetRootHandler();
+        this.dbGet = new GetDBHandler();
+        this.dbPut = new PutDBHandler();
+        this.dbDelete = new DeleteDBHandler();
+        this.dbPatch = new PatchDBHandler();
+        this.collectionGet = new GetCollectionHandler();
+        this.collectionPost = new PostCollectionHandler();
+        this.collectionPut = new PutCollectionHandler();
+        this.collectionDelete = new DeleteCollectionHandler();
+        this.collectionPatch = new PatchCollectionHandler();
+        this.documentGet = new GetDocumentHandler();
+        this.documentPut = new PutDocumentHandler();
+        this.documentDelete = new DeleteDocumentHandler();
+        this.documentPatch = new PatchDocumentHandler();
+        this.indexesGet = new GetIndexesHandler();
+        this.indexPut = new PutIndexHandler();
+        this.indexDelete = new DeleteIndexHandler();
     }
 
     /**
