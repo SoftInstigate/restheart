@@ -67,13 +67,13 @@ public class PostCollectionHandler extends PutCollectionHandler {
             return;
         }
 
-        int SC = DocumentDAO.upsertDocumentPost(exchange, context.getDBName(), context.getCollectionName(), content, etag);
+        int httpCode = new DocumentDAO().upsertDocumentPost(exchange, context.getDBName(), context.getCollectionName(), content, etag);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(SC, exchange, context);
+            sendWarnings(httpCode, exchange, context);
         } else {
-            exchange.setResponseCode(SC);
+            exchange.setResponseCode(httpCode);
         }
 
         exchange.endExchange();

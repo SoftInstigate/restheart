@@ -20,8 +20,8 @@ package org.restheart.test.performance;
 /**
  * install ldt from https://github.com/bazhenov/load-test-tool run it from
  * target/class directory (current directory is added to classpath) as follows:
- * <PATH_TO_ldt-assembly-1.1>/bin/ldt.sh -z
- * org.restheart.perftest.LoadPutPT#put -c 20 -n 500 -w 5 -p
+ * <PATH_TO_ldt-assembly-1.1>/bin/ldt.sh -z org.restheart.perftest.LoadPutPT#put
+ * -c 20 -n 500 -w 5 -p
  * "url=http://127.0.0.1:8080/testdb/testcoll?page=10&pagesize=5,id=a,pwd=a"
  *
  * @author Andrea Di Cesare
@@ -45,6 +45,7 @@ import org.apache.http.entity.ContentType;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import org.restheart.ConfigurationException;
+import org.restheart.db.DocumentEntity;
 import org.restheart.hal.Representation;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.HttpStatus;
@@ -54,17 +55,18 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare
  */
 public class LoadPutPT {
+
     private String url;
 
     private String id;
     private String pwd;
     private String db;
     private String coll;
-    
+
     private static final ContentType halCT = ContentType.create(Representation.HAL_JSON_MEDIA_TYPE);
-    
+
     private Executor httpExecutor;
-    
+
     private final Path CONF_FILE = new File("./etc/restheart-perftest.yml").toPath();
 
     /**
@@ -87,18 +89,18 @@ public class LoadPutPT {
 
         httpExecutor = Executor.newInstance();
             // for perf test we disable the restheart security
-            //.authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), id, pwd);
+        //.authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), id, pwd);
     }
-    
+
     /**
      *
      * @throws IOException
      */
     public void put() throws Exception {
-        BasicDBObject content = new BasicDBObject("random", Math.random()); 
-        
+        BasicDBObject content = new BasicDBObject("random", Math.random());
+
         Response resp = httpExecutor.execute(Request.Post(url).bodyString(content.toString(), halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        
+
         HttpResponse httpResp = resp.returnResponse();
         assertNotNull(httpResp);
         HttpEntity entity = httpResp.getEntity();
@@ -114,9 +116,9 @@ public class LoadPutPT {
      * @throws IOException
      */
     public void dbdirect() throws IOException {
-        BasicDBObject content = new BasicDBObject("random", Math.random()); 
-        
-        DocumentDAO.upsertDocument(db, coll, null, content, null, false);
+        BasicDBObject content = new BasicDBObject("random", Math.random());
+
+        new DocumentDAO().upsert(new DocumentEntity(db, coll, null, content, null, false));
     }
 
     /**
@@ -146,7 +148,7 @@ public class LoadPutPT {
     public void setColl(String coll) {
         this.coll = coll;
     }
-    
+
     /**
      *
      * @param url

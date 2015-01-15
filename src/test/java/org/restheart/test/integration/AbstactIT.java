@@ -45,6 +45,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.restheart.db.DocumentEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -221,11 +222,12 @@ public abstract class AbstactIT {
             IndexDAO.createIndex(dbName, docsCollectionName, ((DBObject) JSON.parse(index)), null);
         }
 
-        DocumentDAO.upsertDocument(dbName, collection1Name, document1Id, document1Props, new ObjectId(), false);
-        DocumentDAO.upsertDocument(dbName, collection2Name, document2Id, document2Props, new ObjectId(), false);
+        final DocumentDAO documentDAO = new DocumentDAO();
+        documentDAO.upsert(new DocumentEntity(dbName, collection1Name, document1Id, document1Props, new ObjectId(), false));
+        documentDAO.upsert(new DocumentEntity(dbName, collection2Name, document2Id, document2Props, new ObjectId(), false));
 
         for (String doc : docsPropsStrings) {
-            DocumentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), ((DBObject) JSON.parse(doc)), new ObjectId(), false);
+            documentDAO.upsert(new DocumentEntity(dbName, docsCollectionName, new ObjectId().toString(), ((DBObject) JSON.parse(doc)), new ObjectId(), false));
         }
         LOG.info("test data created");
     }

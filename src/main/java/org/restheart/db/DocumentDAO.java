@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the data Repository API server
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -40,11 +40,15 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare
  */
-public class DocumentDAO {
+public class DocumentDAO implements Repository<DocumentEntity> {
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(DocumentDAO.class);
 
-    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-
-    private static final Logger logger = LoggerFactory.getLogger(DocumentDAO.class);
+    private final MongoClient client;
+    
+    public DocumentDAO() {
+        client = MongoDBClientSingleton.getInstance().getClient();
+    }
 
     /**
      *
@@ -52,63 +56,59 @@ public class DocumentDAO {
      * @param collName
      * @return
      */
-    public static DBCollection getCollection(String dbName, String collName) {
+    public DBCollection getCollection(String dbName, String collName) {
         return client.getDB(dbName).getCollection(collName);
     }
 
     /**
-     *
-     *
-     * @param dbName
-     * @param collName
-     * @param documentId
-     * @param content
-     * @param requestEtag
-     * @param patching
-     * @return the HttpStatus code to retrun
+     * @param document
+     * @return the HttpStatus code
      */
-    public static int upsertDocument(String dbName, String collName, String documentId, DBObject content, ObjectId requestEtag, boolean patching) {
-        DB db = DBDAO.getDB(dbName);
+    @Override
+    public int upsert(DocumentEntity document) {
+        DB db = DBDAO.getDB(document.dbName);
 
-        DBCollection coll = db.getCollection(collName);
+        DBCollection coll = db.getCollection(document.collName);
 
         ObjectId timestamp = new ObjectId();
         Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
 
-        if (content == null) {
-            content = new BasicDBObject();
+        if (document.content == null) {
+            throw new IllegalArgumentException("document.content == null");
+            // document.content = new BasicDBObject();
         }
 
-        content.put("_etag", timestamp);
+        document.content.put("_etag", timestamp);
 
-        BasicDBObject idQuery = new BasicDBObject("_id", getId(documentId));
+        BasicDBObject idQuery = new BasicDBObject("_id", getId(document.documentId));
 
-        if (patching) {
-            content.removeField("_created_on"); // make sure we don't change this field
+        if (document.patching) {
+            document.content.removeField("_created_on"); // make sure we don't change this field
 
-            DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, new BasicDBObject("$set", content), false, false);
+            DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, new BasicDBObject("$set", document.content), false, false);
 
             if (oldDocument == null) {
                 return HttpStatus.SC_NOT_FOUND;
             } else {
                 // check the old etag (in case restore the old document version)
-                return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_OK);
+                return optimisticCheckEtag(coll, oldDocument, document.requestEtag, HttpStatus.SC_OK);
             }
         } else {
-            content.put("_created_on", now.toString()); // let's assume this is an insert. in case we'll set it back with a second update
+            document.content.put("_created_on", now.toString()); // let's assume this is an insert. in case we'll set it back with a second update
 
             // we use findAndModify to get the @created_on field value from the existing document
             // in case this is an update well need to put it back using a second update 
             // it is not possible to do it with a single update
             // (even using $setOnInsert update because we'll need to use the $set operator for other data and this would make it a partial update (patch semantic) 
-            DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, content, false, true);
+            DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, document.content, false, true);
 
             if (oldDocument != null) { // upsert
                 Object oldTimestamp = oldDocument.get("_created_on");
 
                 if (oldTimestamp == null) {
                     oldTimestamp = now.toString();
-                    logger.warn("properties of document /{}/{}/{} had no @created_on field. set to now", dbName, collName, documentId);
+                    LOGGER.warn("properties of document /{}/{}/{} had no @created_on field. set to now",
+                            document.dbName, document.collName, document.documentId);
                 }
 
                 // need to readd the @created_on field 
@@ -117,7 +117,7 @@ public class DocumentDAO {
                 coll.update(idQuery, new BasicDBObject("$set", created), true, false);
 
                 // check the old etag (in case restore the old document version)
-                return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_OK);
+                return optimisticCheckEtag(coll, oldDocument, document.requestEtag, HttpStatus.SC_OK);
             } else {  // insert
                 return HttpStatus.SC_CREATED;
             }
@@ -134,7 +134,7 @@ public class DocumentDAO {
      * @param requestEtag
      * @return the HttpStatus code to retrun
      */
-    public static int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, DBObject content, ObjectId requestEtag) {
+    public int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, DBObject content, ObjectId requestEtag) {
         DB db = DBDAO.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
@@ -178,7 +178,7 @@ public class DocumentDAO {
 
             if (oldTimestamp == null) {
                 oldTimestamp = now.toString();
-                logger.warn("properties of document /{}/{}/{} had no @created_on field. set to now", dbName, collName, _id.toString());
+                LOGGER.warn("properties of document /{}/{}/{} had no @created_on field. set to now", dbName, collName, _id.toString());
             }
 
             // need to readd the @created_on field 
@@ -201,7 +201,7 @@ public class DocumentDAO {
      * @param requestEtag
      * @return
      */
-    public static int deleteDocument(String dbName, String collName, String documentId, ObjectId requestEtag) {
+    public int deleteDocument(String dbName, String collName, String documentId, ObjectId requestEtag) {
         DB db = DBDAO.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
@@ -223,11 +223,11 @@ public class DocumentDAO {
      * @param cursor
      * @return
      */
-    public static ArrayList<DBObject> getDataFromCursor(DBCursor cursor) {
+    public ArrayList<DBObject> getDataFromCursor(DBCursor cursor) {
         return new ArrayList<>(cursor.toArray());
     }
 
-    private static Object getId(String id) {
+    private Object getId(String id) {
         if (id == null) {
             return new ObjectId();
         }
@@ -240,7 +240,7 @@ public class DocumentDAO {
         }
     }
 
-    private static int optimisticCheckEtag(DBCollection coll, DBObject oldDocument, ObjectId requestEtag, int httpStatusIfOk) {
+    private int optimisticCheckEtag(DBCollection coll, DBObject oldDocument, ObjectId requestEtag, int httpStatusIfOk) {
         if (requestEtag == null) {
             coll.save(oldDocument);
             return HttpStatus.SC_CONFLICT;
@@ -262,11 +262,11 @@ public class DocumentDAO {
         }
     }
 
-    static private URI getReferenceLink(String parentUrl, String referencedName) {
+    private URI getReferenceLink(String parentUrl, String referencedName) {
         try {
             return new URI(URLUtilis.removeTrailingSlashes(parentUrl) + "/" + referencedName);
         } catch (URISyntaxException ex) {
-            logger.error("error creating URI from {} + / + {}", parentUrl, referencedName, ex);
+            LOGGER.error("error creating URI from {} + / + {}", parentUrl, referencedName, ex);
         }
 
         return null;
