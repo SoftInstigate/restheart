@@ -51,8 +51,8 @@ public class RequestContextTest {
     }
 
     @Test
-    public void testSelectRequestMethod() {
-        System.out.println("testSelectRequestMethod");
+    public void selectRequestMethod() {
+        System.out.println("selectRequestMethod");
 
         HttpString _method = new HttpString("UNKNOWN");
         assertEquals(RequestContext.METHOD.OTHER, RequestContext.selectRequestMethod(_method));
@@ -65,8 +65,8 @@ public class RequestContextTest {
     }
 
     @Test
-    public void testSelectRequestType() {
-        System.out.println("testSelectRequestType");
+    public void selectRequestType() {
+        System.out.println("selectRequestType");
 
         String[] pathTokens = "/".split("/");
         assertEquals(RequestContext.TYPE.ROOT, RequestContext.selectRequestType(pathTokens));
@@ -88,16 +88,16 @@ public class RequestContextTest {
     }
     
     @Test
-    public void testSelectRequestType_File() {
-        System.out.println("testSelectRequestType_File");
+    public void selectRequestType_File() {
+        System.out.println("selectRequestType_File");
         
         String[] pathTokens = "/db/collection/_files".split("/");
         assertEquals(RequestContext.TYPE.FILE, RequestContext.selectRequestType(pathTokens));
     }
 
     @Test
-    public void testGetMappedRequestUri() {
-        System.out.println("testGetMappedRequestUri");
+    public void getMappedRequestUri() {
+        System.out.println("getMappedRequestUri");
         
         HttpServerExchange exchange = new HttpServerExchange(null);
         exchange.setRequestPath("/");
