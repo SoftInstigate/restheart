@@ -24,8 +24,8 @@ import com.mongodb.DBCursor;
  * @author uji
  */
 public class SkippedDBCursor {
-    private DBCursor cursor;
-    private int alreadySkipped;
+    private final DBCursor cursor;
+    private final int alreadySkipped;
 
     public SkippedDBCursor(DBCursor cursor, int alreadySkipped) {
         this.cursor = cursor;
