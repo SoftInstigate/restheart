@@ -17,9 +17,17 @@
  */
 package org.restheart.handlers.files;
 
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
+import org.bson.types.ObjectId;
+import org.restheart.db.DocumentDAO;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.utils.HttpStatus;
+import org.restheart.utils.RequestHelper;
+import org.restheart.utils.ResponseHelper;
 
 /**
  *
@@ -33,7 +41,39 @@ public class PutFileHandler extends PipedHttpHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        DBObject content = context.getContent();
+
+        if (content == null) {
+            content = new BasicDBObject();
+        }
+
+        // cannot PUT an array
+        if (content instanceof BasicDBList) {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
+            return;
+        }
+
+        String id = context.getDocumentId();
+
+        if (content.get("_id") == null) {
+            content.put("_id", getId(id));
+        } else if (!content.get("_id").equals(id)) {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is different than id in URL");
+            return;
+        }
+
+        ObjectId etag = RequestHelper.getWriteEtag(exchange);
+
+        // int SC = DocumentDAO.upsertDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), content, etag, false);
+
+        // send the warnings if any (and in case no_content change the return code to ok
+        if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
+            sendWarnings(SC, exchange, context);
+        } else {
+            exchange.setResponseCode(SC);
+        }
+
+        exchange.endExchange();
     }
-    
+
 }
