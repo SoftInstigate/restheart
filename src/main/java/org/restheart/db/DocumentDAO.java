@@ -46,14 +46,6 @@ public class DocumentDAO {
 
     private static final Logger logger = LoggerFactory.getLogger(DocumentDAO.class);
 
-    private static final BasicDBObject fieldsToReturn;
-
-    static {
-        fieldsToReturn = new BasicDBObject();
-        fieldsToReturn.put("_id", 1);
-        fieldsToReturn.put("_created_on", 1);
-    }
-
     /**
      *
      * @param dbName
