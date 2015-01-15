@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  */
 public class Relationship {
 
-    private static final Logger logger = LoggerFactory.getLogger(Relationship.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Relationship.class);
 
     public enum TYPE {
         ONE_TO_ONE,
@@ -221,7 +221,7 @@ public class Relationship {
                             + " the " + type.name() + " relationship ref-field " + this.referenceField + " should be an array, but is " + _referenceValue);
                 }
 
-                String[] ids = ((BasicDBList) _referenceValue).toArray(new String[0]);
+                String[] ids = ((BasicDBList) _referenceValue).toArray(new String[((BasicDBList) _referenceValue).size()]);
 
                 for (int idx = ids.length - 1; idx >= 0; idx--) {
                     ids[idx] = "'" + ids[idx] + "'";
@@ -250,7 +250,7 @@ public class Relationship {
             }
         }
 
-        logger.debug("returned null link. this = {}, data = {}", this, data);
+        LOGGER.debug("returned null link. this = {}, data = {}", this, data);
         return null;
     }
 
