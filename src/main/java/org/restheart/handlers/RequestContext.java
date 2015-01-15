@@ -187,8 +187,10 @@ public class RequestContext {
     public final String unmapUri(String mappedUri) {
         String ret = URLUtilis.removeTrailingSlashes(mappedUri);
 
-        if (this.whatUri.equals("*") && !this.whereUri.equals(SLASH)) {
-            ret = ret.replaceFirst("^" + this.whereUri, "");
+        if (whatUri.equals("*")) {
+            if (!this.whereUri.equals(SLASH)) {
+                ret = ret.replaceFirst("^" + this.whereUri, "");
+            }
         } else {
             ret = URLUtilis.removeTrailingSlashes(ret.replaceFirst("^" + this.whereUri, this.whatUri));
         }
@@ -211,8 +213,10 @@ public class RequestContext {
     public final String mapUri(String unmappedUri) {
         String ret = URLUtilis.removeTrailingSlashes(unmappedUri);
 
-        if (this.whatUri.equals("*") && !this.whereUri.equals(SLASH)) {
-            ret = this.whereUri + unmappedUri;
+        if (whatUri.equals("*")) {
+            if (!this.whereUri.equals(SLASH)) {
+                return this.whereUri + unmappedUri;
+            }
         } else {
             ret = URLUtilis.removeTrailingSlashes(ret.replaceFirst("^" + this.whatUri, this.whereUri));
         }
@@ -223,7 +227,7 @@ public class RequestContext {
 
         return ret;
     }
-
+    
     /**
      * check if the parent of the requested resource is accessible in this
      * request context
