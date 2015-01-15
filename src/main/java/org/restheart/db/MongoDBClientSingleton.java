@@ -44,7 +44,7 @@ public class MongoDBClientSingleton {
 
     private MongoClient mongoClient;
 
-    private static Logger logger = LoggerFactory.getLogger(MongoDBClientSingleton.class);
+    private static final Logger logger = LoggerFactory.getLogger(MongoDBClientSingleton.class);
 
     private MongoDBClientSingleton() {
         if (!initialized) {
@@ -90,15 +90,19 @@ public class MongoDBClientSingleton {
             }
 
             if (mongoCredentials != null) {
-                for (Map<String, Object> mongoCredential : mongoCredentials) {
+                mongoCredentials.stream().forEach((mongoCredential) -> {
                     Object mongoAuthDb = mongoCredential.get(Configuration.MONGO_AUTH_DB_KEY);
                     Object mongoUser = mongoCredential.get(Configuration.MONGO_USER_KEY);
                     Object mongoPwd = mongoCredential.get(Configuration.MONGO_PASSWORD_KEY);
-
-                    if (mongoAuthDb != null && mongoAuthDb instanceof String && mongoUser != null && mongoUser instanceof String && mongoPwd != null && mongoPwd instanceof String) {
+                    if (mongoAuthDb != null 
+                            && mongoAuthDb instanceof String 
+                            && mongoUser != null 
+                            && mongoUser instanceof String 
+                            && mongoPwd != null 
+                            && mongoPwd instanceof String) {
                         credentials.add(MongoCredential.createMongoCRCredential((String) mongoUser, (String) mongoAuthDb, ((String) mongoPwd).toCharArray()));
                     }
-                }
+                });
             }
 
             MongoClientOptions opts = MongoClientOptions.builder().readPreference(ReadPreference.primaryPreferred()).writeConcern(WriteConcern.ACKNOWLEDGED).build();
