@@ -22,7 +22,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
-import org.restheart.db.DocumentDAO;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
@@ -64,13 +63,16 @@ public class PutFileHandler extends PipedHttpHandler {
 
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
-        // int SC = DocumentDAO.upsertDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), content, etag, false);
+        int httpStatus = 0;
+        
+        // TODO
+        
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(SC, exchange, context);
+            sendWarnings(httpStatus, exchange, context);
         } else {
-            exchange.setResponseCode(SC);
+            exchange.setResponseCode(httpStatus);
         }
 
         exchange.endExchange();
