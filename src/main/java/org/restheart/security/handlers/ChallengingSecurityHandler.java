@@ -47,7 +47,7 @@ public class ChallengingSecurityHandler extends PipedWrappingHandler {
         if (identityManager != null) {
             final List<AuthenticationMechanism> mechanisms = Collections.<AuthenticationMechanism>singletonList(
                     new BasicAuthenticationMechanism(RESTHEART_REALM));
-            handler = buildSecurityHandlerChain(accessManager, handler, identityManager, mechanisms);
+            handler = buildSecurityHandlerChain(accessManager, null, identityManager, mechanisms);
         }
         return handler;
     }
