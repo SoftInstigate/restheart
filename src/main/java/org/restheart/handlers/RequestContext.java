@@ -72,6 +72,7 @@ public class RequestContext {
     public static final String LOCAL = "local";
     public static final String ADMIN = "admin";
     public static final String _INDEXES = "_indexes";
+    public static final String _FILES = "_files";
 
     private final String whereUri;
     private final String whatUri;
@@ -167,7 +168,7 @@ public class RequestContext {
             type = TYPE.COLLECTION_INDEXES;
         } else if (pathTokens.length > 4 && pathTokens[3].equals(_INDEXES)) {
             type = TYPE.INDEX;
-        } else if (pathTokens.length == 4 && pathTokens[3].equals("_files")) {
+        } else if (pathTokens.length >= 4 && pathTokens[3].equals(_FILES)) {
             type = TYPE.FILE;
         } else {
             type = TYPE.DOCUMENT;
@@ -186,10 +187,8 @@ public class RequestContext {
     public final String unmapUri(String mappedUri) {
         String ret = URLUtilis.removeTrailingSlashes(mappedUri);
 
-        if (whatUri.equals("*")) {
-            if (!this.whereUri.equals(SLASH)) {
-                ret = ret.replaceFirst("^" + this.whereUri, "");
-            }
+        if (this.whatUri.equals("*") && !this.whereUri.equals(SLASH)) {
+            ret = ret.replaceFirst("^" + this.whereUri, "");
         } else {
             ret = URLUtilis.removeTrailingSlashes(ret.replaceFirst("^" + this.whereUri, this.whatUri));
         }
@@ -212,10 +211,8 @@ public class RequestContext {
     public final String mapUri(String unmappedUri) {
         String ret = URLUtilis.removeTrailingSlashes(unmappedUri);
 
-        if (whatUri.equals("*")) {
-            if (!this.whereUri.equals(SLASH)) {
-                return this.whereUri + unmappedUri;
-            }
+        if (this.whatUri.equals("*") && !this.whereUri.equals(SLASH)) {
+            ret = this.whereUri + unmappedUri;
         } else {
             ret = URLUtilis.removeTrailingSlashes(ret.replaceFirst("^" + this.whatUri, this.whereUri));
         }
