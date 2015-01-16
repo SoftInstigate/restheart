@@ -25,6 +25,8 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 /**
  *
  * @author Maurizio Turatti <maurizio@softinstigate.com>
@@ -91,20 +93,20 @@ public class RequestContextTest {
     public void getMappedRequestUri() {
         System.out.println("getMappedRequestUri");
         
-        HttpServerExchange exchange = new HttpServerExchange(null);
-        exchange.setRequestPath("/");
-        exchange.setRequestMethod(HttpString.EMPTY);
+        HttpServerExchange ex = mock(HttpServerExchange.class);
+        when(ex.getRequestPath()).thenReturn("/");
+        when(ex.getRequestMethod()).thenReturn(HttpString.EMPTY);
 
         String whatUri = "/mydb/mycollection";
         String whereUri = "/";
         
-        RequestContext context = new RequestContext(exchange, whereUri, whatUri);
+        RequestContext context = new RequestContext(ex, whereUri, whatUri);
         assertEquals("/mydb/mycollection", context.getMappedRequestUri());
         
         whatUri = "*";
         whereUri = "/data";
         
-        context = new RequestContext(exchange, whereUri, whatUri);
+        context = new RequestContext(ex, whereUri, whatUri);
         assertEquals("/", context.getMappedRequestUri());
     }
 
