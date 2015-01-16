@@ -29,7 +29,7 @@ import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
-import org.restheart.db.DocumentEntity;
+import org.restheart.db.entity.PutDocumentEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +79,7 @@ public class PutDocumentHandler extends PipedHttpHandler {
 
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
         
-        DocumentEntity entity = new DocumentEntity(
+        PutDocumentEntity entity = new PutDocumentEntity(
                 context.getDBName(),
                 context.getCollectionName(),
                 context.getDocumentId(),
@@ -88,7 +88,7 @@ public class PutDocumentHandler extends PipedHttpHandler {
                 false);
         
         DocumentDAO documentDAO = new DocumentDAO();
-        int httpCode = documentDAO.upsert(entity);
+        int httpCode = documentDAO.put(entity);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {

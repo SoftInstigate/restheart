@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.db;
+package org.restheart.db.entity;
 
 import com.mongodb.DBObject;
 import org.bson.types.ObjectId;
@@ -24,7 +24,7 @@ import org.bson.types.ObjectId;
  *
  * @author Maurizio Turatti <info@maurizioturatti.com>
  */
-public final class DocumentEntity {
+public final class PutDocumentEntity implements Entity {
     
     public final String dbName;
     public final String collName;
@@ -33,7 +33,7 @@ public final class DocumentEntity {
     public final ObjectId requestEtag;
     public final boolean patching;
     
-    public DocumentEntity(String dbName, String collName, String documentId, DBObject content, ObjectId requestEtag, boolean patching) {
+    public PutDocumentEntity(String dbName, String collName, String documentId, DBObject content, ObjectId requestEtag, boolean patching) {
         assert dbName != null && collName != null && documentId != null && content != null && requestEtag != null;
         this.collName = collName;
         this.content = content;

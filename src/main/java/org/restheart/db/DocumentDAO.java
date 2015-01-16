@@ -17,6 +17,8 @@
  */
 package org.restheart.db;
 
+import org.restheart.db.entity.PutDocumentEntity;
+import org.restheart.db.entity.PostDocumentEntity;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -26,7 +28,6 @@ import com.mongodb.MongoClient;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.URLUtilis;
-import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -40,7 +41,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare
  */
-public class DocumentDAO implements Repository<DocumentEntity> {
+public class DocumentDAO implements Repository<PutDocumentEntity, PostDocumentEntity> {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(DocumentDAO.class);
 
@@ -65,7 +66,7 @@ public class DocumentDAO implements Repository<DocumentEntity> {
      * @return the HttpStatus code
      */
     @Override
-    public int upsert(DocumentEntity document) {
+    public int put(PutDocumentEntity document) {
         DB db = DBDAO.getDB(document.dbName);
 
         DBCollection coll = db.getCollection(document.collName);
@@ -102,7 +103,7 @@ public class DocumentDAO implements Repository<DocumentEntity> {
             // (even using $setOnInsert update because we'll need to use the $set operator for other data and this would make it a partial update (patch semantic) 
             DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, document.content, false, true);
 
-            if (oldDocument != null) { // upsert
+            if (oldDocument != null) { // put
                 Object oldTimestamp = oldDocument.get("_created_on");
 
                 if (oldTimestamp == null) {
@@ -126,43 +127,43 @@ public class DocumentDAO implements Repository<DocumentEntity> {
 
     /**
      *
-     *
-     * @param exchange
-     * @param dbName
-     * @param collName
-     * @param content
-     * @param requestEtag
-     * @return the HttpStatus code to retrun
+     * @param document
+     * @return
      */
-    public int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, DBObject content, ObjectId requestEtag) {
-        DB db = DBDAO.getDB(dbName);
+    @Override
+    public int post(PostDocumentEntity document) {
+        DB db = DBDAO.getDB(document.dbName);
 
-        DBCollection coll = db.getCollection(collName);
+        DBCollection coll = db.getCollection(document.collName);
 
         ObjectId timestamp = new ObjectId();
         Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
 
-        if (content == null) {
-            content = new BasicDBObject();
+        if (document.content == null) {
+            //document.content = new BasicDBObject();
         }
 
-        content.put("_etag", timestamp);
-        content.put("_created_on", now.toString()); // make sure we don't change this field
+        document.content.put("_etag", timestamp);
+        document.content.put("_created_on", now.toString()); // make sure we don't change this field
 
-        Object _id = content.get("_id");
-        content.removeField("_id");
+        Object _id = document.content.get("_id");
+        document.content.removeField("_id");
 
         if (_id == null) {
             ObjectId id = new ObjectId();
-            content.put("_id", id);
+            document.content.put("_id", id);
 
-            coll.insert(content);
+            coll.insert(document.content);
 
-            exchange.getResponseHeaders().add(HttpString.tryFromString("Location"), getReferenceLink(exchange.getRequestURL(), id.toString()).toString());
+            document.exchange.getResponseHeaders()
+                    .add(HttpString.tryFromString("Location"), 
+                            getReferenceLink(document.exchange.getRequestURL(), id.toString()).toString());
 
             return HttpStatus.SC_CREATED;
         } else {
-            exchange.getResponseHeaders().add(HttpString.tryFromString("Location"), getReferenceLink(exchange.getRequestURL(), _id.toString()).toString());
+            document.exchange.getResponseHeaders()
+                    .add(HttpString.tryFromString("Location"),
+                            getReferenceLink(document.exchange.getRequestURL(), _id.toString()).toString());
         }
 
         BasicDBObject idQuery = new BasicDBObject("_id", getId("" + _id));
@@ -171,14 +172,15 @@ public class DocumentDAO implements Repository<DocumentEntity> {
         // we need to put this field back using a second update 
         // it is not possible in a single update even using $setOnInsert update operator
         // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
-        DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, content, false, true);
+        DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, document.content, false, true);
 
-        if (oldDocument != null) {  // upsert
+        if (oldDocument != null) {  // put
             Object oldTimestamp = oldDocument.get("_created_on");
 
             if (oldTimestamp == null) {
                 oldTimestamp = now.toString();
-                LOGGER.warn("properties of document /{}/{}/{} had no @created_on field. set to now", dbName, collName, _id.toString());
+                LOGGER.warn("properties of document /{}/{}/{} had no @created_on field. set to now", 
+                        document.dbName, document.collName, _id.toString());
             }
 
             // need to readd the @created_on field 
@@ -187,7 +189,7 @@ public class DocumentDAO implements Repository<DocumentEntity> {
             coll.update(idQuery, new BasicDBObject("$set", createdContet), true, false);
 
             // check the old etag (in case restore the old document version)
-            return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_OK);
+            return optimisticCheckEtag(coll, oldDocument, document.requestEtag, HttpStatus.SC_OK);
         } else { // insert
             return HttpStatus.SC_CREATED;
         }
@@ -223,9 +225,9 @@ public class DocumentDAO implements Repository<DocumentEntity> {
      * @param cursor
      * @return
      */
-    public ArrayList<DBObject> getDataFromCursor(DBCursor cursor) {
-        return new ArrayList<>(cursor.toArray());
-    }
+//    public ArrayList<DBObject> getDataFromCursor(DBCursor cursor) {
+//        return new ArrayList<>(cursor.toArray());
+//    }
 
     private Object getId(String id) {
         if (id == null) {
@@ -271,4 +273,5 @@ public class DocumentDAO implements Repository<DocumentEntity> {
 
         return null;
     }
+
 }
