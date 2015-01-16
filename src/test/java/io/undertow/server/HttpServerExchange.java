@@ -19,22 +19,115 @@ package io.undertow.server;
 
 import io.undertow.util.AbstractAttachable;
 import io.undertow.util.HttpString;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
- * A mock for io.undertow.server.HttpServerExchange
- * The original class is final so it can't be mocked directly.
- * Then use Mockito:
+ * A mock for io.undertow.server.HttpServerExchange The original class is final
+ * so it can't be mocked directly. Then use Mockito:
  * <code>HttpServerExchange ex = mock(HttpServerExchange.class);</code>
  *
  * @author Maurizio Turatti <info@maurizioturatti.com>
  */
-public abstract class HttpServerExchange extends AbstractAttachable {
+public class HttpServerExchange extends AbstractAttachable {
+
+    private int responseCode = 0;
+    private String queryString;
+    private String requestPath;
+    private HttpString requestMethod;
+    private Map<String, Deque<String>> queryParameters;
 
     public HttpServerExchange() {
     }
-    
-    public abstract String getRequestPath();
-    
-    public abstract HttpString getRequestMethod();
+
+    public HttpServerExchange endExchange() {
+        return this;
+    }
+
+    /**
+     * Returns a mutable map of query parameters.
+     *
+     * @return The query parameters
+     */
+    public Map<String, Deque<String>> getQueryParameters() {
+        if (queryParameters == null) {
+            queryParameters = new TreeMap<String, Deque<String>>();
+        }
+        return queryParameters;
+    }
+
+    public HttpServerExchange addQueryParam(final String name, final String param) {
+        if (queryParameters == null) {
+            queryParameters = new TreeMap<String, Deque<String>>();
+        }
+        Deque<String> list = queryParameters.get(name);
+        if (list == null) {
+            queryParameters.put(name, list = new ArrayDeque<String>(2));
+        }
+        list.add(param);
+        return this;
+    }
+
+    /**
+     * @return the responseCode
+     */
+    public int getResponseCode() {
+        return responseCode;
+    }
+
+    /**
+     * @param responseCode the responseCode to set
+     * @return
+     */
+    public HttpServerExchange setResponseCode(final int responseCode) {
+        this.responseCode = responseCode;
+        return this;
+    }
+
+    /**
+     * @return the queryString
+     */
+    public String getQueryString() {
+        return queryString;
+    }
+
+    /**
+     * @param queryString the queryString to set
+     * @return
+     */
+    public HttpServerExchange setQueryString(final String queryString) {
+        this.queryString = queryString;
+        return this;
+    }
+
+    /**
+     * @return the requestPath
+     */
+    public String getRequestPath() {
+        return requestPath;
+    }
+
+    /**
+     * @param requestPath the requestPath to set
+     */
+    public void setRequestPath(String requestPath) {
+        this.requestPath = requestPath;
+    }
+
+    /**
+     * @return the requestMethod
+     */
+    public HttpString getRequestMethod() {
+        return requestMethod;
+    }
+
+    /**
+     * @param requestMethod the requestMethod to set
+     */
+    public void setRequestMethod(HttpString requestMethod) {
+        this.requestMethod = requestMethod;
+    }
 
 }

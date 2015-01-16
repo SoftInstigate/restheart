@@ -21,18 +21,20 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
-import org.bson.types.ObjectId;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
 public class PutFileHandler extends PipedHttpHandler {
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(PutFileHandler.class);
 
     public PutFileHandler() {
         super(null);
@@ -61,11 +63,12 @@ public class PutFileHandler extends PipedHttpHandler {
             return;
         }
 
-        ObjectId etag = RequestHelper.getWriteEtag(exchange);
+        //ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
         int httpStatus = 0;
         
         // TODO
+        LOGGER.debug("@@@ Inserting file with GridFS");
         
 
         // send the warnings if any (and in case no_content change the return code to ok

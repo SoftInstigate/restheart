@@ -118,7 +118,7 @@ public class URLUtilisTest {
     @Test
     public void testGetQueryStringRemovingParams() {
         System.out.println("getQueryStringRemovingParams");
-        HttpServerExchange exchange = new HttpServerExchange(null);
+        HttpServerExchange exchange = new HttpServerExchange();
         exchange.setQueryString("a=1&b=2&c=3");
         exchange.addQueryParam("a", "1").addQueryParam("b", "2").addQueryParam("c", "3");
         String expResult = "a=1&c=3";
@@ -127,7 +127,7 @@ public class URLUtilisTest {
     }
 
     private RequestContext prepareRequestContext() {
-        HttpServerExchange exchange = new HttpServerExchange(null);
+        HttpServerExchange exchange = new HttpServerExchange();
         exchange.setRequestPath("");
         exchange.setRequestMethod(HttpString.EMPTY);
         RequestContext context = new RequestContext(exchange, "", "");
