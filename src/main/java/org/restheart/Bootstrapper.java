@@ -317,7 +317,7 @@ public final class Bootstrapper {
 
             LOGGER.info("mongodb connection pool initialized");
 
-            PropsFixer.fixAllMissingProps();
+            new PropsFixer().fixAllMissingProps();
         } catch (Throwable t) {
             LOGGER.error("error connecting to mongodb. exiting..", t);
             stopServer();

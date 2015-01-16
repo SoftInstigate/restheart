@@ -36,9 +36,13 @@ import org.slf4j.LoggerFactory;
  */
 public class PropsFixer {
 
-    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
+    private final MongoClient client;
 
-    private static final Logger logger = LoggerFactory.getLogger(PropsFixer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PropsFixer.class);
+
+    public PropsFixer() {
+        client = MongoDBClientSingleton.getInstance().getClient();
+    }
 
     /**
      *
@@ -47,7 +51,7 @@ public class PropsFixer {
      * @return
      * @throws MongoException
      */
-    public static boolean addCollectionProps(String dbName, String collName) throws MongoException {
+    public boolean addCollectionProps(String dbName, String collName) throws MongoException {
         final DbsDAO dbsDAO = new DbsDAO();
         DBObject dbmd = dbsDAO.getDbProps(dbName);
 
@@ -85,7 +89,7 @@ public class PropsFixer {
 
         coll.insert(properties);
 
-        logger.info("properties added to {}/{}", dbName, collName);
+        LOGGER.info("properties added to {}/{}", dbName, collName);
         return true;
     }
 
@@ -94,7 +98,7 @@ public class PropsFixer {
      * @param dbName
      * @return
      */
-    public static boolean addDbProps(String dbName) {
+    public boolean addDbProps(String dbName) {
         final DbsDAO dbsDAO = new DbsDAO();
         if (!dbsDAO.doesDbExists(dbName)) {
             return false;
@@ -121,21 +125,21 @@ public class PropsFixer {
         DBCollection coll = collectionDAO.getCollection(dbName, "_properties");
 
         coll.insert(properties);
-        logger.info("properties added to {}", dbName);
+        LOGGER.info("properties added to {}", dbName);
         return true;
     }
 
     /**
      *
      */
-    public static void fixAllMissingProps() {
+    public void fixAllMissingProps() {
         final DbsDAO dbsDAO = new DbsDAO();
         try {
             client.getDatabaseNames().stream().filter(dbName -> !RequestContext.isReservedResourceDb(dbName)).map(dbName -> {
                 try {
                     addDbProps(dbName);
                 } catch (Throwable t) {
-                    logger.error("error fixing _properties of db {}", dbName, t);
+                    LOGGER.error("error fixing _properties of db {}", dbName, t);
                 }
                 return dbName;
             }).forEach(dbName -> {
@@ -145,7 +149,7 @@ public class PropsFixer {
                     try {
                         addCollectionProps(dbName, collectionName);
                     } catch (Throwable t) {
-                        logger.error("error checking the collection {}/{} for valid _properties. note that a request to it will result on NOT_FOUND", dbName, collectionName, t);
+                        LOGGER.error("error checking the collection {}/{} for valid _properties. note that a request to it will result on NOT_FOUND", dbName, collectionName, t);
                     }
                 }
                 );
@@ -154,12 +158,12 @@ public class PropsFixer {
             Object errmsg = cfe.getCommandResult().get("errmsg");
 
             if (errmsg != null && errmsg instanceof String && ("unauthorized".equals(errmsg) || ((String) errmsg).contains("not authorized"))) {
-                logger.error("error looking for dbs and collections with missing _properties due to insuffient mongo user privileges. note that requests to dbs and collections with no _properties result on NOT_FOUND", cfe);
+                LOGGER.error("error looking for dbs and collections with missing _properties due to insuffient mongo user privileges. note that requests to dbs and collections with no _properties result on NOT_FOUND", cfe);
             } else {
-                logger.error("eorro looking for dbs and collections with missing _properties. note that requests to dbs and collections with no _properties result on NOT_FOUND", cfe);
+                LOGGER.error("eorro looking for dbs and collections with missing _properties. note that requests to dbs and collections with no _properties result on NOT_FOUND", cfe);
             }
         } catch (MongoException mex) {
-            logger.error("eorro looking for dbs and collections with missing _properties. note that requests to dbs and collections with no _properties result on NOT_FOUND", mex);
+            LOGGER.error("eorro looking for dbs and collections with missing _properties. note that requests to dbs and collections with no _properties result on NOT_FOUND", mex);
         }
     }
 }
