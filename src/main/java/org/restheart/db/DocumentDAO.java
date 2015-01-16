@@ -22,7 +22,6 @@ import org.restheart.db.entity.PostDocumentEntity;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import org.restheart.utils.HttpStatus;
@@ -32,8 +31,8 @@ import io.undertow.util.HttpString;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
-import java.util.ArrayList;
 import org.bson.types.ObjectId;
+import org.restheart.db.entity.DeleteDocumentEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +40,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare
  */
-public class DocumentDAO implements Repository<PutDocumentEntity, PostDocumentEntity> {
+public class DocumentDAO implements Repository {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(DocumentDAO.class);
 
@@ -196,19 +195,16 @@ public class DocumentDAO implements Repository<PutDocumentEntity, PostDocumentEn
     }
 
     /**
-     *
-     * @param dbName
-     * @param collName
-     * @param documentId
-     * @param requestEtag
-     * @return
+     * @param document
+     * @return 
      */
-    public int deleteDocument(String dbName, String collName, String documentId, ObjectId requestEtag) {
-        DB db = DBDAO.getDB(dbName);
+    @Override
+    public int delete(DeleteDocumentEntity document) {
+        DB db = DBDAO.getDB(document.dbName);
 
-        DBCollection coll = db.getCollection(collName);
+        DBCollection coll = db.getCollection(document.collName);
 
-        BasicDBObject idQuery = new BasicDBObject("_id", getId(documentId));
+        BasicDBObject idQuery = new BasicDBObject("_id", getId(document.documentId));
 
         DBObject oldDocument = coll.findAndModify(idQuery, null, null, true, null, false, false);
 
@@ -216,18 +212,9 @@ public class DocumentDAO implements Repository<PutDocumentEntity, PostDocumentEn
             return HttpStatus.SC_NOT_FOUND;
         } else {
             // check the old etag (in case restore the old document version)
-            return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_NO_CONTENT);
+            return optimisticCheckEtag(coll, oldDocument, document.requestEtag, HttpStatus.SC_NO_CONTENT);
         }
     }
-
-    /**
-     *
-     * @param cursor
-     * @return
-     */
-//    public ArrayList<DBObject> getDataFromCursor(DBCursor cursor) {
-//        return new ArrayList<>(cursor.toArray());
-//    }
 
     private Object getId(String id) {
         if (id == null) {

@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data Repository API server
+ * RESTHeart - the data REST API server
  * Copyright (C) SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -15,22 +15,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.db;
+package org.restheart.db.entity;
 
-import org.restheart.db.entity.DeleteDocumentEntity;
-import org.restheart.db.entity.PostDocumentEntity;
-import org.restheart.db.entity.PutDocumentEntity;
+import org.bson.types.ObjectId;
 
 /**
  *
  * @author Maurizio Turatti <info@maurizioturatti.com>
  */
-public interface Repository {
-    
-    int put(PutDocumentEntity entity);
-    
-    int post(PostDocumentEntity entity);
-    
-    int delete(DeleteDocumentEntity entity);
-    
+public class DeleteDocumentEntity implements Entity {
+
+    public final String dbName;
+    public final String collName;
+    public final String documentId;
+    public final ObjectId requestEtag;
+
+    public DeleteDocumentEntity(String dbName, String collName, String documentId, ObjectId requestEtag) {
+        assert dbName != null && collName != null && documentId != null && requestEtag != null;
+        this.collName = collName;
+        this.dbName = dbName;
+        this.documentId = documentId;
+        this.requestEtag = requestEtag;
+    }
+
 }
