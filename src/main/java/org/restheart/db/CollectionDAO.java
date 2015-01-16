@@ -278,7 +278,7 @@ public class CollectionDAO {
      * @return the HttpStatus code to set in the http response
      */
     public int upsertCollection(String dbName, String collName, DBObject content, ObjectId etag, boolean updating, boolean patching) {
-        DB db = DBDAO.getDB(dbName);
+        DB db = new DbsDAO().getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
 

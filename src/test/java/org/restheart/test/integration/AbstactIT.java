@@ -22,7 +22,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
 import org.restheart.Configuration;
 import org.restheart.db.CollectionDAO;
-import org.restheart.db.DBDAO;
+import org.restheart.db.DbsDAO;
 import org.restheart.db.DocumentDAO;
 import org.restheart.db.IndexDAO;
 import org.restheart.db.MongoDBClientSingleton;
@@ -213,7 +213,9 @@ public abstract class AbstactIT {
     }
 
     private void createTestData() {
-        DBDAO.upsertDB(dbName, dbProps, new ObjectId(), false);
+        final DbsDAO dbsDAO = new DbsDAO();
+        dbsDAO.upsertDB(dbName, dbProps, new ObjectId(), false);
+        
         final CollectionDAO collectionDAO = new CollectionDAO();
         collectionDAO.upsertCollection(dbName, collection1Name, coll1Props, new ObjectId(), false, false);
         collectionDAO.upsertCollection(dbName, collection2Name, coll2Props, new ObjectId(), false, false);

@@ -20,7 +20,7 @@ package org.restheart.handlers.database;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import org.restheart.db.DBDAO;
+import org.restheart.db.DbsDAO;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.utils.HttpStatus;
@@ -70,13 +70,14 @@ public class PutDBHandler extends PipedHttpHandler {
 
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
-        int SC = DBDAO.upsertDB(context.getDBName(), content, etag, false);
+        final DbsDAO dbsDAO = new DbsDAO();
+        int httpCode = dbsDAO.upsertDB(context.getDBName(), content, etag, false);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(SC, exchange, context);
+            sendWarnings(httpCode, exchange, context);
         } else {
-            exchange.setResponseCode(SC);
+            exchange.setResponseCode(httpCode);
         }
 
         exchange.endExchange();

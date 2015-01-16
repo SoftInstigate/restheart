@@ -17,7 +17,7 @@
  */
 package org.restheart.handlers.database;
 
-import org.restheart.db.DBDAO;
+import org.restheart.db.DbsDAO;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.utils.HttpStatus;
@@ -55,15 +55,16 @@ public class DeleteDBHandler extends PipedHttpHandler {
             return;
         }
 
-        int SC = DBDAO.deleteDB(context.getDBName(), etag);
+        final DbsDAO dbsDAO = new DbsDAO();
+        int httpCode = dbsDAO.deleteDB(context.getDBName(), etag);
 
-        exchange.setResponseCode(SC);
+        exchange.setResponseCode(httpCode);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(SC, exchange, context);
+            sendWarnings(httpCode, exchange, context);
         } else {
-            exchange.setResponseCode(SC);
+            exchange.setResponseCode(httpCode);
         }
 
         exchange.endExchange();

@@ -48,7 +48,8 @@ public class PropsFixer {
      * @throws MongoException
      */
     public static boolean addCollectionProps(String dbName, String collName) throws MongoException {
-        DBObject dbmd = DBDAO.getDbProps(dbName);
+        final DbsDAO dbsDAO = new DbsDAO();
+        DBObject dbmd = dbsDAO.getDbProps(dbName);
 
         if (dbmd == null) {
             // db must exists with properties
@@ -64,7 +65,7 @@ public class PropsFixer {
         }
 
         // check if collection has data
-        DB db = DBDAO.getDB(dbName);
+        DB db = dbsDAO.getDB(dbName);
 
         if (!db.collectionExists(collName)) {
             return false;
@@ -94,11 +95,12 @@ public class PropsFixer {
      * @return
      */
     public static boolean addDbProps(String dbName) {
-        if (!DBDAO.doesDbExists(dbName)) {
+        final DbsDAO dbsDAO = new DbsDAO();
+        if (!dbsDAO.doesDbExists(dbName)) {
             return false;
         }
 
-        DBObject dbmd = DBDAO.getDbProps(dbName);
+        DBObject dbmd = dbsDAO.getDbProps(dbName);
 
         if (dbmd != null) // properties exists
         {
@@ -127,6 +129,7 @@ public class PropsFixer {
      *
      */
     public static void fixAllMissingProps() {
+        final DbsDAO dbsDAO = new DbsDAO();
         try {
             client.getDatabaseNames().stream().filter(dbName -> !RequestContext.isReservedResourceDb(dbName)).map(dbName -> {
                 try {
@@ -136,9 +139,9 @@ public class PropsFixer {
                 }
                 return dbName;
             }).forEach(dbName -> {
-                DB db = DBDAO.getDB(dbName);
+                DB db = dbsDAO.getDB(dbName);
 
-                DBDAO.getDbCollections(db).stream().filter(collectionName -> !RequestContext.isReservedResourceCollection(collectionName)).forEach(collectionName -> {
+                dbsDAO.getDbCollections(db).stream().filter(collectionName -> !RequestContext.isReservedResourceCollection(collectionName)).forEach(collectionName -> {
                     try {
                         addCollectionProps(dbName, collectionName);
                     } catch (Throwable t) {

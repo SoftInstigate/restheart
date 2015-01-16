@@ -25,7 +25,7 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import org.restheart.Configuration;
 import org.restheart.db.CollectionDAO;
-import org.restheart.db.DBDAO;
+import org.restheart.db.DbsDAO;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -74,13 +74,14 @@ public class LocalCachesSingleton {
         }
 
         if (enabled) {
-            this.dbPropsCache = builder.build(
-                    new CacheLoader<String, Optional<DBObject>>() {
-                        @Override
-                        public Optional<DBObject> load(String key) throws Exception {
-                            return Optional.ofNullable(DBDAO.getDbProps(key));
-                        }
-                    });
+            this.dbPropsCache = builder.build(new CacheLoader<String, Optional<DBObject>>() {
+                final DbsDAO dbsDAO = new DbsDAO();
+
+                @Override
+                public Optional<DBObject> load(String key) throws Exception {
+                    return Optional.ofNullable(dbsDAO.getDbProps(key));
+                }
+            });
 
             this.collectionPropsCache = builder.build(
                     new CacheLoader<String, Optional<DBObject>>() {

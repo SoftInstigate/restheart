@@ -18,7 +18,7 @@
 package org.restheart.handlers.injectors;
 
 import com.mongodb.DBObject;
-import org.restheart.db.DBDAO;
+import org.restheart.db.DbsDAO;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
@@ -53,10 +53,11 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getDBName() != null) {
-            DBObject dbProps;
+            DBObject dbProps = null;
 
             if (!LocalCachesSingleton.isEnabled()) {
-                dbProps = DBDAO.getDbProps(context.getDBName());
+                final DbsDAO dbsDAO = new DbsDAO();
+                dbProps = dbsDAO.getDbProps(context.getDBName());
 
                 if (dbProps != null) {
                     dbProps.put("_db-props-cached", false);

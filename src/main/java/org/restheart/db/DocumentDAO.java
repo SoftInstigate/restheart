@@ -66,7 +66,8 @@ public class DocumentDAO implements Repository {
      */
     @Override
     public int put(PutDocumentEntity document) {
-        DB db = DBDAO.getDB(document.dbName);
+        final DbsDAO dbsDAO = new DbsDAO();
+        DB db = dbsDAO.getDB(document.dbName);
 
         DBCollection coll = db.getCollection(document.collName);
 
@@ -131,7 +132,8 @@ public class DocumentDAO implements Repository {
      */
     @Override
     public int post(PostDocumentEntity document) {
-        DB db = DBDAO.getDB(document.dbName);
+        final DbsDAO dbsDAO = new DbsDAO();
+        DB db = dbsDAO.getDB(document.dbName);
 
         DBCollection coll = db.getCollection(document.collName);
 
@@ -200,7 +202,8 @@ public class DocumentDAO implements Repository {
      */
     @Override
     public int delete(DeleteDocumentEntity document) {
-        DB db = DBDAO.getDB(document.dbName);
+        final DbsDAO dbsDAO = new DbsDAO();
+        DB db = dbsDAO.getDB(document.dbName);
 
         DBCollection coll = db.getCollection(document.collName);
 

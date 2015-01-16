@@ -19,7 +19,7 @@ package org.restheart.handlers.database;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
-import org.restheart.db.DBDAO;
+import org.restheart.db.DbsDAO;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.RequestContext;
@@ -76,7 +76,8 @@ public class PatchDBHandler extends PipedHttpHandler {
             return;
         }
 
-        int SC = DBDAO.upsertDB(context.getDBName(), content, etag, true);
+        final DbsDAO dbsDAO = new DbsDAO();
+        int SC = dbsDAO.upsertDB(context.getDBName(), content, etag, true);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
