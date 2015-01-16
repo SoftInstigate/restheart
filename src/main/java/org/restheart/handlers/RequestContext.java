@@ -168,8 +168,6 @@ public class RequestContext {
             type = TYPE.COLLECTION_INDEXES;
         } else if (pathTokens.length > 4 && pathTokens[3].equals(_INDEXES)) {
             type = TYPE.INDEX;
-        } else if (pathTokens.length >= 4 && pathTokens[3].equals(_FILES)) {
-            type = TYPE.FILE;
         } else {
             type = TYPE.DOCUMENT;
         }
