@@ -214,9 +214,10 @@ public abstract class AbstactIT {
 
     private void createTestData() {
         DBDAO.upsertDB(dbName, dbProps, new ObjectId(), false);
-        CollectionDAO.upsertCollection(dbName, collection1Name, coll1Props, new ObjectId(), false, false);
-        CollectionDAO.upsertCollection(dbName, collection2Name, coll2Props, new ObjectId(), false, false);
-        CollectionDAO.upsertCollection(dbName, docsCollectionName, docsCollectionProps, new ObjectId(), false, false);
+        final CollectionDAO collectionDAO = new CollectionDAO();
+        collectionDAO.upsertCollection(dbName, collection1Name, coll1Props, new ObjectId(), false, false);
+        collectionDAO.upsertCollection(dbName, collection2Name, coll2Props, new ObjectId(), false, false);
+        collectionDAO.upsertCollection(dbName, docsCollectionName, docsCollectionProps, new ObjectId(), false, false);
 
         for (String index : docsCollectionIndexesStrings) {
             IndexDAO.createIndex(dbName, docsCollectionName, ((DBObject) JSON.parse(index)), null);

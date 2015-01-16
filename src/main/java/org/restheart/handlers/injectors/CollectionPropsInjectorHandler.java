@@ -55,7 +55,8 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
             DBObject collProps;
 
             if (!LocalCachesSingleton.isEnabled()) {
-                collProps = CollectionDAO.getCollectionProps(context.getDBName(), context.getCollectionName());
+                final CollectionDAO collectionDAO = new CollectionDAO();
+                collProps = collectionDAO.getCollectionProps(context.getDBName(), context.getCollectionName());
 
                 if (collProps != null) {
                     collProps.put("_collection-props-cached", false);

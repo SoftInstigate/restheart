@@ -84,10 +84,12 @@ public class LocalCachesSingleton {
 
             this.collectionPropsCache = builder.build(
                     new CacheLoader<String, Optional<DBObject>>() {
+                        final CollectionDAO collectionDAO = new CollectionDAO();
+
                         @Override
                         public Optional<DBObject> load(String key) throws Exception {
                             String[] dbNameAndCollectionName = key.split(SEPARATOR);
-                            return Optional.ofNullable(CollectionDAO.getCollectionProps(dbNameAndCollectionName[0], dbNameAndCollectionName[1]));
+                            return Optional.ofNullable(collectionDAO.getCollectionProps(dbNameAndCollectionName[0], dbNameAndCollectionName[1]));
                         }
                     });
         }

@@ -57,7 +57,6 @@ public class GetCollectionHandler extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         final CollectionDAO collectionDAO = new CollectionDAO();
         DBCollection coll = collectionDAO.getCollection(context.getDBName(), context.getCollectionName());
-
         long size = -1;
 
         if (context.isCount()) {

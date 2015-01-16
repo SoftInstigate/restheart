@@ -71,7 +71,8 @@ public class GetDocumentHandler extends PipedHttpHandler {
             query = new BasicDBObject("_id", sid);
         }
 
-        DBObject document = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName()).findOne(query);
+        final CollectionDAO collectionDAO = new CollectionDAO();
+        DBObject document = collectionDAO.getCollection(context.getDBName(), context.getCollectionName()).findOne(query);
 
         if (document == null) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "document does not exist");
