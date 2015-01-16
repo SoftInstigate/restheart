@@ -19,6 +19,7 @@ package org.restheart.db;
 
 import org.restheart.db.entity.PutDocumentEntity;
 import org.restheart.db.entity.PostDocumentEntity;
+import org.restheart.db.entity.DeleteDocumentEntity;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -32,7 +33,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import org.bson.types.ObjectId;
-import org.restheart.db.entity.DeleteDocumentEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,11 +41,11 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare
  */
 public class DocumentDAO implements Repository {
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DocumentDAO.class);
 
     private final MongoClient client;
-    
+
     public DocumentDAO() {
         client = MongoDBClientSingleton.getInstance().getClient();
     }
@@ -155,7 +155,7 @@ public class DocumentDAO implements Repository {
             coll.insert(document.content);
 
             document.exchange.getResponseHeaders()
-                    .add(HttpString.tryFromString("Location"), 
+                    .add(HttpString.tryFromString("Location"),
                             getReferenceLink(document.exchange.getRequestURL(), id.toString()).toString());
 
             return HttpStatus.SC_CREATED;
@@ -178,7 +178,7 @@ public class DocumentDAO implements Repository {
 
             if (oldTimestamp == null) {
                 oldTimestamp = now.toString();
-                LOGGER.warn("properties of document /{}/{}/{} had no @created_on field. set to now", 
+                LOGGER.warn("properties of document /{}/{}/{} had no @created_on field. set to now",
                         document.dbName, document.collName, _id.toString());
             }
 
@@ -196,7 +196,7 @@ public class DocumentDAO implements Repository {
 
     /**
      * @param document
-     * @return 
+     * @return
      */
     @Override
     public int delete(DeleteDocumentEntity document) {
