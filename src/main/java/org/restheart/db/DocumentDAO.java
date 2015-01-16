@@ -17,14 +17,12 @@
  */
 package org.restheart.db;
 
-import org.restheart.db.entity.PutDocumentEntity;
-import org.restheart.db.entity.PostDocumentEntity;
-import org.restheart.db.entity.DeleteDocumentEntity;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import io.undertow.server.HttpServerExchange;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.URLUtilis;
@@ -61,55 +59,59 @@ public class DocumentDAO implements Repository {
     }
 
     /**
-     * @param document
+     * @param dbName
+     * @param collName
+     * @param documentId
+     * @param content
+     * @param requestEtag
+     * @param patching
      * @return the HttpStatus code
      */
     @Override
-    public int put(PutDocumentEntity document) {
+    public int upsertDocument(String dbName, String collName, String documentId, DBObject content, ObjectId requestEtag, boolean patching) {
         final DbsDAO dbsDAO = new DbsDAO();
-        DB db = dbsDAO.getDB(document.dbName);
+        DB db = dbsDAO.getDB(dbName);
 
-        DBCollection coll = db.getCollection(document.collName);
+        DBCollection coll = db.getCollection(collName);
 
         ObjectId timestamp = new ObjectId();
         Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
 
-        if (document.content == null) {
-            throw new IllegalArgumentException("document.content == null");
-            // document.content = new BasicDBObject();
+        if (content == null) {
+            content = new BasicDBObject();
         }
 
-        document.content.put("_etag", timestamp);
+        content.put("_etag", timestamp);
 
-        BasicDBObject idQuery = new BasicDBObject("_id", getId(document.documentId));
+        BasicDBObject idQuery = new BasicDBObject("_id", getId(documentId));
 
-        if (document.patching) {
-            document.content.removeField("_created_on"); // make sure we don't change this field
+        if (patching) {
+            content.removeField("_created_on"); // make sure we don't change this field
 
-            DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, new BasicDBObject("$set", document.content), false, false);
+            DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, new BasicDBObject("$set", content), false, false);
 
             if (oldDocument == null) {
                 return HttpStatus.SC_NOT_FOUND;
             } else {
                 // check the old etag (in case restore the old document version)
-                return optimisticCheckEtag(coll, oldDocument, document.requestEtag, HttpStatus.SC_OK);
+                return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_OK);
             }
         } else {
-            document.content.put("_created_on", now.toString()); // let's assume this is an insert. in case we'll set it back with a second update
+            content.put("_created_on", now.toString()); // let's assume this is an insert. in case we'll set it back with a second update
 
             // we use findAndModify to get the @created_on field value from the existing document
-            // in case this is an update well need to put it back using a second update 
+            // in case this is an update well need to upsertDocument it back using a second update 
             // it is not possible to do it with a single update
             // (even using $setOnInsert update because we'll need to use the $set operator for other data and this would make it a partial update (patch semantic) 
-            DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, document.content, false, true);
+            DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, content, false, true);
 
-            if (oldDocument != null) { // put
+            if (oldDocument != null) { // upsertDocument
                 Object oldTimestamp = oldDocument.get("_created_on");
 
                 if (oldTimestamp == null) {
                     oldTimestamp = now.toString();
                     LOGGER.warn("properties of document /{}/{}/{} had no @created_on field. set to now",
-                            document.dbName, document.collName, document.documentId);
+                            dbName, collName, documentId);
                 }
 
                 // need to readd the @created_on field 
@@ -118,7 +120,7 @@ public class DocumentDAO implements Repository {
                 coll.update(idQuery, new BasicDBObject("$set", created), true, false);
 
                 // check the old etag (in case restore the old document version)
-                return optimisticCheckEtag(coll, oldDocument, document.requestEtag, HttpStatus.SC_OK);
+                return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_OK);
             } else {  // insert
                 return HttpStatus.SC_CREATED;
             }
@@ -126,62 +128,65 @@ public class DocumentDAO implements Repository {
     }
 
     /**
-     *
-     * @param document
+     * @param exchange
+     * @param dbName
+     * @param collName
+     * @param content
+     * @param requestEtag
      * @return
      */
     @Override
-    public int post(PostDocumentEntity document) {
+    public int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, DBObject content, ObjectId requestEtag) {
         final DbsDAO dbsDAO = new DbsDAO();
-        DB db = dbsDAO.getDB(document.dbName);
+        DB db = dbsDAO.getDB(dbName);
 
-        DBCollection coll = db.getCollection(document.collName);
+        DBCollection coll = db.getCollection(collName);
 
         ObjectId timestamp = new ObjectId();
         Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
 
-        if (document.content == null) {
-            //document.content = new BasicDBObject();
+        if (content == null) {
+            content = new BasicDBObject();
         }
 
-        document.content.put("_etag", timestamp);
-        document.content.put("_created_on", now.toString()); // make sure we don't change this field
+        content.put("_etag", timestamp);
+        content.put("_created_on", now.toString()); // make sure we don't change this field
 
-        Object _id = document.content.get("_id");
-        document.content.removeField("_id");
+        Object _id = content.get("_id");
+        content.removeField("_id");
 
         if (_id == null) {
             ObjectId id = new ObjectId();
-            document.content.put("_id", id);
+            content.put("_id", id);
 
-            coll.insert(document.content);
+            coll.insert(content);
 
-            document.exchange.getResponseHeaders()
+            exchange.getResponseHeaders()
                     .add(HttpString.tryFromString("Location"),
-                            getReferenceLink(document.exchange.getRequestURL(), id.toString()).toString());
+                            getReferenceLink(exchange.getRequestURL(), id.toString()).toString());
 
             return HttpStatus.SC_CREATED;
         } else {
-            document.exchange.getResponseHeaders()
+            exchange.getResponseHeaders()
                     .add(HttpString.tryFromString("Location"),
-                            getReferenceLink(document.exchange.getRequestURL(), _id.toString()).toString());
+                            getReferenceLink(exchange.getRequestURL(), _id.toString()).toString());
         }
 
         BasicDBObject idQuery = new BasicDBObject("_id", getId("" + _id));
 
         // we use findAndModify to get the @created_on field value from the existing document
-        // we need to put this field back using a second update 
+        // we need to upsertDocument this field back using a second update 
         // it is not possible in a single update even using $setOnInsert update operator
         // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
-        DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, document.content, false, true);
+        DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, content, false, true);
 
-        if (oldDocument != null) {  // put
+        if (oldDocument != null) {  // upsertDocument
             Object oldTimestamp = oldDocument.get("_created_on");
 
             if (oldTimestamp == null) {
                 oldTimestamp = now.toString();
                 LOGGER.warn("properties of document /{}/{}/{} had no @created_on field. set to now",
-                        document.dbName, document.collName, _id.toString());
+                        dbName, collName, _id.toString());
             }
 
             // need to readd the @created_on field 
@@ -190,24 +195,27 @@ public class DocumentDAO implements Repository {
             coll.update(idQuery, new BasicDBObject("$set", createdContet), true, false);
 
             // check the old etag (in case restore the old document version)
-            return optimisticCheckEtag(coll, oldDocument, document.requestEtag, HttpStatus.SC_OK);
+            return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_OK);
         } else { // insert
             return HttpStatus.SC_CREATED;
         }
     }
 
     /**
-     * @param document
+     * @param dbName
+     * @param collName
+     * @param documentId
+     * @param requestEtag
      * @return
      */
     @Override
-    public int delete(DeleteDocumentEntity document) {
+    public int deleteDocument(String dbName, String collName, String documentId, ObjectId requestEtag) {
         final DbsDAO dbsDAO = new DbsDAO();
-        DB db = dbsDAO.getDB(document.dbName);
+        DB db = dbsDAO.getDB(dbName);
 
-        DBCollection coll = db.getCollection(document.collName);
+        DBCollection coll = db.getCollection(collName);
 
-        BasicDBObject idQuery = new BasicDBObject("_id", getId(document.documentId));
+        BasicDBObject idQuery = new BasicDBObject("_id", getId(documentId));
 
         DBObject oldDocument = coll.findAndModify(idQuery, null, null, true, null, false, false);
 
@@ -215,7 +223,7 @@ public class DocumentDAO implements Repository {
             return HttpStatus.SC_NOT_FOUND;
         } else {
             // check the old etag (in case restore the old document version)
-            return optimisticCheckEtag(coll, oldDocument, document.requestEtag, HttpStatus.SC_NO_CONTENT);
+            return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_NO_CONTENT);
         }
     }
 

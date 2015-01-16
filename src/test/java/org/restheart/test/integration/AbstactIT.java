@@ -45,7 +45,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.restheart.db.entity.PutDocumentEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -227,11 +226,11 @@ public abstract class AbstactIT {
         }
 
         final DocumentDAO documentDAO = new DocumentDAO();
-        documentDAO.put(new PutDocumentEntity(dbName, collection1Name, document1Id, document1Props, new ObjectId(), false));
-        documentDAO.put(new PutDocumentEntity(dbName, collection2Name, document2Id, document2Props, new ObjectId(), false));
+        documentDAO.upsertDocument(dbName, collection1Name, document1Id, document1Props, new ObjectId(), false);
+        documentDAO.upsertDocument(dbName, collection2Name, document2Id, document2Props, new ObjectId(), false);
 
         for (String doc : docsPropsStrings) {
-            documentDAO.put(new PutDocumentEntity(dbName, docsCollectionName, new ObjectId().toString(), ((DBObject) JSON.parse(doc)), new ObjectId(), false));
+            documentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), ((DBObject) JSON.parse(doc)), new ObjectId(), false);
         }
         LOG.info("test data created");
     }

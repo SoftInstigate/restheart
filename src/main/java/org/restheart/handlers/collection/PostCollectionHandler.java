@@ -27,7 +27,6 @@ import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
-import org.restheart.db.entity.PostDocumentEntity;
 
 /**
  *
@@ -69,7 +68,7 @@ public class PostCollectionHandler extends PutCollectionHandler {
         }
 
         int httpCode = new DocumentDAO()
-                .post(new PostDocumentEntity(exchange, context.getDBName(), context.getCollectionName(), content, etag));
+                .upsertDocumentPost(exchange, context.getDBName(), context.getCollectionName(), content, etag);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {

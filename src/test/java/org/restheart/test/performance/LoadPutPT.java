@@ -45,7 +45,6 @@ import org.apache.http.entity.ContentType;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import org.restheart.ConfigurationException;
-import org.restheart.db.entity.PutDocumentEntity;
 import org.restheart.hal.Representation;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.HttpStatus;
@@ -118,7 +117,7 @@ public class LoadPutPT {
     public void dbdirect() throws IOException {
         BasicDBObject content = new BasicDBObject("random", Math.random());
 
-        new DocumentDAO().put(new PutDocumentEntity(db, coll, null, content, null, false));
+        new DocumentDAO().upsertDocument(db, coll, null, content, null, false);
     }
 
     /**

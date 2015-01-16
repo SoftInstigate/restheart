@@ -86,14 +86,6 @@ public class RequestContextTest {
         pathTokens = "/db/collection/_indexes/123".split("/");
         assertEquals(RequestContext.TYPE.INDEX, RequestContext.selectRequestType(pathTokens));
     }
-    
-    @Test
-    public void selectRequestType_File() {
-        System.out.println("selectRequestType_File");
-        
-        String[] pathTokens = "/db/collection/_files".split("/");
-        assertEquals(RequestContext.TYPE.FILE, RequestContext.selectRequestType(pathTokens));
-    }
 
     @Test
     public void getMappedRequestUri() {

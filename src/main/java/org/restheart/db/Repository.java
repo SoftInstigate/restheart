@@ -17,9 +17,9 @@
  */
 package org.restheart.db;
 
-import org.restheart.db.entity.DeleteDocumentEntity;
-import org.restheart.db.entity.PostDocumentEntity;
-import org.restheart.db.entity.PutDocumentEntity;
+import com.mongodb.DBObject;
+import io.undertow.server.HttpServerExchange;
+import org.bson.types.ObjectId;
 
 /**
  *
@@ -27,10 +27,10 @@ import org.restheart.db.entity.PutDocumentEntity;
  */
 public interface Repository {
     
-    int put(PutDocumentEntity entity);
+    int upsertDocument(String dbName, String collName, String documentId, DBObject content, ObjectId requestEtag, boolean patching);
     
-    int post(PostDocumentEntity entity);
+    int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, DBObject content, ObjectId requestEtag);
     
-    int delete(DeleteDocumentEntity entity);
+    int deleteDocument(String dbName, String collName, String documentId, ObjectId requestEtag);
     
 }

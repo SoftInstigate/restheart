@@ -27,7 +27,6 @@ import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
-import org.restheart.db.entity.PutDocumentEntity;
 
 /**
  *
@@ -79,16 +78,15 @@ public class PatchDocumentHandler extends PipedHttpHandler {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
             return;
         }
-        
-        PutDocumentEntity entity = new PutDocumentEntity(
+
+        DocumentDAO documentDAO = new DocumentDAO();
+        int httpCode = documentDAO.upsertDocument(
                 context.getDBName(),
                 context.getCollectionName(),
                 context.getDocumentId(),
                 content,
                 etag,
                 true);
-        DocumentDAO documentDAO = new DocumentDAO();
-        int httpCode = documentDAO.put(entity);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
