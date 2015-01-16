@@ -54,6 +54,7 @@ public class DBCursorPool {
     private final int SKIP_SLICE_RND_MAX_CURSORS = Bootstrapper.getConf().getEagerRndMaxCursors();
 
     public enum EAGER_CURSOR_ALLOCATION_POLICY {
+
         LINEAR,
         RANDOM,
         NONE
@@ -91,10 +92,11 @@ public class DBCursorPool {
                 .maximumSize(100)
                 .expireAfterAccess(5, TimeUnit.MINUTES);
 
+        final CollectionDAO collectionDAO = new CollectionDAO();
         collSizes = builder2.build(new CacheLoader<DBCursorPoolEntryKey, Long>() {
             @Override
             public Long load(DBCursorPoolEntryKey key) throws Exception {
-                return CollectionDAO.getCollectionSize(key.getCollection(), key.getFilter());
+                return collectionDAO.getCollectionSize(key.getCollection(), key.getFilter());
             }
         });
 
@@ -161,6 +163,7 @@ public class DBCursorPool {
 
         int firstSlice = key.getSkipped() / SKIP_SLICE_LINEAR_WIDTH;
 
+        final CollectionDAO collectionDAO = new CollectionDAO();
         executor.submit(() -> {
             int slice = firstSlice;
 
@@ -171,7 +174,7 @@ public class DBCursorPool {
                 long existing = getSliceHeight(sliceKey);
 
                 for (long cont = tohave - existing; cont > 0; cont--) {
-                    DBCursor cursor = CollectionDAO.getCollectionDBCursor(key.getCollection(), key.getSort(), key.getFilter());
+                    DBCursor cursor = collectionDAO.getCollectionDBCursor(key.getCollection(), key.getSort(), key.getFilter());
                     cursor.skip(sliceSkips);
                     DBCursorPoolEntryKey newkey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), sliceSkips, System.nanoTime());
                     cache.put(newkey, cursor);
@@ -184,6 +187,7 @@ public class DBCursorPool {
     }
 
     private void populateCacheRandom(DBCursorPoolEntryKey key) {
+        final CollectionDAO collectionDAO = new CollectionDAO();
         executor.submit(() -> {
             Long size = collSizes.getUnchecked(key);
 
@@ -207,7 +211,7 @@ public class DBCursorPool {
                 long existing = getSliceHeight(sliceKey);
 
                 for (long cont = 1 - existing; cont > 0; cont--) {
-                    DBCursor cursor = CollectionDAO.getCollectionDBCursor(key.getCollection(), key.getSort(), key.getFilter());
+                    DBCursor cursor = collectionDAO.getCollectionDBCursor(key.getCollection(), key.getSort(), key.getFilter());
                     cursor.skip(sliceSkips);
                     DBCursorPoolEntryKey newkey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), sliceSkips, System.nanoTime());
                     cache.put(newkey, cursor);
@@ -243,6 +247,6 @@ public class DBCursorPool {
     private static class DBCursorPoolSingletonHolder {
 
         private static final DBCursorPool INSTANCE = new DBCursorPool();
-        
+
     };
 }

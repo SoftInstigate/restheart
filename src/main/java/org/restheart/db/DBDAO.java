@@ -83,7 +83,6 @@ public class DBDAO {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
             return false;
         }
-
         return true;
     }
 
@@ -95,7 +94,6 @@ public class DBDAO {
      *
      */
     public static boolean doesDbExists(String dbName) {
-
         return client.getDatabaseNames().contains(dbName);
     }
 
@@ -115,9 +113,7 @@ public class DBDAO {
      */
     public static List<String> getDbCollections(DB db) {
         List<String> _colls = new ArrayList(db.getCollectionNames());
-
         Collections.sort(_colls);
-
         return _colls;
     }
 
@@ -139,12 +135,13 @@ public class DBDAO {
      *
      */
     public static DBObject getDbProps(String dbName) {
-        if (!DBDAO.doesDbExists(dbName)) // this check is important, otherwise the db would get created if not existing after the query
-        {
+        if (!DBDAO.doesDbExists(dbName)) {
+            // this check is important, otherwise the db would get created if not existing after the query
             return null;
         }
 
-        DBCollection propscoll = CollectionDAO.getCollection(dbName, "_properties");
+        final CollectionDAO collectionDAO = new CollectionDAO();
+        DBCollection propscoll = collectionDAO.getCollection(dbName, "_properties");
 
         DBObject row = propscoll.findOne(METADATA_QUERY);
 
@@ -169,8 +166,7 @@ public class DBDAO {
      * @param page
      * @param pagesize
      * @return the db data
-     * @throws
-     * org.restheart.handlers.IllegalQueryParamenterException
+     * @throws org.restheart.handlers.IllegalQueryParamenterException
      *
      */
     public static List<DBObject> getData(String dbName, List<String> colls, int page, int pagesize)
@@ -199,6 +195,7 @@ public class DBDAO {
 
         List<DBObject> data = new ArrayList<>();
 
+        final CollectionDAO collectionDAO = new CollectionDAO();
         _colls.stream().map(
                 (collName) -> {
                     BasicDBObject properties = new BasicDBObject();
@@ -210,7 +207,7 @@ public class DBDAO {
                     if (LocalCachesSingleton.isEnabled()) {
                         collProperties = LocalCachesSingleton.getInstance().getCollectionProps(dbName, collName);
                     } else {
-                        collProperties = CollectionDAO.getCollectionProps(dbName, collName);
+                        collProperties = collectionDAO.getCollectionProps(dbName, collName);
                     }
 
                     if (collProperties != null) {

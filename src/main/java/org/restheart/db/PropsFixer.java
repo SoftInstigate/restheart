@@ -55,7 +55,8 @@ public class PropsFixer {
             return false;
         }
 
-        DBObject md = CollectionDAO.getCollectionProps(dbName, collName);
+        final CollectionDAO collectionDAO = new CollectionDAO();
+        DBObject md = collectionDAO.getCollectionProps(dbName, collName);
 
         if (md != null) // properties exists
         {
@@ -79,7 +80,7 @@ public class PropsFixer {
         properties.put("_created_on", now.toString());
         properties.put("_etag", timestamp);
 
-        DBCollection coll = CollectionDAO.getCollection(dbName, collName);
+        DBCollection coll = collectionDAO.getCollection(dbName, collName);
 
         coll.insert(properties);
 
@@ -114,7 +115,8 @@ public class PropsFixer {
         properties.put("_created_on", now.toString());
         properties.put("_etag", timestamp);
 
-        DBCollection coll = CollectionDAO.getCollection(dbName, "_properties");
+        final CollectionDAO collectionDAO = new CollectionDAO();
+        DBCollection coll = collectionDAO.getCollection(dbName, "_properties");
 
         coll.insert(properties);
         logger.info("properties added to {}", dbName);
