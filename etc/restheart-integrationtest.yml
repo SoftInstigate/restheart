@@ -135,10 +135,10 @@ access-manager:
 # log-file-path: to specify the log file path (default value: restheart.log in system temporary directory)
 # log-level: to set the log level. Value can be OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. (default value is INFO)
 
-enable-log-file: false
+enable-log-file: true
 log-file-path: /tmp/restheart.log
 enable-log-console: true
-log-level: INFO
+log-level: DEBUG
 
 #### performace settings
 
