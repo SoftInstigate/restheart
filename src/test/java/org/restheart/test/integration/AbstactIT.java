@@ -221,8 +221,9 @@ public abstract class AbstactIT {
         collectionDAO.upsertCollection(dbName, collection2Name, coll2Props, new ObjectId(), false, false);
         collectionDAO.upsertCollection(dbName, docsCollectionName, docsCollectionProps, new ObjectId(), false, false);
 
+        final IndexDAO indexDAO = new IndexDAO();
         for (String index : docsCollectionIndexesStrings) {
-            IndexDAO.createIndex(dbName, docsCollectionName, ((DBObject) JSON.parse(index)), null);
+            indexDAO.createIndex(dbName, docsCollectionName, ((DBObject) JSON.parse(index)), null);
         }
 
         final DocumentDAO documentDAO = new DocumentDAO();

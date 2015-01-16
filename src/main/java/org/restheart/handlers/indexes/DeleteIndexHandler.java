@@ -55,13 +55,14 @@ public class DeleteIndexHandler extends PipedHttpHandler {
             return;
         }
 
-        int SC = IndexDAO.deleteIndex(db, co, id);
+        final IndexDAO indexDAO = new IndexDAO();
+        int httpCode = indexDAO.deleteIndex(db, co, id);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(SC, exchange, context);
+            sendWarnings(httpCode, exchange, context);
         } else {
-            exchange.setResponseCode(SC);
+            exchange.setResponseCode(httpCode);
         }
 
         exchange.endExchange();

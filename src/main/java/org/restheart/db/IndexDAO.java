@@ -29,20 +29,9 @@ import java.util.List;
  */
 public class IndexDAO {
 
-    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
+    private final MongoClient client;
 
-    /**
-     *
-     */
     public static final BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "_properties");
-
-    private static final BasicDBObject fieldsToReturn;
-
-    static {
-        fieldsToReturn = new BasicDBObject();
-        fieldsToReturn.put("_id", 1);
-        fieldsToReturn.put("_created_on", 1);
-    }
 
     private static final BasicDBObject fieldsToReturnIndexes;
 
@@ -52,13 +41,17 @@ public class IndexDAO {
         fieldsToReturnIndexes.put("name", 1);
     }
 
+    public IndexDAO() {
+        client = MongoDBClientSingleton.getInstance().getClient();
+    }
+
     /**
      *
      * @param dbName
      * @param collName
      * @return
      */
-    public static List<DBObject> getCollectionIndexes(String dbName, String collName) {
+    public List<DBObject> getCollectionIndexes(String dbName, String collName) {
         List<DBObject> indexes = client.getDB(dbName).getCollection("system.indexes").find(new BasicDBObject("ns", dbName + "." + collName), fieldsToReturnIndexes).sort(new BasicDBObject("name", 1)).toArray();
 
         indexes.forEach((i) -> {
@@ -72,27 +65,27 @@ public class IndexDAO {
     /**
      *
      * @param db
-     * @param co
+     * @param collection
      * @param keys
      * @param ops
      */
-    public static void createIndex(String db, String co, DBObject keys, DBObject ops) {
+    public void createIndex(String db, String collection, DBObject keys, DBObject ops) {
         if (ops == null) {
-            client.getDB(db).getCollection(co).createIndex(keys);
+            client.getDB(db).getCollection(collection).createIndex(keys);
         } else {
-            client.getDB(db).getCollection(co).createIndex(keys, ops);
+            client.getDB(db).getCollection(collection).createIndex(keys, ops);
         }
     }
 
     /**
      *
      * @param db
-     * @param co
+     * @param collection
      * @param indexId
      * @return
      */
-    public static int deleteIndex(String db, String co, String indexId) {
-        client.getDB(db).getCollection(co).dropIndex(indexId);
+    public int deleteIndex(String db, String collection, String indexId) {
+        client.getDB(db).getCollection(collection).dropIndex(indexId);
         return HttpStatus.SC_NO_CONTENT;
     }
 }

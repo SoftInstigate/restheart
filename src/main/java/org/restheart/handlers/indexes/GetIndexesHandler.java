@@ -46,7 +46,8 @@ public class GetIndexesHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        List<DBObject> indexes = IndexDAO.getCollectionIndexes(context.getDBName(), context.getCollectionName());
+        final IndexDAO indexDAO = new IndexDAO();
+        List<DBObject> indexes = indexDAO.getCollectionIndexes(context.getDBName(), context.getCollectionName());
 
         exchange.setResponseCode(HttpStatus.SC_OK);
         IndexesRepresentationFactory.sendHal(exchange, context, indexes, indexes.size());
