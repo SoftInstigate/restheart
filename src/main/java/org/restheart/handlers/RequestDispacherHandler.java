@@ -71,7 +71,7 @@ public class RequestDispacherHandler extends PipedHttpHandler {
      */
     public RequestDispacherHandler() {
         super(null);
-                                    
+
         this.rootGet = new GetRootHandler();
         this.dbGet = new GetDBHandler();
         this.dbPut = new PutDBHandler();
@@ -197,4 +197,69 @@ public class RequestDispacherHandler extends PipedHttpHandler {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
     }
+
+    /**
+     * Package private constructor, for testing purposes only.
+     *
+     * @param rootGet
+     * @param dbGet
+     * @param dbPut
+     * @param dbDelete
+     * @param dbPatch
+     * @param collectionGet
+     * @param collectionPost
+     * @param collectionPut
+     * @param collectionDelete
+     * @param collectionPatch
+     * @param documentGet
+     * @param documentPut
+     * @param documentDelete
+     * @param documentPatch
+     * @param indexesGet
+     * @param indexDelete
+     * @param indexPut
+     * @param filePut
+     */
+    RequestDispacherHandler(
+            GetRootHandler rootGet,
+            GetDBHandler dbGet,
+            PutDBHandler dbPut,
+            DeleteDBHandler dbDelete,
+            PatchDBHandler dbPatch,
+            GetCollectionHandler collectionGet,
+            PostCollectionHandler collectionPost,
+            PutCollectionHandler collectionPut,
+            DeleteCollectionHandler collectionDelete,
+            PatchCollectionHandler collectionPatch,
+            GetDocumentHandler documentGet,
+            PutDocumentHandler documentPut,
+            DeleteDocumentHandler documentDelete,
+            PatchDocumentHandler documentPatch,
+            GetIndexesHandler indexesGet,
+            PutIndexHandler indexPut,
+            DeleteIndexHandler indexDelete,
+            PutFileHandler filePut
+    ) {
+
+        super(null);
+        this.rootGet = rootGet;
+        this.dbGet = dbGet;
+        this.dbPut = dbPut;
+        this.dbDelete = dbDelete;
+        this.dbPatch = dbPatch;
+        this.collectionGet = collectionGet;
+        this.collectionPost = collectionPost;
+        this.collectionPut = collectionPut;
+        this.collectionDelete = collectionDelete;
+        this.collectionPatch = collectionPatch;
+        this.documentGet = documentGet;
+        this.documentPut = documentPut;
+        this.documentDelete = documentDelete;
+        this.documentPatch = documentPatch;
+        this.indexesGet = indexesGet;
+        this.indexPut = indexPut;
+        this.indexDelete = indexDelete;
+        this.filePut = filePut;
+    }
+
 }
