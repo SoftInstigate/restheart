@@ -21,11 +21,10 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import org.junit.After;
 import org.junit.AfterClass;
+import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import org.restheart.handlers.RequestContext;
 
 /**
@@ -56,13 +55,16 @@ public class PutFileHandlerTest {
     @Test
     public void testHandleRequest() throws Exception { 
         System.out.println("handleRequest");
-        HttpServerExchange ex = new HttpServerExchange();
-        ex.setRequestPath("/");
-        ex.setRequestMethod(new HttpString("PUT"));
+        
+        HttpServerExchange exchange = new HttpServerExchange();
+        exchange.setRequestPath("/db/filecoll/_files/123");
+        exchange.setRequestMethod(new HttpString("PUT"));
 
-        RequestContext context = new RequestContext(ex, "", "");
+        RequestContext context = new RequestContext(exchange, "/", "/");
         PutFileHandler instance = new PutFileHandler();
-        instance.handleRequest(ex, context);
+        instance.handleRequest(exchange, context);
+        
+       assertEquals(201, exchange.getResponseCode());
     }
     
 }

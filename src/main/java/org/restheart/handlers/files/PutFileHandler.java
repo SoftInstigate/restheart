@@ -65,9 +65,11 @@ public class PutFileHandler extends PipedHttpHandler {
 
         //ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
-        int httpStatus = 0;
+        int httpStatus = 201;
         
         // TODO
+        System.out.println("+++ Inserting file with GridFS");
+        System.out.println(content.toString());
         LOGGER.debug("@@@ Inserting file with GridFS");
         
 

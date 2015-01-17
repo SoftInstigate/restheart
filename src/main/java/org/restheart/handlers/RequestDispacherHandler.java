@@ -157,6 +157,8 @@ public class RequestDispacherHandler extends PipedHttpHandler {
                 case INDEX:
                     indexPut.handleRequest(exchange, context);
                     return;
+                case FILE:
+                    this.filePut.handleRequest(exchange, context);
                 default:
                     ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
             }
