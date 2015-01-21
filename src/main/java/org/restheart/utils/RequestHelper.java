@@ -17,16 +17,22 @@
  */
 package org.restheart.utils;
 
+import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
+import java.util.HashMap;
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare
  */
 public class RequestHelper {
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequestHelper.class);
 
     /**
      *
@@ -69,6 +75,21 @@ public class RequestHelper {
             return new ObjectId("" + etag);
         } else {
             return new ObjectId();
+        }
+    }
+    
+    /**
+     * undertow bug UNDERTOW-371 workaround, reported to be fixed, waiting for releases 1.1.2.Final and
+     * 1.2.0.Beta9 to test and remove
+     *
+     * @param exchange
+     * @see https://issues.jboss.org/browse/UNDERTOW-371
+     *
+     */
+    public static void fixExchangeForUndertowBug(HttpServerExchange exchange) {
+        LOGGER.debug("applying undertow bug 371 workaround - to be removed when 1.1.2.Final or 1.2.0.Beta9 are available");
+        if (exchange.getAttachment(Predicate.PREDICATE_CONTEXT) == null) {
+            exchange.putAttachment(Predicate.PREDICATE_CONTEXT, new HashMap<String, Object>());
         }
     }
 }

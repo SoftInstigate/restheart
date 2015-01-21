@@ -32,12 +32,12 @@ import java.util.stream.Stream;
 
 import static com.google.common.collect.Sets.newHashSet;
 import java.util.function.Consumer;
+import org.restheart.utils.RequestHelper;
 
 /**
  * @author Andrea Di Cesare
  */
 public final class SimpleAccessManager extends AbstractSecurityManager implements AccessManager {
-
     private final HashMap<String, Set<Predicate>> acl = new HashMap<>();
 
     /**
@@ -91,6 +91,9 @@ public final class SimpleAccessManager extends AbstractSecurityManager implement
         if (noAclDefined()) {
             return false;
         }
+
+        RequestHelper.fixExchangeForUndertowBug(exchange);
+
         return roles(exchange).anyMatch(role -> aclForRole(role).stream().anyMatch(p -> p.resolve(exchange)));
     }
 

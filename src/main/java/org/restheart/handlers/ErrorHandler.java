@@ -33,7 +33,7 @@ public class ErrorHandler implements HttpHandler {
 
     private final HttpHandler next;
 
-    private final Logger logger = LoggerFactory.getLogger(ErrorHandler.class);
+    private final Logger LOGGER = LoggerFactory.getLogger(ErrorHandler.class);
 
     /**
      * Creates a new instance of ErrorHandler
@@ -49,7 +49,7 @@ public class ErrorHandler implements HttpHandler {
         try {
             next.handleRequest(exchange);
         } catch (CommandFailureException cfe) {
-            logger.error("mongodb command failure handling the request", cfe);
+            LOGGER.error("mongodb command failure handling the request", cfe);
 
             Object errmsg = cfe.getCommandResult().get("errmsg");
 
@@ -60,7 +60,7 @@ public class ErrorHandler implements HttpHandler {
             }
 
         } catch (Throwable t) {
-            logger.error("error handling the request", t);
+            LOGGER.error("error handling the request", t);
 
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error handling the request", t);
         }
