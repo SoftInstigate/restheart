@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Maurizio Turatti <info@maurizioturatti.com>
+ * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
 public class FileDAO {
     

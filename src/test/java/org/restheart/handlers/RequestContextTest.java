@@ -27,7 +27,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 /**
  *
- * @author Maurizio Turatti <info@maurizioturatti.com>
+ * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
 public class RequestContextTest {
 

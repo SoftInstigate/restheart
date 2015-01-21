@@ -23,7 +23,7 @@ import org.bson.types.ObjectId;
 
 /**
  *
- * @author Maurizio Turatti <info@maurizioturatti.com>
+ * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
 public interface Repository {
     

@@ -31,7 +31,7 @@ import org.yaml.snakeyaml.Yaml;
 
 /**
  *
- * @author Maurizio Turatti <info@maurizioturatti.com>
+ * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
 abstract class AbstractSecurityManager {
 

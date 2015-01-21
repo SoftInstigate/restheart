@@ -29,7 +29,7 @@ import org.restheart.handlers.RequestContext;
 
 /**
  *
- * @author Maurizio Turatti <info@maurizioturatti.com>
+ * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
 public class URLUtilisTest {
 

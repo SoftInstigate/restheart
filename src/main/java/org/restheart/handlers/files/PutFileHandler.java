@@ -30,7 +30,7 @@ import org.restheart.utils.ResponseHelper;
 
 /**
  *
- * @author Maurizio Turatti <info@maurizioturatti.com>
+ * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
 public class PutFileHandler extends PipedHttpHandler {
 
