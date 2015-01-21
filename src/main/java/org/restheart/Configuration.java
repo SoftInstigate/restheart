@@ -36,7 +36,7 @@ import org.yaml.snakeyaml.Yaml;
 /**
  * Utility class to help dealing with the restheart configuration file.
  *
- * @author Andrea Di Cesare
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class Configuration {
 

@@ -34,7 +34,7 @@ import org.restheart.hal.HALUtils;
 
 /**
  *
- * @author Andrea Di Cesare
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class BodyInjectorHandler extends PipedHttpHandler {
 

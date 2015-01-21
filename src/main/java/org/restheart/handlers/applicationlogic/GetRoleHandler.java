@@ -40,7 +40,7 @@ import javax.xml.bind.DatatypeConverter;
 
 /**
  *
- * @author Andrea Di Cesare
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class GetRoleHandler extends ApplicationLogicHandler {
 

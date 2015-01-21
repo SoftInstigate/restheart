@@ -18,6 +18,6 @@
 /**
  * Handlers for HTTP requests related to a document resource
  * 
-* @author Andrea Di Cesare
+* @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 package org.restheart.handlers.document;

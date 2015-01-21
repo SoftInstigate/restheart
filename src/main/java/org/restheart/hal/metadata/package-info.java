@@ -19,6 +19,6 @@
  * Classes to deal with HAL documents properties that have a special semantic in
  * RESTHeart and thus are called metadata
  * 
-* @author Andrea Di Cesare
+* @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 package org.restheart.hal.metadata;

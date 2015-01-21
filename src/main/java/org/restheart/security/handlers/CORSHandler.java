@@ -32,7 +32,7 @@ import static java.lang.Boolean.TRUE;
 
 /**
  *
- * @author Andrea Di Cesare
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class CORSHandler extends PipedHttpHandler {
 

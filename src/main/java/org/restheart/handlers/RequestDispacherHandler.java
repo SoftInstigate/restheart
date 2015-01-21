@@ -42,7 +42,7 @@ import org.restheart.utils.ResponseHelper;
 
 /**
  *
- * @author Andrea Di Cesare
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class RequestDispacherHandler extends PipedHttpHandler {
 

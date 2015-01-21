@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class Shutdowner {
     private static final Logger LOGGER = LoggerFactory.getLogger(Shutdowner.class);

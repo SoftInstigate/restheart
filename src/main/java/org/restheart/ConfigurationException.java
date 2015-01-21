@@ -19,7 +19,7 @@ package org.restheart;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class ConfigurationException extends Exception {
     public ConfigurationException() {

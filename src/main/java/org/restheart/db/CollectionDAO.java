@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 /**
  * The Data Access Object for the mongodb Collection resource.
  *
- * @author Andrea Di Cesare
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class CollectionDAO {
     private static final MongoClient CLIENT = MongoDBClientSingleton.getInstance().getClient();

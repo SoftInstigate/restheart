@@ -18,6 +18,6 @@
 /**
  * Handlers in charge of injecting data in the request context.
  * 
-* @author Andrea Di Cesare
+* @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 package org.restheart.handlers.injectors;

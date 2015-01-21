@@ -28,7 +28,7 @@ import java.util.TreeMap;
 
 /**
  *
- * @author Andrea Di Cesare
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class DAOUtils {
 

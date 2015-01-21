@@ -24,7 +24,7 @@ import java.util.Objects;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class DBCursorPoolEntryKey {
     private final DBCollection collection;

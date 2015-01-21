@@ -19,6 +19,6 @@
  * Abstract handler to define custom application logic services and some generic
  * example implementations
  * 
-* @author Andrea Di Cesare
+* @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 package org.restheart.handlers.applicationlogic;

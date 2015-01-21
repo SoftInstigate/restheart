@@ -31,7 +31,7 @@ import io.undertow.server.HttpServerExchange;
  * also responsible of sending NOT_FOUND in case of requests involving not
  * existing dbs (that are not PUT)
  *
- * @author Andrea Di Cesare
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class DbPropsInjectorHandler extends PipedHttpHandler {
 

@@ -21,7 +21,7 @@ import io.undertow.security.idm.IdentityManager;
 
 /**
  *
- * @author Andrea Di Cesare
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public abstract class RestheartIdentityManager implements IdentityManager {
 

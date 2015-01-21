@@ -21,7 +21,7 @@ import com.mongodb.DBCursor;
 
 /**
  *
- * @author uji
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class SkippedDBCursor {
     private DBCursor cursor;

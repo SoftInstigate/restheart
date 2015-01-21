@@ -18,6 +18,6 @@
 /**
  * Handlers for HTTP requests concerning metadata properties
  * 
-* @author Andrea Di Cesare
+* @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 package org.restheart.handlers.metadata;

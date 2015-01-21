@@ -18,6 +18,6 @@
 /**
  * Standard (and simple) implementation of the security model
  * 
-* @author Andrea Di Cesare
+* @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 package org.restheart.security.impl;

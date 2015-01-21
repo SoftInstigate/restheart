@@ -30,7 +30,7 @@ import java.util.Set;
 
 /**
  *
- * @author Andrea Di Cesare
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class MapIdentityManager implements IdentityManager {
 

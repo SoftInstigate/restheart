@@ -24,7 +24,7 @@ package org.restheart.test.performance;
  * org.restheart.perftest.LoadPutPT#put -c 20 -n 500 -w 5 -p
  * "url=http://127.0.0.1:8080/testdb/testcoll?page=10&pagesize=5,id=a,pwd=a"
  *
- * @author Andrea Di Cesare
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 import com.mongodb.BasicDBObject;
 import io.undertow.util.Headers;
@@ -51,7 +51,7 @@ import org.restheart.utils.HttpStatus;
 
 /**
  *
- * @author Andrea Di Cesare
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class LoadPutPT {
     private String url;
