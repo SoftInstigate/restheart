@@ -33,6 +33,8 @@ public class Representation {
      *
      */
     public static final String HAL_JSON_MEDIA_TYPE = "application/hal+json";
+    public static final String HAL_APP_FORM_URLENCODED_TYPE = "application/x-www-form-urlencoded";
+    public static final String HAL_MULTIPART_FORM_DATA_TYPE = "multipart/form-data";
 
     private final BasicDBObject properties;
     private final BasicDBObject embedded;
@@ -99,7 +101,7 @@ public class Representation {
         if (value instanceof ObjectId) {
             properties.append(key, value.toString());
         } else if (value instanceof BSONObject) {
-            HALUtils.replaceObjectIdsWithStrings((BSONObject)value);
+            HALUtils.replaceObjectIdsWithStrings((BSONObject) value);
             properties.append(key, value);
         } else {
             properties.append(key, value);
