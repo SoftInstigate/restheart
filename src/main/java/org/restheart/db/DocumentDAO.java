@@ -190,9 +190,9 @@ public class DocumentDAO implements Repository {
             }
 
             // need to readd the @created_on field 
-            BasicDBObject createdContet = new BasicDBObject("_created_on", "" + oldTimestamp);
-            createdContet.markAsPartialObject();
-            coll.update(idQuery, new BasicDBObject("$set", createdContet), true, false);
+            BasicDBObject createdContent = new BasicDBObject("_created_on", "" + oldTimestamp);
+            createdContent.markAsPartialObject();
+            coll.update(idQuery, new BasicDBObject("$set", createdContent), true, false);
 
             // check the old etag (in case restore the old document version)
             return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_OK);

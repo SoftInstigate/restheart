@@ -337,16 +337,16 @@ public class CollectionDAO {
                 }
 
                 // need to readd the @created_on field 
-                BasicDBObject createdContet = new BasicDBObject("_created_on", "" + oldTimestamp);
-                createdContet.markAsPartialObject();
-                coll.update(PROPS_QUERY, new BasicDBObject("$set", createdContet), true, false);
+                BasicDBObject createdContent = new BasicDBObject("_created_on", "" + oldTimestamp);
+                createdContent.markAsPartialObject();
+                coll.update(PROPS_QUERY, new BasicDBObject("$set", createdContent), true, false);
 
                 return HttpStatus.SC_OK;
             } else {
                 // need to readd the @created_on field 
-                BasicDBObject createdContet = new BasicDBObject("_created_on", now.toString());
-                createdContet.markAsPartialObject();
-                coll.update(PROPS_QUERY, new BasicDBObject("$set", createdContet), true, false);
+                BasicDBObject createdContent = new BasicDBObject("_created_on", now.toString());
+                createdContent.markAsPartialObject();
+                coll.update(PROPS_QUERY, new BasicDBObject("$set", createdContent), true, false);
 
                 initDefaultIndexes(coll);
 
