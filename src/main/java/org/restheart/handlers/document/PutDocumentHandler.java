@@ -22,7 +22,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.restheart.db.DocumentDAO;
 import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.collection.PutCollectionHandler;
 import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.RequestHelper;
@@ -38,7 +37,7 @@ import org.slf4j.LoggerFactory;
  */
 public class PutDocumentHandler extends PipedHttpHandler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PutCollectionHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PutDocumentHandler.class);
 
     /**
      * Creates a new instance of PutDocumentHandler

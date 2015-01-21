@@ -72,7 +72,6 @@ public class RequestContext {
     public static final String LOCAL = "local";
     public static final String ADMIN = "admin";
     public static final String _INDEXES = "_indexes";
-    public static final String _FILES = "_files";
 
     private final String whereUri;
     private final String whatUri;
