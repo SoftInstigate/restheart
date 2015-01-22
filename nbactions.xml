@@ -43,4 +43,11 @@
                 <exec.executable>java</exec.executable>
             </properties>
         </action>
+        <action>
+            <actionName>CUSTOM-Package</actionName>
+            <displayName>Package</displayName>
+            <goals>
+                <goal>package</goal>
+            </goals>
+        </action>
     </actions>

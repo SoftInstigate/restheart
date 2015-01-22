@@ -15,7 +15,6 @@
  */
 package org.restheart.security;
 
-import static io.undertow.UndertowMessages.MESSAGES;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
@@ -30,21 +29,21 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.List;
-import org.restheart.security.impl.SessionTokenIdentityManager;
+import org.restheart.security.impl.AuthTokenIdentityManager;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
- *
- * this extends the undertow BasicAuthenticationMechanism and authenticate the
- * request using the SessionTokenIdentityManager.
- * 
- * if user already authenticated via a different mechanism, that a token is
- * generated so that later calls can be use the token instead of the actual 
- * password
+
+ this extends the undertow BasicAuthenticationMechanism and authenticate the
+ request using the AuthTokenIdentityManager.
+ 
+ if user already authenticated via a different mechanism, that a token is
+ generated so that later calls can be use the token instead of the actual 
+ password
  *
  */
-public class SessionTokenAuthenticationMechanism extends BasicAuthenticationMechanism {
+public class AuthTokenAuthenticationMechanism extends BasicAuthenticationMechanism {
     private static final Charset UTF_8 = Charset.forName("UTF-8");
 
     private final String mechanismName = "TOKEN";
@@ -57,7 +56,7 @@ public class SessionTokenAuthenticationMechanism extends BasicAuthenticationMech
      *
      * @param realmName
      */
-    public SessionTokenAuthenticationMechanism(String realmName) {
+    public AuthTokenAuthenticationMechanism(String realmName) {
         super(realmName, "TOKEN", true);
     }
 
@@ -81,7 +80,7 @@ public class SessionTokenAuthenticationMechanism extends BasicAuthenticationMech
                         char[] password = plainChallenge.substring(colonPos + 1).toCharArray();
 
                         // this is where the token cache comes into play
-                        IdentityManager idm = SessionTokenIdentityManager.getInstance();
+                        IdentityManager idm = AuthTokenIdentityManager.getInstance();
                         
                         PasswordCredential credential = new PasswordCredential(password);
                         try {

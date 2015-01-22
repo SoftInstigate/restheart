@@ -20,6 +20,7 @@ package org.restheart.handlers;
 import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
+import org.restheart.security.handlers.AuthTokenInjecterHandler;
 
 /**
  *
@@ -58,28 +59,28 @@ public class OptionsHandler extends PipedHttpHandler {
         if (context.getType() == RequestContext.TYPE.ROOT) {
             exchange.getResponseHeaders()
                     .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET")
-                    .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge, " + AuthTokenInjecterHandler.AUTH_TOKEN_HEADER + ", " + AuthTokenInjecterHandler.AUTH_TOKEN_VALID_HEADER);
 
         } else if (context.getType() == RequestContext.TYPE.DB) {
             exchange.getResponseHeaders()
                     .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, PATCH, DELETE, OPTIONS")
-                    .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge, Location," + AuthTokenInjecterHandler.AUTH_TOKEN_HEADER + ", " + AuthTokenInjecterHandler.AUTH_TOKEN_VALID_HEADER);
         } else if (context.getType() == RequestContext.TYPE.COLLECTION) {
             exchange.getResponseHeaders()
                     .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, POST, PATCH, DELETE, OPTIONS")
-                    .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge, Location, " + AuthTokenInjecterHandler.AUTH_TOKEN_HEADER + ", " + AuthTokenInjecterHandler.AUTH_TOKEN_VALID_HEADER);
         } else if (context.getType() == RequestContext.TYPE.DOCUMENT) {
             exchange.getResponseHeaders()
                     .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, PATCH, DELETE, OPTIONS")
-                    .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, If-None-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, If-None-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge, Location, " + AuthTokenInjecterHandler.AUTH_TOKEN_HEADER + ", " + AuthTokenInjecterHandler.AUTH_TOKEN_VALID_HEADER);
         } else if (context.getType() == RequestContext.TYPE.INDEX) {
             exchange.getResponseHeaders()
                     .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "PUT")
-                    .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge, Location, " + AuthTokenInjecterHandler.AUTH_TOKEN_HEADER + ", " + AuthTokenInjecterHandler.AUTH_TOKEN_VALID_HEADER);
         } else if (context.getType() == RequestContext.TYPE.COLLECTION_INDEXES) {
             exchange.getResponseHeaders()
                     .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET")
-                    .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge, Location, " + AuthTokenInjecterHandler.AUTH_TOKEN_HEADER + ", " + AuthTokenInjecterHandler.AUTH_TOKEN_VALID_HEADER);
         }
 
         exchange.setResponseCode(HttpStatus.SC_OK);

@@ -31,7 +31,7 @@ import org.restheart.cache.CacheFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public final class SessionTokenIdentityManager implements IdentityManager {
+public final class AuthTokenIdentityManager implements IdentityManager {
     private final Cache<String, SimpleAccount> cachedAccounts;
     
     public static long TTL = 15*60*1000;
@@ -40,8 +40,8 @@ public final class SessionTokenIdentityManager implements IdentityManager {
      *
      * @param next
      */
-    private SessionTokenIdentityManager() {
-        this.cachedAccounts = CacheFactory.createLocalCache(100, Cache.EXPIRE_POLICY.AFTER_READ, TTL);
+    private AuthTokenIdentityManager() {
+        this.cachedAccounts = CacheFactory.createLocalCache(Long.MAX_VALUE, Cache.EXPIRE_POLICY.AFTER_READ, TTL);
     }
 
 
@@ -81,11 +81,11 @@ public final class SessionTokenIdentityManager implements IdentityManager {
      *
      * @return
      */
-    public static SessionTokenIdentityManager getInstance() {
+    public static AuthTokenIdentityManager getInstance() {
         return SessionTokenIdentityManagerHolder.INSTANCE;
     }
 
     private static class SessionTokenIdentityManagerHolder {
-        private static final SessionTokenIdentityManager INSTANCE = new SessionTokenIdentityManager();
+        private static final AuthTokenIdentityManager INSTANCE = new AuthTokenIdentityManager();
     }
 }

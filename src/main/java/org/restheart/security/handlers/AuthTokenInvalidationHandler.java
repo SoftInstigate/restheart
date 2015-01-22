@@ -17,30 +17,32 @@
  */
 package org.restheart.security.handlers;
 
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.security.AccessManager;
-import org.restheart.utils.HttpStatus;
-import org.restheart.handlers.RequestContext;
-import org.restheart.utils.ResponseHelper;
+import io.undertow.predicate.Predicate;
+import io.undertow.predicate.Predicates;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.RequestContext;
+import org.restheart.security.impl.AuthTokenIdentityManager;
+import org.restheart.utils.HttpStatus;
+import org.restheart.utils.ResponseHelper;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class AccessManagerHandler extends PipedHttpHandler {
+public class AuthTokenInvalidationHandler extends PipedHttpHandler {
+    private static final Predicate predicate;
 
-    private final AccessManager accessManager;
+    static {
+        predicate = Predicates.parse("method[DELETE] and regex[pattern=\"/_authtokens/(.*?)\", value=%U, full-match=true] and equals[%u, \"${1}\"]");
+    }
 
     /**
-     * Creates a new instance of AccessManagerHandler
+     * Creates a new instance of SessionTokenInvalidationHandler
      *
-     * @param accessManager
-     * @param next
      */
-    public AccessManagerHandler(AccessManager accessManager, PipedHttpHandler next) {
-        super(next);
-        this.accessManager = accessManager;
+    public AuthTokenInvalidationHandler() {
+        super(null);
     }
 
     /**
@@ -51,12 +53,13 @@ public class AccessManagerHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (accessManager.isAllowed(exchange, context)) {
-            if (next != null) {
-                next.handleRequest(exchange, context);
-            }
-        } else {
+        if (!predicate.resolve(exchange) || exchange.getSecurityContext() == null || exchange.getSecurityContext().getAuthenticatedAccount() == null){
             ResponseHelper.endExchange(exchange, HttpStatus.SC_UNAUTHORIZED);
+        } else {
+            AuthTokenIdentityManager.getInstance().getCachedAccounts().invalidate(exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
+            exchange.setResponseCode(HttpStatus.SC_NO_CONTENT);
+            exchange.endExchange();
         }
     }
+
 }

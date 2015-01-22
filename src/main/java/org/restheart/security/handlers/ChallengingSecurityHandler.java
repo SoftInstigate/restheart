@@ -25,7 +25,7 @@ import io.undertow.server.HttpHandler;
 import java.util.ArrayList;
 import java.util.List;
 import static org.restheart.security.RestheartIdentityManager.RESTHEART_REALM;
-import org.restheart.security.SessionTokenAuthenticationMechanism;
+import org.restheart.security.AuthTokenAuthenticationMechanism;
 
 /**
  *
@@ -48,7 +48,7 @@ public class ChallengingSecurityHandler extends PipedWrappingHandler {
         if (identityManager != null) {
             final List<AuthenticationMechanism> mechanisms = new ArrayList<>();
             
-            mechanisms.add(new SessionTokenAuthenticationMechanism(RESTHEART_REALM));
+            mechanisms.add(new AuthTokenAuthenticationMechanism(RESTHEART_REALM));
             mechanisms.add(new BasicAuthenticationMechanism(RESTHEART_REALM));
             
             handler = buildSecurityHandlerChain(accessManager, identityManager, mechanisms);

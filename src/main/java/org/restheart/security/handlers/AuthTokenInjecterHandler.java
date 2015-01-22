@@ -25,27 +25,26 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.restheart.security.handlers.SessionTokenInjecterHandler.TokenHeaders.AUTH_TOKEN_HEADER;
-import static org.restheart.security.handlers.SessionTokenInjecterHandler.TokenHeaders.AUTH_TOKEN_VALID_HEADER;
-import org.restheart.security.impl.SessionTokenIdentityManager;
+import org.restheart.security.impl.AuthTokenIdentityManager;
 import org.restheart.security.impl.SimpleAccount;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class SessionTokenInjecterHandler extends PipedHttpHandler {
+public class AuthTokenInjecterHandler extends PipedHttpHandler {
+    public static final  HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
+    public static final HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
 
     /**
      * Creates a new instance of GetRootHandler
      *
      * @param next
      */
-    public SessionTokenInjecterHandler(PipedHttpHandler next) {
+    public AuthTokenInjecterHandler(PipedHttpHandler next) {
         super(next);
     }
 
@@ -54,7 +53,7 @@ public class SessionTokenInjecterHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public SessionTokenInjecterHandler(HttpHandler next) {
+    public AuthTokenInjecterHandler(HttpHandler next) {
         super(null);
     }
 
@@ -80,26 +79,21 @@ public class SessionTokenInjecterHandler extends PipedHttpHandler {
 
     private void injectTokenHeaders(HeadersManager headers, char[] token) {
         headers.addResponseHeader(AUTH_TOKEN_HEADER, new String(token));
-        headers.addResponseHeader(AUTH_TOKEN_VALID_HEADER,  Instant.now().plus(SessionTokenIdentityManager.TTL, ChronoUnit.MILLIS).toString());
+        headers.addResponseHeader(AUTH_TOKEN_VALID_HEADER,  Instant.now().plus(AuthTokenIdentityManager.TTL, ChronoUnit.MILLIS).toString());
     }
     
     private char[] cacheSessionToken(Account authenticatedAccount) {
         String id = authenticatedAccount.getPrincipal().getName();
-        Optional<SimpleAccount> cachedTokenAccount = SessionTokenIdentityManager.getInstance().getCachedAccounts().get(id);
+        Optional<SimpleAccount> cachedTokenAccount = AuthTokenIdentityManager.getInstance().getCachedAccounts().get(id);
     
         if (cachedTokenAccount == null) {
             char[] token = UUID.randomUUID().toString().toCharArray();
             SimpleAccount newCachedTokenAccount = new SimpleAccount(id, token, authenticatedAccount.getRoles());
-            SessionTokenIdentityManager.getInstance().getCachedAccounts().put(id, newCachedTokenAccount);
+            AuthTokenIdentityManager.getInstance().getCachedAccounts().put(id, newCachedTokenAccount);
             
             return token;
         } else {
             return cachedTokenAccount.get().getCredentials().getPassword();
         }
-    }
-
-    interface TokenHeaders {
-        HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
-        HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
     }
 }
