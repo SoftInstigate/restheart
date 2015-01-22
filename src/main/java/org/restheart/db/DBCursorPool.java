@@ -79,7 +79,7 @@ public class DBCursorPool {
         });
 
         collSizes = CacheFactory.createLocalLoadingCache(100, org.restheart.cache.Cache.EXPIRE_POLICY.AFTER_WRITE, 60*1000, (DBCursorPoolEntryKey key) -> {
-            return CollectionDAO.getCollectionSize(key.getCollection(), key.getFilter());
+            return new CollectionDAO().getCollectionSize(key.getCollection(), key.getFilter());
         }
         );
 

@@ -64,11 +64,11 @@ public class LocalCachesSingleton {
         }
 
         if (enabled) {
-            this.dbPropsCache = CacheFactory.createLocalLoadingCache(maxCacheSize, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl, DBDAO::getDbProps);
+            this.dbPropsCache = CacheFactory.createLocalLoadingCache(maxCacheSize, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl, (String key) -> { return new DbsDAO().getDbProps(key); } );
 
             this.collectionPropsCache = CacheFactory.createLocalLoadingCache(maxCacheSize, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl, (String key) -> {
                 String[] dbNameAndCollectionName = key.split(SEPARATOR);
-                return CollectionDAO.getCollectionProps(dbNameAndCollectionName[0], dbNameAndCollectionName[1]);
+                return new CollectionDAO().getCollectionProps(dbNameAndCollectionName[0], dbNameAndCollectionName[1]);
             });
         }
     }
