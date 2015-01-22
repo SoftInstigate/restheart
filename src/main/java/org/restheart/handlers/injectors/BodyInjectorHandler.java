@@ -38,8 +38,6 @@ import org.restheart.hal.HALUtils;
  */
 public class BodyInjectorHandler extends PipedHttpHandler {
 
-    private final static String JSON_MEDIA_TYPE = "application/json";
-
     /**
      * Creates a new instance of BodyInjectorHandler
      *
@@ -67,13 +65,12 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         // check content type
         HeaderValues contentTypes = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
 
-        if (contentTypes == null
-                || contentTypes.isEmpty()
-                || contentTypes.stream().noneMatch(ct -> ct.startsWith(Representation.HAL_JSON_MEDIA_TYPE)
-                || ct.startsWith(JSON_MEDIA_TYPE))) {
-            // content type header can be also: Content-Type: application/json; charset=utf-8
+        if (unsupportedContentType(contentTypes)) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
-                    "Content-Type must be either " + Representation.HAL_JSON_MEDIA_TYPE + " or " + JSON_MEDIA_TYPE);
+                    "Content-Type must be either: " + Representation.HAL_JSON_MEDIA_TYPE 
+                            + ", " + Representation.JSON_MEDIA_TYPE 
+                            + ", " + Representation.APP_FORM_URLENCODED_TYPE 
+                            + ", " + Representation.MULTIPART_FORM_DATA_TYPE);
             return;
         }
 
@@ -104,7 +101,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             }).forEach(keyToRemove -> {
                 context.addWarning("the reserved field " + keyToRemove + " was filtered out from the request");
             });
-            
+
             //replace string that are valid ObjectIds with ObjectIds objects.
             HALUtils.replaceStringsWithObjectIds(content);
 
@@ -113,5 +110,15 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         }
 
         next.handleRequest(exchange, context);
+    }
+
+    private static boolean unsupportedContentType(HeaderValues contentTypes) {
+        return contentTypes == null
+                || contentTypes.isEmpty()
+                || contentTypes.stream().noneMatch(
+                        ct -> ct.startsWith(Representation.HAL_JSON_MEDIA_TYPE)
+                                || ct.startsWith(Representation.JSON_MEDIA_TYPE)
+                                || ct.startsWith(Representation.APP_FORM_URLENCODED_TYPE)
+                                || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE));
     }
 }

@@ -30,11 +30,12 @@ import org.bson.types.ObjectId;
 public class Representation {
 
     /**
-     *
+     * Supported content types
      */
     public static final String HAL_JSON_MEDIA_TYPE = "application/hal+json";
-    public static final String HAL_APP_FORM_URLENCODED_TYPE = "application/x-www-form-urlencoded";
-    public static final String HAL_MULTIPART_FORM_DATA_TYPE = "multipart/form-data";
+    public static final String JSON_MEDIA_TYPE = "application/json";
+    public static final String APP_FORM_URLENCODED_TYPE = "application/x-www-form-urlencoded";
+    public static final String MULTIPART_FORM_DATA_TYPE = "multipart/form-data";
 
     private final BasicDBObject properties;
     private final BasicDBObject embedded;
