@@ -139,8 +139,8 @@ public class DBDAO {
      *
      */
     public static DBObject getDbProps(String dbName) {
-        if (!DBDAO.doesDbExists(dbName)) // this check is important, otherwise the db would get created if not existing after the query
-        {
+        // this check is important, otherwise the db would get created if not existing after the query
+        if (!DBDAO.doesDbExists(dbName)) {
             return null;
         }
 

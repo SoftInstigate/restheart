@@ -17,17 +17,15 @@
  */
 package org.restheart.handlers.injectors;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import org.restheart.Configuration;
 import org.restheart.db.CollectionDAO;
 import org.restheart.db.DBDAO;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
+import org.restheart.cache.Cache;
+import org.restheart.cache.LoadingCache;
+import org.restheart.cache.CacheFactory;
 
 /**
  *
@@ -39,8 +37,8 @@ public class LocalCachesSingleton {
 
     private static boolean initialized = false;
 
-    private LoadingCache<String, Optional<DBObject>> dbPropsCache = null;
-    private LoadingCache<String, Optional<DBObject>> collectionPropsCache = null;
+    private LoadingCache<String, DBObject> dbPropsCache = null;
+    private LoadingCache<String, DBObject> collectionPropsCache = null;
 
     private static long ttl = 1000;
     private static boolean enabled = false;
@@ -65,31 +63,13 @@ public class LocalCachesSingleton {
             throw new IllegalStateException("not initialized");
         }
 
-        CacheBuilder builder = CacheBuilder.newBuilder();
-
-        builder.maximumSize(maxCacheSize);
-
-        if (ttl > 0) {
-            builder.expireAfterWrite(ttl, TimeUnit.MILLISECONDS);
-        }
-
         if (enabled) {
-            this.dbPropsCache = builder.build(
-                    new CacheLoader<String, Optional<DBObject>>() {
-                        @Override
-                        public Optional<DBObject> load(String key) throws Exception {
-                            return Optional.ofNullable(DBDAO.getDbProps(key));
-                        }
-                    });
+            this.dbPropsCache = CacheFactory.createLocalLoadingCache(maxCacheSize, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl, DBDAO::getDbProps);
 
-            this.collectionPropsCache = builder.build(
-                    new CacheLoader<String, Optional<DBObject>>() {
-                        @Override
-                        public Optional<DBObject> load(String key) throws Exception {
-                            String[] dbNameAndCollectionName = key.split(SEPARATOR);
-                            return Optional.ofNullable(CollectionDAO.getCollectionProps(dbNameAndCollectionName[0], dbNameAndCollectionName[1]));
-                        }
-                    });
+            this.collectionPropsCache = CacheFactory.createLocalLoadingCache(maxCacheSize, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl, (String key) -> {
+                String[] dbNameAndCollectionName = key.split(SEPARATOR);
+                return CollectionDAO.getCollectionProps(dbNameAndCollectionName[0], dbNameAndCollectionName[1]);
+            });
         }
     }
 
@@ -118,7 +98,7 @@ public class LocalCachesSingleton {
 
         DBObject dbProps;
 
-        Optional<DBObject> _dbProps = dbPropsCache.getIfPresent(dbName);
+        Optional<DBObject> _dbProps = dbPropsCache.get(dbName);
 
         if (_dbProps != null) {
             if (_dbProps.isPresent()) {
@@ -129,8 +109,8 @@ public class LocalCachesSingleton {
             }
         } else {
             try {
-                _dbProps = dbPropsCache.getUnchecked(dbName);
-            } catch (UncheckedExecutionException uex) {
+                _dbProps = dbPropsCache.getLoading(dbName);
+            } catch (Throwable uex) {
                 if (uex.getCause() instanceof MongoException) {
                     throw (MongoException) uex.getCause();
                 } else {
@@ -162,7 +142,7 @@ public class LocalCachesSingleton {
 
         DBObject collProps;
 
-        Optional<DBObject> _collProps = collectionPropsCache.getIfPresent(dbName + SEPARATOR + collName);
+        Optional<DBObject> _collProps = collectionPropsCache.get(dbName + SEPARATOR + collName);
 
         if (_collProps != null) {
             if (_collProps.isPresent()) {
@@ -173,8 +153,8 @@ public class LocalCachesSingleton {
             }
         } else {
             try {
-                _collProps = collectionPropsCache.getUnchecked(dbName + SEPARATOR + collName);
-            } catch (UncheckedExecutionException uex) {
+                _collProps = collectionPropsCache.getLoading(dbName + SEPARATOR + collName);
+            } catch (Throwable uex) {
                 if (uex.getCause() instanceof MongoException) {
                     throw (MongoException) uex.getCause();
                 } else {

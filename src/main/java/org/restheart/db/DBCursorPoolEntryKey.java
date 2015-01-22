@@ -110,7 +110,7 @@ public class DBCursorPoolEntryKey {
 
     @Override
     public String toString() {
-        return "{ collection: " + collection.getName() + ", " +
+        return "{ collection: " + collection.getFullName() + ", " +
                 "filter: " + (filter == null ? "null": filter.toString()) + ", " + 
                 "sort: " + (sort == null ? "null": sort.toString()) + ", "  +
                 "skipped: " + skipped + ", "  +
