@@ -44,7 +44,7 @@ public class RequestContext {
         DOCUMENT,
         COLLECTION_INDEXES,
         INDEX,
-        FILE
+        FILESYSTEM
     };
 
     public enum METHOD {
@@ -72,6 +72,7 @@ public class RequestContext {
     public static final String LOCAL = "local";
     public static final String ADMIN = "admin";
     public static final String _INDEXES = "_indexes";
+    public static final String _FILESYSTEM = "_filesystem";
 
     private final String whereUri;
     private final String whatUri;
@@ -167,6 +168,8 @@ public class RequestContext {
             type = TYPE.COLLECTION_INDEXES;
         } else if (pathTokens.length > 4 && pathTokens[3].equals(_INDEXES)) {
             type = TYPE.INDEX;
+        } else if (pathTokens.length >= 2 && pathTokens[2].equals(_FILESYSTEM)) {
+            type = TYPE.FILESYSTEM;
         } else {
             type = TYPE.DOCUMENT;
         }
