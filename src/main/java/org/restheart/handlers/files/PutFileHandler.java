@@ -91,7 +91,6 @@ public class PutFileHandler extends PipedHttpHandler {
             stringBuilder.append(line);
         }
         System.out.println(stringBuilder.toString());
-        System.out.println("\nDone!");
         httpStatus = 201;
         return httpStatus;
     }

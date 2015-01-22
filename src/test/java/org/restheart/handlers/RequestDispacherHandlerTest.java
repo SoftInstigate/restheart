@@ -62,7 +62,7 @@ public class RequestDispacherHandlerTest {
     public void tearDown() {
     }
 
-    @Test
+    //@Test
     public void testGridFS() throws UnknownHostException, IOException {
         System.out.println("+++ testGridFS");
         String filedb = "filedb";
