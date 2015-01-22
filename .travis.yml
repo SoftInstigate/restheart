@@ -1,0 +1,9 @@
+language: java
+jdk:
+    - oraclejdk8
+notifications:
+  email:
+    recipients:
+        - maurizio@softinstigate.com
+        - info@softinstigate.com
+    on_success: always

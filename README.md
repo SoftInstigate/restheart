@@ -6,6 +6,10 @@ Open your data, quickly build HATEOAS applications, use it as your mobile apps b
 
 __You'll find the full documentation at [http://www.restheart.org](http://www.restheart.org).__
 
+Develop branch:
+
+[![Build Status](https://travis-ci.org/SoftInstigate/restheart.svg?branch=develop)](https://travis-ci.org/SoftInstigate/restheart)
+
 ## RESTHeart is the REST API server for [MongoDB](http://www.mongodb.org/).
 
 * Zero development time: just start it and the data REST API is ready to use
