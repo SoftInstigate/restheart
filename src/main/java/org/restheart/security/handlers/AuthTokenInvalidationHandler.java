@@ -57,9 +57,14 @@ public class AuthTokenInvalidationHandler extends PipedHttpHandler {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_UNAUTHORIZED);
         } else {
             AuthTokenIdentityManager.getInstance().getCachedAccounts().invalidate(exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
+            removeAuthTokens(exchange);
             exchange.setResponseCode(HttpStatus.SC_NO_CONTENT);
             exchange.endExchange();
         }
     }
-
+    
+    private void removeAuthTokens(HttpServerExchange exchange) {
+        exchange.getResponseHeaders().remove(AuthTokenInjecterHandler.AUTH_TOKEN_HEADER);
+        exchange.getResponseHeaders().remove(AuthTokenInjecterHandler.AUTH_TOKEN_VALID_HEADER);
+    }
 }
