@@ -23,8 +23,9 @@ import static org.restheart.security.RestheartIdentityManager.RESTHEART_REALM;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpHandler;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
+import org.restheart.security.AuthTokenAuthenticationMechanism;
 
 /**
  *
@@ -45,9 +46,12 @@ public class SilentSecurityHandler extends PipedWrappingHandler {
     private static HttpHandler getSecurityHandlerChain(final IdentityManager identityManager, final AccessManager accessManager) {
         HttpHandler handler = null;
         if (identityManager != null) {
-            final List<AuthenticationMechanism> mechanisms = Collections.<AuthenticationMechanism>singletonList(
-                    new SilentBasicAuthenticationMechanism(RESTHEART_REALM));
-            handler = buildSecurityHandlerChain(accessManager, null, identityManager, mechanisms);
+            final List<AuthenticationMechanism> mechanisms = new ArrayList<>();
+            
+            mechanisms.add(new AuthTokenAuthenticationMechanism(RESTHEART_REALM));
+            mechanisms.add(new SilentBasicAuthenticationMechanism(RESTHEART_REALM));
+            
+            handler = buildSecurityHandlerChain(accessManager, identityManager, mechanisms);
         }
         return handler;
     }

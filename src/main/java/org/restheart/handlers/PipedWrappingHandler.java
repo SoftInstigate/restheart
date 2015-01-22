@@ -29,6 +29,7 @@ import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
+import org.restheart.security.handlers.AuthTokenInjecterHandler;
 
 /**
  *
@@ -68,9 +69,11 @@ public class PipedWrappingHandler extends PipedHttpHandler {
         }
     }
 
-    protected static HttpHandler buildSecurityHandlerChain(final AccessManager accessManager, HttpHandler handler, final IdentityManager identityManager, final List<AuthenticationMechanism> mechanisms) {
+    protected static HttpHandler buildSecurityHandlerChain(final AccessManager accessManager, final IdentityManager identityManager, final List<AuthenticationMechanism> mechanisms) {
+        HttpHandler handler = null;
+        
         if (accessManager != null) {
-            handler = new AccessManagerHandler(accessManager, null);
+            handler = new AccessManagerHandler(accessManager, new AuthTokenInjecterHandler(null));
         }
         handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE,
                 identityManager,
