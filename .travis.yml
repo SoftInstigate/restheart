@@ -1,11 +1,7 @@
 language: java
 jdk:
   - oraclejdk8
-before_install:
-  - git submodule update --init --recursive
-install: mvn package -DskipTests=true
-services: mongodb 
-script: mvn verify
 notifications:
   email:
     - maurizio@softinstigate.com
+    - info@softinstigate.com
