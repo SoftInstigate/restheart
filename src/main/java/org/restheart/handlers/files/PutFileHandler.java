@@ -1,6 +1,6 @@
 /*
  * RESTHeart - the data REST API server
- * Copyright (C) 2014 - 2015 SoftInstigate Srl
+ * Copyright (C) SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,37 +15,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.collection;
+package org.restheart.handlers.files;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import org.restheart.db.DocumentDAO;
+import io.undertow.server.HttpServerExchange;
+import org.bson.types.ObjectId;
+import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
-import io.undertow.server.HttpServerExchange;
-import org.bson.types.ObjectId;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
-public class PostCollectionHandler extends PutCollectionHandler {
+public class PutFileHandler extends PipedHttpHandler {
 
-    /**
-     * Creates a new instance of PostCollectionHandler
-     */
-    public PostCollectionHandler() {
+    public PutFileHandler() {
+        super(null);
     }
 
-    /**
-     *
-     * @param exchange
-     * @param context
-     * @throws Exception
-     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         DBObject content = context.getContent();
@@ -54,29 +46,36 @@ public class PostCollectionHandler extends PutCollectionHandler {
             content = new BasicDBObject();
         }
 
-        // cannot POST an array
+        // cannot PUT an array
         if (content instanceof BasicDBList) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
             return;
         }
 
-        ObjectId etag = RequestHelper.getWriteEtag(exchange);
+        String id = context.getDocumentId();
 
-        if (content.get("_id") != null && content.get("_id") instanceof String && RequestContext.isReservedResourceDocument((String) content.get("_id"))) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "reserved resource");
+        if (content.get("_id") == null) {
+            content.put("_id", getId(id));
+        } else if (!content.get("_id").equals(id)) {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is different than id in URL");
             return;
         }
 
-        int httpCode = new DocumentDAO()
-                .upsertDocumentPost(exchange, context.getDBName(), context.getCollectionName(), content, etag);
+        ObjectId etag = RequestHelper.getWriteEtag(exchange);
+
+        int httpStatus = 0;
+        
+        // TODO
+        
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(httpCode, exchange, context);
+            sendWarnings(httpStatus, exchange, context);
         } else {
-            exchange.setResponseCode(httpCode);
+            exchange.setResponseCode(httpStatus);
         }
 
         exchange.endExchange();
     }
+
 }

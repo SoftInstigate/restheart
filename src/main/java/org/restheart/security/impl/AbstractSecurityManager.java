@@ -20,30 +20,45 @@ package org.restheart.security.impl;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
 /**
  *
- * @author Maurizio Turatti <info@maurizioturatti.com>
+ * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
 abstract class AbstractSecurityManager {
 
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(AbstractSecurityManager.class);
+
     AbstractSecurityManager() {
     }
-    
+
     abstract Consumer<? super Map<String, Object>> consumeConfiguration();
 
     final void init(Map<String, Object> arguments, String type) throws FileNotFoundException {
-        final String confFilePath = extractConfigFilePath(arguments);
-        final Map<String, Object> conf = (Map<String, Object>) new Yaml().load(new FileInputStream(new File(confFilePath)));
-
-        List<Map<String, Object>> users = extractUsers(conf, type);
-
-        users.stream().forEach(consumeConfiguration());
+        InputStream is = null;
+        try {
+            final String confFilePath = extractConfigFilePath(arguments);
+            is = new FileInputStream(new File(confFilePath));
+            final Map<String, Object> conf = (Map<String, Object>) new Yaml().load(is);
+            List<Map<String, Object>> users = extractUsers(conf, type);
+            users.stream().forEach(consumeConfiguration());
+        } finally {
+            try {
+                if (is != null) {
+                    is.close();
+                }
+            } catch (IOException ex) {
+                LOGGER.warn("Can't close the InputStream", ex);
+            }
+        }
     }
 
     final String extractConfigFilePath(Map<String, Object> arguments) throws IllegalArgumentException {

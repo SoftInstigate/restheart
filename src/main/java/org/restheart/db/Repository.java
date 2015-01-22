@@ -1,6 +1,6 @@
 /*
- * RESTHeart - the data REST API server
- * Copyright (C) 2014 - 2015 SoftInstigate Srl
+ * RESTHeart - the data Repository API server
+ * Copyright (C) SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,22 +15,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.test.unit;
+package org.restheart.db;
 
-//import org.junit.Test;
-//import static org.junit.Assert.*;
+import com.mongodb.DBObject;
+import io.undertow.server.HttpServerExchange;
+import org.bson.types.ObjectId;
+
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
-public class RepresentationTest {
-
-    public RepresentationTest() {
-    }
-
-    // TODO add test methods here.
-    // The methods must be annotated with annotation @Test. For example:
-    //
-    // @Test
-    // public void hello() {}
+public interface Repository {
+    
+    int upsertDocument(String dbName, String collName, String documentId, DBObject content, ObjectId requestEtag, boolean patching);
+    
+    int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, DBObject content, ObjectId requestEtag);
+    
+    int deleteDocument(String dbName, String collName, String documentId, ObjectId requestEtag);
+    
 }

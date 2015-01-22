@@ -42,15 +42,10 @@ public final class SimpleAccessManager extends AbstractSecurityManager implement
 
     /**
      * @param arguments
+     * @throws java.io.FileNotFoundException
      */
-    public SimpleAccessManager(Map<String, Object> arguments) {
-        try {
-            init(arguments, "permissions");
-        } catch (FileNotFoundException fnef) {
-            throw new IllegalArgumentException("configuration file not found.", fnef);
-        } catch (Throwable t) {
-            throw new IllegalArgumentException("wrong configuration file format.", t);
-        }
+    public SimpleAccessManager(Map<String, Object> arguments) throws FileNotFoundException {
+        init(arguments, "permissions");
     }
 
     @Override
@@ -133,6 +128,7 @@ public final class SimpleAccessManager extends AbstractSecurityManager implement
     }
 
     private static class NotAuthenticatedAccount implements Account {
+
         @Override
         public Principal getPrincipal() {
             return null;

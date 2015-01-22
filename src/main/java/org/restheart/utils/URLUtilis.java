@@ -176,11 +176,7 @@ public class URLUtilis {
     public static String getQueryStringRemovingParams(HttpServerExchange exchange, String... paramsToRemove) {
         String ret = exchange.getQueryString();
 
-        if (ret == null || ret.isEmpty()) {
-            return ret;
-        }
-
-        if (paramsToRemove == null) {
+        if (ret == null || ret.isEmpty() || paramsToRemove == null) {
             return ret;
         }
 

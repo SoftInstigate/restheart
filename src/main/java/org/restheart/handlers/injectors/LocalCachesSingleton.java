@@ -21,7 +21,7 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import org.restheart.Configuration;
 import org.restheart.db.CollectionDAO;
-import org.restheart.db.DBDAO;
+import org.restheart.db.DbsDAO;
 import java.util.Optional;
 import org.restheart.cache.Cache;
 import org.restheart.cache.LoadingCache;

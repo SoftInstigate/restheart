@@ -42,15 +42,10 @@ public final class SimpleFileIdentityManager extends AbstractSecurityManager imp
     /**
      *
      * @param arguments
+     * @throws java.io.FileNotFoundException
      */
-    public SimpleFileIdentityManager(Map<String, Object> arguments) {
-        try {
-            init(arguments, "users");
-        } catch (FileNotFoundException fnef) {
-            throw new IllegalArgumentException("configuration file not found.", fnef);
-        } catch (Throwable t) {
-            throw new IllegalArgumentException("wrong configuration file format.", t);
-        }
+    public SimpleFileIdentityManager(Map<String, Object> arguments) throws FileNotFoundException {
+        init(arguments, "users");
     }
 
     @Override

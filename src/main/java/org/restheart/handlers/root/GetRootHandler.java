@@ -19,7 +19,7 @@ package org.restheart.handlers.root;
 
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import org.restheart.db.DBDAO;
+import org.restheart.db.DbsDAO;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.PipedHttpHandler;
@@ -72,14 +72,14 @@ public class GetRootHandler extends PipedHttpHandler {
 
         List<DBObject> data = new ArrayList<>();
 
-        dbs.stream().map(
-                (db) -> {
-                    if (LocalCachesSingleton.isEnabled()) {
-                        return LocalCachesSingleton.getInstance().getDBProps(db);
-                    } else {
-                        return DBDAO.getDbProps(db);
-                    }
-                }
+        final DbsDAO dbsDAO = new DbsDAO();
+        dbs.stream().map((db) -> {
+            if (LocalCachesSingleton.isEnabled()) {
+                return LocalCachesSingleton.getInstance().getDBProps(db);
+            } else {
+                return dbsDAO.getDbProps(db);
+            }
+        }
         ).forEach((item) -> {
             data.add(item);
         });

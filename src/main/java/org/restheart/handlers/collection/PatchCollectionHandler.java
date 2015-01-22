@@ -91,13 +91,14 @@ public class PatchCollectionHandler extends PipedHttpHandler {
             return;
         }
 
-        int SC = CollectionDAO.upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, true, true);
+        final CollectionDAO collectionDAO = new CollectionDAO();
+        int httpCode = collectionDAO.upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, true, true);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(SC, exchange, context);
+            sendWarnings(httpCode, exchange, context);
         } else {
-            exchange.setResponseCode(SC);
+            exchange.setResponseCode(httpCode);
         }
 
         exchange.endExchange();

@@ -1,6 +1,6 @@
 /*
  * RESTHeart - the data REST API server
- * Copyright (C) 2014 - 2015 SoftInstigate Srl
+ * Copyright (C) SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,32 +17,18 @@
  */
 package org.restheart.db;
 
-import com.mongodb.DBCursor;
+import com.mongodb.MongoClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
-public class SkippedDBCursor {
-    private final DBCursor cursor;
-    private final int alreadySkipped;
+public class FileDAO {
+    
+    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
 
-    public SkippedDBCursor(DBCursor cursor, int alreadySkipped) {
-        this.cursor = cursor;
-        this.alreadySkipped = alreadySkipped;
-    }
-
-    /**
-     * @return the alreadySkipped
-     */
-    public int getAlreadySkipped() {
-        return alreadySkipped;
-    }
-
-    /**
-     * @return the cursor
-     */
-    public DBCursor getCursor() {
-        return cursor;
-    }
+    private static final Logger LOGGER = LoggerFactory.getLogger(DocumentDAO.class);
+    
 }

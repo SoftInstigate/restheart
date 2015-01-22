@@ -39,17 +39,13 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare
  */
-public class DBDAO {
+public class DbsDAO {
 
-    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
+    private final MongoClient client;
 
-    private static final Logger logger = LoggerFactory.getLogger(DBDAO.class);
-
-    /**
-     *
-     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(DbsDAO.class);
     public static final BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "_properties");
 
     private static final BasicDBObject fieldsToReturn;
@@ -67,6 +63,10 @@ public class DBDAO {
         fieldsToReturnIndexes.put("key", 1);
         fieldsToReturnIndexes.put("name", 1);
     }
+    
+    public DbsDAO() {
+        client = MongoDBClientSingleton.getInstance().getClient();
+    }
 
     /**
      *
@@ -78,12 +78,11 @@ public class DBDAO {
      * @deprecated
      *
      */
-    public static boolean checkDbExists(HttpServerExchange exchange, String dbName) {
+    public boolean checkDbExists(HttpServerExchange exchange, String dbName) {
         if (!doesDbExists(dbName)) {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
             return false;
         }
-
         return true;
     }
 
@@ -94,8 +93,7 @@ public class DBDAO {
      * @return
      *
      */
-    public static boolean doesDbExists(String dbName) {
-
+    public boolean doesDbExists(String dbName) {
         return client.getDatabaseNames().contains(dbName);
     }
 
@@ -104,7 +102,7 @@ public class DBDAO {
      * @param dbName
      * @return
      */
-    public static DB getDB(String dbName) {
+    public DB getDB(String dbName) {
         return client.getDB(dbName);
     }
 
@@ -113,11 +111,9 @@ public class DBDAO {
      * @param db
      * @return
      */
-    public static List<String> getDbCollections(DB db) {
+    public List<String> getDbCollections(DB db) {
         List<String> _colls = new ArrayList(db.getCollectionNames());
-
         Collections.sort(_colls);
-
         return _colls;
     }
 
@@ -126,7 +122,7 @@ public class DBDAO {
      * @return the number of collections in this db
      *
      */
-    public static long getDBSize(List<String> colls) {
+    public long getDBSize(List<String> colls) {
         // filter out reserved resources
         List<String> _colls = colls.stream().filter(coll -> !RequestContext.isReservedResourceCollection(coll)).collect(Collectors.toList());
 
@@ -138,13 +134,14 @@ public class DBDAO {
      * @return the db props
      *
      */
-    public static DBObject getDbProps(String dbName) {
-        // this check is important, otherwise the db would get created if not existing after the query
-        if (!DBDAO.doesDbExists(dbName)) {
+    public DBObject getDbProps(String dbName) {
+        if (!doesDbExists(dbName)) {
+            // this check is important, otherwise the db would get created if not existing after the query
             return null;
         }
 
-        DBCollection propscoll = CollectionDAO.getCollection(dbName, "_properties");
+        final CollectionDAO collectionDAO = new CollectionDAO();
+        DBCollection propscoll = collectionDAO.getCollection(dbName, "_properties");
 
         DBObject row = propscoll.findOne(METADATA_QUERY);
 
@@ -169,11 +166,10 @@ public class DBDAO {
      * @param page
      * @param pagesize
      * @return the db data
-     * @throws
-     * org.restheart.handlers.IllegalQueryParamenterException
+     * @throws org.restheart.handlers.IllegalQueryParamenterException
      *
      */
-    public static List<DBObject> getData(String dbName, List<String> colls, int page, int pagesize)
+    public List<DBObject> getData(String dbName, List<String> colls, int page, int pagesize)
             throws IllegalQueryParamenterException {
         // filter out reserved resources
         List<String> _colls = colls.stream().filter(coll -> !RequestContext.isReservedResourceCollection(coll)).collect(Collectors.toList());
@@ -199,6 +195,7 @@ public class DBDAO {
 
         List<DBObject> data = new ArrayList<>();
 
+        final CollectionDAO collectionDAO = new CollectionDAO();
         _colls.stream().map(
                 (collName) -> {
                     BasicDBObject properties = new BasicDBObject();
@@ -210,7 +207,7 @@ public class DBDAO {
                     if (LocalCachesSingleton.isEnabled()) {
                         collProperties = LocalCachesSingleton.getInstance().getCollectionProps(dbName, collName);
                     } else {
-                        collProperties = CollectionDAO.getCollectionProps(dbName, collName);
+                        collProperties = collectionDAO.getCollectionProps(dbName, collName);
                     }
 
                     if (collProperties != null) {
@@ -234,7 +231,7 @@ public class DBDAO {
      * @param patching
      * @return
      */
-    public static int upsertDB(String dbName, DBObject content, ObjectId etag, boolean patching) {
+    public int upsertDB(String dbName, DBObject content, ObjectId etag, boolean patching) {
         DB db = client.getDB(dbName);
 
         boolean existing = db.getCollectionNames().size() > 0;
@@ -287,7 +284,7 @@ public class DBDAO {
 
                 if (oldTimestamp == null) {
                     oldTimestamp = now.toString();
-                    logger.warn("properties of collection {} had no @created_on field. set to now", coll.getFullName());
+                    LOGGER.warn("properties of collection {} had no @created_on field. set to now", coll.getFullName());
                 }
 
                 // need to readd the @created_on field 
@@ -313,8 +310,8 @@ public class DBDAO {
      * @param requestEtag
      * @return
      */
-    public static int deleteDB(String dbName, ObjectId requestEtag) {
-        DB db = DBDAO.getDB(dbName);
+    public int deleteDB(String dbName, ObjectId requestEtag) {
+        DB db = getDB(dbName);
 
         DBCollection coll = db.getCollection("_properties");
 

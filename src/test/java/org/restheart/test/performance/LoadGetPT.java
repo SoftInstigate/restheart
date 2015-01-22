@@ -141,7 +141,8 @@ public class LoadGetPT {
      *
      */
     public void dbdirect() {
-        DBCollection dbcoll = CollectionDAO.getCollection(db, coll);
+        final CollectionDAO collectionDAO = new CollectionDAO();
+        DBCollection dbcoll = collectionDAO.getCollection(db, coll);
 
         Deque<String> _filter;
 
@@ -155,7 +156,7 @@ public class LoadGetPT {
         ArrayList<DBObject> data;
         
         try {
-            data = CollectionDAO.getCollectionData(dbcoll, page, pagesize, null, _filter, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE);
+            data = collectionDAO.getCollectionData(dbcoll, page, pagesize, null, _filter, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE);
         } catch(Exception e) {
             System.out.println("error: " + e.getMessage());
             return;

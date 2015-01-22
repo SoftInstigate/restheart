@@ -22,7 +22,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
 import org.restheart.Configuration;
 import org.restheart.db.CollectionDAO;
-import org.restheart.db.DBDAO;
+import org.restheart.db.DbsDAO;
 import org.restheart.db.DocumentDAO;
 import org.restheart.db.IndexDAO;
 import org.restheart.db.MongoDBClientSingleton;
@@ -212,20 +212,25 @@ public abstract class AbstactIT {
     }
 
     private void createTestData() {
-        DBDAO.upsertDB(dbName, dbProps, new ObjectId(), false);
-        CollectionDAO.upsertCollection(dbName, collection1Name, coll1Props, new ObjectId(), false, false);
-        CollectionDAO.upsertCollection(dbName, collection2Name, coll2Props, new ObjectId(), false, false);
-        CollectionDAO.upsertCollection(dbName, docsCollectionName, docsCollectionProps, new ObjectId(), false, false);
+        final DbsDAO dbsDAO = new DbsDAO();
+        dbsDAO.upsertDB(dbName, dbProps, new ObjectId(), false);
+        
+        final CollectionDAO collectionDAO = new CollectionDAO();
+        collectionDAO.upsertCollection(dbName, collection1Name, coll1Props, new ObjectId(), false, false);
+        collectionDAO.upsertCollection(dbName, collection2Name, coll2Props, new ObjectId(), false, false);
+        collectionDAO.upsertCollection(dbName, docsCollectionName, docsCollectionProps, new ObjectId(), false, false);
 
+        final IndexDAO indexDAO = new IndexDAO();
         for (String index : docsCollectionIndexesStrings) {
-            IndexDAO.createIndex(dbName, docsCollectionName, ((DBObject) JSON.parse(index)), null);
+            indexDAO.createIndex(dbName, docsCollectionName, ((DBObject) JSON.parse(index)), null);
         }
 
-        DocumentDAO.upsertDocument(dbName, collection1Name, document1Id, document1Props, new ObjectId(), false);
-        DocumentDAO.upsertDocument(dbName, collection2Name, document2Id, document2Props, new ObjectId(), false);
+        final DocumentDAO documentDAO = new DocumentDAO();
+        documentDAO.upsertDocument(dbName, collection1Name, document1Id, document1Props, new ObjectId(), false);
+        documentDAO.upsertDocument(dbName, collection2Name, document2Id, document2Props, new ObjectId(), false);
 
         for (String doc : docsPropsStrings) {
-            DocumentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), ((DBObject) JSON.parse(doc)), new ObjectId(), false);
+            documentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), ((DBObject) JSON.parse(doc)), new ObjectId(), false);
         }
         LOG.info("test data created");
     }

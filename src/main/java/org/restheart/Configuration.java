@@ -807,7 +807,7 @@ public class Configuration {
 
             int ret[] = convertListToIntArray((List) conf.get(key));
 
-            if (ret == null) {
+            if (ret.length == 0) {
                 if (!silent) {
                     LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
                 }
@@ -832,7 +832,7 @@ public class Configuration {
             if (o instanceof Integer) {
                 ret[i] = (Integer) o;
             } else {
-                return null;
+                return new int[0];
             }
         }
 

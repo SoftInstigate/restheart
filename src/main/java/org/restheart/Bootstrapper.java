@@ -26,26 +26,9 @@ import org.restheart.handlers.GzipEncodingHandler;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestDispacherHandler;
 import org.restheart.handlers.injectors.RequestContextInjectorHandler;
-import org.restheart.handlers.root.GetRootHandler;
-import org.restheart.handlers.collection.DeleteCollectionHandler;
-import org.restheart.handlers.collection.GetCollectionHandler;
 import org.restheart.handlers.injectors.CollectionPropsInjectorHandler;
 import org.restheart.handlers.injectors.DbPropsInjectorHandler;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
-import org.restheart.handlers.collection.PatchCollectionHandler;
-import org.restheart.handlers.collection.PostCollectionHandler;
-import org.restheart.handlers.collection.PutCollectionHandler;
-import org.restheart.handlers.database.DeleteDBHandler;
-import org.restheart.handlers.database.GetDBHandler;
-import org.restheart.handlers.database.PatchDBHandler;
-import org.restheart.handlers.database.PutDBHandler;
-import org.restheart.handlers.document.DeleteDocumentHandler;
-import org.restheart.handlers.document.GetDocumentHandler;
-import org.restheart.handlers.document.PatchDocumentHandler;
-import org.restheart.handlers.document.PutDocumentHandler;
-import org.restheart.handlers.indexes.DeleteIndexHandler;
-import org.restheart.handlers.indexes.GetIndexesHandler;
-import org.restheart.handlers.indexes.PutIndexHandler;
 import org.restheart.security.AccessManager;
 import org.restheart.utils.ResourcesExtractor;
 import org.restheart.utils.LoggingInitializer;
@@ -334,7 +317,7 @@ public final class Bootstrapper {
 
             LOGGER.info("mongodb connection pool initialized");
 
-            PropsFixer.fixAllMissingProps();
+            new PropsFixer().fixAllMissingProps();
         } catch (Throwable t) {
             LOGGER.error("error connecting to mongodb. exiting..", t);
             stopServer();

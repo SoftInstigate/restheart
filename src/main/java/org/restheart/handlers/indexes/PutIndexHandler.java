@@ -82,7 +82,8 @@ public class PutIndexHandler extends PipedHttpHandler {
         ops.put("name", id);
 
         try {
-            IndexDAO.createIndex(db, co, keys, ops);
+            final IndexDAO indexDAO = new IndexDAO();
+            indexDAO.createIndex(db, co, keys, ops);
         } catch (Throwable t) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "error creating the index", t);
             return;

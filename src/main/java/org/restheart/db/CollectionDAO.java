@@ -41,7 +41,8 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class CollectionDAO {
-    private static final MongoClient CLIENT = MongoDBClientSingleton.getInstance().getClient();
+
+    private final MongoClient client;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CollectionDAO.class);
 
@@ -49,6 +50,10 @@ public class CollectionDAO {
     private static final BasicDBObject DOCUMENTS_QUERY = new BasicDBObject("_id", new BasicDBObject("$ne", "_properties"));
 
     private static final BasicDBObject fieldsToReturn;
+
+    public CollectionDAO() {
+        client = MongoDBClientSingleton.getInstance().getClient();
+    }
 
     static {
         fieldsToReturn = new BasicDBObject();
@@ -75,14 +80,14 @@ public class CollectionDAO {
      * @param collName the collection name
      * @return true if the specified collection exits in the db dbName
      */
-    public static boolean doesCollectionExist(String dbName, String collName) {
+    public boolean doesCollectionExist(String dbName, String collName) {
         if (dbName == null || dbName.isEmpty() || dbName.contains(" ")) {
             return false;
         }
 
         BasicDBObject query = new BasicDBObject("name", dbName + "." + collName);
 
-        return CLIENT.getDB(dbName).getCollection("system.namespaces").findOne(query) != null;
+        return client.getDB(dbName).getCollection("system.namespaces").findOne(query) != null;
     }
 
     /**
@@ -93,8 +98,8 @@ public class CollectionDAO {
      * @param collName the collection name
      * @return the mongodb DBCollection object for the collection in db dbName
      */
-    public static DBCollection getCollection(String dbName, String collName) {
-        return CLIENT.getDB(dbName).getCollection(collName);
+    public DBCollection getCollection(String dbName, String collName) {
+        return client.getDB(dbName).getCollection(collName);
     }
 
     /**
@@ -106,7 +111,7 @@ public class CollectionDAO {
      * @param coll the mongodb DBCollection object
      * @return true if the commection is empty
      */
-    public static boolean isCollectionEmpty(DBCollection coll) {
+    public boolean isCollectionEmpty(DBCollection coll) {
         return coll.count(DOCUMENTS_QUERY) == 0;
     }
 
@@ -120,7 +125,7 @@ public class CollectionDAO {
      * @return the number of documents in the given collection (taking into
      * account the filters in case)
      */
-    public static long getCollectionSize(DBCollection coll, Deque<String> filters) {
+    public long getCollectionSize(DBCollection coll, Deque<String> filters) {
         final BasicDBObject query = new BasicDBObject(DOCUMENTS_QUERY);
 
         if (filters != null) {
@@ -147,7 +152,7 @@ public class CollectionDAO {
      * @return
      * @throws JSONParseException
      */
-    protected static DBCursor getCollectionDBCursor(DBCollection coll, Deque<String> sortBy, Deque<String> filters) throws JSONParseException {
+    protected DBCursor getCollectionDBCursor(DBCollection coll, Deque<String> sortBy, Deque<String> filters) throws JSONParseException {
         // apply sort_by
         DBObject sort = new BasicDBObject();
 
@@ -186,7 +191,7 @@ public class CollectionDAO {
         return coll.find(query).sort(sort);
     }
 
-    public static ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filters, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager) throws JSONParseException {
+    public ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filters, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager) throws JSONParseException {
         ArrayList<DBObject> ret = new ArrayList<>();
 
         int toskip = pagesize * (page - 1);
@@ -240,8 +245,8 @@ public class CollectionDAO {
      * @param collName the collection name
      * @return the collection properties document
      */
-    public static DBObject getCollectionProps(String dbName, String collName) {
-        DBCollection coll = CollectionDAO.getCollection(dbName, collName);
+    public DBObject getCollectionProps(String dbName, String collName) {
+        DBCollection coll = getCollection(dbName, collName);
 
         DBObject properties = coll.findOne(PROPS_QUERY);
 
@@ -272,8 +277,8 @@ public class CollectionDAO {
      * @param patching true if use patch semantic (update only specified fields)
      * @return the HttpStatus code to set in the http response
      */
-    public static int upsertCollection(String dbName, String collName, DBObject content, ObjectId etag, boolean updating, boolean patching) {
-        DB db = DBDAO.getDB(dbName);
+    public int upsertCollection(String dbName, String collName, DBObject content, ObjectId etag, boolean updating, boolean patching) {
+        DB db = new DbsDAO().getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
 
@@ -359,7 +364,7 @@ public class CollectionDAO {
      * http error code is returned)
      * @return the HttpStatus code to set in the http response
      */
-    public static int deleteCollection(String dbName, String collName, ObjectId etag) {
+    public int deleteCollection(String dbName, String collName, ObjectId etag) {
         DBCollection coll = getCollection(dbName, collName);
 
         BasicDBObject checkEtag = new BasicDBObject("_id", "_properties");
@@ -375,7 +380,7 @@ public class CollectionDAO {
         }
     }
 
-    private static void initDefaultIndexes(DBCollection coll) {
+    private void initDefaultIndexes(DBCollection coll) {
         coll.createIndex(new BasicDBObject("_id", 1).append("_etag", 1), new BasicDBObject("name", "_id_etag_idx"));
         coll.createIndex(new BasicDBObject("_etag", 1), new BasicDBObject("name", "_etag_idx"));
         coll.createIndex(new BasicDBObject("_created_on", 1), new BasicDBObject("name", "_created_on_idx"));

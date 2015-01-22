@@ -38,6 +38,7 @@ import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import static org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.TYPE;
+import org.restheart.handlers.files.PutFileHandler;
 import org.restheart.utils.ResponseHelper;
 
 /**
@@ -63,6 +64,7 @@ public class RequestDispacherHandler extends PipedHttpHandler {
     private final GetIndexesHandler indexesGet;
     private final PutIndexHandler indexPut;
     private final DeleteIndexHandler indexDelete;
+    private final PutFileHandler filePut;
 
     /**
      * Creates a new instance of RequestDispacherHandler
@@ -87,6 +89,7 @@ public class RequestDispacherHandler extends PipedHttpHandler {
         this.indexesGet = new GetIndexesHandler();
         this.indexPut = new PutIndexHandler();
         this.indexDelete = new DeleteIndexHandler();
+        this.filePut = new PutFileHandler();
     }
 
     /**

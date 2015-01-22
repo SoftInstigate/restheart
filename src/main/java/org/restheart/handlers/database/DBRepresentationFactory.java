@@ -19,7 +19,6 @@ package org.restheart.handlers.database;
 
 import com.mongodb.DBObject;
 import org.restheart.Configuration;
-import org.restheart.hal.HALUtils;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.IllegalQueryParamenterException;

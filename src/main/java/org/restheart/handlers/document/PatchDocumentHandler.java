@@ -79,13 +79,20 @@ public class PatchDocumentHandler extends PipedHttpHandler {
             return;
         }
 
-        int SC = DocumentDAO.upsertDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), content, etag, true);
+        DocumentDAO documentDAO = new DocumentDAO();
+        int httpCode = documentDAO.upsertDocument(
+                context.getDBName(),
+                context.getCollectionName(),
+                context.getDocumentId(),
+                content,
+                etag,
+                true);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(SC, exchange, context);
+            sendWarnings(httpCode, exchange, context);
         } else {
-            exchange.setResponseCode(SC);
+            exchange.setResponseCode(httpCode);
         }
 
         exchange.endExchange();

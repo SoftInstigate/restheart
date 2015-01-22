@@ -55,13 +55,14 @@ public class DeleteCollectionHandler extends PipedHttpHandler {
             return;
         }
 
-        int SC = CollectionDAO.deleteCollection(context.getDBName(), context.getCollectionName(), etag);
+        final CollectionDAO collectionDAO = new CollectionDAO();
+        int httpCode = collectionDAO.deleteCollection(context.getDBName(), context.getCollectionName(), etag);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(SC, exchange, context);
+            sendWarnings(httpCode, exchange, context);
         } else {
-            exchange.setResponseCode(SC);
+            exchange.setResponseCode(httpCode);
         }
 
         exchange.endExchange();

@@ -55,21 +55,21 @@ public class GetCollectionHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        DBCollection coll = CollectionDAO.getCollection(context.getDBName(), context.getCollectionName());
-
+        final CollectionDAO collectionDAO = new CollectionDAO();
+        DBCollection coll = collectionDAO.getCollection(context.getDBName(), context.getCollectionName());
         long size = -1;
 
         if (context.isCount()) {
-            size = CollectionDAO.getCollectionSize(coll, exchange.getQueryParameters().get("filter"));
+            size = collectionDAO.getCollectionSize(coll, exchange.getQueryParameters().get("filter"));
         }
 
         // ***** get data
         ArrayList<DBObject> data = null;
 
         try {
-            data = CollectionDAO.getCollectionData(coll, context.getPage(), context.getPagesize(), context.getSortBy(), context.getFilter(), context.getCursorAllocationPolicy());
-        } catch (JSONParseException jpe) // the filter expression is not a valid json string
-        {
+            data = collectionDAO.getCollectionData(coll, context.getPage(), context.getPagesize(), context.getSortBy(), context.getFilter(), context.getCursorAllocationPolicy());
+        } catch (JSONParseException jpe) {
+            // the filter expression is not a valid json string
             LOGGER.error("invalid filter expression {}", context.getFilter(), jpe);
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", jpe);
             return;

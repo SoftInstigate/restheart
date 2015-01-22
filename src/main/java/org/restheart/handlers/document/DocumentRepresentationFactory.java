@@ -33,7 +33,6 @@ import io.undertow.util.Headers;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.TreeMap;
-import org.bson.types.ObjectId;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 

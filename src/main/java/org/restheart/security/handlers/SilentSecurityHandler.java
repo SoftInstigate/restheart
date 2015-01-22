@@ -47,7 +47,7 @@ public class SilentSecurityHandler extends PipedWrappingHandler {
         if (identityManager != null) {
             final List<AuthenticationMechanism> mechanisms = Collections.<AuthenticationMechanism>singletonList(
                     new SilentBasicAuthenticationMechanism(RESTHEART_REALM));
-            handler = buildSecurityHandlerChain(accessManager, handler, identityManager, mechanisms);
+            handler = buildSecurityHandlerChain(accessManager, null, identityManager, mechanisms);
         }
         return handler;
     }

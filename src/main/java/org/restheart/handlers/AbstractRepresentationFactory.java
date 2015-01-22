@@ -30,7 +30,7 @@ import org.restheart.utils.URLUtilis;
 
 /**
  *
- * @author Maurizio Turatti <info@maurizioturatti.com>
+ * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
 public abstract class AbstractRepresentationFactory {
 

@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the data Repository API server
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -20,18 +20,16 @@ package org.restheart.db;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import io.undertow.server.HttpServerExchange;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.URLUtilis;
-import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
-import java.util.ArrayList;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,18 +38,14 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class DocumentDAO {
+public class DocumentDAO implements Repository {
 
-    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
+    private static final Logger LOGGER = LoggerFactory.getLogger(DocumentDAO.class);
 
-    private static final Logger logger = LoggerFactory.getLogger(DocumentDAO.class);
+    private final MongoClient client;
 
-    private static final BasicDBObject fieldsToReturn;
-
-    static {
-        fieldsToReturn = new BasicDBObject();
-        fieldsToReturn.put("_id", 1);
-        fieldsToReturn.put("_created_on", 1);
+    public DocumentDAO() {
+        client = MongoDBClientSingleton.getInstance().getClient();
     }
 
     /**
@@ -60,23 +54,23 @@ public class DocumentDAO {
      * @param collName
      * @return
      */
-    public static DBCollection getCollection(String dbName, String collName) {
+    public DBCollection getCollection(String dbName, String collName) {
         return client.getDB(dbName).getCollection(collName);
     }
 
     /**
-     *
-     *
      * @param dbName
      * @param collName
      * @param documentId
      * @param content
      * @param requestEtag
      * @param patching
-     * @return the HttpStatus code to retrun
+     * @return the HttpStatus code
      */
-    public static int upsertDocument(String dbName, String collName, String documentId, DBObject content, ObjectId requestEtag, boolean patching) {
-        DB db = DBDAO.getDB(dbName);
+    @Override
+    public int upsertDocument(String dbName, String collName, String documentId, DBObject content, ObjectId requestEtag, boolean patching) {
+        final DbsDAO dbsDAO = new DbsDAO();
+        DB db = dbsDAO.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
 
@@ -106,17 +100,18 @@ public class DocumentDAO {
             content.put("_created_on", now.toString()); // let's assume this is an insert. in case we'll set it back with a second update
 
             // we use findAndModify to get the @created_on field value from the existing document
-            // in case this is an update well need to put it back using a second update 
+            // in case this is an update well need to upsertDocument it back using a second update 
             // it is not possible to do it with a single update
             // (even using $setOnInsert update because we'll need to use the $set operator for other data and this would make it a partial update (patch semantic) 
             DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, content, false, true);
 
-            if (oldDocument != null) { // upsert
+            if (oldDocument != null) { // upsertDocument
                 Object oldTimestamp = oldDocument.get("_created_on");
 
                 if (oldTimestamp == null) {
                     oldTimestamp = now.toString();
-                    logger.warn("properties of document /{}/{}/{} had no @created_on field. set to now", dbName, collName, documentId);
+                    LOGGER.warn("properties of document /{}/{}/{} had no @created_on field. set to now",
+                            dbName, collName, documentId);
                 }
 
                 // need to readd the @created_on field 
@@ -133,17 +128,17 @@ public class DocumentDAO {
     }
 
     /**
-     *
-     *
      * @param exchange
      * @param dbName
      * @param collName
      * @param content
      * @param requestEtag
-     * @return the HttpStatus code to retrun
+     * @return
      */
-    public static int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, DBObject content, ObjectId requestEtag) {
-        DB db = DBDAO.getDB(dbName);
+    @Override
+    public int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, DBObject content, ObjectId requestEtag) {
+        final DbsDAO dbsDAO = new DbsDAO();
+        DB db = dbsDAO.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
 
@@ -166,27 +161,32 @@ public class DocumentDAO {
 
             coll.insert(content);
 
-            exchange.getResponseHeaders().add(HttpString.tryFromString("Location"), getReferenceLink(exchange.getRequestURL(), id.toString()).toString());
+            exchange.getResponseHeaders()
+                    .add(HttpString.tryFromString("Location"),
+                            getReferenceLink(exchange.getRequestURL(), id.toString()).toString());
 
             return HttpStatus.SC_CREATED;
         } else {
-            exchange.getResponseHeaders().add(HttpString.tryFromString("Location"), getReferenceLink(exchange.getRequestURL(), _id.toString()).toString());
+            exchange.getResponseHeaders()
+                    .add(HttpString.tryFromString("Location"),
+                            getReferenceLink(exchange.getRequestURL(), _id.toString()).toString());
         }
 
         BasicDBObject idQuery = new BasicDBObject("_id", getId("" + _id));
 
         // we use findAndModify to get the @created_on field value from the existing document
-        // we need to put this field back using a second update 
+        // we need to upsertDocument this field back using a second update 
         // it is not possible in a single update even using $setOnInsert update operator
         // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
         DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, content, false, true);
 
-        if (oldDocument != null) {  // upsert
+        if (oldDocument != null) {  // upsertDocument
             Object oldTimestamp = oldDocument.get("_created_on");
 
             if (oldTimestamp == null) {
                 oldTimestamp = now.toString();
-                logger.warn("properties of document /{}/{}/{} had no @created_on field. set to now", dbName, collName, _id.toString());
+                LOGGER.warn("properties of document /{}/{}/{} had no @created_on field. set to now",
+                        dbName, collName, _id.toString());
             }
 
             // need to readd the @created_on field 
@@ -202,15 +202,16 @@ public class DocumentDAO {
     }
 
     /**
-     *
      * @param dbName
      * @param collName
      * @param documentId
      * @param requestEtag
      * @return
      */
-    public static int deleteDocument(String dbName, String collName, String documentId, ObjectId requestEtag) {
-        DB db = DBDAO.getDB(dbName);
+    @Override
+    public int deleteDocument(String dbName, String collName, String documentId, ObjectId requestEtag) {
+        final DbsDAO dbsDAO = new DbsDAO();
+        DB db = dbsDAO.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
 
@@ -226,16 +227,7 @@ public class DocumentDAO {
         }
     }
 
-    /**
-     *
-     * @param cursor
-     * @return
-     */
-    public static ArrayList<DBObject> getDataFromCursor(DBCursor cursor) {
-        return new ArrayList<>(cursor.toArray());
-    }
-
-    private static Object getId(String id) {
+    private Object getId(String id) {
         if (id == null) {
             return new ObjectId();
         }
@@ -248,7 +240,7 @@ public class DocumentDAO {
         }
     }
 
-    private static int optimisticCheckEtag(DBCollection coll, DBObject oldDocument, ObjectId requestEtag, int httpStatusIfOk) {
+    private int optimisticCheckEtag(DBCollection coll, DBObject oldDocument, ObjectId requestEtag, int httpStatusIfOk) {
         if (requestEtag == null) {
             coll.save(oldDocument);
             return HttpStatus.SC_CONFLICT;
@@ -270,13 +262,14 @@ public class DocumentDAO {
         }
     }
 
-    static private URI getReferenceLink(String parentUrl, String referencedName) {
+    private URI getReferenceLink(String parentUrl, String referencedName) {
         try {
             return new URI(URLUtilis.removeTrailingSlashes(parentUrl) + "/" + referencedName);
         } catch (URISyntaxException ex) {
-            logger.error("error creating URI from {} + / + {}", parentUrl, referencedName, ex);
+            LOGGER.error("error creating URI from {} + / + {}", parentUrl, referencedName, ex);
         }
 
         return null;
     }
+
 }
