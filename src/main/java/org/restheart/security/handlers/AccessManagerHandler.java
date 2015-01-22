@@ -23,6 +23,7 @@ import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.security.impl.SessionTokenIdentityManager;
 
 /**
  *
@@ -33,7 +34,7 @@ public class AccessManagerHandler extends PipedHttpHandler {
     private final AccessManager accessManager;
 
     /**
-     * Creates a new instance of AclHandler
+     * Creates a new instance of AccessManagerHandler
      *
      * @param accessManager
      * @param next

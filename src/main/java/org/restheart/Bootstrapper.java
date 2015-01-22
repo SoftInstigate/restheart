@@ -79,6 +79,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import org.restheart.security.handlers.SessionTokenInjecterHandler;
+import org.restheart.security.impl.SessionTokenIdentityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,7 +115,7 @@ public final class Bootstrapper {
             stopServer();
             System.exit(-1);
         }
-        
+
         Daemon d = null;
 
         if (!OSChecker.isWindows()) {
@@ -134,7 +136,7 @@ public final class Bootstrapper {
                 System.exit(-1);
             }
         }
-        
+
         initLogging(args, d);
 
         if (!OSChecker.isWindows()) {
@@ -561,10 +563,11 @@ public final class Bootstrapper {
             String db = (String) m.get(Configuration.MONGO_MOUNT_WHAT_KEY);
 
             paths.addPrefixPath(url,
-                    new CORSHandler(
-                            new RequestContextInjectorHandler(url, db,
-                                    new OptionsHandler(
-                                            new SecurityHandler(coreHanlderChain, identityManager, accessManager)))));
+                    new SessionTokenInjecterHandler(
+                            new CORSHandler(
+                                    new RequestContextInjectorHandler(url, db,
+                                            new OptionsHandler(
+                                                    new SecurityHandler(coreHanlderChain, identityManager, accessManager))))));
 
             LOGGER.info("url {} bound to mongodb resource {}", url, db);
         });
