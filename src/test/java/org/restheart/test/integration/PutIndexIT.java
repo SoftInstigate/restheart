@@ -28,6 +28,9 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import org.junit.Test;
 
 /**
@@ -62,33 +65,33 @@ public class PutIndexIT extends AbstactIT {
             resp = adminExecutor.execute(Request.Get(indexesTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
             HttpResponse httpResp = resp.returnResponse();
-            junit.framework.Assert.assertNotNull(httpResp);
+            assertNotNull(httpResp);
             HttpEntity entity = httpResp.getEntity();
-            junit.framework.Assert.assertNotNull(entity);
+            assertNotNull(entity);
             StatusLine statusLine = httpResp.getStatusLine();
-            junit.framework.Assert.assertNotNull(statusLine);
+            assertNotNull(statusLine);
 
-            junit.framework.Assert.assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
-            junit.framework.Assert.assertNotNull("content type not null", entity.getContentType());
-            junit.framework.Assert.assertEquals("check content type", Representation.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
+            assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
+            assertNotNull("content type not null", entity.getContentType());
+            assertEquals("check content type", Representation.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
 
             String content = EntityUtils.toString(entity);
 
-            junit.framework.Assert.assertNotNull("", content);
+            assertNotNull("", content);
 
             JsonObject json = null;
 
             try {
                 json = JsonObject.readFrom(content);
             } catch (Throwable t) {
-                junit.framework.Assert.fail("parsing received json");
+                fail("parsing received json");
             }
 
-            junit.framework.Assert.assertNotNull("check json not null", json);
-            junit.framework.Assert.assertNotNull("check not null _returned property", json.get("_returned"));
-            junit.framework.Assert.assertNotNull("check not null _size property", json.get("_size"));
-            junit.framework.Assert.assertEquals("check _size value to be 5", 5, json.get("_size").asInt());
-            junit.framework.Assert.assertEquals("check _returned value to be 5", 5, json.get("_returned").asInt());
+            assertNotNull("check json not null", json);
+            assertNotNull("check not null _returned property", json.get("_returned"));
+            assertNotNull("check not null _size property", json.get("_size"));
+            assertEquals("check _size value to be 5", 5, json.get("_size").asInt());
+            assertEquals("check _returned value to be 5", 5, json.get("_returned").asInt());
         } finally {
             mongoClient.dropDatabase(dbTmpName);
         }
