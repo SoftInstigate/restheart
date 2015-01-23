@@ -52,7 +52,10 @@ public class IndexDAO {
      * @return
      */
     public List<DBObject> getCollectionIndexes(String dbName, String collName) {
-        List<DBObject> indexes = client.getDB(dbName).getCollection("system.indexes").find(new BasicDBObject("ns", dbName + "." + collName), fieldsToReturnIndexes).sort(new BasicDBObject("name", 1)).toArray();
+        List<DBObject> indexes = client.getDB(dbName).getCollection("system.indexes")
+                .find(new BasicDBObject("ns", dbName + "." + collName), fieldsToReturnIndexes)
+                .sort(new BasicDBObject("name", 1))
+                .toArray();
 
         indexes.forEach((i) -> {
             i.put("_id", i.get("name"));
