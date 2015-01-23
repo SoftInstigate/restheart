@@ -55,14 +55,6 @@ public class DbsDAO {
         fieldsToReturn.put("_id", 1);
         fieldsToReturn.put("_created_on", 1);
     }
-
-    private static final BasicDBObject fieldsToReturnIndexes;
-
-    static {
-        fieldsToReturnIndexes = new BasicDBObject();
-        fieldsToReturnIndexes.put("key", 1);
-        fieldsToReturnIndexes.put("name", 1);
-    }
     
     public DbsDAO() {
         client = MongoDBClientSingleton.getInstance().getClient();
@@ -124,7 +116,9 @@ public class DbsDAO {
      */
     public long getDBSize(List<String> colls) {
         // filter out reserved resources
-        List<String> _colls = colls.stream().filter(coll -> !RequestContext.isReservedResourceCollection(coll)).collect(Collectors.toList());
+        List<String> _colls = colls.stream()
+                .filter(coll -> !RequestContext.isReservedResourceCollection(coll))
+                .collect(Collectors.toList());
 
         return _colls.size();
     }
@@ -172,7 +166,9 @@ public class DbsDAO {
     public List<DBObject> getData(String dbName, List<String> colls, int page, int pagesize)
             throws IllegalQueryParamenterException {
         // filter out reserved resources
-        List<String> _colls = colls.stream().filter(coll -> !RequestContext.isReservedResourceCollection(coll)).collect(Collectors.toList());
+        List<String> _colls = colls.stream()
+                .filter(coll -> !RequestContext.isReservedResourceCollection(coll))
+                .collect(Collectors.toList());
 
         int size = _colls.size();
 
@@ -186,12 +182,15 @@ public class DbsDAO {
             total_pages = Math.max(1, Math.round(Math.ceil(_size / _pagesize)));
 
             if (page > total_pages) {
-                throw new IllegalQueryParamenterException("illegal query paramenter, page is bigger that total pages which is " + total_pages);
+                throw new IllegalQueryParamenterException("illegal query paramenter,"
+                        + " page is bigger that total pages which is " + total_pages);
             }
         }
 
         // apply page and pagesize
-        _colls = _colls.subList((page - 1) * pagesize, (page - 1) * pagesize + pagesize > _colls.size() ? _colls.size() : (page - 1) * pagesize + pagesize);
+        _colls = _colls.subList((page - 1) * pagesize, (page - 1) * pagesize + pagesize > _colls.size() 
+                ? _colls.size() 
+                : (page - 1) * pagesize + pagesize);
 
         List<DBObject> data = new ArrayList<>();
 
@@ -205,7 +204,8 @@ public class DbsDAO {
                     DBObject collProperties;
 
                     if (LocalCachesSingleton.isEnabled()) {
-                        collProperties = LocalCachesSingleton.getInstance().getCollectionProps(dbName, collName);
+                        collProperties = LocalCachesSingleton.getInstance()
+                                .getCollectionProps(dbName, collName);
                     } else {
                         collProperties = collectionDAO.getCollectionProps(dbName, collName);
                     }
@@ -276,7 +276,8 @@ public class DbsDAO {
             // we use findAndModify to get the @created_on field value from the existing document
             // we need to put this field back using a second update 
             // it is not possible in a single update even using $setOnInsert update operator
-            // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
+            // in this case we need to provide the other data using $set operator 
+            // and this makes it a partial update (patch semantic) 
             DBObject old = coll.findAndModify(METADATA_QUERY, fieldsToReturn, null, false, content, false, true);
 
             if (old != null) {
