@@ -61,14 +61,6 @@ public class CollectionDAO {
         fieldsToReturn.put("_created_on", 1);
     }
 
-    private static final BasicDBObject fieldsToReturnIndexes;
-
-    static {
-        fieldsToReturnIndexes = new BasicDBObject();
-        fieldsToReturnIndexes.put("key", 1);
-        fieldsToReturnIndexes.put("name", 1);
-    }
-
     /**
      * Checks if the collection exists.
      *
