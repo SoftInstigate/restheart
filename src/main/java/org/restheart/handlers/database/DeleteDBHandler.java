@@ -27,6 +27,7 @@ import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.bson.types.ObjectId;
+import org.restheart.db.Database;
 
 /**
  *
@@ -34,7 +35,7 @@ import org.bson.types.ObjectId;
  */
 public class DeleteDBHandler extends PipedHttpHandler {
 
-    private final DbsDAO dbsDAO;
+    private final Database dbsDAO;
 
     /**
      * Creates a new instance of DeleteDBHandler
@@ -43,7 +44,7 @@ public class DeleteDBHandler extends PipedHttpHandler {
         this(new DbsDAO());
     }
 
-    public DeleteDBHandler(DbsDAO dbsDAO) {
+    public DeleteDBHandler(Database dbsDAO) {
         super(null);
         this.dbsDAO = dbsDAO;
     }
@@ -63,7 +64,7 @@ public class DeleteDBHandler extends PipedHttpHandler {
             return;
         }
 
-        int httpCode = this.dbsDAO.deleteDB(context.getDBName(), etag);
+        int httpCode = this.dbsDAO.deleteDatabase(context.getDBName(), etag);
 
         exchange.setResponseCode(httpCode);
 

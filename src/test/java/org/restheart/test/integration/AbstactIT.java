@@ -44,6 +44,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.restheart.db.Database;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -164,7 +165,7 @@ public abstract class AbstactIT {
         "{ \"ranking\": 1 }"
     };
     
-    private final DbsDAO dbsDAO = new DbsDAO();
+    private final Database dbsDAO = new DbsDAO();
 
     public AbstactIT() {
     }

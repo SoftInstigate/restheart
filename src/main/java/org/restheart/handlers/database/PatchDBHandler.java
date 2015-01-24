@@ -28,6 +28,7 @@ import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
+import org.restheart.db.Database;
 
 /**
  *
@@ -35,7 +36,7 @@ import org.bson.types.ObjectId;
  */
 public class PatchDBHandler extends PipedHttpHandler {
 
-    private final DbsDAO dbsDAO;
+    private final Database dbsDAO;
 
     /**
      * Creates a new instance of PatchDBHandler
@@ -44,7 +45,7 @@ public class PatchDBHandler extends PipedHttpHandler {
         this(new DbsDAO());
     }
 
-    public PatchDBHandler(DbsDAO dbsDAO) {
+    public PatchDBHandler(Database dbsDAO) {
         super(null);
         this.dbsDAO = dbsDAO;
     }

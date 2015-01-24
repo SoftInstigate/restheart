@@ -28,6 +28,7 @@ import org.restheart.utils.URLUtilis;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import org.bson.types.ObjectId;
+import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 
 /**
@@ -36,7 +37,7 @@ import org.restheart.db.DbsDAO;
  */
 public class GetDocumentHandler extends PipedHttpHandler {
 
-    private final DbsDAO dbsDAO;
+    private final Database dbsDAO;
 
     /**
      * Default ctor
@@ -50,7 +51,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
      *
      * @param dbsDAO
      */
-    public GetDocumentHandler(DbsDAO dbsDAO) {
+    public GetDocumentHandler(Database dbsDAO) {
         super(null);
         this.dbsDAO = dbsDAO;
     }

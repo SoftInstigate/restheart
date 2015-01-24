@@ -18,9 +18,7 @@
 package org.restheart.handlers.root;
 
 import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
 import org.restheart.db.DbsDAO;
-import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -30,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.restheart.db.Database;
 
 /**
  *
@@ -37,9 +36,7 @@ import java.util.stream.Collectors;
  */
 public class GetRootHandler extends PipedHttpHandler {
 
-    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-
-    private final DbsDAO dbsDAO;
+    private final Database dbsDAO;
 
     /**
      * Creates a new instance of GetRootHandler
@@ -48,7 +45,7 @@ public class GetRootHandler extends PipedHttpHandler {
         this(new DbsDAO());
     }
 
-    public GetRootHandler(DbsDAO dbsDAO) {
+    public GetRootHandler(Database dbsDAO) {
         super(null);
         this.dbsDAO = dbsDAO;
     }
@@ -61,7 +58,7 @@ public class GetRootHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        List<String> _dbs = client.getDatabaseNames();
+        List<String> _dbs = dbsDAO.getDatabaseNames();
 
         // filter out reserved resources
         List<String> dbs = _dbs.stream().filter(db -> !RequestContext.isReservedResourceDb(db)).collect(Collectors.toList());
@@ -83,7 +80,7 @@ public class GetRootHandler extends PipedHttpHandler {
             if (LocalCachesSingleton.isEnabled()) {
                 return LocalCachesSingleton.getInstance().getDBProps(db);
             } else {
-                return dbsDAO.getDbProps(db);
+                return dbsDAO.getDatabaseProperties(db);
             }
         }
         ).forEach((item) -> {

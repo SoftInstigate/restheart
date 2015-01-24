@@ -59,6 +59,7 @@ import org.apache.http.client.fluent.Response;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 
 /**
@@ -141,7 +142,7 @@ public class LoadGetPT {
      *
      */
     public void dbdirect() {
-        final DbsDAO dbsDAO = new DbsDAO();
+        final Database dbsDAO = new DbsDAO();
         DBCollection dbcoll = dbsDAO.getCollection(db, coll);
 
         Deque<String> _filter;

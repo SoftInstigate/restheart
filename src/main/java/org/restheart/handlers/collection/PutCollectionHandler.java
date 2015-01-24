@@ -30,6 +30,7 @@ import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
+import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 
 /**
@@ -38,7 +39,7 @@ import org.restheart.db.DbsDAO;
  */
 public class PutCollectionHandler extends PipedHttpHandler {
 
-    private final DbsDAO dbsDAO;
+    private final Database dbsDAO;
 
     /**
      * Creates a new instance of PutCollectionHandler
@@ -47,7 +48,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
         this(new DbsDAO());
     }
 
-    public PutCollectionHandler(DbsDAO dbsDAO) {
+    public PutCollectionHandler(Database dbsDAO) {
         super(null);
         this.dbsDAO = dbsDAO;
     }

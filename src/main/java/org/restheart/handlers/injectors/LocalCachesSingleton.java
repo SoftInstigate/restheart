@@ -25,6 +25,7 @@ import java.util.Optional;
 import org.restheart.cache.Cache;
 import org.restheart.cache.LoadingCache;
 import org.restheart.cache.CacheFactory;
+import org.restheart.db.Database;
 
 /**
  *
@@ -35,7 +36,7 @@ public class LocalCachesSingleton {
     private static final String SEPARATOR = "_@_@_";
     private static boolean initialized = false;
 
-    private final DbsDAO dbsDAO;
+    private final Database dbsDAO;
 
     private LoadingCache<String, DBObject> dbPropsCache = null;
     private LoadingCache<String, DBObject> collectionPropsCache = null;
@@ -70,13 +71,13 @@ public class LocalCachesSingleton {
         if (enabled) {
             this.dbPropsCache = CacheFactory.createLocalLoadingCache(maxCacheSize, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl,
                     (String key) -> {
-                        return this.dbsDAO.getDbProps(key);
+                        return this.dbsDAO.getDatabaseProperties(key);
                     });
 
             this.collectionPropsCache = CacheFactory.createLocalLoadingCache(maxCacheSize, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl,
                     (String key) -> {
                         String[] dbNameAndCollectionName = key.split(SEPARATOR);
-                        return this.dbsDAO.getCollectionProps(dbNameAndCollectionName[0], dbNameAndCollectionName[1]);
+                        return this.dbsDAO.getCollectionProperties(dbNameAndCollectionName[0], dbNameAndCollectionName[1]);
                     });
         }
     }

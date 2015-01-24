@@ -26,6 +26,7 @@ import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.bson.types.ObjectId;
+import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 
 /**
@@ -34,7 +35,7 @@ import org.restheart.db.DbsDAO;
  */
 public class DeleteCollectionHandler extends PipedHttpHandler {
 
-    private final DbsDAO dbsDAO;
+    private final Database dbsDAO;
 
     /**
      * Creates a new instance of DeleteCollectionHandler
@@ -43,7 +44,7 @@ public class DeleteCollectionHandler extends PipedHttpHandler {
         this(new DbsDAO());
     }
     
-    public DeleteCollectionHandler(DbsDAO dbsDAO) {
+    public DeleteCollectionHandler(Database dbsDAO) {
         super(null);
         this.dbsDAO = dbsDAO;
     }

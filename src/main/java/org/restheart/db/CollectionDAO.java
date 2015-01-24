@@ -53,8 +53,8 @@ class CollectionDAO {
 
     private static final BasicDBObject fieldsToReturn;
 
-    CollectionDAO() {
-        client = MongoDBClientSingleton.getInstance().getClient();
+    CollectionDAO(MongoClient client) {
+        this.client = client;
     }
 
     static {

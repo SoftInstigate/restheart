@@ -24,6 +24,7 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.db.Database;
 
 /**
  *
@@ -35,7 +36,7 @@ import io.undertow.server.HttpServerExchange;
  */
 public class DbPropsInjectorHandler extends PipedHttpHandler {
 
-    private final DbsDAO dbsDAO;
+    private final Database dbsDAO;
 
     /**
      * Creates a new instance of MetadataInjecterHandler
@@ -59,7 +60,7 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
             DBObject dbProps = null;
 
             if (!LocalCachesSingleton.isEnabled()) {
-                dbProps = dbsDAO.getDbProps(context.getDBName());
+                dbProps = dbsDAO.getDatabaseProperties(context.getDBName());
 
                 if (dbProps != null) {
                     dbProps.put("_db-props-cached", false);

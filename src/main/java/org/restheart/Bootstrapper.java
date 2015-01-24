@@ -79,7 +79,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import org.restheart.db.DbsDAO;
 import org.restheart.security.handlers.AuthTokenInjecterHandler;
 import org.restheart.security.handlers.AuthTokenInvalidationHandler;
 import org.slf4j.Logger;

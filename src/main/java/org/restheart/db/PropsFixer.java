@@ -22,7 +22,6 @@ import com.mongodb.CommandFailureException;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
 import org.restheart.handlers.RequestContext;
 import java.time.Instant;
@@ -36,13 +35,11 @@ import org.slf4j.LoggerFactory;
  */
 public class PropsFixer {
 
-    private final MongoClient client;
-    private final DbsDAO dbsDAO;
+    private final Database dbsDAO;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PropsFixer.class);
 
     public PropsFixer() {
-        client = MongoDBClientSingleton.getInstance().getClient();
         dbsDAO = new DbsDAO();
     }
 
@@ -55,14 +52,14 @@ public class PropsFixer {
      */
     public boolean addCollectionProps(String dbName, String collName) throws MongoException {
         
-        DBObject dbmd = dbsDAO.getDbProps(dbName);
+        DBObject dbmd = dbsDAO.getDatabaseProperties(dbName);
 
         if (dbmd == null) {
             // db must exists with properties
             return false;
         }
 
-        DBObject md = dbsDAO.getCollectionProps(dbName, collName);
+        DBObject md = dbsDAO.getCollectionProperties(dbName, collName);
 
         if (md != null) // properties exists
         {
@@ -100,11 +97,11 @@ public class PropsFixer {
      * @return
      */
     public boolean addDbProps(String dbName) {
-        if (!dbsDAO.doesDbExists(dbName)) {
+        if (!dbsDAO.existsDatabaseWithName(dbName)) {
             return false;
         }
 
-        DBObject dbmd = dbsDAO.getDbProps(dbName);
+        DBObject dbmd = dbsDAO.getDatabaseProperties(dbName);
 
         if (dbmd != null) // properties exists
         {
@@ -133,7 +130,7 @@ public class PropsFixer {
      */
     public void fixAllMissingProps() {
         try {
-            client.getDatabaseNames().stream().filter(dbName -> !RequestContext.isReservedResourceDb(dbName)).map(dbName -> {
+            dbsDAO.getDatabaseNames().stream().filter(dbName -> !RequestContext.isReservedResourceDb(dbName)).map(dbName -> {
                 try {
                     addDbProps(dbName);
                 } catch (Throwable t) {
@@ -143,7 +140,7 @@ public class PropsFixer {
             }).forEach(dbName -> {
                 DB db = dbsDAO.getDB(dbName);
 
-                dbsDAO.getDbCollections(db).stream().filter(collectionName -> !RequestContext.isReservedResourceCollection(collectionName)).forEach(collectionName -> {
+                dbsDAO.getCollectionNames(db).stream().filter(collectionName -> !RequestContext.isReservedResourceCollection(collectionName)).forEach(collectionName -> {
                     try {
                         addCollectionProps(dbName, collectionName);
                     } catch (Throwable t) {

@@ -28,6 +28,7 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
+import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +41,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetCollectionHandler.class);
 
-    private final DbsDAO dbsDAO;
+    private final Database dbsDAO;
 
     /**
      * Creates a new instance of GetCollectionHandler
@@ -49,7 +50,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
         this(new DbsDAO());
     }
 
-    public GetCollectionHandler(DbsDAO dbsDAO) {
+    public GetCollectionHandler(Database dbsDAO) {
         super(null);
         this.dbsDAO = dbsDAO;
     }

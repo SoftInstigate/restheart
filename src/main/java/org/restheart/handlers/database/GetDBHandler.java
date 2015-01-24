@@ -24,6 +24,7 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
+import org.restheart.db.Database;
 
 /**
  *
@@ -31,7 +32,7 @@ import java.util.List;
  */
 public class GetDBHandler extends PipedHttpHandler {
     
-    private final DbsDAO dbsDAO;
+    private final Database dbsDAO;
 
     /**
      * Creates a new instance of GetDBHandler
@@ -40,7 +41,7 @@ public class GetDBHandler extends PipedHttpHandler {
         this(new DbsDAO());
     }
 
-    public GetDBHandler(DbsDAO dbsDAO) {
+    public GetDBHandler(Database dbsDAO) {
         super(null);
         this.dbsDAO = dbsDAO;
     }
@@ -52,7 +53,7 @@ public class GetDBHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        List<String> colls = this.dbsDAO.getDbCollections(this.dbsDAO.getDB(context.getDBName()));
+        List<String> colls = this.dbsDAO.getCollectionNames(this.dbsDAO.getDB(context.getDBName()));
         List<DBObject> data = this.dbsDAO.getData(context.getDBName(), colls, context.getPage(), context.getPagesize());
         exchange.setResponseCode(HttpStatus.SC_OK);
         
