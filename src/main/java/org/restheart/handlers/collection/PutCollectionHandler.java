@@ -61,9 +61,9 @@ public class PutCollectionHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.getCollectionName().isEmpty() || context.getCollectionName().startsWith("_")) {
+        if (context.getCollectionName().isEmpty() || context.getCollectionName().startsWith(UNDERSCORE)) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
-                    "wrong request, collection name cannot be empty or start with _");
+                    "wrong request, collection name cannot be empty or start with '_'");
             return;
         }
 
@@ -105,4 +105,6 @@ public class PutCollectionHandler extends PipedHttpHandler {
         exchange.endExchange();
         LocalCachesSingleton.getInstance().invalidateCollection(context.getDBName(), context.getCollectionName());
     }
+    
+    private static final String UNDERSCORE = "_";
 }
