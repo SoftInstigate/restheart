@@ -19,13 +19,14 @@ package org.restheart.handlers.indexes;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import org.restheart.db.IndexDAO;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.document.DocumentRepresentationFactory;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.db.Database;
+import org.restheart.db.DbsDAO;
 
 /**
  *
@@ -33,18 +34,18 @@ import io.undertow.server.HttpServerExchange;
  */
 public class PutIndexHandler extends PipedHttpHandler {
 
-    final IndexDAO indexDAO;
+    final Database dbsDAO;
 
     /**
      * Creates a new instance of PutIndexHandler
      */
     public PutIndexHandler() {
-        this(new IndexDAO());
+        this(new DbsDAO());
     }
 
-    public PutIndexHandler(IndexDAO indexDAO) {
+    public PutIndexHandler(Database dbsDAO) {
         super(null);
-        this.indexDAO = indexDAO;
+        this.dbsDAO = dbsDAO;
     }
 
     /**
@@ -83,7 +84,7 @@ public class PutIndexHandler extends PipedHttpHandler {
         ops.put("name", id);
 
         try {
-            indexDAO.createIndex(db, co, keys, ops);
+            dbsDAO.createIndex(db, co, keys, ops);
         } catch (Throwable t) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
                     "error creating the index", t);

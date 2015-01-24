@@ -23,7 +23,6 @@ import com.mongodb.util.JSON;
 import org.restheart.Configuration;
 import org.restheart.db.DbsDAO;
 import org.restheart.db.DocumentDAO;
-import org.restheart.db.IndexDAO;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.hal.Representation;
 import java.io.File;
@@ -220,9 +219,8 @@ public abstract class AbstactIT {
         dbsDAO.upsertCollection(dbName, collection2Name, coll2Props, new ObjectId(), false, false);
         dbsDAO.upsertCollection(dbName, docsCollectionName, docsCollectionProps, new ObjectId(), false, false);
 
-        final IndexDAO indexDAO = new IndexDAO();
         for (String index : docsCollectionIndexesStrings) {
-            indexDAO.createIndex(dbName, docsCollectionName, ((DBObject) JSON.parse(index)), null);
+            dbsDAO.createIndex(dbName, docsCollectionName, ((DBObject) JSON.parse(index)), null);
         }
 
         final DocumentDAO documentDAO = new DocumentDAO();

@@ -59,12 +59,14 @@ public class DbsDAO implements Database {
      * delegated object for collection operations
      */
     private final CollectionDAO collectionDAO;
+    private final IndexDAO indexDAO;
 
     private final MongoClient client;
 
     public DbsDAO() {
         client = MongoDBClientSingleton.getInstance().getClient();
         this.collectionDAO = new CollectionDAO(client);
+        this.indexDAO = new IndexDAO(client);
     }
 
     /**
@@ -373,12 +375,28 @@ public class DbsDAO implements Database {
         return collectionDAO.getCollectionData(coll, page, pagesize, sortBy, filter, cursorAllocationPolicy);
     }
 
-    DBCursor getCollectionDBCursor(DBCollection collection, Deque<String> sortBy, Deque<String> filters) {
+    @Override
+    public List<String> getDatabaseNames() {
+        return client.getDatabaseNames();
+    }
+
+    @Override
+    public int deleteIndex(String dbName, String collection, String indexId) {
+        return indexDAO.deleteIndex(dbName, collection, indexId);
+    }
+
+    @Override
+    public List<DBObject> getCollectionIndexes(String dbName, String collectionName) {
+        return indexDAO.getCollectionIndexes(dbName, collectionName);
+    }
+
+    @Override
+    public DBCursor getCollectionDBCursor(DBCollection collection, Deque<String> sortBy, Deque<String> filters) {
         return collectionDAO.getCollectionDBCursor(collection, sortBy, filters);
     }
 
     @Override
-    public List<String> getDatabaseNames() {
-        return client.getDatabaseNames();
+    public void createIndex(String dbName, String collection, DBObject keys, DBObject options) {
+        indexDAO.createIndex(dbName, collection, keys, options);
     }
 }

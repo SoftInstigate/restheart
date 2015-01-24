@@ -20,7 +20,9 @@ package org.restheart.db;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import com.mongodb.util.JSONParseException;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -178,4 +180,42 @@ public interface Database {
      */
     boolean checkDbExists(HttpServerExchange exchange, String dbName);
 
+    /**
+     *
+     * @param dbName
+     * @param collection
+     * @param indexId
+     * @return the operation result
+     */
+    int deleteIndex(String dbName, String collection, String indexId);
+
+    /**
+     *
+     * @param dbName
+     * @param collectionName
+     * @return A List of indexes for collectionName in dbName
+     */
+    List<DBObject> getCollectionIndexes(String dbName, String collectionName);
+
+    /**
+     * Returs the DBCursor of the collection applying sorting and filtering.
+     *
+     * @param collection the mongodb DBCollection object
+     * @param sortBy the Deque collection of fields to use for sorting (prepend
+     * field name with - for descending sorting)
+     * @param filters the filters to apply. it is a Deque collection of mongodb
+     * query conditions.
+     * @return
+     * @throws JSONParseException
+     */
+    DBCursor getCollectionDBCursor(DBCollection collection, Deque<String> sortBy, Deque<String> filters) throws JSONParseException;
+
+    /**
+     *
+     * @param dbName
+     * @param collection
+     * @param keys
+     * @param options
+     */
+    void createIndex(String dbName, String collection, DBObject keys, DBObject options);
 }
