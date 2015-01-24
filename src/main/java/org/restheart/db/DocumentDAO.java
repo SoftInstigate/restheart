@@ -69,8 +69,7 @@ public class DocumentDAO implements Repository {
      */
     @Override
     public int upsertDocument(String dbName, String collName, String documentId, DBObject content, ObjectId requestEtag, boolean patching) {
-        final DbsDAO dbsDAO = new DbsDAO();
-        DB db = dbsDAO.getDB(dbName);
+        DB db = client.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
 
@@ -137,8 +136,7 @@ public class DocumentDAO implements Repository {
      */
     @Override
     public int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, DBObject content, ObjectId requestEtag) {
-        final DbsDAO dbsDAO = new DbsDAO();
-        DB db = dbsDAO.getDB(dbName);
+        DB db = client.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
 
@@ -210,8 +208,7 @@ public class DocumentDAO implements Repository {
      */
     @Override
     public int deleteDocument(String dbName, String collName, String documentId, ObjectId requestEtag) {
-        final DbsDAO dbsDAO = new DbsDAO();
-        DB db = dbsDAO.getDB(dbName);
+        DB db = client.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
 

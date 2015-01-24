@@ -36,11 +36,18 @@ import org.bson.types.ObjectId;
  */
 public class PutDBHandler extends PipedHttpHandler {
 
+    private final DbsDAO dbsDAO;
+
     /**
      * Creates a new instance of PutDBHandler
      */
     public PutDBHandler() {
+        this(new DbsDAO());
+    }
+
+    public PutDBHandler(DbsDAO dbsDAO) {
         super(null);
+        this.dbsDAO = dbsDAO;
     }
 
     /**
@@ -70,7 +77,6 @@ public class PutDBHandler extends PipedHttpHandler {
 
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
-        final DbsDAO dbsDAO = new DbsDAO();
         int httpCode = dbsDAO.upsertDB(context.getDBName(), content, etag, false);
 
         // send the warnings if any (and in case no_content change the return code to ok

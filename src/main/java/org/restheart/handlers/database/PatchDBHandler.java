@@ -35,11 +35,18 @@ import org.bson.types.ObjectId;
  */
 public class PatchDBHandler extends PipedHttpHandler {
 
+    private final DbsDAO dbsDAO;
+
     /**
      * Creates a new instance of PatchDBHandler
      */
     public PatchDBHandler() {
+        this(new DbsDAO());
+    }
+
+    public PatchDBHandler(DbsDAO dbsDAO) {
         super(null);
+        this.dbsDAO = dbsDAO;
     }
 
     /**
@@ -76,14 +83,13 @@ public class PatchDBHandler extends PipedHttpHandler {
             return;
         }
 
-        final DbsDAO dbsDAO = new DbsDAO();
-        int SC = dbsDAO.upsertDB(context.getDBName(), content, etag, true);
+        int httpCode = dbsDAO.upsertDB(context.getDBName(), content, etag, true);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(SC, exchange, context);
+            sendWarnings(httpCode, exchange, context);
         } else {
-            exchange.setResponseCode(SC);
+            exchange.setResponseCode(httpCode);
         }
 
         exchange.endExchange();

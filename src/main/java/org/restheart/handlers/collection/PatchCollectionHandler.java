@@ -19,7 +19,6 @@ package org.restheart.handlers.collection;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
-import org.restheart.db.CollectionDAO;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.Relationship;
 import org.restheart.handlers.PipedHttpHandler;
@@ -30,6 +29,7 @@ import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
+import org.restheart.db.DbsDAO;
 
 /**
  *
@@ -37,11 +37,18 @@ import org.bson.types.ObjectId;
  */
 public class PatchCollectionHandler extends PipedHttpHandler {
 
+    private final DbsDAO dbsDAO;
+
     /**
      * Creates a new instance of PatchCollectionHandler
      */
     public PatchCollectionHandler() {
+        this(new DbsDAO());
+    }
+
+    public PatchCollectionHandler(DbsDAO dbsDAO) {
         super(null);
+        this.dbsDAO = dbsDAO;
     }
 
     /**
@@ -53,25 +60,29 @@ public class PatchCollectionHandler extends PipedHttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getDBName().isEmpty()) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, db name cannot be empty");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+                    "wrong request, db name cannot be empty");
             return;
         }
 
         if (context.getCollectionName().isEmpty() || context.getCollectionName().startsWith("_")) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, collection name cannot be empty or start with _");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+                    "wrong request, collection name cannot be empty or start with _");
             return;
         }
 
         DBObject content = context.getContent();
 
         if (content == null) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "no data provided");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+                    "no data provided");
             return;
         }
 
         // cannot PATCH with an array
         if (content instanceof BasicDBList) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+                    "data cannot be an array");
             return;
         }
 
@@ -79,7 +90,8 @@ public class PatchCollectionHandler extends PipedHttpHandler {
             try {
                 Relationship.getFromJson(content);
             } catch (InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong relationships definition. " + ex.getMessage(), ex);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+                        "wrong relationships definition. " + ex.getMessage(), ex);
                 return;
             }
         }
@@ -91,8 +103,7 @@ public class PatchCollectionHandler extends PipedHttpHandler {
             return;
         }
 
-        final CollectionDAO collectionDAO = new CollectionDAO();
-        int httpCode = collectionDAO.upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, true, true);
+        int httpCode = dbsDAO.upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, true, true);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {

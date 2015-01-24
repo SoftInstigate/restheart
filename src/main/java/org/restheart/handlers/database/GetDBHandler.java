@@ -30,14 +30,20 @@ import java.util.List;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class GetDBHandler extends PipedHttpHandler {
+    
+    private final DbsDAO dbsDAO;
 
     /**
      * Creates a new instance of GetDBHandler
      */
     public GetDBHandler() {
-        super(null);
+        this(new DbsDAO());
     }
 
+    public GetDBHandler(DbsDAO dbsDAO) {
+        super(null);
+        this.dbsDAO = dbsDAO;
+    }
     /**
      *
      * @param exchange
@@ -46,13 +52,11 @@ public class GetDBHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        final DbsDAO dbsDAO = new DbsDAO();
-        
-        List<String> colls = dbsDAO.getDbCollections(dbsDAO.getDB(context.getDBName()));
-        List<DBObject> data = dbsDAO.getData(context.getDBName(), colls, context.getPage(), context.getPagesize());
+        List<String> colls = this.dbsDAO.getDbCollections(this.dbsDAO.getDB(context.getDBName()));
+        List<DBObject> data = this.dbsDAO.getData(context.getDBName(), colls, context.getPage(), context.getPagesize());
         exchange.setResponseCode(HttpStatus.SC_OK);
         
-        new DBRepresentationFactory().sendHal(exchange, context, data, dbsDAO.getDBSize(colls));
+        new DBRepresentationFactory().sendHal(exchange, context, data, this.dbsDAO.getDBSize(colls));
         exchange.endExchange();
     }
 }

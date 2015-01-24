@@ -36,11 +36,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The Data Access Object for the mongodb Collection resource.
+ * The Data Access Object for the mongodb Collection resource. NOTE: this class
+ * is package-private and only meant to be used as a delagate within the DbsDAO
+ * class.
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class CollectionDAO {
+class CollectionDAO {
 
     private final MongoClient client;
 
@@ -51,7 +53,7 @@ public class CollectionDAO {
 
     private static final BasicDBObject fieldsToReturn;
 
-    public CollectionDAO() {
+    CollectionDAO() {
         client = MongoDBClientSingleton.getInstance().getClient();
     }
 
@@ -72,7 +74,7 @@ public class CollectionDAO {
      * @param collName the collection name
      * @return true if the specified collection exits in the db dbName
      */
-    public boolean doesCollectionExist(String dbName, String collName) {
+    boolean doesCollectionExist(String dbName, String collName) {
         if (dbName == null || dbName.isEmpty() || dbName.contains(" ")) {
             return false;
         }
@@ -90,7 +92,7 @@ public class CollectionDAO {
      * @param collName the collection name
      * @return the mongodb DBCollection object for the collection in db dbName
      */
-    public DBCollection getCollection(String dbName, String collName) {
+    DBCollection getCollection(String dbName, String collName) {
         return client.getDB(dbName).getCollection(collName);
     }
 
@@ -103,7 +105,7 @@ public class CollectionDAO {
      * @param coll the mongodb DBCollection object
      * @return true if the commection is empty
      */
-    public boolean isCollectionEmpty(DBCollection coll) {
+    boolean isCollectionEmpty(DBCollection coll) {
         return coll.count(DOCUMENTS_QUERY) == 0;
     }
 
@@ -117,7 +119,7 @@ public class CollectionDAO {
      * @return the number of documents in the given collection (taking into
      * account the filters in case)
      */
-    public long getCollectionSize(DBCollection coll, Deque<String> filters) {
+    long getCollectionSize(DBCollection coll, Deque<String> filters) {
         final BasicDBObject query = new BasicDBObject(DOCUMENTS_QUERY);
 
         if (filters != null) {
@@ -144,7 +146,7 @@ public class CollectionDAO {
      * @return
      * @throws JSONParseException
      */
-    protected DBCursor getCollectionDBCursor(DBCollection coll, Deque<String> sortBy, Deque<String> filters) throws JSONParseException {
+    DBCursor getCollectionDBCursor(DBCollection coll, Deque<String> sortBy, Deque<String> filters) throws JSONParseException {
         // apply sort_by
         DBObject sort = new BasicDBObject();
 
@@ -183,7 +185,13 @@ public class CollectionDAO {
         return coll.find(query).sort(sort);
     }
 
-    public ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filters, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager) throws JSONParseException {
+    ArrayList<DBObject> getCollectionData(
+            DBCollection coll,
+            int page,
+            int pagesize,
+            Deque<String> sortBy,
+            Deque<String> filters,
+            DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager) throws JSONParseException {
         ArrayList<DBObject> ret = new ArrayList<>();
 
         int toskip = pagesize * (page - 1);
@@ -237,7 +245,7 @@ public class CollectionDAO {
      * @param collName the collection name
      * @return the collection properties document
      */
-    public DBObject getCollectionProps(String dbName, String collName) {
+    DBObject getCollectionProps(String dbName, String collName) {
         DBCollection coll = getCollection(dbName, collName);
 
         DBObject properties = coll.findOne(PROPS_QUERY);
@@ -269,8 +277,8 @@ public class CollectionDAO {
      * @param patching true if use patch semantic (update only specified fields)
      * @return the HttpStatus code to set in the http response
      */
-    public int upsertCollection(String dbName, String collName, DBObject content, ObjectId etag, boolean updating, boolean patching) {
-        DB db = new DbsDAO().getDB(dbName);
+    int upsertCollection(String dbName, String collName, DBObject content, ObjectId etag, boolean updating, boolean patching) {
+        DB db = client.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
 
@@ -356,7 +364,7 @@ public class CollectionDAO {
      * http error code is returned)
      * @return the HttpStatus code to set in the http response
      */
-    public int deleteCollection(String dbName, String collName, ObjectId etag) {
+    int deleteCollection(String dbName, String collName, ObjectId etag) {
         DBCollection coll = getCollection(dbName, collName);
 
         BasicDBObject checkEtag = new BasicDBObject("_id", "_properties");

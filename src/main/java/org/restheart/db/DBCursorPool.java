@@ -43,6 +43,8 @@ import org.slf4j.LoggerFactory;
 public class DBCursorPool {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DBCursorPool.class);
+    
+    private final DbsDAO dbsDAO;
 
     //TODO make those configurable
     private final int SKIP_SLICE_LINEAR_DELTA = Bootstrapper.getConf().getEagerLinearSliceDelta();
@@ -71,7 +73,9 @@ public class DBCursorPool {
         return DBCursorPoolSingletonHolder.INSTANCE;
     }
 
-    private DBCursorPool() {
+    private DBCursorPool(DbsDAO dbsDAO) {
+        this.dbsDAO = dbsDAO;
+        
         cache = CacheFactory.createLocalCache(POOL_SIZE, Cache.EXPIRE_POLICY.AFTER_READ, TTL, (Map.Entry<DBCursorPoolEntryKey, Optional<DBCursor>> entry) -> {
             if (entry != null && entry.getValue() != null) {
                 entry.getValue().ifPresent(v -> v.close());
@@ -79,7 +83,7 @@ public class DBCursorPool {
         });
 
         collSizes = CacheFactory.createLocalLoadingCache(100, org.restheart.cache.Cache.EXPIRE_POLICY.AFTER_WRITE, 60*1000, (DBCursorPoolEntryKey key) -> {
-            return new CollectionDAO().getCollectionSize(key.getCollection(), key.getFilter());
+            return dbsDAO.getCollectionSize(key.getCollection(), key.getFilter());
         }
         );
 
@@ -148,7 +152,6 @@ public class DBCursorPool {
 
         int firstSlice = key.getSkipped() / SKIP_SLICE_LINEAR_WIDTH;
 
-        final CollectionDAO collectionDAO = new CollectionDAO();
         executor.submit(() -> {
             int slice = firstSlice;
 
@@ -159,7 +162,7 @@ public class DBCursorPool {
                 long existing = getSliceHeight(sliceKey);
 
                 for (long cont = tohave - existing; cont > 0; cont--) {
-                    DBCursor cursor = collectionDAO.getCollectionDBCursor(key.getCollection(), key.getSort(), key.getFilter());
+                    DBCursor cursor = dbsDAO.getCollectionDBCursor(key.getCollection(), key.getSort(), key.getFilter());
                     cursor.skip(sliceSkips);
                     DBCursorPoolEntryKey newkey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), sliceSkips, System.nanoTime());
                     cache.put(newkey, cursor);
@@ -172,7 +175,6 @@ public class DBCursorPool {
     }
 
     private void populateCacheRandom(DBCursorPoolEntryKey key) {
-        final CollectionDAO collectionDAO = new CollectionDAO();
         executor.submit(() -> {
             Long size = collSizes.getLoading(key).get();
 
@@ -196,7 +198,7 @@ public class DBCursorPool {
                 long existing = getSliceHeight(sliceKey);
 
                 for (long cont = 1 - existing; cont > 0; cont--) {
-                    DBCursor cursor = collectionDAO.getCollectionDBCursor(key.getCollection(), key.getSort(), key.getFilter());
+                    DBCursor cursor = dbsDAO.getCollectionDBCursor(key.getCollection(), key.getSort(), key.getFilter());
                     cursor.skip(sliceSkips);
                     DBCursorPoolEntryKey newkey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), sliceSkips, System.nanoTime());
                     cache.put(newkey, cursor);
@@ -240,7 +242,7 @@ public class DBCursorPool {
 
     private static class DBCursorPoolSingletonHolder {
 
-        private static final DBCursorPool INSTANCE = new DBCursorPool();
+        private static final DBCursorPool INSTANCE = new DBCursorPool(new DbsDAO());
 
     };
 }

@@ -20,6 +20,7 @@ package org.restheart.db;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import org.restheart.utils.HttpStatus;
@@ -31,6 +32,7 @@ import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.bson.types.ObjectId;
@@ -43,7 +45,9 @@ import org.slf4j.LoggerFactory;
  */
 public class DbsDAO {
 
-    private final MongoClient client;
+    private final CollectionDAO collectionDAO;
+
+    private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbsDAO.class);
     public static final BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "_properties");
@@ -55,9 +59,13 @@ public class DbsDAO {
         fieldsToReturn.put("_id", 1);
         fieldsToReturn.put("_created_on", 1);
     }
-    
+
     public DbsDAO() {
-        client = MongoDBClientSingleton.getInstance().getClient();
+        this.collectionDAO = new CollectionDAO();
+    }
+
+    protected DbsDAO(CollectionDAO collectionDAO) {
+        this.collectionDAO = collectionDAO;
     }
 
     /**
@@ -134,7 +142,6 @@ public class DbsDAO {
             return null;
         }
 
-        final CollectionDAO collectionDAO = new CollectionDAO();
         DBCollection propscoll = collectionDAO.getCollection(dbName, "_properties");
 
         DBObject row = propscoll.findOne(METADATA_QUERY);
@@ -188,13 +195,12 @@ public class DbsDAO {
         }
 
         // apply page and pagesize
-        _colls = _colls.subList((page - 1) * pagesize, (page - 1) * pagesize + pagesize > _colls.size() 
-                ? _colls.size() 
+        _colls = _colls.subList((page - 1) * pagesize, (page - 1) * pagesize + pagesize > _colls.size()
+                ? _colls.size()
                 : (page - 1) * pagesize + pagesize);
 
         List<DBObject> data = new ArrayList<>();
 
-        final CollectionDAO collectionDAO = new CollectionDAO();
         _colls.stream().map(
                 (collName) -> {
                     BasicDBObject properties = new BasicDBObject();
@@ -205,7 +211,7 @@ public class DbsDAO {
 
                     if (LocalCachesSingleton.isEnabled()) {
                         collProperties = LocalCachesSingleton.getInstance()
-                                .getCollectionProps(dbName, collName);
+                        .getCollectionProps(dbName, collName);
                     } else {
                         collProperties = collectionDAO.getCollectionProps(dbName, collName);
                     }
@@ -327,5 +333,33 @@ public class DbsDAO {
             db.dropDatabase();
             return HttpStatus.SC_NO_CONTENT;
         }
+    }
+
+    public DBObject getCollectionProps(String dbName, String collName) {
+        return collectionDAO.getCollectionProps(dbName, collName);
+    }
+
+    public DBCollection getCollection(String dbName, String collName) {
+        return collectionDAO.getCollection(dbName, collName);
+    }
+
+    public int upsertCollection(String dbName, String collName, DBObject content, ObjectId etag, boolean updating, boolean patching) {
+        return collectionDAO.upsertCollection(dbName, collName, content, etag, updating, patching);
+    }
+
+    public int deleteCollection(String dbName, String collectionName, ObjectId etag) {
+        return collectionDAO.deleteCollection(dbName, collectionName, etag);
+    }
+
+    public long getCollectionSize(DBCollection coll, Deque<String> filters) {
+        return collectionDAO.getCollectionSize(coll, filters);
+    }
+
+    public ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filter, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
+        return collectionDAO.getCollectionData(coll, page, pagesize, sortBy, filter, cursorAllocationPolicy);
+    }
+
+    DBCursor getCollectionDBCursor(DBCollection collection, Deque<String> sortBy, Deque<String> filters) {
+        return collectionDAO.getCollectionDBCursor(collection, sortBy, filters);
     }
 }

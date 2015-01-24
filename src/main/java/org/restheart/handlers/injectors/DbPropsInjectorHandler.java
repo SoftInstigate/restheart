@@ -35,6 +35,8 @@ import io.undertow.server.HttpServerExchange;
  */
 public class DbPropsInjectorHandler extends PipedHttpHandler {
 
+    private final DbsDAO dbsDAO;
+
     /**
      * Creates a new instance of MetadataInjecterHandler
      *
@@ -42,6 +44,7 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
      */
     public DbPropsInjectorHandler(PipedHttpHandler next) {
         super(next);
+        this.dbsDAO = new DbsDAO();
     }
 
     /**
@@ -56,7 +59,6 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
             DBObject dbProps = null;
 
             if (!LocalCachesSingleton.isEnabled()) {
-                final DbsDAO dbsDAO = new DbsDAO();
                 dbProps = dbsDAO.getDbProps(context.getDBName());
 
                 if (dbProps != null) {

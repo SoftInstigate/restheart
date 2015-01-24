@@ -31,11 +31,18 @@ import java.util.List;
  */
 public class GetIndexesHandler extends PipedHttpHandler {
 
+    private final IndexDAO indexDAO;
+
     /**
      * Creates a new instance of GetIndexesHandler
      */
     public GetIndexesHandler() {
+        this(new IndexDAO());
+    }
+
+    public GetIndexesHandler(IndexDAO indexDAO) {
         super(null);
+        this.indexDAO = indexDAO;
     }
 
     /**
@@ -46,9 +53,7 @@ public class GetIndexesHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        final IndexDAO indexDAO = new IndexDAO();
         List<DBObject> indexes = indexDAO.getCollectionIndexes(context.getDBName(), context.getCollectionName());
-
         exchange.setResponseCode(HttpStatus.SC_OK);
         IndexesRepresentationFactory.sendHal(exchange, context, indexes, indexes.size());
         exchange.endExchange();

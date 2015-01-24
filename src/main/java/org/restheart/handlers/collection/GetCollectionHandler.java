@@ -21,7 +21,6 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import com.mongodb.util.JSONParseException;
-import org.restheart.db.CollectionDAO;
 import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.PipedHttpHandler;
@@ -29,6 +28,7 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
+import org.restheart.db.DbsDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,11 +40,18 @@ public class GetCollectionHandler extends PipedHttpHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetCollectionHandler.class);
 
+    private final DbsDAO dbsDAO;
+
     /**
      * Creates a new instance of GetCollectionHandler
      */
     public GetCollectionHandler() {
+        this(new DbsDAO());
+    }
+
+    public GetCollectionHandler(DbsDAO dbsDAO) {
         super(null);
+        this.dbsDAO = dbsDAO;
     }
 
     /**
@@ -55,19 +62,19 @@ public class GetCollectionHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        final CollectionDAO collectionDAO = new CollectionDAO();
-        DBCollection coll = collectionDAO.getCollection(context.getDBName(), context.getCollectionName());
+        DBCollection coll = this.dbsDAO.getCollection(context.getDBName(), context.getCollectionName());
         long size = -1;
 
         if (context.isCount()) {
-            size = collectionDAO.getCollectionSize(coll, exchange.getQueryParameters().get("filter"));
+            size = this.dbsDAO.getCollectionSize(coll, exchange.getQueryParameters().get("filter"));
         }
 
         // ***** get data
         ArrayList<DBObject> data = null;
 
         try {
-            data = collectionDAO.getCollectionData(coll, context.getPage(), context.getPagesize(), context.getSortBy(), context.getFilter(), context.getCursorAllocationPolicy());
+            data = this.dbsDAO.getCollectionData(coll, context.getPage(), context.getPagesize(),
+                    context.getSortBy(), context.getFilter(), context.getCursorAllocationPolicy());
         } catch (JSONParseException jpe) {
             // the filter expression is not a valid json string
             LOGGER.error("invalid filter expression {}", context.getFilter(), jpe);

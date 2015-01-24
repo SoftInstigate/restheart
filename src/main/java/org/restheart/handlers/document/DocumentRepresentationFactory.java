@@ -111,7 +111,9 @@ public class DocumentRepresentationFactory {
         try {
             rels = Relationship.getFromJson((DBObject) context.getCollectionProps());
         } catch (InvalidMetadataException ex) {
-            context.addWarning("collection " + context.getDBName() + "/" + context.getCollectionName() + " has invalid relationships definition");
+            context.addWarning("collection " + context.getDBName() 
+                    + "/" + context.getCollectionName()
+                    + " has invalid relationships definition");
         }
 
         if (rels == null) {

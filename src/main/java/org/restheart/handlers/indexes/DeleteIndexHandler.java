@@ -30,11 +30,18 @@ import io.undertow.server.HttpServerExchange;
  */
 public class DeleteIndexHandler extends PipedHttpHandler {
 
+    private final IndexDAO indexDAO;
+
     /**
      * Creates a new instance of DeleteIndexHandler
      */
     public DeleteIndexHandler() {
+        this(new IndexDAO());
+    }
+
+    public DeleteIndexHandler(IndexDAO indexDAO) {
         super(null);
+        this.indexDAO = indexDAO;
     }
 
     /**
@@ -55,7 +62,6 @@ public class DeleteIndexHandler extends PipedHttpHandler {
             return;
         }
 
-        final IndexDAO indexDAO = new IndexDAO();
         int httpCode = indexDAO.deleteIndex(db, co, id);
 
         // send the warnings if any (and in case no_content change the return code to ok

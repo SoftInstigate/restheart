@@ -29,7 +29,6 @@ package org.restheart.test.performance;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import org.restheart.ConfigurationException;
-import org.restheart.db.CollectionDAO;
 import org.restheart.db.DBCursorPool;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.utils.FileUtils;
@@ -60,6 +59,7 @@ import org.apache.http.client.fluent.Response;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import org.restheart.db.DbsDAO;
 
 /**
  *
@@ -141,8 +141,8 @@ public class LoadGetPT {
      *
      */
     public void dbdirect() {
-        final CollectionDAO collectionDAO = new CollectionDAO();
-        DBCollection dbcoll = collectionDAO.getCollection(db, coll);
+        final DbsDAO dbsDAO = new DbsDAO();
+        DBCollection dbcoll = dbsDAO.getCollection(db, coll);
 
         Deque<String> _filter;
 
@@ -156,7 +156,7 @@ public class LoadGetPT {
         ArrayList<DBObject> data;
         
         try {
-            data = collectionDAO.getCollectionData(dbcoll, page, pagesize, null, _filter, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE);
+            data = dbsDAO.getCollectionData(dbcoll, page, pagesize, null, _filter, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE);
         } catch(Exception e) {
             System.out.println("error: " + e.getMessage());
             return;

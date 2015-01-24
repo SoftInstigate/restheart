@@ -39,11 +39,18 @@ public class GetRootHandler extends PipedHttpHandler {
 
     private static final MongoClient client = MongoDBClientSingleton.getInstance().getClient();
 
+    private final DbsDAO dbsDAO;
+
     /**
      * Creates a new instance of GetRootHandler
      */
     public GetRootHandler() {
+        this(new DbsDAO());
+    }
+
+    public GetRootHandler(DbsDAO dbsDAO) {
         super(null);
+        this.dbsDAO = dbsDAO;
     }
 
     /**
@@ -72,7 +79,6 @@ public class GetRootHandler extends PipedHttpHandler {
 
         List<DBObject> data = new ArrayList<>();
 
-        final DbsDAO dbsDAO = new DbsDAO();
         dbs.stream().map((db) -> {
             if (LocalCachesSingleton.isEnabled()) {
                 return LocalCachesSingleton.getInstance().getDBProps(db);

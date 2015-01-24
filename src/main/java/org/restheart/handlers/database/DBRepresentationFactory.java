@@ -65,7 +65,10 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
         return rep;
     }
 
-    private void addEmbeddedData(List<DBObject> embeddedData, final Representation rep, final String requestPath) {
+    private void addEmbeddedData(
+            final List<DBObject> embeddedData, 
+            final Representation rep, 
+            final String requestPath) {
         if (embeddedData != null) {
             addReturnedProperty(embeddedData, rep);
             if (!embeddedData.isEmpty()) {
@@ -74,7 +77,11 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
         }
     }
 
-    private void addLinkTemplatesAndCuries(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath) {
+    private void addLinkTemplatesAndCuries(
+            final HttpServerExchange exchange, 
+            final RequestContext context, 
+            final Representation rep, 
+            final String requestPath) {
         // link templates and curies
         if (context.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
@@ -85,7 +92,10 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
         ResponseHelper.injectWarnings(rep, exchange, context);
     }
 
-    private void embeddedCollections(List<DBObject> embeddedData, String requestPath, Representation rep) {
+    private void embeddedCollections(
+            final List<DBObject> embeddedData, 
+            final String requestPath, 
+            final Representation rep) {
         embeddedData.stream().forEach((d) -> {
             Object _id = d.get("_id");
 
