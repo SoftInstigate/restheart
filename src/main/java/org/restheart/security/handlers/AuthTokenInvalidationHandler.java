@@ -20,6 +20,7 @@ package org.restheart.security.handlers;
 import io.undertow.predicate.Predicate;
 import io.undertow.predicate.Predicates;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.Bootstrapper;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.security.impl.AuthTokenIdentityManager;
@@ -31,6 +32,7 @@ import org.restheart.utils.ResponseHelper;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class AuthTokenInvalidationHandler extends PipedHttpHandler {
+    private static final boolean enabled = Bootstrapper.getConf().isAuthTokenEnabled();
     private static final Predicate predicate;
 
     static {
@@ -53,6 +55,9 @@ public class AuthTokenInvalidationHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (!enabled)
+            return;
+        
         if (!predicate.resolve(exchange) || exchange.getSecurityContext() == null || exchange.getSecurityContext().getAuthenticatedAccount() == null){
             ResponseHelper.endExchange(exchange, HttpStatus.SC_UNAUTHORIZED);
         } else {

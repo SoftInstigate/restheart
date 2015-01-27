@@ -109,6 +109,9 @@ public class Configuration {
     private final int[] eagerLinearSliceHeights;
     private final int eagerRndSliceMinWidht;
     private final int eagerRndMaxCursors;
+    
+    private final boolean authTokenEnabled;
+    private final int authTokenTtl;
 
     /**
      * default mongodb port 27017.
@@ -440,6 +443,16 @@ public class Configuration {
      * property.
      */
     public static final String EAGER_RND_MAX_CURSORS = "eager-cursor-allocation-random-max-cursors";
+    
+    /**
+     * the key for the auth-token-enabled property.
+     */
+    public static final String AUTH_TOKEN_ENABLED = "auth-token-enabled";
+    
+    /**
+     * the key for the auth-token-ttl property.
+     */
+    public static final String AUTH_TOKEN_TTL = "auth-token-ttl";
 
     /**
      * Creates a new instance of ErrorHandler with defaults values.
@@ -520,6 +533,9 @@ public class Configuration {
         eagerLinearSliceHeights = new int[]{4, 2, 1};
         eagerRndSliceMinWidht = 1000;
         eagerRndMaxCursors = 50;
+        
+        authTokenEnabled = true;
+        authTokenTtl = 15*60*1000; // 15 minutes
     }
 
     /**
@@ -653,6 +669,9 @@ public class Configuration {
         eagerLinearSliceHeights = getAsArrayOfInts(conf, EAGER_LINEAR_HEIGHTS, new int[]{4, 2, 1});
         eagerRndSliceMinWidht = getAsIntegerOrDefault(conf, EAGER_RND_SLICE_MIN_WIDHT, 1000);
         eagerRndMaxCursors = getAsIntegerOrDefault(conf, EAGER_RND_MAX_CURSORS, 50);
+        
+        authTokenEnabled = getAsBooleanOrDefault(conf, AUTH_TOKEN_ENABLED, true);
+        authTokenTtl = getAsIntegerOrDefault(conf, AUTH_TOKEN_TTL, 15*60*1000);
     }
 
     private List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key, final List<Map<String, Object>> defaultValue) {
@@ -1131,5 +1150,19 @@ public class Configuration {
      */
     public int getEagerPoolSize() {
         return eagerPoolSize;
+    }
+
+    /**
+     * @return the authTokenEnabled
+     */
+    public boolean isAuthTokenEnabled() {
+        return authTokenEnabled;
+    }
+
+    /**
+     * @return the authTokenTtl
+     */
+    public int getAuthTokenTtl() {
+        return authTokenTtl;
     }
 }

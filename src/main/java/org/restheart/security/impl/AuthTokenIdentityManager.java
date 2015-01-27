@@ -23,6 +23,7 @@ import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
 import java.util.Arrays;
 import java.util.Optional;
+import org.restheart.Bootstrapper;
 
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
@@ -34,7 +35,8 @@ import org.restheart.cache.CacheFactory;
 public final class AuthTokenIdentityManager implements IdentityManager {
     private final Cache<String, SimpleAccount> cachedAccounts;
     
-    public static long TTL = 15*60*1000;
+    private static final long TTL = Bootstrapper.getConf().getAuthTokenTtl();
+    private static final boolean enabled = Bootstrapper.getConf().isAuthTokenEnabled();
     
     /**
      *
@@ -47,11 +49,17 @@ public final class AuthTokenIdentityManager implements IdentityManager {
 
     @Override
     public Account verify(Account account) {
+        if (!enabled)
+            return null;
+        
         return account;
     }
 
     @Override
     public Account verify(String id, Credential credential) {
+         if (!enabled)
+            return null;
+        
         final Optional<SimpleAccount> _account = cachedAccounts.get(id);
         
         return _account != null && _account.isPresent() && verifyToken(_account.get(), credential) ? _account.get() : null;
@@ -59,7 +67,6 @@ public final class AuthTokenIdentityManager implements IdentityManager {
 
     @Override
     public Account verify(Credential credential) {
-        // Auto-generated method stub
         return null;
     }
 

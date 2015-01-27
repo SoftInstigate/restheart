@@ -49,16 +49,6 @@ public class DocumentDAO implements Repository {
     }
 
     /**
-     *
-     * @param dbName
-     * @param collName
-     * @return
-     */
-    public DBCollection getCollection(String dbName, String collName) {
-        return client.getDB(dbName).getCollection(collName);
-    }
-
-    /**
      * @param dbName
      * @param collName
      * @param documentId

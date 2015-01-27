@@ -26,6 +26,7 @@ package org.restheart.test.performance;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import org.restheart.ConfigurationException;
@@ -57,6 +58,7 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
+import org.bson.types.ObjectId;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -74,6 +76,7 @@ public class LoadGetPT {
     private boolean printData = false;
     private String db;
     private String coll;
+    private String doc;
     private String filter = null;
     private int page = 1;
     private int pagesize = 5;
@@ -164,6 +167,49 @@ public class LoadGetPT {
         
         assertNotNull(data);
         assertFalse(data.isEmpty());
+
+        if (printData) {
+            System.out.println(data);
+        }
+    }
+    
+     /**
+     *
+     */
+    public void dbdirectdoc() {
+        final CollectionDAO collectionDAO = new CollectionDAO();
+        DBCollection dbcoll = collectionDAO.getCollection(db, coll);
+        
+        ObjectId oid;
+        String sid;
+
+        if (ObjectId.isValid(doc)) {
+            sid = null;
+            oid = new ObjectId(doc);
+        } else {
+            // the id is not an object id
+            sid = doc;
+            oid = null;
+        }
+
+        BasicDBObject query;
+
+        if (oid != null) {
+            query = new BasicDBObject("_id", oid);
+        } else {
+            query = new BasicDBObject("_id", sid);
+        }
+
+        DBObject data;
+        
+        try {
+            data = dbcoll.findOne(query);
+        } catch(Exception e) {
+            System.out.println("error: " + e.getMessage());
+            return;
+        }
+        
+        assertNotNull(data);
 
         if (printData) {
             System.out.println(data);
@@ -272,5 +318,19 @@ public class LoadGetPT {
      */
     public void setPagesize(int pagesize) {
         this.pagesize = pagesize;
+    }
+
+    /**
+     * @return the doc
+     */
+    public String getDoc() {
+        return doc;
+    }
+
+    /**
+     * @param doc the doc to set
+     */
+    public void setDoc(String doc) {
+        this.doc = doc;
     }
 }

@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
+import org.restheart.Bootstrapper;
 
 import org.restheart.security.impl.AuthTokenIdentityManager;
 import org.restheart.security.impl.SimpleAccount;
@@ -36,7 +37,10 @@ import org.restheart.security.impl.SimpleAccount;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class AuthTokenInjecterHandler extends PipedHttpHandler {
-    public static final  HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
+    private static final boolean enabled = Bootstrapper.getConf().isAuthTokenEnabled();
+    private static final long TTL = Bootstrapper.getConf().getAuthTokenTtl();
+
+    public static final HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
     public static final HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
 
     /**
@@ -65,32 +69,35 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (exchange.getSecurityContext() != null && exchange.getSecurityContext().isAuthenticated()) {
-            Account authenticatedAccount = exchange.getSecurityContext().getAuthenticatedAccount();
-            
-            char[] token = cacheSessionToken(authenticatedAccount);
-            
-            injectTokenHeaders(new HeadersManager(exchange), token);
+        if (enabled) {
+            if (exchange.getSecurityContext() != null && exchange.getSecurityContext().isAuthenticated()) {
+                Account authenticatedAccount = exchange.getSecurityContext().getAuthenticatedAccount();
+
+                char[] token = cacheSessionToken(authenticatedAccount);
+
+                injectTokenHeaders(new HeadersManager(exchange), token);
+            }
         }
-        
-        if (next != null)
+
+        if (next != null) {
             next.handleRequest(exchange, context);
+        }
     }
 
     private void injectTokenHeaders(HeadersManager headers, char[] token) {
         headers.addResponseHeader(AUTH_TOKEN_HEADER, new String(token));
-        headers.addResponseHeader(AUTH_TOKEN_VALID_HEADER,  Instant.now().plus(AuthTokenIdentityManager.TTL, ChronoUnit.MILLIS).toString());
+        headers.addResponseHeader(AUTH_TOKEN_VALID_HEADER, Instant.now().plus(TTL, ChronoUnit.MILLIS).toString());
     }
-    
+
     private char[] cacheSessionToken(Account authenticatedAccount) {
         String id = authenticatedAccount.getPrincipal().getName();
         Optional<SimpleAccount> cachedTokenAccount = AuthTokenIdentityManager.getInstance().getCachedAccounts().get(id);
-    
+
         if (cachedTokenAccount == null) {
             char[] token = UUID.randomUUID().toString().toCharArray();
             SimpleAccount newCachedTokenAccount = new SimpleAccount(id, token, authenticatedAccount.getRoles());
             AuthTokenIdentityManager.getInstance().getCachedAccounts().put(id, newCachedTokenAccount);
-            
+
             return token;
         } else {
             return cachedTokenAccount.get().getCredentials().getPassword();

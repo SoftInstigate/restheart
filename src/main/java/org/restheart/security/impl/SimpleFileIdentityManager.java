@@ -35,7 +35,7 @@ import java.util.function.Consumer;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public final class SimpleFileIdentityManager extends AbstractSecurityManager implements IdentityManager {
+public final class SimpleFileIdentityManager extends AbstractSimpleSecurityManager implements IdentityManager {
 
     private final Map<String, SimpleAccount> accounts = new HashMap<>();
 

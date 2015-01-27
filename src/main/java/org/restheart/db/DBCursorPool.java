@@ -112,7 +112,7 @@ public class DBCursorPool {
         if (_bestKey.isPresent()) {
             Optional<DBCursor> _dbcur = cache.get(_bestKey.get());
 
-            if (_dbcur.isPresent()) {
+            if (_dbcur != null && _dbcur.isPresent()) {
                 ret = new SkippedDBCursor(_dbcur.get(), _bestKey.get().getSkipped());
                 cache.invalidate(_bestKey.get());
 

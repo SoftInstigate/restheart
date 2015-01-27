@@ -29,17 +29,15 @@ import java.util.function.Consumer;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
-
-
 /**
  *
  * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
-abstract class AbstractSecurityManager {
+abstract class AbstractSimpleSecurityManager {
 
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(AbstractSecurityManager.class);
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(AbstractSimpleSecurityManager.class);
 
-    AbstractSecurityManager() {
+    AbstractSimpleSecurityManager() {
     }
 
     abstract Consumer<? super Map<String, Object>> consumeConfiguration();
@@ -52,6 +50,10 @@ abstract class AbstractSecurityManager {
             final Map<String, Object> conf = (Map<String, Object>) new Yaml().load(is);
             List<Map<String, Object>> users = extractUsers(conf, type);
             users.stream().forEach(consumeConfiguration());
+        } catch(FileNotFoundException fnfe) {
+            LOGGER.error("*** cannot find the file {} specified in the configuration.", extractConfigFilePath(arguments));
+            LOGGER.error("*** note that the path must be either absolute or relative to the directory containing the RESTHeart jar file.");
+            throw fnfe;
         } finally {
             try {
                 if (is != null) {

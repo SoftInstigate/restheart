@@ -128,6 +128,16 @@ access-manager:
     implementation-class: org.restheart.security.impl.SimpleAccessManager
     conf-file: ../etc/security-integrationtest.yml
     
+# authentication token
+
+# note: you need to pay attention to the authentitcation token in case of multi-node deployments (horizontal scalability).
+# in this case, you need to either disable it or use a load balancer with the sticky session option 
+# or use a distributed auth token cache implementation (not provided in the current version).
+
+auth-token-enabled: true
+# in milliseconds, 900.000ms = 15 minutes
+auth-token-ttl: 900000
+    
 #### logging
 
 # enable-log-console: true => log messages to the console (default value: true)
@@ -160,7 +170,7 @@ force-gzip-encoding: false
 
 # local-cache allows to cache the db and collection properties to drammatically improve performaces. 
 # Without caching, a GET on a document would requires two additional queries to retrieve the db and the collection properties.
-# pay attention to local caching only in case of a multi-node deployments (horizontal scalability). 
+# pay attention to local caching only in case of multi-node deployments (horizontal scalability). 
 # In this case a change in a db or collection properties would reflect on other nodes at worst after the TTL (cache entries time to live). 
 # In most of the cases Dbs and collections properties only change at development time.
 

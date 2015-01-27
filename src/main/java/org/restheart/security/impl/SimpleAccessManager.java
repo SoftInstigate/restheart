@@ -37,7 +37,7 @@ import org.restheart.utils.RequestHelper;
 /**
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public final class SimpleAccessManager extends AbstractSecurityManager implements AccessManager {
+public final class SimpleAccessManager extends AbstractSimpleSecurityManager implements AccessManager {
     private final HashMap<String, Set<Predicate>> acl = new HashMap<>();
 
     /**
