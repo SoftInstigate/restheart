@@ -43,7 +43,7 @@ public final class AuthTokenIdentityManager implements IdentityManager {
      * @param next
      */
     private AuthTokenIdentityManager() {
-        this.cachedAccounts = CacheFactory.createLocalCache(Long.MAX_VALUE, Cache.EXPIRE_POLICY.AFTER_READ, TTL);
+        this.cachedAccounts = CacheFactory.createLocalCache(Long.MAX_VALUE, Cache.EXPIRE_POLICY.AFTER_READ, TTL*60*1000);
     }
 
 

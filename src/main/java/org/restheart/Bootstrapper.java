@@ -459,6 +459,10 @@ public final class Bootstrapper {
                 System.exit(-3);
             }
         }
+        
+        if (configuration.isAuthTokenEnabled()) {
+            LOGGER.info("token based authentication enabled with token TTL {} minutes", configuration.getAuthTokenTtl());
+        }
 
         SSLContext sslContext = null;
 

@@ -122,9 +122,8 @@ access-manager:
 # in this case, you need to either disable it or use a load balancer with the sticky session option 
 # or use a distributed auth token cache implementation (not provided in the current version).
 
-auth-token-enabled: false
-# in milliseconds, 900.000ms = 15 minutes
-auth-token-ttl: 900000
+auth-token-enabled: true
+auth-token-ttl: 15
 
 #### logging
 

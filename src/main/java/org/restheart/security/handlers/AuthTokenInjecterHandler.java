@@ -86,7 +86,7 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
 
     private void injectTokenHeaders(HeadersManager headers, char[] token) {
         headers.addResponseHeader(AUTH_TOKEN_HEADER, new String(token));
-        headers.addResponseHeader(AUTH_TOKEN_VALID_HEADER, Instant.now().plus(TTL, ChronoUnit.MILLIS).toString());
+        headers.addResponseHeader(AUTH_TOKEN_VALID_HEADER, Instant.now().plus(TTL, ChronoUnit.MINUTES).toString());
     }
 
     private char[] cacheSessionToken(Account authenticatedAccount) {

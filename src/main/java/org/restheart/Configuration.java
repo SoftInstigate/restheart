@@ -535,7 +535,7 @@ public class Configuration {
         eagerRndMaxCursors = 50;
         
         authTokenEnabled = true;
-        authTokenTtl = 15*60*1000; // 15 minutes
+        authTokenTtl = 15; // minutes
     }
 
     /**
@@ -671,7 +671,7 @@ public class Configuration {
         eagerRndMaxCursors = getAsIntegerOrDefault(conf, EAGER_RND_MAX_CURSORS, 50);
         
         authTokenEnabled = getAsBooleanOrDefault(conf, AUTH_TOKEN_ENABLED, true);
-        authTokenTtl = getAsIntegerOrDefault(conf, AUTH_TOKEN_TTL, 15*60*1000);
+        authTokenTtl = getAsIntegerOrDefault(conf, AUTH_TOKEN_TTL, 15);
     }
 
     private List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key, final List<Map<String, Object>> defaultValue) {
