@@ -42,6 +42,7 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
 
     public static final HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
     public static final HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
+    public static final HttpString AUTH_TOKEN_HEADER_LOCATION = HttpString.tryFromString("Auth-Token-Location");
 
     /**
      * Creates a new instance of GetRootHandler
@@ -75,7 +76,7 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
 
                 char[] token = cacheSessionToken(authenticatedAccount);
 
-                injectTokenHeaders(new HeadersManager(exchange), token);
+                injectTokenHeaders(exchange, new HeadersManager(exchange), token);
             }
         }
 
@@ -84,9 +85,10 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
         }
     }
 
-    private void injectTokenHeaders(HeadersManager headers, char[] token) {
+    private void injectTokenHeaders(HttpServerExchange exchange, HeadersManager headers, char[] token) {
         headers.addResponseHeader(AUTH_TOKEN_HEADER, new String(token));
         headers.addResponseHeader(AUTH_TOKEN_VALID_HEADER, Instant.now().plus(TTL, ChronoUnit.MINUTES).toString());
+        headers.addResponseHeader(AUTH_TOKEN_HEADER_LOCATION, "/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
     }
 
     private char[] cacheSessionToken(Account authenticatedAccount) {

@@ -80,7 +80,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import org.restheart.security.handlers.AuthTokenInjecterHandler;
-import org.restheart.security.handlers.AuthTokenInvalidationHandler;
+import org.restheart.security.handlers.AuthTokenHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -306,7 +306,8 @@ public final class Bootstrapper {
     }
 
     private static void startServer() {
-        LOGGER.info("RESTHeart version {}", RESTHEART_VERSION);
+        if (RESTHEART_VERSION != null )
+            LOGGER.info("RESTHeart version {}", RESTHEART_VERSION);
 
         String mongoHosts = configuration.getMongoServers().stream()
                 .map(s -> s.get(Configuration.MONGO_HOST_KEY) + ":" + s.get(Configuration.MONGO_PORT_KEY) + " ")
@@ -582,7 +583,7 @@ public final class Bootstrapper {
         
         // pipe the auth tokens invalidation handler
         
-        paths.addPrefixPath("/_authtokens", new SecurityHandler(new AuthTokenInvalidationHandler(), identityManager, accessManager));
+        paths.addPrefixPath("/_authtokens", new SecurityHandler(new AuthTokenHandler(), identityManager, accessManager));
 
         return new GracefulShutdownHandler(
                 new RequestLimitingHandler(new RequestLimit(configuration.getRequestLimit()),
