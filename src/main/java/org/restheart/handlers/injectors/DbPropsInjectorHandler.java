@@ -82,7 +82,7 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
                 return;
             }
 
-            context.setDbProps(dbProps);
+            context.setDbProperties(dbProps);
         }
 
         next.handleRequest(exchange, context);

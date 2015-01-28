@@ -46,22 +46,22 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
     protected Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
-        final Representation rep = createRepresentation(exchange, context, requestPath);
-        final DBObject dbProps = context.getDbProps();
+        final Representation representation = createRepresentation(exchange, context, requestPath);
+        final DBObject dbProps = context.getDbProperties();
 
         if (dbProps != null) {
-            rep.addProperties(dbProps);
+            representation.addProperties(dbProps);
         }
 
-        addSizeAndTotalPagesProperties(size, context, rep);
+        addSizeAndTotalPagesProperties(size, context, representation);
 
-        addEmbeddedData(embeddedData, rep, requestPath);
+        addEmbeddedData(embeddedData, representation, requestPath);
         
-        addPaginationLinks(exchange, context, size, rep);
+        addPaginationLinks(exchange, context, size, representation);
         
-        addLinkTemplatesAndCuries(exchange, context, rep, requestPath);
+        addLinkTemplatesAndCuries(exchange, context, representation, requestPath);
         
-        return rep;
+        return representation;
     }
 
     private void addEmbeddedData(

@@ -45,7 +45,7 @@ public class RequestContext {
         DOCUMENT,
         COLLECTION_INDEXES,
         INDEX,
-        FILESYSTEM
+        FILE
     };
 
     public enum METHOD {
@@ -81,6 +81,7 @@ public class RequestContext {
     public static final String FS_CHUNKS_SUFFIX = ".chunks";
     public static final String FS_FILES_SUFFIX = ".files";
     public static final String _INDEXES = "_indexes";
+    public static final String _FILES = "_files";
 
     private final String whereUri;
     private final String whatUri;
@@ -89,7 +90,7 @@ public class RequestContext {
     private final METHOD method;
     private final String[] pathTokens;
 
-    private DBObject dbProps;
+    private DBObject dbProperties;
     private DBObject collectionProps;
 
     private DBObject content;
@@ -461,17 +462,17 @@ public class RequestContext {
     }
 
     /**
-     * @return the dbProps
+     * @return the dbProperties
      */
-    public DBObject getDbProps() {
-        return dbProps;
+    public DBObject getDbProperties() {
+        return dbProperties;
     }
 
     /**
-     * @param dbProps the dbProps to set
+     * @param dbProperties the dbProperties to set
      */
-    public void setDbProps(DBObject dbProps) {
-        this.dbProps = dbProps;
+    public void setDbProperties(DBObject dbProperties) {
+        this.dbProperties = dbProperties;
     }
 
     /**

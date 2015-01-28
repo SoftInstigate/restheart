@@ -75,7 +75,7 @@ public class GetRootHandler extends PipedHttpHandler {
 
         if (context.getPagesize() > 0) {
             // apply page and pagesize
-            dbs = dbs.subList((context.getPage() - 1) * context.getPagesize(), (context.getPage() - 1) * context.getPagesize() 
+            dbs = dbs.subList((context.getPage() - 1) * context.getPagesize(), (context.getPage() - 1) * context.getPagesize()
                     + context.getPagesize() > dbs.size() ? dbs.size() : (context.getPage() - 1) * context.getPagesize() + context.getPagesize());
 
             dbs.stream().map((db) -> {
