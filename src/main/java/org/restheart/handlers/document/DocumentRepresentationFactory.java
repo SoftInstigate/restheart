@@ -60,8 +60,8 @@ public class DocumentRepresentationFactory {
         
         Object id = data.get("_id");
         
-        if (id instanceof String || id instanceof ObjectId) {
-            rep = new Representation(href);
+        if (id == null) {
+            rep = new Representation("#");
         } else if (id instanceof Integer) {
             rep = new Representation(href + "?doc_id_type=" + DOC_ID_TYPE.INT);
         } else if (id instanceof Long) {

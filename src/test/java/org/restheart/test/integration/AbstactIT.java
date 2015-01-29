@@ -396,7 +396,7 @@ public abstract class AbstactIT {
                 .setHost(HOST)
                 .setPort(conf.getHttpPort())
                 .setPath("/" + dbName + "/" + docsCollectionName)
-                .addParameter("filter", "{'name':{'$regex' : '.*k$'}}")
+                .addParameter("filter", "{'name':{'$regex':'.*k$'}}")
                 .addParameter("sort_by", "name")
                 .addParameter("count", null)
                 .build();

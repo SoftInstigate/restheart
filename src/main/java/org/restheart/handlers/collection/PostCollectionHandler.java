@@ -82,7 +82,7 @@ public class PostCollectionHandler extends PutCollectionHandler {
             if (context.getDocIdType() == URLUtils.DOC_ID_TYPE.OBJECTID || context.getDocIdType() == URLUtils.DOC_ID_TYPE.STRING_OBJECTID) {
                 docId = new ObjectId();
             } else {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is mandatory for document id type " + context.getDocIdType().name());
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is mandatory for documents with id type " + context.getDocIdType().name());
                 return;
             }
             
@@ -96,7 +96,7 @@ public class PostCollectionHandler extends PutCollectionHandler {
         }
 
         int httpCode = this.documentDAO
-                .upsertDocumentPost(exchange, context.getDBName(), context.getCollectionName(), content, etag);
+                .upsertDocumentPost(exchange, context.getDBName(), context.getCollectionName(), docId, content, etag);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {

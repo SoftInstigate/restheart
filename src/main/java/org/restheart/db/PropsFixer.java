@@ -83,7 +83,7 @@ public class PropsFixer {
         properties.put("_created_on", now.toString());
         properties.put("_etag", timestamp);
 
-        DBCollection propsColl = collectionDAO.getCollection(dbName, "_properties");
+        DBCollection propsColl = dbsDAO.getCollection(dbName, "_properties");
 
         propsColl.insert(properties);
 

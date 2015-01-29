@@ -21,6 +21,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RequestHelper;
@@ -29,10 +30,7 @@ import io.undertow.util.HttpString;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
-import static jdk.nashorn.internal.runtime.Debug.id;
 import org.bson.types.ObjectId;
-import org.restheart.utils.IllegalDocumentIdException;
-import org.restheart.utils.URLUtils.DOC_ID_TYPE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +42,10 @@ public class DocumentDAO implements Repository {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DocumentDAO.class);
 
+    private final MongoClient client;
+
     public DocumentDAO() {
+        client = MongoDBClientSingleton.getInstance().getClient();
     }
 
     /**
@@ -57,7 +58,7 @@ public class DocumentDAO implements Repository {
      * @return the HttpStatus code
      */
     @Override
-    public int upsertDocument(String dbName, String collName, String documentId, DBObject content, ObjectId requestEtag, boolean patching) {
+    public int upsertDocument(String dbName, String collName, Object documentId, DBObject content, ObjectId requestEtag, boolean patching) {
         DB db = client.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
@@ -125,7 +126,7 @@ public class DocumentDAO implements Repository {
      * @return
      */
     @Override
-    public int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, DBObject content, ObjectId requestEtag) {
+    public int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, Object documentId, DBObject content, ObjectId requestEtag) {
         DB db = client.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
@@ -133,25 +134,31 @@ public class DocumentDAO implements Repository {
         ObjectId timestamp = new ObjectId();
         Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
 
-        if (content == null) {
+        if (content
+                == null) {
             content = new BasicDBObject();
         }
 
-        content.put("_etag", timestamp);
-        content.put("_created_on", now.toString()); // make sure we don't change this field
+        content.put(
+                "_etag", timestamp);
+        content.put(
+                "_created_on", now.toString()); // make sure we don't change this field
 
         Object _idInContent = content.get("_id");
-        content.removeField("_id");
-       
-        if (_idInContent == null) {
+
+        content.removeField(
+                "_id");
+
+        if (_idInContent
+                == null) {
             // new document since the id was just auto-generated
-            content.put("_id", docId);
+            content.put("_id", documentId);
 
             coll.insert(content);
 
             exchange.getResponseHeaders()
                     .add(HttpString.tryFromString("Location"),
-                            getReferenceLink(exchange.getRequestURL(), docId.toString()).toString());
+                            getReferenceLink(exchange.getRequestURL(), documentId.toString()).toString());
 
             return HttpStatus.SC_CREATED;
         } else {
@@ -160,9 +167,8 @@ public class DocumentDAO implements Repository {
                     .add(HttpString.tryFromString("Location"),
                             getReferenceLink(exchange.getRequestURL(), _idInContent.toString()).toString());
         }
-        
 
-        BasicDBObject idQuery = new BasicDBObject("_id", docId);
+        BasicDBObject idQuery = new BasicDBObject("_id", documentId);
 
         // we use findAndModify to get the @created_on field value from the existing document
         // we need to upsertDocument this field back using a second update 
@@ -170,7 +176,8 @@ public class DocumentDAO implements Repository {
         // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
         DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, content, false, true);
 
-        if (oldDocument != null) {  // upsertDocument
+        if (oldDocument
+                != null) {  // upsertDocument
             Object oldTimestamp = oldDocument.get("_created_on");
 
             if (oldTimestamp == null) {
@@ -199,7 +206,7 @@ public class DocumentDAO implements Repository {
      * @return
      */
     @Override
-    public int deleteDocument(String dbName, String collName, String documentId, ObjectId requestEtag) {
+    public int deleteDocument(String dbName, String collName, Object documentId, ObjectId requestEtag) {
         DB db = client.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
@@ -247,5 +254,4 @@ public class DocumentDAO implements Repository {
 
         return null;
     }
-
 }

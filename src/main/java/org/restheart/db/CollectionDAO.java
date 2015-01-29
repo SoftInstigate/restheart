@@ -180,14 +180,14 @@ class CollectionDAO {
         return coll.find(query).sort(sort);
     }
 
-    public ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filters, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager, boolean detectOids) throws JSONParseException {
     ArrayList<DBObject> getCollectionData(
             DBCollection coll,
             int page,
             int pagesize,
             Deque<String> sortBy,
             Deque<String> filters,
-            DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager) throws JSONParseException {
+            DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager,
+            boolean detectOids) throws JSONParseException {
         ArrayList<DBObject> ret = new ArrayList<>();
 
         int toskip = pagesize * (page - 1);
@@ -389,35 +389,38 @@ class CollectionDAO {
     }
 
     private Deque<String> replaceObjectIdsInFilters(Deque<String> filters) {
-        if (filters == null)
+        if (filters == null) {
             return null;
-        
+        }
+
         ArrayDeque<String> ret = new ArrayDeque<>();
-        
+
         filters.stream().forEach((filter) -> {
-            ret.add(replaceObjectIdsInFilters((BSONObject)JSON.parse(filter)));
+            ret.add(replaceObjectIdsInFilters((BSONObject) JSON.parse(filter)));
         });
-        
+
         return ret;
     }
-        
+
     private String replaceObjectIdsInFilters(BSONObject source) {
         if (source == null) {
             return null;
         }
 
         BasicDBObject ret = new BasicDBObject();
-        
-        for (String key: source.keySet()) {
+
+        source.keySet().stream().forEach((key) -> {
             Object value = source.get(key);
-            
+
             if (value instanceof BSONObject) {
                 ret.append(key, replaceObjectIdsInFilters((BSONObject) value));
             } else if (ObjectId.isValid(value.toString())) {
                 ret.append(key, new ObjectId(value.toString()));
+            } else {
+                ret.append(key, value);
             }
-        }
-       
+        });
+
         return ret.toString();
     }
 }

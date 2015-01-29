@@ -29,7 +29,7 @@ public interface Repository {
     
     int upsertDocument(String dbName, String collName, Object documentId, DBObject content, ObjectId requestEtag, boolean patching);
     
-    int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, Object docId, DBObject content, ObjectId requestEtag);
+    int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, Object documentId, DBObject content, ObjectId requestEtag);
     
     int deleteDocument(String dbName, String collName, Object documentId, ObjectId requestEtag);
     

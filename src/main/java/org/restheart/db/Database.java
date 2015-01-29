@@ -80,9 +80,10 @@ public interface Database {
      * @param sortBy
      * @param filter
      * @param cursorAllocationPolicy
+     * @param detectObjectids
      * @return Collection Data as ArrayList of DBObject
      */
-    ArrayList<DBObject> getCollectionData(DBCollection collection, int page, int pagesize, Deque<String> sortBy, Deque<String> filter, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy);
+    ArrayList<DBObject> getCollectionData(DBCollection collection, int page, int pagesize, Deque<String> sortBy, Deque<String> filter, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy, boolean detectObjectids);
 
     /**
      *

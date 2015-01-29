@@ -75,7 +75,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
 
         try {
             data = this.dbsDAO.getCollectionData(coll, context.getPage(), context.getPagesize(),
-                    context.getSortBy(), context.getFilter(), context.getCursorAllocationPolicy());
+                    context.getSortBy(), context.getFilter(), context.getCursorAllocationPolicy(), context.isDetectObjectIds());
         } catch (JSONParseException jpe) {
             // the filter expression is not a valid json string
             LOGGER.error("invalid filter expression {}", context.getFilter(), jpe);

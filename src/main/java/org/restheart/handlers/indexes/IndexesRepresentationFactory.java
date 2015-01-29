@@ -50,10 +50,10 @@ public class IndexesRepresentationFactory {
      */
     static public void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
-        String requestPath = URLUtilis.removeTrailingSlashes(context.getMappedRequestUri());
+        String requestPath = URLUtils.removeTrailingSlashes(context.getMappedRequestUri());
         String queryString = exchange.getQueryString() == null || exchange.getQueryString().isEmpty() 
                 ? "" 
-                : "?" + URLUtilis.decodeQueryString(exchange.getQueryString());
+                : "?" + URLUtils.decodeQueryString(exchange.getQueryString());
 
         Representation rep = new Representation(requestPath + queryString);
 
@@ -83,8 +83,6 @@ public class IndexesRepresentationFactory {
         }
         rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL 
                 + "/#api-indexes-{rel}", false), true);
-
-        ResponseHelper.injectWarnings(rep, exchange, context);
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
