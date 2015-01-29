@@ -38,7 +38,7 @@ import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import static org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.TYPE;
-import org.restheart.handlers.files.PutFileHandler;
+import org.restheart.handlers.files.GetFileHandler;
 import org.restheart.utils.ResponseHelper;
 
 /**
@@ -81,7 +81,7 @@ public class RequestDispacherHandler extends PipedHttpHandler {
         this.collectionPut = new PutCollectionHandler();
         this.collectionDelete = new DeleteCollectionHandler();
         this.collectionPatch = new PatchCollectionHandler();
-        this.documentGet = new GetDocumentHandler();
+        this.documentGet = new GetFileHandler();
         this.documentPut = new PutDocumentHandler();
         this.documentDelete = new DeleteDocumentHandler();
         this.documentPatch = new PatchDocumentHandler();

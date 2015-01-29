@@ -37,7 +37,7 @@ import org.restheart.db.DbsDAO;
  */
 public class GetDocumentHandler extends PipedHttpHandler {
 
-    private final Database dbsDAO;
+    protected final Database dbsDAO;
 
     /**
      * Default ctor
