@@ -14,7 +14,7 @@
  * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+ */ 
 package org.restheart.security.handlers;
 
 import io.undertow.security.idm.Account;
@@ -22,12 +22,14 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 import org.restheart.Bootstrapper;
+import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_HEADER;
+import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
+import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_VALID_HEADER;
 
 import org.restheart.security.impl.AuthTokenIdentityManager;
 import org.restheart.security.impl.SimpleAccount;
@@ -39,10 +41,6 @@ import org.restheart.security.impl.SimpleAccount;
 public class AuthTokenInjecterHandler extends PipedHttpHandler {
     private static final boolean enabled = Bootstrapper.getConf().isAuthTokenEnabled();
     private static final long TTL = Bootstrapper.getConf().getAuthTokenTtl();
-
-    public static final HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
-    public static final HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
-    public static final HttpString AUTH_TOKEN_HEADER_LOCATION = HttpString.tryFromString("Auth-Token-Location");
 
     /**
      * Creates a new instance of GetRootHandler
@@ -88,7 +86,7 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
     private void injectTokenHeaders(HttpServerExchange exchange, HeadersManager headers, char[] token) {
         headers.addResponseHeader(AUTH_TOKEN_HEADER, new String(token));
         headers.addResponseHeader(AUTH_TOKEN_VALID_HEADER, Instant.now().plus(TTL, ChronoUnit.MINUTES).toString());
-        headers.addResponseHeader(AUTH_TOKEN_HEADER_LOCATION, "/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
+        headers.addResponseHeader(AUTH_TOKEN_LOCATION_HEADER, "/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
     }
 
     private char[] cacheSessionToken(Account authenticatedAccount) {

@@ -27,6 +27,8 @@ import org.restheart.hal.Representation;
 import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_HEADER;
+import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_VALID_HEADER;
 import org.restheart.security.impl.AuthTokenIdentityManager;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -66,8 +68,8 @@ public class AuthTokenHandler extends PipedHttpHandler {
         if (Methods.GET.equals(exchange.getRequestMethod())) {
             Representation rep = new Representation("/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
             
-            rep.addProperty("auth_token", exchange.getResponseHeaders().get(AuthTokenInjecterHandler.AUTH_TOKEN_HEADER).getFirst());
-            rep.addProperty("auth_token_valid_until", exchange.getResponseHeaders().get(AuthTokenInjecterHandler.AUTH_TOKEN_VALID_HEADER).getFirst());
+            rep.addProperty("auth_token", exchange.getResponseHeaders().get(AUTH_TOKEN_HEADER).getFirst());
+            rep.addProperty("auth_token_valid_until", exchange.getResponseHeaders().get(AUTH_TOKEN_VALID_HEADER).getFirst());
             
             exchange.setResponseCode(HttpStatus.SC_OK);
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
@@ -86,7 +88,7 @@ public class AuthTokenHandler extends PipedHttpHandler {
     }
 
     private void removeAuthTokens(HttpServerExchange exchange) {
-        exchange.getResponseHeaders().remove(AuthTokenInjecterHandler.AUTH_TOKEN_HEADER);
-        exchange.getResponseHeaders().remove(AuthTokenInjecterHandler.AUTH_TOKEN_VALID_HEADER);
+        exchange.getResponseHeaders().remove(AUTH_TOKEN_HEADER);
+        exchange.getResponseHeaders().remove(AUTH_TOKEN_VALID_HEADER);
     }
 }
