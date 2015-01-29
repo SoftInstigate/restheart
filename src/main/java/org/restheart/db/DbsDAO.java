@@ -20,6 +20,7 @@ package org.restheart.db;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import org.restheart.utils.HttpStatus;
@@ -31,6 +32,7 @@ import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.bson.types.ObjectId;
@@ -41,9 +43,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class DbsDAO {
-
-    private final MongoClient client;
+public class DbsDAO implements Database {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbsDAO.class);
     public static final BasicDBObject PROPS_QUERY = new BasicDBObject("_id", "_properties");
@@ -56,16 +56,18 @@ public class DbsDAO {
         fieldsToReturn.put("_created_on", 1);
     }
 
-    private static final BasicDBObject fieldsToReturnIndexes;
+    /**
+     * delegated object for collection operations
+     */
+    private final CollectionDAO collectionDAO;
+    private final IndexDAO indexDAO;
 
-    static {
-        fieldsToReturnIndexes = new BasicDBObject();
-        fieldsToReturnIndexes.put("key", 1);
-        fieldsToReturnIndexes.put("name", 1);
-    }
-    
+    private final MongoClient client;
+
     public DbsDAO() {
         client = MongoDBClientSingleton.getInstance().getClient();
+        this.collectionDAO = new CollectionDAO(client);
+        this.indexDAO = new IndexDAO(client);
     }
 
     /**
@@ -78,8 +80,9 @@ public class DbsDAO {
      * @deprecated
      *
      */
+    @Override
     public boolean checkDbExists(HttpServerExchange exchange, String dbName) {
-        if (!doesDbExists(dbName)) {
+        if (!existsDatabaseWithName(dbName)) {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
             return false;
         }
@@ -93,7 +96,8 @@ public class DbsDAO {
      * @return
      *
      */
-    public boolean doesDbExists(String dbName) {
+    @Override
+    public boolean existsDatabaseWithName(String dbName) {
         return client.getDatabaseNames().contains(dbName);
     }
 
@@ -102,6 +106,7 @@ public class DbsDAO {
      * @param dbName
      * @return
      */
+    @Override
     public DB getDB(String dbName) {
         return client.getDB(dbName);
     }
@@ -109,9 +114,10 @@ public class DbsDAO {
     /**
      *
      * @param db
-     * @return
+     * @return A ordered List of collection names
      */
-    public List<String> getDbCollections(DB db) {
+    @Override
+    public List<String> getCollectionNames(DB db) {
         List<String> _colls = new ArrayList(db.getCollectionNames());
         
         // filter out reserved dbs
@@ -119,13 +125,16 @@ public class DbsDAO {
     }
     
     /**
-     * @param colls the collections list got from getDbCollections()
+     * @param colls the collections list got from getCollectionNames()
      * @return the number of collections in this db
      *
      */
+    @Override
     public long getDBSize(List<String> colls) {
         // filter out reserved resources
-        List<String> _colls = colls.stream().filter(coll -> !RequestContext.isReservedResourceCollection(coll)).collect(Collectors.toList());
+        List<String> _colls = colls.stream()
+                .filter(coll -> !RequestContext.isReservedResourceCollection(coll))
+                .collect(Collectors.toList());
 
         return _colls.size();
     }
@@ -135,14 +144,14 @@ public class DbsDAO {
      * @return the db props
      *
      */
-    public DBObject getDbProps(String dbName) {
-        if (!doesDbExists(dbName)) {
+    @Override
+    public DBObject getDatabaseProperties(String dbName) {
+        if (!existsDatabaseWithName(dbName)) {
             // this check is important, otherwise the db would get created if not existing after the query
             return null;
         }
 
-        final CollectionDAO collectionDAO = new CollectionDAO();
-        DBCollection propsColl = collectionDAO.getCollection(dbName, "_properties");
+        DBCollection propscoll = collectionDAO.getCollection(dbName, "_properties");
 
         DBObject row = propsColl.findOne(PROPS_QUERY);
 
@@ -163,17 +172,20 @@ public class DbsDAO {
 
     /**
      * @param dbName
-     * @param colls the collections list as got from getDbCollections()
+     * @param colls the collections list as got from getCollectionNames()
      * @param page
      * @param pagesize
      * @return the db data
      * @throws org.restheart.handlers.IllegalQueryParamenterException
      *
      */
+    @Override
     public List<DBObject> getData(String dbName, List<String> colls, int page, int pagesize)
             throws IllegalQueryParamenterException {
         // filter out reserved resources
-        List<String> _colls = colls.stream().filter(coll -> !RequestContext.isReservedResourceCollection(coll)).collect(Collectors.toList());
+        List<String> _colls = colls.stream()
+                .filter(coll -> !RequestContext.isReservedResourceCollection(coll))
+                .collect(Collectors.toList());
 
         int size = _colls.size();
 
@@ -187,16 +199,18 @@ public class DbsDAO {
             total_pages = Math.max(1, Math.round(Math.ceil(_size / _pagesize)));
 
             if (page > total_pages) {
-                throw new IllegalQueryParamenterException("illegal query paramenter, page is bigger that total pages which is " + total_pages);
+                throw new IllegalQueryParamenterException("illegal query paramenter,"
+                        + " page is bigger that total pages which is " + total_pages);
             }
         }
 
         // apply page and pagesize
-        _colls = _colls.subList((page - 1) * pagesize, (page - 1) * pagesize + pagesize > _colls.size() ? _colls.size() : (page - 1) * pagesize + pagesize);
+        _colls = _colls.subList((page - 1) * pagesize, (page - 1) * pagesize + pagesize > _colls.size()
+                ? _colls.size()
+                : (page - 1) * pagesize + pagesize);
 
         List<DBObject> data = new ArrayList<>();
 
-        final CollectionDAO collectionDAO = new CollectionDAO();
         _colls.stream().map(
                 (collName) -> {
                     BasicDBObject properties = new BasicDBObject();
@@ -206,7 +220,8 @@ public class DbsDAO {
                     DBObject collProperties;
 
                     if (LocalCachesSingleton.isEnabled()) {
-                        collProperties = LocalCachesSingleton.getInstance().getCollectionProps(dbName, collName);
+                        collProperties = LocalCachesSingleton.getInstance()
+                        .getCollectionProps(dbName, collName);
                     } else {
                         collProperties = collectionDAO.getCollectionProps(dbName, collName);
                     }
@@ -232,6 +247,7 @@ public class DbsDAO {
      * @param patching
      * @return
      */
+    @Override
     public int upsertDB(String dbName, DBObject content, ObjectId etag, boolean patching) {
         DB db = client.getDB(dbName);
 
@@ -311,7 +327,8 @@ public class DbsDAO {
      * @param requestEtag
      * @return
      */
-    public int deleteDB(String dbName, ObjectId requestEtag) {
+    @Override
+    public int deleteDatabase(String dbName, ObjectId requestEtag) {
         DB db = getDB(dbName);
 
         DBCollection coll = db.getCollection("_properties");
@@ -327,5 +344,60 @@ public class DbsDAO {
             db.dropDatabase();
             return HttpStatus.SC_NO_CONTENT;
         }
+    }
+
+    @Override
+    public DBObject getCollectionProperties(String dbName, String collName) {
+        return collectionDAO.getCollectionProps(dbName, collName);
+    }
+
+    @Override
+    public DBCollection getCollection(String dbName, String collName) {
+        return collectionDAO.getCollection(dbName, collName);
+    }
+
+    @Override
+    public int upsertCollection(String dbName, String collName, DBObject content, ObjectId etag, boolean updating, boolean patching) {
+        return collectionDAO.upsertCollection(dbName, collName, content, etag, updating, patching);
+    }
+
+    @Override
+    public int deleteCollection(String dbName, String collectionName, ObjectId etag) {
+        return collectionDAO.deleteCollection(dbName, collectionName, etag);
+    }
+
+    @Override
+    public long getCollectionSize(DBCollection coll, Deque<String> filters) {
+        return collectionDAO.getCollectionSize(coll, filters);
+    }
+
+    @Override
+    public ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filter, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
+        return collectionDAO.getCollectionData(coll, page, pagesize, sortBy, filter, cursorAllocationPolicy);
+    }
+
+    @Override
+    public List<String> getDatabaseNames() {
+        return client.getDatabaseNames();
+    }
+
+    @Override
+    public int deleteIndex(String dbName, String collection, String indexId) {
+        return indexDAO.deleteIndex(dbName, collection, indexId);
+    }
+
+    @Override
+    public List<DBObject> getCollectionIndexes(String dbName, String collectionName) {
+        return indexDAO.getCollectionIndexes(dbName, collectionName);
+    }
+
+    @Override
+    public DBCursor getCollectionDBCursor(DBCollection collection, Deque<String> sortBy, Deque<String> filters) {
+        return collectionDAO.getCollectionDBCursor(collection, sortBy, filters);
+    }
+
+    @Override
+    public void createIndex(String dbName, String collection, DBObject keys, DBObject options) {
+        indexDAO.createIndex(dbName, collection, keys, options);
     }
 }

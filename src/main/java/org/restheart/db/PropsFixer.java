@@ -22,7 +22,6 @@ import com.mongodb.CommandFailureException;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
 import org.restheart.handlers.RequestContext;
 import java.time.Instant;
@@ -36,12 +35,12 @@ import org.slf4j.LoggerFactory;
  */
 public class PropsFixer {
 
-    private final MongoClient client;
+    private final Database dbsDAO;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PropsFixer.class);
 
     public PropsFixer() {
-        client = MongoDBClientSingleton.getInstance().getClient();
+        dbsDAO = new DbsDAO();
     }
 
     /**
@@ -52,16 +51,15 @@ public class PropsFixer {
      * @throws MongoException
      */
     public boolean addCollectionProps(String dbName, String collName) throws MongoException {
-        final DbsDAO dbsDAO = new DbsDAO();
-        DBObject dbmd = dbsDAO.getDbProps(dbName);
+        
+        DBObject dbmd = dbsDAO.getDatabaseProperties(dbName);
 
         if (dbmd == null) {
             // db must exists with properties
             return false;
         }
 
-        final CollectionDAO collectionDAO = new CollectionDAO();
-        DBObject md = collectionDAO.getCollectionProps(dbName, collName);
+        DBObject md = dbsDAO.getCollectionProperties(dbName, collName);
 
         if (md != null) // properties exists
         {
@@ -99,12 +97,11 @@ public class PropsFixer {
      * @return
      */
     public boolean addDbProps(String dbName) {
-        final DbsDAO dbsDAO = new DbsDAO();
-        if (!dbsDAO.doesDbExists(dbName)) {
+        if (!dbsDAO.existsDatabaseWithName(dbName)) {
             return false;
         }
 
-        DBObject dbmd = dbsDAO.getDbProps(dbName);
+        DBObject dbmd = dbsDAO.getDatabaseProperties(dbName);
 
         if (dbmd != null) // properties exists
         {
@@ -121,8 +118,7 @@ public class PropsFixer {
         properties.put("_created_on", now.toString());
         properties.put("_etag", timestamp);
 
-        final CollectionDAO collectionDAO = new CollectionDAO();
-        DBCollection coll = collectionDAO.getCollection(dbName, "_properties");
+        DBCollection coll = dbsDAO.getCollection(dbName, "_properties");
 
         coll.insert(properties);
         LOGGER.info("properties added to {}", dbName);
@@ -133,9 +129,8 @@ public class PropsFixer {
      *
      */
     public void fixAllMissingProps() {
-        final DbsDAO dbsDAO = new DbsDAO();
         try {
-            client.getDatabaseNames().stream().filter(dbName -> !RequestContext.isReservedResourceDb(dbName)).map(dbName -> {
+            dbsDAO.getDatabaseNames().stream().filter(dbName -> !RequestContext.isReservedResourceDb(dbName)).map(dbName -> {
                 try {
                     addDbProps(dbName);
                 } catch (Throwable t) {
@@ -145,7 +140,7 @@ public class PropsFixer {
             }).forEach(dbName -> {
                 DB db = dbsDAO.getDB(dbName);
 
-                dbsDAO.getDbCollections(db).stream().filter(collectionName -> !RequestContext.isReservedResourceCollection(collectionName)).forEach(collectionName -> {
+                dbsDAO.getCollectionNames(db).stream().filter(collectionName -> !RequestContext.isReservedResourceCollection(collectionName)).forEach(collectionName -> {
                     try {
                         addCollectionProps(dbName, collectionName);
                     } catch (Throwable t) {

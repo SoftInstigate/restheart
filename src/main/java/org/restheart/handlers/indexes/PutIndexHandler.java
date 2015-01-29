@@ -19,13 +19,14 @@ package org.restheart.handlers.indexes;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import org.restheart.db.IndexDAO;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.document.DocumentRepresentationFactory;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.db.Database;
+import org.restheart.db.DbsDAO;
 
 /**
  *
@@ -33,19 +34,18 @@ import io.undertow.server.HttpServerExchange;
  */
 public class PutIndexHandler extends PipedHttpHandler {
 
-    private static final BasicDBObject fieldsToReturn;
-
-    static {
-        fieldsToReturn = new BasicDBObject();
-        fieldsToReturn.put("_id", 1);
-        fieldsToReturn.put("_created_on", 1);
-    }
+    final Database dbsDAO;
 
     /**
      * Creates a new instance of PutIndexHandler
      */
     public PutIndexHandler() {
+        this(new DbsDAO());
+    }
+
+    public PutIndexHandler(Database dbsDAO) {
         super(null);
+        this.dbsDAO = dbsDAO;
     }
 
     /**
@@ -56,12 +56,13 @@ public class PutIndexHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        String db = context.getDBName();
-        String co = context.getCollectionName();
-        String id = context.getIndexId();
+        final String db = context.getDBName();
+        final String co = context.getCollectionName();
+        final String id = context.getIndexId();
 
         if (id.startsWith("_")) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "index name cannot start with _");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+                    "index name cannot start with _");
             return;
         }
 
@@ -71,7 +72,8 @@ public class PutIndexHandler extends PipedHttpHandler {
         DBObject ops = (DBObject) content.get("ops");
 
         if (keys == null) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, content must include 'keys' object", null);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+                    "wrong request, content must include 'keys' object", null);
             return;
         }
 
@@ -82,10 +84,10 @@ public class PutIndexHandler extends PipedHttpHandler {
         ops.put("name", id);
 
         try {
-            final IndexDAO indexDAO = new IndexDAO();
-            indexDAO.createIndex(db, co, keys, ops);
+            dbsDAO.createIndex(db, co, keys, ops);
         } catch (Throwable t) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "error creating the index", t);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+                    "error creating the index", t);
             return;
         }
 
@@ -93,7 +95,8 @@ public class PutIndexHandler extends PipedHttpHandler {
 
         // send the warnings if any
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
+            DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(),
+                    exchange, context, new BasicDBObject());
         }
 
         exchange.endExchange();

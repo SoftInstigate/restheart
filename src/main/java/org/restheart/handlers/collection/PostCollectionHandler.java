@@ -36,10 +36,17 @@ import org.restheart.utils.URLUtils;
  */
 public class PostCollectionHandler extends PutCollectionHandler {
 
+    private final DocumentDAO documentDAO;
+
     /**
      * Creates a new instance of PostCollectionHandler
      */
     public PostCollectionHandler() {
+        this(new DocumentDAO());
+    }
+
+    public PostCollectionHandler(DocumentDAO documentDAO) {
+        this.documentDAO = documentDAO;
     }
 
     /**
@@ -88,8 +95,8 @@ public class PostCollectionHandler extends PutCollectionHandler {
             }
         }
 
-        int httpCode = new DocumentDAO()
-                .upsertDocumentPost(exchange, context.getDBName(), context.getCollectionName(), docId, content, etag);
+        int httpCode = this.documentDAO
+                .upsertDocumentPost(exchange, context.getDBName(), context.getCollectionName(), content, etag);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {

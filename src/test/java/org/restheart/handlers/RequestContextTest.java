@@ -53,8 +53,8 @@ public class RequestContextTest {
     }
 
     @Test
-    public void selectRequestMethod() {
-        System.out.println("selectRequestMethod");
+    public void testSelectRequestMethod() {
+        System.out.println("testSelectRequestMethod");
 
         HttpString _method = new HttpString("UNKNOWN");
         assertEquals(RequestContext.METHOD.OTHER, RequestContext.selectRequestMethod(_method));
@@ -67,8 +67,8 @@ public class RequestContextTest {
     }
 
     @Test
-    public void selectRequestType() {
-        System.out.println("selectRequestType");
+    public void testSelectRequestType() {
+        System.out.println("testSelectRequestType");
 
         String[] pathTokens = "/".split("/");
         assertEquals(RequestContext.TYPE.ROOT, RequestContext.selectRequestType(pathTokens));
@@ -88,10 +88,18 @@ public class RequestContextTest {
         pathTokens = "/db/collection/_indexes/123".split("/");
         assertEquals(RequestContext.TYPE.INDEX, RequestContext.selectRequestType(pathTokens));
     }
+    
+    @Test
+    public void testFilesystemRequests() {
+        System.out.println("testFilesystemRequests");
+        
+        String[] pathTokens = "/db/_filesystem".split("/");
+        assertEquals(RequestContext.TYPE.COLLECTION, RequestContext.selectRequestType(pathTokens));
+    }
 
     @Test
-    public void getMappedRequestUri() {
-        System.out.println("getMappedRequestUri");
+    public void testGetMappedRequestUri() {
+        System.out.println("testGetMappedRequestUri");
         
         HttpServerExchange ex = mock(HttpServerExchange.class);
         when(ex.getRequestPath()).thenReturn("/");

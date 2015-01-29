@@ -17,12 +17,13 @@
  */
 package org.restheart.handlers.indexes;
 
-import org.restheart.db.IndexDAO;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.db.Database;
+import org.restheart.db.DbsDAO;
 
 /**
  *
@@ -30,11 +31,18 @@ import io.undertow.server.HttpServerExchange;
  */
 public class DeleteIndexHandler extends PipedHttpHandler {
 
+    private final Database dbsDAO;
+
     /**
      * Creates a new instance of DeleteIndexHandler
      */
     public DeleteIndexHandler() {
+        this(new DbsDAO());
+    }
+
+    public DeleteIndexHandler(Database dbsDAO) {
         super(null);
+        this.dbsDAO = dbsDAO;
     }
 
     /**
@@ -45,18 +53,17 @@ public class DeleteIndexHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        String db = context.getDBName();
-        String co = context.getCollectionName();
+        String dbName = context.getDBName();
+        String collectionName = context.getCollectionName();
 
-        String id = context.getIndexId();
+        String indexId = context.getIndexId();
 
-        if (id.startsWith("_") || id.equals("_id_")) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNAUTHORIZED, id + " is a default index and cannot be deleted");
+        if (indexId.startsWith("_") || indexId.equals("_id_")) {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNAUTHORIZED, indexId + " is a default index and cannot be deleted");
             return;
         }
 
-        final IndexDAO indexDAO = new IndexDAO();
-        int httpCode = indexDAO.deleteIndex(db, co, id);
+        int httpCode = dbsDAO.deleteIndex(dbName, collectionName, indexId);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {

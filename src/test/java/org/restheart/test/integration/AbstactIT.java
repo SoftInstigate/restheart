@@ -21,10 +21,8 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
 import org.restheart.Configuration;
-import org.restheart.db.CollectionDAO;
 import org.restheart.db.DbsDAO;
 import org.restheart.db.DocumentDAO;
-import org.restheart.db.IndexDAO;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.hal.Representation;
 import java.io.File;
@@ -45,6 +43,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.restheart.db.Database;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -164,6 +163,8 @@ public abstract class AbstactIT {
         "{ \"band\": 1 }",
         "{ \"ranking\": 1 }"
     };
+    
+    private final Database dbsDAO = new DbsDAO();
 
     public AbstactIT() {
     }
@@ -212,17 +213,14 @@ public abstract class AbstactIT {
     }
 
     private void createTestData() {
-        final DbsDAO dbsDAO = new DbsDAO();
         dbsDAO.upsertDB(dbName, dbProps, new ObjectId(), false);
         
-        final CollectionDAO collectionDAO = new CollectionDAO();
-        collectionDAO.upsertCollection(dbName, collection1Name, coll1Props, new ObjectId(), false, false);
-        collectionDAO.upsertCollection(dbName, collection2Name, coll2Props, new ObjectId(), false, false);
-        collectionDAO.upsertCollection(dbName, docsCollectionName, docsCollectionProps, new ObjectId(), false, false);
+        dbsDAO.upsertCollection(dbName, collection1Name, coll1Props, new ObjectId(), false, false);
+        dbsDAO.upsertCollection(dbName, collection2Name, coll2Props, new ObjectId(), false, false);
+        dbsDAO.upsertCollection(dbName, docsCollectionName, docsCollectionProps, new ObjectId(), false, false);
 
-        final IndexDAO indexDAO = new IndexDAO();
         for (String index : docsCollectionIndexesStrings) {
-            indexDAO.createIndex(dbName, docsCollectionName, ((DBObject) JSON.parse(index)), null);
+            dbsDAO.createIndex(dbName, docsCollectionName, ((DBObject) JSON.parse(index)), null);
         }
 
         final DocumentDAO documentDAO = new DocumentDAO();

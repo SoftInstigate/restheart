@@ -27,7 +27,7 @@ import java.util.List;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class IndexDAO {
+class IndexDAO {
 
     private final MongoClient client;
 
@@ -41,8 +41,8 @@ public class IndexDAO {
         fieldsToReturnIndexes.put("name", 1);
     }
 
-    public IndexDAO() {
-        client = MongoDBClientSingleton.getInstance().getClient();
+    IndexDAO(MongoClient client) {
+        this.client = client;
     }
 
     /**
@@ -51,8 +51,11 @@ public class IndexDAO {
      * @param collName
      * @return
      */
-    public List<DBObject> getCollectionIndexes(String dbName, String collName) {
-        List<DBObject> indexes = client.getDB(dbName).getCollection("system.indexes").find(new BasicDBObject("ns", dbName + "." + collName), fieldsToReturnIndexes).sort(new BasicDBObject("name", 1)).toArray();
+    List<DBObject> getCollectionIndexes(String dbName, String collName) {
+        List<DBObject> indexes = client.getDB(dbName).getCollection("system.indexes")
+                .find(new BasicDBObject("ns", dbName + "." + collName), fieldsToReturnIndexes)
+                .sort(new BasicDBObject("name", 1))
+                .toArray();
 
         indexes.forEach((i) -> {
             i.put("_id", i.get("name"));
@@ -64,16 +67,16 @@ public class IndexDAO {
 
     /**
      *
-     * @param db
+     * @param dbName
      * @param collection
      * @param keys
-     * @param ops
+     * @param options
      */
-    public void createIndex(String db, String collection, DBObject keys, DBObject ops) {
-        if (ops == null) {
-            client.getDB(db).getCollection(collection).createIndex(keys);
+    void createIndex(String dbName, String collection, DBObject keys, DBObject options) {
+        if (options == null) {
+            client.getDB(dbName).getCollection(collection).createIndex(keys);
         } else {
-            client.getDB(db).getCollection(collection).createIndex(keys, ops);
+            client.getDB(dbName).getCollection(collection).createIndex(keys, options);
         }
     }
 
@@ -84,8 +87,8 @@ public class IndexDAO {
      * @param indexId
      * @return
      */
-    public int deleteIndex(String db, String collection, String indexId) {
-        client.getDB(db).getCollection(collection).dropIndex(indexId);
+    int deleteIndex(String dbName, String collection, String indexId) {
+        client.getDB(dbName).getCollection(collection).dropIndex(indexId);
         return HttpStatus.SC_NO_CONTENT;
     }
 }

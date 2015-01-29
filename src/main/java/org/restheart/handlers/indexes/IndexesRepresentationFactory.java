@@ -50,8 +50,10 @@ public class IndexesRepresentationFactory {
      */
     static public void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
-        String requestPath = URLUtils.removeTrailingSlashes(context.getMappedRequestUri());
-        String queryString = exchange.getQueryString() == null || exchange.getQueryString().isEmpty() ? "" : "?" + URLUtils.decodeQueryString(exchange.getQueryString());
+        String requestPath = URLUtilis.removeTrailingSlashes(context.getMappedRequestUri());
+        String queryString = exchange.getQueryString() == null || exchange.getQueryString().isEmpty() 
+                ? "" 
+                : "?" + URLUtilis.decodeQueryString(exchange.getQueryString());
 
         Representation rep = new Representation(requestPath + queryString);
 
@@ -62,7 +64,10 @@ public class IndexesRepresentationFactory {
         }
 
         if (embeddedData != null) {
-            long count = embeddedData.stream().filter((props) -> props.keySet().stream().anyMatch((k) -> k.equals("id") || k.equals("_id"))).count();
+            long count = embeddedData.stream()
+                    .filter((props) -> props.keySet().stream()
+                            .anyMatch((k) -> k.equals("id") || k.equals("_id")))
+                    .count();
 
             rep.addProperty("_returned", count);
 
@@ -76,7 +81,10 @@ public class IndexesRepresentationFactory {
             // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath)));
         }
-        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-indexes-{rel}", false), true);
+        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL 
+                + "/#api-indexes-{rel}", false), true);
+
+        ResponseHelper.injectWarnings(rep, exchange, context);
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());

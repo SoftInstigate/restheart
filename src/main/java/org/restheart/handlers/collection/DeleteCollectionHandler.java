@@ -17,7 +17,6 @@
  */
 package org.restheart.handlers.collection;
 
-import org.restheart.db.CollectionDAO;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.utils.HttpStatus;
@@ -27,17 +26,27 @@ import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.bson.types.ObjectId;
+import org.restheart.db.Database;
+import org.restheart.db.DbsDAO;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class DeleteCollectionHandler extends PipedHttpHandler {
+
+    private final Database dbsDAO;
+
     /**
      * Creates a new instance of DeleteCollectionHandler
      */
     public DeleteCollectionHandler() {
+        this(new DbsDAO());
+    }
+    
+    public DeleteCollectionHandler(Database dbsDAO) {
         super(null);
+        this.dbsDAO = dbsDAO;
     }
 
     /**
@@ -51,12 +60,12 @@ public class DeleteCollectionHandler extends PipedHttpHandler {
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
         if (etag == null) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT, "the " + Headers.ETAG + " header must be provided");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
+                    "the " + Headers.ETAG + " header must be provided");
             return;
         }
 
-        final CollectionDAO collectionDAO = new CollectionDAO();
-        int httpCode = collectionDAO.deleteCollection(context.getDBName(), context.getCollectionName(), etag);
+        int httpCode = this.dbsDAO.deleteCollection(context.getDBName(), context.getCollectionName(), etag);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
@@ -67,7 +76,8 @@ public class DeleteCollectionHandler extends PipedHttpHandler {
 
         exchange.endExchange();
 
-        LocalCachesSingleton.getInstance().invalidateCollection(context.getDBName(), context.getCollectionName());
+        LocalCachesSingleton.getInstance()
+                .invalidateCollection(context.getDBName(), context.getCollectionName());
     }
 
 }

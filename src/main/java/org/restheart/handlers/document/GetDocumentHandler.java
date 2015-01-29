@@ -19,7 +19,6 @@ package org.restheart.handlers.document;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import org.restheart.db.CollectionDAO;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.RequestContext;
@@ -29,6 +28,8 @@ import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import org.bson.types.ObjectId;
+import org.restheart.db.Database;
+import org.restheart.db.DbsDAO;
 
 /**
  *
@@ -36,11 +37,23 @@ import org.bson.types.ObjectId;
  */
 public class GetDocumentHandler extends PipedHttpHandler {
 
+    private final Database dbsDAO;
+
     /**
-     * Creates a new instance of GetDocumentHandler
+     * Default ctor
      */
     public GetDocumentHandler() {
+        this(new DbsDAO());
+    }
+
+    /**
+     * Creates a new instance of GetDocumentHandler
+     *
+     * @param dbsDAO
+     */
+    public GetDocumentHandler(Database dbsDAO) {
         super(null);
+        this.dbsDAO = dbsDAO;
     }
 
     /**
@@ -53,8 +66,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         BasicDBObject query = new BasicDBObject("_id", context.getDocumentId());;
 
-        final CollectionDAO collectionDAO = new CollectionDAO();
-        DBObject document = collectionDAO.getCollection(context.getDBName(), context.getCollectionName()).findOne(query);
+        DBObject document = dbsDAO.getCollection(context.getDBName(), context.getCollectionName()).findOne(query);
 
         if (document == null) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "document does not exist");

@@ -36,11 +36,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The Data Access Object for the mongodb Collection resource.
+ * The Data Access Object for the mongodb Collection resource. NOTE: this class
+ * is package-private and only meant to be used as a delagate within the DbsDAO
+ * class.
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class CollectionDAO {
+class CollectionDAO {
 
     private final MongoClient client;
 
@@ -48,22 +50,14 @@ public class CollectionDAO {
 
     private static final BasicDBObject fieldsToReturn;
 
-    public CollectionDAO() {
-        client = MongoDBClientSingleton.getInstance().getClient();
+    CollectionDAO(MongoClient client) {
+        this.client = client;
     }
 
     static {
         fieldsToReturn = new BasicDBObject();
         fieldsToReturn.put("_id", 1);
         fieldsToReturn.put("_created_on", 1);
-    }
-
-    private static final BasicDBObject fieldsToReturnIndexes;
-
-    static {
-        fieldsToReturnIndexes = new BasicDBObject();
-        fieldsToReturnIndexes.put("key", 1);
-        fieldsToReturnIndexes.put("name", 1);
     }
 
     /**
@@ -77,7 +71,7 @@ public class CollectionDAO {
      * @param collName the collection name
      * @return true if the specified collection exits in the db dbName
      */
-    public boolean doesCollectionExist(String dbName, String collName) {
+    boolean doesCollectionExist(String dbName, String collName) {
         if (dbName == null || dbName.isEmpty() || dbName.contains(" ")) {
             return false;
         }
@@ -95,7 +89,7 @@ public class CollectionDAO {
      * @param collName the collection name
      * @return the mongodb DBCollection object for the collection in db dbName
      */
-    public DBCollection getCollection(String dbName, String collName) {
+    DBCollection getCollection(String dbName, String collName) {
         return client.getDB(dbName).getCollection(collName);
     }
 
@@ -149,7 +143,7 @@ public class CollectionDAO {
      * @return
      * @throws JSONParseException
      */
-    protected DBCursor getCollectionDBCursor(DBCollection coll, Deque<String> sortBy, Deque<String> filters) throws JSONParseException {
+    DBCursor getCollectionDBCursor(DBCollection coll, Deque<String> sortBy, Deque<String> filters) throws JSONParseException {
         // apply sort_by
         DBObject sort = new BasicDBObject();
 
@@ -187,6 +181,13 @@ public class CollectionDAO {
     }
 
     public ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filters, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager, boolean detectOids) throws JSONParseException {
+    ArrayList<DBObject> getCollectionData(
+            DBCollection coll,
+            int page,
+            int pagesize,
+            Deque<String> sortBy,
+            Deque<String> filters,
+            DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager) throws JSONParseException {
         ArrayList<DBObject> ret = new ArrayList<>();
 
         int toskip = pagesize * (page - 1);
@@ -276,8 +277,8 @@ public class CollectionDAO {
      * @param patching true if use patch semantic (update only specified fields)
      * @return the HttpStatus code to set in the http response
      */
-    public int upsertCollection(String dbName, String collName, DBObject content, ObjectId etag, boolean updating, boolean patching) {
-        DB db = new DbsDAO().getDB(dbName);
+    int upsertCollection(String dbName, String collName, DBObject content, ObjectId etag, boolean updating, boolean patching) {
+        DB db = client.getDB(dbName);
 
         DBCollection propsColl = db.getCollection("_properties");
 
@@ -363,7 +364,7 @@ public class CollectionDAO {
      * http error code is returned)
      * @return the HttpStatus code to set in the http response
      */
-    public int deleteCollection(String dbName, String collName, ObjectId etag) {
+    int deleteCollection(String dbName, String collName, ObjectId etag) {
         DBCollection coll = getCollection(dbName, collName);
         DBCollection propsColl = getCollection(dbName, "_properties");
 

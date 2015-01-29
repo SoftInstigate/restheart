@@ -35,11 +35,23 @@ import org.bson.types.ObjectId;
  */
 public class PutDocumentHandler extends PipedHttpHandler {
 
+    private final DocumentDAO documentDAO;
+
     /**
-     * Creates a new instance of PutDocumentHandler
+     * Default ctor
      */
     public PutDocumentHandler() {
+        this(new DocumentDAO());
+    }
+
+    /**
+     * Creates a new instance of PutDocumentHandler
+     *
+     * @param documentDAO
+     */
+    public PutDocumentHandler(DocumentDAO documentDAO) {
         super(null);
+        this.documentDAO = documentDAO;
     }
 
     /**
@@ -72,9 +84,8 @@ public class PutDocumentHandler extends PipedHttpHandler {
         }
 
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
-        
-        DocumentDAO documentDAO = new DocumentDAO();
-        int httpCode = documentDAO.upsertDocument(
+
+        int httpCode = this.documentDAO.upsertDocument(
                 context.getDBName(),
                 context.getCollectionName(),
                 context.getDocumentId(),

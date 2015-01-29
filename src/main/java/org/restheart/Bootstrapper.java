@@ -317,6 +317,7 @@ public final class Bootstrapper {
 
         try {
             MongoDBClientSingleton.init(configuration);
+           
 
             LOGGER.info("mongodb connection pool initialized");
 
@@ -550,7 +551,7 @@ public final class Bootstrapper {
     }
 
     private static GracefulShutdownHandler getHandlersPipe(final IdentityManager identityManager, final AccessManager accessManager) {
-        PipedHttpHandler coreHanlderChain
+        PipedHttpHandler coreHandlerChain
                 = new DbPropsInjectorHandler(
                         new CollectionPropsInjectorHandler(
                                 new BodyInjectorHandler(
@@ -572,7 +573,7 @@ public final class Bootstrapper {
                             new CORSHandler(
                                     new RequestContextInjectorHandler(url, db,
                                             new OptionsHandler(
-                                                    new SecurityHandler(coreHanlderChain, identityManager, accessManager))))));
+                                                    new SecurityHandler(coreHandlerChain, identityManager, accessManager))))));
 
             LOGGER.info("url {} bound to mongodb resource {}", url, db);
         });

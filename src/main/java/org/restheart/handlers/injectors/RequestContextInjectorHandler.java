@@ -180,7 +180,8 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 try {
                     eager = EAGER_CURSOR_ALLOCATION_POLICY.valueOf(_eager.trim().toUpperCase());
                 } catch (IllegalArgumentException iae) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal eager paramenter (must be LINEAR, RANDOM or NONE)");
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                            "illegal eager paramenter (must be LINEAR, RANDOM or NONE)");
                     return;
                 }
             }

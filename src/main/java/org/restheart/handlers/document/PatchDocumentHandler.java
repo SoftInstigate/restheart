@@ -34,11 +34,18 @@ import org.bson.types.ObjectId;
  */
 public class PatchDocumentHandler extends PipedHttpHandler {
 
+    private final DocumentDAO documentDAO;
+
     /**
      * Creates a new instance of PatchDocumentHandler
      */
     public PatchDocumentHandler() {
+        this(new DocumentDAO());
+    }
+
+    public PatchDocumentHandler(DocumentDAO documentDAO) {
         super(null);
+        this.documentDAO = documentDAO;
     }
 
     /**
@@ -53,13 +60,15 @@ public class PatchDocumentHandler extends PipedHttpHandler {
 
         // cannot PATCH with no data
         if (content == null) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data is empty");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+                    "data is empty");
             return;
         }
 
         // cannot PATCH an array
         if (content instanceof BasicDBList) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+                    "data cannot be an array");
             return;
         }
 
@@ -68,7 +77,8 @@ public class PatchDocumentHandler extends PipedHttpHandler {
         if (content.get("_id") == null) {
             content.put("_id", id);
         } else if (!content.get("_id").equals(id)) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in json data cannot be different than id in URL");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, 
+                    "_id in json data cannot be different than id in URL");
             return;
         }
 
@@ -79,7 +89,6 @@ public class PatchDocumentHandler extends PipedHttpHandler {
             return;
         }
 
-        DocumentDAO documentDAO = new DocumentDAO();
         int httpCode = documentDAO.upsertDocument(
                 context.getDBName(),
                 context.getCollectionName(),

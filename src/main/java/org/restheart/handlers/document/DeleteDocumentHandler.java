@@ -32,11 +32,23 @@ import org.bson.types.ObjectId;
  */
 public class DeleteDocumentHandler extends PipedHttpHandler {
 
+    private final DocumentDAO documentDAO;
+
     /**
-     * Creates a new instance of DeleteDocumentHandler
+     * Default ctor
      */
     public DeleteDocumentHandler() {
+        this(new DocumentDAO());
+    }
+
+    /**
+     * Creates a new instance of DeleteDocumentHandler
+     *
+     * @param documentDAO
+     */
+    public DeleteDocumentHandler(DocumentDAO documentDAO) {
         super(null);
+        this.documentDAO = documentDAO;
     }
 
     /**
@@ -54,7 +66,7 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
             return;
         }
 
-        int httpCode = new DocumentDAO()
+        int httpCode = this.documentDAO
                 .deleteDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), etag);
 
         // send the warnings if any (and in case no_content change the return code to ok
