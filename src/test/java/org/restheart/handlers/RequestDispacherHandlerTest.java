@@ -24,17 +24,15 @@ import com.mongodb.gridfs.GridFS;
 import com.mongodb.gridfs.GridFSInputFile;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.net.UnknownHostException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Test;
 import org.restheart.handlers.files.PutFileHandler;
 
 /**
@@ -76,27 +74,29 @@ public class RequestDispacherHandlerTest {
 
         InputStream is = getClass().getResourceAsStream("/RESTHeart_documentation.pdf");
 
-        GridFS gfsPhoto = new GridFS(db, "mybucket");
-        GridFSInputFile gfsFile = gfsPhoto.createFile(is);
+        GridFS gridfs = new GridFS(db, "mybucket");
+        
+        GridFSInputFile gfsFile = gridfs.createFile(is);
+        gfsFile.setFilename("RESTHeart_documentation.pdf");
         gfsFile.save();
     }
 
-    //@Test
-    public void test_put_file_request() throws Exception {
-        System.out.println("+++ test_put_file_request");
-
-        HttpServerExchange exchange = new HttpServerExchange();
-        exchange.setRequestPath("/testdb/testcoll/files");
-        exchange.setRequestMethod(new HttpString("PUT"));
-
-        RequestContext context = new RequestContext(exchange, "/", "/");
-
-        RequestDispacherHandlerBuilder builder = new RequestDispacherHandlerBuilder();
-        builder.setFilePut(new PutFileHandler());
-        RequestDispacherHandler instance = builder.createRequestDispacherHandler();
-        instance.handleRequest(exchange, context);
-
-        assertEquals(201, exchange.getResponseCode());
-    }
+//    @Test
+//    public void test_put_file_request() throws Exception {
+//        System.out.println("+++ test_put_file_request");
+//
+//        HttpServerExchange exchange = new HttpServerExchange();
+//        exchange.setRequestPath("/testdb/_files");
+//        exchange.setRequestMethod(new HttpString("POST"));
+//
+//        RequestContext context = new RequestContext(exchange, "/", "/");
+//
+//        RequestDispacherHandlerBuilder builder = new RequestDispacherHandlerBuilder();
+//        builder.setFilePut(new PutFileHandler());
+//        RequestDispacherHandler instance = builder.createRequestDispacherHandler();
+//        instance.handleRequest(exchange, context);
+//
+//        assertEquals(201, exchange.getResponseCode());
+//    }
 
 }

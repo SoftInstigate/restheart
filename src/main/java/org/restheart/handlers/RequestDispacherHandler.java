@@ -64,7 +64,6 @@ public class RequestDispacherHandler extends PipedHttpHandler {
     private final GetIndexesHandler indexesGet;
     private final PutIndexHandler indexPut;
     private final DeleteIndexHandler indexDelete;
-    private final PutFileHandler filePut;
 
     /**
      * Creates a new instance of RequestDispacherHandler
@@ -89,7 +88,6 @@ public class RequestDispacherHandler extends PipedHttpHandler {
         this.indexesGet = new GetIndexesHandler();
         this.indexPut = new PutIndexHandler();
         this.indexDelete = new DeleteIndexHandler();
-        this.filePut = new PutFileHandler();
     }
 
     /**
@@ -216,7 +214,6 @@ public class RequestDispacherHandler extends PipedHttpHandler {
      * @param indexesGet
      * @param indexDelete
      * @param indexPut
-     * @param filePut
      */
     RequestDispacherHandler(
             GetRootHandler rootGet,
@@ -235,8 +232,7 @@ public class RequestDispacherHandler extends PipedHttpHandler {
             PatchDocumentHandler documentPatch,
             GetIndexesHandler indexesGet,
             PutIndexHandler indexPut,
-            DeleteIndexHandler indexDelete,
-            PutFileHandler filePut
+            DeleteIndexHandler indexDelete
     ) {
 
         super(null);
@@ -257,7 +253,6 @@ public class RequestDispacherHandler extends PipedHttpHandler {
         this.indexesGet = indexesGet;
         this.indexPut = indexPut;
         this.indexDelete = indexDelete;
-        this.filePut = filePut;
     }
 
 }

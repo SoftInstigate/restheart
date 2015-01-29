@@ -30,7 +30,6 @@ import org.restheart.handlers.document.DeleteDocumentHandler;
 import org.restheart.handlers.document.GetDocumentHandler;
 import org.restheart.handlers.document.PatchDocumentHandler;
 import org.restheart.handlers.document.PutDocumentHandler;
-import org.restheart.handlers.files.PutFileHandler;
 import org.restheart.handlers.indexes.DeleteIndexHandler;
 import org.restheart.handlers.indexes.GetIndexesHandler;
 import org.restheart.handlers.indexes.PutIndexHandler;
@@ -62,7 +61,6 @@ class RequestDispacherHandlerBuilder {
     private GetIndexesHandler indexesGet;
     private PutIndexHandler indexPut;
     private DeleteIndexHandler indexDelete;
-    private PutFileHandler filePut;
 
     public RequestDispacherHandlerBuilder() {
     }
@@ -152,13 +150,8 @@ class RequestDispacherHandlerBuilder {
         return this;
     }
 
-    public RequestDispacherHandlerBuilder setFilePut(PutFileHandler filePut) {
-        this.filePut = filePut;
-        return this;
-    }
-
     public RequestDispacherHandler createRequestDispacherHandler() {
-        return new RequestDispacherHandler(rootGet, dbGet, dbPut, dbDelete, dbPatch, collectionGet, collectionPost, collectionPut, collectionDelete, collectionPatch, documentGet, documentPut, documentDelete, documentPatch, indexesGet, indexPut, indexDelete, filePut);
+        return new RequestDispacherHandler(rootGet, dbGet, dbPut, dbDelete, dbPatch, collectionGet, collectionPost, collectionPut, collectionDelete, collectionPatch, documentGet, documentPut, documentDelete, documentPatch, indexesGet, indexPut, indexDelete);
     }
 
 }

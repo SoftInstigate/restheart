@@ -45,6 +45,7 @@ public class RequestContext {
         DOCUMENT,
         COLLECTION_INDEXES,
         INDEX,
+        COLLECTION_FILES,
         FILE
     };
 
@@ -142,7 +143,7 @@ public class RequestContext {
         this.mappedRequestUri = unmapUri(exchange.getRequestPath());
 
         // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
-        pathTokens = mappedRequestUri.split(SLASH);
+        this.pathTokens = this.mappedRequestUri.split(SLASH);
         this.type = selectRequestType(pathTokens);
 
         this.method = selectRequestMethod(exchange.getRequestMethod());
@@ -174,11 +175,19 @@ public class RequestContext {
             type = TYPE.ROOT;
         } else if (pathTokens.length < 3) {
             type = TYPE.DB;
+        } else if (pathTokens.length >= 3 && pathTokens[2].equalsIgnoreCase(_FILES)) {
+            if (pathTokens.length == 3) {
+                type = TYPE.COLLECTION_FILES;
+            } else if (pathTokens.length == 4 && pathTokens[2].equalsIgnoreCase(_FILES)) {
+                type = TYPE.FILE;
+            } else {
+                type = TYPE.ERROR;
+            }
         } else if (pathTokens.length < 4) {
             type = TYPE.COLLECTION;
-        } else if (pathTokens.length == 4 && pathTokens[3].equals(_INDEXES)) {
+        } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.COLLECTION_INDEXES;
-        } else if (pathTokens.length > 4 && pathTokens[3].equals(_INDEXES)) {
+        } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.INDEX;
         } else {
             type = TYPE.DOCUMENT;

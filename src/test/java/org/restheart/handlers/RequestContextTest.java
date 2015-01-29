@@ -27,6 +27,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 /**
  *
  * @author Maurizio Turatti <maurizio@softinstigate.com>
@@ -58,10 +59,10 @@ public class RequestContextTest {
 
         HttpString _method = new HttpString("UNKNOWN");
         assertEquals(RequestContext.METHOD.OTHER, RequestContext.selectRequestMethod(_method));
-        
+
         _method = new HttpString("GET");
         assertEquals(RequestContext.METHOD.GET, RequestContext.selectRequestMethod(_method));
-        
+
         _method = new HttpString("PATCH");
         assertEquals(RequestContext.METHOD.PATCH, RequestContext.selectRequestMethod(_method));
     }
@@ -88,32 +89,43 @@ public class RequestContextTest {
         pathTokens = "/db/collection/_indexes/123".split("/");
         assertEquals(RequestContext.TYPE.INDEX, RequestContext.selectRequestType(pathTokens));
     }
-    
+
     @Test
     public void testFilesystemRequests() {
         System.out.println("testFilesystemRequests");
+
+        String[] pathTokens = "/db/_files".split("/");
+        assertEquals(RequestContext.TYPE.COLLECTION_FILES, RequestContext.selectRequestType(pathTokens));
+    }
+
+    @Test
+    public void testFilesRequest() {
+        System.out.println("testFilesRequest");
         
-        String[] pathTokens = "/db/_filesystem".split("/");
-        assertEquals(RequestContext.TYPE.COLLECTION, RequestContext.selectRequestType(pathTokens));
+        String[] pathTokens = "/db/_files/123".split("/");
+        assertEquals(RequestContext.TYPE.FILE, RequestContext.selectRequestType(pathTokens));
+        
+        pathTokens = "/db/_files/123/456".split("/");
+        assertEquals(RequestContext.TYPE.ERROR, RequestContext.selectRequestType(pathTokens));
     }
 
     @Test
     public void testGetMappedRequestUri() {
         System.out.println("testGetMappedRequestUri");
-        
+
         HttpServerExchange ex = mock(HttpServerExchange.class);
         when(ex.getRequestPath()).thenReturn("/");
         when(ex.getRequestMethod()).thenReturn(HttpString.EMPTY);
 
         String whatUri = "/mydb/mycollection";
         String whereUri = "/";
-        
+
         RequestContext context = new RequestContext(ex, whereUri, whatUri);
         assertEquals("/mydb/mycollection", context.getMappedRequestUri());
-        
+
         whatUri = "*";
         whereUri = "/data";
-        
+
         context = new RequestContext(ex, whereUri, whatUri);
         assertEquals("/", context.getMappedRequestUri());
     }
