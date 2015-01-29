@@ -85,19 +85,19 @@ public class ResponseHelper {
 
         if (t != null) {
             nrep.addProperty("exception", t.getClass().getName());
+
+            if (t.getMessage() != null) {
+                nrep.addProperty("exception message", t.getMessage());
+            }
+
+            BasicDBList stackTrace = getStackTraceJson(t);
+
+            if (stackTrace != null) {
+                nrep.addProperty("stack trace", stackTrace);
+            }
+
+            rep.addRepresentation("rh:exception", nrep);
         }
-
-        if (t != null && t.getMessage() != null) {
-            nrep.addProperty("exception message", t.getMessage());
-        }
-
-        BasicDBList stackTrace = getStackTraceJson(t);
-
-        if (stackTrace != null) {
-            nrep.addProperty("stack trace", stackTrace);
-        }
-
-        rep.addRepresentation("rh:exception", nrep);
 
         return rep.toString();
     }

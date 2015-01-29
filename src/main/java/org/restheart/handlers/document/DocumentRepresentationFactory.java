@@ -27,7 +27,7 @@ import org.restheart.hal.metadata.Relationship;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.ResponseHelper;
-import org.restheart.utils.URLUtilis;
+import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.net.URISyntaxException;
@@ -50,10 +50,11 @@ public class DocumentRepresentationFactory {
      * @param exchange
      * @param context
      * @param data
+     * @param embedded true if this document is embedded in a parent document
      * @return
      * @throws IllegalQueryParamenterException
      */
-    public static Representation getDocument(String href, HttpServerExchange exchange, RequestContext context, DBObject data)
+    public static Representation getDocument(String href, HttpServerExchange exchange, RequestContext context, DBObject data, boolean embedded)
             throws IllegalQueryParamenterException {
         Representation rep = new Representation(href);
 
@@ -74,14 +75,16 @@ public class DocumentRepresentationFactory {
         }
 
         // link templates and curies
-        String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
+        String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
         if (context.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
-            rep.addLink(new Link("rh:coll", URLUtilis.getParentPath(requestPath)));
+            rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath)));
         }
         rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-doc-{rel}", false), true);
 
-        ResponseHelper.injectWarnings(rep, exchange, context);
+        // inject warning only on the root representation
+        if (!embedded)
+            ResponseHelper.injectWarnings(rep, exchange, context);
 
         return rep;
     }
@@ -97,7 +100,7 @@ public class DocumentRepresentationFactory {
      */
     public static void sendDocument(String href, HttpServerExchange exchange, RequestContext context, DBObject data)
             throws IllegalQueryParamenterException, URISyntaxException {
-        Representation rep = getDocument(href, exchange, context, data);
+        Representation rep = getDocument(href, exchange, context, data, false);
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());

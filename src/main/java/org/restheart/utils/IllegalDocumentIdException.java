@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data Repository API server
+ * RESTHeart - the data REST API server
  * Copyright (C) SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -15,22 +15,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.db;
-
-import com.mongodb.DBObject;
-import io.undertow.server.HttpServerExchange;
-import org.bson.types.ObjectId;
+package org.restheart.utils;
 
 /**
  *
- * @author Maurizio Turatti <maurizio@softinstigate.com>
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface Repository {
+public class IllegalDocumentIdException extends Exception {
+    public IllegalDocumentIdException() {
+        super();
+    }
     
-    int upsertDocument(String dbName, String collName, Object documentId, DBObject content, ObjectId requestEtag, boolean patching);
+    public IllegalDocumentIdException(String message) {
+        super(message);
+    }
     
-    int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, Object docId, DBObject content, ObjectId requestEtag);
+    public IllegalDocumentIdException(String message, Throwable cause) {
+        super(message, cause);
+    }
     
-    int deleteDocument(String dbName, String collName, Object documentId, ObjectId requestEtag);
-    
+    public IllegalDocumentIdException(Throwable cause) {
+        super(cause);
+    }
 }

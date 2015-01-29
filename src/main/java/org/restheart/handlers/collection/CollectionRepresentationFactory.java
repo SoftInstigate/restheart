@@ -25,13 +25,11 @@ import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.document.DocumentRepresentationFactory;
 import org.restheart.utils.ResponseHelper;
-import org.restheart.utils.URLUtilis;
+import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.AbstractRepresentationFactory;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
 
 /**
  *
@@ -39,8 +37,6 @@ import org.slf4j.Logger;
  */
 public class CollectionRepresentationFactory extends AbstractRepresentationFactory {
 
-    private static final Logger logger = LoggerFactory.getLogger(CollectionRepresentationFactory.class);
-    
     public CollectionRepresentationFactory() {
     }
 
@@ -54,7 +50,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
      * @throws IllegalQueryParamenterException
      */
     @Override
-    protected Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
+    protected Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size, boolean embedded)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
         final Representation rep = createRepresentation(exchange, context, requestPath);
@@ -72,7 +68,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
 
         addPaginationLinks(exchange, context, size, rep);
 
-        addLinkTemplatesAndCuries(exchange, context, rep, requestPath);
+        addLinkTemplatesAndCuries(exchange, context, rep, requestPath, embedded);
 
         return rep;
     }
@@ -87,11 +83,11 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         }
     }
 
-    private void addLinkTemplatesAndCuries(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath) {
+    private void addLinkTemplatesAndCuries(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath, boolean embedded) {
         // link templates and curies
         if (context.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
-            rep.addLink(new Link("rh:db", URLUtilis.getParentPath(requestPath)));
+            rep.addLink(new Link("rh:db", URLUtils.getParentPath(requestPath)));
         }
         rep.addLink(new Link("rh:filter", requestPath + "/{?filter}", true));
         rep.addLink(new Link("rh:sort", requestPath + "/{?sort_by}", true));
@@ -100,24 +96,32 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         rep.addLink(new Link("rh:indexes", requestPath + "/_indexes"));
         rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-coll-{rel}", true), true);
 
-        ResponseHelper.injectWarnings(rep, exchange, context);
+        // inject warning only on the root representation
+        if (!embedded) {
+            ResponseHelper.injectWarnings(rep, exchange, context);
+        }
     }
 
     private void embeddedDocuments(List<DBObject> embeddedData, String requestPath, HttpServerExchange exchange, RequestContext context, Representation rep) throws IllegalQueryParamenterException {
         for (DBObject d : embeddedData) {
             Object _id = d.get("_id");
 
-            if (_id != null && (_id instanceof String || _id instanceof ObjectId)) {
-                Representation nrep = DocumentRepresentationFactory.getDocument(requestPath + "/" + _id.toString(), exchange, context, d);
+            if (_id != null && (_id instanceof Number || _id instanceof String || _id instanceof ObjectId)) {
+                if (RequestContext.isReservedResourceCollection(_id.toString()))  {
+                    context.addWarning("filtered out reserved resource " + requestPath + "/" + _id.toString());
+                } else {
 
-                nrep.addProperty("_type", RequestContext.TYPE.DOCUMENT.name());
+                    Representation nrep = DocumentRepresentationFactory.getDocument(requestPath + "/" + _id.toString(), exchange, context, d, true);
 
-                if (d.get("_etag") != null && d.get("_etag") instanceof ObjectId) {
-                    d.put("_etag", ((ObjectId) d.get("_etag")).toString()); // represent the etag as a string
+                    nrep.addProperty("_type", RequestContext.TYPE.DOCUMENT.name());
+
+                    if (d.get("_etag") != null && d.get("_etag") instanceof ObjectId) {
+                        d.put("_etag", ((ObjectId) d.get("_etag")).toString()); // represent the etag as a string
+                    }
+                    rep.addRepresentation("rh:doc", nrep);
                 }
-                rep.addRepresentation("rh:doc", nrep);
             } else {
-                logger.error("collection missing string _id field", d);
+                context.addWarning("filtered out collection with _id " + _id + "; unable to build the resource URI");
             }
         }
     }

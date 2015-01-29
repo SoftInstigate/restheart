@@ -25,7 +25,7 @@ import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
-import org.restheart.utils.URLUtilis;
+import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import org.bson.types.ObjectId;
@@ -51,25 +51,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        ObjectId oid;
-        String sid;
-
-        if (ObjectId.isValid(context.getDocumentId())) {
-            sid = null;
-            oid = new ObjectId(context.getDocumentId());
-        } else {
-            // the id is not an object id
-            sid = context.getDocumentId();
-            oid = null;
-        }
-
-        BasicDBObject query;
-
-        if (oid != null) {
-            query = new BasicDBObject("_id", oid);
-        } else {
-            query = new BasicDBObject("_id", sid);
-        }
+        BasicDBObject query = new BasicDBObject("_id", context.getDocumentId());;
 
         final CollectionDAO collectionDAO = new CollectionDAO();
         DBObject document = collectionDAO.getCollection(context.getDBName(), context.getCollectionName()).findOne(query);
@@ -94,7 +76,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
             }
         }
 
-        String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
+        String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
 
         ResponseHelper.injectEtagHeader(exchange, document);
         exchange.setResponseCode(HttpStatus.SC_OK);

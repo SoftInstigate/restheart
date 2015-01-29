@@ -26,7 +26,7 @@ import org.restheart.hal.HALUtils;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
 import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
-import org.restheart.utils.URLUtilis;
+import org.restheart.utils.URLUtils;
 
 /**
  *
@@ -44,13 +44,13 @@ public abstract class AbstractRepresentationFactory {
      */
     public void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
-        Representation rep = getRepresentation(exchange, context, embeddedData, size);
+        Representation rep = getRepresentation(exchange, context, embeddedData, size, false);
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
     }
 
-    protected abstract Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
+    protected abstract Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size, boolean embedded)
             throws IllegalQueryParamenterException;
 
     protected void addSizeAndTotalPagesProperties(final long size, final RequestContext context, final Representation rep) {
@@ -74,14 +74,14 @@ public abstract class AbstractRepresentationFactory {
     protected Representation createRepresentation(final HttpServerExchange exchange, final RequestContext context, final String requestPath) {
         String queryString = exchange.getQueryString() == null || exchange.getQueryString().isEmpty()
                 ? ""
-                : "?" + URLUtilis.decodeQueryString(exchange.getQueryString());
+                : "?" + URLUtils.decodeQueryString(exchange.getQueryString());
         Representation rep = new Representation(requestPath + queryString);
         rep.addProperty("_type", context.getType().name());
         return rep;
     }
 
     protected String buildRequestPath(final HttpServerExchange exchange) {
-        String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
+        String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
         return requestPath;
     }
 

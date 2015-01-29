@@ -25,7 +25,7 @@ import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.ResponseHelper;
-import org.restheart.utils.URLUtilis;
+import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.util.List;
@@ -51,8 +51,8 @@ public class IndexesRepresentationFactory {
      */
     static public void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
-        String requestPath = URLUtilis.removeTrailingSlashes(context.getMappedRequestUri());
-        String queryString = exchange.getQueryString() == null || exchange.getQueryString().isEmpty() ? "" : "?" + URLUtilis.decodeQueryString(exchange.getQueryString());
+        String requestPath = URLUtils.removeTrailingSlashes(context.getMappedRequestUri());
+        String queryString = exchange.getQueryString() == null || exchange.getQueryString().isEmpty() ? "" : "?" + URLUtils.decodeQueryString(exchange.getQueryString());
 
         Representation rep = new Representation(requestPath + queryString);
 
@@ -75,7 +75,7 @@ public class IndexesRepresentationFactory {
         // link templates and curies
         if (context.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
-            rep.addLink(new Link("rh:coll", URLUtilis.getParentPath(requestPath)));
+            rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath)));
         }
         rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-indexes-{rel}", false), true);
 

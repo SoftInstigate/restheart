@@ -57,11 +57,11 @@ public class PutFileHandler extends PipedHttpHandler {
             return;
         }
 
-        String id = context.getDocumentId();
+        Object id = context.getDocumentId();
 
         if (content.get("_id") == null) {
-            content.put("_id", getId(id));
-        } else if (!content.get("_id").equals(id)) {
+            content.put("_id", id);
+        } else if (!content.get("_id").equals(id.toString())) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is different than id in URL");
             return;
         }

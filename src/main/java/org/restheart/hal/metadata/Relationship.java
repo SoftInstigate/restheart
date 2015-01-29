@@ -20,7 +20,7 @@ package org.restheart.hal.metadata;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 import org.restheart.handlers.RequestContext;
-import org.restheart.utils.URLUtilis;
+import org.restheart.utils.URLUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -238,15 +238,15 @@ public class Relationship {
 
         if (role == ROLE.OWNING) {
             if (type == TYPE.ONE_TO_ONE || type == TYPE.MANY_TO_ONE) {
-                return URLUtilis.getUriWithDocId(context, db, targetCollection, reference);
+                return URLUtils.getUriWithDocId(context, db, targetCollection, reference);
             } else if (type == TYPE.ONE_TO_MANY || type == TYPE.MANY_TO_MANY) {
-                return URLUtilis.getUriWithFilterMany(context, db, targetCollection, referenceField, reference);
+                return URLUtils.getUriWithFilterMany(context, db, targetCollection, referenceField, reference);
             }
         } else {
             if (type == TYPE.ONE_TO_ONE || type == TYPE.ONE_TO_MANY) {
-                return URLUtilis.getUriWithFilterOne(context, db, targetCollection, referenceField, reference);
+                return URLUtils.getUriWithFilterOne(context, db, targetCollection, referenceField, reference);
             } else if (type == TYPE.MANY_TO_ONE || type == TYPE.MANY_TO_MANY) {
-                return URLUtilis.getUriWithFilterManyInverse(context, db, targetCollection, referenceField, reference);
+                return URLUtils.getUriWithFilterManyInverse(context, db, targetCollection, referenceField, reference);
             }
         }
 

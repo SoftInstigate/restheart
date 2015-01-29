@@ -26,8 +26,8 @@ import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 
 /**
- * this handler injects the collection properties in the RequestContext this
- * handler is also responsible of sending NOT_FOUND in case of requests
+ * this handler injects the collection properties in the RequestContext
+ * it is also responsible of sending NOT_FOUND in case of requests
  * involving not existing collections (that are not PUT)
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>

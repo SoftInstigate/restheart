@@ -28,16 +28,12 @@ import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class PutDocumentHandler extends PipedHttpHandler {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(PutDocumentHandler.class);
 
     /**
      * Creates a new instance of PutDocumentHandler
@@ -66,10 +62,10 @@ public class PutDocumentHandler extends PipedHttpHandler {
             return;
         }
 
-        String id = context.getDocumentId();
+        Object id = context.getDocumentId();
 
         if (content.get("_id") == null) {
-            content.put("_id", getId(id));
+            content.put("_id", id);
         } else if (!content.get("_id").equals(id)) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is different than id in URL");
             return;

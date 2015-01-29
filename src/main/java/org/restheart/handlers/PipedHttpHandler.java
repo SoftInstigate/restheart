@@ -59,13 +59,4 @@ public abstract class PipedHttpHandler implements HttpHandler {
 
         DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
     }
-
-    protected static Object getId(String id) {
-        if (ObjectId.isValid(id)) {
-            return new ObjectId(id);
-        } else {
-            // the id is not an object id
-            return id;
-        }
-    }
 }

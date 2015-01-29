@@ -27,6 +27,8 @@ import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
+import org.restheart.utils.IllegalDocumentIdException;
+import org.restheart.utils.URLUtils;
 
 /**
  *
@@ -66,9 +68,22 @@ public class PostCollectionHandler extends PutCollectionHandler {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "reserved resource");
             return;
         }
+        
+        Object docId;
+
+        if (content.get("_id") == null) {
+            docId = new ObjectId();
+        } else {
+            try {
+                docId = URLUtils.getId(content.get("_id"), context.getDocIdType());
+            } catch(IllegalDocumentIdException idide) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is not of type " + context.getDocIdType().name());
+                return;
+            }
+        }
 
         int httpCode = new DocumentDAO()
-                .upsertDocumentPost(exchange, context.getDBName(), context.getCollectionName(), content, etag);
+                .upsertDocumentPost(exchange, context.getDBName(), context.getCollectionName(), docId, content, etag);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {

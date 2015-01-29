@@ -19,7 +19,7 @@ package org.restheart.handlers;
 
 import com.mongodb.DBObject;
 import org.restheart.db.DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
-import org.restheart.utils.URLUtilis;
+import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
@@ -28,6 +28,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
+import org.restheart.utils.IllegalDocumentIdException;
 
 /**
  *
@@ -64,6 +65,8 @@ public class RequestContext {
     public static final String SORT_BY_QPARAM_KEY = "sort_by";
     public static final String FILTER_QPARAM_KEY = "filter";
     public static final String EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY = "eager";
+    public static final String DOC_ID_TYPE_KEY = "doc_id_type";
+    public static final String AUTODETECT_OBJECTID_KEY = "autodetect_oid";
 
     public static final String SLASH = "/";
     public static final String PATCH = "PATCH";
@@ -93,6 +96,9 @@ public class RequestContext {
     private EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy;
     private Deque<String> filter = null;
     private Deque<String> sortBy = null;
+    private URLUtils.DOC_ID_TYPE docIdType = URLUtils.DOC_ID_TYPE.STRING_OBJECTID;
+    private boolean autodetectObjectId = false;
+    private Object documentId;
 
     private String unmappedRequestUri = null;
     private String mappedRequestUri = null;
@@ -122,7 +128,7 @@ public class RequestContext {
      * @param whatUri the uri to map
      */
     public RequestContext(HttpServerExchange exchange, String whereUri, String whatUri) {
-        this.whereUri = URLUtilis.removeTrailingSlashes(whereUri);
+        this.whereUri = URLUtils.removeTrailingSlashes(whereUri);
         this.whatUri = whatUri;
 
         this.unmappedRequestUri = exchange.getRequestPath();
@@ -182,14 +188,14 @@ public class RequestContext {
      * @return
      */
     public final String unmapUri(String mappedUri) {
-        String ret = URLUtilis.removeTrailingSlashes(mappedUri);
+        String ret = URLUtils.removeTrailingSlashes(mappedUri);
 
         if (whatUri.equals("*")) {
             if (!this.whereUri.equals(SLASH)) {
                 ret = ret.replaceFirst("^" + this.whereUri, "");
             }
         } else {
-            ret = URLUtilis.removeTrailingSlashes(ret.replaceFirst("^" + this.whereUri, this.whatUri));
+            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + this.whereUri, this.whatUri));
         }
 
         if (ret.isEmpty()) {
@@ -208,14 +214,14 @@ public class RequestContext {
      * @return
      */
     public final String mapUri(String unmappedUri) {
-        String ret = URLUtilis.removeTrailingSlashes(unmappedUri);
+        String ret = URLUtils.removeTrailingSlashes(unmappedUri);
 
         if (whatUri.equals("*")) {
             if (!this.whereUri.equals(SLASH)) {
                 return this.whereUri + unmappedUri;
             }
         } else {
-            ret = URLUtilis.removeTrailingSlashes(ret.replaceFirst("^" + this.whatUri, this.whereUri));
+            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + this.whatUri, this.whereUri));
         }
 
         if (ret.isEmpty()) {
@@ -224,7 +230,7 @@ public class RequestContext {
 
         return ret;
     }
-    
+
     /**
      * check if the parent of the requested resource is accessible in this
      * request context
@@ -270,7 +276,7 @@ public class RequestContext {
      *
      * @return document id
      */
-    public String getDocumentId() {
+    public String getDocumentIdRaw() {
         return getPathTokenAt(3);
     }
 
@@ -322,11 +328,14 @@ public class RequestContext {
 
     /**
      *
-     * @param documentId
+     * @param documentIdRaw
      * @return isReservedResourceDocument
      */
-    public static boolean isReservedResourceDocument(String documentId) {
-        return documentId != null && documentId.startsWith(UNDERSCORE) && !documentId.equals(_INDEXES);
+    public static boolean isReservedResourceDocument(String documentIdRaw) {
+        if (documentIdRaw == null)
+            return false;
+        
+        return documentIdRaw.startsWith(UNDERSCORE) && !documentIdRaw.equals(_INDEXES);
     }
 
     /**
@@ -340,7 +349,7 @@ public class RequestContext {
 
         return isReservedResourceDb(getDBName())
                 || isReservedResourceCollection(getCollectionName())
-                || isReservedResourceDocument(getDocumentId());
+                || isReservedResourceDocument(getDocumentIdRaw());
     }
 
     /**
@@ -519,5 +528,47 @@ public class RequestContext {
      */
     public void setCursorAllocationPolicy(EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
         this.cursorAllocationPolicy = cursorAllocationPolicy;
+    }
+
+    /**
+     * @return the docIdType
+     */
+    public URLUtils.DOC_ID_TYPE getDocIdType() {
+        return docIdType;
+    }
+
+    /**
+     * @param docIdType the docIdType to set
+     */
+    public void setDocIdType(URLUtils.DOC_ID_TYPE docIdType) {
+        this.docIdType = docIdType;
+    }
+
+    /**
+     * @return the autodetectObjectId
+     */
+    public boolean isAutodetectObjectId() {
+        return autodetectObjectId;
+    }
+
+    /**
+     * @param autodetectObjectId the autodetectObjectId to set
+     */
+    public void setAutodetectObjectId(boolean autodetectObjectId) {
+        this.autodetectObjectId = autodetectObjectId;
+    }
+
+    /**
+     * @param documentId the documentId to set
+     */
+    public void setDocumentId(Object documentId) {
+        this.documentId = documentId;
+    }
+
+    /**
+     * @return the documentId
+     */
+    public Object getDocumentId() {
+        return documentId;
     }
 }

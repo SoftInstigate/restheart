@@ -81,13 +81,13 @@ public class PropsFixer {
         ObjectId timestamp = new ObjectId();
         Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
 
-        properties.put("_id", "_properties");
+        properties.put("_id", "_properties.".concat(collName));
         properties.put("_created_on", now.toString());
         properties.put("_etag", timestamp);
 
-        DBCollection coll = collectionDAO.getCollection(dbName, collName);
+        DBCollection propsColl = collectionDAO.getCollection(dbName, "_properties");
 
-        coll.insert(properties);
+        propsColl.insert(properties);
 
         LOGGER.info("properties added to {}/{}", dbName, collName);
         return true;

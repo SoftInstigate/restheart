@@ -46,9 +46,6 @@ public class CollectionDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CollectionDAO.class);
 
-    private static final BasicDBObject PROPS_QUERY = new BasicDBObject("_id", "_properties");
-    private static final BasicDBObject DOCUMENTS_QUERY = new BasicDBObject("_id", new BasicDBObject("$ne", "_properties"));
-
     private static final BasicDBObject fieldsToReturn;
 
     public CollectionDAO() {
@@ -112,7 +109,7 @@ public class CollectionDAO {
      * @return true if the commection is empty
      */
     public boolean isCollectionEmpty(DBCollection coll) {
-        return coll.count(DOCUMENTS_QUERY) == 0;
+        return coll.count() == 0;
     }
 
     /**
@@ -126,7 +123,7 @@ public class CollectionDAO {
      * account the filters in case)
      */
     public long getCollectionSize(DBCollection coll, Deque<String> filters) {
-        final BasicDBObject query = new BasicDBObject(DOCUMENTS_QUERY);
+        final BasicDBObject query = new BasicDBObject();
 
         if (filters != null) {
             try {
@@ -176,7 +173,7 @@ public class CollectionDAO {
         }
 
         // apply filter
-        final BasicDBObject query = new BasicDBObject(DOCUMENTS_QUERY);
+        final BasicDBObject query = new BasicDBObject();
 
         if (filters != null) {
             filters.stream().forEach((String f) -> {
@@ -246,9 +243,9 @@ public class CollectionDAO {
      * @return the collection properties document
      */
     public DBObject getCollectionProps(String dbName, String collName) {
-        DBCollection coll = getCollection(dbName, collName);
-
-        DBObject properties = coll.findOne(PROPS_QUERY);
+        DBCollection propsColl = getCollection(dbName, "_properties");
+        
+        DBObject properties = propsColl.findOne(new BasicDBObject("_id", "_properties.".concat(collName)));
 
         if (properties != null) {
             properties.put("_id", collName);
@@ -280,7 +277,7 @@ public class CollectionDAO {
     public int upsertCollection(String dbName, String collName, DBObject content, ObjectId etag, boolean updating, boolean patching) {
         DB db = new DbsDAO().getDB(dbName);
 
-        DBCollection coll = db.getCollection(collName);
+        DBCollection propsColl = db.getCollection("_properties");
 
         if (patching && !updating) {
             return HttpStatus.SC_NOT_FOUND;
@@ -291,10 +288,10 @@ public class CollectionDAO {
                 return HttpStatus.SC_CONFLICT;
             }
 
-            BasicDBObject idAndEtagQuery = new BasicDBObject("_id", "_properties");
+            BasicDBObject idAndEtagQuery = new BasicDBObject("_id", "_properties.".concat(collName));
             idAndEtagQuery.append("_etag", etag);
 
-            if (coll.count(idAndEtagQuery) < 1) {
+            if (propsColl.count(idAndEtagQuery) < 1) {
                 return HttpStatus.SC_PRECONDITION_FAILED;
             }
         }
@@ -312,13 +309,13 @@ public class CollectionDAO {
             content.removeField("_crated_on"); // don't allow to update this field
             content.put("_etag", timestamp);
         } else {
-            content.put("_id", "_properties");
+            content.put("_id", "_properties.".concat(collName));
             content.put("_created_on", now.toString());
             content.put("_etag", timestamp);
         }
 
         if (patching) {
-            coll.update(PROPS_QUERY, new BasicDBObject("$set", content), true, false);
+            propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)), new BasicDBObject("$set", content), true, false);
             return HttpStatus.SC_OK;
         } else {
             // we use findAndModify to get the @created_on field value from the existing properties document
@@ -326,29 +323,29 @@ public class CollectionDAO {
             // it is not possible in a single update even using $setOnInsert update operator
             // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
 
-            DBObject old = coll.findAndModify(PROPS_QUERY, fieldsToReturn, null, false, content, false, true);
+            DBObject old = propsColl.findAndModify(new BasicDBObject("_id", "_properties.".concat(collName)), fieldsToReturn, null, false, content, false, true);
 
             if (old != null) {
                 Object oldTimestamp = old.get("_created_on");
 
                 if (oldTimestamp == null) {
                     oldTimestamp = now.toString();
-                    LOGGER.warn("properties of collection {} had no @created_on field. set to now", coll.getFullName());
+                    LOGGER.warn("properties of collection {} had no @created_on field. set it to now", dbName + "." + collName);
                 }
 
                 // need to readd the @created_on field 
                 BasicDBObject createdContent = new BasicDBObject("_created_on", "" + oldTimestamp);
                 createdContent.markAsPartialObject();
-                coll.update(PROPS_QUERY, new BasicDBObject("$set", createdContent), true, false);
+                propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)), new BasicDBObject("$set", createdContent), true, false);
 
                 return HttpStatus.SC_OK;
             } else {
                 // need to readd the @created_on field 
                 BasicDBObject createdContent = new BasicDBObject("_created_on", now.toString());
                 createdContent.markAsPartialObject();
-                coll.update(PROPS_QUERY, new BasicDBObject("$set", createdContent), true, false);
+                propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)), new BasicDBObject("$set", createdContent), true, false);
 
-                initDefaultIndexes(coll);
+                initDefaultIndexes(db.getCollection(collName));
 
                 return HttpStatus.SC_CREATED;
             }
@@ -366,15 +363,17 @@ public class CollectionDAO {
      */
     public int deleteCollection(String dbName, String collName, ObjectId etag) {
         DBCollection coll = getCollection(dbName, collName);
+        DBCollection propsColl = getCollection(dbName, "_properties");
 
-        BasicDBObject checkEtag = new BasicDBObject("_id", "_properties");
+        BasicDBObject checkEtag = new BasicDBObject("_id", "_properties.".concat(collName));
         checkEtag.append("_etag", etag);
 
-        DBObject exists = coll.findOne(checkEtag, fieldsToReturn);
+        DBObject exists = propsColl.findOne(checkEtag, fieldsToReturn);
 
         if (exists == null) {
             return HttpStatus.SC_PRECONDITION_FAILED;
         } else {
+            propsColl.remove(new BasicDBObject("_id", "_properties.".concat(collName)));
             coll.drop();
             return HttpStatus.SC_NO_CONTENT;
         }

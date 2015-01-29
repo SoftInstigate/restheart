@@ -18,7 +18,7 @@
 package org.restheart;
 
 import ch.qos.logback.classic.Level;
-import org.restheart.utils.URLUtilis;
+import org.restheart.utils.URLUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -509,7 +509,7 @@ public class Configuration {
         amImpl = null;
         amArgs = null;
 
-        logFilePath = URLUtilis.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
+        logFilePath = URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
                 .concat(File.separator + "restheart.log");
         logToConsole = true;
         logToFile = true;
@@ -631,7 +631,7 @@ public class Configuration {
         amArgs = am;
 
         logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH_KEY,
-                URLUtilis.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
+                URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
                 .concat(File.separator + "restheart.log"));
         String _logLevel = getAsStringOrDefault(conf, LOG_LEVEL_KEY, "INFO");
         logToConsole = getAsBooleanOrDefault(conf, ENABLE_LOG_CONSOLE_KEY, true);

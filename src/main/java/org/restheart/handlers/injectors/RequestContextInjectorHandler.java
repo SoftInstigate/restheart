@@ -28,9 +28,12 @@ import static org.restheart.handlers.RequestContext.PAGE_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.SORT_BY_QPARAM_KEY;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
-import org.restheart.utils.URLUtilis;
+import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
+import static org.restheart.handlers.RequestContext.AUTODETECT_OBJECTID_KEY;
+import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_KEY;
+import org.restheart.utils.IllegalDocumentIdException;
 
 /**
  *
@@ -62,7 +65,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             throw new IllegalArgumentException("whatUri must start with \"/\". check your mongo-mounts");
         }
 
-        this.whereUri = URLUtilis.removeTrailingSlashes(whereUri);
+        this.whereUri = URLUtils.removeTrailingSlashes(whereUri);
         this.whatUri = whatUri;
     }
 
@@ -163,16 +166,16 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
             rcontext.setFilter(exchange.getQueryParameters().get(FILTER_QPARAM_KEY));
         }
-        
+
         // get and check eager parameter
         Deque<String> __eager = exchange.getQueryParameters().get(EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY);
 
         // default value
-        EAGER_CURSOR_ALLOCATION_POLICY eager = EAGER_CURSOR_ALLOCATION_POLICY.LINEAR; 
-        
+        EAGER_CURSOR_ALLOCATION_POLICY eager = EAGER_CURSOR_ALLOCATION_POLICY.LINEAR;
+
         if (__eager != null && !__eager.isEmpty()) {
             String _eager = __eager.getFirst();
-            
+
             if (_eager != null && !_eager.isEmpty()) {
                 try {
                     eager = EAGER_CURSOR_ALLOCATION_POLICY.valueOf(_eager.trim().toUpperCase());
@@ -181,9 +184,59 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                     return;
                 }
             }
-        } 
+        }
 
         rcontext.setCursorAllocationPolicy(eager);
+
+        // get and check the doc id type parameter
+        Deque<String> __docIdType = exchange.getQueryParameters().get(DOC_ID_TYPE_KEY);
+
+        // default value
+        URLUtils.DOC_ID_TYPE docIdType = URLUtils.DOC_ID_TYPE.STRING_OBJECTID;
+
+        if (__docIdType != null && !__docIdType.isEmpty()) {
+            String _docIdType = __docIdType.getFirst();
+
+            if (_docIdType != null && !_docIdType.isEmpty()) {
+                try {
+                    docIdType = URLUtils.DOC_ID_TYPE.valueOf(_docIdType.trim().toUpperCase());
+                } catch (IllegalArgumentException iae) {
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal " + DOC_ID_TYPE_KEY + " paramenter (must be STRING_OBJECTID, INT, LONG, FLOAT, DOUBLE, STRING or OBJECTID)");
+                    return;
+                }
+            }
+        }
+
+        rcontext.setDocIdType(docIdType);
+        
+        // get and check the document id
+        
+        String _docId = rcontext.getDocumentIdRaw();
+        
+        try {
+            rcontext.setDocumentId(URLUtils.getId(_docId, docIdType));
+        } catch(IllegalDocumentIdException idide) {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong document id format. it is not a valid " + docIdType.name());
+            return;
+        }
+
+        // get the autodetect objectid parameter
+        Deque<String> __autodetectObjectId = exchange.getQueryParameters().get(AUTODETECT_OBJECTID_KEY);
+
+        // default value
+        boolean autodetectObjectId = true;
+
+        if (__autodetectObjectId != null && !__autodetectObjectId.isEmpty()) {
+            String _autodetectObjectId = __autodetectObjectId.getFirst();
+
+            if (_autodetectObjectId != null && !_autodetectObjectId.isEmpty()) {
+                autodetectObjectId = Boolean.getBoolean(_autodetectObjectId);
+            }
+        }
+
+        rcontext.setAutodetectObjectId(autodetectObjectId);
+        
+        
 
         next.handleRequest(exchange, rcontext);
     }

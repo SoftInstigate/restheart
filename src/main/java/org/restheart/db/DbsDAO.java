@@ -46,7 +46,7 @@ public class DbsDAO {
     private final MongoClient client;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbsDAO.class);
-    public static final BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "_properties");
+    public static final BasicDBObject PROPS_QUERY = new BasicDBObject("_id", "_properties");
 
     private static final BasicDBObject fieldsToReturn;
 
@@ -113,10 +113,11 @@ public class DbsDAO {
      */
     public List<String> getDbCollections(DB db) {
         List<String> _colls = new ArrayList(db.getCollectionNames());
-        Collections.sort(_colls);
-        return _colls;
+        
+        // filter out reserved dbs
+        return _colls.stream().filter(coll -> !RequestContext.isReservedResourceCollection(coll)).sorted().collect(Collectors.toList());
     }
-
+    
     /**
      * @param colls the collections list got from getDbCollections()
      * @return the number of collections in this db
@@ -141,9 +142,9 @@ public class DbsDAO {
         }
 
         final CollectionDAO collectionDAO = new CollectionDAO();
-        DBCollection propscoll = collectionDAO.getCollection(dbName, "_properties");
+        DBCollection propsColl = collectionDAO.getCollection(dbName, "_properties");
 
-        DBObject row = propscoll.findOne(METADATA_QUERY);
+        DBObject row = propsColl.findOne(PROPS_QUERY);
 
         if (row != null) {
             row.put("_id", dbName);
@@ -269,7 +270,7 @@ public class DbsDAO {
         content.removeField("_id"); // make sure we don't change this field
 
         if (patching) {
-            coll.update(METADATA_QUERY, new BasicDBObject("$set", content), true, false);
+            coll.update(PROPS_QUERY, new BasicDBObject("$set", content), true, false);
 
             return HttpStatus.SC_OK;
         } else {
@@ -277,7 +278,7 @@ public class DbsDAO {
             // we need to put this field back using a second update 
             // it is not possible in a single update even using $setOnInsert update operator
             // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
-            DBObject old = coll.findAndModify(METADATA_QUERY, fieldsToReturn, null, false, content, false, true);
+            DBObject old = coll.findAndModify(PROPS_QUERY, fieldsToReturn, null, false, content, false, true);
 
             if (old != null) {
                 Object oldTimestamp = old.get("_created_on");
@@ -290,14 +291,14 @@ public class DbsDAO {
                 // need to readd the @created_on field 
                 BasicDBObject createdContent = new BasicDBObject("_created_on", "" + oldTimestamp);
                 createdContent.markAsPartialObject();
-                coll.update(METADATA_QUERY, new BasicDBObject("$set", createdContent), true, false);
+                coll.update(PROPS_QUERY, new BasicDBObject("$set", createdContent), true, false);
 
                 return HttpStatus.SC_OK;
             } else {
                 // need to readd the @created_on field 
                 BasicDBObject createdContent = new BasicDBObject("_created_on", now.toString());
                 createdContent.markAsPartialObject();
-                coll.update(METADATA_QUERY, new BasicDBObject("$set", createdContent), true, false);
+                coll.update(PROPS_QUERY, new BasicDBObject("$set", createdContent), true, false);
 
                 return HttpStatus.SC_CREATED;
             }

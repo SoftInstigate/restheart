@@ -21,16 +21,18 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RequestHelper;
-import org.restheart.utils.URLUtilis;
+import org.restheart.utils.URLUtils;
 import io.undertow.util.HttpString;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
+import static jdk.nashorn.internal.runtime.Debug.id;
 import org.bson.types.ObjectId;
+import org.restheart.utils.IllegalDocumentIdException;
+import org.restheart.utils.URLUtils.DOC_ID_TYPE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,10 +44,7 @@ public class DocumentDAO implements Repository {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DocumentDAO.class);
 
-    private final MongoClient client;
-
     public DocumentDAO() {
-        client = MongoDBClientSingleton.getInstance().getClient();
     }
 
     /**
@@ -58,7 +57,7 @@ public class DocumentDAO implements Repository {
      * @return the HttpStatus code
      */
     @Override
-    public int upsertDocument(String dbName, String collName, String documentId, DBObject content, ObjectId requestEtag, boolean patching) {
+    public int upsertDocument(String dbName, String collName, Object documentId, DBObject content, ObjectId requestEtag, boolean patching) {
         final DbsDAO dbsDAO = new DbsDAO();
         DB db = dbsDAO.getDB(dbName);
 
@@ -73,7 +72,7 @@ public class DocumentDAO implements Repository {
 
         content.put("_etag", timestamp);
 
-        BasicDBObject idQuery = new BasicDBObject("_id", getId(documentId));
+        BasicDBObject idQuery = new BasicDBObject("_id", documentId);
 
         if (patching) {
             content.removeField("_created_on"); // make sure we don't change this field
@@ -100,7 +99,7 @@ public class DocumentDAO implements Repository {
 
                 if (oldTimestamp == null) {
                     oldTimestamp = now.toString();
-                    LOGGER.warn("properties of document /{}/{}/{} had no @created_on field. set to now",
+                    LOGGER.warn("properties of document /{}/{}/{} had no @created_on field. set it to current time",
                             dbName, collName, documentId);
                 }
 
@@ -121,12 +120,13 @@ public class DocumentDAO implements Repository {
      * @param exchange
      * @param dbName
      * @param collName
+     * @param docId
      * @param content
      * @param requestEtag
      * @return
      */
     @Override
-    public int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, DBObject content, ObjectId requestEtag) {
+    public int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, Object docId, DBObject content, ObjectId requestEtag) {
         final DbsDAO dbsDAO = new DbsDAO();
         DB db = dbsDAO.getDB(dbName);
 
@@ -142,27 +142,29 @@ public class DocumentDAO implements Repository {
         content.put("_etag", timestamp);
         content.put("_created_on", now.toString()); // make sure we don't change this field
 
-        Object _id = content.get("_id");
+        Object _idInContent = content.get("_id");
         content.removeField("_id");
-
-        if (_id == null) {
-            ObjectId id = new ObjectId();
-            content.put("_id", id);
+       
+        if (_idInContent == null) {
+            // new document since the id was just auto-generated
+            content.put("_id", docId);
 
             coll.insert(content);
 
             exchange.getResponseHeaders()
                     .add(HttpString.tryFromString("Location"),
-                            getReferenceLink(exchange.getRequestURL(), id.toString()).toString());
+                            getReferenceLink(exchange.getRequestURL(), docId.toString()).toString());
 
             return HttpStatus.SC_CREATED;
         } else {
+            // might be existing, we will check
             exchange.getResponseHeaders()
                     .add(HttpString.tryFromString("Location"),
-                            getReferenceLink(exchange.getRequestURL(), _id.toString()).toString());
+                            getReferenceLink(exchange.getRequestURL(), _idInContent.toString()).toString());
         }
+        
 
-        BasicDBObject idQuery = new BasicDBObject("_id", getId("" + _id));
+        BasicDBObject idQuery = new BasicDBObject("_id", docId);
 
         // we use findAndModify to get the @created_on field value from the existing document
         // we need to upsertDocument this field back using a second update 
@@ -175,8 +177,8 @@ public class DocumentDAO implements Repository {
 
             if (oldTimestamp == null) {
                 oldTimestamp = now.toString();
-                LOGGER.warn("properties of document /{}/{}/{} had no @created_on field. set to now",
-                        dbName, collName, _id.toString());
+                LOGGER.warn("properties of document /{}/{}/{} had no @created_on field. set it to current time",
+                        dbName, collName, _idInContent.toString());
             }
 
             // need to readd the @created_on field 
@@ -199,13 +201,13 @@ public class DocumentDAO implements Repository {
      * @return
      */
     @Override
-    public int deleteDocument(String dbName, String collName, String documentId, ObjectId requestEtag) {
+    public int deleteDocument(String dbName, String collName, Object documentId, ObjectId requestEtag) {
         final DbsDAO dbsDAO = new DbsDAO();
         DB db = dbsDAO.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
 
-        BasicDBObject idQuery = new BasicDBObject("_id", getId(documentId));
+        BasicDBObject idQuery = new BasicDBObject("_id", documentId);
 
         DBObject oldDocument = coll.findAndModify(idQuery, null, null, true, null, false, false);
 
@@ -214,19 +216,6 @@ public class DocumentDAO implements Repository {
         } else {
             // check the old etag (in case restore the old document version)
             return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_NO_CONTENT);
-        }
-    }
-
-    private Object getId(String id) {
-        if (id == null) {
-            return new ObjectId();
-        }
-
-        if (ObjectId.isValid(id)) {
-            return new ObjectId(id);
-        } else {
-            // the id is not an object id
-            return id;
         }
     }
 
@@ -254,7 +243,7 @@ public class DocumentDAO implements Repository {
 
     private URI getReferenceLink(String parentUrl, String referencedName) {
         try {
-            return new URI(URLUtilis.removeTrailingSlashes(parentUrl) + "/" + referencedName);
+            return new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + referencedName);
         } catch (URISyntaxException ex) {
             LOGGER.error("error creating URI from {} + / + {}", parentUrl, referencedName, ex);
         }

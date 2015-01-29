@@ -63,10 +63,10 @@ public class PatchDocumentHandler extends PipedHttpHandler {
             return;
         }
 
-        String id = context.getDocumentId();
+        Object id = context.getDocumentId();
 
         if (content.get("_id") == null) {
-            content.put("_id", getId(id));
+            content.put("_id", id);
         } else if (!content.get("_id").equals(id)) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in json data cannot be different than id in URL");
             return;

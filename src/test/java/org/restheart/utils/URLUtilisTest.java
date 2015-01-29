@@ -57,7 +57,7 @@ public class URLUtilisTest {
         System.out.println("removeTrailingSlashes");
         String s = "/ciao/this/has/trailings/////";
         String expResult = "/ciao/this/has/trailings";
-        String result = URLUtilis.removeTrailingSlashes(s);
+        String result = URLUtils.removeTrailingSlashes(s);
         assertEquals(expResult, result);
     }
 
@@ -66,7 +66,7 @@ public class URLUtilisTest {
         System.out.println("decodeQueryString");
         String qs = "one%2Btwo";
         String expResult = "one+two";
-        String result = URLUtilis.decodeQueryString(qs);
+        String result = URLUtils.decodeQueryString(qs);
         assertEquals(expResult, result);
     }
 
@@ -75,7 +75,7 @@ public class URLUtilisTest {
         System.out.println("getParentPath");
         String path = "/a/b/c/d";
         String expResult = "/a/b/c";
-        String result = URLUtilis.getParentPath(path);
+        String result = URLUtils.getParentPath(path);
         assertEquals(expResult, result);
     }
 
@@ -84,7 +84,7 @@ public class URLUtilisTest {
         System.out.println("getUriWithDocId");
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName/documentId";
-        String result = URLUtilis.getUriWithDocId(context, "dbName", "collName", "documentId");
+        String result = URLUtils.getUriWithDocId(context, "dbName", "collName", "documentId");
         assertEquals(expResult, result);
     }
 
@@ -93,7 +93,7 @@ public class URLUtilisTest {
         System.out.println("getUriWithFilterMany");
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName?filter={'referenceField':{'$in':ids}}";
-        String result = URLUtilis.getUriWithFilterMany(context, "dbName", "collName", "referenceField", "ids");
+        String result = URLUtils.getUriWithFilterMany(context, "dbName", "collName", "referenceField", "ids");
         assertEquals(expResult, result);
     }
 
@@ -102,7 +102,7 @@ public class URLUtilisTest {
         System.out.println("getUriWithFilterOne");
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName?filter={'referenceField':ids}";
-        String result = URLUtilis.getUriWithFilterOne(context, "dbName", "collName", "referenceField", "ids");
+        String result = URLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField", "ids");
         assertEquals(expResult, result);
     }
 
@@ -111,7 +111,7 @@ public class URLUtilisTest {
         System.out.println("getUriWithFilterManyInverse");
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':ids}}}";
-        String result = URLUtilis.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", "ids");
+        String result = URLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", "ids");
         assertEquals(expResult, result);
     }
 
@@ -122,7 +122,7 @@ public class URLUtilisTest {
         exchange.setQueryString("a=1&b=2&c=3");
         exchange.addQueryParam("a", "1").addQueryParam("b", "2").addQueryParam("c", "3");
         String expResult = "a=1&c=3";
-        String result = URLUtilis.getQueryStringRemovingParams(exchange,"b");
+        String result = URLUtils.getQueryStringRemovingParams(exchange,"b");
         assertEquals(expResult, result);
     }
 

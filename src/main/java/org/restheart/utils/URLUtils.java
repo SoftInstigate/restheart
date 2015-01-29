@@ -22,16 +22,56 @@ import io.undertow.server.HttpServerExchange;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.Deque;
+import org.bson.types.ObjectId;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class URLUtilis {
+public class URLUtils {
+    public enum DOC_ID_TYPE {
+        INT, LONG, FLOAT, DOUBLE, STRING, OBJECTID, STRING_OBJECTID
+    }
+
+    public static Object getId(Object id, DOC_ID_TYPE type) throws IllegalDocumentIdException {
+        if (id == null) {
+            return null;
+        }
+        
+        if (type == null) {
+            type = DOC_ID_TYPE.STRING_OBJECTID;
+        }
+        
+        String _id = id.toString();
+        
+        try {
+            switch (type) {
+                case STRING_OBJECTID:
+                    return getIdAsStringOrObjectId(_id);
+                case OBJECTID:
+                    return getIdAsObjectId(_id);
+                case STRING:
+                    return id;
+                case INT:
+                    return getIdAsInt(_id);
+                case LONG:
+                    return getIdAsLong(_id);
+                case FLOAT:
+                    return getIdAsFloat(_id);
+                case DOUBLE:
+                    return getIdAsDouble(_id);
+            }
+        } catch (IllegalArgumentException iar) {
+            throw new IllegalDocumentIdException(iar);
+        }
+
+        return id;
+    }
 
     /**
-     * given string /ciao/this/has/trailings///// returns /ciao/this/has/trailings
-     * 
+     * given string /ciao/this/has/trailings///// returns
+     * /ciao/this/has/trailings
+     *
      * @param s
      * @return the string s without the trailing slashes
      */
@@ -46,10 +86,10 @@ public class URLUtilis {
             return s.trim();
         }
     }
-    
+
     /**
      * decode the percent encoded query string
-     * 
+     *
      * @param qs
      * @return the undecoded string
      */
@@ -192,5 +232,53 @@ public class URLUtilis {
         }
 
         return ret;
+    }
+
+    private static int getIdAsInt(String id) throws IllegalArgumentException {
+        try {
+            return Integer.parseInt(id, 10);
+        } catch (NumberFormatException nfe) {
+            throw new IllegalArgumentException("The id is not a valid int " + id, nfe);
+        }
+    }
+
+    private static long getIdAsLong(String id) throws IllegalArgumentException {
+        try {
+            return Long.parseLong(id, 10);
+        } catch (NumberFormatException nfe) {
+            throw new IllegalArgumentException("The id is not a valid long " + id, nfe);
+        }
+    }
+
+    private static float getIdAsFloat(String id) throws IllegalArgumentException {
+        try {
+            return Float.parseFloat(id);
+        } catch (NumberFormatException nfe) {
+            throw new IllegalArgumentException("The id is not a valid float " + id, nfe);
+        }
+    }
+
+    private static double getIdAsDouble(String id) throws IllegalArgumentException {
+        try {
+            return Double.parseDouble(id);
+        } catch (NumberFormatException nfe) {
+            throw new IllegalArgumentException("The id is not a valid double " + id, nfe);
+        }
+    }
+
+    private static ObjectId getIdAsObjectId(String id) throws IllegalArgumentException {
+        if (!ObjectId.isValid(id)) {
+            throw new IllegalArgumentException("The id is not a valid ObjectId " + id);
+        }
+
+        return new ObjectId(id);
+    }
+
+    private static Object getIdAsStringOrObjectId(String id) {
+        if (ObjectId.isValid(id)) {
+            return getIdAsObjectId(id);
+        }
+
+        return id;
     }
 }

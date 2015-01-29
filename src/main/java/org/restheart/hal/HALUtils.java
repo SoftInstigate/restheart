@@ -19,7 +19,7 @@ package org.restheart.hal;
 
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
-import org.restheart.utils.URLUtilis;
+import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.util.TreeMap;
 import org.bson.BSONObject;
@@ -81,8 +81,8 @@ public class HALUtils {
      * @throws IllegalQueryParamenterException
      */
     public static TreeMap<String, String> getPaginationLinks(HttpServerExchange exchange, RequestContext context, long size) throws IllegalQueryParamenterException {
-        String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
-        String queryString = URLUtilis.decodeQueryString(exchange.getQueryString());
+        String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
+        String queryString = URLUtils.decodeQueryString(exchange.getQueryString());
 
         int page = context.getPage();
         int pagesize = context.getPagesize();
@@ -103,7 +103,7 @@ public class HALUtils {
                 links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize);
             }
         } else {
-            String queryStringNoPagingProps = URLUtilis.decodeQueryString(URLUtilis.getQueryStringRemovingParams(exchange, "page", "pagesize"));
+            String queryStringNoPagingProps = URLUtils.decodeQueryString(URLUtils.getQueryStringRemovingParams(exchange, "page", "pagesize"));
 
             if (queryStringNoPagingProps == null || queryStringNoPagingProps.isEmpty()) {
                 links.put("first", requestPath + "?pagesize=" + pagesize);
