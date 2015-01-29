@@ -111,7 +111,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
                     context.addWarning("filtered out reserved resource " + requestPath + "/" + _id.toString());
                 } else {
 
-                    Representation nrep = DocumentRepresentationFactory.getDocument(requestPath + "/" + _id.toString(), exchange, context, d, true);
+                    Representation nrep = DocumentRepresentationFactory.getDocument(requestPath + "/" + _id.toString(), context.getDocIdType(), exchange, context, d, true);
 
                     nrep.addProperty("_type", RequestContext.TYPE.DOCUMENT.name());
 

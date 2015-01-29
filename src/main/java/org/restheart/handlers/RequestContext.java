@@ -28,7 +28,6 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
-import org.restheart.utils.IllegalDocumentIdException;
 
 /**
  *
@@ -66,7 +65,7 @@ public class RequestContext {
     public static final String FILTER_QPARAM_KEY = "filter";
     public static final String EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY = "eager";
     public static final String DOC_ID_TYPE_KEY = "doc_id_type";
-    public static final String AUTODETECT_OBJECTID_KEY = "autodetect_oid";
+    public static final String DETECT_OBJECTIDS_KEY = "detect_oids";
 
     public static final String SLASH = "/";
     public static final String PATCH = "PATCH";
@@ -97,7 +96,7 @@ public class RequestContext {
     private Deque<String> filter = null;
     private Deque<String> sortBy = null;
     private URLUtils.DOC_ID_TYPE docIdType = URLUtils.DOC_ID_TYPE.STRING_OBJECTID;
-    private boolean autodetectObjectId = false;
+    private boolean detectObjectIds = false;
     private Object documentId;
 
     private String unmappedRequestUri = null;
@@ -545,17 +544,17 @@ public class RequestContext {
     }
 
     /**
-     * @return the autodetectObjectId
+     * @return the detectObjectIds
      */
-    public boolean isAutodetectObjectId() {
-        return autodetectObjectId;
+    public boolean isDetectObjectIds() {
+        return detectObjectIds;
     }
 
     /**
-     * @param autodetectObjectId the autodetectObjectId to set
+     * @param detectObjectIds the detectObjectIds to set
      */
-    public void setAutodetectObjectId(boolean autodetectObjectId) {
-        this.autodetectObjectId = autodetectObjectId;
+    public void setDetectObjectIds(boolean detectObjectIds) {
+        this.detectObjectIds = detectObjectIds;
     }
 
     /**

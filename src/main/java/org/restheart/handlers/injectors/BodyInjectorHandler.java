@@ -103,7 +103,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             });
 
             //replace string that are valid ObjectIds with ObjectIds objects.
-            HALUtils.replaceStringsWithObjectIds(content);
+            if (context.isDetectObjectIds())
+                HALUtils.replaceStringsWithObjectIds(content);
 
             // inject the request content in the context
             context.setContent(content);

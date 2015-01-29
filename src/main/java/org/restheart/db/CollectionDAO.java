@@ -27,11 +27,11 @@ import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import org.restheart.utils.HttpStatus;
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import org.bson.BSONObject;
 import org.bson.types.ObjectId;
-import org.restheart.hal.HALUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -179,8 +179,6 @@ public class CollectionDAO {
             filters.stream().forEach((String f) -> {
                 BSONObject filterQuery = (BSONObject) JSON.parse(f);
 
-                HALUtils.replaceStringsWithObjectIds(filterQuery);
-
                 query.putAll(filterQuery);  // this can throw JSONParseException for invalid filter parameters
             });
         }
@@ -188,10 +186,14 @@ public class CollectionDAO {
         return coll.find(query).sort(sort);
     }
 
-    public ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filters, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager) throws JSONParseException {
+    public ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filters, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager, boolean detectOids) throws JSONParseException {
         ArrayList<DBObject> ret = new ArrayList<>();
 
         int toskip = pagesize * (page - 1);
+
+        if (detectOids) {
+            filters = replaceObjectIdsInFilters(filters);
+        }
 
         DBCursor cursor;
         SkippedDBCursor _cursor = null;
@@ -244,7 +246,7 @@ public class CollectionDAO {
      */
     public DBObject getCollectionProps(String dbName, String collName) {
         DBCollection propsColl = getCollection(dbName, "_properties");
-        
+
         DBObject properties = propsColl.findOne(new BasicDBObject("_id", "_properties.".concat(collName)));
 
         if (properties != null) {
@@ -383,5 +385,35 @@ public class CollectionDAO {
         coll.createIndex(new BasicDBObject("_id", 1).append("_etag", 1), new BasicDBObject("name", "_id_etag_idx"));
         coll.createIndex(new BasicDBObject("_etag", 1), new BasicDBObject("name", "_etag_idx"));
         coll.createIndex(new BasicDBObject("_created_on", 1), new BasicDBObject("name", "_created_on_idx"));
+    }
+
+    private Deque<String> replaceObjectIdsInFilters(Deque<String> filters) {
+        ArrayDeque<String> ret = new ArrayDeque<>();
+        
+        filters.stream().forEach((filter) -> {
+            ret.add(replaceObjectIdsInFilters((BSONObject)JSON.parse(filter)));
+        });
+        
+        return ret;
+    }
+        
+    private String replaceObjectIdsInFilters(BSONObject source) {
+        if (source == null) {
+            return null;
+        }
+
+        BasicDBObject ret = new BasicDBObject();
+        
+        for (String key: source.keySet()) {
+            Object value = source.get(key);
+            
+            if (value instanceof BSONObject) {
+                ret.append(key, replaceObjectIdsInFilters((BSONObject) value));
+            } else if (ObjectId.isValid(value.toString())) {
+                ret.append(key, new ObjectId(value.toString()));
+            }
+        }
+       
+        return ret.toString();
     }
 }

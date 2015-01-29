@@ -72,7 +72,13 @@ public class PostCollectionHandler extends PutCollectionHandler {
         Object docId;
 
         if (content.get("_id") == null) {
-            docId = new ObjectId();
+            if (context.getDocIdType() == URLUtils.DOC_ID_TYPE.OBJECTID || context.getDocIdType() == URLUtils.DOC_ID_TYPE.STRING_OBJECTID) {
+                docId = new ObjectId();
+            } else {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is mandatory for document id type " + context.getDocIdType().name());
+                return;
+            }
+            
         } else {
             try {
                 docId = URLUtils.getId(content.get("_id"), context.getDocIdType());

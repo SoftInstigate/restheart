@@ -33,6 +33,7 @@ import io.undertow.util.Headers;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.TreeMap;
+import org.restheart.utils.URLUtils.DOC_ID_TYPE;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -47,6 +48,7 @@ public class DocumentRepresentationFactory {
     /**
      *
      * @param href
+     * @param docIdType
      * @param exchange
      * @param context
      * @param data
@@ -54,9 +56,16 @@ public class DocumentRepresentationFactory {
      * @return
      * @throws IllegalQueryParamenterException
      */
-    public static Representation getDocument(String href, HttpServerExchange exchange, RequestContext context, DBObject data, boolean embedded)
+    public static Representation getDocument(String href, DOC_ID_TYPE docIdType, HttpServerExchange exchange, RequestContext context, DBObject data, boolean embedded)
             throws IllegalQueryParamenterException {
-        Representation rep = new Representation(href);
+
+        Representation rep;
+        
+        if (docIdType == DOC_ID_TYPE.STRING_OBJECTID) {
+            rep = new Representation(href);
+        } else {
+            rep = new Representation(href + "?doc_id_type=" + docIdType.name());
+        }
 
         rep.addProperty("_type", context.getType().name());
 
@@ -83,8 +92,9 @@ public class DocumentRepresentationFactory {
         rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-doc-{rel}", false), true);
 
         // inject warning only on the root representation
-        if (!embedded)
+        if (!embedded) {
             ResponseHelper.injectWarnings(rep, exchange, context);
+        }
 
         return rep;
     }
@@ -100,7 +110,7 @@ public class DocumentRepresentationFactory {
      */
     public static void sendDocument(String href, HttpServerExchange exchange, RequestContext context, DBObject data)
             throws IllegalQueryParamenterException, URISyntaxException {
-        Representation rep = getDocument(href, exchange, context, data, false);
+        Representation rep = getDocument(href, context.getDocIdType(), exchange, context, data, false);
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
