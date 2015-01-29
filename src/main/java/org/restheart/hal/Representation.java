@@ -20,6 +20,7 @@ package org.restheart.hal;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import java.util.Objects;
 import org.bson.BSONObject;
 import org.bson.types.ObjectId;
 
@@ -140,8 +141,40 @@ public class Representation {
         repArray.add(rep.getDBObject());
     }
 
+    public void addWarning(String warning) {
+        Representation nrep = new Representation("#warnings");
+        nrep.addProperty("message", warning);
+        addRepresentation("rh:warnings", nrep);
+    }
+
     @Override
     public String toString() {
         return getDBObject().toString();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(embedded, links, properties);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Representation other = (Representation) obj;
+        if (!Objects.equals(this.properties, other.properties)) {
+            return false;
+        }
+        if (!Objects.equals(this.embedded, other.embedded)) {
+            return false;
+        }
+        if (!Objects.equals(this.links, other.links)) {
+            return false;
+        }
+        return true;
     }
 }

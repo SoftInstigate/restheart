@@ -26,13 +26,13 @@ import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.Relationship;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
-import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.TreeMap;
+import org.bson.types.ObjectId;
 import org.restheart.utils.URLUtils.DOC_ID_TYPE;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -43,29 +43,38 @@ import org.slf4j.Logger;
  */
 public class DocumentRepresentationFactory {
 
-    private static final Logger logger = LoggerFactory.getLogger(DocumentRepresentationFactory.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DocumentRepresentationFactory.class);
 
     /**
      *
      * @param href
-     * @param docIdType
      * @param exchange
      * @param context
      * @param data
-     * @param embedded true if this document is embedded in a parent document
      * @return
      * @throws IllegalQueryParamenterException
      */
-    public static Representation getDocument(String href, DOC_ID_TYPE docIdType, HttpServerExchange exchange, RequestContext context, DBObject data, boolean embedded)
+    public static Representation getDocument(String href, HttpServerExchange exchange, RequestContext context, DBObject data)
             throws IllegalQueryParamenterException {
-
         Representation rep;
         
-        if (docIdType == DOC_ID_TYPE.STRING_OBJECTID) {
+        Object id = data.get("_id");
+        
+        if (id instanceof String || id instanceof ObjectId) {
             rep = new Representation(href);
+        } else if (id instanceof Integer) {
+            rep = new Representation(href + "?doc_id_type=" + DOC_ID_TYPE.INT);
+        } else if (id instanceof Long) {
+            rep = new Representation(href + "?doc_id_type=" + DOC_ID_TYPE.LONG);
+        } else if (id instanceof Float) {
+            rep = new Representation(href + "?doc_id_type=" + DOC_ID_TYPE.FLOAT);
+        } else if (id instanceof Double) {
+            rep = new Representation(href + "?doc_id_type=" + DOC_ID_TYPE.DOUBLE);
         } else {
-            rep = new Representation(href + "?doc_id_type=" + docIdType.name());
+            rep = new Representation("#");
+            rep.addWarning("this resource does not have an URI since the _id is of type " + id.getClass().getSimpleName());
         }
+        
 
         rep.addProperty("_type", context.getType().name());
 
@@ -75,7 +84,7 @@ public class DocumentRepresentationFactory {
         // document links
         TreeMap<String, String> links;
 
-        links = getRelationshipsLinks(context, data);
+        links = getRelationshipsLinks(rep, context, data);
 
         if (links != null) {
             links.keySet().stream().forEach((k) -> {
@@ -91,11 +100,6 @@ public class DocumentRepresentationFactory {
         }
         rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-doc-{rel}", false), true);
 
-        // inject warning only on the root representation
-        if (!embedded) {
-            ResponseHelper.injectWarnings(rep, exchange, context);
-        }
-
         return rep;
     }
 
@@ -110,13 +114,16 @@ public class DocumentRepresentationFactory {
      */
     public static void sendDocument(String href, HttpServerExchange exchange, RequestContext context, DBObject data)
             throws IllegalQueryParamenterException, URISyntaxException {
-        Representation rep = getDocument(href, context.getDocIdType(), exchange, context, data, false);
+        Representation rep = getDocument(href, exchange, context, data);
+        
+        if (context.getWarnings() != null)
+            context.getWarnings().forEach(w -> rep.addWarning(w));
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
     }
 
-    private static TreeMap<String, String> getRelationshipsLinks(RequestContext context, DBObject data) {
+    private static TreeMap<String, String> getRelationshipsLinks(Representation rep, RequestContext context, DBObject data) {
         TreeMap<String, String> links = new TreeMap<>();
 
         List<Relationship> rels = null;
@@ -124,7 +131,7 @@ public class DocumentRepresentationFactory {
         try {
             rels = Relationship.getFromJson((DBObject) context.getCollectionProps());
         } catch (InvalidMetadataException ex) {
-            context.addWarning("collection " + context.getDBName() + "/" + context.getCollectionName() + " has invalid relationships definition");
+            rep.addWarning("collection " + context.getDBName() + "/" + context.getCollectionName() + " has invalid relationships definition");
         }
 
         if (rels == null) {
@@ -139,8 +146,8 @@ public class DocumentRepresentationFactory {
                     links.put(rel.getRel(), link);
                 }
             } catch (IllegalArgumentException ex) {
-                context.addWarning(ex.getMessage());
-                logger.warn(ex.getMessage(), ex);
+                rep.addWarning(ex.getMessage());
+                LOGGER.debug(ex.getMessage(), ex);
             }
         }
 

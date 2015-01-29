@@ -23,7 +23,6 @@ import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
-import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
@@ -44,7 +43,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     @Override
-    protected Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size, boolean embedded)
+    protected Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
         final Representation rep = createRepresentation(exchange, context, requestPath);
@@ -60,7 +59,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
         
         addPaginationLinks(exchange, context, size, rep);
         
-        addLinkTemplatesAndCuries(exchange, context, rep, requestPath, embedded);
+        addLinkTemplatesAndCuries(exchange, context, rep, requestPath);
         
         return rep;
     }
@@ -74,7 +73,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
         }
     }
 
-    private void addLinkTemplatesAndCuries(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath, boolean embedded) {
+    private void addLinkTemplatesAndCuries(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath) {
         // link templates and curies
         if (context.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
@@ -82,10 +81,6 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
         }
         rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
         rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-db-{rel}", false), true);
-        
-        // inject warning only on the root representation
-        if (!embedded)
-            ResponseHelper.injectWarnings(rep, exchange, context);
     }
 
     private void embeddedCollections(List<DBObject> embeddedData, String requestPath, Representation rep) {

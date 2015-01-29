@@ -44,13 +44,16 @@ public abstract class AbstractRepresentationFactory {
      */
     public void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
-        Representation rep = getRepresentation(exchange, context, embeddedData, size, false);
-
+        Representation rep = getRepresentation(exchange, context, embeddedData, size);
+        
+        if (context.getWarnings() != null)
+            context.getWarnings().forEach(w -> rep.addWarning(w));
+        
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
     }
 
-    protected abstract Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size, boolean embedded)
+    protected abstract Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException;
 
     protected void addSizeAndTotalPagesProperties(final long size, final RequestContext context, final Representation rep) {
@@ -98,5 +101,4 @@ public abstract class AbstractRepresentationFactory {
     protected boolean hasTrailingSlash(final String requestPath) {
         return requestPath.substring(requestPath.length() > 0 ? requestPath.length() - 1 : 0).equals("/");
     }
-
 }

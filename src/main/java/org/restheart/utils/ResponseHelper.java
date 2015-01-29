@@ -155,22 +155,4 @@ public class ResponseHelper {
             exchange.getResponseHeaders().put(Headers.ETAG, etag.toString());
         }
     }
-
-    /**
-     *
-     * @param rep
-     * @param exchange
-     * @param context
-     */
-    public static void injectWarnings(Representation rep, HttpServerExchange exchange, RequestContext context) {
-        if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            context.getWarnings().stream().map((warning) -> {
-                Representation nrep = new Representation("#warnings");
-                nrep.addProperty("message", warning);
-                return nrep;
-            }).forEach((nrep) -> {
-                rep.addRepresentation("rh:warnings", nrep);
-            });
-        }
-    }
 }

@@ -23,7 +23,6 @@ import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
-import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.types.ObjectId;
@@ -43,7 +42,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     @Override
-    protected Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size, boolean embedded)
+    protected Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
         final Representation rep = createRepresentation(exchange, context, requestPath);
@@ -54,7 +53,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
 
         addPaginationLinks(exchange, context, size, rep);
 
-        addLinkTemplatesAndCuries(exchange, context, rep, requestPath, embedded);
+        addLinkTemplatesAndCuries(exchange, context, rep, requestPath);
 
         return rep;
     }
@@ -68,14 +67,10 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
         }
     }
 
-    private void addLinkTemplatesAndCuries(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath, boolean embedded) {
+    private void addLinkTemplatesAndCuries(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath) {
         //curies
         rep.addLink(new Link("rh:paging", requestPath + "{?page}{&pagesize}", true));
         rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-root-{rel}", true), true);
-
-        // inject warning only on the root representation
-        if (!embedded)
-            ResponseHelper.injectWarnings(rep, exchange, context);
     }
 
     private void embeddedDocuments(List<DBObject> embeddedData, boolean trailingSlash, String requestPath, Representation rep) {

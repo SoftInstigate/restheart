@@ -24,7 +24,6 @@ import org.restheart.hal.Representation;
 import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
-import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -78,8 +77,6 @@ public class IndexesRepresentationFactory {
             rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath)));
         }
         rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-indexes-{rel}", false), true);
-
-        ResponseHelper.injectWarnings(rep, exchange, context);
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());

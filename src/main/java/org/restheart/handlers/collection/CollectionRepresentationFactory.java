@@ -24,7 +24,6 @@ import org.restheart.hal.Representation;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.document.DocumentRepresentationFactory;
-import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
@@ -50,7 +49,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
      * @throws IllegalQueryParamenterException
      */
     @Override
-    protected Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size, boolean embedded)
+    protected Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
         final Representation rep = createRepresentation(exchange, context, requestPath);
@@ -68,8 +67,8 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
 
         addPaginationLinks(exchange, context, size, rep);
 
-        addLinkTemplatesAndCuries(exchange, context, rep, requestPath, embedded);
-
+        addLinkTemplatesAndCuries(exchange, context, rep, requestPath);
+        
         return rep;
     }
 
@@ -83,7 +82,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         }
     }
 
-    private void addLinkTemplatesAndCuries(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath, boolean embedded) {
+    private void addLinkTemplatesAndCuries(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath) {
         // link templates and curies
         if (context.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
@@ -95,33 +94,24 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         rep.addLink(new Link("rh:countandpaging", requestPath + "/{?page}{&pagesize}&count", true));
         rep.addLink(new Link("rh:indexes", requestPath + "/_indexes"));
         rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-coll-{rel}", true), true);
-
-        // inject warning only on the root representation
-        if (!embedded) {
-            ResponseHelper.injectWarnings(rep, exchange, context);
-        }
     }
 
     private void embeddedDocuments(List<DBObject> embeddedData, String requestPath, HttpServerExchange exchange, RequestContext context, Representation rep) throws IllegalQueryParamenterException {
         for (DBObject d : embeddedData) {
             Object _id = d.get("_id");
 
-            if (_id != null && (_id instanceof Number || _id instanceof String || _id instanceof ObjectId)) {
-                if (RequestContext.isReservedResourceCollection(_id.toString()))  {
-                    context.addWarning("filtered out reserved resource " + requestPath + "/" + _id.toString());
-                } else {
-
-                    Representation nrep = DocumentRepresentationFactory.getDocument(requestPath + "/" + _id.toString(), context.getDocIdType(), exchange, context, d, true);
-
-                    nrep.addProperty("_type", RequestContext.TYPE.DOCUMENT.name());
-
-                    if (d.get("_etag") != null && d.get("_etag") instanceof ObjectId) {
-                        d.put("_etag", ((ObjectId) d.get("_etag")).toString()); // represent the etag as a string
-                    }
-                    rep.addRepresentation("rh:doc", nrep);
-                }
+            if (RequestContext.isReservedResourceCollection(_id.toString())) {
+                rep.addWarning("filtered out reserved resource " + requestPath + "/" + _id.toString());;
             } else {
-                context.addWarning("filtered out collection with _id " + _id + "; unable to build the resource URI");
+
+                Representation nrep = DocumentRepresentationFactory.getDocument(requestPath + "/" + _id.toString(), exchange, context, d);
+
+                nrep.addProperty("_type", RequestContext.TYPE.DOCUMENT.name());
+
+                if (d.get("_etag") != null && d.get("_etag") instanceof ObjectId) {
+                    d.put("_etag", ((ObjectId) d.get("_etag")).toString()); // represent the etag as a string
+                }
+                rep.addRepresentation("rh:doc", nrep);
             }
         }
     }

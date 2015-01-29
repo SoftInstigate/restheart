@@ -388,6 +388,9 @@ public class CollectionDAO {
     }
 
     private Deque<String> replaceObjectIdsInFilters(Deque<String> filters) {
+        if (filters == null)
+            return null;
+        
         ArrayDeque<String> ret = new ArrayDeque<>();
         
         filters.stream().forEach((filter) -> {

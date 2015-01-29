@@ -28,6 +28,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.List;
 
 /**
  *
@@ -87,7 +88,7 @@ public class RequestContext {
 
     private DBObject content;
 
-    private final ArrayList<String> warnings = new ArrayList<>();
+    private final List<String> warnings = new ArrayList<>();
 
     private int page = 1;
     private int pagesize = 100;
@@ -480,7 +481,7 @@ public class RequestContext {
     /**
      * @return the warnings
      */
-    public ArrayList<String> getWarnings() {
+    public List<String> getWarnings() {
         return warnings;
     }
 
