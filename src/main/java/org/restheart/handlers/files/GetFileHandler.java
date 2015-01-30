@@ -27,10 +27,8 @@ import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.time.Instant;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.RequestContext;
@@ -39,34 +37,25 @@ import org.restheart.handlers.document.GetDocumentHandler;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
-import org.restheart.utils.URLUtilis;
+import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xnio.channels.StreamSinkChannel;
 
 /**
  *
  * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
 public class GetFileHandler extends GetDocumentHandler {
-    
+
+    public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(GetFileHandler.class);
+
+    private static final int _16K = 16 * 1024;
 
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        ObjectId objectId = null;
-        String stringObjectId = null;
-
-        if (ObjectId.isValid(context.getDocumentId())) {
-            objectId = new ObjectId(context.getDocumentId());
-        } else {
-            // the id is not an acutal ObjectId
-            stringObjectId = context.getDocumentId();
-        }
-
-        final BasicDBObject query = objectId != null
-                ? new BasicDBObject("_id", objectId)
-                : new BasicDBObject("_id", stringObjectId);
+        BasicDBObject query = new BasicDBObject("_id", context.getDocumentId());
 
         DBObject document = dbsDAO.getCollection(context.getDBName(), context.getCollectionName()).findOne(query);
 
@@ -75,28 +64,11 @@ public class GetFileHandler extends GetDocumentHandler {
             return;
         }
 
-        HeaderMap headers = exchange.getRequestHeaders();
-
-        HeaderValues headerValues = headers.get(new HttpString("Accept"));
-        LOGGER.info("@@@ headerValues = {}", headerValues.toString());
-        LOGGER.info("@@@ getCollectionName = {}", context.getCollectionName());
-        if (headerValues != null && headerValues.size() > 0 && headerValues.contains("application/octet-stream")) {
-            // check if this is a file
+        if (isBinaryRequest(extractHeaderValues(exchange, context))) {
             boolean isFile = document.containsField("filename") && document.containsField("chunkSize");
             LOGGER.info("@@@ filename = {}", document.get("filename"));
             if (isFile) {
-                String bucket = extractBucket(context.getCollectionName());
-                // read the file from GridFS
-                GridFS gridfs = new GridFS(dbsDAO.getDB(context.getDBName()), bucket);
-                GridFSDBFile dbsfile = gridfs.findOne((String)document.get("filename"));
-                ReadableByteChannel inputChannel = Channels.newChannel(dbsfile.getInputStream());
-                StreamSinkChannel responseChannel = exchange.getResponseChannel();
-                
-                fastCopy(inputChannel, responseChannel);
-
-                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/octet-stream");
-                exchange.setResponseCode(HttpStatus.SC_OK);
-                exchange.endExchange();
+                handleFile(exchange, context, document);
                 return;
             }
         }
@@ -116,7 +88,7 @@ public class GetFileHandler extends GetDocumentHandler {
             }
         }
 
-        String requestPath = URLUtilis.removeTrailingSlashes(exchange.getRequestPath());
+        String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
 
         ResponseHelper.injectEtagHeader(exchange, document);
         exchange.setResponseCode(HttpStatus.SC_OK);
@@ -125,24 +97,44 @@ public class GetFileHandler extends GetDocumentHandler {
         exchange.endExchange();
     }
 
-    static String extractBucket(String collectionName) {
-        String bucket = collectionName.split("\\.")[0];
-        return bucket;
+    private HeaderValues extractHeaderValues(HttpServerExchange exchange, RequestContext context) {
+        HeaderMap headers = exchange.getRequestHeaders();
+        HeaderValues headerValues = headers.get(new HttpString("Accept"));
+        LOGGER.info("@@@ headerValues = {}", headerValues);
+        LOGGER.info("@@@ getCollectionName = {}", context.getCollectionName());
+        return headerValues;
     }
-    
-    static void fastCopy(final ReadableByteChannel src, final WritableByteChannel dest) throws IOException {
-        final ByteBuffer buffer = ByteBuffer.allocateDirect(32 * 1024);
-        
-        while(src.read(buffer) != -1) {
-            buffer.flip();
-            dest.write(buffer);
-            buffer.compact();
+
+    private static boolean isBinaryRequest(HeaderValues headerValues) {
+        return headerValues != null && headerValues.size() > 0 && headerValues.contains(APPLICATION_OCTET_STREAM);
+    }
+
+    private void handleFile(HttpServerExchange exchange, RequestContext context, DBObject document) throws IOException {
+        String contentLength = document.get("length").toString();
+        LOGGER.info("@@@ content length = {}", contentLength);
+        String bucket = extractBucket(context.getCollectionName());
+        // read the file from GridFS
+        GridFS gridfs = new GridFS(dbsDAO.getDB(context.getDBName()), bucket);
+        GridFSDBFile dbsfile = gridfs.findOne((String) document.get("filename"));
+
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
+        exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, contentLength);
+        exchange.setResponseCode(HttpStatus.SC_OK);
+
+        copy(dbsfile.getInputStream(), exchange.getOutputStream());
+
+        exchange.endExchange();
+    }
+
+    void copy(InputStream input, OutputStream output) throws IOException {
+        byte[] buffer = new byte[_16K];
+        int bytesRead;
+        while ((bytesRead = input.read(buffer)) != -1) {
+            output.write(buffer, 0, bytesRead);
         }
-        
-        buffer.flip();
-        
-        while(buffer.hasRemaining()) {
-            dest.write(buffer);
-        }
+    }
+
+    static String extractBucket(String collectionName) {
+        return collectionName.split("\\.")[0];
     }
 }

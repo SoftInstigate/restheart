@@ -64,7 +64,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        BasicDBObject query = new BasicDBObject("_id", context.getDocumentId());;
+        BasicDBObject query = new BasicDBObject("_id", context.getDocumentId());
 
         DBObject document = dbsDAO.getCollection(context.getDBName(), context.getCollectionName()).findOne(query);
 
