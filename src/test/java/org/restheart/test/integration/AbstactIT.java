@@ -55,8 +55,8 @@ public abstract class AbstactIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstactIT.class);
 
-    private static final String HOST = "127.0.0.1";
-    private static final String HTTP = "http";
+    protected static final String HOST = "127.0.0.1";
+    protected static final String HTTP = "http";
 
     protected static final Path confFilePath = new File("etc/restheart-integrationtest.yml").toPath();
     protected static MongoClient mongoClient;

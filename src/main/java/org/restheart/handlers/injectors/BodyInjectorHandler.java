@@ -67,10 +67,10 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
         if (unsupportedContentType(contentTypes)) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
-                    "Content-Type must be either: " + Representation.HAL_JSON_MEDIA_TYPE 
-                            + ", " + Representation.JSON_MEDIA_TYPE 
-                            + ", " + Representation.APP_FORM_URLENCODED_TYPE 
-                            + ", " + Representation.MULTIPART_FORM_DATA_TYPE);
+                    "Content-Type must be either: " + Representation.HAL_JSON_MEDIA_TYPE
+                    + ", " + Representation.JSON_MEDIA_TYPE
+                    + ", " + Representation.APP_FORM_URLENCODED_TYPE
+                    + ", " + Representation.MULTIPART_FORM_DATA_TYPE);
             return;
         }
 
@@ -103,8 +103,20 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             });
 
             //replace string that are valid ObjectIds with ObjectIds objects.
-            if (context.isDetectObjectIds())
+            if (context.isDetectObjectIds()) {
+                Object keepId = null;
+                
+                // if detect_oids==true and doc_id_type==string, replace all objectids but the id 
+                if (context.getDocIdType() == RequestContext.DOC_ID_TYPE.STRING) {
+                    keepId = content.removeField("_id");
+                }
+                
                 HALUtils.replaceStringsWithObjectIds(content);
+                
+                if (keepId != null) {
+                    content.put("_id", keepId);
+                }
+            }
 
             // inject the request content in the context
             context.setContent(content);
@@ -118,8 +130,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                 || contentTypes.isEmpty()
                 || contentTypes.stream().noneMatch(
                         ct -> ct.startsWith(Representation.HAL_JSON_MEDIA_TYPE)
-                                || ct.startsWith(Representation.JSON_MEDIA_TYPE)
-                                || ct.startsWith(Representation.APP_FORM_URLENCODED_TYPE)
-                                || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE));
+                        || ct.startsWith(Representation.JSON_MEDIA_TYPE)
+                        || ct.startsWith(Representation.APP_FORM_URLENCODED_TYPE)
+                        || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE));
     }
 }

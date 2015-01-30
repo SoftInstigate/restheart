@@ -58,6 +58,10 @@ public class RequestContext {
         OPTIONS,
         OTHER
     };
+    
+    public enum DOC_ID_TYPE {
+        INT, LONG, FLOAT, DOUBLE, STRING, OBJECTID, STRING_OBJECTID
+    }
 
     public static final String PAGE_QPARAM_KEY = "page";
     public static final String PAGESIZE_QPARAM_KEY = "pagesize";
@@ -97,7 +101,7 @@ public class RequestContext {
     private EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy;
     private Deque<String> filter = null;
     private Deque<String> sortBy = null;
-    private URLUtils.DOC_ID_TYPE docIdType = URLUtils.DOC_ID_TYPE.STRING_OBJECTID;
+    private DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OBJECTID;
     private boolean detectObjectIds = false;
     private Object documentId;
 
@@ -536,14 +540,14 @@ public class RequestContext {
     /**
      * @return the docIdType
      */
-    public URLUtils.DOC_ID_TYPE getDocIdType() {
+    public DOC_ID_TYPE getDocIdType() {
         return docIdType;
     }
 
     /**
      * @param docIdType the docIdType to set
      */
-    public void setDocIdType(URLUtils.DOC_ID_TYPE docIdType) {
+    public void setDocIdType(DOC_ID_TYPE docIdType) {
         this.docIdType = docIdType;
     }
 

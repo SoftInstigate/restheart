@@ -23,15 +23,21 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.Deque;
 import org.bson.types.ObjectId;
+import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
+import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.DOUBLE;
+import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.FLOAT;
+import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.INT;
+import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.LONG;
+import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.OBJECTID;
+import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.STRING;
+import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.STRING_OBJECTID;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class URLUtils {
-    public enum DOC_ID_TYPE {
-        INT, LONG, FLOAT, DOUBLE, STRING, OBJECTID, STRING_OBJECTID
-    }
+    
 
     public static Object getId(Object id, DOC_ID_TYPE type) throws IllegalDocumentIdException {
         if (id == null) {

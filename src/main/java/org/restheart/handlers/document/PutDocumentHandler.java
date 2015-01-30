@@ -27,6 +27,7 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 import org.bson.types.ObjectId;
 
 /**

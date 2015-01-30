@@ -22,13 +22,8 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import io.undertow.server.HttpServerExchange;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RequestHelper;
-import org.restheart.utils.URLUtils;
-import io.undertow.util.HttpString;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.time.Instant;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -75,7 +70,7 @@ public class DocumentDAO implements Repository {
         BasicDBObject idQuery = new BasicDBObject("_id", documentId);
 
         if (patching) {
-            content.removeField("_created_on"); // make sure we don't change this field
+            content.removeField("_created_on"); // it makes sure the client doesn't change this field
 
             DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, new BasicDBObject("$set", content), false, false);
 
@@ -117,7 +112,6 @@ public class DocumentDAO implements Repository {
     }
 
     /**
-     * @param exchange
      * @param dbName
      * @param collName
      * @param docId
@@ -126,7 +120,7 @@ public class DocumentDAO implements Repository {
      * @return
      */
     @Override
-    public int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, Object documentId, DBObject content, ObjectId requestEtag) {
+    public int upsertDocumentPost(String dbName, String collName, Object documentId, DBObject content, ObjectId requestEtag) {
         DB db = client.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
@@ -134,43 +128,29 @@ public class DocumentDAO implements Repository {
         ObjectId timestamp = new ObjectId();
         Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
 
-        if (content
-                == null) {
+        if (content == null) {
             content = new BasicDBObject();
         }
 
-        content.put(
-                "_etag", timestamp);
-        content.put(
-                "_created_on", now.toString()); // make sure we don't change this field
+        content.put("_etag", timestamp);
+        content.put("_created_on", now.toString()); // it makes sure the client doesn't change this field
 
         Object _idInContent = content.get("_id");
 
-        content.removeField(
-                "_id");
+        content.removeField("_id");
 
-        if (_idInContent
-                == null) {
+        if (_idInContent == null) {
             // new document since the id was just auto-generated
             content.put("_id", documentId);
 
             coll.insert(content);
 
-            exchange.getResponseHeaders()
-                    .add(HttpString.tryFromString("Location"),
-                            getReferenceLink(exchange.getRequestURL(), documentId.toString()).toString());
-
             return HttpStatus.SC_CREATED;
-        } else {
-            // might be existing, we will check
-            exchange.getResponseHeaders()
-                    .add(HttpString.tryFromString("Location"),
-                            getReferenceLink(exchange.getRequestURL(), _idInContent.toString()).toString());
         }
 
         BasicDBObject idQuery = new BasicDBObject("_id", documentId);
 
-        // we use findAndModify to get the @created_on field value from the existing document
+        // we use findAndModify to get the _created_on field value from the existing document
         // we need to upsertDocument this field back using a second update 
         // it is not possible in a single update even using $setOnInsert update operator
         // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
@@ -243,15 +223,5 @@ public class DocumentDAO implements Repository {
                 return HttpStatus.SC_PRECONDITION_FAILED;
             }
         }
-    }
-
-    private URI getReferenceLink(String parentUrl, String referencedName) {
-        try {
-            return new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + referencedName);
-        } catch (URISyntaxException ex) {
-            LOGGER.error("error creating URI from {} + / + {}", parentUrl, referencedName, ex);
-        }
-
-        return null;
     }
 }

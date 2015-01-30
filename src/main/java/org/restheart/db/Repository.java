@@ -18,7 +18,6 @@
 package org.restheart.db;
 
 import com.mongodb.DBObject;
-import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
 
 /**
@@ -29,7 +28,7 @@ public interface Repository {
     
     int upsertDocument(String dbName, String collName, Object documentId, DBObject content, ObjectId requestEtag, boolean patching);
     
-    int upsertDocumentPost(HttpServerExchange exchange, String dbName, String collName, Object documentId, DBObject content, ObjectId requestEtag);
+    int upsertDocumentPost(String dbName, String collName, Object documentId, DBObject content, ObjectId requestEtag);
     
     int deleteDocument(String dbName, String collName, Object documentId, ObjectId requestEtag);
     

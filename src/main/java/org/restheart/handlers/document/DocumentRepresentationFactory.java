@@ -33,7 +33,7 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.TreeMap;
 import org.bson.types.ObjectId;
-import org.restheart.utils.URLUtils.DOC_ID_TYPE;
+import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -62,7 +62,9 @@ public class DocumentRepresentationFactory {
         
         if (id == null) {
             rep = new Representation("#");
-        } else if (id instanceof Integer) {
+        } else if (id instanceof String || id instanceof ObjectId) {
+            rep = new Representation(href);
+        }else if (id instanceof Integer) {
             rep = new Representation(href + "?doc_id_type=" + DOC_ID_TYPE.INT);
         } else if (id instanceof Long) {
             rep = new Representation(href + "?doc_id_type=" + DOC_ID_TYPE.LONG);

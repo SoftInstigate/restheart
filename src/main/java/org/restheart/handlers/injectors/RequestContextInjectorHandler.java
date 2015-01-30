@@ -32,6 +32,7 @@ import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 import static org.restheart.handlers.RequestContext.DETECT_OBJECTIDS_KEY;
+import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_KEY;
 import org.restheart.utils.IllegalDocumentIdException;
 
@@ -193,14 +194,14 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         Deque<String> __docIdType = exchange.getQueryParameters().get(DOC_ID_TYPE_KEY);
 
         // default value
-        URLUtils.DOC_ID_TYPE docIdType = URLUtils.DOC_ID_TYPE.STRING_OBJECTID;
+        DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OBJECTID;
 
         if (__docIdType != null && !__docIdType.isEmpty()) {
             String _docIdType = __docIdType.getFirst();
 
             if (_docIdType != null && !_docIdType.isEmpty()) {
                 try {
-                    docIdType = URLUtils.DOC_ID_TYPE.valueOf(_docIdType.trim().toUpperCase());
+                    docIdType = DOC_ID_TYPE.valueOf(_docIdType.trim().toUpperCase());
                 } catch (IllegalArgumentException iae) {
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal " + DOC_ID_TYPE_KEY + " paramenter (must be STRING_OBJECTID, INT, LONG, FLOAT, DOUBLE, STRING or OBJECTID)");
                     return;

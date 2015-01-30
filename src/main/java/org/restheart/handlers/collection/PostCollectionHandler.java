@@ -26,15 +26,24 @@ import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
+import java.net.URI;
+import java.net.URISyntaxException;
 import org.bson.types.ObjectId;
+import org.restheart.hal.Representation;
+import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import org.restheart.utils.IllegalDocumentIdException;
 import org.restheart.utils.URLUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class PostCollectionHandler extends PutCollectionHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PostCollectionHandler.class);
 
     private final DocumentDAO documentDAO;
 
@@ -75,28 +84,33 @@ public class PostCollectionHandler extends PutCollectionHandler {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "reserved resource");
             return;
         }
-        
+
         Object docId;
 
         if (content.get("_id") == null) {
-            if (context.getDocIdType() == URLUtils.DOC_ID_TYPE.OBJECTID || context.getDocIdType() == URLUtils.DOC_ID_TYPE.STRING_OBJECTID) {
+            if (context.getDocIdType() == DOC_ID_TYPE.OBJECTID || context.getDocIdType() == DOC_ID_TYPE.STRING_OBJECTID) {
                 docId = new ObjectId();
             } else {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is mandatory for documents with id type " + context.getDocIdType().name());
                 return;
             }
-            
+
         } else {
             try {
                 docId = URLUtils.getId(content.get("_id"), context.getDocIdType());
-            } catch(IllegalDocumentIdException idide) {
+            } catch (IllegalDocumentIdException idide) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is not of type " + context.getDocIdType().name());
                 return;
             }
         }
 
         int httpCode = this.documentDAO
-                .upsertDocumentPost(exchange, context.getDBName(), context.getCollectionName(), docId, content, etag);
+                .upsertDocumentPost(context.getDBName(), context.getCollectionName(), docId, content, etag);
+
+        // insert the Location handler
+        exchange.getResponseHeaders()
+                .add(HttpString.tryFromString("Location"),
+                        getReferenceLink(context, exchange.getRequestURL(), docId));
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
@@ -106,5 +120,39 @@ public class PostCollectionHandler extends PutCollectionHandler {
         }
 
         exchange.endExchange();
+    }
+
+    private String getReferenceLink(RequestContext context, String parentUrl, Object docId) {
+        if (context == null || parentUrl == null || docId == null) {
+            LOGGER.error("error creating URI, null arguments: context = {}, parentUrl = {}, docId = {}", context, parentUrl, docId);
+            return "";
+        }
+        
+        try {
+            URI uri;
+
+            if (docId instanceof String && ObjectId.isValid((String)docId)) { 
+                uri = new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + docId.toString()+ "?doc_id_type=" + DOC_ID_TYPE.STRING);
+            } else if (docId instanceof String || docId instanceof ObjectId) {
+                uri = new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + docId.toString());
+            } else if (docId instanceof Integer) {
+                uri = new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + docId.toString() + "?doc_id_type=" + DOC_ID_TYPE.INT);
+            } else if (docId instanceof Long) {
+                uri = new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + docId.toString() + "?doc_id_type=" + DOC_ID_TYPE.LONG);
+            } else if (docId instanceof Float) {
+                uri = new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + docId.toString() + "?doc_id_type=" + DOC_ID_TYPE.FLOAT);
+            } else if (docId instanceof Double) {
+                uri = new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + docId.toString() + "?doc_id_type=" + DOC_ID_TYPE.DOUBLE);
+            } else {
+                context.addWarning("this resource does not have an URI since the _id is of type " + docId.getClass().getSimpleName());
+                return "";
+            }
+
+            return uri.toString();
+        } catch (URISyntaxException ex) {
+            LOGGER.error("error creating URI from {} + / + {}", parentUrl, docId, ex);
+        }
+
+        return "";
     }
 }
