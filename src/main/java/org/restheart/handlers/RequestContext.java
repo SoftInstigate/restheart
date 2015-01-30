@@ -78,6 +78,8 @@ public class RequestContext {
     public static final String SYSTEM = "system.";
     public static final String LOCAL = "local";
     public static final String ADMIN = "admin";
+    public static final String FS_CHUNKS_SUFFIX = ".chunks";
+    public static final String FS_FILES_SUFFIX = ".files";
     public static final String _INDEXES = "_indexes";
     public static final String _FILESYSTEM = "_filesystem";
 
@@ -330,7 +332,11 @@ public class RequestContext {
      * @return isReservedResourceCollection
      */
     public static boolean isReservedResourceCollection(String collectionName) {
-        return collectionName != null && (collectionName.startsWith(SYSTEM) || collectionName.startsWith(UNDERSCORE));
+        return collectionName != null && (
+                collectionName.startsWith(SYSTEM) || 
+                collectionName.startsWith(UNDERSCORE) ||
+                collectionName.endsWith(FS_CHUNKS_SUFFIX) || 
+                collectionName.endsWith(FS_FILES_SUFFIX));
     }
 
     /**

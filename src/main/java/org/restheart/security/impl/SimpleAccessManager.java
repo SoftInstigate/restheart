@@ -87,8 +87,6 @@ public final class SimpleAccessManager extends AbstractSimpleSecurityManager imp
             return false;
         }
 
-        RequestHelper.fixExchangeForUndertowBug(exchange);
-
         return roles(exchange).anyMatch(role -> aclForRole(role).stream().anyMatch(p -> p.resolve(exchange)));
     }
 

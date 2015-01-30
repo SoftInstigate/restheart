@@ -77,19 +77,4 @@ public class RequestHelper {
             return new ObjectId();
         }
     }
-    
-    /**
-     * undertow bug UNDERTOW-371 workaround, reported to be fixed, waiting for releases 1.1.2.Final and
-     * 1.2.0.Beta9 to test and remove
-     *
-     * @param exchange
-     * @see https://issues.jboss.org/browse/UNDERTOW-371
-     *
-     */
-    public static void fixExchangeForUndertowBug(HttpServerExchange exchange) {
-        LOGGER.debug("applying undertow bug 371 workaround - to be removed when 1.1.2.Final or 1.2.0.Beta9 are available");
-        if (exchange.getAttachment(Predicate.PREDICATE_CONTEXT) == null) {
-            exchange.putAttachment(Predicate.PREDICATE_CONTEXT, new HashMap<String, Object>());
-        }
-    }
 }
