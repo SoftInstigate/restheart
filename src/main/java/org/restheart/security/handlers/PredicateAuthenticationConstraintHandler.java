@@ -23,7 +23,6 @@ import io.undertow.security.handlers.AuthenticationConstraintHandler;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import java.util.Set;
-import org.restheart.utils.RequestHelper;
 
 /**
  *

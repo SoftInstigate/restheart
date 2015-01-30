@@ -32,7 +32,6 @@ import java.util.stream.Stream;
 
 import static com.google.common.collect.Sets.newHashSet;
 import java.util.function.Consumer;
-import org.restheart.utils.RequestHelper;
 
 /**
  * @author Andrea Di Cesare <andrea@softinstigate.com>

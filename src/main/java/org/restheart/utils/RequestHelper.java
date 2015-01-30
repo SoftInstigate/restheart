@@ -17,22 +17,16 @@
  */
 package org.restheart.utils;
 
-import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
-import java.util.HashMap;
 import org.bson.types.ObjectId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class RequestHelper {
-    
-    private static final Logger LOGGER = LoggerFactory.getLogger(RequestHelper.class);
 
     /**
      *

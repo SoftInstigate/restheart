@@ -17,8 +17,6 @@
  */
 package org.restheart.security.handlers;
 
-import io.undertow.predicate.Predicate;
-import io.undertow.predicate.Predicates;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.Methods;
@@ -39,11 +37,6 @@ import org.restheart.utils.ResponseHelper;
  */
 public class AuthTokenHandler extends PipedHttpHandler {
     private static final boolean enabled = Bootstrapper.getConf().isAuthTokenEnabled();
-    private static final Predicate predicate;
-
-    static {
-        predicate = Predicates.parse("(method[DELETE]or method[GET]) and regex[pattern=\"/_authtokens/(.*?)\", value=%U, full-match=true] and equals[%u, \"${1}\"]");
-    }
 
     /**
      * Creates a new instance of SessionTokenInvalidationHandler
@@ -64,26 +57,31 @@ public class AuthTokenHandler extends PipedHttpHandler {
         if (!enabled) {
             return;
         }
-
+        
+        if (exchange.getSecurityContext() == null ||
+                exchange.getSecurityContext().getAuthenticatedAccount() == null ||
+                exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null ||
+                !("/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName()).equals(exchange.getRequestURI())) {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_UNAUTHORIZED);
+            return;
+        }
+        
         if (Methods.GET.equals(exchange.getRequestMethod())) {
             Representation rep = new Representation("/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
-            
+
             rep.addProperty("auth_token", exchange.getResponseHeaders().get(AUTH_TOKEN_HEADER).getFirst());
             rep.addProperty("auth_token_valid_until", exchange.getResponseHeaders().get(AUTH_TOKEN_VALID_HEADER).getFirst());
-            
+
             exchange.setResponseCode(HttpStatus.SC_OK);
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
             exchange.getResponseSender().send(rep.toString());
             exchange.endExchange();
         } else if (Methods.DELETE.equals(exchange.getRequestMethod())) {
-            if (!predicate.resolve(exchange) || exchange.getSecurityContext() == null || exchange.getSecurityContext().getAuthenticatedAccount() == null) {
-                ResponseHelper.endExchange(exchange, HttpStatus.SC_UNAUTHORIZED);
-            } else {
-                AuthTokenIdentityManager.getInstance().getCachedAccounts().invalidate(exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
-                removeAuthTokens(exchange);
-                exchange.setResponseCode(HttpStatus.SC_NO_CONTENT);
-                exchange.endExchange();
-            }
+            AuthTokenIdentityManager.getInstance().getCachedAccounts().invalidate(exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
+            removeAuthTokens(exchange);
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NO_CONTENT);
+        } else {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
     }
 
