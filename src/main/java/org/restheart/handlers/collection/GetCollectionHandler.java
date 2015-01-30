@@ -73,22 +73,25 @@ public class GetCollectionHandler extends PipedHttpHandler {
         // ***** get data
         ArrayList<DBObject> data = null;
 
-        try {
-            data = this.dbsDAO.getCollectionData(coll, context.getPage(), context.getPagesize(),
-                    context.getSortBy(), context.getFilter(), context.getCursorAllocationPolicy(), context.isDetectObjectIds());
-        } catch (JSONParseException jpe) {
-            // the filter expression is not a valid json string
-            LOGGER.error("invalid filter expression {}", context.getFilter(), jpe);
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", jpe);
-            return;
-        } catch (MongoException me) {
-            if (me.getMessage().matches(".*Can't canonicalize query.*")) {
-                // error with the filter expression during query execution
-                LOGGER.error("invalid filter expression {}", context.getFilter(), me);
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", me);
+        if (context.getPagesize() > 0) {
+
+            try {
+                data = this.dbsDAO.getCollectionData(coll, context.getPage(), context.getPagesize(),
+                        context.getSortBy(), context.getFilter(), context.getCursorAllocationPolicy(), context.isDetectObjectIds());
+            } catch (JSONParseException jpe) {
+                // the filter expression is not a valid json string
+                LOGGER.error("invalid filter expression {}", context.getFilter(), jpe);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", jpe);
                 return;
-            } else {
-                throw me;
+            } catch (MongoException me) {
+                if (me.getMessage().matches(".*Can't canonicalize query.*")) {
+                    // error with the filter expression during query execution
+                    LOGGER.error("invalid filter expression {}", context.getFilter(), me);
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", me);
+                    return;
+                } else {
+                    throw me;
+                }
             }
         }
 
@@ -99,7 +102,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
 
         // ***** return NOT_FOUND from here if collection is not existing 
         // (this is to avoid to check existance via the slow CollectionDAO.checkCollectionExists)
-        if (data.isEmpty() && (context.getCollectionProps() == null || context.getCollectionProps().keySet().isEmpty())) {
+        if ((context.getPagesize() > 0 && data.isEmpty()) && (context.getCollectionProps() == null || context.getCollectionProps().keySet().isEmpty())) {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
             return;
         }

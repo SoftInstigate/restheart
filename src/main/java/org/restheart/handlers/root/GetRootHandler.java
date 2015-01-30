@@ -71,21 +71,24 @@ public class GetRootHandler extends PipedHttpHandler {
 
         Collections.sort(dbs); // sort by id
 
-        // apply page and pagesize
-        dbs = dbs.subList((context.getPage() - 1) * context.getPagesize(), (context.getPage() - 1) * context.getPagesize() + context.getPagesize() > dbs.size() ? dbs.size() : (context.getPage() - 1) * context.getPagesize() + context.getPagesize());
-
         List<DBObject> data = new ArrayList<>();
 
-        dbs.stream().map((db) -> {
-            if (LocalCachesSingleton.isEnabled()) {
-                return LocalCachesSingleton.getInstance().getDBProps(db);
-            } else {
-                return dbsDAO.getDatabaseProperties(db);
+        if (context.getPagesize() > 0) {
+            // apply page and pagesize
+            dbs = dbs.subList((context.getPage() - 1) * context.getPagesize(), (context.getPage() - 1) * context.getPagesize() 
+                    + context.getPagesize() > dbs.size() ? dbs.size() : (context.getPage() - 1) * context.getPagesize() + context.getPagesize());
+
+            dbs.stream().map((db) -> {
+                if (LocalCachesSingleton.isEnabled()) {
+                    return LocalCachesSingleton.getInstance().getDBProps(db);
+                } else {
+                    return dbsDAO.getDatabaseProperties(db);
+                }
             }
+            ).forEach((item) -> {
+                data.add(item);
+            });
         }
-        ).forEach((item) -> {
-            data.add(item);
-        });
 
         exchange.setResponseCode(HttpStatus.SC_OK);
         new RootRepresentationFactory().sendHal(exchange, context, data, size);

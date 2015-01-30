@@ -95,7 +95,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             }
         }
 
-        if (pagesize < 1 || pagesize > 1000) {
+        if (pagesize < 0 || pagesize > 1000) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
                     "illegal page parameter, pagesize must be >= 0 and <= 1000");
             return;
