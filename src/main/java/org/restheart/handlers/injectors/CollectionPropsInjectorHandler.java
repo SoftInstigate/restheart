@@ -25,15 +25,21 @@ import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * this handler injects the collection properties in the RequestContext
- * it is also responsible of sending NOT_FOUND in case of requests
- * involving not existing collections (that are not PUT)
+ * this handler injects the collection properties in the RequestContext it is
+ * also responsible of sending NOT_FOUND in case of requests involving not
+ * existing collections (that are not PUT)
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class CollectionPropsInjectorHandler extends PipedHttpHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CollectionPropsInjectorHandler.class);
+
+    private static final String COLLECTION_DOES_NOT_EXIST = "Collection '%s' does not exist";
 
     private final Database dbsDAO;
 
@@ -70,8 +76,7 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
                         && context.getMethod() == RequestContext.METHOD.PUT)
                         && context.getType() != RequestContext.TYPE.ROOT
                         && context.getType() != RequestContext.TYPE.DB) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND,
-                            "collection does not exist");
+                    collectionDoesNotExists(context, exchange);
                     return;
                 }
             } else {
@@ -84,8 +89,7 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
                     && context.getMethod() == RequestContext.METHOD.PUT)
                     && context.getType() != RequestContext.TYPE.ROOT
                     && context.getType() != RequestContext.TYPE.DB) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND,
-                        "collection does not exist");
+                collectionDoesNotExists(context, exchange);
                 return;
             }
 
@@ -93,5 +97,11 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
         }
 
         next.handleRequest(exchange, context);
+    }
+
+    private void collectionDoesNotExists(RequestContext context, HttpServerExchange exchange) {
+        final String errMsg = String.format(COLLECTION_DOES_NOT_EXIST, context.getCollectionName());
+        LOGGER.error(errMsg);
+        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, errMsg);
     }
 }
