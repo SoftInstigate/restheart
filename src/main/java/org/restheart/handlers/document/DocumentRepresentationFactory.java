@@ -57,14 +57,14 @@ public class DocumentRepresentationFactory {
     public static Representation getDocument(String href, HttpServerExchange exchange, RequestContext context, DBObject data)
             throws IllegalQueryParamenterException {
         Representation rep;
-        
+
         Object id = data.get("_id");
-        
+
         if (id == null) {
             rep = new Representation("#");
         } else if (id instanceof String || id instanceof ObjectId) {
             rep = new Representation(href);
-        }else if (id instanceof Integer) {
+        } else if (id instanceof Integer) {
             rep = new Representation(href + "?doc_id_type=" + DOC_ID_TYPE.INT);
         } else if (id instanceof Long) {
             rep = new Representation(href + "?doc_id_type=" + DOC_ID_TYPE.LONG);
@@ -76,7 +76,6 @@ public class DocumentRepresentationFactory {
             rep = new Representation("#");
             rep.addWarning("this resource does not have an URI since the _id is of type " + id.getClass().getSimpleName());
         }
-        
 
         rep.addProperty("_type", context.getType().name());
 
@@ -96,13 +95,24 @@ public class DocumentRepresentationFactory {
 
         // link templates and curies
         String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
+
+        if (isBinaryFile(data)) {
+            rep.addLink(new Link("rh:download", 
+                    String.format("%s/%s/%s", context.getMappedRequestUri(), id, RequestContext.BINARY_CONTENT)));
+        }
+
         if (context.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath)));
         }
+
         rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-doc-{rel}", false), true);
 
         return rep;
+    }
+
+    private static boolean isBinaryFile(DBObject data) {
+        return data.containsField("filename") && data.containsField("chunkSize");
     }
 
     /**
@@ -117,9 +127,10 @@ public class DocumentRepresentationFactory {
     public static void sendDocument(String href, HttpServerExchange exchange, RequestContext context, DBObject data)
             throws IllegalQueryParamenterException, URISyntaxException {
         Representation rep = getDocument(href, exchange, context, data);
-        
-        if (context.getWarnings() != null)
+
+        if (context.getWarnings() != null) {
             context.getWarnings().forEach(w -> rep.addWarning(w));
+        }
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
@@ -133,7 +144,7 @@ public class DocumentRepresentationFactory {
         try {
             rels = Relationship.getFromJson((DBObject) context.getCollectionProps());
         } catch (InvalidMetadataException ex) {
-            rep.addWarning("collection " + context.getDBName() 
+            rep.addWarning("collection " + context.getDBName()
                     + "/" + context.getCollectionName()
                     + " has invalid relationships definition");
         }

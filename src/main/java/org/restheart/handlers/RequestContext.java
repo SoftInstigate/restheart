@@ -83,7 +83,7 @@ public class RequestContext {
     public static final String FS_CHUNKS_SUFFIX = ".chunks";
     public static final String FS_FILES_SUFFIX = ".files";
     public static final String _INDEXES = "_indexes";
-    public static final String CONTENT = "content";
+    public static final String BINARY_CONTENT = "binary";
 
     private final String whereUri;
     private final String whatUri;
@@ -179,8 +179,8 @@ public class RequestContext {
         } else if (pathTokens.length >= 3 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
             if (pathTokens.length == 3) {
                 type = TYPE.COLLECTION_FILES;
-            } else if (pathTokens.length == 5 && pathTokens[2].endsWith(FS_FILES_SUFFIX) && pathTokens[4].equalsIgnoreCase(CONTENT)) {
-                // URL: <host>/db/bucket.file/xxx/content
+            } else if (pathTokens.length == 5 && pathTokens[2].endsWith(FS_FILES_SUFFIX) && pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
+                // URL: <host>/db/bucket.file/xxx/binary
                 type = TYPE.FILE;
             } else {
                 type = TYPE.DOCUMENT;
