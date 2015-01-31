@@ -23,7 +23,6 @@ import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import java.net.URISyntaxException;
-import org.bson.types.ObjectId;
 
 /**
  *

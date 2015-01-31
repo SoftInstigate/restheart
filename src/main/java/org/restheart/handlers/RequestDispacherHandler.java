@@ -36,68 +36,120 @@ import org.restheart.handlers.indexes.GetIndexesHandler;
 import org.restheart.handlers.indexes.PutIndexHandler;
 import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
+import java.util.HashMap;
+import java.util.Map;
 import static org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.files.GetFileHandler;
 import org.restheart.utils.ResponseHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class RequestDispacherHandler extends PipedHttpHandler {
+public final class RequestDispacherHandler extends PipedHttpHandler {
 
-    private final GetRootHandler rootGet;
-    private final GetDBHandler dbGet;
-    private final PutDBHandler dbPut;
-    private final DeleteDBHandler dbDelete;
-    private final PatchDBHandler dbPatch;
-    private final GetCollectionHandler collectionGet;
-    private final PostCollectionHandler collectionPost;
-    private final PutCollectionHandler collectionPut;
-    private final DeleteCollectionHandler collectionDelete;
-    private final PatchCollectionHandler collectionPatch;
-    private final GetDocumentHandler documentGet;
-    private final PutDocumentHandler documentPut;
-    private final DeleteDocumentHandler documentDelete;
-    private final PatchDocumentHandler documentPatch;
-    private final GetIndexesHandler indexesGet;
-    private final PutIndexHandler indexPut;
-    private final DeleteIndexHandler indexDelete;
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequestDispacherHandler.class);
+    private final Map<TYPE, Map<METHOD, PipedHttpHandler>> handlersMultimap;
 
     /**
      * Creates a new instance of RequestDispacherHandler
      */
     public RequestDispacherHandler() {
-        super(null);
-
-        this.rootGet = new GetRootHandler();
-        this.dbGet = new GetDBHandler();
-        this.dbPut = new PutDBHandler();
-        this.dbDelete = new DeleteDBHandler();
-        this.dbPatch = new PatchDBHandler();
-        this.collectionGet = new GetCollectionHandler();
-        this.collectionPost = new PostCollectionHandler();
-        this.collectionPut = new PutCollectionHandler();
-        this.collectionDelete = new DeleteCollectionHandler();
-        this.collectionPatch = new PatchCollectionHandler();
-        this.documentGet = new GetFileHandler();
-        this.documentPut = new PutDocumentHandler();
-        this.documentDelete = new DeleteDocumentHandler();
-        this.documentPatch = new PatchDocumentHandler();
-        this.indexesGet = new GetIndexesHandler();
-        this.indexPut = new PutIndexHandler();
-        this.indexDelete = new DeleteIndexHandler();
+        this(true);
     }
 
     /**
+     * Used for testing.
      *
-     * @param exchange
-     * @param context
+     * @param initialize if false then do not initialize the handlersMultimap
+     */
+    RequestDispacherHandler(boolean initialize) {
+        super(null);
+        this.handlersMultimap = new HashMap<>();
+        if (initialize) {
+            defaultInit();
+        }
+    }
+
+    /**
+     * Put into handlersMultimap all the default combinations of types, methods
+     * and PipedHttpHandler objects
+     */
+    private void defaultInit() {
+        // ROOT handlers
+        putHttpHandler(TYPE.ROOT, METHOD.GET, new GetRootHandler());
+
+        // DB handlres
+        putHttpHandler(TYPE.DB, METHOD.GET, new GetDBHandler());
+        putHttpHandler(TYPE.DB, METHOD.PUT, new PutDBHandler());
+        putHttpHandler(TYPE.DB, METHOD.DELETE, new DeleteDBHandler());
+        putHttpHandler(TYPE.DB, METHOD.PATCH, new PatchDBHandler());
+
+        // COLLECTION handlres
+        putHttpHandler(TYPE.COLLECTION, METHOD.GET, new GetCollectionHandler());
+        putHttpHandler(TYPE.COLLECTION, METHOD.POST, new PostCollectionHandler());
+        putHttpHandler(TYPE.COLLECTION, METHOD.PUT, new PutCollectionHandler());
+        putHttpHandler(TYPE.COLLECTION, METHOD.DELETE, new DeleteCollectionHandler());
+        putHttpHandler(TYPE.COLLECTION, METHOD.PATCH, new PatchCollectionHandler());
+
+        // DOCUMENT handlers
+        putHttpHandler(TYPE.DOCUMENT, METHOD.GET, new GetDocumentHandler());
+        putHttpHandler(TYPE.DOCUMENT, METHOD.PUT, new PutDocumentHandler());
+        putHttpHandler(TYPE.DOCUMENT, METHOD.DELETE, new DeleteDocumentHandler());
+        putHttpHandler(TYPE.DOCUMENT, METHOD.PATCH, new PatchDocumentHandler());
+
+        // COLLECTION_INDEXES handlers
+        putHttpHandler(TYPE.COLLECTION_INDEXES, METHOD.GET, new GetIndexesHandler());
+        
+        // INDEX handlers
+        putHttpHandler(TYPE.INDEX, METHOD.PUT, new PutIndexHandler());
+        putHttpHandler(TYPE.INDEX, METHOD.DELETE, new DeleteIndexHandler());
+
+        // FILE handlers
+        putHttpHandler(TYPE.FILE, METHOD.GET, new GetFileHandler());
+    }
+
+    /**
+     * Given a type and method, return the appropriate PipedHttpHandler which
+     * can handle this request
+     *
+     * @param type
+     * @param method
+     * @return the PipedHttpHandler
+     */
+    public PipedHttpHandler getHttpHandler(TYPE type, METHOD method) {
+        Map<METHOD, PipedHttpHandler> methodsMap = handlersMultimap.get(type);
+        return methodsMap != null ? methodsMap.get(method) : null;
+    }
+
+    /**
+     * Given a type and method, put into handlersMultimap the PipedHttpHandler
+     *
+     * @param type
+     * @param method
+     * @param handler
+     */
+    void putHttpHandler(TYPE type, METHOD method, PipedHttpHandler handler) {
+        Map<METHOD, PipedHttpHandler> methodsMap = handlersMultimap.get(type);
+        if (methodsMap == null) {
+            methodsMap = new HashMap<METHOD, PipedHttpHandler>();
+            handlersMultimap.put(type, methodsMap);
+        }
+        methodsMap.put(method, handler);
+    }
+
+    /**
+     * Handle the request
+     *
+     * @param exchange the HttpServerExchange
+     * @param context the RequestContext
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public final void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getType() == TYPE.ERROR) {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_BAD_REQUEST);
             return;
@@ -113,146 +165,13 @@ public class RequestDispacherHandler extends PipedHttpHandler {
             return;
         }
 
-        if (context.getMethod() == METHOD.GET) {
-            switch (context.getType()) {
-                case ROOT:
-                    rootGet.handleRequest(exchange, context);
-                    return;
-                case DB:
-                    dbGet.handleRequest(exchange, context);
-                    return;
-                case COLLECTION:
-                    collectionGet.handleRequest(exchange, context);
-                    return;
-                case DOCUMENT:
-                    documentGet.handleRequest(exchange, context);
-                    return;
-                case COLLECTION_INDEXES:
-                    indexesGet.handleRequest(exchange, context);
-                    return;
-                default:
-                    ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
-            }
-        } else if (context.getMethod() == METHOD.POST) {
-            switch (context.getType()) {
-                case COLLECTION:
-                    collectionPost.handleRequest(exchange, context);
-                    return;
-                default:
-                    ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
-            }
-        } else if (context.getMethod() == METHOD.PUT) {
-            switch (context.getType()) {
-                case DB:
-                    dbPut.handleRequest(exchange, context);
-                    return;
-                case COLLECTION:
-                    collectionPut.handleRequest(exchange, context);
-                    return;
-                case DOCUMENT:
-                    documentPut.handleRequest(exchange, context);
-                    return;
-                case INDEX:
-                    indexPut.handleRequest(exchange, context);
-                    return;
-                default:
-                    ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
-            }
-        } else if (context.getMethod() == METHOD.DELETE) {
-            switch (context.getType()) {
-                case DB:
-                    dbDelete.handleRequest(exchange, context);
-                    return;
-                case COLLECTION:
-                    collectionDelete.handleRequest(exchange, context);
-                    return;
-                case DOCUMENT:
-                    documentDelete.handleRequest(exchange, context);
-                    return;
-                case INDEX:
-                    indexDelete.handleRequest(exchange, context);
-                    return;
-                default:
-                    ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
-            }
-        } else if (context.getMethod() == METHOD.PATCH) {
-            switch (context.getType()) {
-                case DB:
-                    dbPatch.handleRequest(exchange, context);
-                    return;
-                case COLLECTION:
-                    collectionPatch.handleRequest(exchange, context);
-                    return;
-                case DOCUMENT:
-                    documentPatch.handleRequest(exchange, context);
-                    return;
-                default:
-                    ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
-            }
+        final PipedHttpHandler httpHandler = getHttpHandler(context.getType(), context.getMethod());
+
+        if (httpHandler != null) {
+            httpHandler.handleRequest(exchange, context);
         } else {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
-    }
-
-    /**
-     * Package private constructor, for testing purposes only.
-     *
-     * @param rootGet
-     * @param dbGet
-     * @param dbPut
-     * @param dbDelete
-     * @param dbPatch
-     * @param collectionGet
-     * @param collectionPost
-     * @param collectionPut
-     * @param collectionDelete
-     * @param collectionPatch
-     * @param documentGet
-     * @param documentPut
-     * @param documentDelete
-     * @param documentPatch
-     * @param indexesGet
-     * @param indexDelete
-     * @param indexPut
-     */
-    RequestDispacherHandler(
-            GetRootHandler rootGet,
-            GetDBHandler dbGet,
-            PutDBHandler dbPut,
-            DeleteDBHandler dbDelete,
-            PatchDBHandler dbPatch,
-            GetCollectionHandler collectionGet,
-            PostCollectionHandler collectionPost,
-            PutCollectionHandler collectionPut,
-            DeleteCollectionHandler collectionDelete,
-            PatchCollectionHandler collectionPatch,
-            GetDocumentHandler documentGet,
-            PutDocumentHandler documentPut,
-            DeleteDocumentHandler documentDelete,
-            PatchDocumentHandler documentPatch,
-            GetIndexesHandler indexesGet,
-            PutIndexHandler indexPut,
-            DeleteIndexHandler indexDelete
-    ) {
-
-        super(null);
-        this.rootGet = rootGet;
-        this.dbGet = dbGet;
-        this.dbPut = dbPut;
-        this.dbDelete = dbDelete;
-        this.dbPatch = dbPatch;
-        this.collectionGet = collectionGet;
-        this.collectionPost = collectionPost;
-        this.collectionPut = collectionPut;
-        this.collectionDelete = collectionDelete;
-        this.collectionPatch = collectionPatch;
-        this.documentGet = documentGet;
-        this.documentPut = documentPut;
-        this.documentDelete = documentDelete;
-        this.documentPatch = documentPatch;
-        this.indexesGet = indexesGet;
-        this.indexPut = indexPut;
-        this.indexDelete = indexDelete;
     }
 
 }

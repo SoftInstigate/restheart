@@ -27,13 +27,17 @@ import io.undertow.util.HttpString;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import static org.junit.Assert.*;
 import org.junit.Test;
+import org.restheart.handlers.collection.PutCollectionHandler;
+import org.restheart.handlers.database.GetDBHandler;
 import org.restheart.handlers.files.PutFileHandler;
+import org.restheart.handlers.root.GetRootHandler;
 
 /**
  *
@@ -59,27 +63,41 @@ public class RequestDispacherHandlerTest {
     @After
     public void tearDown() {
     }
-
-    //@Test
-    public void testGridFS() throws UnknownHostException, IOException {
-        System.out.println("+++ testGridFS");
-        String filedb = "filedb";
-        Mongo mongo = new MongoClient();
-        if (mongo.getDatabaseNames().stream().filter(s -> s.equals(filedb)).count() > 0) {
-            System.out.println("Dropping old db");
-            mongo.getDB(filedb).dropDatabase();
-        }
-
-        DB db = mongo.getDB(filedb);
-
-        InputStream is = getClass().getResourceAsStream("/RESTHeart_documentation.pdf");
-
-        GridFS gridfs = new GridFS(db, "mybucket");
+    
+    @Test
+    public void testHttpHandlers() {
+        RequestDispacherHandler dispacher = new RequestDispacherHandler(false);
+        dispacher.putHttpHandler(RequestContext.TYPE.ROOT, RequestContext.METHOD.GET, new GetRootHandler(null));
+        dispacher.putHttpHandler(RequestContext.TYPE.DB, RequestContext.METHOD.GET, new GetDBHandler(null));
+        dispacher.putHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.PUT, new PutCollectionHandler(null));
         
-        GridFSInputFile gfsFile = gridfs.createFile(is);
-        gfsFile.setFilename("RESTHeart_documentation.pdf");
-        gfsFile.save();
+        assertThat(dispacher.getHttpHandler(RequestContext.TYPE.ROOT, RequestContext.METHOD.GET), instanceOf(GetRootHandler.class));
+        assertThat(dispacher.getHttpHandler(RequestContext.TYPE.DB, RequestContext.METHOD.GET), instanceOf(GetDBHandler.class));
+        assertThat(dispacher.getHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.PUT), instanceOf(PutCollectionHandler.class));
+        
+        assertNull(dispacher.getHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.POST));
     }
+
+//    @Test
+//    public void testGridFS() throws UnknownHostException, IOException {
+//        System.out.println("+++ testGridFS");
+//        String filedb = "filedb";
+//        Mongo mongo = new MongoClient();
+//        if (mongo.getDatabaseNames().stream().filter(s -> s.equals(filedb)).count() > 0) {
+//            System.out.println("Dropping old db");
+//            mongo.getDB(filedb).dropDatabase();
+//        }
+//
+//        DB db = mongo.getDB(filedb);
+//
+//        InputStream is = getClass().getResourceAsStream("/RESTHeart_documentation.pdf");
+//
+//        GridFS gridfs = new GridFS(db, "mybucket");
+//        
+//        GridFSInputFile gfsFile = gridfs.createFile(is);
+//        gfsFile.setFilename("RESTHeart_documentation.pdf");
+//        gfsFile.save();
+//    }
 
 //    @Test
 //    public void test_put_file_request() throws Exception {
