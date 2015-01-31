@@ -98,7 +98,7 @@ public class DocumentRepresentationFactory {
 
         if (isBinaryFile(data)) {
             rep.addLink(new Link("rh:download", 
-                    String.format("%s/%s/%s", context.getMappedRequestUri(), id, RequestContext.BINARY_CONTENT)));
+                    String.format("%s/%s", href, RequestContext.BINARY_CONTENT)));
         }
 
         if (context.isParentAccessible()) {
