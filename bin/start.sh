@@ -3,4 +3,5 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 java -server -jar $DIR/../target/restheart.jar $1 --fork
-sleep 5
+echo 'Sleeping few seconds...'
+sleep 2

@@ -49,10 +49,10 @@ mongo-servers:
       port: 27017
       
 # Provide mongodb users credentials with mongo-credentials.
-mongo-credentials:
-    - auth-db: admin
-      user: admin
-      password: adminadmin
+#mongo-credentials:
+#    - auth-db: admin
+#      user: admin
+#      password: adminadmin
       
 # Use mongo-mounts to bind URls to mongodb resources using the out-of-the-box URL rewrite feature.
 mongo-mounts:
@@ -109,12 +109,12 @@ application-logic-mounts:
 # the provided default implementations of IDM and AM are SimpleFileIdentityManager and SimpleAccessManager.
 # conf-file paths are either absolute (starting with /) or relative to the restheart.jar directory
 
-idm:    
-    implementation-class: org.restheart.security.impl.SimpleFileIdentityManager
-    conf-file: ../etc/security.yml
-access-manager:    
-    implementation-class: org.restheart.security.impl.SimpleAccessManager
-    conf-file: ../etc/security.yml
+#idm:
+#    implementation-class: org.restheart.security.impl.SimpleFileIdentityManager
+#    conf-file: ../etc/security.yml
+#access-manager:
+#    implementation-class: org.restheart.security.impl.SimpleAccessManager
+#    conf-file: ../etc/security.yml
 
 # authentication token
 
@@ -135,7 +135,7 @@ auth-token-ttl: 15
 enable-log-file: true
 log-file-path: /tmp/restheart.log
 enable-log-console: true
-log-level: INFO
+log-level: DEBUG
 
 #### performace settings
 
