@@ -40,7 +40,7 @@ import java.util.HashMap;
 import java.util.Map;
 import static org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.TYPE;
-import org.restheart.handlers.files.GetFileHandler;
+import org.restheart.handlers.files.GetBinaryFileHandler;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +91,8 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         putHttpHandler(TYPE.DB, METHOD.PATCH, new PatchDBHandler());
 
         // COLLECTION handlres
-        putHttpHandler(TYPE.COLLECTION, METHOD.GET, new GetCollectionHandler());
+        final GetCollectionHandler getCollectionHandler = new GetCollectionHandler();
+        putHttpHandler(TYPE.COLLECTION, METHOD.GET, getCollectionHandler);
         putHttpHandler(TYPE.COLLECTION, METHOD.POST, new PostCollectionHandler());
         putHttpHandler(TYPE.COLLECTION, METHOD.PUT, new PutCollectionHandler());
         putHttpHandler(TYPE.COLLECTION, METHOD.DELETE, new DeleteCollectionHandler());
@@ -110,8 +111,9 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         putHttpHandler(TYPE.INDEX, METHOD.PUT, new PutIndexHandler());
         putHttpHandler(TYPE.INDEX, METHOD.DELETE, new DeleteIndexHandler());
 
-        // FILE handlers
-        putHttpHandler(TYPE.FILE, METHOD.GET, new GetFileHandler());
+        // COLLECTION_FILES and FILE handlers
+        putHttpHandler(TYPE.COLLECTION_FILES, METHOD.GET, getCollectionHandler);
+        putHttpHandler(TYPE.FILE, METHOD.GET, new GetBinaryFileHandler());
     }
 
     /**

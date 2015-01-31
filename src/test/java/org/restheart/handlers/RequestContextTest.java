@@ -94,7 +94,7 @@ public class RequestContextTest {
     public void test_COLLECTION_FILES_selectRequestType() {
         System.out.println("test_COLLECTION_FILES_selectRequestType");
 
-        String[] pathTokens = "/db/_files".split("/");
+        String[] pathTokens = "/db/mybucket.files".split("/");
         assertEquals(RequestContext.TYPE.COLLECTION_FILES, RequestContext.selectRequestType(pathTokens));
     }
 
@@ -102,10 +102,10 @@ public class RequestContextTest {
     public void test_FILE_selectRequestType() {
         System.out.println("test_FILE_selectRequestType");
 
-        String[] pathTokens = "/db/_files/123".split("/");
+        String[] pathTokens = "/db/mybucket.files/123".split("/");
         assertEquals(RequestContext.TYPE.FILE, RequestContext.selectRequestType(pathTokens));
 
-        pathTokens = "/db/_files/123/456".split("/");
+        pathTokens = "/db/mybucket.files/123/456".split("/");
         assertEquals(RequestContext.TYPE.ERROR, RequestContext.selectRequestType(pathTokens));
     }
 

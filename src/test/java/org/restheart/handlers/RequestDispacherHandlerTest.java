@@ -17,16 +17,16 @@
  */
 package org.restheart.handlers;
 
-import com.mongodb.DB;
-import com.mongodb.Mongo;
-import com.mongodb.MongoClient;
-import com.mongodb.gridfs.GridFS;
-import com.mongodb.gridfs.GridFSInputFile;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.UnknownHostException;
+//import com.mongodb.DB;
+//import com.mongodb.Mongo;
+//import com.mongodb.MongoClient;
+//import com.mongodb.gridfs.GridFS;
+//import com.mongodb.gridfs.GridFSInputFile;
+//import io.undertow.server.HttpServerExchange;
+//import io.undertow.util.HttpString;
+//import java.io.IOException;
+//import java.io.InputStream;
+//import java.net.UnknownHostException;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -34,9 +34,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import static org.junit.Assert.*;
 import org.junit.Test;
+import org.restheart.handlers.collection.GetCollectionHandler;
 import org.restheart.handlers.collection.PutCollectionHandler;
 import org.restheart.handlers.database.GetDBHandler;
-import org.restheart.handlers.files.PutFileHandler;
 import org.restheart.handlers.root.GetRootHandler;
 
 /**
@@ -70,10 +70,12 @@ public class RequestDispacherHandlerTest {
         dispacher.putHttpHandler(RequestContext.TYPE.ROOT, RequestContext.METHOD.GET, new GetRootHandler(null));
         dispacher.putHttpHandler(RequestContext.TYPE.DB, RequestContext.METHOD.GET, new GetDBHandler(null));
         dispacher.putHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.PUT, new PutCollectionHandler(null));
+        dispacher.putHttpHandler(RequestContext.TYPE.COLLECTION_FILES, RequestContext.METHOD.GET, new GetCollectionHandler(null));
         
         assertThat(dispacher.getHttpHandler(RequestContext.TYPE.ROOT, RequestContext.METHOD.GET), instanceOf(GetRootHandler.class));
         assertThat(dispacher.getHttpHandler(RequestContext.TYPE.DB, RequestContext.METHOD.GET), instanceOf(GetDBHandler.class));
         assertThat(dispacher.getHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.PUT), instanceOf(PutCollectionHandler.class));
+        assertThat(dispacher.getHttpHandler(RequestContext.TYPE.COLLECTION_FILES, RequestContext.METHOD.GET), instanceOf(GetCollectionHandler.class));
         
         assertNull(dispacher.getHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.POST));
     }

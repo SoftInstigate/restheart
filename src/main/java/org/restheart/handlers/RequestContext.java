@@ -82,7 +82,6 @@ public class RequestContext {
     public static final String FS_CHUNKS_SUFFIX = ".chunks";
     public static final String FS_FILES_SUFFIX = ".files";
     public static final String _INDEXES = "_indexes";
-    public static final String _FILES = "_files";
 
     private final String whereUri;
     private final String whatUri;
@@ -175,10 +174,10 @@ public class RequestContext {
             type = TYPE.ROOT;
         } else if (pathTokens.length < 3) {
             type = TYPE.DB;
-        } else if (pathTokens.length >= 3 && pathTokens[2].equalsIgnoreCase(_FILES)) {
+        } else if (pathTokens.length >= 3 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
             if (pathTokens.length == 3) {
                 type = TYPE.COLLECTION_FILES;
-            } else if (pathTokens.length == 4 && pathTokens[2].equalsIgnoreCase(_FILES)) {
+            } else if (pathTokens.length == 4 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
                 type = TYPE.FILE;
             } else {
                 type = TYPE.ERROR;
@@ -342,8 +341,7 @@ public class RequestContext {
         return collectionName != null && (
                 collectionName.startsWith(SYSTEM) || 
                 collectionName.startsWith(UNDERSCORE) ||
-                collectionName.endsWith(FS_CHUNKS_SUFFIX) || 
-                collectionName.endsWith(FS_FILES_SUFFIX));
+                collectionName.endsWith(FS_CHUNKS_SUFFIX));
     }
 
     /**

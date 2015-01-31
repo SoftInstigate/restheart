@@ -28,9 +28,9 @@ import static org.junit.Assert.*;
  *
  * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
-public class GetFileHandlerTest {
+public class GetBinaryFileHandlerTest {
     
-    public GetFileHandlerTest() {
+    public GetBinaryFileHandlerTest() {
     }
     
     @BeforeClass
@@ -54,7 +54,7 @@ public class GetFileHandlerTest {
 //        System.out.println("handleRequest");
 //        HttpServerExchange exchange = null;
 //        RequestContext context = null;
-//        GetFileHandler instance = new GetFileHandler();
+//        GetBinaryFileHandler instance = new GetBinaryFileHandler();
 //        instance.handleRequest(exchange, context);
 //        // TODO review the generated test code and remove the default call to fail.
 //        fail("The test case is a prototype.");
@@ -64,7 +64,7 @@ public class GetFileHandlerTest {
     public void testExtractBucket() {
         System.out.println("extractBucket");
         String expResult = "mybucket";
-        String result = GetFileHandler.extractBucket("mybucket.files");
+        String result = GetBinaryFileHandler.extractBucket("mybucket.files");
         assertEquals(expResult, result);
     }
     
