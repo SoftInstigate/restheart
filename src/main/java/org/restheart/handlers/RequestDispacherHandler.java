@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
 public final class RequestDispacherHandler extends PipedHttpHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestDispacherHandler.class);
+    
     private final Map<TYPE, Map<METHOD, PipedHttpHandler>> handlersMultimap;
 
     /**
@@ -62,7 +63,8 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
     }
 
     /**
-     * Used for testing.
+     * Used for testing. By passing a <code>false</code> parameter then handlers
+     * are not initialized and you can put your own (e.g. mocks)
      *
      * @param initialize if false then do not initialize the handlersMultimap
      */
@@ -103,7 +105,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         // COLLECTION_INDEXES handlers
         putHttpHandler(TYPE.COLLECTION_INDEXES, METHOD.GET, new GetIndexesHandler());
-        
+
         // INDEX handlers
         putHttpHandler(TYPE.INDEX, METHOD.PUT, new PutIndexHandler());
         putHttpHandler(TYPE.INDEX, METHOD.DELETE, new DeleteIndexHandler());
@@ -151,16 +153,19 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
     @Override
     public final void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getType() == TYPE.ERROR) {
+            LOGGER.error("This is a bad request: returning a <{}> HTTP code", HttpStatus.SC_BAD_REQUEST);
             ResponseHelper.endExchange(exchange, HttpStatus.SC_BAD_REQUEST);
             return;
         }
 
         if (context.getMethod() == METHOD.OTHER) {
+            LOGGER.error("This method is not allowed: returning a <{}> HTTP code", HttpStatus.SC_METHOD_NOT_ALLOWED);
             ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
             return;
         }
 
         if (context.isReservedResource()) {
+            LOGGER.error("The resource is reserved: returning a <{}> HTTP code", HttpStatus.SC_FORBIDDEN);
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "reserved resource");
             return;
         }
@@ -170,6 +175,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         if (httpHandler != null) {
             httpHandler.handleRequest(exchange, context);
         } else {
+            LOGGER.error("getHttpHandler({}, {}) can't find any PipedHttpHandler", context.getType(), context.getMethod());
             ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
     }
