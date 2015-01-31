@@ -59,8 +59,9 @@ public class RequestContext {
         OPTIONS,
         OTHER
     };
-    
+
     public enum DOC_ID_TYPE {
+
         INT, LONG, FLOAT, DOUBLE, STRING, OBJECTID, STRING_OBJECTID
     }
 
@@ -82,6 +83,7 @@ public class RequestContext {
     public static final String FS_CHUNKS_SUFFIX = ".chunks";
     public static final String FS_FILES_SUFFIX = ".files";
     public static final String _INDEXES = "_indexes";
+    public static final String CONTENT = "content";
 
     private final String whereUri;
     private final String whatUri;
@@ -177,10 +179,11 @@ public class RequestContext {
         } else if (pathTokens.length >= 3 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
             if (pathTokens.length == 3) {
                 type = TYPE.COLLECTION_FILES;
-            } else if (pathTokens.length == 4 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
+            } else if (pathTokens.length == 5 && pathTokens[2].endsWith(FS_FILES_SUFFIX) && pathTokens[4].equalsIgnoreCase(CONTENT)) {
+                // URL: <host>/db/bucket.file/xxx/content
                 type = TYPE.FILE;
             } else {
-                type = TYPE.ERROR;
+                type = TYPE.DOCUMENT;
             }
         } else if (pathTokens.length < 4) {
             type = TYPE.COLLECTION;
@@ -338,10 +341,9 @@ public class RequestContext {
      * @return isReservedResourceCollection
      */
     public static boolean isReservedResourceCollection(String collectionName) {
-        return collectionName != null && (
-                collectionName.startsWith(SYSTEM) || 
-                collectionName.startsWith(UNDERSCORE) ||
-                collectionName.endsWith(FS_CHUNKS_SUFFIX));
+        return collectionName != null && (collectionName.startsWith(SYSTEM)
+                || collectionName.startsWith(UNDERSCORE)
+                || collectionName.endsWith(FS_CHUNKS_SUFFIX));
     }
 
     /**
@@ -350,9 +352,10 @@ public class RequestContext {
      * @return isReservedResourceDocument
      */
     public static boolean isReservedResourceDocument(String documentIdRaw) {
-        if (documentIdRaw == null)
+        if (documentIdRaw == null) {
             return false;
-        
+        }
+
         return documentIdRaw.startsWith(UNDERSCORE) && !documentIdRaw.equals(_INDEXES);
     }
 

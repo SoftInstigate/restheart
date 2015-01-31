@@ -18,14 +18,11 @@
 package org.restheart.handlers.files;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import com.mongodb.gridfs.GridFS;
 import com.mongodb.gridfs.GridFSDBFile;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.document.GetDocumentHandler;
 import org.restheart.utils.HttpStatus;
@@ -43,65 +40,47 @@ public class GetBinaryFileHandler extends GetDocumentHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetBinaryFileHandler.class);
 
-    private static final int _16K = 16 * 1024;
-
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        DBObject document = findDocument(context);
+        LOGGER.info("GET " + exchange.getRequestURL());
+        final String bucket = extractBucketName(context.getCollectionName());
 
-        if (document == null) {
-            final String errMsg = String.format("Document <%s> does not exist", context.getDocumentId());
-            LOGGER.error(errMsg);
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, errMsg);
-            return;
-        }
-
-        if (isBinaryFile(document)) {
-            LOGGER.info("filename = {}", document.get("filename"));
-            streamBinaryFile(exchange, context, document);
-        } else {
-            LOGGER.warn("Document <{}> is not a GridFS object!", context.getDocumentId());
-            // TODO: could throwing an exception be a better option?
-            super.handleRequest(exchange, context);
-        }
-    }
-
-    protected boolean isBinaryFile(DBObject document) {
-        return document.containsField("filename") && document.containsField("chunkSize");
-    }
-
-    protected DBObject findDocument(RequestContext context) {
-        BasicDBObject query = new BasicDBObject("_id", context.getDocumentId());
-        DBObject document = dbsDAO.getCollection(context.getDBName(), context.getCollectionName()).findOne(query);
-        return document;
-    }
-
-    private void streamBinaryFile(HttpServerExchange exchange, RequestContext context, DBObject document) throws IOException {
-        final String contentLength = document.get("length").toString();
-        LOGGER.debug("@@@ content length = {}", contentLength);
-        final String bucket = extractBucket(context.getCollectionName());
-        // read the file from GridFS
         GridFS gridfs = new GridFS(dbsDAO.getDB(context.getDBName()), bucket);
-        GridFSDBFile dbsfile = gridfs.findOne((String) document.get("filename"));
+        GridFSDBFile dbsfile = gridfs.findOne(new BasicDBObject("_id", context.getDocumentId()));
+
+        if (dbsfile == null) {
+            fileNotFound(context, exchange);
+        } else {
+            sendBinaryContent(dbsfile, exchange);
+        }
+    }
+
+    private void fileNotFound(RequestContext context, HttpServerExchange exchange) {
+        final String errMsg = String.format("File with ID <%s> not found", context.getDocumentId());
+        LOGGER.error(errMsg);
+        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, errMsg);
+    }
+
+    private void sendBinaryContent(final GridFSDBFile dbsfile, final HttpServerExchange exchange) throws IOException {
+        LOGGER.info("Filename = {}", dbsfile.getFilename());
+        LOGGER.info("Content length = {}", dbsfile.getLength());
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
-        exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, contentLength);
+        exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, dbsfile.getLength());
+        exchange.getResponseHeaders().put(Headers.CONTENT_DISPOSITION,
+                String.format("Attachment; filename=\"%s\"", extractFilename(dbsfile)));
         exchange.setResponseCode(HttpStatus.SC_OK);
 
-        copy(dbsfile.getInputStream(), exchange.getOutputStream());
+        dbsfile.writeTo(exchange.getOutputStream());
 
         exchange.endExchange();
     }
 
-    void copy(InputStream input, OutputStream output) throws IOException {
-        byte[] buffer = new byte[_16K];
-        int bytesRead;
-        while ((bytesRead = input.read(buffer)) != -1) {
-            output.write(buffer, 0, bytesRead);
-        }
+    private String extractFilename(final GridFSDBFile dbsfile) {
+        return dbsfile.getFilename() != null ? dbsfile.getFilename() : dbsfile.getId().toString();
     }
 
-    static String extractBucket(String collectionName) {
+    static String extractBucketName(final String collectionName) {
         return collectionName.split("\\.")[0];
     }
 }
