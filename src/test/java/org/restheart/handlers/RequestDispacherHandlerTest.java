@@ -67,17 +67,17 @@ public class RequestDispacherHandlerTest {
     @Test
     public void testHttpHandlers() {
         RequestDispacherHandler dispacher = new RequestDispacherHandler(false);
-        dispacher.putHttpHandler(RequestContext.TYPE.ROOT, RequestContext.METHOD.GET, new GetRootHandler(null));
-        dispacher.putHttpHandler(RequestContext.TYPE.DB, RequestContext.METHOD.GET, new GetDBHandler(null));
-        dispacher.putHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.PUT, new PutCollectionHandler(null));
-        dispacher.putHttpHandler(RequestContext.TYPE.COLLECTION_FILES, RequestContext.METHOD.GET, new GetCollectionHandler(null));
+        dispacher.putPipedHttpHandler(RequestContext.TYPE.ROOT, RequestContext.METHOD.GET, new GetRootHandler(null));
+        dispacher.putPipedHttpHandler(RequestContext.TYPE.DB, RequestContext.METHOD.GET, new GetDBHandler(null));
+        dispacher.putPipedHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.PUT, new PutCollectionHandler(null));
+        dispacher.putPipedHttpHandler(RequestContext.TYPE.COLLECTION_FILES, RequestContext.METHOD.GET, new GetCollectionHandler(null));
         
-        assertThat(dispacher.getHttpHandler(RequestContext.TYPE.ROOT, RequestContext.METHOD.GET), instanceOf(GetRootHandler.class));
-        assertThat(dispacher.getHttpHandler(RequestContext.TYPE.DB, RequestContext.METHOD.GET), instanceOf(GetDBHandler.class));
-        assertThat(dispacher.getHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.PUT), instanceOf(PutCollectionHandler.class));
-        assertThat(dispacher.getHttpHandler(RequestContext.TYPE.COLLECTION_FILES, RequestContext.METHOD.GET), instanceOf(GetCollectionHandler.class));
+        assertThat(dispacher.getPipedHttpHandler(RequestContext.TYPE.ROOT, RequestContext.METHOD.GET), instanceOf(GetRootHandler.class));
+        assertThat(dispacher.getPipedHttpHandler(RequestContext.TYPE.DB, RequestContext.METHOD.GET), instanceOf(GetDBHandler.class));
+        assertThat(dispacher.getPipedHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.PUT), instanceOf(PutCollectionHandler.class));
+        assertThat(dispacher.getPipedHttpHandler(RequestContext.TYPE.COLLECTION_FILES, RequestContext.METHOD.GET), instanceOf(GetCollectionHandler.class));
         
-        assertNull(dispacher.getHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.POST));
+        assertNull(dispacher.getPipedHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.POST));
     }
 
 //    @Test

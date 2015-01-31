@@ -82,38 +82,38 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      */
     private void defaultInit() {
         // ROOT handlers
-        putHttpHandler(TYPE.ROOT, METHOD.GET, new GetRootHandler());
+        putPipedHttpHandler(TYPE.ROOT, METHOD.GET, new GetRootHandler());
 
         // DB handlres
-        putHttpHandler(TYPE.DB, METHOD.GET, new GetDBHandler());
-        putHttpHandler(TYPE.DB, METHOD.PUT, new PutDBHandler());
-        putHttpHandler(TYPE.DB, METHOD.DELETE, new DeleteDBHandler());
-        putHttpHandler(TYPE.DB, METHOD.PATCH, new PatchDBHandler());
+        putPipedHttpHandler(TYPE.DB, METHOD.GET, new GetDBHandler());
+        putPipedHttpHandler(TYPE.DB, METHOD.PUT, new PutDBHandler());
+        putPipedHttpHandler(TYPE.DB, METHOD.DELETE, new DeleteDBHandler());
+        putPipedHttpHandler(TYPE.DB, METHOD.PATCH, new PatchDBHandler());
 
         // COLLECTION handlres
         final GetCollectionHandler getCollectionHandler = new GetCollectionHandler();
-        putHttpHandler(TYPE.COLLECTION, METHOD.GET, getCollectionHandler);
-        putHttpHandler(TYPE.COLLECTION, METHOD.POST, new PostCollectionHandler());
-        putHttpHandler(TYPE.COLLECTION, METHOD.PUT, new PutCollectionHandler());
-        putHttpHandler(TYPE.COLLECTION, METHOD.DELETE, new DeleteCollectionHandler());
-        putHttpHandler(TYPE.COLLECTION, METHOD.PATCH, new PatchCollectionHandler());
+        putPipedHttpHandler(TYPE.COLLECTION, METHOD.GET, getCollectionHandler);
+        putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST, new PostCollectionHandler());
+        putPipedHttpHandler(TYPE.COLLECTION, METHOD.PUT, new PutCollectionHandler());
+        putPipedHttpHandler(TYPE.COLLECTION, METHOD.DELETE, new DeleteCollectionHandler());
+        putPipedHttpHandler(TYPE.COLLECTION, METHOD.PATCH, new PatchCollectionHandler());
 
         // DOCUMENT handlers
-        putHttpHandler(TYPE.DOCUMENT, METHOD.GET, new GetDocumentHandler());
-        putHttpHandler(TYPE.DOCUMENT, METHOD.PUT, new PutDocumentHandler());
-        putHttpHandler(TYPE.DOCUMENT, METHOD.DELETE, new DeleteDocumentHandler());
-        putHttpHandler(TYPE.DOCUMENT, METHOD.PATCH, new PatchDocumentHandler());
+        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.GET, new GetDocumentHandler());
+        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PUT, new PutDocumentHandler());
+        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.DELETE, new DeleteDocumentHandler());
+        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PATCH, new PatchDocumentHandler());
 
         // COLLECTION_INDEXES handlers
-        putHttpHandler(TYPE.COLLECTION_INDEXES, METHOD.GET, new GetIndexesHandler());
+        putPipedHttpHandler(TYPE.COLLECTION_INDEXES, METHOD.GET, new GetIndexesHandler());
 
         // INDEX handlers
-        putHttpHandler(TYPE.INDEX, METHOD.PUT, new PutIndexHandler());
-        putHttpHandler(TYPE.INDEX, METHOD.DELETE, new DeleteIndexHandler());
+        putPipedHttpHandler(TYPE.INDEX, METHOD.PUT, new PutIndexHandler());
+        putPipedHttpHandler(TYPE.INDEX, METHOD.DELETE, new DeleteIndexHandler());
 
         // COLLECTION_FILES and FILE handlers
-        putHttpHandler(TYPE.COLLECTION_FILES, METHOD.GET, getCollectionHandler);
-        putHttpHandler(TYPE.FILE, METHOD.GET, new GetBinaryFileHandler());
+        putPipedHttpHandler(TYPE.COLLECTION_FILES, METHOD.GET, getCollectionHandler);
+        putPipedHttpHandler(TYPE.FILE, METHOD.GET, new GetBinaryFileHandler());
     }
 
     /**
@@ -124,7 +124,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * @param method
      * @return the PipedHttpHandler
      */
-    public PipedHttpHandler getHttpHandler(TYPE type, METHOD method) {
+    public PipedHttpHandler getPipedHttpHandler(TYPE type, METHOD method) {
         Map<METHOD, PipedHttpHandler> methodsMap = handlersMultimap.get(type);
         return methodsMap != null ? methodsMap.get(method) : null;
     }
@@ -136,7 +136,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * @param method
      * @param handler
      */
-    void putHttpHandler(TYPE type, METHOD method, PipedHttpHandler handler) {
+    void putPipedHttpHandler(TYPE type, METHOD method, PipedHttpHandler handler) {
         Map<METHOD, PipedHttpHandler> methodsMap = handlersMultimap.get(type);
         if (methodsMap == null) {
             methodsMap = new HashMap<METHOD, PipedHttpHandler>();
@@ -172,7 +172,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
             return;
         }
 
-        final PipedHttpHandler httpHandler = getHttpHandler(context.getType(), context.getMethod());
+        final PipedHttpHandler httpHandler = getPipedHttpHandler(context.getType(), context.getMethod());
 
         if (httpHandler != null) {
             httpHandler.handleRequest(exchange, context);
