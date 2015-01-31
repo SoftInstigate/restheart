@@ -50,8 +50,9 @@ public class GetBinaryFileHandler extends GetDocumentHandler {
         DBObject document = findDocument(context);
 
         if (document == null) {
-            LOGGER.error("Document <{}> does not exist", context.getDocumentId());
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "Document does not exist");
+            final String errMsg = String.format("Document <%s> does not exist", context.getDocumentId());
+            LOGGER.error(errMsg);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, errMsg);
             return;
         }
 
@@ -59,7 +60,7 @@ public class GetBinaryFileHandler extends GetDocumentHandler {
             LOGGER.info("filename = {}", document.get("filename"));
             streamBinaryFile(exchange, context, document);
         } else {
-            LOGGER.warn("Document <{}> is not a GridFS object!");
+            LOGGER.warn("Document <{}> is not a GridFS object!", context.getDocumentId());
             // TODO: could throwing an exception be a better option?
             super.handleRequest(exchange, context);
         }
@@ -76,9 +77,9 @@ public class GetBinaryFileHandler extends GetDocumentHandler {
     }
 
     private void streamBinaryFile(HttpServerExchange exchange, RequestContext context, DBObject document) throws IOException {
-        String contentLength = document.get("length").toString();
+        final String contentLength = document.get("length").toString();
         LOGGER.debug("@@@ content length = {}", contentLength);
-        String bucket = extractBucket(context.getCollectionName());
+        final String bucket = extractBucket(context.getCollectionName());
         // read the file from GridFS
         GridFS gridfs = new GridFS(dbsDAO.getDB(context.getDBName()), bucket);
         GridFSDBFile dbsfile = gridfs.findOne((String) document.get("filename"));
