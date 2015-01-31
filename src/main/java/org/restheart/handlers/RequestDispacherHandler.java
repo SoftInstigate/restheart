@@ -130,11 +130,11 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
     }
 
     /**
-     * Given a type and method, put into handlersMultimap the PipedHttpHandler
+     * Given a type and method, put in a PipedHttpHandler
      *
-     * @param type
-     * @param method
-     * @param handler
+     * @param type the DB type
+     * @param method the HTTP method
+     * @param handler the PipedHttpHandler
      */
     void putPipedHttpHandler(TYPE type, METHOD method, PipedHttpHandler handler) {
         Map<METHOD, PipedHttpHandler> methodsMap = handlersMultimap.get(type);
