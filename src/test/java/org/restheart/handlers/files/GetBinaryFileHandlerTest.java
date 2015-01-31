@@ -17,10 +17,6 @@
  */
 package org.restheart.handlers.files;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -32,40 +28,11 @@ public class GetBinaryFileHandlerTest {
     
     public GetBinaryFileHandlerTest() {
     }
-    
-    @BeforeClass
-    public static void setUpClass() {
-    }
-    
-    @AfterClass
-    public static void tearDownClass() {
-    }
-    
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
-    }
-
-//    @Test
-//    public void testHandleRequest() throws Exception {
-//        System.out.println("handleRequest");
-//        HttpServerExchange exchange = null;
-//        RequestContext context = null;
-//        GetBinaryFileHandler instance = new GetBinaryFileHandler();
-//        instance.handleRequest(exchange, context);
-//        // TODO review the generated test code and remove the default call to fail.
-//        fail("The test case is a prototype.");
-//    }
 
     @Test
     public void testExtractBucket() {
-        System.out.println("extractBucket");
-        String expResult = "mybucket";
-        String result = GetBinaryFileHandler.extractBucket("mybucket.files");
-        assertEquals(expResult, result);
+        System.out.println("testExtractBucket");
+        assertEquals("mybucket", GetBinaryFileHandler.extractBucket("mybucket.files"));
     }
     
 }
