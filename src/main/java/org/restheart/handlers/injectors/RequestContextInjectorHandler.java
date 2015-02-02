@@ -31,6 +31,7 @@ import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
+import org.bson.BSONObject;
 import static org.restheart.handlers.RequestContext.DETECT_OBJECTIDS_KEY;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_KEY;
@@ -153,7 +154,13 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 }
 
                 try {
-                    JSON.parse(f);
+                    Object _filter = JSON.parse(f);
+                    
+                    if (!(_filter instanceof BSONObject)) {
+                        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                            "illegal filter paramenter, it is not a json object: " + f + " => " + f.getClass().getSimpleName());
+                    return true;
+                    }
                 } catch (Throwable t) {
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
                             "illegal filter paramenter: " + f, t);
