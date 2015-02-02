@@ -18,8 +18,13 @@
 package org.restheart.handlers.files;
 
 import io.undertow.server.HttpServerExchange;
+import org.restheart.db.Database;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.utils.HttpStatus;
+import org.restheart.utils.ResponseHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -27,9 +32,21 @@ import org.restheart.handlers.RequestContext;
  */
 public class PostBinaryFileHandler extends PipedHttpHandler {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(PostBinaryFileHandler.class);
+
+    public PostBinaryFileHandler() {
+        super();
+    }
+
+    public PostBinaryFileHandler(PipedHttpHandler next, Database dbsDAO) {
+        super(next, dbsDAO);
+    }
+
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        final String errMsg = "Operation 'POST' not implemented yet for binary files";
+        LOGGER.error(errMsg);
+        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_IMPLEMENTED, errMsg);
     }
-    
+
 }

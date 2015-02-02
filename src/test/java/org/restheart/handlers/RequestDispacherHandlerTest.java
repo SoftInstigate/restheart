@@ -27,6 +27,8 @@ package org.restheart.handlers;
 //import java.io.IOException;
 //import java.io.InputStream;
 //import java.net.UnknownHostException;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -34,16 +36,21 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import static org.junit.Assert.*;
 import org.junit.Test;
+import static org.mockito.Mockito.mock;
 import org.restheart.handlers.collection.GetCollectionHandler;
 import org.restheart.handlers.collection.PutCollectionHandler;
 import org.restheart.handlers.database.GetDBHandler;
+import org.restheart.handlers.files.PostBinaryFileHandler;
 import org.restheart.handlers.root.GetRootHandler;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
  * @author Maurizio Turatti <info@maurizioturatti.com>
  */
 public class RequestDispacherHandlerTest {
+
+    private RequestDispacherHandler dispacher;
 
     public RequestDispacherHandlerTest() {
     }
@@ -58,6 +65,7 @@ public class RequestDispacherHandlerTest {
 
     @Before
     public void setUp() {
+        dispacher = new RequestDispacherHandler(false);
     }
 
     @After
@@ -68,7 +76,6 @@ public class RequestDispacherHandlerTest {
     public void testCreateHttpHandlers() {
         System.out.println("testCreateHttpHandlers");
 
-        RequestDispacherHandler dispacher = new RequestDispacherHandler(false);
         dispacher.putPipedHttpHandler(RequestContext.TYPE.ROOT, RequestContext.METHOD.GET, new GetRootHandler(null, null));
         dispacher.putPipedHttpHandler(RequestContext.TYPE.DB, RequestContext.METHOD.GET, new GetDBHandler(null, null));
         dispacher.putPipedHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.PUT, new PutCollectionHandler(null, null));
@@ -80,6 +87,21 @@ public class RequestDispacherHandlerTest {
         assertThat(dispacher.getPipedHttpHandler(RequestContext.TYPE.COLLECTION_FILES, RequestContext.METHOD.GET), instanceOf(GetCollectionHandler.class));
 
         assertNull(dispacher.getPipedHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.POST));
+    }
+
+    @Test
+    public void testPostBinaryFileHandler() throws Exception {
+        System.out.println("testPostBinaryFileHandler");
+        
+        HttpServerExchange exchange = new HttpServerExchange();
+        exchange.setRequestPath("/testdb/mybucket.files");
+        exchange.setRequestMethod(new HttpString("POST"));
+        RequestContext context = new RequestContext(exchange, "/", "/");
+        
+        dispacher.putPipedHttpHandler(RequestContext.TYPE.COLLECTION_FILES, RequestContext.METHOD.POST, new PostBinaryFileHandler(null, null));
+        dispacher.handleRequest(exchange, context);
+        
+        assertEquals(HttpStatus.SC_NOT_IMPLEMENTED, exchange.getResponseCode());
     }
 
 //    @Test
@@ -102,21 +124,5 @@ public class RequestDispacherHandlerTest {
 //        gfsFile.setFilename("RESTHeart_documentation.pdf");
 //        gfsFile.save();
 //    }
-//    @Test
-//    public void test_put_file_request() throws Exception {
-//        System.out.println("+++ test_put_file_request");
-//
-//        HttpServerExchange exchange = new HttpServerExchange();
-//        exchange.setRequestPath("/testdb/_files");
-//        exchange.setRequestMethod(new HttpString("POST"));
-//
-//        RequestContext context = new RequestContext(exchange, "/", "/");
-//
-//        RequestDispacherHandlerBuilder builder = new RequestDispacherHandlerBuilder();
-//        builder.setFilePut(new PutFileHandler());
-//        RequestDispacherHandler instance = builder.createRequestDispacherHandler();
-//        instance.handleRequest(exchange, context);
-//
-//        assertEquals(201, exchange.getResponseCode());
-//    }
+
 }

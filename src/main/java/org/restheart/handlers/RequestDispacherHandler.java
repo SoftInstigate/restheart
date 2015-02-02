@@ -41,6 +41,7 @@ import java.util.Map;
 import static org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.files.GetBinaryFileHandler;
+import org.restheart.handlers.files.PostBinaryFileHandler;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +53,7 @@ import org.slf4j.LoggerFactory;
 public final class RequestDispacherHandler extends PipedHttpHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestDispacherHandler.class);
-    
+
     private final Map<TYPE, Map<METHOD, PipedHttpHandler>> handlersMultimap;
 
     /**
@@ -81,6 +82,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * and PipedHttpHandler objects
      */
     private void defaultInit() {
+        LOGGER.info("Initialize default HTTP handlers:");
         // ROOT handlers
         putPipedHttpHandler(TYPE.ROOT, METHOD.GET, new GetRootHandler());
 
@@ -113,6 +115,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         // COLLECTION_FILES and FILE handlers
         putPipedHttpHandler(TYPE.COLLECTION_FILES, METHOD.GET, getCollectionHandler);
+        putPipedHttpHandler(TYPE.COLLECTION_FILES, METHOD.POST, new PostBinaryFileHandler());
         putPipedHttpHandler(TYPE.FILE, METHOD.GET, new GetBinaryFileHandler());
     }
 
@@ -137,9 +140,10 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * @param handler the PipedHttpHandler
      */
     void putPipedHttpHandler(TYPE type, METHOD method, PipedHttpHandler handler) {
+        LOGGER.info("putPipedHttpHandler( {}, {}, {} )", type, method, handler.getClass().getCanonicalName());
         Map<METHOD, PipedHttpHandler> methodsMap = handlersMultimap.get(type);
         if (methodsMap == null) {
-            methodsMap = new HashMap<METHOD, PipedHttpHandler>();
+            methodsMap = new HashMap<>();
             handlersMultimap.put(type, methodsMap);
         }
         methodsMap.put(method, handler);
@@ -177,7 +181,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         if (httpHandler != null) {
             httpHandler.handleRequest(exchange, context);
         } else {
-            LOGGER.error("getHttpHandler({}, {}) can't find any PipedHttpHandler", context.getType(), context.getMethod());
+            LOGGER.error("Call to getPipedHttpHandler({}, {}) can't find any PipedHttpHandler", context.getType(), context.getMethod());
             ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
     }

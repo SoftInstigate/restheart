@@ -37,7 +37,7 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CollectionPropsInjectorHandler.class);
 
-    private static final String COLLECTION_DOES_NOT_EXIST = "Collection '%s' does not exist";
+    private static final String COLLECTION_DOES_NOT_EXIST = "Collection '%s' does not exist or method '%s' is not applicable";
 
     /**
      * Creates a new instance of MetadataInjecterHandler
@@ -63,10 +63,7 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
                 collProps = getDatabase().getCollectionProperties(context.getDBName(), context.getCollectionName());
                 if (collProps != null) {
                     collProps.put("_collection-props-cached", false);
-                } else if (!(context.getType() == RequestContext.TYPE.COLLECTION
-                        && context.getMethod() == RequestContext.METHOD.PUT)
-                        && context.getType() != RequestContext.TYPE.ROOT
-                        && context.getType() != RequestContext.TYPE.DB) {
+                } else if (checkCollection(context)) {
                     collectionDoesNotExists(context, exchange);
                     return;
                 }
@@ -75,11 +72,7 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
                         .getCollectionProps(context.getDBName(), context.getCollectionName());
             }
 
-            if (collProps == null
-                    && !(context.getType() == RequestContext.TYPE.COLLECTION
-                    && context.getMethod() == RequestContext.METHOD.PUT)
-                    && context.getType() != RequestContext.TYPE.ROOT
-                    && context.getType() != RequestContext.TYPE.DB) {
+            if (collProps == null && checkCollection(context)) {
                 collectionDoesNotExists(context, exchange);
                 return;
             }
@@ -90,8 +83,15 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
         getNext().handleRequest(exchange, context);
     }
 
-    private void collectionDoesNotExists(RequestContext context, HttpServerExchange exchange) {
-        final String errMsg = String.format(COLLECTION_DOES_NOT_EXIST, context.getCollectionName());
+    public static boolean checkCollection(RequestContext context) {
+        return !(context.getType() == RequestContext.TYPE.COLLECTION && context.getMethod() == RequestContext.METHOD.PUT)
+                && !(context.getType() == RequestContext.TYPE.COLLECTION_FILES && context.getMethod() == RequestContext.METHOD.POST)
+                && context.getType() != RequestContext.TYPE.ROOT
+                && context.getType() != RequestContext.TYPE.DB;
+    }
+
+    protected void collectionDoesNotExists(RequestContext context, HttpServerExchange exchange) {
+        final String errMsg = String.format(COLLECTION_DOES_NOT_EXIST, context.getCollectionName(), context.getMethod());
         LOGGER.error(errMsg);
         ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, errMsg);
     }
