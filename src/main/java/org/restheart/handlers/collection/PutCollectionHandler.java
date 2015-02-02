@@ -31,7 +31,6 @@ import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
 import org.restheart.db.Database;
-import org.restheart.db.DbsDAO;
 
 /**
  *
@@ -39,18 +38,12 @@ import org.restheart.db.DbsDAO;
  */
 public class PutCollectionHandler extends PipedHttpHandler {
 
-    private final Database dbsDAO;
-
-    /**
-     * Creates a new instance of PutCollectionHandler
-     */
     public PutCollectionHandler() {
-        this(new DbsDAO());
+        super();
     }
 
-    public PutCollectionHandler(Database dbsDAO) {
-        super(null);
-        this.dbsDAO = dbsDAO;
+    public PutCollectionHandler(PipedHttpHandler next, Database dbsDAO) {
+        super(next, dbsDAO);
     }
 
     /**
@@ -93,7 +86,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
         boolean updating = context.getCollectionProps() != null;
 
-        int httpCode = this.dbsDAO.upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, updating, false);
+        int httpCode = getDatabase().upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, updating, false);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
@@ -105,6 +98,6 @@ public class PutCollectionHandler extends PipedHttpHandler {
         exchange.endExchange();
         LocalCachesSingleton.getInstance().invalidateCollection(context.getDBName(), context.getCollectionName());
     }
-    
+
     private static final String UNDERSCORE = "_";
 }

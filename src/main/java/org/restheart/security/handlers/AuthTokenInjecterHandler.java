@@ -20,7 +20,6 @@ package org.restheart.security.handlers;
 import io.undertow.security.idm.Account;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -43,21 +42,12 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
     private static final long TTL = Bootstrapper.getConf().getAuthTokenTtl();
 
     /**
-     * Creates a new instance of GetRootHandler
+     * Creates a new instance of AuthTokenInjecterHandler
      *
      * @param next
      */
     public AuthTokenInjecterHandler(PipedHttpHandler next) {
         super(next);
-    }
-
-    /**
-     * Creates a new instance of GetRootHandler
-     *
-     * @param next
-     */
-    public AuthTokenInjecterHandler(HttpHandler next) {
-        super(null);
     }
 
     /**
@@ -78,8 +68,8 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
             }
         }
 
-        if (next != null) {
-            next.handleRequest(exchange, context);
+        if (getNext() != null) {
+            getNext() .handleRequest(exchange, context);
         }
     }
 

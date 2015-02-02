@@ -63,20 +63,22 @@ public class RequestDispacherHandlerTest {
     @After
     public void tearDown() {
     }
-    
+
     @Test
-    public void testHttpHandlers() {
+    public void testCreateHttpHandlers() {
+        System.out.println("testCreateHttpHandlers");
+
         RequestDispacherHandler dispacher = new RequestDispacherHandler(false);
-        dispacher.putPipedHttpHandler(RequestContext.TYPE.ROOT, RequestContext.METHOD.GET, new GetRootHandler(null));
-        dispacher.putPipedHttpHandler(RequestContext.TYPE.DB, RequestContext.METHOD.GET, new GetDBHandler(null));
-        dispacher.putPipedHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.PUT, new PutCollectionHandler(null));
-        dispacher.putPipedHttpHandler(RequestContext.TYPE.COLLECTION_FILES, RequestContext.METHOD.GET, new GetCollectionHandler(null));
-        
+        dispacher.putPipedHttpHandler(RequestContext.TYPE.ROOT, RequestContext.METHOD.GET, new GetRootHandler(null, null));
+        dispacher.putPipedHttpHandler(RequestContext.TYPE.DB, RequestContext.METHOD.GET, new GetDBHandler(null, null));
+        dispacher.putPipedHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.PUT, new PutCollectionHandler(null, null));
+        dispacher.putPipedHttpHandler(RequestContext.TYPE.COLLECTION_FILES, RequestContext.METHOD.GET, new GetCollectionHandler(null, null));
+
         assertThat(dispacher.getPipedHttpHandler(RequestContext.TYPE.ROOT, RequestContext.METHOD.GET), instanceOf(GetRootHandler.class));
         assertThat(dispacher.getPipedHttpHandler(RequestContext.TYPE.DB, RequestContext.METHOD.GET), instanceOf(GetDBHandler.class));
         assertThat(dispacher.getPipedHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.PUT), instanceOf(PutCollectionHandler.class));
         assertThat(dispacher.getPipedHttpHandler(RequestContext.TYPE.COLLECTION_FILES, RequestContext.METHOD.GET), instanceOf(GetCollectionHandler.class));
-        
+
         assertNull(dispacher.getPipedHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.POST));
     }
 
@@ -100,7 +102,6 @@ public class RequestDispacherHandlerTest {
 //        gfsFile.setFilename("RESTHeart_documentation.pdf");
 //        gfsFile.save();
 //    }
-
 //    @Test
 //    public void test_put_file_request() throws Exception {
 //        System.out.println("+++ test_put_file_request");
@@ -118,5 +119,4 @@ public class RequestDispacherHandlerTest {
 //
 //        assertEquals(201, exchange.getResponseCode());
 //    }
-
 }

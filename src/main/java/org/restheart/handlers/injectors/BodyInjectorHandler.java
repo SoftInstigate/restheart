@@ -58,7 +58,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         if (context.getMethod() == RequestContext.METHOD.GET
                 || context.getMethod() == RequestContext.METHOD.OPTIONS
                 || context.getMethod() == RequestContext.METHOD.DELETE) {
-            next.handleRequest(exchange, context);
+            getNext().handleRequest(exchange, context);
             return;
         }
 
@@ -122,7 +122,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             context.setContent(content);
         }
 
-        next.handleRequest(exchange, context);
+        getNext().handleRequest(exchange, context);
     }
 
     private static boolean unsupportedContentType(HeaderValues contentTypes) {

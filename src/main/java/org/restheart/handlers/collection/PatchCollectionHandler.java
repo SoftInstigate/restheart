@@ -29,28 +29,12 @@ import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
-import org.restheart.db.Database;
-import org.restheart.db.DbsDAO;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class PatchCollectionHandler extends PipedHttpHandler {
-
-    private final Database dbsDAO;
-
-    /**
-     * Creates a new instance of PatchCollectionHandler
-     */
-    public PatchCollectionHandler() {
-        this(new DbsDAO());
-    }
-
-    public PatchCollectionHandler(Database dbsDAO) {
-        super(null);
-        this.dbsDAO = dbsDAO;
-    }
 
     /**
      *
@@ -104,7 +88,7 @@ public class PatchCollectionHandler extends PipedHttpHandler {
             return;
         }
 
-        int httpCode = dbsDAO.upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, true, true);
+        int httpCode = getDatabase().upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, true, true);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {

@@ -22,8 +22,6 @@ import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.db.Database;
-import org.restheart.db.DbsDAO;
 
 /**
  *
@@ -31,18 +29,11 @@ import org.restheart.db.DbsDAO;
  */
 public class DeleteIndexHandler extends PipedHttpHandler {
 
-    private final Database dbsDAO;
-
     /**
      * Creates a new instance of DeleteIndexHandler
      */
     public DeleteIndexHandler() {
-        this(new DbsDAO());
-    }
-
-    public DeleteIndexHandler(Database dbsDAO) {
-        super(null);
-        this.dbsDAO = dbsDAO;
+        super();
     }
 
     /**
@@ -63,7 +54,7 @@ public class DeleteIndexHandler extends PipedHttpHandler {
             return;
         }
 
-        int httpCode = dbsDAO.deleteIndex(dbName, collectionName, indexId);
+        int httpCode = getDatabase().deleteIndex(dbName, collectionName, indexId);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {

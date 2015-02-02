@@ -23,8 +23,6 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
-import org.restheart.db.Database;
-import org.restheart.db.DbsDAO;
 
 /**
  *
@@ -32,18 +30,11 @@ import org.restheart.db.DbsDAO;
  */
 public class GetIndexesHandler extends PipedHttpHandler {
 
-    private final Database dbsDAO;
-
     /**
      * Creates a new instance of GetIndexesHandler
      */
     public GetIndexesHandler() {
-        this(new DbsDAO());
-    }
-
-    public GetIndexesHandler(Database dbsDAO) {
-        super(null);
-        this.dbsDAO = dbsDAO;
+        super();
     }
 
     /**
@@ -54,7 +45,7 @@ public class GetIndexesHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        List<DBObject> indexes = dbsDAO.getCollectionIndexes(context.getDBName(), context.getCollectionName());
+        List<DBObject> indexes = getDatabase().getCollectionIndexes(context.getDBName(), context.getCollectionName());
         exchange.setResponseCode(HttpStatus.SC_OK);
         IndexesRepresentationFactory.sendHal(exchange, context, indexes, indexes.size());
         exchange.endExchange();

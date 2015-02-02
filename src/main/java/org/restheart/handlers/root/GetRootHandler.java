@@ -18,7 +18,6 @@
 package org.restheart.handlers.root;
 
 import com.mongodb.DBObject;
-import org.restheart.db.DbsDAO;
 import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -36,18 +35,12 @@ import org.restheart.db.Database;
  */
 public class GetRootHandler extends PipedHttpHandler {
 
-    private final Database dbsDAO;
-
-    /**
-     * Creates a new instance of GetRootHandler
-     */
     public GetRootHandler() {
-        this(new DbsDAO());
+        super();
     }
 
-    public GetRootHandler(Database dbsDAO) {
-        super(null);
-        this.dbsDAO = dbsDAO;
+    public GetRootHandler(PipedHttpHandler next, Database dbsDAO) {
+        super(next, dbsDAO);
     }
 
     /**
@@ -58,7 +51,7 @@ public class GetRootHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        List<String> _dbs = dbsDAO.getDatabaseNames();
+        List<String> _dbs = getDatabase().getDatabaseNames();
 
         // filter out reserved resources
         List<String> dbs = _dbs.stream().filter(db -> !RequestContext.isReservedResourceDb(db)).collect(Collectors.toList());
@@ -82,7 +75,7 @@ public class GetRootHandler extends PipedHttpHandler {
                 if (LocalCachesSingleton.isEnabled()) {
                     return LocalCachesSingleton.getInstance().getDBProps(db);
                 } else {
-                    return dbsDAO.getDatabaseProperties(db);
+                    return getDatabase().getDatabaseProperties(db);
                 }
             }
             ).forEach((item) -> {

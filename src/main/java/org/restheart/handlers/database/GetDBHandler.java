@@ -18,7 +18,6 @@
 package org.restheart.handlers.database;
 
 import com.mongodb.DBObject;
-import org.restheart.db.DbsDAO;
 import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -31,20 +30,18 @@ import org.restheart.db.Database;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class GetDBHandler extends PipedHttpHandler {
-    
-    private final Database dbsDAO;
 
     /**
      * Creates a new instance of GetDBHandler
      */
     public GetDBHandler() {
-        this(new DbsDAO());
+        super();
     }
 
-    public GetDBHandler(Database dbsDAO) {
-        super(null);
-        this.dbsDAO = dbsDAO;
+    public GetDBHandler(PipedHttpHandler next, Database dbsDAO) {
+        super(next, dbsDAO);
     }
+
     /**
      *
      * @param exchange
@@ -53,17 +50,17 @@ public class GetDBHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        List<String> colls = this.dbsDAO.getCollectionNames(this.dbsDAO.getDB(context.getDBName()));
-        
+        List<String> colls = getDatabase().getCollectionNames(getDatabase().getDB(context.getDBName()));
+
         List<DBObject> data = null;
-        
+
         if (context.getPagesize() > 0) {
-            data = this.dbsDAO.getData(context.getDBName(), colls, context.getPage(), context.getPagesize());
+            data = getDatabase().getData(context.getDBName(), colls, context.getPage(), context.getPagesize());
         }
-        
+
         exchange.setResponseCode(HttpStatus.SC_OK);
-        
-        new DBRepresentationFactory().sendHal(exchange, context, data, this.dbsDAO.getDBSize(colls));
+
+        new DBRepresentationFactory().sendHal(exchange, context, data, getDatabase().getDBSize(colls));
         exchange.endExchange();
     }
 }

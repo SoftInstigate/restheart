@@ -245,7 +245,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
         rcontext.setDetectObjectIds(detectObjectIds);
         
-        next.handleRequest(exchange, rcontext);
+        getNext().handleRequest(exchange, rcontext);
     }
 
     @Override

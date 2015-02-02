@@ -23,8 +23,6 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.db.Database;
-import org.restheart.db.DbsDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,20 +39,13 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
 
     private static final String COLLECTION_DOES_NOT_EXIST = "Collection '%s' does not exist";
 
-    private final Database dbsDAO;
-
     /**
      * Creates a new instance of MetadataInjecterHandler
      *
      * @param next
      */
     public CollectionPropsInjectorHandler(PipedHttpHandler next) {
-        this(next, new DbsDAO());
-    }
-
-    public CollectionPropsInjectorHandler(PipedHttpHandler next, DbsDAO dbsDAO) {
         super(next);
-        this.dbsDAO = dbsDAO;
     }
 
     /**
@@ -69,7 +60,7 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
             DBObject collProps;
 
             if (!LocalCachesSingleton.isEnabled()) {
-                collProps = dbsDAO.getCollectionProperties(context.getDBName(), context.getCollectionName());
+                collProps = getDatabase().getCollectionProperties(context.getDBName(), context.getCollectionName());
                 if (collProps != null) {
                     collProps.put("_collection-props-cached", false);
                 } else if (!(context.getType() == RequestContext.TYPE.COLLECTION
@@ -96,7 +87,7 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
             context.setCollectionProps(collProps);
         }
 
-        next.handleRequest(exchange, context);
+        getNext().handleRequest(exchange, context);
     }
 
     private void collectionDoesNotExists(RequestContext context, HttpServerExchange exchange) {

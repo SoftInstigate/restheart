@@ -23,8 +23,8 @@ import com.mongodb.gridfs.GridFSDBFile;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.io.IOException;
+import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.document.GetDocumentHandler;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
-public class GetBinaryFileHandler extends GetDocumentHandler {
+public class GetBinaryFileHandler extends PipedHttpHandler {
 
     public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
 
@@ -45,7 +45,7 @@ public class GetBinaryFileHandler extends GetDocumentHandler {
         LOGGER.info("GET " + exchange.getRequestURL());
         final String bucket = extractBucketName(context.getCollectionName());
 
-        GridFS gridfs = new GridFS(dbsDAO.getDB(context.getDBName()), bucket);
+        GridFS gridfs = new GridFS(getDatabase().getDB(context.getDBName()), bucket);
         GridFSDBFile dbsfile = gridfs.findOne(new BasicDBObject("_id", context.getDocumentId()));
 
         if (dbsfile == null) {

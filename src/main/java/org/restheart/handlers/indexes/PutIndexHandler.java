@@ -25,8 +25,6 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.document.DocumentRepresentationFactory;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.db.Database;
-import org.restheart.db.DbsDAO;
 
 /**
  *
@@ -34,18 +32,11 @@ import org.restheart.db.DbsDAO;
  */
 public class PutIndexHandler extends PipedHttpHandler {
 
-    final Database dbsDAO;
-
     /**
      * Creates a new instance of PutIndexHandler
      */
     public PutIndexHandler() {
-        this(new DbsDAO());
-    }
-
-    public PutIndexHandler(Database dbsDAO) {
-        super(null);
-        this.dbsDAO = dbsDAO;
+        super();
     }
 
     /**
@@ -84,7 +75,7 @@ public class PutIndexHandler extends PipedHttpHandler {
         ops.put("name", id);
 
         try {
-            dbsDAO.createIndex(db, co, keys, ops);
+            getDatabase().createIndex(db, co, keys, ops);
         } catch (Throwable t) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
                     "error creating the index", t);

@@ -28,8 +28,6 @@ import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import org.bson.types.ObjectId;
-import org.restheart.db.Database;
-import org.restheart.db.DbsDAO;
 
 /**
  *
@@ -37,23 +35,11 @@ import org.restheart.db.DbsDAO;
  */
 public class GetDocumentHandler extends PipedHttpHandler {
 
-    protected final Database dbsDAO;
-
     /**
      * Default ctor
      */
     public GetDocumentHandler() {
-        this(new DbsDAO());
-    }
-
-    /**
-     * Creates a new instance of GetDocumentHandler
-     *
-     * @param dbsDAO
-     */
-    public GetDocumentHandler(Database dbsDAO) {
-        super(null);
-        this.dbsDAO = dbsDAO;
+        super();
     }
 
     /**
@@ -66,7 +52,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         BasicDBObject query = new BasicDBObject("_id", context.getDocumentId());
 
-        DBObject document = dbsDAO.getCollection(context.getDBName(), context.getCollectionName()).findOne(query);
+        DBObject document = getDatabase().getCollection(context.getDBName(), context.getCollectionName()).findOne(query);
 
         if (document == null) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "document does not exist");

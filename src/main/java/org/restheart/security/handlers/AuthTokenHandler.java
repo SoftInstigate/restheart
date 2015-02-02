@@ -23,10 +23,10 @@ import io.undertow.util.Methods;
 import org.restheart.Bootstrapper;
 import org.restheart.hal.Representation;
 import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_HEADER;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_VALID_HEADER;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.RequestContext;
 import org.restheart.security.impl.AuthTokenIdentityManager;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -36,15 +36,8 @@ import org.restheart.utils.ResponseHelper;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class AuthTokenHandler extends PipedHttpHandler {
-    private static final boolean enabled = Bootstrapper.getConf().isAuthTokenEnabled();
 
-    /**
-     * Creates a new instance of SessionTokenInvalidationHandler
-     *
-     */
-    public AuthTokenHandler() {
-        super(null);
-    }
+    private static final boolean ENABLED = Bootstrapper.getConf().isAuthTokenEnabled();
 
     /**
      *
@@ -54,20 +47,22 @@ public class AuthTokenHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (!enabled) {
+        if (!ENABLED) {
             return;
         }
-        
-        if (exchange.getSecurityContext() == null ||
-                exchange.getSecurityContext().getAuthenticatedAccount() == null ||
-                exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null ||
-                !("/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName()).equals(exchange.getRequestURI())) {
+
+        if (exchange.getSecurityContext() == null
+                || exchange.getSecurityContext().getAuthenticatedAccount() == null
+                || exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null
+                || !("/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName())
+                        .equals(exchange.getRequestURI())) {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_UNAUTHORIZED);
             return;
         }
-        
+
         if (Methods.GET.equals(exchange.getRequestMethod())) {
-            Representation rep = new Representation("/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
+            Representation rep = new Representation("/_authtokens/" 
+                    + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
 
             rep.addProperty("auth_token", exchange.getResponseHeaders().get(AUTH_TOKEN_HEADER).getFirst());
             rep.addProperty("auth_token_valid_until", exchange.getResponseHeaders().get(AUTH_TOKEN_VALID_HEADER).getFirst());
@@ -77,7 +72,8 @@ public class AuthTokenHandler extends PipedHttpHandler {
             exchange.getResponseSender().send(rep.toString());
             exchange.endExchange();
         } else if (Methods.DELETE.equals(exchange.getRequestMethod())) {
-            AuthTokenIdentityManager.getInstance().getCachedAccounts().invalidate(exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
+            AuthTokenIdentityManager.getInstance().getCachedAccounts()
+                    .invalidate(exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
             removeAuthTokens(exchange);
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NO_CONTENT);
         } else {

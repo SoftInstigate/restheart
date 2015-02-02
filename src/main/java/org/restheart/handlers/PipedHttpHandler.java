@@ -23,6 +23,8 @@ import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import java.net.URISyntaxException;
+import org.restheart.db.Database;
+import org.restheart.db.DbsDAO;
 
 /**
  *
@@ -30,10 +32,34 @@ import java.net.URISyntaxException;
  */
 public abstract class PipedHttpHandler implements HttpHandler {
 
-    protected final PipedHttpHandler next;
+    private final Database dbsDAO;
+    private final PipedHttpHandler next;
 
+    /**
+     * Creates a default instance of PipedHttpHandler with next = null and
+     * dbsDAO = new DbsDAO()
+     */
+    public PipedHttpHandler() {
+        this(null, new DbsDAO());
+    }
+
+    /**
+     *
+     * @param next the next handler in this chain
+     */
     public PipedHttpHandler(PipedHttpHandler next) {
+        this(next, new DbsDAO());
+    }
+
+    /**
+     * Inject a custom DbsDAO, usually a mock for testing purposes
+     *
+     * @param next
+     * @param dbsDAO
+     */
+    public PipedHttpHandler(PipedHttpHandler next, Database dbsDAO) {
         this.next = next;
+        this.dbsDAO = dbsDAO;
     }
 
     /**
@@ -57,5 +83,19 @@ public abstract class PipedHttpHandler implements HttpHandler {
         }
 
         DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
+    }
+
+    /**
+     * @return the dbsDAO
+     */
+    protected Database getDatabase() {
+        return dbsDAO;
+    }
+
+    /**
+     * @return the next PipedHttpHandler
+     */
+    protected PipedHttpHandler getNext() {
+        return next;
     }
 }

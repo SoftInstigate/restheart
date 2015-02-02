@@ -44,6 +44,6 @@ public class MetadataEnforcerHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        next.handleRequest(exchange, context);
+        getNext().handleRequest(exchange, context);
     }
 }

@@ -18,13 +18,11 @@
 package org.restheart.handlers.injectors;
 
 import com.mongodb.DBObject;
-import org.restheart.db.DbsDAO;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.db.Database;
 
 /**
  *
@@ -36,16 +34,13 @@ import org.restheart.db.Database;
  */
 public class DbPropsInjectorHandler extends PipedHttpHandler {
 
-    private final Database dbsDAO;
-
     /**
-     * Creates a new instance of MetadataInjecterHandler
+     * Creates a new instance of DbPropsInjectorHandler
      *
      * @param next
      */
     public DbPropsInjectorHandler(PipedHttpHandler next) {
         super(next);
-        this.dbsDAO = new DbsDAO();
     }
 
     /**
@@ -60,7 +55,7 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
             DBObject dbProps = null;
 
             if (!LocalCachesSingleton.isEnabled()) {
-                dbProps = dbsDAO.getDatabaseProperties(context.getDBName());
+                dbProps = getDatabase().getDatabaseProperties(context.getDBName());
 
                 if (dbProps != null) {
                     dbProps.put("_db-props-cached", false);
@@ -85,6 +80,6 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
             context.setDbProperties(dbProps);
         }
 
-        next.handleRequest(exchange, context);
+        getNext().handleRequest(exchange, context);
     }
 }

@@ -69,7 +69,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * @param initialize if false then do not initialize the handlersMultimap
      */
     RequestDispacherHandler(boolean initialize) {
-        super(null);
+        super(null, null);
         this.handlersMultimap = new HashMap<>();
         if (initialize) {
             defaultInit();

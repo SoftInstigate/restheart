@@ -29,7 +29,6 @@ import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
 import org.restheart.db.Database;
-import org.restheart.db.DbsDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,18 +40,12 @@ public class GetCollectionHandler extends PipedHttpHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetCollectionHandler.class);
 
-    private final Database dbsDAO;
-
-    /**
-     * Creates a new instance of GetCollectionHandler
-     */
     public GetCollectionHandler() {
-        this(new DbsDAO());
+        super();
     }
 
-    public GetCollectionHandler(Database dbsDAO) {
-        super(null);
-        this.dbsDAO = dbsDAO;
+    public GetCollectionHandler(PipedHttpHandler next, Database dbsDAO) {
+        super(next, dbsDAO);
     }
 
     /**
@@ -63,11 +56,11 @@ public class GetCollectionHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        DBCollection coll = this.dbsDAO.getCollection(context.getDBName(), context.getCollectionName());
+        DBCollection coll = getDatabase().getCollection(context.getDBName(), context.getCollectionName());
         long size = -1;
 
         if (context.isCount()) {
-            size = this.dbsDAO.getCollectionSize(coll, exchange.getQueryParameters().get("filter"));
+            size = getDatabase().getCollectionSize(coll, exchange.getQueryParameters().get("filter"));
         }
 
         // ***** get data
@@ -76,7 +69,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
         if (context.getPagesize() > 0) {
 
             try {
-                data = this.dbsDAO.getCollectionData(coll, context.getPage(), context.getPagesize(),
+                data = getDatabase().getCollectionData(coll, context.getPage(), context.getPagesize(),
                         context.getSortBy(), context.getFilter(), context.getCursorAllocationPolicy(), context.isDetectObjectIds());
             } catch (JSONParseException jpe) {
                 // the filter expression is not a valid json string

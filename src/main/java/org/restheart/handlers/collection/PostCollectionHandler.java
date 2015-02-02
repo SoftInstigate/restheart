@@ -30,7 +30,7 @@ import io.undertow.util.HttpString;
 import java.net.URI;
 import java.net.URISyntaxException;
 import org.bson.types.ObjectId;
-import org.restheart.hal.Representation;
+import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import org.restheart.utils.IllegalDocumentIdException;
 import org.restheart.utils.URLUtils;
@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class PostCollectionHandler extends PutCollectionHandler {
+public class PostCollectionHandler extends PipedHttpHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PostCollectionHandler.class);
 

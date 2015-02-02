@@ -35,18 +35,11 @@ import org.restheart.db.Database;
  */
 public class DeleteDBHandler extends PipedHttpHandler {
 
-    private final Database dbsDAO;
-
     /**
      * Creates a new instance of DeleteDBHandler
      */
     public DeleteDBHandler() {
-        this(new DbsDAO());
-    }
-
-    public DeleteDBHandler(Database dbsDAO) {
-        super(null);
-        this.dbsDAO = dbsDAO;
+        super();
     }
 
     /**
@@ -64,7 +57,7 @@ public class DeleteDBHandler extends PipedHttpHandler {
             return;
         }
 
-        int httpCode = this.dbsDAO.deleteDatabase(context.getDBName(), etag);
+        int httpCode = getDatabase().deleteDatabase(context.getDBName(), etag);
 
         exchange.setResponseCode(httpCode);
 

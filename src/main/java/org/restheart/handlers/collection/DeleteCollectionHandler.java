@@ -26,8 +26,6 @@ import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.bson.types.ObjectId;
-import org.restheart.db.Database;
-import org.restheart.db.DbsDAO;
 
 /**
  *
@@ -35,18 +33,11 @@ import org.restheart.db.DbsDAO;
  */
 public class DeleteCollectionHandler extends PipedHttpHandler {
 
-    private final Database dbsDAO;
-
     /**
      * Creates a new instance of DeleteCollectionHandler
      */
     public DeleteCollectionHandler() {
-        this(new DbsDAO());
-    }
-    
-    public DeleteCollectionHandler(Database dbsDAO) {
-        super(null);
-        this.dbsDAO = dbsDAO;
+        super();
     }
 
     /**
@@ -65,7 +56,7 @@ public class DeleteCollectionHandler extends PipedHttpHandler {
             return;
         }
 
-        int httpCode = this.dbsDAO.deleteCollection(context.getDBName(), context.getCollectionName(), etag);
+        int httpCode = getDatabase().deleteCollection(context.getDBName(), context.getCollectionName(), etag);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
