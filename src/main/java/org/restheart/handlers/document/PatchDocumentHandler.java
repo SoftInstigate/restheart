@@ -84,11 +84,6 @@ public class PatchDocumentHandler extends PipedHttpHandler {
 
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
-        if (etag == null) {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
-            return;
-        }
-
         int httpCode = documentDAO.upsertDocument(
                 context.getDBName(),
                 context.getCollectionName(),
