@@ -86,8 +86,26 @@ public class URLUtilisTest {
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName/documentId";
         String result;
-        result = URLUtils.getUriWithDocId(context, "dbName", "collName", "documentId", RequestContext.DOC_ID_TYPE.STRING_OBJECTID);
-        assertEquals(expResult, result);
+        try {
+            result = URLUtils.getUriWithDocId(context, "dbName", "collName", "documentId", false);
+            assertEquals(expResult, result);
+        } catch (UnsupportedDocumentIdException ex) {
+            fail(ex.getMessage());
+        }
+    }
+    
+    @Test
+    public void testGetUriWithDocIdStringValidObjectId() {
+        System.out.println("getUriWithDocId String");
+        RequestContext context = prepareRequestContext();
+        String expResult = "/dbName/collName/54d13711c2e692941728e1d3?doc_id_type=STRING";
+        String result;
+        try {
+            result = URLUtils.getUriWithDocId(context, "dbName", "collName", "54d13711c2e692941728e1d3", false);
+            assertEquals(expResult, result);
+        } catch (UnsupportedDocumentIdException ex) {
+            fail(ex.getMessage());
+        }
     }
 
     @Test
@@ -96,8 +114,12 @@ public class URLUtilisTest {
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName/123?doc_id_type=INT";
         String result;
-        result = URLUtils.getUriWithDocId(context, "dbName", "collName", 123, RequestContext.DOC_ID_TYPE.INT);
-        assertEquals(expResult, result);
+        try {
+            result = URLUtils.getUriWithDocId(context, "dbName", "collName", 123, false);
+            assertEquals(expResult, result);
+        } catch (UnsupportedDocumentIdException ex) {
+            fail(ex.getMessage());
+        }
     }
 
     @Test

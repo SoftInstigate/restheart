@@ -55,7 +55,7 @@ public class Relationship {
     public static final String TARGET_DB_ELEMENT_NAME = "target-db";
     public static final String TARGET_COLLECTION_ELEMENT_NAME = "target-coll";
     public static final String REF_ELEMENT_NAME = "ref-field";
-    public static final String REF_TYPE_ELEMENT_NAME = "ref-field-type";
+    public static final String DETECT_OIDS_ELEMENT_NAME = "detect-oids";
 
     private final String rel;
     private final TYPE type;
@@ -63,7 +63,7 @@ public class Relationship {
     private final String targetDb;
     private final String targetCollection;
     private final String referenceField;
-    private final RequestContext.DOC_ID_TYPE refFieldType;
+    private final boolean detectOids;
 
     /**
      *
@@ -73,16 +73,16 @@ public class Relationship {
      * @param targetDb
      * @param targetCollection
      * @param referenceField
-     * @param refFieldType
+     * @param detectOids
      */
-    public Relationship(String rel, TYPE type, ROLE role, String targetDb, String targetCollection, String referenceField, RequestContext.DOC_ID_TYPE refFieldType) {
+    public Relationship(String rel, TYPE type, ROLE role, String targetDb, String targetCollection, String referenceField, boolean detectOids) {
         this.rel = rel;
         this.type = type;
         this.role = role;
         this.targetDb = targetDb;
         this.targetCollection = targetCollection;
         this.referenceField = referenceField;
-        this.refFieldType = refFieldType;
+        this.detectOids = detectOids;
     }
 
     /**
@@ -93,9 +93,10 @@ public class Relationship {
      * @param targetDb
      * @param targetCollection
      * @param referenceField
+     * @param detectOids
      * @throws InvalidMetadataException
      */
-    public Relationship(String rel, String type, String role, String targetDb, String targetCollection, String referenceField) throws InvalidMetadataException {
+    public Relationship(String rel, String type, String role, String targetDb, String targetCollection, String referenceField, Boolean detectOids) throws InvalidMetadataException {
         this.rel = rel;
 
         try {
@@ -113,48 +114,7 @@ public class Relationship {
         this.targetDb = targetDb;
         this.targetCollection = targetCollection;
         this.referenceField = referenceField;
-        this.refFieldType = null;
-    }
-
-    /**
-     *
-     * @param rel
-     * @param type
-     * @param role
-     * @param targetDb
-     * @param targetCollection
-     * @param referenceField
-     * @param refFieldType
-     * @throws InvalidMetadataException
-     */
-    public Relationship(String rel, String type, String role, String targetDb, String targetCollection, String referenceField, String refFieldType) throws InvalidMetadataException {
-        this.rel = rel;
-
-        try {
-            this.type = TYPE.valueOf(type);
-        } catch (IllegalArgumentException iae) {
-            throw new InvalidMetadataException("invalid type value: " + type + ". valid values are " + Arrays.toString(TYPE.values()), iae);
-        }
-
-        try {
-            this.role = ROLE.valueOf(role);
-        } catch (IllegalArgumentException iae) {
-            throw new InvalidMetadataException("invalid role value " + role + ". valid values are " + Arrays.toString(ROLE.values()), iae);
-        }
-
-        this.targetDb = targetDb;
-        this.targetCollection = targetCollection;
-        this.referenceField = referenceField;
-
-        if (refFieldType != null) {
-            try {
-                this.refFieldType = RequestContext.DOC_ID_TYPE.valueOf(refFieldType.toUpperCase());
-            } catch (IllegalArgumentException iae) {
-                throw new InvalidMetadataException("invalid refFieldType value " + refFieldType + ". valid values are " + Arrays.toString(RequestContext.DOC_ID_TYPE.values()), iae);
-            }
-        } else {
-            this.refFieldType = null;
-        }
+        this.detectOids = detectOids == null ? true: detectOids;
     }
 
     /**
@@ -201,7 +161,7 @@ public class Relationship {
         Object _targetDb = content.get(TARGET_DB_ELEMENT_NAME);
         Object _targetCollection = content.get(TARGET_COLLECTION_ELEMENT_NAME);
         Object _referenceField = content.get(REF_ELEMENT_NAME);
-        Object _refFieldType = content.get(REF_TYPE_ELEMENT_NAME);
+        Object _detectOids = content.get(DETECT_OIDS_ELEMENT_NAME);
 
         if (_rel == null || !(_rel instanceof String)) {
             throw new InvalidMetadataException((_rel == null ? "missing " : "invalid ") + REL_ELEMENT_NAME + " element.");
@@ -227,8 +187,8 @@ public class Relationship {
             throw new InvalidMetadataException((_referenceField == null ? "missing " : "invalid ") + REF_ELEMENT_NAME + " element.");
         }
 
-        if (_refFieldType != null && !(_refFieldType instanceof String)) {
-            throw new InvalidMetadataException("invalid " + REF_TYPE_ELEMENT_NAME + " element.");
+        if (_detectOids != null && !(_detectOids instanceof Boolean)) {
+            throw new InvalidMetadataException("invalid " + DETECT_OIDS_ELEMENT_NAME + " element.");
         }
 
         String rel = (String) _rel;
@@ -238,11 +198,7 @@ public class Relationship {
         String targetCollection = (String) _targetCollection;
         String referenceField = (String) _referenceField;
 
-        if (_refFieldType == null) {
-            return new Relationship(rel, type, role, targetDb, targetCollection, referenceField);
-        } else {
-            return new Relationship(rel, type, role, targetDb, targetCollection, referenceField, (String) _refFieldType);
-        }
+        return new Relationship(rel, type, role, targetDb, targetCollection, referenceField, (Boolean) _detectOids);
     }
 
     /**
@@ -257,9 +213,8 @@ public class Relationship {
      */
     public String getRelationshipLink(RequestContext context, String dbName, String collName, DBObject data) throws IllegalArgumentException, UnsupportedDocumentIdException {
         Object _referenceValue = data.get(referenceField);
-        Object[] ids = null;
-        Object id = null;
-
+        String db = (targetDb == null ? dbName : targetDb);
+        
         // check _referenceValue
         if (role == ROLE.OWNING) {
             if (_referenceValue == null) {
@@ -267,34 +222,25 @@ public class Relationship {
             }
 
             if (type == TYPE.ONE_TO_ONE || type == TYPE.MANY_TO_ONE) {
-                id = _referenceValue;
+                Object id = _referenceValue;
+                return URLUtils.getUriWithDocId(context, db, targetCollection, id, detectOids);
             } else {
                 if (!(_referenceValue instanceof BasicDBList)) {
                     throw new IllegalArgumentException("in resource " + dbName + "/" + collName + "/" + data.get("_id")
                             + " the " + type.name() + " relationship ref-field " + this.referenceField + " should be an array, but is " + _referenceValue);
                 }
 
-                ids = ((BasicDBList) _referenceValue).toArray();
+                Object[] ids = ((BasicDBList) _referenceValue).toArray();
+                return URLUtils.getUriWithFilterMany(context, db, targetCollection, ids, detectOids);
             }
         } else {
             // INVERSE
-            id = data.get("_id");
-        }
-
-        String db = (targetDb == null ? dbName : targetDb);
-
-        if (role == ROLE.OWNING) {
-            if (type == TYPE.ONE_TO_ONE || type == TYPE.MANY_TO_ONE) {
-                return URLUtils.getUriWithDocId(context, db, targetCollection, id, refFieldType);
-            } else if (type == TYPE.ONE_TO_MANY || type == TYPE.MANY_TO_MANY) {
-
-                return URLUtils.getUriWithFilterMany(context, db, targetCollection, ids, RequestContext.DOC_ID_TYPE.STRING != refFieldType);
-            }
-        } else {
+            Object id = data.get("_id");
+            
             if (type == TYPE.ONE_TO_ONE || type == TYPE.ONE_TO_MANY) {
-                return URLUtils.getUriWithFilterOne(context, db, targetCollection, referenceField, ids, RequestContext.DOC_ID_TYPE.STRING != refFieldType);
+                return URLUtils.getUriWithFilterOne(context, db, targetCollection, referenceField, id, detectOids);
             } else if (type == TYPE.MANY_TO_ONE || type == TYPE.MANY_TO_MANY) {
-                return URLUtils.getUriWithFilterManyInverse(context, db, targetCollection, referenceField, ids, RequestContext.DOC_ID_TYPE.STRING != refFieldType);
+                return URLUtils.getUriWithFilterManyInverse(context, db, targetCollection, referenceField, id, detectOids);
             }
         }
 
@@ -345,9 +291,9 @@ public class Relationship {
     }
 
     /**
-     * @return the refFieldType
+     * @return the detectOids
      */
-    public RequestContext.DOC_ID_TYPE getDocIdType() {
-        return refFieldType;
+    public boolean isDetectOids() {
+        return detectOids;
     }
 }

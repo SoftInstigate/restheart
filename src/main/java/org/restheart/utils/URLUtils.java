@@ -38,22 +38,28 @@ import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.STRING_OBJECTID;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class URLUtils {
-
-    public static void checkId(Object id) throws UnsupportedDocumentIdException {
+    public static DOC_ID_TYPE checkId(Object id) throws UnsupportedDocumentIdException {
         if (id == null) {
-            return;
+            return null;
         }
 
         String clazz = id.getClass().getName();
 
-        if (clazz.equals("java.lang.String")
-                || clazz.equals("org.bson.types.ObjectId")
-                || clazz.equals("java.lang.Integer")
-                || clazz.equals("java.lang.Long")
-                || clazz.equals("java.lang.Float")
-                || clazz.equals("java.lang.Double")) {
-        } else {
-            throw new UnsupportedDocumentIdException("unknown _id type: " + id.getClass().getSimpleName());
+        switch (clazz) {
+            case "java.lang.String":
+                return DOC_ID_TYPE.STRING_OBJECTID;
+            case "org.bson.types.ObjectId":
+                return DOC_ID_TYPE.OBJECTID;
+            case "java.lang.Integer":
+                return DOC_ID_TYPE.INT;
+            case "java.lang.Long":
+                return DOC_ID_TYPE.LONG;
+            case "java.lang.Float":
+                return DOC_ID_TYPE.FLOAT;
+            case "java.lang.Double":
+                return DOC_ID_TYPE.DOUBLE;
+            default:
+                throw new UnsupportedDocumentIdException("unknown _id type: " + id.getClass().getSimpleName());
         }
     }
 
@@ -161,16 +167,21 @@ public class URLUtils {
      * @param dbName
      * @param collName
      * @param id
-     * @param refFieldType
+     * @param detectOids
      * @return
+     * @throws org.restheart.utils.UnsupportedDocumentIdException
      */
-    static public String getUriWithDocId(RequestContext context, String dbName, String collName, Object id, DOC_ID_TYPE refFieldType) {
+    static public String getUriWithDocId(RequestContext context, String dbName, String collName, Object id, boolean detectOids) throws UnsupportedDocumentIdException {
+        DOC_ID_TYPE docIdType = URLUtils.checkId(id);
+
         StringBuilder sb = new StringBuilder();
 
         sb.append("/").append(dbName).append("/").append(collName).append("/").append(id);
 
-        if (refFieldType != null && refFieldType != DOC_ID_TYPE.OBJECTID && refFieldType != DOC_ID_TYPE.STRING_OBJECTID) {
-            sb.append("?doc_id_type=").append(refFieldType.name());
+        if (!detectOids && docIdType == STRING_OBJECTID && ObjectId.isValid(id.toString())) {
+                sb.append("?doc_id_type=STRING");
+        } else if (docIdType != STRING && docIdType != OBJECTID && docIdType != STRING_OBJECTID) {
+                sb.append("?doc_id_type=").append(docIdType.name());
         }
 
         return context.mapUri(sb.toString().replaceAll(" ", ""));
@@ -210,6 +221,7 @@ public class URLUtils {
      * @param id
      * @param detectOids if false adds the detect_oids=false query parameter
      * @return
+     * @throws org.restheart.utils.UnsupportedDocumentIdException
      */
     static public String getUriWithFilterOne(RequestContext context, String dbName, String collName, String referenceField, Object id, boolean detectOids) throws UnsupportedDocumentIdException {
         StringBuilder sb = new StringBuilder();
