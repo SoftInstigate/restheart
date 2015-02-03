@@ -25,6 +25,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import static org.junit.Assert.*;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.restheart.handlers.collection.GetCollectionHandler;
 import org.restheart.handlers.collection.PutCollectionHandler;
@@ -78,7 +79,7 @@ public class RequestDispacherHandlerTest {
         assertNull(dispacher.getPipedHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.POST));
     }
 
-    @Test
+    @Ignore
     public void testPostBinaryFileHandler() throws Exception {
         System.out.println("testPostBinaryFileHandler");
 
