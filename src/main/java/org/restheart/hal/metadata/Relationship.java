@@ -267,11 +267,6 @@ public class Relationship {
             }
 
             if (type == TYPE.ONE_TO_ONE || type == TYPE.MANY_TO_ONE) {
-                if (!(_referenceValue instanceof String)) {
-                    throw new IllegalArgumentException("in resource " + dbName + "/" + collName + "/" + data.get("_id")
-                            + " the " + type.name() + " relationship ref-field " + this.referenceField + " should be a string, but is " + _referenceValue);
-                }
-
                 id = _referenceValue;
             } else {
                 if (!(_referenceValue instanceof BasicDBList)) {
@@ -293,7 +288,7 @@ public class Relationship {
                 return URLUtils.getUriWithDocId(context, db, targetCollection, id, refFieldType);
             } else if (type == TYPE.ONE_TO_MANY || type == TYPE.MANY_TO_MANY) {
 
-                return URLUtils.getUriWithFilterMany(context, db, targetCollection, referenceField, ids, RequestContext.DOC_ID_TYPE.STRING != refFieldType);
+                return URLUtils.getUriWithFilterMany(context, db, targetCollection, ids, RequestContext.DOC_ID_TYPE.STRING != refFieldType);
             }
         } else {
             if (type == TYPE.ONE_TO_ONE || type == TYPE.ONE_TO_MANY) {

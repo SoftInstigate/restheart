@@ -97,9 +97,10 @@ public class PostCollectionHandler extends PipedHttpHandler {
 
         } else {
             try {
-                docId = URLUtils.getId(content.get("_id"), context.getDocIdType());
+                URLUtils.checkId(content.get("_id"));
+                docId = content.get("_id");
             } catch (UnsupportedDocumentIdException idide) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is not of type " + context.getDocIdType().name());
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "the type of _id in content body is not supported: " + content.get("_id").getClass().getSimpleName());
                 return;
             }
         }

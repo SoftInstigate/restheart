@@ -31,6 +31,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import org.bson.BSONObject;
+import org.bson.types.BasicBSONList;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -396,31 +397,29 @@ class CollectionDAO {
         ArrayDeque<String> ret = new ArrayDeque<>();
 
         filters.stream().forEach((filter) -> {
-            ret.add(replaceObjectIdsInFilters((BSONObject) JSON.parse(filter)));
+            BSONObject _filter = (BSONObject) JSON.parse(filter);
+            
+            replaceObjectIdsInFilters(_filter);
+            
+            ret.add(_filter.toString());
         });
 
         return ret;
     }
 
-    private String replaceObjectIdsInFilters(BSONObject source) {
+    private void replaceObjectIdsInFilters(BSONObject source) {
         if (source == null) {
-            return null;
+            return;
         }
-
-        BasicDBObject ret = new BasicDBObject();
 
         source.keySet().stream().forEach((key) -> {
             Object value = source.get(key);
 
             if (value instanceof BSONObject) {
-                ret.append(key, replaceObjectIdsInFilters((BSONObject) value));
+                replaceObjectIdsInFilters((BSONObject) value);
             } else if (ObjectId.isValid(value.toString())) {
-                ret.append(key, new ObjectId(value.toString()));
-            } else {
-                ret.append(key, value);
-            }
+                source.put(key, new ObjectId(value.toString()));
+            } 
         });
-
-        return ret.toString();
     }
 }

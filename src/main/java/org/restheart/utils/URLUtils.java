@@ -39,6 +39,24 @@ import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.STRING_OBJECTID;
  */
 public class URLUtils {
 
+    public static void checkId(Object id) throws UnsupportedDocumentIdException {
+        if (id == null) {
+            return;
+        }
+
+        String clazz = id.getClass().getName();
+
+        if (clazz.equals("java.lang.String")
+                || clazz.equals("org.bson.types.ObjectId")
+                || clazz.equals("java.lang.Integer")
+                || clazz.equals("java.lang.Long")
+                || clazz.equals("java.lang.Float")
+                || clazz.equals("java.lang.Double")) {
+        } else {
+            throw new UnsupportedDocumentIdException("unknown _id type: " + id.getClass().getSimpleName());
+        }
+    }
+
     public static Object getId(Object id, DOC_ID_TYPE type) throws UnsupportedDocumentIdException {
         if (id == null) {
             return null;
@@ -163,17 +181,17 @@ public class URLUtils {
      * @param context
      * @param dbName
      * @param collName
-     * @param referenceField
      * @param ids
      * @param detectOids if false adds the detect_oids=false query parameter
      * @return
+     * @throws org.restheart.utils.UnsupportedDocumentIdException
      */
-    static public String getUriWithFilterMany(RequestContext context, String dbName, String collName, String referenceField, Object[] ids, boolean detectOids) throws UnsupportedDocumentIdException {
+    static public String getUriWithFilterMany(RequestContext context, String dbName, String collName, Object[] ids, boolean detectOids) throws UnsupportedDocumentIdException {
         StringBuilder sb = new StringBuilder();
 
         ///db/coll/?filter={"ref":{"$in":{"a","b","c"}}
         sb.append("/").append(dbName).append("/").append(collName).append("?")
-                .append("filter={").append("'").append(referenceField).append("'").append(":")
+                .append("filter={").append("'").append("_id").append("'").append(":")
                 .append("{'$in'").append(":").append(getIdsString(ids)).append("}}");
 
         if (!detectOids) {
@@ -217,6 +235,7 @@ public class URLUtils {
      * @param id
      * @param detectOids if false adds the detect_oids=false query parameter
      * @return
+     * @throws org.restheart.utils.UnsupportedDocumentIdException
      */
     static public String getUriWithFilterManyInverse(RequestContext context, String dbName, String collName, String referenceField, Object id, boolean detectOids) throws UnsupportedDocumentIdException {
         StringBuilder sb = new StringBuilder();
@@ -307,7 +326,7 @@ public class URLUtils {
 
         return id;
     }
-    
+
     private static String getIdString(Object id) throws UnsupportedDocumentIdException {
         if (id == null) {
             return null;

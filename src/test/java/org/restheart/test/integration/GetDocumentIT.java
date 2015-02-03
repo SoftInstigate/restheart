@@ -99,9 +99,9 @@ public class GetDocumentIT extends AbstactIT {
         assertNotNull("check not null otm links", json.get("_links").asObject().get("otm"));
         assertNotNull("check not null oto links", json.get("_links").asObject().get("oto"));
 
-        assertTrue("check mtm link", json.get("_links").asObject().get("mtm").asObject().get("href").asString().endsWith("?filter={'mtm':{'$in':['doc2']}}"));
+        assertTrue("check mtm link", json.get("_links").asObject().get("mtm").asObject().get("href").asString().endsWith("?filter={'_id':{'$in':['doc2']}}"));
         assertTrue("check mto link", json.get("_links").asObject().get("mto").asObject().get("href").asString().endsWith("/doc2"));
-        assertTrue("check otm link", json.get("_links").asObject().get("otm").asObject().get("href").asString().endsWith("?filter={'otm':{'$in':['doc2']}}"));
+        assertTrue("check otm link", json.get("_links").asObject().get("otm").asObject().get("href").asString().endsWith("?filter={'_id':{'$in':['doc2']}}"));
         assertTrue("check oto link", json.get("_links").asObject().get("oto").asObject().get("href").asString().endsWith("/doc2"));
 
         String mtm = json.get("_links").asObject().get("mtm").asObject().get("href").asString();
