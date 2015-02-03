@@ -38,6 +38,12 @@ import org.restheart.hal.HALUtils;
  */
 public class BodyInjectorHandler extends PipedHttpHandler {
 
+    private static final String ERROR_INVALID_CONTENTTYPE = "Content-Type must be either: "
+            + Representation.HAL_JSON_MEDIA_TYPE
+            + ", " + Representation.JSON_MEDIA_TYPE
+            + ", " + Representation.APP_FORM_URLENCODED_TYPE
+            + ", " + Representation.MULTIPART_FORM_DATA_TYPE;
+
     /**
      * Creates a new instance of BodyInjectorHandler
      *
@@ -62,69 +68,108 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             return;
         }
 
-        // check content type
+        // check the content type
         HeaderValues contentTypes = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
 
         if (unsupportedContentType(contentTypes)) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
-                    "Content-Type must be either: " + Representation.HAL_JSON_MEDIA_TYPE
-                    + ", " + Representation.JSON_MEDIA_TYPE
-                    + ", " + Representation.APP_FORM_URLENCODED_TYPE
-                    + ", " + Representation.MULTIPART_FORM_DATA_TYPE);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE);
             return;
         }
 
-        String _content = ChannelReader.read(exchange.getRequestChannel());
-
-        DBObject content;
-
-        try {
-            content = (DBObject) JSON.parse(_content);
-        } catch (JSONParseException ex) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "invalid data", ex);
-            return;
-        }
-
-        HashSet<String> keysToRemove = new HashSet<>();
-
-        if (content == null) {
-            context.setContent(null);
-        } else {
-            // filter out reserved keys
-            content.keySet().stream().filter(key -> key.startsWith("_") && !key.equals("_id")).forEach(key -> {
-                keysToRemove.add(key);
-            });
-
-            keysToRemove.stream().map(keyToRemove -> {
-                content.removeField(keyToRemove);
-                return keyToRemove;
-            }).forEach(keyToRemove -> {
-                context.addWarning("the reserved field " + keyToRemove + " was filtered out from the request");
-            });
-
-            //replace string that are valid ObjectIds with ObjectIds objects.
-            if (context.isDetectObjectIds()) {
-                Object keepId = null;
-                
-                // if detect_oids==true and doc_id_type==string, replace all objectids but the id 
-                if (context.getDocIdType() == RequestContext.DOC_ID_TYPE.STRING) {
-                    keepId = content.removeField("_id");
-                }
-                
-                HALUtils.replaceStringsWithObjectIds(content);
-                
-                if (keepId != null) {
-                    content.put("_id", keepId);
-                }
+        if (isNotFormData(contentTypes)) {
+            final String contentString = ChannelReader.read(exchange.getRequestChannel());
+            DBObject content = null;
+            try {
+                content = (DBObject) JSON.parse(contentString);
+            } catch (JSONParseException ex) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Invalid data", ex);
+                return;
             }
-
-            // inject the request content in the context
-            context.setContent(content);
+            if (content == null) {
+                context.setContent(null);
+            } else {
+                filterJsonContent(content, context);
+            }
         }
 
         getNext().handleRequest(exchange, context);
     }
 
+    /**
+     *
+     * @param contentTypes
+     * @return false if the content-type is form data
+     */
+    private static boolean isNotFormData(HeaderValues contentTypes) {
+        return contentTypes.stream()
+                .noneMatch(ct -> ct.startsWith(Representation.APP_FORM_URLENCODED_TYPE)
+                        || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE));
+    }
+
+    /**
+     * Clean-up the JSON content, filtering out reserved keys and injecting the
+     * request content in the ctx
+     *
+     * @param content
+     * @param ctx
+     */
+    private void filterJsonContent(DBObject content, RequestContext ctx) {
+        filterOutReservedKeys(content, ctx);
+        replaceStringWithObjectId(ctx, content);
+        ctx.setContent(content);
+    }
+
+    /**
+     * replace string that are valid ObjectIds with ObjectIds objects
+     *
+     * @param context
+     * @param content
+     */
+    private void replaceStringWithObjectId(RequestContext context, DBObject content) {
+        if (context.isDetectObjectIds()) {
+            Object keepId = null;
+
+            // if detect_oids==true and doc_id_type==string, replace all objectids but the id
+            if (context.getDocIdType() == RequestContext.DOC_ID_TYPE.STRING) {
+                keepId = content.removeField("_id");
+            }
+
+            HALUtils.replaceStringsWithObjectIds(content);
+
+            if (keepId != null) {
+                content.put("_id", keepId);
+            }
+        }
+    }
+
+    /**
+     * Filter out reserved keys, removoing them from request
+     *
+     * @param content
+     * @param context
+     */
+    private void filterOutReservedKeys(DBObject content, RequestContext context) {
+        final HashSet<String> keysToRemove = new HashSet<>();
+        content.keySet().stream()
+                .filter(key -> key.startsWith("_") && !key.equals("_id"))
+                .forEach(key -> {
+                    keysToRemove.add(key);
+                });
+
+        keysToRemove.stream().map(keyToRemove -> {
+            content.removeField(keyToRemove);
+            return keyToRemove;
+        }).forEach(keyToRemove -> {
+            context.addWarning("the reserved field " + keyToRemove + " was filtered out from the request");
+        });
+    }
+
+    /**
+     * true is the content-type is unsupported
+     *
+     * @param contentTypes
+     * @return
+     */
     private static boolean unsupportedContentType(HeaderValues contentTypes) {
         return contentTypes == null
                 || contentTypes.isEmpty()
