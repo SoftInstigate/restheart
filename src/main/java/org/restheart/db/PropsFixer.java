@@ -52,14 +52,14 @@ public class PropsFixer {
      */
     public boolean addCollectionProps(String dbName, String collName) throws MongoException {
         
-        DBObject dbmd = dbsDAO.getDatabaseProperties(dbName);
+        DBObject dbmd = dbsDAO.getDatabaseProperties(dbName, false);
 
         if (dbmd == null) {
             // db must exists with properties
             return false;
         }
 
-        DBObject md = dbsDAO.getCollectionProperties(dbName, collName);
+        DBObject md = dbsDAO.getCollectionProperties(dbName, collName, false);
 
         if (md != null) // properties exists
         {
@@ -101,7 +101,7 @@ public class PropsFixer {
             return false;
         }
 
-        DBObject dbmd = dbsDAO.getDatabaseProperties(dbName);
+        DBObject dbmd = dbsDAO.getDatabaseProperties(dbName, false);
 
         if (dbmd != null) // properties exists
         {

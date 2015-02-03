@@ -75,7 +75,7 @@ public class GetRootHandler extends PipedHttpHandler {
                 if (LocalCachesSingleton.isEnabled()) {
                     return LocalCachesSingleton.getInstance().getDBProps(db);
                 } else {
-                    return getDatabase().getDatabaseProperties(db);
+                    return getDatabase().getDatabaseProperties(db, true);
                 }
             }
             ).forEach((item) -> {

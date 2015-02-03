@@ -246,7 +246,7 @@ class CollectionDAO {
      * @param collName the collection name
      * @return the collection properties document
      */
-    public DBObject getCollectionProps(String dbName, String collName) {
+    public DBObject getCollectionProps(String dbName, String collName, boolean fixMissingProperties) {
         DBCollection propsColl = getCollection(dbName, "_properties");
 
         DBObject properties = propsColl.findOne(new BasicDBObject("_id", "_properties.".concat(collName)));
@@ -261,6 +261,9 @@ class CollectionDAO {
 
                 properties.put("_lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
             }
+        } else if (fixMissingProperties) {
+            new PropsFixer().addCollectionProps(dbName, collName);
+            return getCollectionProps(dbName, collName, false);
         }
 
         return properties;

@@ -89,9 +89,10 @@ public interface Database {
      *
      * @param dbName
      * @param collectionName
+     * @param fixMissingProperties if true, initialize the collection properties if missing
      * @return Collection properties
      */
-    DBObject getCollectionProperties(String dbName, String collectionName);
+    DBObject getCollectionProperties(String dbName, String collectionName, boolean fixMissingProperties);
 
     /**
      *
@@ -142,10 +143,11 @@ public interface Database {
 
     /**
      * @param dbName
+     * @param fixMissingProperties if true, initialize the db properties if missing
      * @return the db props
      *
      */
-    DBObject getDatabaseProperties(String dbName);
+    DBObject getDatabaseProperties(String dbName, boolean fixMissingProperties);
 
     /**
      *

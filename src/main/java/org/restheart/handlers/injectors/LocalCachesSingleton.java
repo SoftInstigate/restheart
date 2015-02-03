@@ -71,13 +71,13 @@ public class LocalCachesSingleton {
         if (enabled) {
             this.dbPropsCache = CacheFactory.createLocalLoadingCache(maxCacheSize, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl,
                     (String key) -> {
-                        return this.dbsDAO.getDatabaseProperties(key);
+                        return this.dbsDAO.getDatabaseProperties(key, true);
                     });
 
             this.collectionPropsCache = CacheFactory.createLocalLoadingCache(maxCacheSize, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl,
                     (String key) -> {
                         String[] dbNameAndCollectionName = key.split(SEPARATOR);
-                        return this.dbsDAO.getCollectionProperties(dbNameAndCollectionName[0], dbNameAndCollectionName[1]);
+                        return this.dbsDAO.getCollectionProperties(dbNameAndCollectionName[0], dbNameAndCollectionName[1], true);
                     });
         }
     }

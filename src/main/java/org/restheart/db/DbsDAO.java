@@ -31,7 +31,6 @@ import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -141,11 +140,12 @@ public class DbsDAO implements Database {
 
     /**
      * @param dbName
+     * @param fixMissingProperties
      * @return the db props
      *
      */
     @Override
-    public DBObject getDatabaseProperties(String dbName) {
+    public DBObject getDatabaseProperties(String dbName, boolean fixMissingProperties) {
         if (!existsDatabaseWithName(dbName)) {
             // this check is important, otherwise the db would get created if not existing after the query
             return null;
@@ -165,6 +165,9 @@ public class DbsDAO implements Database {
 
                 row.put("_lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
             }
+        } else if (fixMissingProperties) {
+            new PropsFixer().addDbProps(dbName);
+            return getDatabaseProperties(dbName, false);
         }
 
         return row;
@@ -223,7 +226,7 @@ public class DbsDAO implements Database {
                         collProperties = LocalCachesSingleton.getInstance()
                         .getCollectionProps(dbName, collName);
                     } else {
-                        collProperties = collectionDAO.getCollectionProps(dbName, collName);
+                        collProperties = collectionDAO.getCollectionProps(dbName, collName, true);
                     }
 
                     if (collProperties != null) {
@@ -347,8 +350,8 @@ public class DbsDAO implements Database {
     }
 
     @Override
-    public DBObject getCollectionProperties(String dbName, String collName) {
-        return collectionDAO.getCollectionProps(dbName, collName);
+    public DBObject getCollectionProperties(String dbName, String collName, boolean fixMissingProperties) {
+        return collectionDAO.getCollectionProps(dbName, collName, fixMissingProperties);
     }
 
     @Override

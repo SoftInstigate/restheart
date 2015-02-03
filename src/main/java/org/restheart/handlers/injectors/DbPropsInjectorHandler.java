@@ -55,7 +55,7 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
             DBObject dbProps = null;
 
             if (!LocalCachesSingleton.isEnabled()) {
-                dbProps = getDatabase().getDatabaseProperties(context.getDBName());
+                dbProps = getDatabase().getDatabaseProperties(context.getDBName(), true);
 
                 if (dbProps != null) {
                     dbProps.put("_db-props-cached", false);
