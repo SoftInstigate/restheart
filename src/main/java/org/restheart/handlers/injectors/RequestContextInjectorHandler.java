@@ -35,7 +35,7 @@ import org.bson.BSONObject;
 import static org.restheart.handlers.RequestContext.DETECT_OBJECTIDS_KEY;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_KEY;
-import org.restheart.utils.IllegalDocumentIdException;
+import org.restheart.utils.UnsupportedDocumentIdException;
 
 /**
  *
@@ -224,7 +224,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         
         try {
             rcontext.setDocumentId(URLUtils.getId(_docId, docIdType));
-        } catch(IllegalDocumentIdException idide) {
+        } catch(UnsupportedDocumentIdException idide) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong document id format. it is not a valid " + docIdType.name());
             return;
         }

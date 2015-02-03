@@ -19,6 +19,7 @@ package org.restheart.utils;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
+import org.bson.types.ObjectId;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -81,38 +82,138 @@ public class URLUtilisTest {
 
     @Test
     public void testGetUriWithDocId() {
-        System.out.println("getUriWithDocId");
+        System.out.println("getUriWithDocId String");
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName/documentId";
-        String result = URLUtils.getUriWithDocId(context, "dbName", "collName", "documentId");
+        String result;
+        result = URLUtils.getUriWithDocId(context, "dbName", "collName", "documentId", RequestContext.DOC_ID_TYPE.STRING_OBJECTID);
+        assertEquals(expResult, result);
+    }
+
+    @Test
+    public void testGetUriWithLongDocId() {
+        System.out.println("getUriWithDocId Integer");
+        RequestContext context = prepareRequestContext();
+        String expResult = "/dbName/collName/123?doc_id_type=INT";
+        String result;
+        result = URLUtils.getUriWithDocId(context, "dbName", "collName", 123, RequestContext.DOC_ID_TYPE.INT);
         assertEquals(expResult, result);
     }
 
     @Test
     public void testGetUriWithFilterMany() {
         System.out.println("getUriWithFilterMany");
+        Object[] ids = new Object[]{1, 20.0f, "id"};
         RequestContext context = prepareRequestContext();
-        String expResult = "/dbName/collName?filter={'referenceField':{'$in':ids}}";
-        String result = URLUtils.getUriWithFilterMany(context, "dbName", "collName", "referenceField", "ids");
-        assertEquals(expResult, result);
+        String expResult = "/dbName/collName?filter={'referenceField':{'$in':[1,20.0,\'id\']}}";
+        String result;
+        try {
+            result = URLUtils.getUriWithFilterMany(context, "dbName", "collName", "referenceField", ids, true);
+            assertEquals(expResult, result);
+        } catch (UnsupportedDocumentIdException ex) {
+            fail(ex.getMessage());
+        }
+    }
+
+    @Test
+    public void testGetUriWithFilterManyString() {
+        System.out.println("getUriWithFilterMany");
+        Object[] ids = new Object[]{1, 20.0f, "id"};
+        RequestContext context = prepareRequestContext();
+        String expResult = "/dbName/collName?filter={'referenceField':{'$in':[1,20.0,'id']}}&detect_oids=false";
+        String result;
+        try {
+            result = URLUtils.getUriWithFilterMany(context, "dbName", "collName", "referenceField", ids, false);
+            assertEquals(expResult, result);
+        } catch (UnsupportedDocumentIdException ex) {
+            fail(ex.getMessage());
+        }
     }
 
     @Test
     public void testGetUriWithFilterOne() {
-        System.out.println("getUriWithFilterOne");
+        System.out.println("getUriWithFilterOne  String");
         RequestContext context = prepareRequestContext();
-        String expResult = "/dbName/collName?filter={'referenceField':ids}";
-        String result = URLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField", "ids");
-        assertEquals(expResult, result);
+        String expResult = "/dbName/collName?filter={'referenceField':'id'}";
+        String result;
+        try {
+            result = URLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField", "id", true);
+            assertEquals(expResult, result);
+        } catch (UnsupportedDocumentIdException ex) {
+            fail(ex.getMessage());
+        }
+    }
+
+    @Test
+    public void testGetUriWithFilterOneInteger() {
+        System.out.println("getUriWithFilterOne  Integer");
+        RequestContext context = prepareRequestContext();
+        String expResult = "/dbName/collName?filter={'referenceField':123}";
+        String result;
+        try {
+            result = URLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField", 123, true);
+            assertEquals(expResult, result);
+        } catch (UnsupportedDocumentIdException ex) {
+            fail(ex.getMessage());
+        }
+    }
+
+    @Test
+    public void testGetUriWithFilterOneObjectId() {
+        System.out.println("getUriWithFilterOne  ObjectId");
+        ObjectId id = new ObjectId();
+        RequestContext context = prepareRequestContext();
+        String expResult = "/dbName/collName?filter={'referenceField':'" + id.toString() + "'}";
+        String result;
+        try {
+            result = URLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField", id, true);
+            assertEquals(expResult, result);
+        } catch (UnsupportedDocumentIdException ex) {
+            fail(ex.getMessage());
+        }
     }
 
     @Test
     public void testGetUriWithFilterManyInverse() {
-        System.out.println("getUriWithFilterManyInverse");
+        System.out.println("getUriWithFilterManyInverse String");
         RequestContext context = prepareRequestContext();
-        String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':ids}}}";
-        String result = URLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", "ids");
-        assertEquals(expResult, result);
+        String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':'ids'}}}";
+        String result;
+        try {
+            result = URLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", "ids", true);
+            assertEquals(expResult, result);
+        } catch (UnsupportedDocumentIdException ex) {
+            fail(ex.getMessage());
+        }
+    }
+
+    @Test
+    public void testGetUriWithFilterManyInverseLong() {
+        System.out.println("getUriWithFilterManyInverse Long");
+        RequestContext context = prepareRequestContext();
+        String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':123}}}";
+        String result;
+        try {
+            result = URLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", 123, true);
+            assertEquals(expResult, result);
+        } catch (UnsupportedDocumentIdException ex) {
+            fail(ex.getMessage());
+        }
+    }
+
+    @Test
+    public void testGetUriWithFilterManyInverseObjectId() {
+        System.out.println("getUriWithFilterManyInverse ObjectId");
+        RequestContext context = prepareRequestContext();
+        ObjectId id = new ObjectId();
+        String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':'" + id.toString() + "'}}}";
+        String result;
+        try {
+            result = URLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", id, true);
+            assertEquals(expResult, result);
+        } catch (UnsupportedDocumentIdException ex) {
+            fail(ex.getMessage());
+        }
     }
 
     @Test
@@ -122,7 +223,7 @@ public class URLUtilisTest {
         exchange.setQueryString("a=1&b=2&c=3");
         exchange.addQueryParam("a", "1").addQueryParam("b", "2").addQueryParam("c", "3");
         String expResult = "a=1&c=3";
-        String result = URLUtils.getQueryStringRemovingParams(exchange,"b");
+        String result = URLUtils.getQueryStringRemovingParams(exchange, "b");
         assertEquals(expResult, result);
     }
 

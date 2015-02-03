@@ -32,7 +32,7 @@ import java.net.URISyntaxException;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
-import org.restheart.utils.IllegalDocumentIdException;
+import org.restheart.utils.UnsupportedDocumentIdException;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,7 +98,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
         } else {
             try {
                 docId = URLUtils.getId(content.get("_id"), context.getDocIdType());
-            } catch (IllegalDocumentIdException idide) {
+            } catch (UnsupportedDocumentIdException idide) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is not of type " + context.getDocIdType().name());
                 return;
             }

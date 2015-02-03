@@ -32,8 +32,10 @@ import io.undertow.util.Headers;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.logging.Level;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
+import org.restheart.utils.UnsupportedDocumentIdException;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -160,7 +162,7 @@ public class DocumentRepresentationFactory {
                 if (link != null) {
                     links.put(rel.getRel(), link);
                 }
-            } catch (IllegalArgumentException ex) {
+            } catch (IllegalArgumentException | UnsupportedDocumentIdException ex) {
                 rep.addWarning(ex.getMessage());
                 LOGGER.debug(ex.getMessage(), ex);
             }

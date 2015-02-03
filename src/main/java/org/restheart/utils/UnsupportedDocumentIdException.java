@@ -21,20 +21,20 @@ package org.restheart.utils;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class IllegalDocumentIdException extends Exception {
-    public IllegalDocumentIdException() {
+public class UnsupportedDocumentIdException extends Exception {
+    public UnsupportedDocumentIdException() {
         super();
     }
     
-    public IllegalDocumentIdException(String message) {
+    public UnsupportedDocumentIdException(String message) {
         super(message);
     }
     
-    public IllegalDocumentIdException(String message, Throwable cause) {
+    public UnsupportedDocumentIdException(String message, Throwable cause) {
         super(message, cause);
     }
     
-    public IllegalDocumentIdException(Throwable cause) {
+    public UnsupportedDocumentIdException(Throwable cause) {
         super(cause);
     }
 }
