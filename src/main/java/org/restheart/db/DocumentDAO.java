@@ -204,12 +204,12 @@ public class DocumentDAO implements Repository {
     }
 
     private int optimisticCheckEtag(DBCollection coll, DBObject oldDocument, ObjectId requestEtag, int httpStatusIfOk) {
-        if (requestEtag == null) {
+        Object oldEtag = RequestHelper.getEtagAsObjectId(oldDocument.get("_etag"));
+        
+        if (requestEtag == null && oldEtag != null) {
             coll.save(oldDocument);
             return HttpStatus.SC_CONFLICT;
         }
-
-        Object oldEtag = RequestHelper.getEtagAsObjectId(oldDocument.get("_etag"));
 
         if (oldEtag == null) {  // well we don't had an etag there so fine
             return HttpStatus.SC_NO_CONTENT;

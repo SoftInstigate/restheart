@@ -61,11 +61,6 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
-        if (etag == null) {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
-            return;
-        }
-
         int httpCode = this.documentDAO
                 .deleteDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), etag);
 
