@@ -114,7 +114,7 @@ public class DocumentDAO implements Repository {
     /**
      * @param dbName
      * @param collName
-     * @param docId
+     * @param documentId
      * @param content
      * @param requestEtag
      * @return

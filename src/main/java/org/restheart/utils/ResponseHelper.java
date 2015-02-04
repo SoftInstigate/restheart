@@ -20,7 +20,6 @@ package org.restheart.utils;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 import org.restheart.hal.Representation;
-import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.io.PrintWriter;

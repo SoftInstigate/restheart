@@ -27,23 +27,18 @@ import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
-import java.net.URI;
-import java.net.URISyntaxException;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import org.restheart.utils.UnsupportedDocumentIdException;
 import org.restheart.utils.URLUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.restheart.utils.URLUtils.getReferenceLink;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class PostCollectionHandler extends PipedHttpHandler {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(PostCollectionHandler.class);
 
     private final DocumentDAO documentDAO;
 
@@ -121,39 +116,5 @@ public class PostCollectionHandler extends PipedHttpHandler {
         }
 
         exchange.endExchange();
-    }
-
-    private String getReferenceLink(RequestContext context, String parentUrl, Object docId) {
-        if (context == null || parentUrl == null || docId == null) {
-            LOGGER.error("error creating URI, null arguments: context = {}, parentUrl = {}, docId = {}", context, parentUrl, docId);
-            return "";
-        }
-        
-        try {
-            URI uri;
-
-            if (docId instanceof String && ObjectId.isValid((String)docId)) { 
-                uri = new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + docId.toString()+ "?doc_id_type=" + DOC_ID_TYPE.STRING);
-            } else if (docId instanceof String || docId instanceof ObjectId) {
-                uri = new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + docId.toString());
-            } else if (docId instanceof Integer) {
-                uri = new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + docId.toString() + "?doc_id_type=" + DOC_ID_TYPE.INT);
-            } else if (docId instanceof Long) {
-                uri = new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + docId.toString() + "?doc_id_type=" + DOC_ID_TYPE.LONG);
-            } else if (docId instanceof Float) {
-                uri = new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + docId.toString() + "?doc_id_type=" + DOC_ID_TYPE.FLOAT);
-            } else if (docId instanceof Double) {
-                uri = new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + docId.toString() + "?doc_id_type=" + DOC_ID_TYPE.DOUBLE);
-            } else {
-                context.addWarning("this resource does not have an URI since the _id is of type " + docId.getClass().getSimpleName());
-                return "";
-            }
-
-            return uri.toString();
-        } catch (URISyntaxException ex) {
-            LOGGER.error("error creating URI from {} + / + {}", parentUrl, docId, ex);
-        }
-
-        return "";
     }
 }

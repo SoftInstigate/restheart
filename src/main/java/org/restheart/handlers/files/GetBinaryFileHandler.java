@@ -23,9 +23,11 @@ import com.mongodb.gridfs.GridFSDBFile;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.io.IOException;
+import org.bson.types.ObjectId;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,8 +53,28 @@ public class GetBinaryFileHandler extends PipedHttpHandler {
         if (dbsfile == null) {
             fileNotFound(context, exchange);
         } else {
-            sendBinaryContent(dbsfile, exchange);
+            if (!checkEtag(exchange, dbsfile)) {
+                sendBinaryContent(dbsfile, exchange);
+            }
         }
+    }
+
+    private boolean checkEtag(HttpServerExchange exchange, GridFSDBFile dbsfile) {
+        if (dbsfile != null) {
+            Object etag = dbsfile.get("_etag");
+
+            if (etag != null && ObjectId.isValid("" + etag)) {
+
+                // in case the request contains the IF_NONE_MATCH header with the current etag value,
+                // just return 304 NOT_MODIFIED code
+                if (RequestHelper.checkReadEtag(exchange, etag.toString())) {
+                    ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_MODIFIED);
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private void fileNotFound(RequestContext context, HttpServerExchange exchange) {
@@ -65,14 +87,16 @@ public class GetBinaryFileHandler extends PipedHttpHandler {
         LOGGER.info("Filename = {}", dbsfile.getFilename());
         LOGGER.info("Content length = {}", dbsfile.getLength());
 
+        
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
         exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, dbsfile.getLength());
         exchange.getResponseHeaders().put(Headers.CONTENT_DISPOSITION,
                 String.format("Attachment; filename=\"%s\"", extractFilename(dbsfile)));
+        ResponseHelper.injectEtagHeader(exchange, dbsfile);
+        
         exchange.setResponseCode(HttpStatus.SC_OK);
 
         dbsfile.writeTo(exchange.getOutputStream());
-
         exchange.endExchange();
     }
 

@@ -17,22 +17,29 @@
  */
 package org.restheart.handlers.files;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.gridfs.GridFS;
 import com.mongodb.gridfs.GridFSInputFile;
 import com.mongodb.util.JSON;
+import com.mongodb.util.JSONParseException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.server.handlers.form.FormData;
 import io.undertow.server.handlers.form.FormDataParser;
+import io.undertow.util.HttpString;
+import org.bson.types.ObjectId;
 import org.restheart.db.Database;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import static org.restheart.handlers.files.GetBinaryFileHandler.extractBucketName;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
+import org.restheart.utils.URLUtils;
+import org.restheart.utils.UnsupportedDocumentIdException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static org.restheart.utils.URLUtils.getReferenceLink;
 
 /**
  *
@@ -77,21 +84,80 @@ public class PostBinaryFileHandler extends PipedHttpHandler {
             return;
         }
 
-        final DBObject metadata = findMetadata(data);
+        final DBObject props;
 
+        try {
+            props = findProps(data);
+        } catch (JSONParseException jpe) {
+            String errMsg = "The properties field is not valid json";
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, jpe);
+            return;
+        }
+
+        ObjectId now = new ObjectId();
+        Object _id = props.get("_id");
+
+        // id
+        if (_id == null) {
+            _id = now;
+        } else {
+            try {
+                URLUtils.checkId(_id);
+            } catch (UnsupportedDocumentIdException udie) {
+                String errMsg = "the type of _id in content body is not supported: " + _id.getClass().getSimpleName();
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
+                return;
+            }
+        }
+        
+        // remove from the properties the fields that are managed directly by the GridFs
+        props.removeField("_id");
+        props.removeField("filename");
+        props.removeField("chunkSize");
+        props.removeField("uploadDate");
+        props.removeField("length");
+        props.removeField("md5");
+        
+        // it makes sure the client doesn't change this field
+        props.put("_created_on", now);
+        
+        // add etag
+        props.put("_etag", new ObjectId());
+
+        // contentType
+        Object _contentType  = props.removeField("contentType");
+        String contentType;
+        
+        if (_contentType != null && _contentType instanceof String) {
+            contentType = (String) _contentType;
+        } else {
+            contentType = null;
+        }
+        
         FormData.FormValue file = data.getFirst(fileFieldName);
+
         if (file.isFile()) {
             if (file.getFile() != null) {
                 final String bucket = extractBucketName(context.getCollectionName());
                 GridFS gridfs = new GridFS(getDatabase().getDB(context.getDBName()), bucket);
                 GridFSInputFile gfsFile = gridfs.createFile(file.getFile());
+                
+                gfsFile.setId(_id);
+                gfsFile.setContentType(contentType);
                 gfsFile.setFilename(file.getFileName());
-                gfsFile.setMetaData(metadata);
+                
+                props.toMap().keySet().stream().forEach(k -> gfsFile.put((String)k, props.get((String)k)));
+                
                 gfsFile.save();
 
                 exchange.setResponseCode(201);
             }
         }
+        
+        // insert the Location handler
+        exchange.getResponseHeaders()
+                .add(HttpString.tryFromString("Location"),
+                        getReferenceLink(context, exchange.getRequestURL(), _id));
 
         exchange.endExchange();
     }
@@ -114,19 +180,21 @@ public class PostBinaryFileHandler extends PipedHttpHandler {
     }
 
     /**
-     * Search request for a field named 'metadata' which contains JSON
+     * Search request for a field named 'properties' which contains JSON
      *
      * @param data
-     * @return the parsed DBObject or null
+     * @return the parsed DBObject from the form data or an empty DBObject
+     * the etag value)
      */
-    private DBObject findMetadata(final FormData data) {
-        DBObject result = null;
-        if (data.getFirst("metadata") != null) {
-            String metadataString = data.getFirst("metadata").getValue();
+    private DBObject findProps(final FormData data) throws JSONParseException {
+        DBObject result = new BasicDBObject();
+        if (data.getFirst("properties") != null) {
+            String metadataString = data.getFirst("properties").getValue();
             if (metadataString != null) {
                 result = (DBObject) JSON.parse(metadataString);
             }
         }
+
         return result;
     }
 }
