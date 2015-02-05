@@ -39,12 +39,13 @@ import org.slf4j.LoggerFactory;
 public class GetBinaryFileHandler extends PipedHttpHandler {
 
     public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
-
+    public static final String CONTENT_TRANSFER_ENCODING_BINARY = "binary";
+    
     private static final Logger LOGGER = LoggerFactory.getLogger(GetBinaryFileHandler.class);
 
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        LOGGER.info("GET " + exchange.getRequestURL());
+        LOGGER.debug("GET " + exchange.getRequestURL());
         final String bucket = extractBucketName(context.getCollectionName());
 
         GridFS gridfs = new GridFS(getDatabase().getDB(context.getDBName()), bucket);
@@ -84,14 +85,14 @@ public class GetBinaryFileHandler extends PipedHttpHandler {
     }
 
     private void sendBinaryContent(final GridFSDBFile dbsfile, final HttpServerExchange exchange) throws IOException {
-        LOGGER.info("Filename = {}", dbsfile.getFilename());
-        LOGGER.info("Content length = {}", dbsfile.getLength());
+        LOGGER.debug("Filename = {}", dbsfile.getFilename());
+        LOGGER.debug("Content length = {}", dbsfile.getLength());
 
-        
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
         exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, dbsfile.getLength());
         exchange.getResponseHeaders().put(Headers.CONTENT_DISPOSITION,
                 String.format("Attachment; filename=\"%s\"", extractFilename(dbsfile)));
+        exchange.getResponseHeaders().put(Headers.CONTENT_TRANSFER_ENCODING, CONTENT_TRANSFER_ENCODING_BINARY);
         ResponseHelper.injectEtagHeader(exchange, dbsfile);
         
         exchange.setResponseCode(HttpStatus.SC_OK);

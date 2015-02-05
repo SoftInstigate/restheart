@@ -32,7 +32,6 @@ import io.undertow.util.Headers;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.TreeMap;
-import java.util.logging.Level;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import org.restheart.utils.UnsupportedDocumentIdException;
@@ -62,21 +61,32 @@ public class DocumentRepresentationFactory {
 
         Object id = data.get("_id");
 
+        String _docIdType = null;
+
         if (id == null) {
             rep = new Representation("#");
+            rep.addWarning("this resource does not have an URI since it does not have the _id property");
         } else if (id instanceof String || id instanceof ObjectId) {
             rep = new Representation(href);
-        } else if (id instanceof Integer) {
-            rep = new Representation(href + "?doc_id_type=" + DOC_ID_TYPE.INT);
-        } else if (id instanceof Long) {
-            rep = new Representation(href + "?doc_id_type=" + DOC_ID_TYPE.LONG);
-        } else if (id instanceof Float) {
-            rep = new Representation(href + "?doc_id_type=" + DOC_ID_TYPE.FLOAT);
-        } else if (id instanceof Double) {
-            rep = new Representation(href + "?doc_id_type=" + DOC_ID_TYPE.DOUBLE);
         } else {
-            rep = new Representation("#");
-            rep.addWarning("this resource does not have an URI since the _id is of type " + id.getClass().getSimpleName());
+            if (id instanceof Integer) {
+                _docIdType = "doc_id_type=" + DOC_ID_TYPE.INT;
+            } else if (id instanceof Long) {
+                _docIdType = "doc_id_type=" + DOC_ID_TYPE.LONG;
+            } else if (id instanceof Float) {
+                _docIdType = "doc_id_type=" + DOC_ID_TYPE.FLOAT;
+            } else if (id instanceof Double) {
+                _docIdType = "doc_id_type=" + DOC_ID_TYPE.DOUBLE;
+            } else {
+                _docIdType = null;
+            }
+
+            if (_docIdType == null) {
+                rep = new Representation("#");
+                rep.addWarning("this resource does not have an URI since the _id is of type " + id.getClass().getSimpleName());
+            } else {
+                rep = new Representation(href.concat("?").concat(_docIdType));
+            }
         }
 
         rep.addProperty("_type", context.getType().name());
@@ -99,8 +109,13 @@ public class DocumentRepresentationFactory {
         String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
 
         if (isBinaryFile(data)) {
-            rep.addLink(new Link("rh:download", 
-                    String.format("%s/%s", href, RequestContext.BINARY_CONTENT)));
+            if (_docIdType == null) {
+                rep.addLink(new Link("rh:download",
+                        String.format("%s/%s", href, RequestContext.BINARY_CONTENT)));
+            } else {
+                rep.addLink(new Link("rh:download",
+                        String.format("%s/%s?%s", href, RequestContext.BINARY_CONTENT, _docIdType)));
+            }
         }
 
         if (context.isParentAccessible()) {
