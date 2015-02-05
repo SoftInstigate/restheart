@@ -179,6 +179,8 @@ public class RequestContext {
         } else if (pathTokens.length >= 3 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
             if (pathTokens.length == 3) {
                 type = TYPE.COLLECTION_FILES;
+            } else if (pathTokens.length == 4 && pathTokens[2].endsWith(FS_FILES_SUFFIX) && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
+                type = TYPE.COLLECTION_INDEXES;
             } else if (pathTokens.length == 5 && pathTokens[2].endsWith(FS_FILES_SUFFIX) && pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
                 // URL: <host>/db/bucket.file/xxx/binary
                 type = TYPE.FILE;
