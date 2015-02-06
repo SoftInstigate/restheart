@@ -26,11 +26,15 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.server.handlers.form.FormData;
 import io.undertow.server.handlers.form.FormDataParser;
+import io.undertow.util.HeaderValues;
+import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
+import java.io.IOException;
 import org.bson.types.ObjectId;
 import org.restheart.db.Database;
 import org.restheart.db.GridFsDAO;
 import org.restheart.db.GridFsRepository;
+import org.restheart.hal.Representation;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
@@ -65,8 +69,34 @@ public class PostFileHandler extends PipedHttpHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        HeaderValues contentTypes = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
+
+        if (contentTypes.isEmpty() || contentTypes.stream().noneMatch(ct
+                -> ct.startsWith(Representation.APP_FORM_URLENCODED_TYPE)
+                || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE))) {
+
+            String errMsg = "Content-Type must be either: application/x-www-form-urlencoded or multipart/form-data";
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, errMsg);
+            return;
+        }
+
         FormDataParser parser = this.formParserFactory.createParser(exchange);
-        FormData data = parser.parseBlocking();
+
+        if (parser == null) {
+            String errMsg = "This request is not form encoded";
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
+            return;
+        }
+
+        FormData data;
+        
+        try {
+            data = parser.parseBlocking();
+        } catch (IOException ioe) {
+            String errMsg = "Error parsing the form";
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, ioe);
+            return;
+        }
 
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Form fields received:");
@@ -79,7 +109,8 @@ public class PostFileHandler extends PipedHttpHandler {
 
         final String fileFieldName = findFile(data);
 
-        if (fileFieldName == null) {
+        if (fileFieldName
+                == null) {
             String errMsg = "This request does not contain any file";
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
             return;
@@ -98,7 +129,8 @@ public class PostFileHandler extends PipedHttpHandler {
         Object _id = props.get("_id");
 
         // id
-        if (_id == null) {
+        if (_id
+                == null) {
             _id = new ObjectId();;
         } else {
             try {
@@ -113,7 +145,7 @@ public class PostFileHandler extends PipedHttpHandler {
         FormData.FormValue file = data.getFirst(fileFieldName);
 
         int code;
-        
+
         try {
             if (file.getFile() != null) {
                 code = gridFsDAO.createFile(getDatabase(), context.getDBName(), context.getCollectionName(), _id, props, file.getFile());
@@ -137,6 +169,7 @@ public class PostFileHandler extends PipedHttpHandler {
                         getReferenceLink(context, exchange.getRequestURL(), _id));
 
         exchange.setResponseCode(code);
+
         exchange.endExchange();
     }
 
