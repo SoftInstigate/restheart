@@ -69,12 +69,12 @@ public class RequestDispacherHandlerTest {
         dispacher.putPipedHttpHandler(RequestContext.TYPE.ROOT, RequestContext.METHOD.GET, new GetRootHandler(null, null));
         dispacher.putPipedHttpHandler(RequestContext.TYPE.DB, RequestContext.METHOD.GET, new GetDBHandler(null, null));
         dispacher.putPipedHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.PUT, new PutCollectionHandler(null, null));
-        dispacher.putPipedHttpHandler(RequestContext.TYPE.COLLECTION_FILES, RequestContext.METHOD.GET, new GetCollectionHandler(null, null));
+        dispacher.putPipedHttpHandler(RequestContext.TYPE.FILES_BUCKET, RequestContext.METHOD.GET, new GetCollectionHandler(null, null));
 
         assertThat(dispacher.getPipedHttpHandler(RequestContext.TYPE.ROOT, RequestContext.METHOD.GET), instanceOf(GetRootHandler.class));
         assertThat(dispacher.getPipedHttpHandler(RequestContext.TYPE.DB, RequestContext.METHOD.GET), instanceOf(GetDBHandler.class));
         assertThat(dispacher.getPipedHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.PUT), instanceOf(PutCollectionHandler.class));
-        assertThat(dispacher.getPipedHttpHandler(RequestContext.TYPE.COLLECTION_FILES, RequestContext.METHOD.GET), instanceOf(GetCollectionHandler.class));
+        assertThat(dispacher.getPipedHttpHandler(RequestContext.TYPE.FILES_BUCKET, RequestContext.METHOD.GET), instanceOf(GetCollectionHandler.class));
 
         assertNull(dispacher.getPipedHttpHandler(RequestContext.TYPE.COLLECTION, RequestContext.METHOD.POST));
     }
@@ -88,7 +88,7 @@ public class RequestDispacherHandlerTest {
         exchange.setRequestMethod(new HttpString("POST"));
         RequestContext context = new RequestContext(exchange, "/", "*");
 
-        dispacher.putPipedHttpHandler(RequestContext.TYPE.COLLECTION_FILES, RequestContext.METHOD.POST, new PostBinaryFileHandler(null, null));
+        dispacher.putPipedHttpHandler(RequestContext.TYPE.FILES_BUCKET, RequestContext.METHOD.POST, new PostBinaryFileHandler(null, null));
         dispacher.handleRequest(exchange, context);
 
         assertEquals(HttpStatus.SC_NOT_IMPLEMENTED, exchange.getResponseCode());

@@ -45,7 +45,7 @@ public class RequestContext {
         DOCUMENT,
         COLLECTION_INDEXES,
         INDEX,
-        COLLECTION_FILES,
+        FILES_BUCKET,
         FILE
     };
 
@@ -178,7 +178,7 @@ public class RequestContext {
             type = TYPE.DB;
         } else if (pathTokens.length >= 3 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
             if (pathTokens.length == 3) {
-                type = TYPE.COLLECTION_FILES;
+                type = TYPE.FILES_BUCKET;
             } else if (pathTokens.length == 4 && pathTokens[2].endsWith(FS_FILES_SUFFIX) && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
                 type = TYPE.COLLECTION_INDEXES;
             } else if (pathTokens.length == 5 && pathTokens[2].endsWith(FS_FILES_SUFFIX) && pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {

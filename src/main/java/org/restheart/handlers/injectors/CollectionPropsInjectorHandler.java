@@ -37,7 +37,7 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CollectionPropsInjectorHandler.class);
 
-    private static final String COLLECTION_DOES_NOT_EXIST = "Collection '%s' does not exist or method '%s' is not applicable";
+    private static final String COLLECTION_DOES_NOT_EXIST = "Collection '%s' does not exist";
 
     /**
      * Creates a new instance of MetadataInjecterHandler
@@ -85,7 +85,7 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
 
     public static boolean checkCollection(RequestContext context) {
         return !(context.getType() == RequestContext.TYPE.COLLECTION && context.getMethod() == RequestContext.METHOD.PUT)
-                && !(context.getType() == RequestContext.TYPE.COLLECTION_FILES && context.getMethod() == RequestContext.METHOD.POST)
+                && !(context.getType() == RequestContext.TYPE.FILES_BUCKET && context.getMethod() == RequestContext.METHOD.PUT)
                 && context.getType() != RequestContext.TYPE.ROOT
                 && context.getType() != RequestContext.TYPE.DB;
     }

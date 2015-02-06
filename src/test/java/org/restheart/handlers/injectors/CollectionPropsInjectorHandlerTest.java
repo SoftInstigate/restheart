@@ -69,7 +69,7 @@ public class CollectionPropsInjectorHandlerTest {
         
         RequestContext context = createContext("/db/fs.files", "POST");
 
-        assertEquals(context.getType(), RequestContext.TYPE.COLLECTION_FILES);
+        assertEquals(context.getType(), RequestContext.TYPE.FILES_BUCKET);
         assertEquals(context.getMethod(), RequestContext.METHOD.POST);
         assertEquals(false, CollectionPropsInjectorHandler.checkCollection(context));
     }

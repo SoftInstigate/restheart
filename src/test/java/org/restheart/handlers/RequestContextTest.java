@@ -95,7 +95,7 @@ public class RequestContextTest {
         System.out.println("test_COLLECTION_FILES_selectRequestType");
 
         String[] pathTokens = "/db/mybucket.files".split("/");
-        assertEquals(RequestContext.TYPE.COLLECTION_FILES, RequestContext.selectRequestType(pathTokens));
+        assertEquals(RequestContext.TYPE.FILES_BUCKET, RequestContext.selectRequestType(pathTokens));
     }
 
     @Test

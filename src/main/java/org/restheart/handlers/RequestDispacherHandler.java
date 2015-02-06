@@ -113,9 +113,10 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         putPipedHttpHandler(TYPE.INDEX, METHOD.PUT, new PutIndexHandler());
         putPipedHttpHandler(TYPE.INDEX, METHOD.DELETE, new DeleteIndexHandler());
 
-        // COLLECTION_FILES and FILE handlers
-        putPipedHttpHandler(TYPE.COLLECTION_FILES, METHOD.GET, getCollectionHandler);
-        putPipedHttpHandler(TYPE.COLLECTION_FILES, METHOD.POST, new PostBinaryFileHandler());
+        // FILES_BUCKET and FILE handlers
+        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.GET, getCollectionHandler);
+        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.POST, new PostBinaryFileHandler());
+        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.PUT, new PutCollectionHandler());
         putPipedHttpHandler(TYPE.FILE, METHOD.GET, new GetBinaryFileHandler());
     }
 
