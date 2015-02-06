@@ -20,8 +20,6 @@ package org.restheart.handlers.files;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.DuplicateKeyException;
-import com.mongodb.gridfs.GridFS;
-import com.mongodb.gridfs.GridFSInputFile;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import io.undertow.server.HttpServerExchange;
@@ -31,9 +29,10 @@ import io.undertow.server.handlers.form.FormDataParser;
 import io.undertow.util.HttpString;
 import org.bson.types.ObjectId;
 import org.restheart.db.Database;
+import org.restheart.db.GridFsDAO;
+import org.restheart.db.GridFsRepository;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import static org.restheart.handlers.files.GetBinaryFileHandler.extractBucketName;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
@@ -46,25 +45,26 @@ import static org.restheart.utils.URLUtils.getReferenceLink;
  *
  * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
-public class PostBinaryFileHandler extends PipedHttpHandler {
+public class PostFileHandler extends PipedHttpHandler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PostBinaryFileHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PostFileHandler.class);
     private final FormParserFactory formParserFactory;
+    private final GridFsRepository gridFsDAO;
 
-    public PostBinaryFileHandler() {
+    public PostFileHandler() {
         super();
         this.formParserFactory = FormParserFactory.builder().build();
+        this.gridFsDAO = new GridFsDAO();
     }
 
-    public PostBinaryFileHandler(PipedHttpHandler next, Database dbsDAO) {
+    public PostFileHandler(PipedHttpHandler next, Database dbsDAO) {
         super(next, dbsDAO);
         this.formParserFactory = FormParserFactory.builder().build();
+        this.gridFsDAO = new GridFsDAO();
     }
 
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        exchange.setResponseCode(500);
-
         FormDataParser parser = this.formParserFactory.createParser(exchange);
         FormData data = parser.parseBlocking();
 
@@ -95,12 +95,11 @@ public class PostBinaryFileHandler extends PipedHttpHandler {
             return;
         }
 
-        ObjectId now = new ObjectId();
         Object _id = props.get("_id");
 
         // id
         if (_id == null) {
-            _id = now;
+            _id = new ObjectId();;
         } else {
             try {
                 URLUtils.checkId(_id);
@@ -111,58 +110,20 @@ public class PostBinaryFileHandler extends PipedHttpHandler {
             }
         }
 
-        // remove from the properties the fields that are managed directly by the GridFs
-        props.removeField("_id");
-        props.removeField("filename");
-        props.removeField("chunkSize");
-        props.removeField("uploadDate");
-        props.removeField("length");
-        props.removeField("md5");
-
-        // it makes sure the client doesn't change this field
-        props.put("_created_on", now);
-
-        // add etag
-        props.put("_etag", new ObjectId());
-
-        // contentType
-        Object _contentType = props.removeField("contentType");
-        String contentType;
-
-        if (_contentType != null && _contentType instanceof String) {
-            contentType = (String) _contentType;
-        } else {
-            contentType = null;
-        }
-
         FormData.FormValue file = data.getFirst(fileFieldName);
 
         try {
-            if (file.isFile()) {
-                if (file.getFile() != null) {
-                    final String bucket = extractBucketName(context.getCollectionName());
-                    GridFS gridfs = new GridFS(getDatabase().getDB(context.getDBName()), bucket);
-                    GridFSInputFile gfsFile = gridfs.createFile(file.getFile());
-
-                    gfsFile.setId(_id);
-                    gfsFile.setContentType(contentType);
-                    gfsFile.setFilename(file.getFileName());
-
-                    props.toMap().keySet().stream().forEach(k -> gfsFile.put((String) k, props.get((String) k)));
-
-                    gfsFile.save();
-
-                    exchange.setResponseCode(201);
-                }
+            if (file.getFile() != null) {
+                gridFsDAO.createFile(getDatabase(), context.getDBName(), context.getCollectionName(), _id, props, file.getFile());
             }
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             if (t instanceof DuplicateKeyException) {
                 // update not supported
                 String errMsg = "file resource update is not yet implemented";
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_IMPLEMENTED, errMsg);
                 return;
             }
-            
+
             throw t;
         }
 

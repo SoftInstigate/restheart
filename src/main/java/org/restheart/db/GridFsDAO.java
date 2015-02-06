@@ -1,0 +1,123 @@
+package org.restheart.db;
+
+/*
+ * RESTHeart - the data REST API server
+ * Copyright (C) SoftInstigate Srl
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
+import com.mongodb.DuplicateKeyException;
+import com.mongodb.gridfs.GridFS;
+import com.mongodb.gridfs.GridFSDBFile;
+import com.mongodb.gridfs.GridFSInputFile;
+import java.io.File;
+import java.io.IOException;
+import org.bson.types.ObjectId;
+import org.restheart.utils.HttpStatus;
+
+/**
+ *
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
+ */
+public class GridFsDAO implements GridFsRepository {
+
+    public GridFsDAO() {
+    }
+
+    @Override
+    public int createFile(Database db, String dbName, String bucketName, Object fileId, DBObject properties, File data) throws IOException, DuplicateKeyException {
+        final String bucket = extractBucketName(bucketName);
+        GridFS gridfs = new GridFS(db.getDB(dbName), bucket);
+        GridFSInputFile gfsFile = gridfs.createFile(data);
+
+        ObjectId now = new ObjectId();
+        
+        // remove from the properties the fields that are managed directly by the GridFs
+        properties.removeField("_id");
+        Object _fileName = properties.removeField("filename");
+        properties.removeField("chunkSize");
+        properties.removeField("uploadDate");
+        properties.removeField("length");
+        properties.removeField("md5");
+        
+        String fileName;
+        if (_fileName != null && _fileName instanceof String) {
+            fileName = (String) _fileName;
+        } else {
+            fileName = null;
+        }
+
+        // it makes sure the client doesn't change this field
+        properties.put("_created_on", now);
+
+        // add etag
+        properties.put("_etag", new ObjectId());
+
+        // contentType
+        Object _contentType = properties.removeField("contentType");
+        String contentType;
+
+        if (_contentType != null && _contentType instanceof String) {
+            contentType = (String) _contentType;
+        } else {
+            contentType = null;
+        }
+        
+        gfsFile.setId(fileId);
+        gfsFile.setContentType(contentType);
+        gfsFile.setFilename(fileName);
+
+        properties.toMap().keySet().stream().forEach(k -> gfsFile.put((String) k, properties.get((String) k)));
+
+        gfsFile.save();
+
+        return HttpStatus.SC_CREATED;
+    }
+
+    @Override
+    public int deleteFile(Database db, String dbName, String bucketName, Object fileId, ObjectId requestEtag) {
+        GridFS gridfs = new GridFS(db.getDB(bucketName), bucketName);
+        GridFSDBFile dbsfile = gridfs.findOne(new BasicDBObject("_id", fileId));
+
+        if (dbsfile == null) {
+            return HttpStatus.SC_NOT_FOUND;
+        } else {
+            if (!checkEtag(requestEtag, dbsfile)) {
+                // delete file
+                gridfs.remove(new BasicDBObject("_id", fileId));
+                return HttpStatus.SC_NO_CONTENT;
+            } else {
+                return HttpStatus.SC_PRECONDITION_FAILED;
+            }
+        }
+    }
+
+    private boolean checkEtag(ObjectId requestEtag, GridFSDBFile dbsfile) {
+        if (dbsfile != null) {
+            Object etag = dbsfile.get("_etag");
+
+            if (etag != null && etag instanceof ObjectId) {
+                return etag.equals(requestEtag);
+            }
+        }
+
+        return true;
+    }
+
+    private static String extractBucketName(final String collectionName) {
+        return collectionName.split("\\.")[0];
+    }
+}

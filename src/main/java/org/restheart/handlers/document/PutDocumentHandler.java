@@ -27,8 +27,9 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
 import org.bson.types.ObjectId;
+import org.restheart.utils.URLUtils;
+import org.restheart.utils.UnsupportedDocumentIdException;
 
 /**
  *
@@ -81,6 +82,14 @@ public class PutDocumentHandler extends PipedHttpHandler {
             content.put("_id", id);
         } else if (!content.get("_id").equals(id)) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is different than id in URL");
+            return;
+        }
+        
+        try {
+            URLUtils.checkId(id);
+        } catch (UnsupportedDocumentIdException udie) {
+            String errMsg = "the type of _id in content body is not supported: " + id.getClass().getSimpleName();
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
             return;
         }
 

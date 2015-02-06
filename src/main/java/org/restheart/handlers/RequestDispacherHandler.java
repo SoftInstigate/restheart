@@ -40,8 +40,12 @@ import java.util.HashMap;
 import java.util.Map;
 import static org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.TYPE;
-import org.restheart.handlers.files.GetBinaryFileHandler;
-import org.restheart.handlers.files.PostBinaryFileHandler;
+import org.restheart.handlers.files.DeleteBucketHandler;
+import org.restheart.handlers.files.DeleteFileHandler;
+import org.restheart.handlers.files.GetFileHandler;
+import org.restheart.handlers.files.PostFileHandler;
+import org.restheart.handlers.files.PutBucketHandler;
+import org.restheart.handlers.files.PutFileHandler;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,10 +118,13 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         putPipedHttpHandler(TYPE.INDEX, METHOD.DELETE, new DeleteIndexHandler());
 
         // FILES_BUCKET and FILE handlers
-        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.GET, getCollectionHandler);
-        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.POST, new PostBinaryFileHandler());
-        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.PUT, new PutCollectionHandler());
-        putPipedHttpHandler(TYPE.FILE, METHOD.GET, new GetBinaryFileHandler());
+        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.GET, new GetCollectionHandler());
+        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.POST, new PostFileHandler());
+        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.PUT, new PutBucketHandler());
+        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.DELETE, new DeleteBucketHandler());
+        putPipedHttpHandler(TYPE.FILE, METHOD.GET, new GetFileHandler());
+        putPipedHttpHandler(TYPE.FILE, METHOD.PUT, new PutFileHandler());
+        putPipedHttpHandler(TYPE.FILE, METHOD.DELETE, new DeleteFileHandler());
     }
 
     /**

@@ -36,12 +36,12 @@ import org.slf4j.LoggerFactory;
  *
  * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
-public class GetBinaryFileHandler extends PipedHttpHandler {
+public class GetFileHandler extends PipedHttpHandler {
 
     public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
     public static final String CONTENT_TRANSFER_ENCODING_BINARY = "binary";
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(GetBinaryFileHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GetFileHandler.class);
 
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
