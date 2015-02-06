@@ -2,7 +2,7 @@
 ${licenseFirst}
 </#if>
 ${licensePrefix}RESTHeart - the data REST API server
-${licensePrefix}Copyright (C) 2014 SoftInstigate Srl
+${licensePrefix}Copyright (C) SoftInstigate Srl
 ${licensePrefix}
 ${licensePrefix}This program is free software: you can redistribute it and/or modify
 ${licensePrefix}it under the terms of the GNU Affero General Public License as

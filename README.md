@@ -1,8 +1,14 @@
 # RESTHeart #
 
+The data REST API server for MongoDB.
+
 Open your data, quickly build HATEOAS applications, use it as your mobile apps back-end,...
 
 __You'll find the full documentation at [http://www.restheart.org](http://www.restheart.org).__
+
+Develop branch:
+
+[![Build Status](https://travis-ci.org/SoftInstigate/restheart.svg?branch=develop)](https://travis-ci.org/SoftInstigate/restheart)
 
 ## RESTHeart is the REST API server for [MongoDB](http://www.mongodb.org/).
 

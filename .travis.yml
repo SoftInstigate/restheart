@@ -1,0 +1,11 @@
+language: java
+jdk:
+- oraclejdk8
+notifications:
+  email:
+    recipients:
+    - maurizio@softinstigate.com
+    - info@softinstigate.com
+    on_success: always
+  slack:
+    secure: IeoyrbTPjPtopkmTFbcCzgy+9q8MMzhla9lXhZYdqsbn19KKe4UKNp0Cu0SY601ss586Lw4jsegvba6LFF3bi3j4aK0ZITtGJ4PYGvYByh3O7zi4Y0K2RUeYU1CfTIl18QBHcAIjQSmKLJPnyN9Y5Y4/4KhfWTqXy7tvkB36Oys=
