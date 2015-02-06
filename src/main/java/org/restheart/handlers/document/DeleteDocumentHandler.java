@@ -19,10 +19,8 @@ package org.restheart.handlers.document;
 
 import org.restheart.db.DocumentDAO;
 import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.RequestHelper;
-import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
 

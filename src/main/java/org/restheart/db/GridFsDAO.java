@@ -89,32 +89,48 @@ public class GridFsDAO implements GridFsRepository {
 
     @Override
     public int deleteFile(Database db, String dbName, String bucketName, Object fileId, ObjectId requestEtag) {
-        GridFS gridfs = new GridFS(db.getDB(bucketName), bucketName);
+        GridFS gridfs = new GridFS(db.getDB(dbName), extractBucketName(bucketName));
         GridFSDBFile dbsfile = gridfs.findOne(new BasicDBObject("_id", fileId));
 
         if (dbsfile == null) {
             return HttpStatus.SC_NOT_FOUND;
         } else {
-            if (!checkEtag(requestEtag, dbsfile)) {
+            int code = checkEtag(requestEtag, dbsfile);
+            if (code == HttpStatus.SC_NO_CONTENT) {
                 // delete file
                 gridfs.remove(new BasicDBObject("_id", fileId));
+            }
+            
+            return code;
+        }
+    }
+
+    /**
+     * 
+     * @param requestEtag
+     * @param dbsfile
+     * @return HttpStatus.SC_NO_CONTENT if check is ok
+     */
+    private int checkEtag(ObjectId requestEtag, GridFSDBFile dbsfile) {
+        if (dbsfile != null) {
+            Object etag = dbsfile.get("_etag");
+
+            if (etag == null) {
+                return HttpStatus.SC_NO_CONTENT;
+            }
+            
+            if (requestEtag == null) {
+                return HttpStatus.SC_CONFLICT;
+            }
+            
+            if (etag.equals(requestEtag)) {
                 return HttpStatus.SC_NO_CONTENT;
             } else {
                 return HttpStatus.SC_PRECONDITION_FAILED;
             }
         }
-    }
-
-    private boolean checkEtag(ObjectId requestEtag, GridFSDBFile dbsfile) {
-        if (dbsfile != null) {
-            Object etag = dbsfile.get("_etag");
-
-            if (etag != null && etag instanceof ObjectId) {
-                return etag.equals(requestEtag);
-            }
-        }
-
-        return true;
+        
+        return HttpStatus.SC_NO_CONTENT;
     }
 
     private static String extractBucketName(final String collectionName) {
