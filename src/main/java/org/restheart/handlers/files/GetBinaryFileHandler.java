@@ -91,7 +91,7 @@ public class GetBinaryFileHandler extends PipedHttpHandler {
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
         exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, dbsfile.getLength());
         exchange.getResponseHeaders().put(Headers.CONTENT_DISPOSITION,
-                String.format("Attachment; filename=\"%s\"", extractFilename(dbsfile)));
+                String.format("inline; filename=\"%s\"", extractFilename(dbsfile)));
         exchange.getResponseHeaders().put(Headers.CONTENT_TRANSFER_ENCODING, CONTENT_TRANSFER_ENCODING_BINARY);
         ResponseHelper.injectEtagHeader(exchange, dbsfile);
         
