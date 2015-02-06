@@ -103,13 +103,13 @@ public class RequestContextTest {
         System.out.println("test_FILE_selectRequestType");
 
         String[] pathTokens = "/db/mybucket.files/123".split("/");
-        assertEquals(RequestContext.TYPE.DOCUMENT, RequestContext.selectRequestType(pathTokens));
+        assertEquals(RequestContext.TYPE.FILE, RequestContext.selectRequestType(pathTokens));
         
         pathTokens = "/db/mybucket.files/123/binary".split("/");
         assertEquals(RequestContext.TYPE.FILE, RequestContext.selectRequestType(pathTokens));
 
         pathTokens = "/db/mybucket.files/123/456".split("/");
-        assertEquals(RequestContext.TYPE.DOCUMENT, RequestContext.selectRequestType(pathTokens));
+        assertEquals(RequestContext.TYPE.FILE, RequestContext.selectRequestType(pathTokens));
     }
 
     @Test
