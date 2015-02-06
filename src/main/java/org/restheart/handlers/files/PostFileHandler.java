@@ -112,9 +112,13 @@ public class PostFileHandler extends PipedHttpHandler {
 
         FormData.FormValue file = data.getFirst(fileFieldName);
 
+        int code;
+        
         try {
             if (file.getFile() != null) {
-                gridFsDAO.createFile(getDatabase(), context.getDBName(), context.getCollectionName(), _id, props, file.getFile());
+                code = gridFsDAO.createFile(getDatabase(), context.getDBName(), context.getCollectionName(), _id, props, file.getFile());
+            } else {
+                throw new RuntimeException("error. file data is null");
             }
         } catch (Throwable t) {
             if (t instanceof DuplicateKeyException) {
@@ -132,6 +136,7 @@ public class PostFileHandler extends PipedHttpHandler {
                 .add(HttpString.tryFromString("Location"),
                         getReferenceLink(context, exchange.getRequestURL(), _id));
 
+        exchange.setResponseCode(code);
         exchange.endExchange();
     }
 
