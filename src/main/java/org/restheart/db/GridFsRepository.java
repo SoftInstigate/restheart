@@ -32,4 +32,6 @@ public interface GridFsRepository {
     int createFile(Database db, String dbName, String bucketName, Object fileId, DBObject properties, File data) throws IOException, DuplicateKeyException;
     
     int deleteFile(Database db, String dbName, String bucketName, Object fileId, ObjectId requestEtag);
+    
+    void deleteChunksCollection(Database db, String dbName, String bucketName);
 }

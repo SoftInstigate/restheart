@@ -20,6 +20,7 @@ package org.restheart.db;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.DuplicateKeyException;
+import com.mongodb.MongoClient;
 import com.mongodb.gridfs.GridFS;
 import com.mongodb.gridfs.GridFSDBFile;
 import com.mongodb.gridfs.GridFSInputFile;
@@ -33,8 +34,10 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class GridFsDAO implements GridFsRepository {
+    private final MongoClient client;
 
     public GridFsDAO() {
+        client = MongoDBClientSingleton.getInstance().getClient();
     }
 
     @Override
@@ -44,7 +47,7 @@ public class GridFsDAO implements GridFsRepository {
         GridFSInputFile gfsFile = gridfs.createFile(data);
 
         ObjectId now = new ObjectId();
-        
+
         // remove from the properties the fields that are managed directly by the GridFs
         properties.removeField("_id");
         Object _fileName = properties.removeField("filename");
@@ -52,7 +55,7 @@ public class GridFsDAO implements GridFsRepository {
         properties.removeField("uploadDate");
         properties.removeField("length");
         properties.removeField("md5");
-        
+
         String fileName;
         if (_fileName != null && _fileName instanceof String) {
             fileName = (String) _fileName;
@@ -75,7 +78,7 @@ public class GridFsDAO implements GridFsRepository {
         } else {
             contentType = null;
         }
-        
+
         gfsFile.setId(fileId);
         gfsFile.setContentType(contentType);
         gfsFile.setFilename(fileName);
@@ -100,13 +103,18 @@ public class GridFsDAO implements GridFsRepository {
                 // delete file
                 gridfs.remove(new BasicDBObject("_id", fileId));
             }
-            
+
             return code;
         }
     }
 
+    public void deleteChunksCollection(Database db, String dbName, String bucketName) {
+        String chunksCollName = extractBucketName(bucketName).concat(".chunks");
+        client.getDB(dbName).getCollection(chunksCollName).drop();
+    }
+
     /**
-     * 
+     *
      * @param requestEtag
      * @param dbsfile
      * @return HttpStatus.SC_NO_CONTENT if check is ok
@@ -118,18 +126,18 @@ public class GridFsDAO implements GridFsRepository {
             if (etag == null) {
                 return HttpStatus.SC_NO_CONTENT;
             }
-            
+
             if (requestEtag == null) {
                 return HttpStatus.SC_CONFLICT;
             }
-            
+
             if (etag.equals(requestEtag)) {
                 return HttpStatus.SC_NO_CONTENT;
             } else {
                 return HttpStatus.SC_PRECONDITION_FAILED;
             }
         }
-        
+
         return HttpStatus.SC_NO_CONTENT;
     }
 

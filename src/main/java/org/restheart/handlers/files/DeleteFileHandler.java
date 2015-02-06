@@ -24,6 +24,8 @@ import org.restheart.db.GridFsDAO;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
 import org.restheart.db.GridFsRepository;
+import org.restheart.utils.HttpStatus;
+import org.restheart.utils.ResponseHelper;
 
 /**
  *
@@ -67,9 +69,11 @@ public class DeleteFileHandler extends PipedHttpHandler {
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             sendWarnings(httpCode, exchange, context);
         } else {
-            exchange.setResponseCode(httpCode);
+            if (httpCode == HttpStatus.SC_CONFLICT) {
+                ResponseHelper.endExchangeWithMessage(exchange, httpCode, "the ETag header must be provided");
+            } else {
+                ResponseHelper.endExchange(exchange, httpCode);
+            }
         }
-
-        exchange.endExchange();
     }
 }
