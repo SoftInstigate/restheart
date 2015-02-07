@@ -31,6 +31,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Sets.newHashSet;
+import static io.undertow.predicate.Predicate.PREDICATE_CONTEXT;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 
 /**
@@ -68,7 +70,7 @@ public final class SimpleAccessManager extends AbstractSimpleSecurityManager imp
             try {
                 predicate = PredicateParser.parse((String) _predicate, this.getClass().getClassLoader());
             } catch (Throwable t) {
-                throw new IllegalArgumentException("wrong configuration file format. wrong predictate" + (String) _predicate, t);
+                throw new IllegalArgumentException("wrong configuration file format. wrong predicate " + (String) _predicate, t);
             }
 
             aclForRole(role).add(predicate);
@@ -86,6 +88,12 @@ public final class SimpleAccessManager extends AbstractSimpleSecurityManager imp
             return false;
         }
 
+        // this fixes undertow bug 377
+        // https://issues.jboss.org/browse/UNDERTOW-377
+        if (exchange.getAttachment(PREDICATE_CONTEXT) == null) {
+            exchange.putAttachment(PREDICATE_CONTEXT, new TreeMap<String, Object>());
+        }
+        
         return roles(exchange).anyMatch(role -> aclForRole(role).stream().anyMatch(p -> p.resolve(exchange)));
     }
 

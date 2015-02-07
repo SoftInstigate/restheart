@@ -25,17 +25,27 @@ users:
       roles: [users, admins]
       
 permissions:
+# users with role 'admins' can do anything
     - role: admins
       predicate: path-prefix[path="/"]
-      
+
+# not authenticated user can only GET any resource under the /publicdb URI
     - role: $unauthenticated
       predicate: path-prefix[path="/publicdb/"] and method[value="GET"]
-      
-    - role: $unauthenticated
-      predicate: path[path="/integrationtestdb/coll1"] and method[value="GET"]
-      
+
+# users with role 'users' can GET any collection or document resource (excluding dbs)
     - role: users
       predicate: regex[pattern="/.*/.*", value="%R", full-match=true] and method[value="GET"]
       
+# users with role 'users' can do anything on the collection /publicdb/{username}
     - role: users
-      predicate: path-prefix[path="/publicdb/{username}/"]
+      predicate: path-template[value="/publicdb/{username}"] and equals[%u, "${username}"] 
+
+# users with role 'users' can do anything on documents of the collection /publicdb/{username}
+    - role: users
+      predicate: path-template[value="/publicdb/{username}/{doc}"] and equals[%u, "${username}"] 
+ 
+# same than previous one, but using regex predicate
+# users with role 'users' can do anything on documents of the collection /publicdb/{username}
+#    - role: users
+#      predicate: regex[pattern="/publicdb/(.*?)/.*", value="%R", full-match=true] and equals[%u, "${1}"]

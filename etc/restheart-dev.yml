@@ -109,12 +109,12 @@ application-logic-mounts:
 # the provided default implementations of IDM and AM are SimpleFileIdentityManager and SimpleAccessManager.
 # conf-file paths are either absolute (starting with /) or relative to the restheart.jar directory
 
-#idm:
-#    implementation-class: org.restheart.security.impl.SimpleFileIdentityManager
-#    conf-file: ../etc/security.yml
-#access-manager:
-#    implementation-class: org.restheart.security.impl.SimpleAccessManager
-#    conf-file: ../etc/security.yml
+idm:
+    implementation-class: org.restheart.security.impl.SimpleFileIdentityManager
+    conf-file: ../etc/security.yml
+access-manager:
+    implementation-class: org.restheart.security.impl.SimpleAccessManager
+    conf-file: ../etc/security.yml
 
 # authentication token
 
