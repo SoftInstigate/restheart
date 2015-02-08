@@ -32,7 +32,6 @@ import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 import org.bson.BSONObject;
-import static org.restheart.handlers.RequestContext.DETECT_OBJECTIDS_KEY;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_KEY;
 import org.restheart.utils.UnsupportedDocumentIdException;
@@ -229,22 +228,6 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             return;
         }
 
-        // get the autodetect objectid parameter
-        Deque<String> __autodetectObjectId = exchange.getQueryParameters().get(DETECT_OBJECTIDS_KEY);
-
-        // default value
-        boolean detectObjectIds = true;
-
-        if (__autodetectObjectId != null && !__autodetectObjectId.isEmpty()) {
-            String _autodetectObjectId = __autodetectObjectId.getFirst();
-
-            if (_autodetectObjectId != null && !_autodetectObjectId.isEmpty()) {
-                detectObjectIds = "true".equalsIgnoreCase(_autodetectObjectId);
-            }
-        }
-
-        rcontext.setDetectObjectIds(detectObjectIds);
-        
         getNext().handleRequest(exchange, rcontext);
     }
 

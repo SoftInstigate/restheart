@@ -108,9 +108,6 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
 
                 nrep.addProperty("_type", RequestContext.TYPE.DOCUMENT.name());
 
-                if (d.get("_etag") != null && d.get("_etag") instanceof ObjectId) {
-                    d.put("_etag", ((ObjectId) d.get("_etag")).toString()); // represent the etag as a string
-                }
                 rep.addRepresentation("rh:doc", nrep);
             }
         }

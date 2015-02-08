@@ -186,15 +186,10 @@ class CollectionDAO {
             int pagesize,
             Deque<String> sortBy,
             Deque<String> filters,
-            DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager,
-            boolean detectOids) throws JSONParseException {
+            DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager) throws JSONParseException {
         ArrayList<DBObject> ret = new ArrayList<>();
 
         int toskip = pagesize * (page - 1);
-
-        if (detectOids) {
-            filters = replaceObjectIdsInFilters(filters);
-        }
 
         DBCursor cursor;
         SkippedDBCursor _cursor = null;

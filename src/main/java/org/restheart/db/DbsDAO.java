@@ -375,8 +375,8 @@ public class DbsDAO implements Database {
     }
 
     @Override
-    public ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filter, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy, boolean detectObjectids) {
-        return collectionDAO.getCollectionData(coll, page, pagesize, sortBy, filter, cursorAllocationPolicy, detectObjectids);
+    public ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filter, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
+        return collectionDAO.getCollectionData(coll, page, pagesize, sortBy, filter, cursorAllocationPolicy);
     }
 
     @Override

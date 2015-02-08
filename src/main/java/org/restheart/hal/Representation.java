@@ -20,6 +20,8 @@ package org.restheart.hal;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.util.JSONSerializers;
+import com.mongodb.util.ObjectSerializer;
 import java.util.Objects;
 import org.bson.BSONObject;
 import org.bson.types.ObjectId;
@@ -29,6 +31,7 @@ import org.bson.types.ObjectId;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class Representation {
+    private final ObjectSerializer serializer = JSONSerializers.getStrict();
 
     /**
      * Supported content types
@@ -100,14 +103,7 @@ public class Representation {
      * @param value
      */
     public void addProperty(String key, Object value) {
-        if (value instanceof ObjectId) {
-            properties.append(key, value.toString());
-        } else if (value instanceof BSONObject) {
-            HALUtils.replaceObjectIdsWithStrings((BSONObject) value);
-            properties.append(key, value);
-        } else {
-            properties.append(key, value);
-        }
+        properties.append(key, value);
     }
 
     /**
@@ -118,8 +114,6 @@ public class Representation {
         if (props == null) {
             return;
         }
-
-        HALUtils.replaceObjectIdsWithStrings(props);
 
         properties.putAll(props);
     }
@@ -149,7 +143,7 @@ public class Representation {
 
     @Override
     public String toString() {
-        return getDBObject().toString();
+        return serializer.serialize(getDBObject());
     }
 
     @Override

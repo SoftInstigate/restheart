@@ -72,8 +72,6 @@ public class RequestContext {
     public static final String FILTER_QPARAM_KEY = "filter";
     public static final String EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY = "eager";
     public static final String DOC_ID_TYPE_KEY = "doc_id_type";
-    public static final String DETECT_OBJECTIDS_KEY = "detect_oids";
-
     public static final String SLASH = "/";
     public static final String PATCH = "PATCH";
     public static final String UNDERSCORE = "_";
@@ -571,20 +569,6 @@ public class RequestContext {
      */
     public void setDocIdType(DOC_ID_TYPE docIdType) {
         this.docIdType = docIdType;
-    }
-
-    /**
-     * @return the detectObjectIds
-     */
-    public boolean isDetectObjectIds() {
-        return detectObjectIds;
-    }
-
-    /**
-     * @param detectObjectIds the detectObjectIds to set
-     */
-    public void setDetectObjectIds(boolean detectObjectIds) {
-        this.detectObjectIds = detectObjectIds;
     }
 
     /**

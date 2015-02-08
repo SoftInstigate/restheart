@@ -115,31 +115,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      */
     private void filterJsonContent(DBObject content, RequestContext ctx) {
         filterOutReservedKeys(content, ctx);
-        replaceStringWithObjectId(ctx, content);
         ctx.setContent(content);
-    }
-
-    /**
-     * replace string that are valid ObjectIds with ObjectIds objects
-     *
-     * @param context
-     * @param content
-     */
-    private void replaceStringWithObjectId(RequestContext context, DBObject content) {
-        if (context.isDetectObjectIds()) {
-            Object keepId = null;
-
-            // if detect_oids==true and doc_id_type==string, replace all objectids but the id
-            if (context.getDocIdType() == RequestContext.DOC_ID_TYPE.STRING) {
-                keepId = content.removeField("_id");
-            }
-
-            HALUtils.replaceStringsWithObjectIds(content);
-
-            if (keepId != null) {
-                content.put("_id", keepId);
-            }
-        }
     }
 
     /**
