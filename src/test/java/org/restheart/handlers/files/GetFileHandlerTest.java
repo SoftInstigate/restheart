@@ -24,9 +24,9 @@ import static org.junit.Assert.*;
  *
  * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
-public class GetBinaryFileHandlerTest {
+public class GetFileHandlerTest {
     
-    public GetBinaryFileHandlerTest() {
+    public GetFileHandlerTest() {
     }
 
     @Test

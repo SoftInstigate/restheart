@@ -43,7 +43,7 @@ public class GetFileHandler extends PipedHttpHandler {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(GetFileHandler.class);
 
-    public GetBinaryFileHandler() {
+    public GetFileHandler() {
         super();
     }
 
@@ -113,7 +113,7 @@ public class GetFileHandler extends PipedHttpHandler {
         return collectionName.split("\\.")[0];
     }
 
-    GetBinaryFileHandler(Object object, Object object0) {
+    GetFileHandler(Object object, Object object0) {
         super(null, null);
     }
 }
