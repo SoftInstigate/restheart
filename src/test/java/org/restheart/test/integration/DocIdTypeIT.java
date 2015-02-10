@@ -117,7 +117,7 @@ public class DocIdTypeIT extends AbstactIT {
                     .build();
 
             // *** POST tmpcoll
-            resp = adminExecutor.execute(Request.Post(collectionTmpUriInt).bodyString("{_id:'54c965cbc2e64568e235b711', a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+            resp = adminExecutor.execute(Request.Post(collectionTmpUriInt).bodyString("{_id:{'$oid':'54c965cbc2e64568e235b711'}, a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             HttpResponse httpResp = check("check post coll1 again", resp, HttpStatus.SC_CREATED);
 
             Header[] headers = httpResp.getHeaders(Headers.LOCATION_STRING);
@@ -135,12 +135,12 @@ public class DocIdTypeIT extends AbstactIT {
             resp = adminExecutor.execute(Request.Get(createdDocUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
             JsonObject content = JsonObject.readFrom(resp.returnContent().asString());
-            assertTrue("check created doc content", content.get("_id").asString().equals("54c965cbc2e64568e235b711"));
+            assertTrue("check created doc content", content.get("_id").asObject().get("$oid").asString().equals("54c965cbc2e64568e235b711"));
             assertNotNull("check created doc content", content.get("_etag"));
             assertNotNull("check created doc content", content.get("a"));
             assertTrue("check created doc content", content.get("a").asInt() == 1);
 
-            // *** filter - case 1 - without detect_oids=false should not find it
+            // *** filter - case 1 - with string id should not find it
             URI collectionTmpUriSearch = new URIBuilder()
                     .setScheme(HTTP)
                     .setHost(HOST)
@@ -154,14 +154,13 @@ public class DocIdTypeIT extends AbstactIT {
             content = JsonObject.readFrom(resp.returnContent().asString());
             assertTrue("check created doc content", content.get("_returned").asInt() == 0);
 
-            // *** filter - case 1 - with detect_oids=false should find it
+            // *** filter - case 1 - with oid id should find it
             collectionTmpUriSearch = new URIBuilder()
                     .setScheme(HTTP)
                     .setHost(HOST)
                     .setPort(conf.getHttpPort())
                     .setPath("/" + dbTmpName + "/" + collectionTmpName)
-                    .setParameter("filter", "{'_id':'54c965cbc2e64568e235b711'}")
-                    .setParameter("detect_oids", "false")
+                    .setParameter("filter", "{'_id':{'$oid':'54c965cbc2e64568e235b711'}}")
                     .build();
 
             resp = adminExecutor.execute(Request.Get(collectionTmpUriSearch).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));

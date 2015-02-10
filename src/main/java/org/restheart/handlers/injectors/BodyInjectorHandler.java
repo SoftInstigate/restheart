@@ -81,7 +81,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             DBObject content = null;
             try {
                 content = (DBObject) JSON.parse(contentString);
-            } catch (JSONParseException ex) {
+            } catch (JSONParseException | IllegalArgumentException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Invalid data", ex);
                 return;
             }

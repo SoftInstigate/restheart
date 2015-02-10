@@ -65,7 +65,7 @@ public class PatchCollectionIT extends AbstactIT {
 
             JsonObject content = JsonObject.readFrom(resp.returnContent().asString());
 
-            String etag = content.get("_etag").asString();
+            String etag = content.get("_etag").asObject().get("$oid").asString();
 
             // try to patch with correct etag
             resp = adminExecutor.execute(Request.Patch(collectionTmpUri).bodyString("{b:2}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
@@ -77,7 +77,7 @@ public class PatchCollectionIT extends AbstactIT {
             assertNotNull("check patched content", content.get("a"));
             assertNotNull("check patched content", content.get("b"));
             assertTrue("check patched content", content.get("a").asInt() == 1 && content.get("b").asInt() == 2);
-            etag = content.get("_etag").asString();
+            etag = content.get("_etag").asObject().get("$oid").asString();
 
             // try to patch reserved field name
             resp = adminExecutor.execute(Request.Patch(collectionTmpUri).bodyString("{_embedded:\"a\"}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
