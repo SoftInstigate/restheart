@@ -43,6 +43,10 @@ public class GetFileHandler extends PipedHttpHandler {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(GetFileHandler.class);
 
+    public GetFileHandler() {
+        super();
+    }
+
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         LOGGER.debug("GET " + exchange.getRequestURL());
@@ -107,5 +111,9 @@ public class GetFileHandler extends PipedHttpHandler {
 
     static String extractBucketName(final String collectionName) {
         return collectionName.split("\\.")[0];
+    }
+
+    GetFileHandler(Object object, Object object0) {
+        super(null, null);
     }
 }
