@@ -17,103 +17,12 @@
  */
 package org.restheart.handlers.files;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.gridfs.GridFS;
-import com.mongodb.gridfs.GridFSDBFile;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
-import java.io.IOException;
-import org.bson.types.ObjectId;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
-import org.restheart.utils.HttpStatus;
-import org.restheart.utils.RequestHelper;
-import org.restheart.utils.ResponseHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.restheart.handlers.document.GetDocumentHandler;
 
 /**
  *
- * @author Maurizio Turatti <maurizio@softinstigate.com>
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class GetFileHandler extends PipedHttpHandler {
-
-    public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
-    public static final String CONTENT_TRANSFER_ENCODING_BINARY = "binary";
+public class GetFileHandler extends GetDocumentHandler {
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(GetFileHandler.class);
-
-    public GetFileHandler() {
-        super();
-    }
-
-    @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        LOGGER.debug("GET " + exchange.getRequestURL());
-        final String bucket = extractBucketName(context.getCollectionName());
-
-        GridFS gridfs = new GridFS(getDatabase().getDB(context.getDBName()), bucket);
-        GridFSDBFile dbsfile = gridfs.findOne(new BasicDBObject("_id", context.getDocumentId()));
-
-        if (dbsfile == null) {
-            fileNotFound(context, exchange);
-        } else {
-            if (!checkEtag(exchange, dbsfile)) {
-                sendBinaryContent(dbsfile, exchange);
-            }
-        }
-    }
-
-    private boolean checkEtag(HttpServerExchange exchange, GridFSDBFile dbsfile) {
-        if (dbsfile != null) {
-            Object etag = dbsfile.get("_etag");
-
-            if (etag != null && ObjectId.isValid("" + etag)) {
-
-                // in case the request contains the IF_NONE_MATCH header with the current etag value,
-                // just return 304 NOT_MODIFIED code
-                if (RequestHelper.checkReadEtag(exchange, etag.toString())) {
-                    ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_MODIFIED);
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    private void fileNotFound(RequestContext context, HttpServerExchange exchange) {
-        final String errMsg = String.format("File with ID <%s> not found", context.getDocumentId());
-        LOGGER.error(errMsg);
-        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, errMsg);
-    }
-
-    private void sendBinaryContent(final GridFSDBFile dbsfile, final HttpServerExchange exchange) throws IOException {
-        LOGGER.debug("Filename = {}", dbsfile.getFilename());
-        LOGGER.debug("Content length = {}", dbsfile.getLength());
-
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
-        exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, dbsfile.getLength());
-        exchange.getResponseHeaders().put(Headers.CONTENT_DISPOSITION,
-                String.format("inline; filename=\"%s\"", extractFilename(dbsfile)));
-        exchange.getResponseHeaders().put(Headers.CONTENT_TRANSFER_ENCODING, CONTENT_TRANSFER_ENCODING_BINARY);
-        ResponseHelper.injectEtagHeader(exchange, dbsfile);
-        
-        exchange.setResponseCode(HttpStatus.SC_OK);
-
-        dbsfile.writeTo(exchange.getOutputStream());
-        exchange.endExchange();
-    }
-
-    private String extractFilename(final GridFSDBFile dbsfile) {
-        return dbsfile.getFilename() != null ? dbsfile.getFilename() : dbsfile.getId().toString();
-    }
-
-    static String extractBucketName(final String collectionName) {
-        return collectionName.split("\\.")[0];
-    }
-
-    GetFileHandler(Object object, Object object0) {
-        super(null, null);
-    }
 }

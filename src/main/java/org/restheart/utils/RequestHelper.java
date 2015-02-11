@@ -34,20 +34,20 @@ public class RequestHelper {
      * @param etag
      * @return
      */
-    public static boolean checkReadEtag(HttpServerExchange exchange, String etag) {
+    public static boolean checkReadEtag(HttpServerExchange exchange, ObjectId etag) {
         if (etag == null) {
             return false;
         }
 
         HeaderValues vs = exchange.getRequestHeaders().get(Headers.IF_NONE_MATCH);
 
-        return vs == null || vs.getFirst() == null ? false : vs.getFirst().equals(etag);
+        return vs == null || vs.getFirst() == null ? false : vs.getFirst().equals(etag.toString());
     }
 
     /**
      *
      * @param exchange
-     * @return
+     * @return the etag ObjectId value or null in case the IF_MATCH header is not present. If the header contains an invalid ObjectId string value returns a new ObjectId (the check will fail for sure)
      */
     public static ObjectId getWriteEtag(HttpServerExchange exchange) {
         HeaderValues vs = exchange.getRequestHeaders().get(Headers.IF_MATCH);
@@ -60,13 +60,13 @@ public class RequestHelper {
      * @param etag
      * @return
      */
-    public static ObjectId getEtagAsObjectId(Object etag) {
+    private static ObjectId getEtagAsObjectId(String etag) {
         if (etag == null) {
             return null;
         }
 
-        if (ObjectId.isValid("" + etag)) {
-            return new ObjectId("" + etag);
+        if (ObjectId.isValid(etag)) {
+            return new ObjectId(etag);
         } else {
             return new ObjectId();
         }

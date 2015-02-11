@@ -24,7 +24,7 @@ import com.mongodb.util.JSONSerializers;
 import com.mongodb.util.ObjectSerializer;
 import java.util.Objects;
 import org.bson.BSONObject;
-import org.bson.types.ObjectId;
+import org.restheart.handlers.RequestContext;
 
 /**
  *
@@ -55,6 +55,18 @@ public class Representation {
         links = new BasicDBObject();
 
         links.put("self", new BasicDBObject("href", href));
+    }
+    
+    public RequestContext.TYPE getType() {
+        if (properties == null)
+            return null;
+        
+        Object _type = properties.get("_type");
+        
+        if (_type == null)
+            return null;
+        
+        return RequestContext.TYPE.valueOf(_type.toString());
     }
 
     BasicDBObject getDBObject() {

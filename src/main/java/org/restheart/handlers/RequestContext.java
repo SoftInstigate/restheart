@@ -46,7 +46,8 @@ public class RequestContext {
         COLLECTION_INDEXES,
         INDEX,
         FILES_BUCKET,
-        FILE
+        FILE,
+        FILE_BINARY
     };
 
     public enum METHOD {
@@ -104,7 +105,6 @@ public class RequestContext {
     private Deque<String> filter = null;
     private Deque<String> sortBy = null;
     private DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OBJECTID;
-    private boolean detectObjectIds = false;
     private Object documentId;
 
     private String unmappedRequestUri = null;
@@ -187,7 +187,7 @@ public class RequestContext {
                 type = TYPE.FILE;
             } else if (pathTokens.length == 5 && pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
                 // URL: <host>/db/bucket.file/xxx/binary
-                type = TYPE.FILE;
+                type = TYPE.FILE_BINARY;
             } else {
                 type = TYPE.DOCUMENT;
             }

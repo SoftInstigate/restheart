@@ -160,10 +160,8 @@ public class DbsDAO implements Database {
 
             Object etag = row.get("_etag");
 
-            if (etag != null && ObjectId.isValid("" + etag)) {
-                ObjectId oid = new ObjectId("" + etag);
-
-                row.put("_lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
+            if (etag != null && etag instanceof ObjectId) {
+                row.put("_lastupdated_on", Instant.ofEpochSecond(((ObjectId)etag).getTimestamp()).toString());
             }
         } else if (fixMissingProperties) {
             new PropsFixer().addDbProps(dbName);

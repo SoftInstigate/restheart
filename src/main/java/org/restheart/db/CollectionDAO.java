@@ -27,7 +27,6 @@ import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import org.restheart.utils.HttpStatus;
 import java.time.Instant;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import org.bson.BSONObject;
@@ -219,13 +218,12 @@ class CollectionDAO {
             pagesize--;
         }
 
+        // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
         ret.forEach(row -> {
             Object etag = row.get("_etag");
 
-            if (etag != null && ObjectId.isValid("" + etag)) {
-                ObjectId _etag = new ObjectId("" + etag);
-
-                row.put("_lastupdated_on", Instant.ofEpochSecond(_etag.getTimestamp()).toString());
+            if (etag != null && etag instanceof ObjectId) {
+                row.put("_lastupdated_on", Instant.ofEpochSecond(((ObjectId)etag).getTimestamp()).toString());
             }
         }
         );
@@ -250,10 +248,8 @@ class CollectionDAO {
 
             Object etag = properties.get("_etag");
 
-            if (etag != null && ObjectId.isValid("" + etag)) {
-                ObjectId oid = new ObjectId("" + etag);
-
-                properties.put("_lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
+            if (etag != null && etag instanceof ObjectId) {
+                properties.put("_lastupdated_on", Instant.ofEpochSecond(((ObjectId)etag).getTimestamp()).toString());
             }
         } else if (fixMissingProperties) {
             new PropsFixer().addCollectionProps(dbName, collName);
@@ -384,39 +380,5 @@ class CollectionDAO {
         coll.createIndex(new BasicDBObject("_id", 1).append("_etag", 1), new BasicDBObject("name", "_id_etag_idx"));
         coll.createIndex(new BasicDBObject("_etag", 1), new BasicDBObject("name", "_etag_idx"));
         coll.createIndex(new BasicDBObject("_created_on", 1), new BasicDBObject("name", "_created_on_idx"));
-    }
-
-    private Deque<String> replaceObjectIdsInFilters(Deque<String> filters) {
-        if (filters == null) {
-            return null;
-        }
-
-        ArrayDeque<String> ret = new ArrayDeque<>();
-
-        filters.stream().forEach((filter) -> {
-            BSONObject _filter = (BSONObject) JSON.parse(filter);
-            
-            replaceObjectIdsInFilters(_filter);
-            
-            ret.add(_filter.toString());
-        });
-
-        return ret;
-    }
-
-    private void replaceObjectIdsInFilters(BSONObject source) {
-        if (source == null) {
-            return;
-        }
-
-        source.keySet().stream().forEach((key) -> {
-            Object value = source.get(key);
-
-            if (value instanceof BSONObject) {
-                replaceObjectIdsInFilters((BSONObject) value);
-            } else if (ObjectId.isValid(value.toString())) {
-                source.put(key, new ObjectId(value.toString()));
-            } 
-        });
     }
 }

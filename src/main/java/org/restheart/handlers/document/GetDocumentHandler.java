@@ -61,14 +61,13 @@ public class GetDocumentHandler extends PipedHttpHandler {
 
         Object etag = document.get("_etag");
 
-        if (etag != null && ObjectId.isValid("" + etag)) {
-            ObjectId _etag = new ObjectId("" + etag);
-
-            document.put("_lastupdated_on", Instant.ofEpochSecond(_etag.getTimestamp()).toString());
+        if (etag != null && etag instanceof ObjectId) {
+            // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
+            document.put("_lastupdated_on", Instant.ofEpochSecond(((ObjectId)etag).getTimestamp()).toString());
 
             // in case the request contains the IF_NONE_MATCH header with the current etag value,
             // just return 304 NOT_MODIFIED code
-            if (RequestHelper.checkReadEtag(exchange, etag.toString())) {
+            if (RequestHelper.checkReadEtag(exchange, (ObjectId)etag)) {
                 ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_MODIFIED);
                 return;
             }

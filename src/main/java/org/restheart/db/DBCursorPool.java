@@ -101,7 +101,7 @@ public class DBCursorPool {
 
     public synchronized SkippedDBCursor get(DBCursorPoolEntryKey key, EAGER_CURSOR_ALLOCATION_POLICY allocationPolicy) {
         if (key.getSkipped() < SKIP_SLICE_LINEAR_WIDTH) {
-            LOGGER.debug("no cursor to reuse found with skipped {} that is less than SKIP_SLICE_WIDTH {}", key.getSkipped(), SKIP_SLICE_LINEAR_WIDTH);
+            LOGGER.trace("no cursor to reuse found with skipped {} that is less than SKIP_SLICE_WIDTH {}", key.getSkipped(), SKIP_SLICE_LINEAR_WIDTH);
             return null;
         }
 

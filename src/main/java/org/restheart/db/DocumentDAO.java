@@ -23,7 +23,6 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.RequestHelper;
 import java.time.Instant;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -204,24 +203,28 @@ public class DocumentDAO implements Repository {
     }
 
     private int optimisticCheckEtag(DBCollection coll, DBObject oldDocument, ObjectId requestEtag, int httpStatusIfOk) {
-        Object oldEtag = RequestHelper.getEtagAsObjectId(oldDocument.get("_etag"));
+        Object oldEtag = oldDocument.get("_etag");
         
-        if (requestEtag == null && oldEtag != null) {
+        if (oldEtag == null) {  // well we don't had an etag there so fine
+            return httpStatusIfOk;
+        }
+        
+        if (!(oldEtag instanceof ObjectId)) { // well the _etag is not an ObjectId. no check is possible
+            return httpStatusIfOk;
+        }
+        
+        if (requestEtag == null) {
             coll.save(oldDocument);
             return HttpStatus.SC_CONFLICT;
         }
 
-        if (oldEtag == null) {  // well we don't had an etag there so fine
-            return HttpStatus.SC_NO_CONTENT;
+        if (oldEtag.equals(requestEtag)) {
+            return httpStatusIfOk; // ok they match
         } else {
-            if (oldEtag.equals(requestEtag)) {
-                return httpStatusIfOk; // ok they match
-            } else {
-                // oopps, we need to restore old document
-                // they call it optimistic lock strategy
-                coll.save(oldDocument);
-                return HttpStatus.SC_PRECONDITION_FAILED;
-            }
+            // oopps, we need to restore old document
+            // they call it optimistic lock strategy
+            coll.save(oldDocument);
+            return HttpStatus.SC_PRECONDITION_FAILED;
         }
     }
 }
