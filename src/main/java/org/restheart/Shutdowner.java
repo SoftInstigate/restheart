@@ -31,6 +31,8 @@ public class Shutdowner {
     private static final Logger LOGGER = LoggerFactory.getLogger(Shutdowner.class);
 
     public static void main(final String[] args) {
+        LOGGER.info("Shutdowner called...");
+        
         if (askingForHelp(args)) {
             LOGGER.info("usage: java -cp restheart.jar org.restheart.Shutdowner [configuration file].");
             LOGGER.info("shutdown --help\t\tprints this help message and exits.");
