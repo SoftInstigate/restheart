@@ -32,7 +32,7 @@ public class GetFileHandlerTest {
     @Test
     public void testExtractBucket() {
         System.out.println("testExtractBucket");
-        assertEquals("mybucket", GetFileHandler.extractBucketName("mybucket.files"));
+        assertEquals("mybucket", GetFileBinaryHandler.extractBucketName("mybucket.files"));
     }
     
 }

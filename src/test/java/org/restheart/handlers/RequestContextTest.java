@@ -106,7 +106,7 @@ public class RequestContextTest {
         assertEquals(RequestContext.TYPE.FILE, RequestContext.selectRequestType(pathTokens));
         
         pathTokens = "/db/mybucket.files/123/binary".split("/");
-        assertEquals(RequestContext.TYPE.FILE, RequestContext.selectRequestType(pathTokens));
+        assertEquals(RequestContext.TYPE.FILE_BINARY, RequestContext.selectRequestType(pathTokens));
 
         pathTokens = "/db/mybucket.files/123/456".split("/");
         assertEquals(RequestContext.TYPE.FILE, RequestContext.selectRequestType(pathTokens));
