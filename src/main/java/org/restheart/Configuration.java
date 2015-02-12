@@ -602,8 +602,8 @@ public class Configuration {
 
         List<Map<String, Object>> mongoServersDefault = new ArrayList<>();
         Map<String, Object> defaultMongoServer = new HashMap<>();
-        defaultMongoServer.put(MONGO_HOST_KEY, "127.0.0.1");
-        defaultMongoServer.put(MONGO_PORT_KEY, 27017);
+        defaultMongoServer.put(MONGO_HOST_KEY, DEFAULT_MONGO_HOST);
+        defaultMongoServer.put(MONGO_PORT_KEY, DEFAULT_MONGO_PORT);
         mongoServersDefault.add(defaultMongoServer);
 
         mongoServers = getAsListOfMaps(conf, MONGO_SERVERS_KEY, mongoServersDefault);

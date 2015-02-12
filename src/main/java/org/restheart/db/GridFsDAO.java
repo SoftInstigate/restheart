@@ -103,6 +103,7 @@ public class GridFsDAO implements GridFsRepository {
         }
     }
 
+    @Override
     public void deleteChunksCollection(Database db, String dbName, String bucketName) {
         String chunksCollName = extractBucketName(bucketName).concat(".chunks");
         client.getDB(dbName).getCollection(chunksCollName).drop();

@@ -26,8 +26,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.server.handlers.form.FormData;
 import io.undertow.server.handlers.form.FormDataParser;
-import io.undertow.util.HttpString;
-import org.bson.types.ObjectId;
 import org.restheart.db.Database;
 import org.restheart.db.GridFsDAO;
 import org.restheart.db.GridFsRepository;
@@ -39,7 +37,6 @@ import org.restheart.utils.URLUtils;
 import org.restheart.utils.UnsupportedDocumentIdException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static org.restheart.utils.URLUtils.getReferenceLink;
 
 /**
  *
