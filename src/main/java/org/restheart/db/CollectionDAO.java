@@ -216,12 +216,19 @@ class CollectionDAO {
             pagesize--;
         }
 
-        // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
+        // add the _lastupdated_on and _created_on
         ret.forEach(row -> {
             Object etag = row.get("_etag");
 
-            if (etag != null && etag instanceof ObjectId) {
-                row.put("_lastupdated_on", Instant.ofEpochSecond(((ObjectId)etag).getTimestamp()).toString());
+            if (row.get("_lastupdated_on") == null && etag != null && etag instanceof ObjectId) {
+                row.put("_lastupdated_on", Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString());
+            }
+
+            Object id = row.get("_id");
+
+            // generate the _created_on timestamp from the _id if this is an instance of ObjectId
+            if (row.get("_created_on") == null && id != null && id instanceof ObjectId) {
+                row.put("_created_on", Instant.ofEpochSecond(((ObjectId) id).getTimestamp()).toString());
             }
         }
         );
@@ -247,7 +254,7 @@ class CollectionDAO {
             Object etag = properties.get("_etag");
 
             if (etag != null && etag instanceof ObjectId) {
-                properties.put("_lastupdated_on", Instant.ofEpochSecond(((ObjectId)etag).getTimestamp()).toString());
+                properties.put("_lastupdated_on", Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString());
             }
         } else if (fixMissingProperties) {
             new PropsFixer().addCollectionProps(dbName, collName);
