@@ -137,6 +137,14 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                         "illegal sort_by paramenter");
                 return;
             }
+            
+            if (sort_by.stream().anyMatch(s -> s.trim().equals("_last_updated_on") || s.trim().equals("+_last_updated_on") || s.trim().equals("-_last_updated_on") )) {
+                rcontext.addWarning("unexepecting sorting; the _last_updated_on timestamp is generated from the _etag property if present");
+            }
+            
+            if (sort_by.stream().anyMatch(s -> s.trim().equals("_created_on") ||s.trim().equals("_created_on") || s.trim().equals("_created_on"))) {
+                rcontext.addWarning("unexepecting sorting; the _created_on timestamp is generated from the _id property if it is an ObjectId");
+            }
 
             rcontext.setSortBy(exchange.getQueryParameters().get(SORT_BY_QPARAM_KEY));
         }

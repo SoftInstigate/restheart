@@ -147,13 +147,11 @@ class CollectionDAO {
         DBObject sort = new BasicDBObject();
 
         if (sortBy == null || sortBy.isEmpty()) {
-            sort.put("_created_on", -1);
+            sort.put("_id", -1);
         } else {
             sortBy.stream().forEach((s) -> {
 
                 String _s = s.trim(); // the + sign is decoded into a space, in case remove it
-
-                _s = _s.replaceAll("_lastupdated_on", "_etag"); // _lastupdated is not stored and actually generated from @etag
 
                 if (_s.startsWith("-")) {
                     sort.put(_s.substring(1), -1);
@@ -379,6 +377,5 @@ class CollectionDAO {
     private void initDefaultIndexes(DBCollection coll) {
         coll.createIndex(new BasicDBObject("_id", 1).append("_etag", 1), new BasicDBObject("name", "_id_etag_idx"));
         coll.createIndex(new BasicDBObject("_etag", 1), new BasicDBObject("name", "_etag_idx"));
-        coll.createIndex(new BasicDBObject("_created_on", 1), new BasicDBObject("name", "_created_on_idx"));
     }
 }

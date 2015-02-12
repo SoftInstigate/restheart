@@ -29,6 +29,7 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.util.EntityUtils;
+import org.bson.types.ObjectId;
 import org.junit.Test;
 
 /**
@@ -87,11 +88,16 @@ public class GetDocumentIT extends AbstactIT {
         }
 
         assertNotNull("check json not null", json);
-        assertNotNull("check not null @etag property", json.get("_etag"));
-        assertNotNull("check not null @lastupdated_on property", json.get("_lastupdated_on"));
-        assertNotNull("check not null @created_on property", json.get("_created_on"));
-        assertNotNull("check not null @_id property", json.get("_id"));
-        assertEquals("check @_id value", document1Id, json.get("_id").asString());
+        assertNotNull("check not null _etag property", json.get("_etag"));
+        assertNotNull("check not null _lastupdated_on property", json.get("_lastupdated_on"));
+        
+        if (ObjectId.isValid(json.get("_id").asString()))
+            assertNotNull("check not null _created_on property", json.get("_created_on"));
+        else
+            assertNull("check null _created_on property", json.get("_created_on"));
+        
+        assertNotNull("check not null _id property", json.get("_id"));
+        assertEquals("check _id value", document1Id, json.get("_id").asString());
         assertNotNull("check not null a", json.get("a"));
         assertEquals("check a value", 1, json.get("a").asInt());
         assertNotNull("check not null mtm links", json.get("_links").asObject().get("mtm"));

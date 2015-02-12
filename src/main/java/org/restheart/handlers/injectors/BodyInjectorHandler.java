@@ -30,7 +30,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import java.util.HashSet;
-import org.restheart.hal.HALUtils;
 
 /**
  *
@@ -78,7 +77,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
         if (isNotFormData(contentTypes)) {
             final String contentString = ChannelReader.read(exchange.getRequestChannel());
-            DBObject content = null;
+            DBObject content;
             try {
                 content = (DBObject) JSON.parse(contentString);
             } catch (JSONParseException | IllegalArgumentException ex) {

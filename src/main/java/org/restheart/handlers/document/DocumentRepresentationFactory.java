@@ -30,6 +30,7 @@ import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.net.URISyntaxException;
+import java.time.Instant;
 import java.util.List;
 import java.util.TreeMap;
 import org.bson.types.ObjectId;
@@ -88,7 +89,7 @@ public class DocumentRepresentationFactory {
                 rep = new Representation(href.concat("?").concat(_docIdType));
             }
         }
-
+        
         rep.addProperty("_type", context.getType().name());
 
         // document properties
