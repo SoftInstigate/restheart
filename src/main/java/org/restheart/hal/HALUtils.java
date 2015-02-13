@@ -22,8 +22,6 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.util.TreeMap;
-import org.bson.BSONObject;
-import org.bson.types.ObjectId;
 
 /**
  *

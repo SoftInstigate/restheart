@@ -208,7 +208,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         Deque<String> __docIdType = exchange.getQueryParameters().get(DOC_ID_TYPE_KEY);
 
         // default value
-        DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OBJECTID;
+        DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OID;
 
         if (__docIdType != null && !__docIdType.isEmpty()) {
             String _docIdType = __docIdType.getFirst();
@@ -232,7 +232,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         try {
             rcontext.setDocumentId(URLUtils.getId(_docId, docIdType));
         } catch(UnsupportedDocumentIdException idide) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong document id format. it is not a valid " + docIdType.name());
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong document id format: not a valid " + docIdType.name(), idide);
             return;
         }
 

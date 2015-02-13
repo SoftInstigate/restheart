@@ -20,20 +20,17 @@ package org.restheart.utils;
 import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URLDecoder;
+import java.text.DateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Deque;
+import org.bson.types.MaxKey;
+import org.bson.types.MinKey;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
-import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.DOUBLE;
-import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.FLOAT;
-import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.INT;
-import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.LONG;
-import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.OBJECTID;
 import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.STRING;
-import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.STRING_OBJECTID;
+import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_KEY;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,41 +40,40 @@ import org.slf4j.LoggerFactory;
  */
 public class URLUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(URLUtils.class);
-    
+
     public static String getReferenceLink(RequestContext context, String parentUrl, Object docId) {
         if (context == null || parentUrl == null || docId == null) {
             LOGGER.error("error creating URI, null arguments: context = {}, parentUrl = {}, docId = {}", context, parentUrl, docId);
             return "";
         }
-        
-        try {
-            URI uri;
 
-            if (docId instanceof String && ObjectId.isValid((String)docId)) { 
-                uri = new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + docId.toString()+ "?doc_id_type=" + DOC_ID_TYPE.STRING);
-            } else if (docId instanceof String || docId instanceof ObjectId) {
-                uri = new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + docId.toString());
-            } else if (docId instanceof Integer) {
-                uri = new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + docId.toString() + "?doc_id_type=" + DOC_ID_TYPE.INT);
-            } else if (docId instanceof Long) {
-                uri = new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + docId.toString() + "?doc_id_type=" + DOC_ID_TYPE.LONG);
-            } else if (docId instanceof Float) {
-                uri = new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + docId.toString() + "?doc_id_type=" + DOC_ID_TYPE.FLOAT);
-            } else if (docId instanceof Double) {
-                uri = new URI(URLUtils.removeTrailingSlashes(parentUrl) + "/" + docId.toString() + "?doc_id_type=" + DOC_ID_TYPE.DOUBLE);
-            } else {
-                context.addWarning("this resource does not have an URI since the _id is of type " + docId.getClass().getSimpleName());
-                return "";
-            }
+        String uri = "#";
 
-            return uri.toString();
-        } catch (URISyntaxException ex) {
-            LOGGER.error("error creating URI from {} + / + {}", parentUrl, docId, ex);
+        if (docId instanceof String && ObjectId.isValid((String) docId)) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_KEY).concat("=").concat(DOC_ID_TYPE.STRING.name());
+        } else if (docId instanceof String || docId instanceof ObjectId) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString());
+        } else if (docId instanceof Integer) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_KEY).concat("=").concat(DOC_ID_TYPE.NUMBER.name());
+        } else if (docId instanceof Long) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_KEY).concat("=").concat(DOC_ID_TYPE.NUMBER.name());
+        } else if (docId instanceof Float) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_KEY).concat("=").concat(DOC_ID_TYPE.NUMBER.name());
+        } else if (docId instanceof Double) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_KEY).concat("=").concat(DOC_ID_TYPE.NUMBER.name());
+        } else if (docId instanceof MinKey) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat("_MinKey");
+        } else if (docId instanceof MaxKey) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat("_MaxKey");
+        } else if (docId instanceof Date) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(((Date) docId).getTime() + "").concat("?").concat(DOC_ID_TYPE_KEY).concat("=").concat(DOC_ID_TYPE.DATE.name());
+        } else {
+            context.addWarning("this resource does not have an URI since the _id is of type " + docId.getClass().getSimpleName());
         }
 
-        return "";
+        return uri;
     }
-    
+
     public static DOC_ID_TYPE checkId(Object id) throws UnsupportedDocumentIdException {
         if (id == null) {
             return null;
@@ -87,49 +83,63 @@ public class URLUtils {
 
         switch (clazz) {
             case "java.lang.String":
-                return DOC_ID_TYPE.STRING_OBJECTID;
+                return DOC_ID_TYPE.STRING_OID;
             case "org.bson.types.ObjectId":
-                return DOC_ID_TYPE.OBJECTID;
+                return DOC_ID_TYPE.OID;
             case "java.lang.Integer":
-                return DOC_ID_TYPE.INT;
+                return DOC_ID_TYPE.NUMBER;
             case "java.lang.Long":
-                return DOC_ID_TYPE.LONG;
+                return DOC_ID_TYPE.NUMBER;
             case "java.lang.Float":
-                return DOC_ID_TYPE.FLOAT;
+                return DOC_ID_TYPE.NUMBER;
             case "java.lang.Double":
-                return DOC_ID_TYPE.DOUBLE;
+                return DOC_ID_TYPE.NUMBER;
+            case "java.util.Date":
+                return DOC_ID_TYPE.DATE;
+            case "org.bson.types.MaxKey":
+                return DOC_ID_TYPE.MAXKEY;
+            case "org.bson.types.MinKey":
+                return DOC_ID_TYPE.MINKEY;
             default:
                 throw new UnsupportedDocumentIdException("unknown _id type: " + id.getClass().getSimpleName());
         }
     }
 
-    public static Object getId(Object id, DOC_ID_TYPE type) throws UnsupportedDocumentIdException {
+    public static Object getId(String id, DOC_ID_TYPE type) throws UnsupportedDocumentIdException {
         if (id == null) {
             return null;
         }
 
         if (type == null) {
-            type = DOC_ID_TYPE.STRING_OBJECTID;
+            type = DOC_ID_TYPE.STRING_OID;
         }
 
-        String _id = id.toString();
+        // MaxKey can be also determined from the _id
+        if (RequestContext.MAX_KEY_ID.equalsIgnoreCase(id)) {
+            return new MaxKey();
+        }
+
+        // MaxKey can be also determined from the _id
+        if (RequestContext.MIN_KEY_ID.equalsIgnoreCase(id)) {
+            return new MinKey();
+        }
 
         try {
             switch (type) {
-                case STRING_OBJECTID:
-                    return getIdAsStringOrObjectId(_id);
-                case OBJECTID:
-                    return getIdAsObjectId(_id);
+                case STRING_OID:
+                    return getIdAsStringOrObjectId(id);
+                case OID:
+                    return getIdAsObjectId(id);
                 case STRING:
                     return id;
-                case INT:
-                    return getIdAsInt(_id);
-                case LONG:
-                    return getIdAsLong(_id);
-                case FLOAT:
-                    return getIdAsFloat(_id);
-                case DOUBLE:
-                    return getIdAsDouble(_id);
+                case NUMBER:
+                    return getIdAsNumber(id);
+                case MINKEY:
+                    return new MinKey();
+                case MAXKEY:
+                    return new MaxKey();
+                case DATE:
+                    return getIdAsDate(id);
             }
         } catch (IllegalArgumentException iar) {
             throw new UnsupportedDocumentIdException(iar);
@@ -218,10 +228,10 @@ public class URLUtils {
 
         sb.append("/").append(dbName).append("/").append(collName).append("/").append(id);
 
-        if (!detectOids && docIdType == STRING_OBJECTID && ObjectId.isValid(id.toString())) {
-                sb.append("?doc_id_type=STRING");
-        } else if (docIdType != STRING && docIdType != OBJECTID && docIdType != STRING_OBJECTID) {
-                sb.append("?doc_id_type=").append(docIdType.name());
+        if (!detectOids && docIdType == DOC_ID_TYPE.STRING_OID && ObjectId.isValid(id.toString())) {
+            sb.append("?").append(DOC_ID_TYPE_KEY).append("=STRING");
+        } else if (docIdType != STRING && docIdType != DOC_ID_TYPE.OID && docIdType != DOC_ID_TYPE.STRING_OID) {
+            sb.append("?").append(DOC_ID_TYPE_KEY).append("=").append(docIdType.name());
         }
 
         return context.mapUri(sb.toString().replaceAll(" ", ""));
@@ -331,36 +341,42 @@ public class URLUtils {
         return ret;
     }
 
-    private static int getIdAsInt(String id) throws IllegalArgumentException {
+    private static Number getIdAsNumber(String id) throws IllegalArgumentException {
         try {
             return Integer.parseInt(id, 10);
         } catch (NumberFormatException nfe) {
-            throw new IllegalArgumentException("The id is not a valid int " + id, nfe);
+            try {
+                return Long.parseLong(id, 10);
+            } catch (NumberFormatException nfe2) {
+                try {
+                    return Float.parseFloat(id);
+                } catch (NumberFormatException nfe3) {
+                    try {
+                        return Double.parseDouble(id);
+                    } catch (NumberFormatException nfe4) {
+                        try {
+                            return Float.parseFloat(id);
+                        } catch (NumberFormatException nfe5) {
+                            throw new IllegalArgumentException("The id is not a valid number " + id, nfe);
+                        }
+                    }
+                }
+            }
         }
     }
 
-    private static long getIdAsLong(String id) throws IllegalArgumentException {
-        try {
-            return Long.parseLong(id, 10);
-        } catch (NumberFormatException nfe) {
-            throw new IllegalArgumentException("The id is not a valid long " + id, nfe);
-        }
-    }
+    private static Date getIdAsDate(String id) throws IllegalArgumentException {
+        Date ret;
 
-    private static float getIdAsFloat(String id) throws IllegalArgumentException {
         try {
-            return Float.parseFloat(id);
-        } catch (NumberFormatException nfe) {
-            throw new IllegalArgumentException("The id is not a valid float " + id, nfe);
-        }
-    }
+            Long n = Long.parseLong(id, 10);
 
-    private static double getIdAsDouble(String id) throws IllegalArgumentException {
-        try {
-            return Double.parseDouble(id);
+            ret = new Date(n);
         } catch (NumberFormatException nfe) {
-            throw new IllegalArgumentException("The id is not a valid double " + id, nfe);
+            throw new IllegalArgumentException("The id is not a valid date (number of milliseconds since the epoch) " + id, nfe);
         }
+        
+        return ret;
     }
 
     private static ObjectId getIdAsObjectId(String id) throws IllegalArgumentException {

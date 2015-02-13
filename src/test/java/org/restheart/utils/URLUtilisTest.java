@@ -98,7 +98,7 @@ public class URLUtilisTest {
     public void testGetUriWithDocIdStringValidObjectId() {
         System.out.println("getUriWithDocId String");
         RequestContext context = prepareRequestContext();
-        String expResult = "/dbName/collName/54d13711c2e692941728e1d3?doc_id_type=STRING";
+        String expResult = "/dbName/collName/54d13711c2e692941728e1d3?id_type=STRING";
         String result;
         try {
             result = URLUtils.getUriWithDocId(context, "dbName", "collName", "54d13711c2e692941728e1d3", false);
@@ -112,7 +112,7 @@ public class URLUtilisTest {
     public void testGetUriWithLongDocId() {
         System.out.println("getUriWithDocId Integer");
         RequestContext context = prepareRequestContext();
-        String expResult = "/dbName/collName/123?doc_id_type=INT";
+        String expResult = "/dbName/collName/123?id_type=NUMBER";
         String result;
         try {
             result = URLUtils.getUriWithDocId(context, "dbName", "collName", 123, false);

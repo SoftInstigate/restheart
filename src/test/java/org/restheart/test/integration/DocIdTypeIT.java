@@ -66,7 +66,7 @@ public class DocIdTypeIT extends AbstactIT {
 
             URI collectionTmpUriInt = buildURI("/" + dbTmpName + "/" + collectionTmpName,
                     new NameValuePair[]{
-                        new BasicNameValuePair(DOC_ID_TYPE_KEY, DOC_ID_TYPE.INT.name())
+                        new BasicNameValuePair(DOC_ID_TYPE_KEY, DOC_ID_TYPE.NUMBER.name())
                     });
 
             // *** POST tmpcoll
@@ -83,7 +83,7 @@ public class DocIdTypeIT extends AbstactIT {
             Header locationH = headers[0];
             String location = locationH.getValue();
 
-            //assertTrue("check location header value", location.endsWith("/100?doc_id_type=INT"));
+            //assertTrue("check location header value", location.endsWith("/100?id_type=NUMBER"));
             URI createdDocUri = URI.create(location);
 
             resp = adminExecutor.execute(Request.Get(createdDocUri)
@@ -135,7 +135,7 @@ public class DocIdTypeIT extends AbstactIT {
             Header locationH = headers[0];
             String location = locationH.getValue();
 
-            //assertTrue("check location header value", location.endsWith("/54c965cbc2e64568e235b711?doc_id_type=STRING"));
+            //assertTrue("check location header value", location.endsWith("/54c965cbc2e64568e235b711?id_type=STRING"));
             URI createdDocUri = URI.create(location);
 
             resp = adminExecutor.execute(Request.Get(createdDocUri)
