@@ -112,7 +112,6 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
                     nrep.addProperty("_type", RequestContext.TYPE.DOCUMENT.name());
                     rep.addRepresentation("rh:doc", nrep);
                 }
-
             }
         }
     }

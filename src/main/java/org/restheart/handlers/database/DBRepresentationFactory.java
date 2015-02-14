@@ -37,7 +37,7 @@ import org.slf4j.Logger;
  */
 public class DBRepresentationFactory extends AbstractRepresentationFactory {
 
-    private static final Logger logger = LoggerFactory.getLogger(DBRepresentationFactory.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DBRepresentationFactory.class);
 
     public DBRepresentationFactory() {
     }
@@ -56,17 +56,17 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
         addSizeAndTotalPagesProperties(size, context, representation);
 
         addEmbeddedData(embeddedData, representation, requestPath);
-        
+
         addPaginationLinks(exchange, context, size, representation);
-        
+
         addLinkTemplatesAndCuries(exchange, context, representation, requestPath);
-        
+
         return representation;
     }
 
     private void addEmbeddedData(
-            final List<DBObject> embeddedData, 
-            final Representation rep, 
+            final List<DBObject> embeddedData,
+            final Representation rep,
             final String requestPath) {
         if (embeddedData != null) {
             addReturnedProperty(embeddedData, rep);
@@ -77,9 +77,9 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     private void addLinkTemplatesAndCuries(
-            final HttpServerExchange exchange, 
-            final RequestContext context, 
-            final Representation rep, 
+            final HttpServerExchange exchange,
+            final RequestContext context,
+            final Representation rep,
             final String requestPath) {
         // link templates and curies
         if (context.isParentAccessible()) {
@@ -91,22 +91,27 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     private void embeddedCollections(
-            final List<DBObject> embeddedData, 
-            final String requestPath, 
+            final List<DBObject> embeddedData,
+            final String requestPath,
             final Representation rep) {
         embeddedData.stream().forEach((d) -> {
             Object _id = d.get("_id");
 
-            if (_id != null && (_id instanceof String || _id instanceof ObjectId)) {
-                Representation nrep = new Representation(requestPath + "/" + _id.toString());
-
-                nrep.addProperty("_type", RequestContext.TYPE.COLLECTION.name());
+            if (_id != null && _id instanceof String) {
+                String id = (String) _id;
+                Representation nrep = new Representation(requestPath + "/" + id);
 
                 nrep.addProperties(d);
 
-                rep.addRepresentation("rh:coll", nrep);
+                if (id.endsWith(RequestContext.FS_FILES_SUFFIX)) {
+                    nrep.addProperty("_type", RequestContext.TYPE.FILES_BUCKET.name());
+                    rep.addRepresentation("rh:bucket", nrep);
+                } else {
+                    nrep.addProperty("_type", RequestContext.TYPE.COLLECTION.name());
+                    rep.addRepresentation("rh:coll", nrep);
+                }
             } else {
-                logger.error("document missing string _id field", d);
+                LOGGER.error("collection missing string _id field", d);
             }
         });
     }
