@@ -95,7 +95,12 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
         LOGGER.debug("Filename = {}", dbsfile.getFilename());
         LOGGER.debug("Content length = {}", dbsfile.getLength());
 
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
+        if (dbsfile.get("contentType") != null) {
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, dbsfile.get("contentType").toString());
+        } else {
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
+        }
+        
         exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, dbsfile.getLength());
         exchange.getResponseHeaders().put(Headers.CONTENT_DISPOSITION,
                 String.format("inline; filename=\"%s\"", extractFilename(dbsfile)));
