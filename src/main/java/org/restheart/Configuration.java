@@ -49,7 +49,7 @@ public class Configuration {
     /**
      * URL pointing to the online documentation specific for this version.
      */
-    public static final String RESTHEART_ONLINE_DOC_URL = "http://www.restheart.org/docs/v0.9";
+    public static final String RESTHEART_ONLINE_DOC_URL = "http://www.restheart.org/docs/v0.10";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
 
