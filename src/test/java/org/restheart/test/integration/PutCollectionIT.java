@@ -61,7 +61,7 @@ public class PutCollectionIT extends AbstactIT {
 
             JsonObject content = JsonObject.readFrom(resp.returnContent().asString());
 
-            String etag = content.get("_etag").asString();
+            String etag = content.get("_etag").asObject().get("$oid").asString();
 
             // try to put with correct etag
             resp = adminExecutor.execute(Request.Put(collectionTmpUri).bodyString("{b:2}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));

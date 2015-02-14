@@ -46,8 +46,6 @@ public class GridFsDAO implements GridFsRepository {
         GridFS gridfs = new GridFS(db.getDB(dbName), bucket);
         GridFSInputFile gfsFile = gridfs.createFile(data);
 
-        ObjectId now = new ObjectId();
-
         // remove from the properties the fields that are managed directly by the GridFs
         properties.removeField("_id");
         Object _fileName = properties.removeField("filename");
@@ -62,9 +60,6 @@ public class GridFsDAO implements GridFsRepository {
         } else {
             fileName = null;
         }
-
-        // it makes sure the client doesn't change this field
-        properties.put("_created_on", now);
 
         // add etag
         properties.put("_etag", new ObjectId());
@@ -108,6 +103,7 @@ public class GridFsDAO implements GridFsRepository {
         }
     }
 
+    @Override
     public void deleteChunksCollection(Database db, String dbName, String bucketName) {
         String chunksCollName = extractBucketName(bucketName).concat(".chunks");
         client.getDB(dbName).getCollection(chunksCollName).drop();

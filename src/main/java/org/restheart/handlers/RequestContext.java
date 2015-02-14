@@ -46,7 +46,8 @@ public class RequestContext {
         COLLECTION_INDEXES,
         INDEX,
         FILES_BUCKET,
-        FILE
+        FILE,
+        FILE_BINARY
     };
 
     public enum METHOD {
@@ -61,8 +62,13 @@ public class RequestContext {
     };
 
     public enum DOC_ID_TYPE {
-
-        INT, LONG, FLOAT, DOUBLE, STRING, OBJECTID, STRING_OBJECTID
+        OID, // ObjectId
+        STRING_OID, // String eventually converted to ObjectId in case ObjectId.isValid() is true
+        STRING, // String
+        NUMBER, // any Number (including mongodb NumberLong)
+        DATE, // Date
+        MINKEY, //org.bson.types.MinKey;
+        MAXKEY // org.bson.types.MaxKey
     }
 
     public static final String PAGE_QPARAM_KEY = "page";
@@ -71,9 +77,7 @@ public class RequestContext {
     public static final String SORT_BY_QPARAM_KEY = "sort_by";
     public static final String FILTER_QPARAM_KEY = "filter";
     public static final String EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY = "eager";
-    public static final String DOC_ID_TYPE_KEY = "doc_id_type";
-    public static final String DETECT_OBJECTIDS_KEY = "detect_oids";
-
+    public static final String DOC_ID_TYPE_KEY = "id_type";
     public static final String SLASH = "/";
     public static final String PATCH = "PATCH";
     public static final String UNDERSCORE = "_";
@@ -84,6 +88,9 @@ public class RequestContext {
     public static final String FS_FILES_SUFFIX = ".files";
     public static final String _INDEXES = "_indexes";
     public static final String BINARY_CONTENT = "binary";
+    
+    public static final String MAX_KEY_ID = "_MaxKey";
+    public static final String MIN_KEY_ID = "_MinKey";
 
     private final String whereUri;
     private final String whatUri;
@@ -105,8 +112,7 @@ public class RequestContext {
     private EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy;
     private Deque<String> filter = null;
     private Deque<String> sortBy = null;
-    private DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OBJECTID;
-    private boolean detectObjectIds = false;
+    private DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OID;
     private Object documentId;
 
     private String unmappedRequestUri = null;
@@ -189,7 +195,7 @@ public class RequestContext {
                 type = TYPE.FILE;
             } else if (pathTokens.length == 5 && pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
                 // URL: <host>/db/bucket.file/xxx/binary
-                type = TYPE.FILE;
+                type = TYPE.FILE_BINARY;
             } else {
                 type = TYPE.DOCUMENT;
             }
@@ -364,7 +370,10 @@ public class RequestContext {
             return false;
         }
 
-        return documentIdRaw.startsWith(UNDERSCORE) && !documentIdRaw.equals(_INDEXES);
+        return documentIdRaw.startsWith(UNDERSCORE) &&
+                !documentIdRaw.equalsIgnoreCase(_INDEXES) && 
+                !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID) &&
+                !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID);
     }
 
     /**
@@ -571,20 +580,6 @@ public class RequestContext {
      */
     public void setDocIdType(DOC_ID_TYPE docIdType) {
         this.docIdType = docIdType;
-    }
-
-    /**
-     * @return the detectObjectIds
-     */
-    public boolean isDetectObjectIds() {
-        return detectObjectIds;
-    }
-
-    /**
-     * @param detectObjectIds the detectObjectIds to set
-     */
-    public void setDetectObjectIds(boolean detectObjectIds) {
-        this.detectObjectIds = detectObjectIds;
     }
 
     /**

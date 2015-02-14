@@ -26,15 +26,12 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.server.handlers.form.FormData;
 import io.undertow.server.handlers.form.FormDataParser;
-import io.undertow.util.HeaderValues;
-import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import java.io.IOException;
 import org.bson.types.ObjectId;
 import org.restheart.db.Database;
 import org.restheart.db.GridFsDAO;
 import org.restheart.db.GridFsRepository;
-import org.restheart.hal.Representation;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
@@ -69,17 +66,6 @@ public class PostFileHandler extends PipedHttpHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        HeaderValues contentTypes = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
-
-        if (contentTypes.isEmpty() || contentTypes.stream().noneMatch(ct
-                -> ct.startsWith(Representation.APP_FORM_URLENCODED_TYPE)
-                || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE))) {
-
-            String errMsg = "Content-Type must be either: application/x-www-form-urlencoded or multipart/form-data";
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, errMsg);
-            return;
-        }
-
         FormDataParser parser = this.formParserFactory.createParser(exchange);
 
         if (parser == null) {
@@ -200,9 +186,9 @@ public class PostFileHandler extends PipedHttpHandler {
     private DBObject findProps(final FormData data) throws JSONParseException {
         DBObject result = new BasicDBObject();
         if (data.getFirst("properties") != null) {
-            String metadataString = data.getFirst("properties").getValue();
-            if (metadataString != null) {
-                result = (DBObject) JSON.parse(metadataString);
+            String propsString = data.getFirst("properties").getValue();
+            if (propsString != null) {
+                result = (DBObject) JSON.parse(propsString);
             }
         }
 

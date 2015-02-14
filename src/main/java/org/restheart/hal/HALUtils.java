@@ -22,56 +22,12 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.util.TreeMap;
-import org.bson.BSONObject;
-import org.bson.types.ObjectId;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class HALUtils {
-    /**
-     * this replaces string that are valid ObjectIds with ObjectIds objects.
-     *
-     * @param source
-     */
-    public static void replaceStringsWithObjectIds(BSONObject source) {
-        if (source == null) {
-            return;
-        }
-
-        source.keySet().stream().forEach((key) -> {
-            Object value = source.get(key);
-
-            if (value instanceof BSONObject) {
-                replaceStringsWithObjectIds((BSONObject) value);
-            } else if (ObjectId.isValid(value.toString())) {
-                source.put(key, new ObjectId(value.toString()));
-            }
-        });
-    }
-    
-    /**
-     * this replaces ObjectIds with Strings
-     *
-     * @param source
-     */
-    public static void replaceObjectIdsWithStrings(BSONObject source) {
-        if (source == null) {
-            return;
-        }
-
-        source.keySet().stream().forEach((key) -> {
-            Object value = source.get(key);
-
-            if (value instanceof BSONObject) {
-                replaceObjectIdsWithStrings((BSONObject) value);
-            } else if (value instanceof ObjectId) {
-                source.put(key, value.toString());
-            }
-        });
-    }
-
     /**
      *
      * @param exchange

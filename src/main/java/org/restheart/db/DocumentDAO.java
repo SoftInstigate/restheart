@@ -23,7 +23,6 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.RequestHelper;
 import java.time.Instant;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -70,8 +69,6 @@ public class DocumentDAO implements Repository {
         BasicDBObject idQuery = new BasicDBObject("_id", documentId);
 
         if (patching) {
-            content.removeField("_created_on"); // it makes sure the client doesn't change this field
-
             DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, new BasicDBObject("$set", content), false, false);
 
             if (oldDocument == null) {
@@ -81,8 +78,6 @@ public class DocumentDAO implements Repository {
                 return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_OK);
             }
         } else {
-            content.put("_created_on", now.toString()); // let's assume this is an insert. in case we'll set it back with a second update
-
             // we use findAndModify to get the @created_on field value from the existing document
             // in case this is an update well need to upsertDocument it back using a second update 
             // it is not possible to do it with a single update
@@ -90,20 +85,7 @@ public class DocumentDAO implements Repository {
             DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, content, false, true);
 
             if (oldDocument != null) { // upsertDocument
-                Object oldTimestamp = oldDocument.get("_created_on");
-
-                if (oldTimestamp == null) {
-                    oldTimestamp = now.toString();
-                    LOGGER.warn("properties of document /{}/{}/{} had no @created_on field. set it to current time",
-                            dbName, collName, documentId);
-                }
-
-                // need to readd the @created_on field 
-                BasicDBObject created = new BasicDBObject("_created_on", "" + oldTimestamp);
-                created.markAsPartialObject();
-                coll.update(idQuery, new BasicDBObject("$set", created), true, false);
-
-                // check the old etag (in case restore the old document version)
+                // check the old etag (in case restore the old document)
                 return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_OK);
             } else {  // insert
                 return HttpStatus.SC_CREATED;
@@ -126,14 +108,12 @@ public class DocumentDAO implements Repository {
         DBCollection coll = db.getCollection(collName);
 
         ObjectId timestamp = new ObjectId();
-        Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
 
         if (content == null) {
             content = new BasicDBObject();
         }
 
         content.put("_etag", timestamp);
-        content.put("_created_on", now.toString()); // it makes sure the client doesn't change this field
 
         Object _idInContent = content.get("_id");
 
@@ -150,27 +130,9 @@ public class DocumentDAO implements Repository {
 
         BasicDBObject idQuery = new BasicDBObject("_id", documentId);
 
-        // we use findAndModify to get the _created_on field value from the existing document
-        // we need to upsertDocument this field back using a second update 
-        // it is not possible in a single update even using $setOnInsert update operator
-        // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
         DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, content, false, true);
 
-        if (oldDocument
-                != null) {  // upsertDocument
-            Object oldTimestamp = oldDocument.get("_created_on");
-
-            if (oldTimestamp == null) {
-                oldTimestamp = now.toString();
-                LOGGER.warn("properties of document /{}/{}/{} had no @created_on field. set it to current time",
-                        dbName, collName, _idInContent.toString());
-            }
-
-            // need to readd the @created_on field 
-            BasicDBObject createdContent = new BasicDBObject("_created_on", "" + oldTimestamp);
-            createdContent.markAsPartialObject();
-            coll.update(idQuery, new BasicDBObject("$set", createdContent), true, false);
-
+        if (oldDocument != null) {  // upsertDocument
             // check the old etag (in case restore the old document version)
             return optimisticCheckEtag(coll, oldDocument, requestEtag, HttpStatus.SC_OK);
         } else { // insert
@@ -186,7 +148,8 @@ public class DocumentDAO implements Repository {
      * @return
      */
     @Override
-    public int deleteDocument(String dbName, String collName, Object documentId, ObjectId requestEtag) {
+    public int deleteDocument(String dbName, String collName, Object documentId, ObjectId requestEtag
+    ) {
         DB db = client.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
@@ -204,24 +167,28 @@ public class DocumentDAO implements Repository {
     }
 
     private int optimisticCheckEtag(DBCollection coll, DBObject oldDocument, ObjectId requestEtag, int httpStatusIfOk) {
-        Object oldEtag = RequestHelper.getEtagAsObjectId(oldDocument.get("_etag"));
-        
-        if (requestEtag == null && oldEtag != null) {
+        Object oldEtag = oldDocument.get("_etag");
+
+        if (oldEtag == null) {  // well we don't had an etag there so fine
+            return httpStatusIfOk;
+        }
+
+        if (!(oldEtag instanceof ObjectId)) { // well the _etag is not an ObjectId. no check is possible
+            return httpStatusIfOk;
+        }
+
+        if (requestEtag == null) {
             coll.save(oldDocument);
             return HttpStatus.SC_CONFLICT;
         }
 
-        if (oldEtag == null) {  // well we don't had an etag there so fine
-            return HttpStatus.SC_NO_CONTENT;
+        if (oldEtag.equals(requestEtag)) {
+            return httpStatusIfOk; // ok they match
         } else {
-            if (oldEtag.equals(requestEtag)) {
-                return httpStatusIfOk; // ok they match
-            } else {
-                // oopps, we need to restore old document
-                // they call it optimistic lock strategy
-                coll.save(oldDocument);
-                return HttpStatus.SC_PRECONDITION_FAILED;
-            }
+            // oopps, we need to restore old document
+            // they call it optimistic lock strategy
+            coll.save(oldDocument);
+            return HttpStatus.SC_PRECONDITION_FAILED;
         }
     }
 }

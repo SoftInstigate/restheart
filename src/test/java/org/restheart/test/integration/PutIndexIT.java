@@ -90,8 +90,8 @@ public class PutIndexIT extends AbstactIT {
             assertNotNull("check json not null", json);
             assertNotNull("check not null _returned property", json.get("_returned"));
             assertNotNull("check not null _size property", json.get("_size"));
-            assertEquals("check _size value to be 5", 5, json.get("_size").asInt());
-            assertEquals("check _returned value to be 5", 5, json.get("_returned").asInt());
+            assertEquals("check _size value to be 4", 4, json.get("_size").asInt());
+            assertEquals("check _returned value to be 4", 4, json.get("_returned").asInt());
         } finally {
             mongoClient.dropDatabase(dbTmpName);
         }

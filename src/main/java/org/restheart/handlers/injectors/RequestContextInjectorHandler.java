@@ -32,7 +32,6 @@ import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 import org.bson.BSONObject;
-import static org.restheart.handlers.RequestContext.DETECT_OBJECTIDS_KEY;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_KEY;
 import org.restheart.utils.UnsupportedDocumentIdException;
@@ -138,6 +137,14 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                         "illegal sort_by paramenter");
                 return;
             }
+            
+            if (sort_by.stream().anyMatch(s -> s.trim().equals("_last_updated_on") || s.trim().equals("+_last_updated_on") || s.trim().equals("-_last_updated_on") )) {
+                rcontext.addWarning("unexepecting sorting; the _last_updated_on timestamp is generated from the _etag property if present");
+            }
+            
+            if (sort_by.stream().anyMatch(s -> s.trim().equals("_created_on") ||s.trim().equals("_created_on") || s.trim().equals("_created_on"))) {
+                rcontext.addWarning("unexepecting sorting; the _created_on timestamp is generated from the _id property if it is an ObjectId");
+            }
 
             rcontext.setSortBy(exchange.getQueryParameters().get(SORT_BY_QPARAM_KEY));
         }
@@ -201,7 +208,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         Deque<String> __docIdType = exchange.getQueryParameters().get(DOC_ID_TYPE_KEY);
 
         // default value
-        DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OBJECTID;
+        DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OID;
 
         if (__docIdType != null && !__docIdType.isEmpty()) {
             String _docIdType = __docIdType.getFirst();
@@ -225,26 +232,10 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         try {
             rcontext.setDocumentId(URLUtils.getId(_docId, docIdType));
         } catch(UnsupportedDocumentIdException idide) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong document id format. it is not a valid " + docIdType.name());
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong document id format: not a valid " + docIdType.name(), idide);
             return;
         }
 
-        // get the autodetect objectid parameter
-        Deque<String> __autodetectObjectId = exchange.getQueryParameters().get(DETECT_OBJECTIDS_KEY);
-
-        // default value
-        boolean detectObjectIds = true;
-
-        if (__autodetectObjectId != null && !__autodetectObjectId.isEmpty()) {
-            String _autodetectObjectId = __autodetectObjectId.getFirst();
-
-            if (_autodetectObjectId != null && !_autodetectObjectId.isEmpty()) {
-                detectObjectIds = "true".equalsIgnoreCase(_autodetectObjectId);
-            }
-        }
-
-        rcontext.setDetectObjectIds(detectObjectIds);
-        
         getNext().handleRequest(exchange, rcontext);
     }
 

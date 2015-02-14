@@ -27,7 +27,6 @@ import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import org.restheart.utils.HttpStatus;
 import java.time.Instant;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import org.bson.BSONObject;
@@ -148,13 +147,11 @@ class CollectionDAO {
         DBObject sort = new BasicDBObject();
 
         if (sortBy == null || sortBy.isEmpty()) {
-            sort.put("_created_on", -1);
+            sort.put("_id", -1);
         } else {
             sortBy.stream().forEach((s) -> {
 
                 String _s = s.trim(); // the + sign is decoded into a space, in case remove it
-
-                _s = _s.replaceAll("_lastupdated_on", "_etag"); // _lastupdated is not stored and actually generated from @etag
 
                 if (_s.startsWith("-")) {
                     sort.put(_s.substring(1), -1);
@@ -186,15 +183,10 @@ class CollectionDAO {
             int pagesize,
             Deque<String> sortBy,
             Deque<String> filters,
-            DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager,
-            boolean detectOids) throws JSONParseException {
+            DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager) throws JSONParseException {
         ArrayList<DBObject> ret = new ArrayList<>();
 
         int toskip = pagesize * (page - 1);
-
-        if (detectOids) {
-            filters = replaceObjectIdsInFilters(filters);
-        }
 
         DBCursor cursor;
         SkippedDBCursor _cursor = null;
@@ -224,13 +216,19 @@ class CollectionDAO {
             pagesize--;
         }
 
+        // add the _lastupdated_on and _created_on
         ret.forEach(row -> {
             Object etag = row.get("_etag");
 
-            if (etag != null && ObjectId.isValid("" + etag)) {
-                ObjectId _etag = new ObjectId("" + etag);
+            if (row.get("_lastupdated_on") == null && etag != null && etag instanceof ObjectId) {
+                row.put("_lastupdated_on", Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString());
+            }
 
-                row.put("_lastupdated_on", Instant.ofEpochSecond(_etag.getTimestamp()).toString());
+            Object id = row.get("_id");
+
+            // generate the _created_on timestamp from the _id if this is an instance of ObjectId
+            if (row.get("_created_on") == null && id != null && id instanceof ObjectId) {
+                row.put("_created_on", Instant.ofEpochSecond(((ObjectId) id).getTimestamp()).toString());
             }
         }
         );
@@ -255,10 +253,8 @@ class CollectionDAO {
 
             Object etag = properties.get("_etag");
 
-            if (etag != null && ObjectId.isValid("" + etag)) {
-                ObjectId oid = new ObjectId("" + etag);
-
-                properties.put("_lastupdated_on", Instant.ofEpochSecond(oid.getTimestamp()).toString());
+            if (etag != null && etag instanceof ObjectId) {
+                properties.put("_lastupdated_on", Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString());
             }
         } else if (fixMissingProperties) {
             new PropsFixer().addCollectionProps(dbName, collName);
@@ -388,40 +384,5 @@ class CollectionDAO {
     private void initDefaultIndexes(DBCollection coll) {
         coll.createIndex(new BasicDBObject("_id", 1).append("_etag", 1), new BasicDBObject("name", "_id_etag_idx"));
         coll.createIndex(new BasicDBObject("_etag", 1), new BasicDBObject("name", "_etag_idx"));
-        coll.createIndex(new BasicDBObject("_created_on", 1), new BasicDBObject("name", "_created_on_idx"));
-    }
-
-    private Deque<String> replaceObjectIdsInFilters(Deque<String> filters) {
-        if (filters == null) {
-            return null;
-        }
-
-        ArrayDeque<String> ret = new ArrayDeque<>();
-
-        filters.stream().forEach((filter) -> {
-            BSONObject _filter = (BSONObject) JSON.parse(filter);
-            
-            replaceObjectIdsInFilters(_filter);
-            
-            ret.add(_filter.toString());
-        });
-
-        return ret;
-    }
-
-    private void replaceObjectIdsInFilters(BSONObject source) {
-        if (source == null) {
-            return;
-        }
-
-        source.keySet().stream().forEach((key) -> {
-            Object value = source.get(key);
-
-            if (value instanceof BSONObject) {
-                replaceObjectIdsInFilters((BSONObject) value);
-            } else if (ObjectId.isValid(value.toString())) {
-                source.put(key, new ObjectId(value.toString()));
-            } 
-        });
     }
 }

@@ -61,7 +61,7 @@ public class DeleteCollectionIT extends AbstactIT {
 
             JsonObject content = JsonObject.readFrom(resp.returnContent().asString());
 
-            String etag = content.get("_etag").asString();
+            String etag = content.get("_etag").asObject().get("$oid").asString();
 
             // try to delete with correct etag
             resp = adminExecutor.execute(Request.Delete(collectionTmpUri).addHeader(Headers.IF_MATCH_STRING, etag));

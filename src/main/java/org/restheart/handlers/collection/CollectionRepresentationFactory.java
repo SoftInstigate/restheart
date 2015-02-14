@@ -27,7 +27,6 @@ import org.restheart.handlers.document.DocumentRepresentationFactory;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
-import org.bson.types.ObjectId;
 import org.restheart.handlers.AbstractRepresentationFactory;
 
 /**
@@ -68,7 +67,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         addPaginationLinks(exchange, context, size, rep);
 
         addLinkTemplatesAndCuries(exchange, context, rep, requestPath);
-        
+
         return rep;
     }
 
@@ -106,12 +105,13 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
 
                 Representation nrep = DocumentRepresentationFactory.getDocument(requestPath + "/" + _id.toString(), exchange, context, d);
 
-                nrep.addProperty("_type", RequestContext.TYPE.DOCUMENT.name());
-
-                if (d.get("_etag") != null && d.get("_etag") instanceof ObjectId) {
-                    d.put("_etag", ((ObjectId) d.get("_etag")).toString()); // represent the etag as a string
+                if (rep.getType() == RequestContext.TYPE.FILES_BUCKET) {
+                    nrep.addProperty("_type", RequestContext.TYPE.FILE.name());
+                    rep.addRepresentation("rh:file", nrep);
+                } else {
+                    nrep.addProperty("_type", RequestContext.TYPE.DOCUMENT.name());
+                    rep.addRepresentation("rh:doc", nrep);
                 }
-                rep.addRepresentation("rh:doc", nrep);
             }
         }
     }

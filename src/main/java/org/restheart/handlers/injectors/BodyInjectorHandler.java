@@ -30,7 +30,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import java.util.HashSet;
-import org.restheart.hal.HALUtils;
 
 /**
  *
@@ -40,9 +39,11 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
     private static final String ERROR_INVALID_CONTENTTYPE = "Content-Type must be either: "
             + Representation.HAL_JSON_MEDIA_TYPE
-            + ", " + Representation.JSON_MEDIA_TYPE
-            + ", " + Representation.APP_FORM_URLENCODED_TYPE
-            + ", " + Representation.MULTIPART_FORM_DATA_TYPE;
+            + " or " + Representation.JSON_MEDIA_TYPE;
+
+    private static final String ERROR_INVALID_CONTENTTYPE_FILE = "Content-Type must be either: "
+            + Representation.APP_FORM_URLENCODED_TYPE
+            + " or " + Representation.MULTIPART_FORM_DATA_TYPE;
 
     /**
      * Creates a new instance of BodyInjectorHandler
@@ -71,17 +72,25 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         // check the content type
         HeaderValues contentTypes = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
 
-        if (unsupportedContentType(contentTypes)) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE);
-            return;
+        if ((context.getType() == RequestContext.TYPE.FILE && context.getMethod() == RequestContext.METHOD.PUT) ||
+             (context.getType() == RequestContext.TYPE.FILES_BUCKET && context.getMethod() == RequestContext.METHOD.POST)) {
+            if (unsupportedContentTypeFiles(contentTypes)) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE_FILE);
+                return;
+            }
+        } else {
+            if (unsupportedContentType(contentTypes)) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE);
+                return;
+            }
         }
 
         if (isNotFormData(contentTypes)) {
             final String contentString = ChannelReader.read(exchange.getRequestChannel());
-            DBObject content = null;
+            DBObject content;
             try {
                 content = (DBObject) JSON.parse(contentString);
-            } catch (JSONParseException ex) {
+            } catch (JSONParseException | IllegalArgumentException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Invalid data", ex);
                 return;
             }
@@ -115,31 +124,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      */
     private void filterJsonContent(DBObject content, RequestContext ctx) {
         filterOutReservedKeys(content, ctx);
-        replaceStringWithObjectId(ctx, content);
         ctx.setContent(content);
-    }
-
-    /**
-     * replace string that are valid ObjectIds with ObjectIds objects
-     *
-     * @param context
-     * @param content
-     */
-    private void replaceStringWithObjectId(RequestContext context, DBObject content) {
-        if (context.isDetectObjectIds()) {
-            Object keepId = null;
-
-            // if detect_oids==true and doc_id_type==string, replace all objectids but the id
-            if (context.getDocIdType() == RequestContext.DOC_ID_TYPE.STRING) {
-                keepId = content.removeField("_id");
-            }
-
-            HALUtils.replaceStringsWithObjectIds(content);
-
-            if (keepId != null) {
-                content.put("_id", keepId);
-            }
-        }
     }
 
     /**
@@ -175,8 +160,20 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                 || contentTypes.isEmpty()
                 || contentTypes.stream().noneMatch(
                         ct -> ct.startsWith(Representation.HAL_JSON_MEDIA_TYPE)
-                        || ct.startsWith(Representation.JSON_MEDIA_TYPE)
-                        || ct.startsWith(Representation.APP_FORM_URLENCODED_TYPE)
+                        || ct.startsWith(Representation.JSON_MEDIA_TYPE));
+    }
+
+    /**
+     * true is the content-type is unsupported
+     *
+     * @param contentTypes
+     * @return
+     */
+    private static boolean unsupportedContentTypeFiles(HeaderValues contentTypes) {
+        return contentTypes == null
+                || contentTypes.isEmpty()
+                || contentTypes.stream().noneMatch(
+                        ct -> ct.startsWith(Representation.APP_FORM_URLENCODED_TYPE)
                         || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE));
     }
 }

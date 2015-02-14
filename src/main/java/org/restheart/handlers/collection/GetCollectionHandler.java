@@ -70,7 +70,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
 
             try {
                 data = getDatabase().getCollectionData(coll, context.getPage(), context.getPagesize(),
-                        context.getSortBy(), context.getFilter(), context.getCursorAllocationPolicy(), context.isDetectObjectIds());
+                        context.getSortBy(), context.getFilter(), context.getCursorAllocationPolicy());
             } catch (JSONParseException jpe) {
                 // the filter expression is not a valid json string
                 LOGGER.error("invalid filter expression {}", context.getFilter(), jpe);
@@ -95,7 +95,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
 
         // ***** return NOT_FOUND from here if collection is not existing 
         // (this is to avoid to check existance via the slow CollectionDAO.checkCollectionExists)
-        if ((context.getPagesize() > 0 && data.isEmpty()) && (context.getCollectionProps() == null || context.getCollectionProps().keySet().isEmpty())) {
+        if ((context.getPagesize() > 0 && (data == null || data.isEmpty())) && (context.getCollectionProps() == null || context.getCollectionProps().keySet().isEmpty())) {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
             return;
         }

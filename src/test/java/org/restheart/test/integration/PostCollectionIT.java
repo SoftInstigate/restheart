@@ -77,19 +77,19 @@ public class PostCollectionIT extends AbstactIT {
             assertNotNull("check created doc content", content.get("a"));
             assertTrue("check created doc content", content.get("a").asInt() == 1);
 
-            String _id = content.get("_id").asString();
-            String _etag = content.get("_etag").asString();
+            String _id = content.get("_id").asObject().get("$oid").asString();
+            String _etag = content.get("_etag").asObject().get("$oid").asString();
 
             // try to post with _id without etag
-            resp = adminExecutor.execute(Request.Post(collectionTmpUri).bodyString("{_id:\"" + _id + "\", a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+            resp = adminExecutor.execute(Request.Post(collectionTmpUri).bodyString("{_id:{\"$oid\":\"" + _id + "\"}, a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
             check("check post created doc without etag", resp, HttpStatus.SC_CONFLICT);
 
             // try to post with wrong etag
-            resp = adminExecutor.execute(Request.Post(collectionTmpUri).bodyString("{_id:\"" + _id + "\", a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
+            resp = adminExecutor.execute(Request.Post(collectionTmpUri).bodyString("{_id:{\"$oid\":\"" + _id + "\"}, a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
             check("check put created doc with wrong etag", resp, HttpStatus.SC_PRECONDITION_FAILED);
 
             // try to post with correct etag
-            resp = adminExecutor.execute(Request.Post(collectionTmpUri).bodyString("{_id:\"" + _id + "\", a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, _etag));
+            resp = adminExecutor.execute(Request.Post(collectionTmpUri).bodyString("{_id:{\"$oid\":\"" + _id + "\"}, a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, _etag));
             check("check post created doc with correct etag", resp, HttpStatus.SC_OK);
         } finally {
             mongoClient.dropDatabase(dbTmpName);

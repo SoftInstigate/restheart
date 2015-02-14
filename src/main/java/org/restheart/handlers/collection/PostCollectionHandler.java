@@ -83,7 +83,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
         Object docId;
 
         if (content.get("_id") == null) {
-            if (context.getDocIdType() == DOC_ID_TYPE.OBJECTID || context.getDocIdType() == DOC_ID_TYPE.STRING_OBJECTID) {
+            if (context.getDocIdType() == DOC_ID_TYPE.OID || context.getDocIdType() == DOC_ID_TYPE.STRING_OID) {
                 docId = new ObjectId();
             } else {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is mandatory for documents with id type " + context.getDocIdType().name());
