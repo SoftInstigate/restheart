@@ -97,16 +97,15 @@ public final class Bootstrapper {
     private static GracefulShutdownHandler hanldersPipe = null;
     private static Configuration configuration;
     private static Path pidFilePath;
-
-    private Bootstrapper() {
-    }
-
+    
     /**
      * main method
      *
      * @param args command line arguments
      */
     public static void main(final String[] args) {
+        
+        
         try {
             // read configuration silently, to avoid logging before initializing the logging
             configuration = FileUtils.getConfiguration(args, true);

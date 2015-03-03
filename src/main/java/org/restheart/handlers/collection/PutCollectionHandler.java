@@ -31,6 +31,7 @@ import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
 import org.restheart.db.Database;
+import org.restheart.hal.metadata.RepresentationTransformLogic;
 
 /**
  *
@@ -73,12 +74,24 @@ public class PutCollectionHandler extends PipedHttpHandler {
             return;
         }
 
+        // check RELS metadata
         if (content.containsField(Relationship.RELATIONSHIPS_ELEMENT_NAME)) {
             try {
                 Relationship.getFromJson(content);
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong relationships definition. " + ex.getMessage(), ex);
+                return;
+            }
+        }
+        
+        // check RTL metadata
+        if (content.containsField(RepresentationTransformLogic.RTLS_ELEMENT_NAME)) {
+            try {
+                RepresentationTransformLogic.getFromJson(content);
+            } catch (InvalidMetadataException ex) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+                        "wrong representation transform logic definition. " + ex.getMessage(), ex);
                 return;
             }
         }
