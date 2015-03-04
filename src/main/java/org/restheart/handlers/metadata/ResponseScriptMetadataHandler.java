@@ -17,15 +17,28 @@
  */
 package org.restheart.handlers.metadata;
 
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
+import io.undertow.server.HttpServerExchange;
+import java.util.List;
+import javax.script.Bindings;
+import javax.script.ScriptException;
+import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.RepresentationTransformer;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import static org.restheart.handlers.metadata.AbstractScriptMetadataHandler.getBindings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class ResponseScriptMetadataHandler extends AbstractScriptMetadataHandler {
+    static final Logger LOGGER = LoggerFactory.getLogger(ResponseScriptMetadataHandler.class);
+
     /**
      * Creates a new instance of ResponseScriptMetadataHandler
      *
@@ -33,9 +46,8 @@ public class ResponseScriptMetadataHandler extends AbstractScriptMetadataHandler
      */
     public ResponseScriptMetadataHandler(PipedHttpHandler next) {
         super(next);
-        MYPHASE = RepresentationTransformer.PHASE.RESPONSE;
     }
-    
+
     @Override
     boolean canCollRepresentationTransformersAppy(RequestContext context) {
         return (context.getMethod() == RequestContext.METHOD.GET
@@ -48,5 +60,88 @@ public class ResponseScriptMetadataHandler extends AbstractScriptMetadataHandler
         return (context.getMethod() == RequestContext.METHOD.GET
                 && (context.getType() == RequestContext.TYPE.DB || context.getType() == RequestContext.TYPE.COLLECTION)
                 && context.getDbProps().containsField(RepresentationTransformer.RTLS_ELEMENT_NAME));
+    }
+
+    @Override
+    void enforceDbRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException, ScriptException {
+        List<RepresentationTransformer> dbRts = RepresentationTransformer.getFromJson(context.getDbProps(), false);
+
+        RequestContext.TYPE requestType = context.getType(); // DB or COLLECTION
+
+        for (RepresentationTransformer rt : dbRts) {
+            if (rt.getPhase() == RepresentationTransformer.PHASE.RESPONSE) {
+                if (rt.getScope() == RepresentationTransformer.SCOPE.THIS && requestType == RequestContext.TYPE.DB) {
+                    rt.evaluate(getBindings(exchange, context, LOGGER));
+                } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.COLLECTION) {
+                    BasicDBObject _embedded = (BasicDBObject) context.getResponseContent().get("_embedded");
+
+                    // evaluate the script on children collection
+                    BasicDBList colls = (BasicDBList) _embedded.get("rh:coll");
+
+                    if (colls != null) {
+                        for (String k : colls.keySet()) {
+                            DBObject coll = (DBObject) colls.get(k);
+
+                            Bindings b = getBindings(exchange, context, LOGGER);
+
+                            b.put("$responseContent", coll);
+
+                            rt.evaluate(b);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    void enforceCollRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException, ScriptException {
+        List<RepresentationTransformer> dbRts = RepresentationTransformer.getFromJson(context.getCollectionProps(), false);
+
+        RequestContext.TYPE requestType = context.getType(); // DOCUMENT or COLLECTION
+
+        for (RepresentationTransformer rt : dbRts) {
+            if (rt.getPhase() == RepresentationTransformer.PHASE.RESPONSE) {
+                if (rt.getScope() == RepresentationTransformer.SCOPE.THIS && requestType == RequestContext.TYPE.COLLECTION) {
+                    // evaluate the script on collection
+                    rt.evaluate(getBindings(exchange, context, LOGGER));
+                } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.COLLECTION) {
+                    BasicDBObject _embedded = (BasicDBObject) context.getResponseContent().get("_embedded");
+
+                    // evaluate the script on children documents
+                    BasicDBList docs = (BasicDBList) _embedded.get("rh:doc");
+
+                    if (docs != null) {
+                        for (String k : docs.keySet()) {
+                            DBObject doc = (DBObject) docs.get(k);
+
+                            Bindings b = getBindings(exchange, context, LOGGER);
+
+                            b.put("$responseContent", doc);
+
+                            rt.evaluate(b);
+                        }
+                    }
+                    
+                    // evaluate the script on children files
+                    BasicDBList files = (BasicDBList) _embedded.get("rh:file");
+
+                    if (files != null) {
+                        for (String k : files.keySet()) {
+                            DBObject file = (DBObject) files.get(k);
+
+                            Bindings b = getBindings(exchange, context, LOGGER);
+
+                            b.put("$responseContent", file);
+
+                            rt.evaluate(b);
+                        }
+                    }
+                } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.DOCUMENT) {
+                    // evaluate the script on document
+                    rt.evaluate(getBindings(exchange, context, LOGGER));
+                }
+            }
+        }
     }
 }

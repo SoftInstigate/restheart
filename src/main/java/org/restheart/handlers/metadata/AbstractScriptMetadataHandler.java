@@ -24,12 +24,10 @@ import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.Date;
-import java.util.List;
 import javax.script.Bindings;
 import javax.script.ScriptException;
 import javax.script.SimpleBindings;
 import org.restheart.hal.metadata.InvalidMetadataException;
-import org.restheart.hal.metadata.RepresentationTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,10 +36,6 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public abstract class AbstractScriptMetadataHandler extends PipedHttpHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractScriptMetadataHandler.class);
-    
-    protected RepresentationTransformer.PHASE MYPHASE;
-
     /**
      * Creates a new instance of RequestScriptMetadataHandler
      *
@@ -84,37 +78,9 @@ public abstract class AbstractScriptMetadataHandler extends PipedHttpHandler {
 
     abstract boolean canDBRepresentationTransformersAppy(RequestContext context);
 
-    private void enforceDbRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException, ScriptException {
-        List<RepresentationTransformer> dbRts = RepresentationTransformer.getFromJson(context.getDbProps(), false);
+    abstract void enforceDbRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException, ScriptException;
 
-        RequestContext.TYPE requestType = context.getType(); // DB or COLLECTION
-
-        for (RepresentationTransformer rt : dbRts) {
-            if (rt.getPhase() == MYPHASE) {
-                if (rt.getScope() == RepresentationTransformer.SCOPE.THIS && requestType == RequestContext.TYPE.DB) {
-                    rt.evaluate(getBindings(exchange, context, LOGGER));
-                } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.COLLECTION) {
-                    rt.evaluate(getBindings(exchange, context, LOGGER));
-                }
-            }
-        }
-    }
-
-    private void enforceCollRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException, ScriptException {
-        List<RepresentationTransformer> dbRts = RepresentationTransformer.getFromJson(context.getCollectionProps(), false);
-
-        RequestContext.TYPE requestType = context.getType(); // DOCUMENT or COLLECTION
-
-        for (RepresentationTransformer rt : dbRts) {
-            if (rt.getPhase() == MYPHASE) {
-                if (rt.getScope() == RepresentationTransformer.SCOPE.THIS && requestType == RequestContext.TYPE.COLLECTION) {
-                    rt.evaluate(getBindings(exchange, context, LOGGER));
-                } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.DOCUMENT) {
-                    rt.evaluate(getBindings(exchange, context, LOGGER));
-                }
-            }
-        }
-    }
+    abstract void enforceCollRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException, ScriptException;
 
     protected static Bindings getBindings(HttpServerExchange exchange, RequestContext context, Logger _LOGGER) {
         // NOTE: the bound variables must be the same than RepresentationTransformer.getTestBindings()
