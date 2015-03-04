@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.bson.types.Code;
 import org.restheart.hal.Representation;
+import org.restheart.handlers.RequestContext;
 
 /**
  *
@@ -153,6 +154,10 @@ public class RepresentationTransformer extends ScriptMetadata {
 
         // bind the LOGGER
         testBindings.put("$LOGGER", LOGGER);
+        
+        testBindings.put("$user", "user");
+        testBindings.put("$userRoles", new String[0]);
+        testBindings.put("$resourceType", RequestContext.TYPE.DOCUMENT.name());
 
         // bind the content json
         testBindings.put("$content", new BasicDBObject());
@@ -175,7 +180,6 @@ public class RepresentationTransformer extends ScriptMetadata {
         testBindings.put("$responseCode", "200");
         // TODO add more headers
         testBindings.put("$location", "/test/test/dsfs");
-        testBindings.put("$user", "user");
 
         // bing usefull objects
         testBindings.put("$timestamp", new org.bson.types.BSONTimestamp());

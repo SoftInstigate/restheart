@@ -90,6 +90,9 @@ public class RequestScriptMetadataHandler extends PipedHttpHandler {
     }
 
     protected static Bindings getBindings(HttpServerExchange exchange, RequestContext context, Logger _LOGGER) {
+        // NOTE: the bound variables must be the same than RepresentationTransformer.getTestBindings()
+        // to allow scripts using bound vars to be checked at creation time
+        
         Bindings bindings = new SimpleBindings();
 
         // bind the LOGGER
@@ -98,6 +101,17 @@ public class RequestScriptMetadataHandler extends PipedHttpHandler {
         // bind the request and response content json
         bindings.put("$content", context.getContent());
         bindings.put("$responseContent", context.getResponseContent());
+        
+        bindings.put("$user", ExchangeAttributes.remoteUser().readAttribute(exchange));
+        
+        if (exchange.getSecurityContext() != null && 
+                exchange.getSecurityContext().getAuthenticatedAccount() != null &&
+                exchange.getSecurityContext().getAuthenticatedAccount().getRoles() != null)
+            bindings.put("$userRoles", exchange.getSecurityContext().getAuthenticatedAccount().getRoles().toArray());
+        else
+            bindings.put("$userRoles", new String[0]);
+        
+        bindings.put("$resourceType", context.getType().name());
 
         // add request and response attributes
         bindings.put("$dateTime", ExchangeAttributes.dateTime().readAttribute(exchange));
@@ -109,7 +123,7 @@ public class RequestScriptMetadataHandler extends PipedHttpHandler {
         bindings.put("$remoteIp", ExchangeAttributes.requestHeader(HttpString.EMPTY).readAttribute(exchange));
         // TODO add more headers
         bindings.put("$etag", ExchangeAttributes.requestHeader(HttpString.tryFromString(HttpHeaders.ETAG)).readAttribute(exchange));
-        bindings.put("$remoteUser", ExchangeAttributes.remoteUser().readAttribute(exchange));
+        
         bindings.put("$requestList", ExchangeAttributes.requestList().readAttribute(exchange));
         bindings.put("$requestMethod", ExchangeAttributes.requestMethod().readAttribute(exchange));
         bindings.put("$requestProtocol", ExchangeAttributes.requestProtocol().readAttribute(exchange));
@@ -117,7 +131,6 @@ public class RequestScriptMetadataHandler extends PipedHttpHandler {
         bindings.put("$responseCode", ExchangeAttributes.responseCode().readAttribute(exchange));
         // TODO add more headers
         bindings.put("$location", ExchangeAttributes.responseHeader(HttpString.tryFromString(HttpHeaders.LOCATION)).readAttribute(exchange));
-        bindings.put("$user", RemoteUserAttribute.INSTANCE.readAttribute(exchange));
 
         // bing usefull objects
         bindings.put("$timestamp", new org.bson.types.BSONTimestamp());

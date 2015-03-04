@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
-import org.restheart.hal.Representation;
 
 /**
  *
@@ -38,7 +37,6 @@ import org.restheart.hal.Representation;
 public class RequestContext {
 
     public enum TYPE {
-
         ERROR,
         ROOT,
         DB,
@@ -52,7 +50,6 @@ public class RequestContext {
     };
 
     public enum METHOD {
-
         GET,
         POST,
         PUT,
@@ -89,7 +86,7 @@ public class RequestContext {
     public static final String FS_FILES_SUFFIX = ".files";
     public static final String _INDEXES = "_indexes";
     public static final String BINARY_CONTENT = "binary";
-    
+
     public static final String MAX_KEY_ID = "_MaxKey";
     public static final String MIN_KEY_ID = "_MinKey";
 
@@ -104,7 +101,7 @@ public class RequestContext {
     private DBObject collectionProps;
 
     private DBObject content;
-    
+
     private DBObject responseContent;
 
     private final List<String> warnings = new ArrayList<>();
@@ -373,10 +370,10 @@ public class RequestContext {
             return false;
         }
 
-        return documentIdRaw.startsWith(UNDERSCORE) &&
-                !documentIdRaw.equalsIgnoreCase(_INDEXES) && 
-                !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID) &&
-                !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID);
+        return documentIdRaw.startsWith(UNDERSCORE)
+                && !documentIdRaw.equalsIgnoreCase(_INDEXES)
+                && !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID)
+                && !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID);
     }
 
     /**
@@ -598,7 +595,7 @@ public class RequestContext {
     public Object getDocumentId() {
         return documentId;
     }
-    
+
     /**
      * @return the responseContent
      */
