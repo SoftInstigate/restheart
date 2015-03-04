@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
+import org.restheart.hal.Representation;
 
 /**
  *
@@ -103,6 +104,8 @@ public class RequestContext {
     private DBObject collectionProps;
 
     private DBObject content;
+    
+    private DBObject responseContent;
 
     private final List<String> warnings = new ArrayList<>();
 
@@ -594,5 +597,19 @@ public class RequestContext {
      */
     public Object getDocumentId() {
         return documentId;
+    }
+    
+    /**
+     * @return the responseContent
+     */
+    public DBObject getResponseContent() {
+        return responseContent;
+    }
+
+    /**
+     * @param responseContent the responseContent to set
+     */
+    public void setResponseContent(DBObject responseContent) {
+        this.responseContent = responseContent;
     }
 }

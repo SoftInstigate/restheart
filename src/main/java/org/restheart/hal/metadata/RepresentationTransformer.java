@@ -25,58 +25,41 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import javax.script.Bindings;
-import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import javax.script.SimpleBindings;
-import jdk.nashorn.api.scripting.NashornScriptEngineFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.bson.types.Code;
+import org.restheart.hal.Representation;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class RepresentationTransformLogic {
+public class RepresentationTransformer extends ScriptMetadata {
     public enum PHASE {
         REQUEST, RESPONSE
     };
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RepresentationTransformLogic.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RepresentationTransformer.class);
 
-    public static final String RTLS_ELEMENT_NAME = "rtls";
+    public static final String RTLS_ELEMENT_NAME = "rts";
 
-    public static final String RTL_ID_ELEMENT_NAME = "_id";
     public static final String RTL_PHASE_ELEMENT_NAME = "phase";
     public static final String RTL_CODE_ELEMENT_NAME = "code";
 
-    public static final String REPRESENTATION_TRANSFORM_LOGIC_ELEMENT_NAME = "transformers";
-
-    //TODO need to compile scripts to boost performance http://docs.oracle.com/javase/8/docs/api/javax/script/CompiledScript.html
-    // "--no-java", is very important! otherwise js can call anthing including java.lang.System.exit()0;
-    private static final ScriptEngine engine = new NashornScriptEngineFactory().getScriptEngine(new String[] { "--no-java" });
-    
-    private final String id;
     private final Code code;
     private final PHASE phase;
 
     /**
      *
-     * @param id
      * @param phase
      * @param code
      */
-    public RepresentationTransformLogic(String id, PHASE phase, Code code) {
-        this.id = id;
-        this.phase = phase;
+    public RepresentationTransformer(PHASE phase, Code code) {
+        super(code.getCode());
         this.code = code;
-    }
-
-    /**
-     * @return the id
-     */
-    public String getId() {
-        return id;
+        this.phase = phase;
     }
 
     /**
@@ -93,12 +76,8 @@ public class RepresentationTransformLogic {
         return phase;
     }
 
-    public void exectute(Bindings bindings) throws ScriptException {
-        engine.eval(code.getCode(), bindings);
-    }
-
-    public static List<RepresentationTransformLogic> getFromJson(DBObject collProps) throws InvalidMetadataException {
-        ArrayList<RepresentationTransformLogic> ret = new ArrayList<>();
+    public static List<RepresentationTransformer> getFromJson(DBObject collProps, boolean checkCode) throws InvalidMetadataException {
+        ArrayList<RepresentationTransformer> ret = new ArrayList<>();
 
         Object _rtls = collProps.get(RTLS_ELEMENT_NAME);
 
@@ -116,6 +95,10 @@ public class RepresentationTransformLogic {
             if (!(_rtl instanceof DBObject)) {
                 throw new InvalidMetadataException("elements of '" + RTLS_ELEMENT_NAME + "' array, must be json objects");
             } else {
+                if (checkCode) {
+                    checkCodeFromJson((DBObject) _rtl);
+                }
+
                 ret.add(getRelFromJson((DBObject) _rtl));
             }
         }
@@ -123,16 +106,26 @@ public class RepresentationTransformLogic {
         return ret;
     }
 
-    private static RepresentationTransformLogic getRelFromJson(DBObject content) throws InvalidMetadataException {
-        Object _id = content.get(RTL_ID_ELEMENT_NAME);
-        Object _phase = content.get(RTL_PHASE_ELEMENT_NAME);
+    private static void checkCodeFromJson(DBObject content) throws InvalidMetadataException {
         Object _code = content.get(RTL_CODE_ELEMENT_NAME);
 
-        if (_id == null || !(_id instanceof String)) {
-            throw new InvalidMetadataException((_id == null ? "missing '" : "invalid '") + RTL_ID_ELEMENT_NAME + "' element.");
+        if (_code == null || !(_code instanceof Code)) {
+            throw new InvalidMetadataException((_code == null ? "missing '" : "invalid '") + RTL_CODE_ELEMENT_NAME + "' element.");
         }
 
-        String id = (String) _id;
+        Code code = (Code) _code;
+
+        // check code
+        try {
+            evaluate(code.getCode(), getTestBindings());
+        } catch (ScriptException se) {
+            throw new InvalidMetadataException("invalid javascript code", se);
+        }
+    }
+
+    private static RepresentationTransformer getRelFromJson(DBObject content) throws InvalidMetadataException {
+        Object _phase = content.get(RTL_PHASE_ELEMENT_NAME);
+        Object _code = content.get(RTL_CODE_ELEMENT_NAME);
 
         if (_phase == null || !(_phase instanceof String)) {
             throw new InvalidMetadataException((_phase == null ? "missing '" : "invalid '") + RTL_PHASE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(PHASE.values()));
@@ -152,28 +145,18 @@ public class RepresentationTransformLogic {
 
         Code code = (Code) _code;
 
-        // check code
-        try {
-            Object o = System.getSecurityManager();
-            engine.eval(code.getCode(), getTestBindings());
-        } catch (ScriptException se) {
-            throw new InvalidMetadataException("invalid javascript code", se);
-        }
-
-        return new RepresentationTransformLogic(id, phase, code);
+        return new RepresentationTransformer(phase, code);
     }
-    
+
     private static Bindings getTestBindings() {
         Bindings testBindings = new SimpleBindings();
 
         // bind the LOGGER
         testBindings.put("$LOGGER", LOGGER);
-        
+
         // bind the content json
-        
-        DBObject json = new BasicDBObject();
-        
-        testBindings.put("$content", json);
+        testBindings.put("$content", new BasicDBObject());
+        testBindings.put("$responseContent", new Representation("#").asDBObject());
 
         testBindings.put("$dateTime", new Date().toString());
         testBindings.put("$localIp", "127.0.0.1");
@@ -193,11 +176,11 @@ public class RepresentationTransformLogic {
         // TODO add more headers
         testBindings.put("$location", "/test/test/dsfs");
         testBindings.put("$user", "user");
-        
+
         // bing usefull objects
         testBindings.put("$timestamp", new org.bson.types.BSONTimestamp());
         testBindings.put("$currentDate", new Date());
-        
+
         return testBindings;
     }
 }

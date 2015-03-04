@@ -82,7 +82,8 @@ public abstract class PipedHttpHandler implements HttpHandler {
             exchange.setResponseCode(SC);
         }
 
-        DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
+        DocumentRepresentationFactory rf = new DocumentRepresentationFactory();
+        rf.sendRepresentation(exchange, context, rf.getRepresentation(exchange.getRequestPath(), exchange, context, new BasicDBObject()));
     }
 
     /**

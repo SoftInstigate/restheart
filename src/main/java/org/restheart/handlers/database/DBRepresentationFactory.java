@@ -43,7 +43,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     @Override
-    protected Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
+    public Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
         final Representation representation = createRepresentation(exchange, context, requestPath);

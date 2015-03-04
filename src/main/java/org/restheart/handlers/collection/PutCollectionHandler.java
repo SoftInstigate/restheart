@@ -31,7 +31,7 @@ import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
 import org.restheart.db.Database;
-import org.restheart.hal.metadata.RepresentationTransformLogic;
+import org.restheart.hal.metadata.RepresentationTransformer;
 
 /**
  *
@@ -86,9 +86,9 @@ public class PutCollectionHandler extends PipedHttpHandler {
         }
         
         // check RTL metadata
-        if (content.containsField(RepresentationTransformLogic.RTLS_ELEMENT_NAME)) {
+        if (content.containsField(RepresentationTransformer.RTLS_ELEMENT_NAME)) {
             try {
-                RepresentationTransformLogic.getFromJson(content);
+                RepresentationTransformer.getFromJson(content, true);
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong representation transform logic definition. " + ex.getMessage(), ex);

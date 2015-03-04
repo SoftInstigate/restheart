@@ -29,6 +29,8 @@ import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
 import org.restheart.db.Database;
+import org.restheart.db.DbsDAO;
+import org.restheart.hal.Representation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +44,10 @@ public class GetCollectionHandler extends PipedHttpHandler {
 
     public GetCollectionHandler() {
         super();
+    }
+
+    public GetCollectionHandler(PipedHttpHandler next) {
+        super(next, new DbsDAO());
     }
 
     public GetCollectionHandler(PipedHttpHandler next, Database dbsDAO) {
@@ -101,8 +107,20 @@ public class GetCollectionHandler extends PipedHttpHandler {
         }
 
         try {
+            CollectionRepresentationFactory crp = new CollectionRepresentationFactory();
+            Representation rep = crp.getRepresentation(exchange, context, data, size);
+
             exchange.setResponseCode(HttpStatus.SC_OK);
-            new CollectionRepresentationFactory().sendHal(exchange, context, data, size);
+
+            // call the ResponseScriptMetadataHanlder if piped in
+            if (getNext() != null) {
+                DBObject responseContent = rep.asDBObject();
+                context.setResponseContent(responseContent);
+
+                getNext().handleRequest(exchange, context);
+            }
+
+            crp.sendRepresentation(exchange, context, rep);
             exchange.endExchange();
         } catch (IllegalQueryParamenterException ex) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);

@@ -53,7 +53,10 @@ public class Representation {
         properties = new BasicDBObject();
         embedded = new BasicDBObject();
         links = new BasicDBObject();
-
+        
+        properties.append("_embedded", embedded);
+        properties.append("_links", links);
+        
         links.put("self", new BasicDBObject("href", href));
     }
     
@@ -69,18 +72,8 @@ public class Representation {
         return RequestContext.TYPE.valueOf(_type.toString());
     }
 
-    BasicDBObject getDBObject() {
-        BasicDBObject ret = new BasicDBObject(properties);
-
-        if (!embedded.isEmpty()) {
-            ret.append("_embedded", embedded);
-        }
-
-        if (!links.isEmpty()) {
-            ret.append("_links", links);
-        }
-
-        return ret;
+    public BasicDBObject asDBObject() {
+        return properties;
     }
 
     /**
@@ -144,7 +137,7 @@ public class Representation {
             embedded.append(rel, repArray);
         }
 
-        repArray.add(rep.getDBObject());
+        repArray.add(rep.asDBObject());
     }
 
     public void addWarning(String warning) {
@@ -155,7 +148,7 @@ public class Representation {
 
     @Override
     public String toString() {
-        return serializer.serialize(getDBObject());
+        return serializer.serialize(asDBObject());
     }
 
     @Override

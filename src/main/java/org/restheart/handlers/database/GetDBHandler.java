@@ -60,7 +60,11 @@ public class GetDBHandler extends PipedHttpHandler {
 
         exchange.setResponseCode(HttpStatus.SC_OK);
 
-        new DBRepresentationFactory().sendHal(exchange, context, data, getDatabase().getDBSize(colls));
+        DBRepresentationFactory repf = new DBRepresentationFactory();
+        
+        repf.sendRepresentation(exchange, context, 
+                repf.getRepresentation(exchange, context, data, getDatabase().getDBSize(colls)));
+        
         exchange.endExchange();
     }
 }

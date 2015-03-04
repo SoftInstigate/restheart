@@ -84,7 +84,8 @@ public class GetRootHandler extends PipedHttpHandler {
         }
 
         exchange.setResponseCode(HttpStatus.SC_OK);
-        new RootRepresentationFactory().sendHal(exchange, context, data, size);
+        RootRepresentationFactory rf = new RootRepresentationFactory();
+        rf.sendRepresentation(exchange, context, rf.getRepresentation(exchange, context, data, size));
         exchange.endExchange();
     }
 }

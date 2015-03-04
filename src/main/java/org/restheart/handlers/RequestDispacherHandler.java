@@ -38,6 +38,7 @@ import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import java.util.HashMap;
 import java.util.Map;
+import org.restheart.db.DbsDAO;
 import static org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.files.DeleteBucketHandler;
@@ -47,6 +48,7 @@ import org.restheart.handlers.files.GetFileHandler;
 import org.restheart.handlers.files.PostFileHandler;
 import org.restheart.handlers.files.PutBucketHandler;
 import org.restheart.handlers.files.PutFileHandler;
+import org.restheart.handlers.metadata.ResponseScriptMetadataHandler;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,15 +100,14 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         putPipedHttpHandler(TYPE.DB, METHOD.PATCH, new PatchDBHandler());
 
         // COLLECTION handlres
-        final GetCollectionHandler getCollectionHandler = new GetCollectionHandler();
-        putPipedHttpHandler(TYPE.COLLECTION, METHOD.GET, getCollectionHandler);
+        putPipedHttpHandler(TYPE.COLLECTION, METHOD.GET, new GetCollectionHandler(new ResponseScriptMetadataHandler()));
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST, new PostCollectionHandler());
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.PUT, new PutCollectionHandler());
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.DELETE, new DeleteCollectionHandler());
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.PATCH, new PatchCollectionHandler());
 
         // DOCUMENT handlers
-        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.GET, new GetDocumentHandler());
+        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.GET, new GetDocumentHandler(new ResponseScriptMetadataHandler()));
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PUT, new PutDocumentHandler());
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.DELETE, new DeleteDocumentHandler());
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PATCH, new PatchDocumentHandler());
