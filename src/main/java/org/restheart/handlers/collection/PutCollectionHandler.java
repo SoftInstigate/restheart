@@ -32,6 +32,7 @@ import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
 import org.restheart.db.Database;
 import org.restheart.hal.metadata.RepresentationTransformer;
+import org.restheart.hal.metadata.SchemaCheckerMetadata;
 
 /**
  *
@@ -85,13 +86,24 @@ public class PutCollectionHandler extends PipedHttpHandler {
             }
         }
         
-        // check RTL metadata
+        // check RT metadata
         if (content.containsField(RepresentationTransformer.RTLS_ELEMENT_NAME)) {
             try {
                 RepresentationTransformer.getFromJson(content, true);
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong representation transform logic definition. " + ex.getMessage(), ex);
+                        "wrong representation transformer definition. " + ex.getMessage(), ex);
+                return;
+            }
+        }
+        
+        // check SC metadata
+        if (content.containsField(SchemaCheckerMetadata.SCHEMA_ELEMENT_NAME)) {
+            try {
+                SchemaCheckerMetadata.getFromJson(content, true);
+            } catch (InvalidMetadataException ex) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+                        "wrong schema checker definition. " + ex.getMessage(), ex);
                 return;
             }
         }

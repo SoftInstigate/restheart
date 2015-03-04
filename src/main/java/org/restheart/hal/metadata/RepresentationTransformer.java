@@ -18,20 +18,14 @@
 package org.restheart.hal.metadata;
 
 import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
-import javax.script.Bindings;
 import javax.script.ScriptException;
-import javax.script.SimpleBindings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.bson.types.Code;
-import org.restheart.hal.Representation;
-import org.restheart.handlers.RequestContext;
 
 /**
  *
@@ -91,38 +85,38 @@ public class RepresentationTransformer extends ScriptMetadata {
         return scope;
     }
 
-    public static List<RepresentationTransformer> getFromJson(DBObject collProps, boolean checkCode) throws InvalidMetadataException {
+    public static List<RepresentationTransformer> getFromJson(DBObject props, boolean checkCode) throws InvalidMetadataException {
         ArrayList<RepresentationTransformer> ret = new ArrayList<>();
 
-        Object _rtls = collProps.get(RTLS_ELEMENT_NAME);
+        Object _rts = props.get(RTLS_ELEMENT_NAME);
 
-        if (_rtls == null) {
+        if (_rts == null) {
             return ret;
         }
 
-        if (!(_rtls instanceof BasicDBList)) {
-            throw new InvalidMetadataException("element '" + RTLS_ELEMENT_NAME + "' is not an array list." + _rtls);
+        if (!(_rts instanceof BasicDBList)) {
+            throw new InvalidMetadataException("element '" + RTLS_ELEMENT_NAME + "' is not an array list." + _rts);
         }
 
-        BasicDBList rtls = (BasicDBList) _rtls;
+        BasicDBList rts = (BasicDBList) _rts;
 
-        for (Object _rtl : rtls.toArray()) {
-            if (!(_rtl instanceof DBObject)) {
+        for (Object _rt : rts.toArray()) {
+            if (!(_rt instanceof DBObject)) {
                 throw new InvalidMetadataException("elements of '" + RTLS_ELEMENT_NAME + "' array, must be json objects");
             } else {
                 if (checkCode) {
-                    checkCodeFromJson((DBObject) _rtl);
+                    checkCodeFromJson((DBObject) _rt);
                 }
 
-                ret.add(getRelFromJson((DBObject) _rtl));
+                ret.add(getRtFromJson((DBObject) _rt));
             }
         }
 
         return ret;
     }
 
-    private static void checkCodeFromJson(DBObject content) throws InvalidMetadataException {
-        Object _code = content.get(RTL_CODE_ELEMENT_NAME);
+    private static Code checkCodeFromJson(DBObject props) throws InvalidMetadataException {
+        Object _code = props.get(RTL_CODE_ELEMENT_NAME);
 
         if (_code == null || !(_code instanceof Code)) {
             throw new InvalidMetadataException((_code == null ? "missing '" : "invalid '") + RTL_CODE_ELEMENT_NAME + "' element.");
@@ -136,12 +130,14 @@ public class RepresentationTransformer extends ScriptMetadata {
         } catch (ScriptException se) {
             throw new InvalidMetadataException("invalid javascript code", se);
         }
+        
+        return code;
     }
 
-    private static RepresentationTransformer getRelFromJson(DBObject content) throws InvalidMetadataException {
-        Object _phase = content.get(RTL_PHASE_ELEMENT_NAME);
-        Object _scope = content.get(RTL_SCOPE_ELEMENT_NAME);
-        Object _code = content.get(RTL_CODE_ELEMENT_NAME);
+    private static RepresentationTransformer getRtFromJson(DBObject props) throws InvalidMetadataException {
+        Object _phase = props.get(RTL_PHASE_ELEMENT_NAME);
+        Object _scope = props.get(RTL_SCOPE_ELEMENT_NAME);
+        Object _code = props.get(RTL_CODE_ELEMENT_NAME);
 
         if (_phase == null || !(_phase instanceof String)) {
             throw new InvalidMetadataException((_phase == null ? "missing '" : "invalid '") + RTL_PHASE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(PHASE.values()));
@@ -168,50 +164,11 @@ public class RepresentationTransformer extends ScriptMetadata {
         }
 
         if (_code == null || !(_code instanceof Code)) {
-            throw new InvalidMetadataException((_code == null ? "missing '" : "invalid '") + RTL_CODE_ELEMENT_NAME + "' element.");
+            throw new InvalidMetadataException((_code == null ? "missing '" : "invalid '") + RTL_CODE_ELEMENT_NAME + "' element. it must be of type $code");
         }
 
         Code code = (Code) _code;
 
         return new RepresentationTransformer(phase, scope, code);
-    }
-
-    private static Bindings getTestBindings() {
-        Bindings testBindings = new SimpleBindings();
-
-        // bind the LOGGER
-        testBindings.put("$LOGGER", LOGGER);
-        
-        testBindings.put("$user", "user");
-        testBindings.put("$userRoles", new String[0]);
-        testBindings.put("$resourceType", RequestContext.TYPE.DOCUMENT.name());
-
-        // bind the content json
-        testBindings.put("$content", new BasicDBObject());
-        testBindings.put("$responseContent", new Representation("#").asDBObject());
-
-        testBindings.put("$dateTime", new Date().toString());
-        testBindings.put("$localIp", "127.0.0.1");
-        testBindings.put("$localPort", "8080");
-        testBindings.put("$localServerName", "localServerName");
-        testBindings.put("$queryString", "queryString");
-        testBindings.put("$relativePath", "/test/test");
-        testBindings.put("$remoteIp", "remoteIp");
-        // TODO add more headers
-        testBindings.put("$etag", "etag");
-        testBindings.put("$remoteUser", "remoteUser");
-        testBindings.put("$requestList", "requestList");
-        testBindings.put("$requestMethod", "GET");
-        testBindings.put("$requestProtocol", "http");
-        testBindings.put("$requestURL", "http://127.0.0.1:8080/test/test");
-        testBindings.put("$responseCode", "200");
-        // TODO add more headers
-        testBindings.put("$location", "/test/test/dsfs");
-
-        // bing usefull objects
-        testBindings.put("$timestamp", new org.bson.types.BSONTimestamp());
-        testBindings.put("$currentDate", new Date());
-
-        return testBindings;
     }
 }

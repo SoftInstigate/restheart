@@ -48,6 +48,7 @@ import org.restheart.handlers.files.PostFileHandler;
 import org.restheart.handlers.files.PutBucketHandler;
 import org.restheart.handlers.files.PutFileHandler;
 import org.restheart.handlers.metadata.ResponseScriptMetadataHandler;
+import org.restheart.handlers.metadata.SchemaEnforcerHandler;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,16 +101,16 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         // COLLECTION handlres
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.GET, new GetCollectionHandler(new ResponseScriptMetadataHandler(null)));
-        putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST, new PostCollectionHandler());
+        putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST, new SchemaEnforcerHandler(new PostCollectionHandler()));
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.PUT, new PutCollectionHandler());
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.DELETE, new DeleteCollectionHandler());
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.PATCH, new PatchCollectionHandler());
 
         // DOCUMENT handlers
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.GET, new GetDocumentHandler(new ResponseScriptMetadataHandler(null)));
-        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PUT, new PutDocumentHandler());
+        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PUT, new SchemaEnforcerHandler(new PutDocumentHandler()));
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.DELETE, new DeleteDocumentHandler());
-        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PATCH, new PatchDocumentHandler());
+        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PATCH, new SchemaEnforcerHandler(new PatchDocumentHandler()));
 
         // COLLECTION_INDEXES handlers
         putPipedHttpHandler(TYPE.COLLECTION_INDEXES, METHOD.GET, new GetIndexesHandler());
