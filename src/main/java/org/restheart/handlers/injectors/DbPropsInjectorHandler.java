@@ -77,7 +77,7 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
                 return;
             }
 
-            context.setDbProperties(dbProps);
+            context.setDbProps(dbProps);
         }
 
         getNext().handleRequest(exchange, context);

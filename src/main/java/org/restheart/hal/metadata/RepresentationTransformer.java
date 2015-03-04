@@ -41,6 +41,10 @@ public class RepresentationTransformer extends ScriptMetadata {
     public enum PHASE {
         REQUEST, RESPONSE
     };
+    
+    public enum SCOPE {
+        THIS, CHILDREN
+    };
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RepresentationTransformer.class);
 
@@ -48,19 +52,22 @@ public class RepresentationTransformer extends ScriptMetadata {
 
     public static final String RTL_PHASE_ELEMENT_NAME = "phase";
     public static final String RTL_CODE_ELEMENT_NAME = "code";
+    public static final String RTL_SCOPE_ELEMENT_NAME = "scope";
 
     private final Code code;
     private final PHASE phase;
+    private final SCOPE scope;
 
     /**
      *
      * @param phase
      * @param code
      */
-    public RepresentationTransformer(PHASE phase, Code code) {
+    public RepresentationTransformer(PHASE phase, SCOPE scope, Code code) {
         super(code.getCode());
-        this.code = code;
         this.phase = phase;
+        this.scope = scope;
+        this.code = code;
     }
 
     /**
@@ -75,6 +82,13 @@ public class RepresentationTransformer extends ScriptMetadata {
      */
     public PHASE getPhase() {
         return phase;
+    }
+    
+    /**
+     * @return the scope
+     */
+    public SCOPE getScope() {
+        return scope;
     }
 
     public static List<RepresentationTransformer> getFromJson(DBObject collProps, boolean checkCode) throws InvalidMetadataException {
@@ -126,12 +140,17 @@ public class RepresentationTransformer extends ScriptMetadata {
 
     private static RepresentationTransformer getRelFromJson(DBObject content) throws InvalidMetadataException {
         Object _phase = content.get(RTL_PHASE_ELEMENT_NAME);
+        Object _scope = content.get(RTL_SCOPE_ELEMENT_NAME);
         Object _code = content.get(RTL_CODE_ELEMENT_NAME);
 
         if (_phase == null || !(_phase instanceof String)) {
             throw new InvalidMetadataException((_phase == null ? "missing '" : "invalid '") + RTL_PHASE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(PHASE.values()));
         }
-
+        
+        if (_scope == null || !(_scope instanceof String)) {
+            throw new InvalidMetadataException((_phase == null ? "missing '" : "invalid '") + RTL_SCOPE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(SCOPE.values()));
+        }
+        
         PHASE phase;
 
         try {
@@ -140,13 +159,21 @@ public class RepresentationTransformer extends ScriptMetadata {
             throw new InvalidMetadataException("invalid '" + RTL_PHASE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(PHASE.values()));
         }
 
+        SCOPE scope;
+
+        try {
+            scope = SCOPE.valueOf((String) _scope);
+        } catch (IllegalArgumentException iae) {
+            throw new InvalidMetadataException("invalid '" + RTL_SCOPE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(SCOPE.values()));
+        }
+
         if (_code == null || !(_code instanceof Code)) {
             throw new InvalidMetadataException((_code == null ? "missing '" : "invalid '") + RTL_CODE_ELEMENT_NAME + "' element.");
         }
 
         Code code = (Code) _code;
 
-        return new RepresentationTransformer(phase, code);
+        return new RepresentationTransformer(phase, scope, code);
     }
 
     private static Bindings getTestBindings() {

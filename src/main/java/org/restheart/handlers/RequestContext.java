@@ -97,7 +97,7 @@ public class RequestContext {
     private final METHOD method;
     private final String[] pathTokens;
 
-    private DBObject dbProperties;
+    private DBObject dbProps;
     private DBObject collectionProps;
 
     private DBObject content;
@@ -489,17 +489,17 @@ public class RequestContext {
     }
 
     /**
-     * @return the dbProperties
+     * @return the dbProps
      */
-    public DBObject getDbProperties() {
-        return dbProperties;
+    public DBObject getDbProps() {
+        return dbProps;
     }
 
     /**
-     * @param dbProperties the dbProperties to set
+     * @param dbProps the dbProps to set
      */
-    public void setDbProperties(DBObject dbProperties) {
-        this.dbProperties = dbProperties;
+    public void setDbProps(DBObject dbProps) {
+        this.dbProps = dbProps;
     }
 
     /**

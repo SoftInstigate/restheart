@@ -47,7 +47,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
         final Representation representation = createRepresentation(exchange, context, requestPath);
-        final DBObject dbProps = context.getDbProperties();
+        final DBObject dbProps = context.getDbProps();
 
         if (dbProps != null) {
             representation.addProperties(dbProps);

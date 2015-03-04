@@ -27,6 +27,8 @@ import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
+import org.restheart.hal.metadata.InvalidMetadataException;
+import org.restheart.hal.metadata.RepresentationTransformer;
 
 /**
  *
@@ -66,6 +68,17 @@ public class PatchDBHandler extends PipedHttpHandler {
         if (content instanceof BasicDBList) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
             return;
+        }
+        
+        // check RTL metadata
+        if (content.containsField(RepresentationTransformer.RTLS_ELEMENT_NAME)) {
+            try {
+                RepresentationTransformer.getFromJson(content, true);
+            } catch (InvalidMetadataException ex) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+                        "wrong representation transform logic definition. " + ex.getMessage(), ex);
+                return;
+            }
         }
 
         ObjectId etag = RequestHelper.getWriteEtag(exchange);

@@ -17,56 +17,36 @@
  */
 package org.restheart.handlers.metadata;
 
-import io.undertow.server.HttpServerExchange;
-import java.util.List;
-import javax.script.Bindings;
-import javax.script.ScriptException;
-import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.RepresentationTransformer;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class ResponseScriptMetadataHandler extends PipedHttpHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ResponseScriptMetadataHandler.class);
-   /**
+public class ResponseScriptMetadataHandler extends AbstractScriptMetadataHandler {
+    /**
+     * Creates a new instance of ResponseScriptMetadataHandler
      *
-     * @param exchange
-     * @param context
-     * @throws Exception
+     * @param next
      */
+    public ResponseScriptMetadataHandler(PipedHttpHandler next) {
+        super(next);
+        MYPHASE = RepresentationTransformer.PHASE.RESPONSE;
+    }
+    
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (doesRepresentationTransformLogicAppy(context)) {
-            try {
-                enforceRepresentationTransformLogic(exchange, context);
-            } catch(InvalidMetadataException | ScriptException e) {
-                context.addWarning("error evaluating response script metadata: " + e.getMessage());
-            }
-        }
-
-        if (getNext() != null)
-            getNext().handleRequest(exchange, context);
+    boolean canCollRepresentationTransformersAppy(RequestContext context) {
+        return (context.getMethod() == RequestContext.METHOD.GET
+                && (context.getType() == RequestContext.TYPE.DOCUMENT || context.getType() == RequestContext.TYPE.COLLECTION)
+                && context.getCollectionProps().containsField(RepresentationTransformer.RTLS_ELEMENT_NAME));
     }
-    
-    private boolean doesRepresentationTransformLogicAppy(RequestContext context) {
-        return ((context.getType() == RequestContext.TYPE.DOCUMENT && context.getMethod() == RequestContext.METHOD.GET) || 
-                (context.getType() == RequestContext.TYPE.COLLECTION && context.getMethod() == RequestContext.METHOD.GET))
-                && context.getCollectionProps().containsField(RepresentationTransformer.RTLS_ELEMENT_NAME);
-    }
-    
-    private void enforceRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException, ScriptException {
-        List<RepresentationTransformer> rts = RepresentationTransformer.getFromJson(context.getCollectionProps(), false);
 
-            for (RepresentationTransformer rt : rts) {
-                if (rt.getPhase() == RepresentationTransformer.PHASE.RESPONSE) {
-                    rt.evaluate(RequestScriptMetadataHandler.getBindings(exchange, context, LOGGER));
-                }
-            }
-    } 
+    @Override
+    boolean canDBRepresentationTransformersAppy(RequestContext context) {
+        return (context.getMethod() == RequestContext.METHOD.GET
+                && (context.getType() == RequestContext.TYPE.DB || context.getType() == RequestContext.TYPE.COLLECTION)
+                && context.getDbProps().containsField(RepresentationTransformer.RTLS_ELEMENT_NAME));
+    }
 }

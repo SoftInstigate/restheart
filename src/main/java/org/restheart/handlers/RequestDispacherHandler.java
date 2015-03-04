@@ -38,7 +38,6 @@ import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import java.util.HashMap;
 import java.util.Map;
-import org.restheart.db.DbsDAO;
 import static org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.files.DeleteBucketHandler;
@@ -94,20 +93,20 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         putPipedHttpHandler(TYPE.ROOT, METHOD.GET, new GetRootHandler());
 
         // DB handlres
-        putPipedHttpHandler(TYPE.DB, METHOD.GET, new GetDBHandler());
+        putPipedHttpHandler(TYPE.DB, METHOD.GET, new GetDBHandler(new ResponseScriptMetadataHandler(null)));
         putPipedHttpHandler(TYPE.DB, METHOD.PUT, new PutDBHandler());
         putPipedHttpHandler(TYPE.DB, METHOD.DELETE, new DeleteDBHandler());
         putPipedHttpHandler(TYPE.DB, METHOD.PATCH, new PatchDBHandler());
 
         // COLLECTION handlres
-        putPipedHttpHandler(TYPE.COLLECTION, METHOD.GET, new GetCollectionHandler(new ResponseScriptMetadataHandler()));
+        putPipedHttpHandler(TYPE.COLLECTION, METHOD.GET, new GetCollectionHandler(new ResponseScriptMetadataHandler(null)));
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST, new PostCollectionHandler());
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.PUT, new PutCollectionHandler());
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.DELETE, new DeleteCollectionHandler());
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.PATCH, new PatchCollectionHandler());
 
         // DOCUMENT handlers
-        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.GET, new GetDocumentHandler(new ResponseScriptMetadataHandler()));
+        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.GET, new GetDocumentHandler(new ResponseScriptMetadataHandler(null)));
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PUT, new PutDocumentHandler());
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.DELETE, new DeleteDocumentHandler());
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PATCH, new PatchDocumentHandler());
