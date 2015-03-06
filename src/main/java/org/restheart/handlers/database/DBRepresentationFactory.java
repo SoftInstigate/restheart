@@ -111,6 +111,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
                     rep.addRepresentation("rh:coll", nrep);
                 }
             } else {
+                // this shoudn't be possible
                 LOGGER.error("collection missing string _id field", d);
             }
         });

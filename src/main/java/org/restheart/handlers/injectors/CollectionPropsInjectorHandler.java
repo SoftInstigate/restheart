@@ -92,7 +92,7 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
 
     protected void collectionDoesNotExists(RequestContext context, HttpServerExchange exchange) {
         final String errMsg = String.format(COLLECTION_DOES_NOT_EXIST, context.getCollectionName(), context.getMethod());
-        LOGGER.error(errMsg);
+        LOGGER.debug(errMsg);
         ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, errMsg);
     }
 }

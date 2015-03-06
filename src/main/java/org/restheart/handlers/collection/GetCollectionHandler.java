@@ -79,13 +79,13 @@ public class GetCollectionHandler extends PipedHttpHandler {
                         context.getSortBy(), context.getFilter(), context.getCursorAllocationPolicy());
             } catch (JSONParseException jpe) {
                 // the filter expression is not a valid json string
-                LOGGER.error("invalid filter expression {}", context.getFilter(), jpe);
+                LOGGER.debug("invalid filter expression {}", context.getFilter(), jpe);
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", jpe);
                 return;
             } catch (MongoException me) {
                 if (me.getMessage().matches(".*Can't canonicalize query.*")) {
                     // error with the filter expression during query execution
-                    LOGGER.error("invalid filter expression {}", context.getFilter(), me);
+                    LOGGER.debug("invalid filter expression {}", context.getFilter(), me);
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", me);
                     return;
                 } else {

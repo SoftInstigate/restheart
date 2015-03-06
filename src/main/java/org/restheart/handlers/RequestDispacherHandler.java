@@ -170,19 +170,19 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
     @Override
     public final void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getType() == TYPE.ERROR) {
-            LOGGER.error("This is a bad request: returning a <{}> HTTP code", HttpStatus.SC_BAD_REQUEST);
+            LOGGER.debug("This is a bad request: returning a <{}> HTTP code", HttpStatus.SC_BAD_REQUEST);
             ResponseHelper.endExchange(exchange, HttpStatus.SC_BAD_REQUEST);
             return;
         }
 
         if (context.getMethod() == METHOD.OTHER) {
-            LOGGER.error("This method is not allowed: returning a <{}> HTTP code", HttpStatus.SC_METHOD_NOT_ALLOWED);
+            LOGGER.debug("This method is not allowed: returning a <{}> HTTP code", HttpStatus.SC_METHOD_NOT_ALLOWED);
             ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
             return;
         }
 
         if (context.isReservedResource()) {
-            LOGGER.error("The resource is reserved: returning a <{}> HTTP code", HttpStatus.SC_FORBIDDEN);
+            LOGGER.debug("The resource is reserved: returning a <{}> HTTP code", HttpStatus.SC_FORBIDDEN);
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "reserved resource");
             return;
         }

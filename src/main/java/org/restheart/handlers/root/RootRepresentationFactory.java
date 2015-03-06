@@ -92,6 +92,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
 
                 rep.addRepresentation("rh:db", nrep);
             } else {
+                // this shoudn't be possible
                 logger.error("db missing string _id field", d);
             }
         });
