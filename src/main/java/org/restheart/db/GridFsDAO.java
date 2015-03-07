@@ -26,14 +26,19 @@ import com.mongodb.gridfs.GridFSDBFile;
 import com.mongodb.gridfs.GridFSInputFile;
 import java.io.File;
 import java.io.IOException;
+import org.apache.tika.Tika;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class GridFsDAO implements GridFsRepository {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(GridFsDAO.class);
     private final MongoClient client;
 
     public GridFsDAO() {
@@ -71,7 +76,8 @@ public class GridFsDAO implements GridFsRepository {
         if (_contentType != null && _contentType instanceof String) {
             contentType = (String) _contentType;
         } else {
-            contentType = null;
+            contentType = detectMediaType(data);
+            LOGGER.info("MediaType detected: " + contentType);
         }
 
         gfsFile.setId(fileId);
@@ -83,6 +89,11 @@ public class GridFsDAO implements GridFsRepository {
         gfsFile.save();
 
         return HttpStatus.SC_CREATED;
+    }
+
+    public static String detectMediaType(File data) throws IOException {
+        Tika tika = new Tika();
+        return tika.detect(data);
     }
 
     @Override

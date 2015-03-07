@@ -156,6 +156,13 @@
             <version>0.9.2</version>
             <scope>test</scope>
         </dependency>
+        
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>1.7</version>
+            <type>jar</type>
+        </dependency>
     </dependencies>
 
     <build>

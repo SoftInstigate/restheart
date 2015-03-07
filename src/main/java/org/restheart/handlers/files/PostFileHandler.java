@@ -75,7 +75,7 @@ public class PostFileHandler extends PipedHttpHandler {
         }
 
         FormData data;
-        
+
         try {
             data = parser.parseBlocking();
         } catch (IOException ioe) {
@@ -95,8 +95,7 @@ public class PostFileHandler extends PipedHttpHandler {
 
         final String fileFieldName = findFile(data);
 
-        if (fileFieldName
-                == null) {
+        if (fileFieldName == null) {
             String errMsg = "This request does not contain any file";
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
             return;
@@ -115,9 +114,8 @@ public class PostFileHandler extends PipedHttpHandler {
         Object _id = props.get("_id");
 
         // id
-        if (_id
-                == null) {
-            _id = new ObjectId();;
+        if (_id == null) {
+            _id = new ObjectId();
         } else {
             try {
                 URLUtils.checkId(_id);
