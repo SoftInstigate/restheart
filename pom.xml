@@ -161,7 +161,6 @@
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId>
             <version>1.7</version>
-            <type>jar</type>
         </dependency>
     </dependencies>
 
