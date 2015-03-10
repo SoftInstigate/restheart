@@ -34,15 +34,29 @@ import static io.undertow.util.Headers.BASIC;
 import static io.undertow.util.Headers.WWW_AUTHENTICATE;
 import io.undertow.util.HttpString;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import javax.xml.bind.DatatypeConverter;
+import org.restheart.Bootstrapper;
+import org.restheart.security.handlers.AuthTokenInjecterHandler;
+import org.restheart.security.handlers.HeadersManager;
+import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_HEADER;
+import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
+import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_VALID_HEADER;
+import org.restheart.security.impl.AuthTokenIdentityManager;
+import org.restheart.security.impl.SimpleAccount;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class GetRoleHandler extends ApplicationLogicHandler {
+    private static final boolean authTokenEnabled = Bootstrapper.getConf().isAuthTokenEnabled();
+    private static final long TTL = Bootstrapper.getConf().getAuthTokenTtl();
 
     /**
      * the key for the idm-implementation-class property.
@@ -132,6 +146,13 @@ public class GetRoleHandler extends ApplicationLogicHandler {
                     if (idAndPwd.length == 2) {
                         Account a = idm.verify(idAndPwd[0], new PasswordCredential(idAndPwd[1].toCharArray()));
 
+                        // try with AuthTokenIdentityManager if enabled
+                        if (a == null && authTokenEnabled) {
+                            // this is where the token cache comes into play
+                            IdentityManager atIdm = AuthTokenIdentityManager.getInstance();
+                            a = atIdm.verify(idAndPwd[0], new PasswordCredential(idAndPwd[1].toCharArray()));
+                        }
+                        
                         if (a != null) {
                             BasicDBList _roles = new BasicDBList();
 
@@ -144,6 +165,12 @@ public class GetRoleHandler extends ApplicationLogicHandler {
 
                             Representation rep = new Representation(url);
                             rep.addProperties(root);
+
+                            // inject the auth token
+                            if (authTokenEnabled) {
+                                char[] token = cacheSessionToken(idAndPwd[0], a);
+                                injectTokenHeaders(idAndPwd[0], exchange, new HeadersManager(exchange), token);
+                            }
 
                             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
                             exchange.setResponseCode(HttpStatus.SC_OK);
@@ -160,7 +187,7 @@ public class GetRoleHandler extends ApplicationLogicHandler {
             root.append("authenticated", false);
             root.append("roles", null);
 
-            Representation rep = new Representation("/_logic/roles/mine");
+            Representation rep = new Representation(url);
             rep.addProperties(root);
 
             if (sendChallenge) {
@@ -177,6 +204,26 @@ public class GetRoleHandler extends ApplicationLogicHandler {
         } else {
             exchange.setResponseCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             exchange.endExchange();
+        }
+    }
+
+    private void injectTokenHeaders(String id, HttpServerExchange exchange, HeadersManager headers, char[] token) {
+        headers.addResponseHeader(AUTH_TOKEN_HEADER, new String(token));
+        headers.addResponseHeader(AUTH_TOKEN_VALID_HEADER, Instant.now().plus(TTL, ChronoUnit.MINUTES).toString());
+        headers.addResponseHeader(AUTH_TOKEN_LOCATION_HEADER, "/_authtokens/" + id);
+    }
+
+    private char[] cacheSessionToken(String id, Account authenticatedAccount) {
+        Optional<SimpleAccount> cachedTokenAccount = AuthTokenIdentityManager.getInstance().getCachedAccounts().get(id);
+
+        if (cachedTokenAccount == null) {
+            char[] token = UUID.randomUUID().toString().toCharArray();
+            SimpleAccount newCachedTokenAccount = new SimpleAccount(id, token, authenticatedAccount.getRoles());
+            AuthTokenIdentityManager.getInstance().getCachedAccounts().put(id, newCachedTokenAccount);
+
+            return token;
+        } else {
+            return cachedTokenAccount.get().getCredentials().getPassword();
         }
     }
 }

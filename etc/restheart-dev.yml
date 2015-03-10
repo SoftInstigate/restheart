@@ -97,7 +97,7 @@ application-logic-mounts:
           url: /_logic/roles/mine
           send-challenge: false
           idm-implementation-class: org.restheart.security.impl.SimpleFileIdentityManager
-          idm-conf-file: ../etc/security-integrationtest.yml
+          idm-conf-file: ../etc/security.yml
 
 ### security 
 
