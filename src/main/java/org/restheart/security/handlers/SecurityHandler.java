@@ -20,6 +20,7 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.security.AccessManager;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.security.FullAccessManager;
 
 /**
  *
@@ -41,7 +42,7 @@ public class SecurityHandler extends PipedHttpHandler {
      */
     public SecurityHandler(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager) {
         super(null);
-
+        
         silentHandler = new SilentSecurityHandler(next, identityManager, accessManager);
         challengingHandler = new ChallengingSecurityHandler(next, identityManager, accessManager);
     }
