@@ -292,4 +292,22 @@ public class SecurityIT extends AbstactIT {
             mongoClient.dropDatabase(dbTmpName);
         }
     }
+    
+    @Test
+    public void testPathPefixAndRegexPredicates() throws Exception {
+        // *** create dbs
+        Response resp = user2Executor.execute(Request.Put(dbTmpUri2).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check create " + dbTmpName2 + " as user2", resp, HttpStatus.SC_CREATED);
+
+        resp = user2Executor.execute(Request.Put(dbTmpUri3).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check create " + dbTmpName3 + " as user2", resp, HttpStatus.SC_CREATED);
+        
+        // *** create user collection
+        resp = user2Executor.execute(Request.Put(collectionTmpUserUri2).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check path predicate creating user collection " +  collectionTmpUserUri2 + " as user2", resp, HttpStatus.SC_CREATED);
+
+        // *** create user collection
+        resp = user2Executor.execute(Request.Put(collectionTmpUserUri3).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check regex predicate creating user collection " +  collectionTmpUserUri3 + " as user2", resp, HttpStatus.SC_CREATED);
+    }
 }
