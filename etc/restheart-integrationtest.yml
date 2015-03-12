@@ -94,7 +94,7 @@ static-resources-mounts:
 
 # In the following example two built-in application logic handlers are defined:
 # PingHandler bound to /_logic/ping that implements a simple ping service
-# GetRoleHandler bound to /_logic/roles/mine that returns the current user authentication status and eventually its roles
+# GetRoleHandler bound to /_logic/roles that returns the current user authentication status and eventually its roles
 
 application-logic-mounts:
     - what: org.restheart.handlers.applicationlogic.PingHandler
@@ -103,13 +103,10 @@ application-logic-mounts:
       args:
           msg: "ciao from the restheart team"
     - what: org.restheart.handlers.applicationlogic.GetRoleHandler
-      where: /roles/mine
+      where: /roles
       secured: false
       args:
-          url: /_logic/roles/mine
-          send-challenge: false
-          idm-implementation-class: org.restheart.security.impl.SimpleFileIdentityManager
-          idm-conf-file: ../etc/security-integrationtest.yml
+          url: /_logic/roles
 
 ### security 
 

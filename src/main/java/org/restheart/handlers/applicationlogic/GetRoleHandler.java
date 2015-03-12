@@ -17,74 +17,35 @@
  */
 package org.restheart.handlers.applicationlogic;
 
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
-import static org.restheart.security.RestheartIdentityManager.RESTHEART_REALM;
 import org.restheart.utils.HttpStatus;
-import io.undertow.security.idm.Account;
-import io.undertow.security.idm.IdentityManager;
-import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import static io.undertow.util.Headers.BASIC;
-import static io.undertow.util.Headers.WWW_AUTHENTICATE;
 import io.undertow.util.HttpString;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import javax.xml.bind.DatatypeConverter;
-import org.restheart.Bootstrapper;
-import org.restheart.security.handlers.AuthTokenInjecterHandler;
-import org.restheart.security.handlers.HeadersManager;
+import java.util.Set;
+import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_HEADER;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_VALID_HEADER;
-import org.restheart.security.impl.AuthTokenIdentityManager;
-import org.restheart.security.impl.SimpleAccount;
+import org.restheart.utils.URLUtils;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class GetRoleHandler extends ApplicationLogicHandler {
-    private static final boolean authTokenEnabled = Bootstrapper.getConf().isAuthTokenEnabled();
-    private static final long TTL = Bootstrapper.getConf().getAuthTokenTtl();
-
-    /**
-     * the key for the idm-implementation-class property.
-     */
-    public static final String idmClazzKey = "idm-implementation-class";
-
-    /**
-     * the key for the dm-conf-file property.
-     */
-    public static final String idmConfFileKey = "idm-conf-file";
-
     /**
      * the key for the url property.
      */
     public static final String urlKey = "url";
 
-    /**
-     * the key for the send-challenge property.
-     */
-    public static final String sendChallengeKey = "send-challenge";
-
-    private static final String BASIC_PREFIX = BASIC + " ";
-    private static final String challenge = BASIC_PREFIX + "realm=\"" + RESTHEART_REALM + "\"";
-
-    private IdentityManager idm = null;
     private String url;
-    private boolean sendChallenge;
-
+    
     /**
      * Creates a new instance of GetRoleHandler
      *
@@ -99,17 +60,7 @@ public class GetRoleHandler extends ApplicationLogicHandler {
             throw new IllegalArgumentException("args cannot be null");
         }
 
-        String idmClazz = (String) ((Map<String, Object>) args).get(idmClazzKey);
-        String idmConfFile = (String) ((Map<String, Object>) args).get(idmConfFileKey);
-
-        Map<String, Object> idmArgs = new HashMap<>();
-        idmArgs.put("conf-file", idmConfFile);
-
-        Object _idm = Class.forName(idmClazz).getConstructor(Map.class).newInstance(idmArgs);
-        this.idm = (IdentityManager) _idm;
-
         this.url = (String) ((Map<String, Object>) args).get(urlKey);
-        this.sendChallenge = (boolean) ((Map<String, Object>) args).get(sendChallengeKey);
     }
 
     /**
@@ -127,103 +78,47 @@ public class GetRoleHandler extends ApplicationLogicHandler {
             exchange.setResponseCode(HttpStatus.SC_OK);
             exchange.endExchange();
         } else if (context.getMethod() == METHOD.GET) {
-            String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+            if (!(context.getUnmappedRequestUri().equals(URLUtils.removeTrailingSlashes(url) + "/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName()))) {
+                exchange.setResponseCode(HttpStatus.SC_UNAUTHORIZED);
+                
+                // REMOVE THE AUTH TOKEN HEADERS!!!!!!!!!!!
+                exchange.getResponseHeaders().remove(AUTH_TOKEN_HEADER);
+                exchange.getResponseHeaders().remove(AUTH_TOKEN_VALID_HEADER);
+                exchange.getResponseHeaders().remove(AUTH_TOKEN_LOCATION_HEADER);
 
-            if (authHeader != null && authHeader.startsWith("Basic ")) {
-                authHeader = authHeader.replaceAll("^Basic ", "");
-
-                byte[] __idAndPwd;
-
-                try {
-                    __idAndPwd = DatatypeConverter.parseBase64Binary(authHeader);
-                } catch (IllegalArgumentException iae) {
-                    __idAndPwd = null;
-                }
-
-                if (__idAndPwd != null) {
-                    String[] idAndPwd = new String(__idAndPwd, StandardCharsets.UTF_8).split(":");
-
-                    if (idAndPwd.length == 2) {
-                        Account a = idm.verify(idAndPwd[0], new PasswordCredential(idAndPwd[1].toCharArray()));
-
-                        // try with AuthTokenIdentityManager if enabled
-                        if (a == null && authTokenEnabled) {
-                            // this is where the token cache comes into play
-                            IdentityManager atIdm = AuthTokenIdentityManager.getInstance();
-                            a = atIdm.verify(idAndPwd[0], new PasswordCredential(idAndPwd[1].toCharArray()));
-                        }
-                        
-                        if (a != null) {
-                            BasicDBList _roles = new BasicDBList();
-
-                            _roles.addAll(a.getRoles());
-
-                            BasicDBObject root = new BasicDBObject();
-
-                            root.append("authenticated", true);
-                            root.append("roles", _roles);
-
-                            Representation rep = new Representation(url);
-                            rep.addProperties(root);
-
-                            // inject the auth token
-                            if (authTokenEnabled) {
-                                char[] token = cacheSessionToken(idAndPwd[0], a);
-                                injectTokenHeaders(idAndPwd[0], exchange, new HeadersManager(exchange), token);
-                            }
-
-                            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
-                            exchange.setResponseCode(HttpStatus.SC_OK);
-                            exchange.getResponseSender().send(rep.toString());
-                            exchange.endExchange();
-                            return;
-                        }
-                    }
-                }
+                exchange.endExchange();
+                return;
             }
-
-            BasicDBObject root = new BasicDBObject();
-
-            root.append("authenticated", false);
-            root.append("roles", null);
 
             Representation rep = new Representation(url);
-            rep.addProperties(root);
 
-            if (sendChallenge) {
-                exchange.getResponseHeaders().add(WWW_AUTHENTICATE, challenge);
-                exchange.setResponseCode(HttpStatus.SC_UNAUTHORIZED);
+            if (exchange.getSecurityContext() == null
+                    || exchange.getSecurityContext().getAuthenticatedAccount() == null
+                    || exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null) {
+
+                BasicDBObject root = new BasicDBObject();
+
+                root.append("authenticated", false);
+                root.append("roles", null);
+
+                rep.addProperties(root);
             } else {
-                exchange.setResponseCode(HttpStatus.SC_OK);
+                BasicDBObject root = new BasicDBObject();
+
+                Set<String> _roles = exchange.getSecurityContext().getAuthenticatedAccount().getRoles();
+
+                root.append("authenticated", true);
+                root.append("roles", _roles);
+
+                rep.addProperties(root);
             }
 
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
             exchange.getResponseSender().send(rep.toString());
-
             exchange.endExchange();
         } else {
             exchange.setResponseCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             exchange.endExchange();
-        }
-    }
-
-    private void injectTokenHeaders(String id, HttpServerExchange exchange, HeadersManager headers, char[] token) {
-        headers.addResponseHeader(AUTH_TOKEN_HEADER, new String(token));
-        headers.addResponseHeader(AUTH_TOKEN_VALID_HEADER, Instant.now().plus(TTL, ChronoUnit.MINUTES).toString());
-        headers.addResponseHeader(AUTH_TOKEN_LOCATION_HEADER, "/_authtokens/" + id);
-    }
-
-    private char[] cacheSessionToken(String id, Account authenticatedAccount) {
-        Optional<SimpleAccount> cachedTokenAccount = AuthTokenIdentityManager.getInstance().getCachedAccounts().get(id);
-
-        if (cachedTokenAccount == null) {
-            char[] token = UUID.randomUUID().toString().toCharArray();
-            SimpleAccount newCachedTokenAccount = new SimpleAccount(id, token, authenticatedAccount.getRoles());
-            AuthTokenIdentityManager.getInstance().getCachedAccounts().put(id, newCachedTokenAccount);
-
-            return token;
-        } else {
-            return cachedTokenAccount.get().getCredentials().getPassword();
         }
     }
 }
