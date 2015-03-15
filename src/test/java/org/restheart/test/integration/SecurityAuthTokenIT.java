@@ -23,6 +23,7 @@ import java.net.URI;
 import java.security.Principal;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
 import static org.junit.Assert.*;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
@@ -36,6 +37,7 @@ import org.restheart.hal.Representation;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_HEADER;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_VALID_HEADER;
+import static org.restheart.test.integration.AbstactIT.HTTP;
 
 /**
  *
@@ -122,8 +124,11 @@ public class SecurityAuthTokenIT extends AbstactIT {
         String locationURI = _authTokenLocation[0].getValue();
 
         URI authTokenResourceUri = rootUri.resolve(locationURI);
+        
+        final String host = CLIENT_HOST;
+        final int port = conf.getHttpPort();
 
-        Response resp2 = unauthExecutor.auth(new Credentials() {
+        Response resp2 = unauthExecutor.authPreemptive(new HttpHost(host, port, HTTP)).auth(new Credentials() {
             @Override
             public Principal getUserPrincipal() {
                 return new BasicUserPrincipal("admin");

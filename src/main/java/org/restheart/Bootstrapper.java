@@ -79,6 +79,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import org.restheart.security.FullAccessManager;
 import org.restheart.security.handlers.AuthTokenInjecterHandler;
 import org.restheart.security.handlers.AuthTokenHandler;
 import org.slf4j.Logger;
@@ -443,10 +444,10 @@ public final class Bootstrapper {
 
         if (configuration.getAmImpl() == null && configuration.getIdmImpl() != null) {
             LOGGER.warn("***** no access manager specified. authenticated users can do anything.");
-            accessManager = null;
+            accessManager = new FullAccessManager();
         } else if (configuration.getAmImpl() == null && configuration.getIdmImpl() == null) {
             LOGGER.warn("***** no access manager specified. users can do anything.");
-            accessManager = null;
+            accessManager = new FullAccessManager();
 
         } else {
             try {
@@ -583,7 +584,7 @@ public final class Bootstrapper {
         
         // pipe the auth tokens invalidation handler
         
-        paths.addPrefixPath("/_authtokens", new SecurityHandler(new AuthTokenHandler(), identityManager, accessManager));
+        paths.addPrefixPath("/_authtokens", new AuthTokenInjecterHandler(new CORSHandler(new SecurityHandler(new AuthTokenHandler(), identityManager, new FullAccessManager()))));
 
         return new GracefulShutdownHandler(
                 new RequestLimitingHandler(new RequestLimit(configuration.getRequestLimit()),
@@ -716,7 +717,7 @@ public final class Bootstrapper {
                         return;
 
                     }
-
+                    
                     Object o = Class.forName(alClazz)
                             .getConstructor(PipedHttpHandler.class, Map.class)
                             .newInstance(null, (Map) alArgs);
@@ -729,7 +730,7 @@ public final class Bootstrapper {
                         if (alSecured) {
                             paths.addPrefixPath("/_logic" + alWhere, new SecurityHandler(handler, identityManager, accessManager));
                         } else {
-                            paths.addPrefixPath("/_logic" + alWhere, handler);
+                            paths.addPrefixPath("/_logic" + alWhere, new SecurityHandler(handler, identityManager, new FullAccessManager()));
                         }
 
                         LOGGER.info("url {} bound to application logic handler {}."

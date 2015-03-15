@@ -38,3 +38,14 @@ permissions:
     
     - role: users
       predicate: path[path="/mydb/refcoll2"] and method[value="GET"]
+      
+    - role: users
+      predicate: (path[path="/tmpdb2"] or path[path="/tmpdb3"]) and method[value="PUT"]
+    
+    # this to check the path-template predicate
+    - role: users
+      predicate: path-template[value="/tmpdb2/{username}"] and equals[%u, "${username}"]
+    
+    # this to check the regex predicate
+    - role: users
+      predicate: regex[pattern="/tmpdb3/(.*?)", value="%R", full-match=true] and equals[%u, "${1}"]
