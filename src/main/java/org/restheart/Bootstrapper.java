@@ -98,15 +98,14 @@ public final class Bootstrapper {
     private static GracefulShutdownHandler shutdownHandler = null;
     private static Configuration configuration;
     private static Path pidFilePath;
-    
+
     /**
      * main method
      *
      * @param args command line arguments
      */
     public static void main(final String[] args) {
-        
-        
+
         try {
             // read configuration silently, to avoid logging before initializing the logging
             configuration = FileUtils.getConfiguration(args, true);
@@ -306,8 +305,9 @@ public final class Bootstrapper {
     }
 
     private static void startServer() {
-        if (RESTHEART_VERSION != null )
+        if (RESTHEART_VERSION != null) {
             LOGGER.info("RESTHeart version {}", RESTHEART_VERSION);
+        }
 
         String mongoHosts = configuration.getMongoServers().stream()
                 .map(s -> s.get(Configuration.MONGO_HOST_KEY) + ":" + s.get(Configuration.MONGO_PORT_KEY) + " ")
@@ -317,10 +317,7 @@ public final class Bootstrapper {
 
         try {
             MongoDBClientSingleton.init(configuration);
-           
-
             LOGGER.info("mongodb connection pool initialized");
-
             new PropsFixer().fixAllMissingProps();
         } catch (Throwable t) {
             LOGGER.error("error connecting to mongodb. exiting..", t);
@@ -382,7 +379,7 @@ public final class Bootstrapper {
                 client.close();
             }
         } catch (Throwable t) {
-            LOGGER.error("error flushing and clonsing the mongo client", t);
+            LOGGER.error("error flushing and closing the mongo client", t);
         }
 
         TMP_EXTRACTED_FILES.keySet().forEach(k -> {
@@ -461,7 +458,7 @@ public final class Bootstrapper {
                 System.exit(-3);
             }
         }
-        
+
         if (configuration.isAuthTokenEnabled()) {
             LOGGER.info("token based authentication enabled with token TTL {} minutes", configuration.getAuthTokenTtl());
         }
@@ -581,9 +578,8 @@ public final class Bootstrapper {
         pipeStaticResourcesHandlers(configuration, paths, identityManager, accessManager);
 
         pipeApplicationLogicHandlers(configuration, paths, identityManager, accessManager);
-        
+
         // pipe the auth tokens invalidation handler
-        
         paths.addPrefixPath("/_authtokens", new AuthTokenInjecterHandler(new CORSHandler(new SecurityHandler(new AuthTokenHandler(), identityManager, new FullAccessManager()))));
 
         return new GracefulShutdownHandler(
@@ -717,7 +713,7 @@ public final class Bootstrapper {
                         return;
 
                     }
-                    
+
                     Object o = Class.forName(alClazz)
                             .getConstructor(PipedHttpHandler.class, Map.class)
                             .newInstance(null, (Map) alArgs);
