@@ -94,7 +94,7 @@ public final class Bootstrapper {
     private static final Map<String, File> TMP_EXTRACTED_FILES = new HashMap<>();
 
     private static Undertow server;
-    private static GracefulShutdownHandler hanldersPipe = null;
+    private static GracefulShutdownHandler shutdownHandler = null;
     private static Configuration configuration;
     private static Path pidFilePath;
     
@@ -357,10 +357,10 @@ public final class Bootstrapper {
             LOGGER.info("waiting for pending request to complete (up to 1 minute)");
         }
 
-        if (hanldersPipe != null) {
+        if (shutdownHandler != null) {
             try {
-                hanldersPipe.shutdown();
-                hanldersPipe.awaitShutdown(60 * 1000); // up to 1 minute
+                shutdownHandler.shutdown();
+                shutdownHandler.awaitShutdown(60 * 1000); // up to 1 minute
             } catch (InterruptedException ie) {
                 LOGGER.error("error while waiting for pending request to complete", ie);
             }
@@ -536,7 +536,7 @@ public final class Bootstrapper {
             LOGGER.info("local cache not enabled");
         }
 
-        hanldersPipe = getHandlersPipe(identityManager, accessManager);
+        shutdownHandler = getHandlersPipe(identityManager, accessManager);
 
         builder
                 .setIoThreads(configuration.getIoThreads())
@@ -544,7 +544,7 @@ public final class Bootstrapper {
                 .setDirectBuffers(configuration.isDirectBuffers())
                 .setBufferSize(configuration.getBufferSize())
                 .setBuffersPerRegion(configuration.getBuffersPerRegion())
-                .setHandler(hanldersPipe);
+                .setHandler(shutdownHandler);
 
         builder.build().start();
     }
