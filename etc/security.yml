@@ -11,19 +11,19 @@ users:
     - userid: a
       password: a
       roles: [admins]
-    
+
     - userid: user
       password: changeit
       roles: [users]
-          
+
     - userid: user2
       password: changeit
       roles: [users]
-    
+
     - userid: admin
       password: changeit
       roles: [users, admins]
-      
+
 permissions:
 # users with role 'admins' can do anything
     - role: admins
@@ -36,7 +36,7 @@ permissions:
 # users with role 'users' can GET any collection or document resource (excluding dbs)
     - role: users
       predicate: regex[pattern="/.*/.*", value="%R", full-match=true] and method[value="GET"]
-      
+
 # users with role 'users' can do anything on the collection /publicdb/{username}
     - role: users
       predicate: path-template[value="/publicdb/{username}"] and equals[%u, "${username}"] 
@@ -44,7 +44,7 @@ permissions:
 # users with role 'users' can do anything on documents of the collection /publicdb/{username}
     - role: users
       predicate: path-template[value="/publicdb/{username}/{doc}"] and equals[%u, "${username}"] 
- 
+
 # same than previous one, but using regex predicate
 # users with role 'users' can do anything on documents of the collection /publicdb/{username}
 #    - role: users
