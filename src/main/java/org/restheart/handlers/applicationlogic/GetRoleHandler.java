@@ -45,7 +45,7 @@ public class GetRoleHandler extends ApplicationLogicHandler {
     public static final String urlKey = "url";
 
     private String url;
-    
+
     /**
      * Creates a new instance of GetRoleHandler
      *
@@ -72,37 +72,33 @@ public class GetRoleHandler extends ApplicationLogicHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        Representation rep;
+        
         if (context.getMethod() == METHOD.OPTIONS) {
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET");
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
             exchange.setResponseCode(HttpStatus.SC_OK);
             exchange.endExchange();
         } else if (context.getMethod() == METHOD.GET) {
-            if (!(context.getUnmappedRequestUri().equals(URLUtils.removeTrailingSlashes(url) + "/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName()))) {
-                exchange.setResponseCode(HttpStatus.SC_UNAUTHORIZED);
-                
-                // REMOVE THE AUTH TOKEN HEADERS!!!!!!!!!!!
-                exchange.getResponseHeaders().remove(AUTH_TOKEN_HEADER);
-                exchange.getResponseHeaders().remove(AUTH_TOKEN_VALID_HEADER);
-                exchange.getResponseHeaders().remove(AUTH_TOKEN_LOCATION_HEADER);
-
-                exchange.endExchange();
-                return;
-            }
-
-            Representation rep = new Representation(url);
-
-            if (exchange.getSecurityContext() == null
+            if ((exchange.getSecurityContext() == null
                     || exchange.getSecurityContext().getAuthenticatedAccount() == null
-                    || exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null) {
+                    || exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null)
+                    || !(context.getUnmappedRequestUri().equals(URLUtils.removeTrailingSlashes(url) + "/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName()))) {
 
-                BasicDBObject root = new BasicDBObject();
+                {
+                    exchange.setResponseCode(HttpStatus.SC_UNAUTHORIZED);
 
-                root.append("authenticated", false);
-                root.append("roles", null);
+                    // REMOVE THE AUTH TOKEN HEADERS!!!!!!!!!!!
+                    exchange.getResponseHeaders().remove(AUTH_TOKEN_HEADER);
+                    exchange.getResponseHeaders().remove(AUTH_TOKEN_VALID_HEADER);
+                    exchange.getResponseHeaders().remove(AUTH_TOKEN_LOCATION_HEADER);
 
-                rep.addProperties(root);
+                    exchange.endExchange();
+                    return;
+                }
+
             } else {
+                rep = new Representation(URLUtils.removeTrailingSlashes(url) + "/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
                 BasicDBObject root = new BasicDBObject();
 
                 Set<String> _roles = exchange.getSecurityContext().getAuthenticatedAccount().getRoles();
