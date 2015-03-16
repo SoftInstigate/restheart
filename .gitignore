@@ -1,5 +1,8 @@
 # Created by https://www.gitignore.io
 
+### an hidden dir ###
+hidden
+
 ### OSX ###
 .DS_Store
 .AppleDouble
