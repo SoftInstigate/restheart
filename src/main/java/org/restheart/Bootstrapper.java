@@ -80,7 +80,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import org.restheart.security.FullAccessManager;
-import org.restheart.security.handlers.AuthTokenInjecterHandler;
 import org.restheart.security.handlers.AuthTokenHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -572,11 +571,10 @@ public final class Bootstrapper {
             String db = (String) m.get(Configuration.MONGO_MOUNT_WHAT_KEY);
 
             paths.addPrefixPath(url,
-                    new AuthTokenInjecterHandler(
-                            new CORSHandler(
-                                    new RequestContextInjectorHandler(url, db,
-                                            new OptionsHandler(
-                                                    new SecurityHandler(coreHandlerChain, identityManager, accessManager))))));
+                    new CORSHandler(
+                            new RequestContextInjectorHandler(url, db,
+                                    new OptionsHandler(
+                                            new SecurityHandler(coreHandlerChain, identityManager, accessManager)))));
 
             LOGGER.info("URL {} bound to MongoDB resource {}", url, db);
         });
@@ -586,7 +584,7 @@ public final class Bootstrapper {
         pipeApplicationLogicHandlers(configuration, paths, identityManager, accessManager);
 
         // pipe the auth tokens invalidation handler
-        paths.addPrefixPath("/_authtokens", new AuthTokenInjecterHandler(new CORSHandler(new SecurityHandler(new AuthTokenHandler(), identityManager, new FullAccessManager()))));
+        paths.addPrefixPath("/_authtokens", new CORSHandler(new SecurityHandler(new AuthTokenHandler(), identityManager, new FullAccessManager())));
 
         return new GracefulShutdownHandler(
                 new RequestLimitingHandler(new RequestLimit(configuration.getRequestLimit()),

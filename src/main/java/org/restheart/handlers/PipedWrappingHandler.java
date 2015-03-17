@@ -70,16 +70,20 @@ public class PipedWrappingHandler extends PipedHttpHandler {
     }
 
     protected static HttpHandler buildSecurityHandlerChain(final AccessManager accessManager, final IdentityManager identityManager, final List<AuthenticationMechanism> mechanisms) {
-        HttpHandler handler = null;
+        HttpHandler handler;
         
-        if (accessManager != null) {
-            handler = new AccessManagerHandler(accessManager, new AuthTokenInjecterHandler(null));
+        if (accessManager == null) {
+            throw new IllegalArgumentException("Error, accessManager cannot be null. Eventually use FullAccessManager that gives full access power ");
         }
+
+        handler = new AuthTokenInjecterHandler(new AccessManagerHandler(accessManager, null));
+        
         handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE,
                 identityManager,
                 new AuthenticationMechanismsHandler(
                         new PredicateAuthenticationConstraintHandler(
                                 new AuthenticationCallHandler(handler), accessManager), mechanisms));
+        
         return handler;
     }
 
