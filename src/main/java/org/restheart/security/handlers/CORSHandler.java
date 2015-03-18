@@ -26,6 +26,11 @@ import io.undertow.util.HttpString;
 import static org.restheart.security.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_CREDENTIAL;
 import static org.restheart.security.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static org.restheart.security.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_EXPOSE_HEADERS;
+
+import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_HEADER;
+import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
+import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_VALID_HEADER;
+
 import static io.undertow.util.Headers.LOCATION_STRING;
 import static io.undertow.util.Headers.ORIGIN;
 import static java.lang.Boolean.TRUE;
@@ -33,6 +38,8 @@ import static java.lang.Boolean.TRUE;
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * 
+ * The Access-Control-Expose-Headers header indicates which headers are safe to expose to the API of a CORS API specification.
  */
 public class CORSHandler extends PipedHttpHandler {
 
@@ -87,6 +94,11 @@ public class CORSHandler extends PipedHttpHandler {
         headers.addResponseHeader(ACCESS_CONTROL_ALLOW_CREDENTIAL, TRUE);
 
         headers.addResponseHeader(ACCESS_CONTROL_EXPOSE_HEADERS, LOCATION_STRING);
+        headers.addResponseHeader(ACCESS_CONTROL_EXPOSE_HEADERS, 
+                LOCATION_STRING + ", " + 
+                AUTH_TOKEN_HEADER.toString() + ", " + 
+                AUTH_TOKEN_VALID_HEADER.toString() + ", " + 
+                AUTH_TOKEN_LOCATION_HEADER.toString());
     }
 
     interface CORSHeaders {
@@ -94,5 +106,4 @@ public class CORSHandler extends PipedHttpHandler {
         HttpString ACCESS_CONTROL_ALLOW_CREDENTIAL = HttpString.tryFromString("Access-Control-Allow-Credentials");
         HttpString ACCESS_CONTROL_ALLOW_ORIGIN = HttpString.tryFromString("Access-Control-Allow-Origin");
     }
-
 }
