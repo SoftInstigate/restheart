@@ -85,14 +85,6 @@ public class PutDocumentHandler extends PipedHttpHandler {
             return;
         }
         
-        try {
-            URLUtils.checkId(id);
-        } catch (UnsupportedDocumentIdException udie) {
-            String errMsg = "the type of _id in content body is not supported: " + id.getClass().getSimpleName();
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
-            return;
-        }
-
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
         int httpCode = this.documentDAO.upsertDocument(

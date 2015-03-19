@@ -20,9 +20,6 @@ package org.restheart.handlers;
 import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
-import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_HEADER;
-import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
-import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_VALID_HEADER;
 
 /**
  *
@@ -38,9 +35,10 @@ public class OptionsHandler extends PipedHttpHandler {
      * that OPTIONS responds to any resource URL, regardless its existance: This
      * is because OPTIONS http://restheart.org/employees/tofire/andrea shall not
      * give any information
-     * 
-     * The Access-Control-Allow-Methods header indicates, as part of the response to a preflight request, 
-     * which methods can be used during the actual request. 
+     *
+     * The Access-Control-Allow-Methods header indicates, as part of the
+     * response to a preflight request, which methods can be used during the
+     * actual request.
      *
      * @param next
      */

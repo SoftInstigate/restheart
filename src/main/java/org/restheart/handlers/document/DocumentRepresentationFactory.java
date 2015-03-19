@@ -91,17 +91,20 @@ public class DocumentRepresentationFactory {
 
         if (isBinaryFile(data)) {
             if (_docIdType == null) {
-                rep.addLink(new Link("rh:download",
+                rep.addLink(new Link("rh:data",
                         String.format("%s/%s", href, RequestContext.BINARY_CONTENT)));
             } else {
-                rep.addLink(new Link("rh:download",
+                rep.addLink(new Link("rh:data",
                         String.format("%s/%s?%s", href, RequestContext.BINARY_CONTENT, _docIdType)));
             }
-        }
-
-        if (context.isParentAccessible()) {
-            // this can happen due to mongo-mounts mapped URL
-            rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath)));
+            
+            if (context.isParentAccessible()) {
+                rep.addLink(new Link("rh:bucket", URLUtils.getParentPath(requestPath)));
+            }
+        } else {
+            if (context.isParentAccessible()) {
+                rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath)));
+            }
         }
 
         rep.addLink(

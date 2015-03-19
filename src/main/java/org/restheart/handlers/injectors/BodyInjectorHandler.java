@@ -17,6 +17,7 @@
  */
 package org.restheart.handlers.injectors;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
@@ -27,9 +28,17 @@ import org.restheart.utils.ChannelReader;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.form.FormData;
+import io.undertow.server.handlers.form.FormDataParser;
+import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
+import java.io.File;
+import java.io.IOException;
 import java.util.HashSet;
+import org.apache.tika.Tika;
+import org.restheart.utils.URLUtils;
+import org.restheart.utils.UnsupportedDocumentIdException;
 
 /**
  *
@@ -45,6 +54,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             + Representation.APP_FORM_URLENCODED_TYPE
             + " or " + Representation.MULTIPART_FORM_DATA_TYPE;
 
+    private final FormParserFactory formParserFactory;
+
     /**
      * Creates a new instance of BodyInjectorHandler
      *
@@ -52,6 +63,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      */
     public BodyInjectorHandler(PipedHttpHandler next) {
         super(next);
+        this.formParserFactory = FormParserFactory.builder().build();
     }
 
     /**
@@ -72,8 +84,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         // check the content type
         HeaderValues contentTypes = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
 
-        if ((context.getType() == RequestContext.TYPE.FILE && context.getMethod() == RequestContext.METHOD.PUT) ||
-             (context.getType() == RequestContext.TYPE.FILES_BUCKET && context.getMethod() == RequestContext.METHOD.POST)) {
+        if ((context.getType() == RequestContext.TYPE.FILE && context.getMethod() == RequestContext.METHOD.PUT)
+                || (context.getType() == RequestContext.TYPE.FILES_BUCKET && context.getMethod() == RequestContext.METHOD.POST)) {
             if (unsupportedContentTypeFiles(contentTypes)) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE_FILE);
                 return;
@@ -85,19 +97,74 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             }
         }
 
-        if (isNotFormData(contentTypes)) {
+        DBObject content;
+
+        if (isNotFormData(contentTypes)) { // json or hal+json
             final String contentString = ChannelReader.read(exchange.getRequestChannel());
-            DBObject content;
+
             try {
                 content = (DBObject) JSON.parse(contentString);
             } catch (JSONParseException | IllegalArgumentException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Invalid data", ex);
                 return;
             }
-            if (content == null) {
-                context.setContent(null);
-            } else {
-                filterJsonContent(content, context);
+        } else { // multipart form -> file
+            FormDataParser parser = this.formParserFactory.createParser(exchange);
+
+            if (parser == null) {
+                String errMsg = "This request is not form encoded";
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
+                return;
+            }
+
+            FormData data;
+
+            try {
+                data = parser.parseBlocking();
+            } catch (IOException ioe) {
+                String errMsg = "Error parsing the multipart form";
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, ioe);
+                return;
+            }
+
+            try {
+                content = findProps(data);
+            } catch (JSONParseException | IllegalArgumentException ex) {
+                String errMsg = "Invalid data";
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, ex);
+                return;
+            }
+
+            final String fileFieldName = findFile(data);
+
+            if (fileFieldName == null) {
+                String errMsg = "This request does not contain any file";
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
+                return;
+            }
+            
+            File file = data.getFirst(fileFieldName).getFile();
+
+            context.setFile(file);
+            
+            injectContentTypeFromFile(content, file);
+        }
+
+        if (content == null) {
+            context.setContent(null);
+        } else {
+            filterJsonContent(content, context);
+
+            Object _id = content.get("_id");
+
+            if (_id != null) {
+                try {
+                    URLUtils.checkId(_id);
+                } catch (UnsupportedDocumentIdException udie) {
+                    String errMsg = "the type of _id in content body is not supported: " + _id.getClass().getSimpleName();
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
+                    return;
+                }
             }
         }
 
@@ -148,6 +215,24 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             context.addWarning("the reserved field " + keyToRemove + " was filtered out from the request");
         });
     }
+    
+    private void injectContentTypeFromFile(DBObject content, File file) throws IOException {
+        if (content.get("contentType") != null)
+            return;
+        
+        String contentType;
+        
+        if (file == null)
+            return;
+        else
+            contentType = detectMediaType(file);
+        
+        if (content == null && contentType != null) {
+            content = new BasicDBObject();
+        } 
+        
+        content.put("contentType", contentType);
+    }
 
     /**
      * true is the content-type is unsupported
@@ -175,5 +260,46 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                 || contentTypes.stream().noneMatch(
                         ct -> ct.startsWith(Representation.APP_FORM_URLENCODED_TYPE)
                         || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE));
+    }
+
+    /**
+     * Search request for a field named 'properties' which contains JSON
+     *
+     * @param data
+     * @return the parsed DBObject from the form data or an empty DBObject the
+     * etag value)
+     */
+    private DBObject findProps(final FormData data) throws JSONParseException {
+        DBObject result = new BasicDBObject();
+        if (data.getFirst("properties") != null) {
+            String propsString = data.getFirst("properties").getValue();
+            if (propsString != null) {
+                result = (DBObject) JSON.parse(propsString);
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Find the name of the first file field in this request
+     *
+     * @param data
+     * @return the file field name or null
+     */
+    private String findFile(final FormData data) {
+        String fileField = null;
+        for (String f : data) {
+            if (data.getFirst(f) != null && data.getFirst(f).isFile()) {
+                fileField = f;
+                break;
+            }
+        }
+        return fileField;
+    }
+
+    public static String detectMediaType(File data) throws IOException {
+        Tika tika = new Tika();
+        return tika.detect(data);
     }
 }

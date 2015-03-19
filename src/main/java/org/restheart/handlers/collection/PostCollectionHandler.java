@@ -91,13 +91,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
             }
 
         } else {
-            try {
-                URLUtils.checkId(content.get("_id"));
-                docId = content.get("_id");
-            } catch (UnsupportedDocumentIdException idide) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "the type of _id in content body is not supported: " + content.get("_id").getClass().getSimpleName());
-                return;
-            }
+            docId = content.get("_id");
         }
 
         int httpCode = this.documentDAO

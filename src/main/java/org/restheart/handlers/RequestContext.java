@@ -23,6 +23,7 @@ import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
+import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -101,6 +102,8 @@ public class RequestContext {
     private DBObject collectionProps;
 
     private DBObject content;
+    
+    private File file;
 
     private DBObject responseContent;
 
@@ -608,5 +611,19 @@ public class RequestContext {
      */
     public void setResponseContent(DBObject responseContent) {
         this.responseContent = responseContent;
+    }
+
+    /**
+     * @return the file
+     */
+    public File getFile() {
+        return file;
+    }
+
+    /**
+     * @param file the file to set
+     */
+    public void setFile(File file) {
+        this.file = file;
     }
 }
