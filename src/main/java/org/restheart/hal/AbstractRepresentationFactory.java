@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers;
+package org.restheart.hal;
 
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
@@ -25,6 +25,8 @@ import java.util.TreeMap;
 import org.restheart.hal.HALUtils;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
+import org.restheart.handlers.IllegalQueryParamenterException;
+import org.restheart.handlers.RequestContext;
 import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import org.restheart.utils.URLUtils;
 

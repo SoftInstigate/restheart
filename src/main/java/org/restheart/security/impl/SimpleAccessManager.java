@@ -42,11 +42,11 @@ public final class SimpleAccessManager extends AbstractSimpleSecurityManager imp
     private final HashMap<String, Set<Predicate>> acl = new HashMap<>();
 
     /**
-     * @param arguments
+     * @param configuration
      * @throws java.io.FileNotFoundException
      */
-    public SimpleAccessManager(Map<String, Object> arguments) throws FileNotFoundException {
-        init(arguments, "permissions");
+    public SimpleAccessManager(Map<String, Object> configuration) throws FileNotFoundException {
+        init(configuration, "permissions");
     }
 
     @Override

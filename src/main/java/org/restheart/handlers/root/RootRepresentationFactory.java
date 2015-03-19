@@ -26,7 +26,7 @@ import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.types.ObjectId;
-import org.restheart.handlers.AbstractRepresentationFactory;
+import org.restheart.hal.AbstractRepresentationFactory;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 

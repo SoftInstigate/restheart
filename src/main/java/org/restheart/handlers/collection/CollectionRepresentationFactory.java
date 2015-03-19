@@ -27,7 +27,7 @@ import org.restheart.handlers.document.DocumentRepresentationFactory;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
-import org.restheart.handlers.AbstractRepresentationFactory;
+import org.restheart.hal.AbstractRepresentationFactory;
 
 /**
  *

@@ -29,7 +29,6 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import java.net.URISyntaxException;
 import java.util.List;
 import java.util.TreeMap;
 import org.restheart.utils.UnsupportedDocumentIdException;
