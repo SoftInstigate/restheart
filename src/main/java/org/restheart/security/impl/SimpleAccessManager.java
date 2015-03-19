@@ -18,7 +18,6 @@
 package org.restheart.security.impl;
 
 import org.restheart.handlers.RequestContext;
-import org.restheart.security.AccessManager;
 import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateParser;
 import io.undertow.security.idm.Account;
@@ -34,6 +33,7 @@ import static com.google.common.collect.Sets.newHashSet;
 import static io.undertow.predicate.Predicate.PREDICATE_CONTEXT;
 import java.util.TreeMap;
 import java.util.function.Consumer;
+import org.restheart.security.AccessManager;
 
 /**
  * @author Andrea Di Cesare <andrea@softinstigate.com>
@@ -96,6 +96,15 @@ public final class SimpleAccessManager extends AbstractSimpleSecurityManager imp
         
         return roles(exchange).anyMatch(role -> aclForRole(role).stream().anyMatch(p -> p.resolve(exchange)));
     }
+    
+    @Override
+    public boolean isAuthenticationRequired(final HttpServerExchange exchange) {
+        if (getAcl() == null)
+            return true;
+        
+        Set<Predicate> ps = getAcl().get("$unauthenticated");
+        return ps == null ? true : !ps.stream().anyMatch(p -> p.resolve(exchange));
+    }
 
     private Stream<String> roles(HttpServerExchange exchange) {
         return account(exchange).getRoles().stream();
@@ -127,7 +136,6 @@ public final class SimpleAccessManager extends AbstractSimpleSecurityManager imp
     /**
      * @return the acl
      */
-    @Override
     public HashMap<String, Set<Predicate>> getAcl() {
         return acl;
     }

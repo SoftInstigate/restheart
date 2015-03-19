@@ -17,12 +17,7 @@
  */
 package org.restheart.security;
 
-import com.google.common.collect.Sets;
-import io.undertow.predicate.Predicate;
-import io.undertow.predicate.Predicates;
 import io.undertow.server.HttpServerExchange;
-import java.util.HashMap;
-import java.util.Set;
 import org.restheart.handlers.RequestContext;
 
 /**
@@ -30,17 +25,11 @@ import org.restheart.handlers.RequestContext;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class FullAccessManager implements AccessManager {
-    private final FullAccessManagerMap acl;
 
     /**
      * this access manager allows any operation to any user
      */
     public FullAccessManager() {
-        acl = new FullAccessManagerMap();
-        Set predicates = Sets.newHashSet();
-        
-        predicates.add(Predicates.truePredicate());
-        acl.put("k", predicates);
     }
     
     @Override
@@ -48,22 +37,9 @@ public class FullAccessManager implements AccessManager {
         return true;
     }
 
-    @Override
-    public HashMap<String, Set<Predicate>> getAcl() {
-        return acl;
-    }
-}
-
-class FullAccessManagerMap extends HashMap {
-    private final String KEY = "k";
-    
-    @Override
-    public Object get(Object key) {
-        return super.get(KEY); //To change body of generated methods, choose Tools | Templates.
-    }
 
     @Override
-    public Object put(Object key, Object value) {
-        return super.put(KEY, value); //To change body of generated methods, choose Tools | Templates.
+    public boolean isAuthenticationRequired(HttpServerExchange exchange) {
+        return false;
     }
 }
