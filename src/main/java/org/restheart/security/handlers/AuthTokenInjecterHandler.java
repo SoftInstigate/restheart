@@ -69,7 +69,7 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
         }
 
         if (getNext() != null) {
-            getNext() .handleRequest(exchange, context);
+            getNext().handleRequest(exchange, context);
         }
     }
 

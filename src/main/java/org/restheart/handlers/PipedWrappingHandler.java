@@ -17,19 +17,8 @@
  */
 package org.restheart.handlers;
 
-import org.restheart.security.AccessManager;
-import org.restheart.security.handlers.AccessManagerHandler;
-import org.restheart.security.handlers.PredicateAuthenticationConstraintHandler;
-import io.undertow.security.api.AuthenticationMechanism;
-import io.undertow.security.api.AuthenticationMode;
-import io.undertow.security.handlers.AuthenticationCallHandler;
-import io.undertow.security.handlers.AuthenticationMechanismsHandler;
-import io.undertow.security.handlers.SecurityInitialHandler;
-import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import java.util.List;
-import org.restheart.security.handlers.AuthTokenInjecterHandler;
 
 /**
  *
@@ -68,23 +57,4 @@ public class PipedWrappingHandler extends PipedHttpHandler {
             }
         }
     }
-
-    protected static HttpHandler buildSecurityHandlerChain(final AccessManager accessManager, final IdentityManager identityManager, final List<AuthenticationMechanism> mechanisms) {
-        HttpHandler handler;
-        
-        if (accessManager == null) {
-            throw new IllegalArgumentException("Error, accessManager cannot be null. Eventually use FullAccessManager that gives full access power ");
-        }
-
-        handler = new AuthTokenInjecterHandler(new AccessManagerHandler(accessManager, null));
-        
-        handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE,
-                identityManager,
-                new AuthenticationMechanismsHandler(
-                        new PredicateAuthenticationConstraintHandler(
-                                new AuthenticationCallHandler(handler), accessManager), mechanisms));
-        
-        return handler;
-    }
-
 }

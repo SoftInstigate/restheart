@@ -17,18 +17,17 @@
  */
 package org.restheart.security.handlers;
 
+import io.undertow.security.api.SecurityContext;
 import org.restheart.security.AccessManager;
-import io.undertow.predicate.Predicate;
-import io.undertow.security.handlers.AuthenticationConstraintHandler;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import java.util.Set;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.RequestContext;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class PredicateAuthenticationConstraintHandler extends AuthenticationConstraintHandler {
+public class AuthenticationConstraintHandler extends PipedHttpHandler {
 
     AccessManager am;
 
@@ -37,13 +36,22 @@ public class PredicateAuthenticationConstraintHandler extends AuthenticationCons
      * @param next
      * @param am
      */
-    public PredicateAuthenticationConstraintHandler(HttpHandler next, AccessManager am) {
+    public AuthenticationConstraintHandler(PipedHttpHandler next, AccessManager am) {
         super(next);
         this.am = am;
     }
-
-    @Override
+    
     protected boolean isAuthenticationRequired(final HttpServerExchange exchange) {
         return am.isAuthenticationRequired(exchange);
+    }
+
+    @Override
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (isAuthenticationRequired(exchange)) {
+            SecurityContext scontext = exchange.getSecurityContext();
+            scontext.setAuthenticationRequired();
+        }
+
+        getNext().handleRequest(exchange, context);
     }
 }
