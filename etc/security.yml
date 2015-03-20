@@ -7,6 +7,7 @@
 
 
 ---
+## configuration for file based Identity Manager
 users:
     - userid: a
       password: a
@@ -23,7 +24,17 @@ users:
     - userid: admin
       password: changeit
       roles: [users, admins]
+      
+## configuration for db based Identity Manager
+dbim:
+    - db: userbase
+      coll: accounts
+      cache-enabled: false
+      cache-size: 1000
+      cache-ttl: 60000
+      cache-expire-policy: AFTER_WRITE
 
+## configuration for file based Access Manager
 permissions:
 # users with role 'admins' can do anything
     - role: admins
