@@ -1,11 +1,5 @@
 ## RESTHeart simple security configuration file.
 
-## look at undertow documentation for information about predictates syntax 
-## http://undertow.io/documentation/core/predicates-attributes-handlers.html
-
-## the special role $unauthenticated allows to give permissions without requiring authentication
-
-
 ---
 ## configuration for file based Identity Manager
 users:
@@ -29,7 +23,12 @@ dbim:
       cache-size: 1000
       cache-ttl: 60000
       cache-expire-policy: AFTER_WRITE
-      
+
+## configuration for file based Access Manager
+
+## look at undertow documentation for information about predictates syntax 
+## http://undertow.io/documentation/core/predicates-attributes-handlers.html
+## the special role $unauthenticated allows to give permissions without requiring authentication
 permissions:
     - role: admins
       predicate: path-prefix[path="/"]
