@@ -48,8 +48,8 @@ abstract class AbstractSimpleSecurityManager {
             final String confFilePath = extractConfigFilePath(arguments);
             is = new FileInputStream(new File(confFilePath));
             final Map<String, Object> conf = (Map<String, Object>) new Yaml().load(is);
-            List<Map<String, Object>> users = extractUsers(conf, type);
-            users.stream().forEach(consumeConfiguration());
+            List<Map<String, Object>> confItems = extractConfItems(conf, type);
+            confItems.stream().forEach(consumeConfiguration());
         } catch(FileNotFoundException fnfe) {
             LOGGER.error("*** cannot find the file {} specified in the configuration.", extractConfigFilePath(arguments));
             LOGGER.error("*** note that the path must be either absolute or relative to the directory containing the RESTHeart jar file.");
@@ -83,7 +83,7 @@ abstract class AbstractSimpleSecurityManager {
         return confFilePath;
     }
 
-    final List<Map<String, Object>> extractUsers(final Map<String, Object> conf, String type) throws IllegalArgumentException {
+    final List<Map<String, Object>> extractConfItems(final Map<String, Object> conf, String type) throws IllegalArgumentException {
         Object _users = conf.get(type);
         if (_users == null || !(_users instanceof List)) {
             throw new IllegalArgumentException("wrong configuration file format. missing mandatory '" + type + "' section.");
