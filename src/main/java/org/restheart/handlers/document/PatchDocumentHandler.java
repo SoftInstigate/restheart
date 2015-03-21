@@ -91,6 +91,8 @@ public class PatchDocumentHandler extends PipedHttpHandler {
                 content,
                 etag,
                 true);
+        
+        ResponseHelper.injectEtagHeader(exchange, content);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
