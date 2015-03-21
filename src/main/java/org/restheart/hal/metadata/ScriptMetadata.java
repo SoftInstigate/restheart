@@ -20,6 +20,8 @@ package org.restheart.hal.metadata;
 import com.mongodb.BasicDBObject;
 import java.util.Date;
 import javax.script.Bindings;
+import javax.script.Compilable;
+import javax.script.CompiledScript;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
@@ -38,13 +40,13 @@ import org.slf4j.LoggerFactory;
 public abstract class ScriptMetadata {
     private static final Logger LOGGER = LoggerFactory.getLogger(ScriptMetadata.class);
     
-    // "--no-java", is very important! otherwise js can call anthing including java.lang.System.exit()0;
-    private static final ScriptEngine engine = new NashornScriptEngineFactory().getScriptEngine(new String[]{"--no-java"});
+    // "--no-java", is very important! otherwise js can use every Java class including calling java.lang.System.exit();
+    protected static final ScriptEngine engine = new NashornScriptEngineFactory().getScriptEngine(new String[]{"--no-java"});
 
-    protected final String script;
+    protected final CompiledScript script;
 
-    public ScriptMetadata(String script) {
-        this.script = script;
+    public ScriptMetadata(String script) throws ScriptException {
+        this.script = ((Compilable) engine).compile(script);
     }
 
     public Object evaluate(Bindings bindings) throws ScriptException {
@@ -57,11 +59,11 @@ public abstract class ScriptMetadata {
     }
 
     // ref https://blogs.oracle.com/nashorn/entry/improving_nashorn_startup_time_using 
-    private Object evaluateInNewScope(String script, Bindings bindings) throws ScriptException {
+    private Object evaluateInNewScope(CompiledScript script, Bindings bindings) throws ScriptException {
         ScriptContext context = new SimpleScriptContext();
         context.setBindings(bindings, ScriptContext.ENGINE_SCOPE);
         
-        return engine.eval(script, context);
+        return script.eval(context);
     }
     
     static Bindings getTestBindings() {

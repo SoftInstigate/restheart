@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.script.ScriptException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.bson.types.Code;
 
 /**
@@ -40,8 +38,6 @@ public class RepresentationTransformer extends ScriptMetadata {
         THIS, CHILDREN
     };
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RepresentationTransformer.class);
-
     public static final String RTLS_ELEMENT_NAME = "rts";
 
     public static final String RTL_PHASE_ELEMENT_NAME = "phase";
@@ -55,9 +51,10 @@ public class RepresentationTransformer extends ScriptMetadata {
     /**
      *
      * @param phase
+     * @param scope
      * @param code
      */
-    public RepresentationTransformer(PHASE phase, SCOPE scope, Code code) {
+    public RepresentationTransformer(PHASE phase, SCOPE scope, Code code) throws ScriptException {
         super(code.getCode());
         this.phase = phase;
         this.scope = scope;
@@ -169,6 +166,10 @@ public class RepresentationTransformer extends ScriptMetadata {
 
         Code code = (Code) _code;
 
-        return new RepresentationTransformer(phase, scope, code);
+        try {
+            return new RepresentationTransformer(phase, scope, code);
+        } catch (ScriptException ex) {
+            throw new InvalidMetadataException("cannot compile scrip", ex);
+        }
     }
 }
