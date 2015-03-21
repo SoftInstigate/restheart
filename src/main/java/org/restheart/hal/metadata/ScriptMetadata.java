@@ -39,10 +39,13 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class ScriptMetadata {
     private static final Logger LOGGER = LoggerFactory.getLogger(ScriptMetadata.class);
-    
+
     // "--no-java", is very important! otherwise js can use every Java class including calling java.lang.System.exit();
     protected static final ScriptEngine engine = new NashornScriptEngineFactory().getScriptEngine(new String[]{"--no-java"});
 
+    /**
+     * javascript script compiled code
+     */
     protected final CompiledScript script;
 
     public ScriptMetadata(String script) throws ScriptException {
@@ -53,7 +56,7 @@ public abstract class ScriptMetadata {
         Object ret = evaluateInNewScope(script, bindings);
         return ret;
     }
-    
+
     public static Object evaluate(String script, Bindings bindings) throws ScriptException {
         return engine.eval(script, bindings);
     }
@@ -62,16 +65,19 @@ public abstract class ScriptMetadata {
     private Object evaluateInNewScope(CompiledScript script, Bindings bindings) throws ScriptException {
         ScriptContext context = new SimpleScriptContext();
         context.setBindings(bindings, ScriptContext.ENGINE_SCOPE);
-        
+
         return script.eval(context);
     }
-    
+
     static Bindings getTestBindings() {
         Bindings testBindings = new SimpleBindings();
 
+        // empty args
+        testBindings.put("args", "{}");
+        
         // bind the LOGGER
         testBindings.put("$LOGGER", LOGGER);
-        
+
         testBindings.put("$user", "user");
         testBindings.put("$userRoles", new String[0]);
         testBindings.put("$resourceType", RequestContext.TYPE.DOCUMENT.name());

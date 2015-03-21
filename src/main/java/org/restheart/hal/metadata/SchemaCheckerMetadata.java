@@ -47,7 +47,7 @@ public class SchemaCheckerMetadata extends ScriptMetadata {
         this.args = args;
     }
 
-    private static String getCodePlusObjAndScrips(Code code, DBObject obj) {
+    private static String getCodePlusObjAndScrips(Code code, DBObject args) {
         String script = code.getCode();
 
         if (script.contains("JSDValidator")) {
@@ -55,8 +55,8 @@ public class SchemaCheckerMetadata extends ScriptMetadata {
                     + script;
         }
 
-        if (obj != null) {
-            script = "var obj = JSON.parse('" + obj.toString() + "');" + "\n"
+        if (args != null) {
+            script = "var args = JSON.parse('" + args.toString() + "');" + "\n"
                     + script;
         }
 
