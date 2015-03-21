@@ -29,7 +29,6 @@ import javax.script.ScriptException;
 import javax.script.SimpleBindings;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
