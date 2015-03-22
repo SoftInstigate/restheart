@@ -96,6 +96,21 @@ application-logic-mounts:
       args:
           url: /_logic/roles
 
+metadata-named-singletons:
+    - group: checkers
+      interface: org.restheart.hal.metadata.singletons.Checker
+      singletons:
+        - name: allowRandomly
+          class: org.restheart.hal.metadata.singletons.TestChecker
+        - name: ciao
+          class: org.restheart.hal.metadata.singletons.TestChecker
+
+    - group: transformers
+      interface: org.restheart.hal.metadata.singletons.Transformer
+      singletons:
+        - name: addUserName
+          class: org.restheart.hal.metadata.singletons.TestTransformer
+
 ### security 
 
 # The security is configured by setting:

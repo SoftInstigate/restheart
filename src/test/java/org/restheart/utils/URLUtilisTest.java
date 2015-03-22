@@ -17,6 +17,7 @@
  */
 package org.restheart.utils;
 
+import org.restheart.hal.UnsupportedDocumentIdException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import org.bson.types.ObjectId;
