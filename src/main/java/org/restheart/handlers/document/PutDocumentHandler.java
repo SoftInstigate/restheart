@@ -29,7 +29,7 @@ import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
 import org.restheart.utils.URLUtils;
-import org.restheart.utils.UnsupportedDocumentIdException;
+import org.restheart.hal.UnsupportedDocumentIdException;
 
 /**
  *

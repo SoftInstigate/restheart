@@ -71,9 +71,9 @@ public class PatchDBHandler extends PipedHttpHandler {
         }
         
         // check RTL metadata
-        if (content.containsField(RepresentationTransformer.RTLS_ELEMENT_NAME)) {
+        if (content.containsField(RepresentationTransformer.RTS_ELEMENT_NAME)) {
             try {
-                RepresentationTransformer.getFromJson(content, true);
+                RepresentationTransformer.getFromJson(content);
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong representation transform logic definition. " + ex.getMessage(), ex);

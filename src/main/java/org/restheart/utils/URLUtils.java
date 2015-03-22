@@ -17,6 +17,7 @@
  */
 package org.restheart.utils;
 
+import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import java.io.UnsupportedEncodingException;

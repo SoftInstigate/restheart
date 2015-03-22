@@ -474,7 +474,7 @@ public final class Bootstrapper {
             KeyManagerFactory kmf;
             KeyStore ks;
 
-            if (getConf().isUseEmbeddedKeystore()) {
+            if (getConfiguration().isUseEmbeddedKeystore()) {
                 char[] storepass = "restheart".toCharArray();
                 char[] keypass = "restheart".toCharArray();
 
@@ -534,9 +534,9 @@ public final class Bootstrapper {
         LocalCachesSingleton.init(configuration);
 
         if (configuration.isLocalCacheEnabled()) {
-            LOGGER.info("Local cache enabled");
+            LOGGER.info("Local cache for db and collection properties enabled");
         } else {
-            LOGGER.info("Local cache not enabled");
+            LOGGER.info("Local cache for db and collection properties not enabled");
         }
 
         shutdownHandler = getHandlersPipe(identityManager, accessManager);
@@ -750,7 +750,7 @@ public final class Bootstrapper {
     /**
      * @return the conf
      */
-    public static Configuration getConf() {
+    public static Configuration getConfiguration() {
         return configuration;
     }
 }

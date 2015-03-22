@@ -31,7 +31,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.util.List;
 import java.util.TreeMap;
-import org.restheart.utils.UnsupportedDocumentIdException;
+import org.restheart.hal.UnsupportedDocumentIdException;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 

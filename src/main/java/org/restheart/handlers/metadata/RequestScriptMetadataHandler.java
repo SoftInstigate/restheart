@@ -23,8 +23,9 @@ import javax.script.ScriptException;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.hal.metadata.RepresentationTransformer;
+import org.restheart.hal.metadata.singletons.Transformer;
 import org.restheart.handlers.RequestContext;
-import static org.restheart.handlers.metadata.AbstractScriptMetadataHandler.getBindings;
+import org.restheart.utils.NamedSingletonsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +49,7 @@ public class RequestScriptMetadataHandler extends AbstractScriptMetadataHandler 
         return ((context.getMethod() == RequestContext.METHOD.PUT || context.getMethod() == RequestContext.METHOD.PATCH || context.getMethod() == RequestContext.METHOD.POST)
                 && (context.getType() == RequestContext.TYPE.DOCUMENT || context.getType() == RequestContext.TYPE.COLLECTION)
                 && context.getCollectionProps() != null &&
-                context.getCollectionProps().containsField(RepresentationTransformer.RTLS_ELEMENT_NAME));
+                context.getCollectionProps().containsField(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
@@ -56,21 +57,27 @@ public class RequestScriptMetadataHandler extends AbstractScriptMetadataHandler 
         return ((context.getMethod() == RequestContext.METHOD.PUT || context.getMethod() == RequestContext.METHOD.PATCH)
                 && (context.getType() == RequestContext.TYPE.DB || context.getType() == RequestContext.TYPE.COLLECTION)
                 && context.getDbProps() != null
-                && context.getDbProps().containsField(RepresentationTransformer.RTLS_ELEMENT_NAME));
+                && context.getDbProps().containsField(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
     
     @Override
     void enforceDbRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException, ScriptException {
-        List<RepresentationTransformer> dbRts = RepresentationTransformer.getFromJson(context.getDbProps(), false);
+        List<RepresentationTransformer> dbRts = RepresentationTransformer.getFromJson(context.getDbProps());
 
         RequestContext.TYPE requestType = context.getType(); // DB or COLLECTION
-
+        
         for (RepresentationTransformer rt : dbRts) {
+            Transformer t = (Transformer) NamedSingletonsFactory.getInstance().get("transformers", rt.getName());
+            
+            if (t == null) {
+                throw new IllegalArgumentException("cannot find singleton " + rt.getName() + " in singleton group transformers");
+            }
+            
             if (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST) {
                 if (rt.getScope() == RepresentationTransformer.SCOPE.THIS && requestType == RequestContext.TYPE.DB) {
-                    rt.evaluate(getBindings(exchange, context, LOGGER));
+                    t.tranform(exchange, context, context.getContent(), rt.getArgs());
                 } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.COLLECTION) {
-                    rt.evaluate(getBindings(exchange, context, LOGGER));
+                    t.tranform(exchange, context, context.getContent(), rt.getArgs());
                 }
             }
         }
@@ -78,16 +85,22 @@ public class RequestScriptMetadataHandler extends AbstractScriptMetadataHandler 
 
     @Override
     void enforceCollRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException, ScriptException {
-        List<RepresentationTransformer> dbRts = RepresentationTransformer.getFromJson(context.getCollectionProps(), false);
+        List<RepresentationTransformer> dbRts = RepresentationTransformer.getFromJson(context.getCollectionProps());
 
         RequestContext.TYPE requestType = context.getType(); // DOCUMENT or COLLECTION
 
         for (RepresentationTransformer rt : dbRts) {
             if (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST) {
+                Transformer t = (Transformer) NamedSingletonsFactory.getInstance().get("transformers", rt.getName());
+                
+                if (t == null) {
+                throw new IllegalArgumentException("cannot find singleton " + rt.getName() + " in singleton group transformers");
+            }
+                
                 if (rt.getScope() == RepresentationTransformer.SCOPE.THIS && requestType == RequestContext.TYPE.COLLECTION) {
-                    rt.evaluate(getBindings(exchange, context, LOGGER));
+                    t.tranform(exchange, context, context.getContent(), rt.getArgs());
                 } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.DOCUMENT) {
-                    rt.evaluate(getBindings(exchange, context, LOGGER));
+                    t.tranform(exchange, context, context.getContent(), rt.getArgs());
                 }
             }
         }

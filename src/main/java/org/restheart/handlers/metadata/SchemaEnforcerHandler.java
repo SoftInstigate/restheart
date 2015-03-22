@@ -21,10 +21,11 @@ import io.undertow.server.HttpServerExchange;
 import javax.script.ScriptException;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.SchemaCheckerMetadata;
+import org.restheart.hal.metadata.singletons.Checker;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import static org.restheart.handlers.metadata.AbstractScriptMetadataHandler.getBindings;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.NamedSingletonsFactory;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,15 +61,19 @@ public class SchemaEnforcerHandler extends PipedHttpHandler {
 
     private boolean doesSchemaCheckerAppy(RequestContext context) {
         return context.getCollectionProps() != null
-                && context.getCollectionProps().containsField(SchemaCheckerMetadata.SCHEMA_ELEMENT_NAME);
+                && context.getCollectionProps().containsField(SchemaCheckerMetadata.SC_ELEMENT_NAME);
     }
 
     private boolean checkSchema(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException, ScriptException {
-        SchemaCheckerMetadata sc = SchemaCheckerMetadata.getFromJson(context.getCollectionProps(), false);
+        SchemaCheckerMetadata sc = SchemaCheckerMetadata.getFromJson(context.getCollectionProps());
 
         // evaluate the script on document
-        Object result = sc.evaluate(getBindings(exchange, context, LOGGER));
+        Checker checker = (Checker) NamedSingletonsFactory.getInstance().get("checkers", sc.getName());
 
-        return Boolean.TRUE.equals(result);
+        if (checker == null) {
+            throw new IllegalArgumentException("cannot find singleton " + sc.getName() + " in singleton group checkers");
+        }
+
+        return checker.check(exchange, context, sc.getArgs());
     }
 }

@@ -37,7 +37,7 @@ import org.restheart.utils.ResponseHelper;
  */
 public class AuthTokenHandler extends PipedHttpHandler {
 
-    private static final boolean ENABLED = Bootstrapper.getConf().isAuthTokenEnabled();
+    private static final boolean ENABLED = Bootstrapper.getConfiguration().isAuthTokenEnabled();
 
     /**
      *

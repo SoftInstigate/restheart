@@ -30,7 +30,7 @@ import io.undertow.util.HttpString;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
-import org.restheart.utils.UnsupportedDocumentIdException;
+import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.utils.URLUtils;
 import static org.restheart.utils.URLUtils.getReferenceLink;
 

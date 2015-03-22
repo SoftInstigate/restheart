@@ -24,7 +24,7 @@ import org.restheart.utils.URLUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.restheart.utils.UnsupportedDocumentIdException;
+import org.restheart.hal.UnsupportedDocumentIdException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -209,7 +209,7 @@ public class Relationship {
      * @param data
      * @return
      * @throws IllegalArgumentException
-     * @throws org.restheart.utils.UnsupportedDocumentIdException
+     * @throws org.restheart.hal.UnsupportedDocumentIdException
      */
     public String getRelationshipLink(RequestContext context, String dbName, String collName, DBObject data) throws IllegalArgumentException, UnsupportedDocumentIdException {
         Object _referenceValue = data.get(referenceField);

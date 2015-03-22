@@ -22,50 +22,54 @@ import com.mongodb.DBObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import javax.script.ScriptException;
-import org.bson.types.Code;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class RepresentationTransformer extends ScriptMetadata {
+public class RepresentationTransformer {
     public enum PHASE {
         REQUEST, RESPONSE
     };
-    
+
     public enum SCOPE {
         THIS, CHILDREN
     };
 
-    public static final String RTLS_ELEMENT_NAME = "rts";
+    public static final String RTS_ELEMENT_NAME = "rts";
 
-    public static final String RTL_PHASE_ELEMENT_NAME = "phase";
-    public static final String RTL_CODE_ELEMENT_NAME = "code";
-    public static final String RTL_SCOPE_ELEMENT_NAME = "scope";
+    public static final String RT_PHASE_ELEMENT_NAME = "phase";
+    public static final String RT_NAME_ELEMENT_NAME = "name";
+    public static final String RT_SCOPE_ELEMENT_NAME = "scope";
+    public static final String RT_ARGS_ELEMENT_NAME = "args";
 
-    private final Code code;
+    private final String name;
     private final PHASE phase;
     private final SCOPE scope;
+    private final DBObject args;
 
     /**
      *
      * @param phase
      * @param scope
-     * @param code
+     * @param name the name of the transfromer as specified in the yml
+     * configuration file
+     * @param args
      */
-    public RepresentationTransformer(PHASE phase, SCOPE scope, Code code) throws ScriptException {
-        super(code.getCode());
+    public RepresentationTransformer(PHASE phase, SCOPE scope, String name, DBObject args) {
         this.phase = phase;
         this.scope = scope;
-        this.code = code;
+        this.name = name;
+        this.args = args;
     }
 
     /**
-     * @return the code
+     * @return the name
      */
-    public Code getCode() {
-        return code;
+    public String getName() {
+        return name;
     }
 
     /**
@@ -74,7 +78,7 @@ public class RepresentationTransformer extends ScriptMetadata {
     public PHASE getPhase() {
         return phase;
     }
-    
+
     /**
      * @return the scope
      */
@@ -82,74 +86,51 @@ public class RepresentationTransformer extends ScriptMetadata {
         return scope;
     }
 
-    public static List<RepresentationTransformer> getFromJson(DBObject props, boolean checkCode) throws InvalidMetadataException {
-        ArrayList<RepresentationTransformer> ret = new ArrayList<>();
+    /**
+     * @return the args
+     */
+    public DBObject getArgs() {
+        return args;
+    }
 
-        Object _rts = props.get(RTLS_ELEMENT_NAME);
+    public static List<RepresentationTransformer> getFromJson(DBObject props) throws InvalidMetadataException {
+        Object _rts = props.get(RTS_ELEMENT_NAME);
 
-        if (_rts == null) {
-            return ret;
-        }
-
-        if (!(_rts instanceof BasicDBList)) {
-            throw new InvalidMetadataException("element '" + RTLS_ELEMENT_NAME + "' is not an array list." + _rts);
+        if (!(_rts == null || _rts instanceof BasicDBList)) {
+            throw new InvalidMetadataException((_rts == null ? "missing '" : "invalid '") + RTS_ELEMENT_NAME + "' element; it must be an array");
         }
 
         BasicDBList rts = (BasicDBList) _rts;
 
-        for (Object _rt : rts.toArray()) {
-            if (!(_rt instanceof DBObject)) {
-                throw new InvalidMetadataException("elements of '" + RTLS_ELEMENT_NAME + "' array, must be json objects");
-            } else {
-                if (checkCode) {
-                    checkCodeFromJson((DBObject) _rt);
-                }
+        List<RepresentationTransformer> ret = new ArrayList<>();
 
-                ret.add(getRtFromJson((DBObject) _rt));
-            }
+        for (Object o : rts) {
+            ret.add(getSingleFromJson((DBObject) o));
         }
 
         return ret;
     }
 
-    private static Code checkCodeFromJson(DBObject props) throws InvalidMetadataException {
-        Object _code = props.get(RTL_CODE_ELEMENT_NAME);
-
-        if (_code == null || !(_code instanceof Code)) {
-            throw new InvalidMetadataException((_code == null ? "missing '" : "invalid '") + RTL_CODE_ELEMENT_NAME + "' element.");
-        }
-
-        Code code = (Code) _code;
-
-        // check code
-        try {
-            evaluate(code.getCode(), getTestBindings());
-        } catch (ScriptException se) {
-            throw new InvalidMetadataException("invalid javascript code", se);
-        }
-        
-        return code;
-    }
-
-    private static RepresentationTransformer getRtFromJson(DBObject props) throws InvalidMetadataException {
-        Object _phase = props.get(RTL_PHASE_ELEMENT_NAME);
-        Object _scope = props.get(RTL_SCOPE_ELEMENT_NAME);
-        Object _code = props.get(RTL_CODE_ELEMENT_NAME);
+    private static RepresentationTransformer getSingleFromJson(DBObject props) throws InvalidMetadataException {
+        Object _phase = props.get(RT_PHASE_ELEMENT_NAME);
+        Object _scope = props.get(RT_SCOPE_ELEMENT_NAME);
+        Object _name = props.get(RT_NAME_ELEMENT_NAME);
+        Object _args = props.get(RT_ARGS_ELEMENT_NAME);
 
         if (_phase == null || !(_phase instanceof String)) {
-            throw new InvalidMetadataException((_phase == null ? "missing '" : "invalid '") + RTL_PHASE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(PHASE.values()));
+            throw new InvalidMetadataException((_phase == null ? "missing '" : "invalid '") + RT_PHASE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(PHASE.values()));
         }
-        
-        if (_scope == null || !(_scope instanceof String)) {
-            throw new InvalidMetadataException((_phase == null ? "missing '" : "invalid '") + RTL_SCOPE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(SCOPE.values()));
-        }
-        
+
         PHASE phase;
 
         try {
             phase = PHASE.valueOf((String) _phase);
         } catch (IllegalArgumentException iae) {
-            throw new InvalidMetadataException("invalid '" + RTL_PHASE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(PHASE.values()));
+            throw new InvalidMetadataException("invalid '" + RT_PHASE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(PHASE.values()));
+        }
+
+        if (_scope == null || !(_scope instanceof String)) {
+            throw new InvalidMetadataException((_phase == null ? "missing '" : "invalid '") + RT_SCOPE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(SCOPE.values()));
         }
 
         SCOPE scope;
@@ -157,19 +138,21 @@ public class RepresentationTransformer extends ScriptMetadata {
         try {
             scope = SCOPE.valueOf((String) _scope);
         } catch (IllegalArgumentException iae) {
-            throw new InvalidMetadataException("invalid '" + RTL_SCOPE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(SCOPE.values()));
+            throw new InvalidMetadataException("invalid '" + RT_SCOPE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(SCOPE.values()));
         }
 
-        if (_code == null || !(_code instanceof Code)) {
-            throw new InvalidMetadataException((_code == null ? "missing '" : "invalid '") + RTL_CODE_ELEMENT_NAME + "' element. it must be of type $code");
+        if (_name == null || !(_name instanceof String)) {
+            throw new InvalidMetadataException((_name == null ? "missing '" : "invalid '") + RT_NAME_ELEMENT_NAME + "' element");
         }
 
-        Code code = (Code) _code;
+        String name = (String) _name;
 
-        try {
-            return new RepresentationTransformer(phase, scope, code);
-        } catch (ScriptException ex) {
-            throw new InvalidMetadataException("cannot compile scrip", ex);
+        if (_args == null || !(_args instanceof DBObject)) {
+            throw new InvalidMetadataException((_args == null ? "missing '" : "invalid '") + RT_ARGS_ELEMENT_NAME + "' element. it must be an Object");
         }
+
+        DBObject args = (DBObject) _args;
+
+        return new RepresentationTransformer(phase, scope, name, args);
     }
 }

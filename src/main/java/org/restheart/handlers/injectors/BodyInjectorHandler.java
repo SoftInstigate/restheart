@@ -38,7 +38,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import org.apache.tika.Tika;
 import org.restheart.utils.URLUtils;
-import org.restheart.utils.UnsupportedDocumentIdException;
+import org.restheart.hal.UnsupportedDocumentIdException;
 
 /**
  *

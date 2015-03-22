@@ -38,8 +38,8 @@ import org.restheart.security.impl.SimpleAccount;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class AuthTokenInjecterHandler extends PipedHttpHandler {
-    private static final boolean enabled = Bootstrapper.getConf().isAuthTokenEnabled();
-    private static final long TTL = Bootstrapper.getConf().getAuthTokenTtl();
+    private static final boolean enabled = Bootstrapper.getConfiguration().isAuthTokenEnabled();
+    private static final long TTL = Bootstrapper.getConfiguration().getAuthTokenTtl();
 
     /**
      * Creates a new instance of AuthTokenInjecterHandler

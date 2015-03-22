@@ -35,8 +35,8 @@ import org.restheart.cache.CacheFactory;
 public final class AuthTokenIdentityManager implements IdentityManager {
     private final Cache<String, SimpleAccount> cachedAccounts;
     
-    private static final long TTL = Bootstrapper.getConf().getAuthTokenTtl();
-    private static final boolean enabled = Bootstrapper.getConf().isAuthTokenEnabled();
+    private static final long TTL = Bootstrapper.getConfiguration().getAuthTokenTtl();
+    private static final boolean enabled = Bootstrapper.getConfiguration().isAuthTokenEnabled();
     
     /**
      *

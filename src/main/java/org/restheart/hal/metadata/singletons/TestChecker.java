@@ -15,26 +15,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.utils;
+package org.restheart.hal.metadata.singletons;
+
+import com.mongodb.DBObject;
+import io.undertow.server.HttpServerExchange;
+import org.restheart.handlers.RequestContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class UnsupportedDocumentIdException extends Exception {
-    public UnsupportedDocumentIdException() {
-        super();
+public class TestChecker implements Checker {
+    static final Logger LOGGER = LoggerFactory.getLogger(TestChecker.class);
+
+    @Override
+    public boolean check(HttpServerExchange exchange, RequestContext context, DBObject args) {
+        boolean allow = Math.random() < 0.5d;
+        
+        LOGGER.info("returning {}", allow);
+        
+        return allow;
     }
     
-    public UnsupportedDocumentIdException(String message) {
-        super(message);
-    }
-    
-    public UnsupportedDocumentIdException(String message, Throwable cause) {
-        super(message, cause);
-    }
-    
-    public UnsupportedDocumentIdException(Throwable cause) {
-        super(cause);
-    }
 }

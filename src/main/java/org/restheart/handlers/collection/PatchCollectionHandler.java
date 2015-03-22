@@ -85,9 +85,9 @@ public class PatchCollectionHandler extends PipedHttpHandler {
         }
         
         // check RT metadata
-        if (content.containsField(RepresentationTransformer.RTLS_ELEMENT_NAME)) {
+        if (content.containsField(RepresentationTransformer.RTS_ELEMENT_NAME)) {
             try {
-                RepresentationTransformer.getFromJson(content, true);
+                RepresentationTransformer.getFromJson(content);
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong representation transformer definition. " + ex.getMessage(), ex);
@@ -96,9 +96,9 @@ public class PatchCollectionHandler extends PipedHttpHandler {
         }
         
         // check SC metadata
-        if (content.containsField(SchemaCheckerMetadata.SCHEMA_ELEMENT_NAME)) {
+        if (content.containsField(SchemaCheckerMetadata.SC_ELEMENT_NAME)) {
             try {
-                SchemaCheckerMetadata.getFromJson(content, true);
+                SchemaCheckerMetadata.getFromJson(content);
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong schema checker definition. " + ex.getMessage(), ex);
