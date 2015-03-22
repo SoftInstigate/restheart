@@ -19,7 +19,6 @@ package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
-import javax.script.ScriptException;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.hal.metadata.RepresentationTransformer;
@@ -33,8 +32,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class RequestScriptMetadataHandler extends AbstractScriptMetadataHandler {
+public class RequestScriptMetadataHandler extends AbstractTransformerHandler {
     static final Logger LOGGER = LoggerFactory.getLogger(RequestScriptMetadataHandler.class);
+
     /**
      * Creates a new instance of RequestScriptMetadataHandler
      *
@@ -43,13 +43,13 @@ public class RequestScriptMetadataHandler extends AbstractScriptMetadataHandler 
     public RequestScriptMetadataHandler(PipedHttpHandler next) {
         super(next);
     }
-    
+
     @Override
     boolean canCollRepresentationTransformersAppy(RequestContext context) {
         return ((context.getMethod() == RequestContext.METHOD.PUT || context.getMethod() == RequestContext.METHOD.PATCH || context.getMethod() == RequestContext.METHOD.POST)
                 && (context.getType() == RequestContext.TYPE.DOCUMENT || context.getType() == RequestContext.TYPE.COLLECTION)
-                && context.getCollectionProps() != null &&
-                context.getCollectionProps().containsField(RepresentationTransformer.RTS_ELEMENT_NAME));
+                && context.getCollectionProps() != null
+                && context.getCollectionProps().containsField(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
@@ -59,24 +59,24 @@ public class RequestScriptMetadataHandler extends AbstractScriptMetadataHandler 
                 && context.getDbProps() != null
                 && context.getDbProps().containsField(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
-    
+
     @Override
-    void enforceDbRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException, ScriptException {
+    void enforceDbRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
         List<RepresentationTransformer> dbRts = RepresentationTransformer.getFromJson(context.getDbProps());
 
         RequestContext.TYPE requestType = context.getType(); // DB or COLLECTION
-        
+
         for (RepresentationTransformer rt : dbRts) {
             Transformer t = (Transformer) NamedSingletonsFactory.getInstance().get("transformers", rt.getName());
-            
+
             if (t == null) {
                 throw new IllegalArgumentException("cannot find singleton " + rt.getName() + " in singleton group transformers");
             }
-            
+
             if (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST) {
                 if (rt.getScope() == RepresentationTransformer.SCOPE.THIS && requestType == RequestContext.TYPE.DB) {
                     t.tranform(exchange, context, context.getContent(), rt.getArgs());
-                } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.COLLECTION) {
+                } else {
                     t.tranform(exchange, context, context.getContent(), rt.getArgs());
                 }
             }
@@ -84,7 +84,7 @@ public class RequestScriptMetadataHandler extends AbstractScriptMetadataHandler 
     }
 
     @Override
-    void enforceCollRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException, ScriptException {
+    void enforceCollRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
         List<RepresentationTransformer> dbRts = RepresentationTransformer.getFromJson(context.getCollectionProps());
 
         RequestContext.TYPE requestType = context.getType(); // DOCUMENT or COLLECTION
@@ -92,11 +92,11 @@ public class RequestScriptMetadataHandler extends AbstractScriptMetadataHandler 
         for (RepresentationTransformer rt : dbRts) {
             if (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST) {
                 Transformer t = (Transformer) NamedSingletonsFactory.getInstance().get("transformers", rt.getName());
-                
+
                 if (t == null) {
-                throw new IllegalArgumentException("cannot find singleton " + rt.getName() + " in singleton group transformers");
-            }
-                
+                    throw new IllegalArgumentException("cannot find singleton " + rt.getName() + " in singleton group transformers");
+                }
+
                 if (rt.getScope() == RepresentationTransformer.SCOPE.THIS && requestType == RequestContext.TYPE.COLLECTION) {
                     t.tranform(exchange, context, context.getContent(), rt.getArgs());
                 } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.DOCUMENT) {

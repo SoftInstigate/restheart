@@ -23,7 +23,7 @@ import com.mongodb.DBObject;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class SchemaCheckerMetadata {
+public class SchemaChecker {
     public static final String SC_ELEMENT_NAME = "schemaCheck";
     public static final String SC_CHECKER_ELEMENT_NAME = "name";
     public static final String SC_ARGS_ELEMENT_NAME = "args";
@@ -36,7 +36,7 @@ public class SchemaCheckerMetadata {
      * @param checker
      * @param args
      */
-    public SchemaCheckerMetadata(String checker, DBObject args) {
+    public SchemaChecker(String checker, DBObject args) {
         this.name = checker;
         this.args = args;
     }
@@ -55,7 +55,7 @@ public class SchemaCheckerMetadata {
         return args;
     }
 
-    public static SchemaCheckerMetadata getFromJson(DBObject props) throws InvalidMetadataException {
+    public static SchemaChecker getFromJson(DBObject props) throws InvalidMetadataException {
         String name;
         DBObject args = null;
 
@@ -70,7 +70,7 @@ public class SchemaCheckerMetadata {
         Object _name = sc.get(SC_CHECKER_ELEMENT_NAME);
 
         if (_name == null || !(_name instanceof String)) {
-            throw new InvalidMetadataException((_name == null ? "missing '" : "invalid '") + SC_CHECKER_ELEMENT_NAME + "' element. it must be of type $code");
+            throw new InvalidMetadataException((_name == null ? "missing '" : "invalid '") + SC_CHECKER_ELEMENT_NAME + "' element. it must be of type String");
         }
 
         name = (String) _name;
@@ -84,7 +84,7 @@ public class SchemaCheckerMetadata {
 
         args = (DBObject) _args;
         
-        return new SchemaCheckerMetadata(name, args);
+        return new SchemaChecker(name, args);
 
     }
 }

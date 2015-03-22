@@ -22,7 +22,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
-import javax.script.ScriptException;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.RepresentationTransformer;
 import org.restheart.hal.metadata.singletons.Transformer;
@@ -36,7 +35,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class ResponseScriptMetadataHandler extends AbstractScriptMetadataHandler {
+public class ResponseScriptMetadataHandler extends AbstractTransformerHandler {
     static final Logger LOGGER = LoggerFactory.getLogger(ResponseScriptMetadataHandler.class);
 
     /**
@@ -63,7 +62,7 @@ public class ResponseScriptMetadataHandler extends AbstractScriptMetadataHandler
     }
 
     @Override
-    void enforceDbRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException, ScriptException {
+    void enforceDbRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
         List<RepresentationTransformer> dbRts = RepresentationTransformer.getFromJson(context.getDbProps());
 
         RequestContext.TYPE requestType = context.getType(); // DB or COLLECTION
@@ -77,7 +76,7 @@ public class ResponseScriptMetadataHandler extends AbstractScriptMetadataHandler
                 }
 
                 if (rt.getScope() == RepresentationTransformer.SCOPE.THIS && requestType == RequestContext.TYPE.DB) {
-                    t.tranform(exchange, context, context.getContent(), rt.getArgs());
+                    t.tranform(exchange, context, context.getResponseContent(), rt.getArgs());
                 } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.COLLECTION) {
                     BasicDBObject _embedded = (BasicDBObject) context.getResponseContent().get("_embedded");
 
@@ -97,7 +96,7 @@ public class ResponseScriptMetadataHandler extends AbstractScriptMetadataHandler
     }
 
     @Override
-    void enforceCollRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException, ScriptException {
+    void enforceCollRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
         List<RepresentationTransformer> dbRts = RepresentationTransformer.getFromJson(context.getCollectionProps());
 
         RequestContext.TYPE requestType = context.getType(); // DOCUMENT or COLLECTION
@@ -112,11 +111,11 @@ public class ResponseScriptMetadataHandler extends AbstractScriptMetadataHandler
                 
                 if (rt.getScope() == RepresentationTransformer.SCOPE.THIS && requestType == RequestContext.TYPE.COLLECTION) {
                     // evaluate the script on collection
-                    t.tranform(exchange, context, context.getContent(), rt.getArgs());
+                    t.tranform(exchange, context, context.getResponseContent(), rt.getArgs());
                 } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.COLLECTION) {
                     BasicDBObject _embedded = (BasicDBObject) context.getResponseContent().get("_embedded");
 
-                    // evaluate the script on children documents
+                    // execute the logic on children documents
                     BasicDBList docs = (BasicDBList) _embedded.get("rh:doc");
 
                     if (docs != null) {
@@ -127,7 +126,7 @@ public class ResponseScriptMetadataHandler extends AbstractScriptMetadataHandler
                         }
                     }
 
-                    // evaluate the script on children files
+                    // execute the logic on children files
                     BasicDBList files = (BasicDBList) _embedded.get("rh:file");
 
                     if (files != null) {
@@ -138,7 +137,6 @@ public class ResponseScriptMetadataHandler extends AbstractScriptMetadataHandler
                         }
                     }
                 } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.DOCUMENT) {
-                    // evaluate the script on document
                     t.tranform(exchange, context, context.getContent(), rt.getArgs());
                 }
             }

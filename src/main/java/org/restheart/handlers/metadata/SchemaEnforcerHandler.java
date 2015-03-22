@@ -18,9 +18,8 @@
 package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
-import javax.script.ScriptException;
 import org.restheart.hal.metadata.InvalidMetadataException;
-import org.restheart.hal.metadata.SchemaCheckerMetadata;
+import org.restheart.hal.metadata.SchemaChecker;
 import org.restheart.hal.metadata.singletons.Checker;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -61,11 +60,11 @@ public class SchemaEnforcerHandler extends PipedHttpHandler {
 
     private boolean doesSchemaCheckerAppy(RequestContext context) {
         return context.getCollectionProps() != null
-                && context.getCollectionProps().containsField(SchemaCheckerMetadata.SC_ELEMENT_NAME);
+                && context.getCollectionProps().containsField(SchemaChecker.SC_ELEMENT_NAME);
     }
 
-    private boolean checkSchema(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException, ScriptException {
-        SchemaCheckerMetadata sc = SchemaCheckerMetadata.getFromJson(context.getCollectionProps());
+    private boolean checkSchema(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
+        SchemaChecker sc = SchemaChecker.getFromJson(context.getCollectionProps());
 
         // evaluate the script on document
         Checker checker = (Checker) NamedSingletonsFactory.getInstance().get("checkers", sc.getName());

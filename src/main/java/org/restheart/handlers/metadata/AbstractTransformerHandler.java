@@ -17,30 +17,22 @@
  */
 package org.restheart.handlers.metadata;
 
-import com.google.common.net.HttpHeaders;
-import io.undertow.attribute.ExchangeAttributes;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
-import java.util.Date;
-import javax.script.Bindings;
-import javax.script.ScriptException;
-import javax.script.SimpleBindings;
 import org.restheart.hal.metadata.InvalidMetadataException;
-import org.slf4j.Logger;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public abstract class AbstractScriptMetadataHandler extends PipedHttpHandler {
+public abstract class AbstractTransformerHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of RequestScriptMetadataHandler
      *
      * @param next
      */
-    public AbstractScriptMetadataHandler(PipedHttpHandler next) {
+    public AbstractTransformerHandler(PipedHttpHandler next) {
         super(next);
     }
 
@@ -55,16 +47,16 @@ public abstract class AbstractScriptMetadataHandler extends PipedHttpHandler {
         if (canCollRepresentationTransformersAppy(context)) {
             try {
                 enforceCollRepresentationTransformLogic(exchange, context);
-            } catch (InvalidMetadataException | ScriptException e) {
-                context.addWarning("error evaluating script metadata: " + e.getMessage());
+            } catch (InvalidMetadataException e) {
+                context.addWarning("error enforcing representation transformation logic: " + e.getMessage());
             }
         }
 
         if (canDBRepresentationTransformersAppy(context)) {
             try {
                 enforceDbRepresentationTransformLogic(exchange, context);
-            } catch (InvalidMetadataException | ScriptException e) {
-                context.addWarning("error evaluating script metadata: " + e.getMessage());
+            } catch (InvalidMetadataException e) {
+                context.addWarning("error enforcing representation transformation logic: " + e.getMessage());
             }
         }
 
@@ -77,7 +69,7 @@ public abstract class AbstractScriptMetadataHandler extends PipedHttpHandler {
 
     abstract boolean canDBRepresentationTransformersAppy(RequestContext context);
 
-    abstract void enforceDbRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException, ScriptException;
+    abstract void enforceDbRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException;
 
-    abstract void enforceCollRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException, ScriptException;
+    abstract void enforceCollRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException;
 }
