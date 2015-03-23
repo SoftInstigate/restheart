@@ -37,7 +37,7 @@ import org.restheart.handlers.applicationlogic.ApplicationLogicHandler;
 import org.restheart.handlers.OptionsHandler;
 import org.restheart.handlers.PipedWrappingHandler;
 import org.restheart.handlers.injectors.BodyInjectorHandler;
-import org.restheart.handlers.metadata.RequestScriptMetadataHandler;
+import org.restheart.handlers.metadata.RequestTransformerMetadataHandler;
 import org.restheart.security.handlers.SecurityHandler;
 import org.restheart.security.handlers.CORSHandler;
 import org.restheart.utils.FileUtils;
@@ -556,7 +556,7 @@ public final class Bootstrapper {
         PipedHttpHandler coreHandlerChain
                 = new DbPropsInjectorHandler(
                         new CollectionPropsInjectorHandler(
-                                new RequestScriptMetadataHandler(
+                                new RequestTransformerMetadataHandler(
                                         new RequestDispacherHandler()
                                 )));
 

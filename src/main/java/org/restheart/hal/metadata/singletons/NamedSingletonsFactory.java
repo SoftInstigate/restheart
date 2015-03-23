@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.utils;
+package org.restheart.hal.metadata.singletons;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;

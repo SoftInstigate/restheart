@@ -1,6 +1,6 @@
 /*
  * RESTHeart - the data REST API server
- * Copyright (C) SoftInstigate Srl
+ * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,17 +17,14 @@
  */
 package org.restheart.handlers.metadata;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.restheart.hal.metadata.InvalidMetadataException;
+import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.hal.metadata.RepresentationTransformer;
 import org.restheart.hal.metadata.singletons.Transformer;
-import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.utils.NamedSingletonsFactory;
+import org.restheart.hal.metadata.singletons.NamedSingletonsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,29 +32,31 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class ResponseScriptMetadataHandler extends AbstractTransformerHandler {
-    static final Logger LOGGER = LoggerFactory.getLogger(ResponseScriptMetadataHandler.class);
+public class RequestTransformerMetadataHandler extends AbstractTransformerHandler {
+    static final Logger LOGGER = LoggerFactory.getLogger(RequestTransformerMetadataHandler.class);
 
     /**
-     * Creates a new instance of ResponseScriptMetadataHandler
+     * Creates a new instance of RequestTransformerMetadataHandler
      *
      * @param next
      */
-    public ResponseScriptMetadataHandler(PipedHttpHandler next) {
+    public RequestTransformerMetadataHandler(PipedHttpHandler next) {
         super(next);
     }
 
     @Override
     boolean canCollRepresentationTransformersAppy(RequestContext context) {
-        return (context.getMethod() == RequestContext.METHOD.GET
+        return ((context.getMethod() == RequestContext.METHOD.PUT || context.getMethod() == RequestContext.METHOD.PATCH || context.getMethod() == RequestContext.METHOD.POST)
                 && (context.getType() == RequestContext.TYPE.DOCUMENT || context.getType() == RequestContext.TYPE.COLLECTION)
+                && context.getCollectionProps() != null
                 && context.getCollectionProps().containsField(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
     boolean canDBRepresentationTransformersAppy(RequestContext context) {
-        return (context.getMethod() == RequestContext.METHOD.GET
+        return ((context.getMethod() == RequestContext.METHOD.PUT || context.getMethod() == RequestContext.METHOD.PATCH)
                 && (context.getType() == RequestContext.TYPE.DB || context.getType() == RequestContext.TYPE.COLLECTION)
+                && context.getDbProps() != null
                 && context.getDbProps().containsField(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
@@ -68,28 +67,17 @@ public class ResponseScriptMetadataHandler extends AbstractTransformerHandler {
         RequestContext.TYPE requestType = context.getType(); // DB or COLLECTION
 
         for (RepresentationTransformer rt : dbRts) {
-            if (rt.getPhase() == RepresentationTransformer.PHASE.RESPONSE) {
-                Transformer t = (Transformer) NamedSingletonsFactory.getInstance().get("transformers", rt.getName());
+            Transformer t = (Transformer) NamedSingletonsFactory.getInstance().get("transformers", rt.getName());
 
-                if (t == null) {
-                    throw new IllegalArgumentException("cannot find singleton " + rt.getName() + " in singleton group transformers");
-                }
+            if (t == null) {
+                throw new IllegalArgumentException("cannot find singleton " + rt.getName() + " in singleton group transformers");
+            }
 
+            if (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST) {
                 if (rt.getScope() == RepresentationTransformer.SCOPE.THIS && requestType == RequestContext.TYPE.DB) {
-                    t.tranform(exchange, context, context.getResponseContent(), rt.getArgs());
-                } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.COLLECTION) {
-                    BasicDBObject _embedded = (BasicDBObject) context.getResponseContent().get("_embedded");
-
-                    // evaluate the script on children collection
-                    BasicDBList colls = (BasicDBList) _embedded.get("rh:coll");
-
-                    if (colls != null) {
-                        for (String k : colls.keySet()) {
-                            DBObject coll = (DBObject) colls.get(k);
-                            
-                            t.tranform(exchange, context, coll, rt.getArgs());
-                        }
-                    }
+                    t.tranform(exchange, context, context.getContent(), rt.getArgs());
+                } else {
+                    t.tranform(exchange, context, context.getContent(), rt.getArgs());
                 }
             }
         }
@@ -102,40 +90,15 @@ public class ResponseScriptMetadataHandler extends AbstractTransformerHandler {
         RequestContext.TYPE requestType = context.getType(); // DOCUMENT or COLLECTION
 
         for (RepresentationTransformer rt : dbRts) {
-            if (rt.getPhase() == RepresentationTransformer.PHASE.RESPONSE) {
+            if (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST) {
                 Transformer t = (Transformer) NamedSingletonsFactory.getInstance().get("transformers", rt.getName());
 
                 if (t == null) {
                     throw new IllegalArgumentException("cannot find singleton " + rt.getName() + " in singleton group transformers");
                 }
-                
+
                 if (rt.getScope() == RepresentationTransformer.SCOPE.THIS && requestType == RequestContext.TYPE.COLLECTION) {
-                    // evaluate the script on collection
-                    t.tranform(exchange, context, context.getResponseContent(), rt.getArgs());
-                } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.COLLECTION) {
-                    BasicDBObject _embedded = (BasicDBObject) context.getResponseContent().get("_embedded");
-
-                    // execute the logic on children documents
-                    BasicDBList docs = (BasicDBList) _embedded.get("rh:doc");
-
-                    if (docs != null) {
-                        for (String k : docs.keySet()) {
-                            DBObject doc = (DBObject) docs.get(k);
-
-                            t.tranform(exchange, context, doc, rt.getArgs());
-                        }
-                    }
-
-                    // execute the logic on children files
-                    BasicDBList files = (BasicDBList) _embedded.get("rh:file");
-
-                    if (files != null) {
-                        for (String k : files.keySet()) {
-                            DBObject file = (DBObject) files.get(k);
-                            
-                            t.tranform(exchange, context, file, rt.getArgs());
-                        }
-                    }
+                    t.tranform(exchange, context, context.getContent(), rt.getArgs());
                 } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.DOCUMENT) {
                     t.tranform(exchange, context, context.getContent(), rt.getArgs());
                 }
