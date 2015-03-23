@@ -25,14 +25,18 @@ import org.restheart.handlers.RequestContext;
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
- * 
- * this transformer filters out the properties from the resource representation.
- * 
- * if added to the REQUEST phase, it avoids properties to be stored
- * if added to the RESPONSE phase, it hides stored properties
- * 
- * the properties to filter out are passed in the args argumenet as an array of strings
- * 
+ *
+ * This transformer filters out the properties from the resource representation.
+ * the properties to filter out are passed in the args argumenet as an array of
+ * strings.
+ *
+ * If added to the REQUEST phase, it avoids properties to be stored, if added to
+ * the RESPONSE phase, it hides stored properties.
+ *
+ * <br>Example that removes the property 'password' from the response:
+ * <br>rtl:=[{name:"filterProperties", "phase":"RESPONSE", "scope":"CHILDREN",
+ * args:["password"]}]
+ *
  */
 public class FilterTransformer implements Transformer {
     /**
@@ -40,7 +44,8 @@ public class FilterTransformer implements Transformer {
      * @param exchange
      * @param context
      * @param contentToTransform
-     * @param args properties to filter out as an array of strings (["prop1", "prop2"]
+     * @param args properties to filter out as an array of strings (["prop1",
+     * "prop2"]
      */
     @Override
     public void tranform(final HttpServerExchange exchange, final RequestContext context, DBObject contentToTransform, final DBObject args) {
@@ -57,7 +62,6 @@ public class FilterTransformer implements Transformer {
                 }
             });
 
-            
         } else {
             context.addWarning("transformer wrong definition: args property must be an arrary of string property names.");
         }

@@ -67,7 +67,14 @@ public class RequestTransformerMetadataHandler extends AbstractTransformerHandle
         RequestContext.TYPE requestType = context.getType(); // DB or COLLECTION
 
         for (RepresentationTransformer rt : dbRts) {
-            Transformer t = (Transformer) NamedSingletonsFactory.getInstance().get("transformers", rt.getName());
+            Transformer t;
+
+            try {
+                t = (Transformer) NamedSingletonsFactory.getInstance().get("transformers", rt.getName());
+            } catch (IllegalArgumentException ex) {
+                context.addWarning("error applying transformer: " + ex.getMessage());
+                return;
+            }
 
             if (t == null) {
                 throw new IllegalArgumentException("cannot find singleton " + rt.getName() + " in singleton group transformers");

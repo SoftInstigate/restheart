@@ -20,21 +20,10 @@ package org.restheart.hal.metadata.singletons;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import com.mongodb.util.JSONSerializers;
-import com.mongodb.util.ObjectSerializer;
 import io.undertow.server.HttpServerExchange;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
-import java.util.regex.Pattern;
-import org.bson.types.BSONTimestamp;
-import org.bson.types.Code;
-import org.bson.types.MaxKey;
-import org.bson.types.MinKey;
-import org.bson.types.ObjectId;
-import org.bson.types.Symbol;
 import org.restheart.handlers.RequestContext;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,31 +35,37 @@ import org.slf4j.LoggerFactory;
  * expression
  *
  * the args arguments is an array of condition. a condition is json object as
- * follows: { path: "[pathexpr]", type: "[type]" }
+ * follows: { "path": "PATHEXPR", [ "type": "TYPE]" | "count": COUNT ]}
  *
  * where
  *
- * [pathexpr] use the . notation to identity the property, examples
- *
- * {a: {b:1, c: {d:2,e:3}}, f:4} a -> {b:1, c: {d:2,e:3}}, f:4} a.b -> 1 a.c ->
- * {d:2,e:3} a.c.d -> 2
- *
- * {a: [{b:1}, {d:1,e:1}}, true]}
- *
- * a -> [{b:1,c:2}, {b:3,c:4}, {b:true}] a.[*] -> {b:1,c:2}, {b:3,c:4}, true
- * a.[*].c -> 2, 4, null
- *
- * a -> [{b:1,c:2}, {b:3,c:4}, true] a.[*] -> {b:1,c:2}, {b:3,c:4}, true a.[*].c
- * -> exception, third element of array is not an object
- *
- * [type] can be any BSON type: null, object, array, string, number, boolean
+ * <br>[pathexpr] use the . notation to identity the property
+ * <br>[count] is the number of expected values
+ * <br>[type] can be any BSON type: null, object, array, string, number, boolean
  * objectid, date,timestamp, maxkey, minkey, symbol, code, objectid
+ *
+ * <br>examples of path expressions
+ *
+ * <br>root = {a: {b:1, c: {d:2, e:3}}, f:4}
+ * <br> a -> {b:1, c: {d:2, e:3}}, f:4}
+ * <br> a.b -> 1
+ * <br> a.c -> {d:2,e:3}
+ * <br> a.c.d -> 2
+ *
+ * <br>root = {a: [{b:1}, {c:2,d:3}}, true]}
+ *
+ * <br>a -> [{b:1}, {c:2,d:3}, true]
+ * <br>a.[*] -> {b:1}, {c:2,d:3}, true
+ * <br>a.[*].c -> null, 2, null
+ *
+ *
+ * <br>root = {a: [{b:1}, {b:2}, {b:3}]}"
+ *
+ * <br>*.a.[*].b -> [1,2,3]
  *
  */
 public class SimpleContentChecker implements Checker {
     static final Logger LOGGER = LoggerFactory.getLogger(SimpleContentChecker.class);
-
-    private static final ObjectSerializer serializer = JSONSerializers.getStrict();
 
     @Override
     public boolean check(HttpServerExchange exchange, RequestContext context, DBObject args) {
@@ -84,26 +79,34 @@ public class SimpleContentChecker implements Checker {
                     String path = null;
                     Object _path = condition.get("path");
 
-                    if (_path == null || !(_path instanceof String)) {
-                        context.addWarning("condition in the args list missing the string path property: " + _condition);
-                    } else {
+                    if (_path != null && _path instanceof String) {
                         path = (String) _path;
                     }
 
                     String type = null;
                     Object _type = condition.get("type");
 
-                    if (_type == null || !(_type instanceof String)) {
-                        context.addWarning("condition in the args list missing the string type property: " + _condition);
-                    } else {
-                        type = (String) _type;
+                    int count = -1;
+                    Object _count = condition.get("count");
+
+                    if (_count != null && _type instanceof Integer) {
+                        count = (Integer) count;
+                    }
+
+                    if (count < 0 && type == null) {
+                        context.addWarning("condition in the args list does not have count and type property, specify at least one: " + _condition);
                     }
 
                     if (path != null && type != null) {
-                        return check(context.getContent(), path, type);
+                        return checkType(context.getContent(), path, type);
+                    } else if (path != null && count >= 0) {
+                        return checkCount(context.getContent(), path, count);
+                    } else if (path != null && type != null && count >= 0) {
+                        return checkCount(context.getContent(), path, count) && checkType(context.getContent(), path, type);
                     } else {
                         return false;
                     }
+
                 } else {
                     context.addWarning("property in the args list is not an object: " + _condition);
                     return false;
@@ -115,135 +118,17 @@ public class SimpleContentChecker implements Checker {
         }
     }
 
-    private boolean check(DBObject json, String path, String type) {
-        if (json instanceof BasicDBObject) {
-            LOGGER.debug("the content is not a json object: " + json.getClass().getSimpleName());
-            return false;
-        }
-
+    private boolean checkType(DBObject json, String path, String type) {
         BasicDBObject _json = (BasicDBObject) json;
 
-        List<Object> props = getPropsFromPath(_json, path);
+        List<Object> props = JsonUtils.getPropsFromPath(_json, path);
 
-        return props.stream().map((prop) -> checkType(prop, type)).noneMatch((thisCheck) -> (!thisCheck));
+        return props.stream().map((prop) -> JsonUtils.checkType(prop, type)).noneMatch((thisCheck) -> (!thisCheck));
     }
 
-    public static List<Object> getPropsFromPath(Object root, String path) throws IllegalArgumentException {
-        String pathTokens[] = path.split(Pattern.quote("."));
+    private boolean checkCount(DBObject json, String path, int count) {
+        BasicDBObject _json = (BasicDBObject) json;
 
-        if (pathTokens == null || pathTokens.length == 0 || !pathTokens[0].equals("*")) {
-            throw new IllegalArgumentException("wrong path. it must use the . notation and start with *");
-        } else if (!(root instanceof BasicDBObject)) {
-            throw new IllegalArgumentException("wrong json. it must be an object");
-        } else {
-            return _getPropsFromPath(root, path.split(Pattern.quote(".")));
-        }
+        return count == JsonUtils.countPropsFromPath(count, path);
     }
-
-    public static List<Object> _getPropsFromPath(Object json, String[] pathTokens) throws IllegalArgumentException {
-        if (json == null) {
-            throw new IllegalArgumentException("json argument cannot be null");
-        }
-
-        if (pathTokens == null) {
-            throw new IllegalArgumentException("pathTokens argument cannot be null");
-        }
-
-        ArrayList<Object> ret = new ArrayList<>();
-
-        String pathToken;
-
-        if (pathTokens.length > 0) {
-            pathToken = pathTokens[0];
-        } else {
-            pathToken = null;
-        }
-
-        if (pathToken == null) {
-            ret.add(json);
-        } else if (pathToken.equals("*")) {
-            if (!(json instanceof BasicDBObject)) {
-                throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; it should be an object but found " + (json == null ? "null" : serializer.serialize(json)));
-            }
-
-            ret.addAll(_getPropsFromPath(json, subpath(pathTokens)));
-        } else if (pathToken.equals("[*]")) {
-            if (!(json instanceof BasicDBList)) {
-                throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; it should be a list " + "but found " + (json == null ? "null" : serializer.serialize(json)));
-            }
-
-            for (String key : ((BasicDBList) json).keySet()) {
-                ret.addAll(_getPropsFromPath(((BasicDBList) json).get(key), subpath(pathTokens)));
-            }
-        } else {
-            if (json instanceof BasicDBList) {
-                throw new IllegalArgumentException("wrong path " + pathFromTokens(pathTokens) + " at token " + pathToken + "; it should be '[*]'");
-            } else if (json instanceof BasicDBObject) {
-                ret.addAll(_getPropsFromPath(((DBObject) json).get(pathToken), subpath(pathTokens)));
-            } else {
-                throw new IllegalArgumentException("wrong path " + pathFromTokens(pathTokens) + " at token " + pathToken + "; reached leaf but path tokens remaining" + (json == null ? "null" : serializer.serialize(json)));
-            }
-        }
-
-        return ret;
-    }
-
-    private static String pathFromTokens(String[] pathTokens) {
-        if (pathTokens == null)
-            return null;
-        
-        String ret = "";
-
-        for (int cont = 1; cont < pathTokens.length; cont++) {
-            ret = ret.concat(pathTokens[cont]);
-
-            if (cont < pathTokens.length - 1) {
-                ret = ret.concat(".");
-            }
-        }
-
-        return ret;
-    }
-
-    private static String[] subpath(String[] pathTokens) {
-        ArrayList<String> subpath = new ArrayList<>();
-
-        for (int cont = 1; cont < pathTokens.length; cont++) {
-            subpath.add(pathTokens[cont]);
-        }
-
-        return subpath.toArray(new String[0]);
-    }
-
-    private boolean checkType(Object o, String type) {
-        switch (type) {
-            case "object":
-                return o instanceof BasicDBObject;
-            case "array":
-                return o instanceof BasicDBList;
-            case "string":
-                return o instanceof String;
-            case "number":
-                return o instanceof Number;
-            case "boolean":
-                return o instanceof Boolean;
-            case "objectid":
-                return o instanceof ObjectId;
-            case "date":
-                return o instanceof Date;
-            case "timestamp":
-                return o instanceof BSONTimestamp;
-            case "maxkey":
-                return o instanceof MaxKey;
-            case "minkey":
-                return o instanceof MinKey;
-            case "symbol":
-                return o instanceof Symbol;
-            case "code":
-                return o instanceof Code;
-            default:
-                return false;
-        }
-    }
-
 }

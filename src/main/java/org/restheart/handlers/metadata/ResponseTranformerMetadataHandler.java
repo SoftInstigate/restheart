@@ -86,7 +86,7 @@ public class ResponseTranformerMetadataHandler extends AbstractTransformerHandle
                     if (colls != null) {
                         for (String k : colls.keySet()) {
                             DBObject coll = (DBObject) colls.get(k);
-                            
+
                             t.tranform(exchange, context, coll, rt.getArgs());
                         }
                     }
@@ -103,12 +103,19 @@ public class ResponseTranformerMetadataHandler extends AbstractTransformerHandle
 
         for (RepresentationTransformer rt : dbRts) {
             if (rt.getPhase() == RepresentationTransformer.PHASE.RESPONSE) {
-                Transformer t = (Transformer) NamedSingletonsFactory.getInstance().get("transformers", rt.getName());
+                Transformer t;
+
+                try {
+                    t = (Transformer) NamedSingletonsFactory.getInstance().get("transformers", rt.getName());
+                } catch (IllegalArgumentException ex) {
+                    context.addWarning("error applying transformer: " + ex.getMessage());
+                    return;
+                }
 
                 if (t == null) {
                     throw new IllegalArgumentException("cannot find singleton " + rt.getName() + " in singleton group transformers");
                 }
-                
+
                 if (rt.getScope() == RepresentationTransformer.SCOPE.THIS && requestType == RequestContext.TYPE.COLLECTION) {
                     // evaluate the script on collection
                     t.tranform(exchange, context, context.getResponseContent(), rt.getArgs());
@@ -132,7 +139,7 @@ public class ResponseTranformerMetadataHandler extends AbstractTransformerHandle
                     if (files != null) {
                         for (String k : files.keySet()) {
                             DBObject file = (DBObject) files.get(k);
-                            
+
                             t.tranform(exchange, context, file, rt.getArgs());
                         }
                     }

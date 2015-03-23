@@ -66,8 +66,14 @@ public class CheckMetadataHandler extends PipedHttpHandler {
     private boolean check(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
         SchemaChecker sc = SchemaChecker.getFromJson(context.getCollectionProps());
 
-        // evaluate the script on document
-        Checker checker = (Checker) NamedSingletonsFactory.getInstance().get("checkers", sc.getName());
+        Checker checker;
+
+        try {
+            checker = (Checker) NamedSingletonsFactory.getInstance().get("checkers", sc.getName());
+        } catch (IllegalArgumentException ex) {
+            context.addWarning("error applying checker: " + ex.getMessage());
+            return false;
+        }
 
         if (checker == null) {
             throw new IllegalArgumentException("cannot find singleton " + sc.getName() + " in singleton group checkers");

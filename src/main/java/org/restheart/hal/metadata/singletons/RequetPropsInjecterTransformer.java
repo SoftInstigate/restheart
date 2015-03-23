@@ -25,6 +25,7 @@ import io.undertow.server.HttpServerExchange;
 import java.util.HashMap;
 import java.util.Objects;
 import org.restheart.handlers.RequestContext;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +36,9 @@ import org.slf4j.LoggerFactory;
  * this transformer adds log info to the properties of the resource
  * representation.
  *
- * for instance, log properties are: log: { userName:"andrea",
- * remoteIp:"127.0.0.1"}
+ * <br>for instance, with the following definition:
+ * <br>{name:"addRequestProperties", "phase":"REQUEST", "scope":"CHILDREN", args:{"log": ["userName", "remoteIp"]}}
+ * <br>injected properties are: _log: { userName:"andrea", remoteIp:"127.0.0.1"}
  *
  * it is intended to be applied on REQUEST phase
  *
@@ -59,29 +61,38 @@ public class RequetPropsInjecterTransformer implements Transformer {
      */
     @Override
     public void tranform(final HttpServerExchange exchange, final RequestContext context, DBObject contentToTransform, final DBObject args) {
-        BasicDBObject log = new BasicDBObject();
+        BasicDBObject injected = new BasicDBObject();
 
-        if (args instanceof BasicDBList) {
+        if (args instanceof BasicDBObject) {
             HashMap<String, String> properties = getPropsValues(exchange, context);
 
-            BasicDBList toinject = (BasicDBList) args;
+            String firstKey = args.keySet().iterator().next();
 
-            toinject.forEach(_el -> {
-                if (_el instanceof String) {
-                    String el = (String) _el;
+            Object _toinject = args.get(firstKey);
 
-                    String value = properties.get(el);
+            if (_toinject instanceof BasicDBList) {
 
-                    log.put(el, value);
+                BasicDBList toinject = (BasicDBList) _toinject;
 
-                } else {
-                    context.addWarning("property in the args list is not a string: " + _el);
-                }
-            });
+                toinject.forEach(_el -> {
+                    if (_el instanceof String) {
+                        String el = (String) _el;
 
-            contentToTransform.put("_log", log);
+                        String value = properties.get(el);
+
+                        injected.put(el, value);
+
+                    } else {
+                        context.addWarning("property in the args list is not a string: " + _el);
+                    }
+                });
+
+                contentToTransform.put(firstKey, injected);
+            } else {
+                context.addWarning("transformer wrong definition: args must be an object with a array containing the names of the properties to inject. got " + JsonUtils.serialize(args));
+            }
         } else {
-            context.addWarning("transformer wrong definition: args property must be an arrary of string property names.");
+            context.addWarning("transformer wrong definition: args must be an object with a array containing the names of the properties to inject. got " + JsonUtils.serialize(args));
         }
 
     }
