@@ -188,21 +188,29 @@ public class SimpleContentChecker implements Checker {
                 Object _count = _condition.get("count");
 
                 LOGGER.debug("count ? {}", _count != null);
+                LOGGER.debug("path {}", path);
+                LOGGER.debug("condition {}", _condition);
                 LOGGER.debug(JsonUtils.getPropsFromPath(content, path.concat(".*")).toString());
-                
+
                 if (_count != null) {
-                    // count $.*
-                    // patch data = {a:[1,2]}
-                    
-                    
-                    
-                    return false;
+                    if (path.equals("$") || path.equals("$.*")) {
+                        return false;
+                    } else {
+                        List<Object> matches = JsonUtils.getPropsFromPath(content, path);
+
+                        if (matches.isEmpty()) {
+                            return false;
+                        }
+
+                        return !(matches.size() == 1 && matches.get(0) == null);
+                    }
                 } else {
                     List<Object> matches = JsonUtils.getPropsFromPath(content, path);
-                    
-                    if (matches.isEmpty())
+
+                    if (matches.isEmpty()) {
                         return false;
-                    
+                    }
+
                     return !(matches.size() == 1 && matches.get(0) == null);
                 }
             }).collect(Collectors.toList());
@@ -264,11 +272,6 @@ public class SimpleContentChecker implements Checker {
         } else {
             Pattern p = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
             ret = props.stream().allMatch(prop -> {
-                LOGGER.debug("**** regex {}", regex);
-                LOGGER.debug("**** prop {}", prop);
-                LOGGER.debug("**** JsonUtils.serialize(prop) {}", JsonUtils.serialize(prop));
-                LOGGER.debug("**** regex matches  {}", p.matcher(JsonUtils.serialize(prop)).find());
-
                 return p.matcher(JsonUtils.serialize(prop)).find();
             });
         }
