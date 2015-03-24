@@ -58,11 +58,11 @@ public class JsonUtils {
      * @return the List of Objects extracted from root ojbect and identifie by
      * the path
      *
-     * examples 
+     * examples
      * <br>root = {a: {b:1, c: {d:2, e:3}}, f:4}
      * <br> a -> {b:1, c: {d:2, e:3}}, f:4}
      * <br> a.b -> 1
-     * <br> a.c -> {d:2,e:3} 
+     * <br> a.c -> {d:2,e:3}
      * <br> a.c.d -> 2
      *
      * <br>root = {a: [{b:1}, {c:2,d:3}}, true]}
@@ -71,11 +71,11 @@ public class JsonUtils {
      * <br>a.[*] -> {b:1}, {c:2,d:3}, true
      * <br>a.[*].c -> null, 2, null
      *
-     * 
+     *
      * <br>root = {a: [{b:1}, {b:2}, {b:3}]}"
-     * 
+     *
      * <br>*.a.[*].b -> [1,2,3]
-     * 
+     *
      * @see org.restheart.test.unit.JsonUtilsTest form code examples
      *
      */
@@ -90,16 +90,15 @@ public class JsonUtils {
             return _getPropsFromPath(root, pathTokens, "$", pathTokens.length);
         }
     }
-    
+
     public static int countPropsFromPath(Object root, String path) throws IllegalArgumentException {
         return getPropsFromPath(root, path).size();
     }
 
-    private static List<Object> _getPropsFromPath(Object json, String[] pathTokens, String currentPath, int startTokensNo) throws IllegalArgumentException {
+    private static List<Object> _getPropsFromPath(Object json, String[] pathTokens, String currentPath, int totalTokensLength) throws IllegalArgumentException {
         List<Object> nullRet = new ArrayList<>();
         nullRet.add(null);
-        
-        
+
         if (json == null) {
             return nullRet;
         }
@@ -124,19 +123,26 @@ public class JsonUtils {
             if (!(json instanceof BasicDBObject)) {
                 throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; it should be an object but found " + serializer.serialize(json));
             }
-            
-            if (pathTokens.length != startTokensNo) {
+
+            if (pathTokens.length != totalTokensLength) {
                 throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; $ can only start the expression");
             }
 
-            ret.addAll(_getPropsFromPath(json, subpath(pathTokens), addpath(currentPath, pathToken), startTokensNo));
+            ret.addAll(_getPropsFromPath(json, subpath(pathTokens), addpath(currentPath, pathToken), totalTokensLength));
         } else if (pathToken.equals("*")) {
-            if (!(json instanceof BasicDBObject)) {
-                throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; it should be an object but found " + serializer.serialize(json));
-            }
+            if (json instanceof BasicDBObject) {
 
-            for (String key : ((BasicDBObject) json).keySet()) {
-                ret.addAll(_getPropsFromPath(((BasicDBObject) json).get(key), subpath(pathTokens), addpath(currentPath, pathToken), startTokensNo));
+                for (String key : ((BasicDBObject) json).keySet()) {
+                    List<Object> nested = _getPropsFromPath(((BasicDBObject) json).get(key), subpath(pathTokens), addpath(currentPath, pathToken), totalTokensLength);
+
+                    if (nested.size() > 0 && pathTokens.length == 1) {
+                        BasicDBObject toadd = new BasicDBObject(key, nested.get(0));
+
+                        ret.add(toadd);
+                    } else {
+                        ret.addAll(nested);
+                    }
+                }
             }
         } else if (pathToken.equals("[*]")) {
             if (!(json instanceof BasicDBList)) {
@@ -144,13 +150,13 @@ public class JsonUtils {
             }
 
             for (String key : ((BasicDBList) json).keySet()) {
-                ret.addAll(_getPropsFromPath(((BasicDBList) json).get(key), subpath(pathTokens), addpath(currentPath, pathToken), startTokensNo));
+                ret.addAll(_getPropsFromPath(((BasicDBList) json).get(key), subpath(pathTokens), addpath(currentPath, pathToken), totalTokensLength));
             }
         } else {
             if (json instanceof BasicDBList) {
                 throw new IllegalArgumentException("wrong path " + pathFromTokens(pathTokens) + " at token " + pathToken + "; it should be '[*]'");
             } else if (json instanceof BasicDBObject) {
-                ret.addAll(_getPropsFromPath(((DBObject) json).get(pathToken), subpath(pathTokens), addpath(currentPath, pathToken), startTokensNo));
+                ret.addAll(_getPropsFromPath(((DBObject) json).get(pathToken), subpath(pathTokens), addpath(currentPath, pathToken), totalTokensLength));
             } else {
                 return nullRet;
             }
@@ -186,16 +192,16 @@ public class JsonUtils {
 
         return subpath.toArray(new String[0]);
     }
-    
+
     private static String addpath(String path, String pathToken) {
         return path.concat(".").concat(pathToken);
     }
 
     public static boolean checkType(Object o, String type) {
         switch (type.toLowerCase().trim()) {
-            case "null": 
+            case "null":
                 return o == null;
-            case "notnull": 
+            case "notnull":
                 return o != null;
             case "object":
                 return o instanceof BasicDBObject;

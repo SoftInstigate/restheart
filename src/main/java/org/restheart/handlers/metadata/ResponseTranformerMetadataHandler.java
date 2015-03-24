@@ -144,7 +144,7 @@ public class ResponseTranformerMetadataHandler extends AbstractTransformerHandle
                         }
                     }
                 } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.DOCUMENT) {
-                    t.tranform(exchange, context, context.getContent(), rt.getArgs());
+                    t.tranform(exchange, context, context.getResponseContent(), rt.getArgs());
                 }
             }
         }

@@ -20,6 +20,7 @@ package org.restheart.test.unit;
 import com.mongodb.util.JSON;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -73,7 +74,8 @@ public class JsonUtilsTest {
         Assert.assertTrue(checkType(json1, "$", "object"));
         Assert.assertFalse(checkType(json1, "$", "number"));
         
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.*", "{b:1, c: {d:{\"$oid\": \"550c6e62c2e62b5640673e93\"}, e:3}}", "4"));
+        Assert.assertTrue(checkGetPropsFromPath(json1, "$.*", "{a: {b:1, c: {d:{\"$oid\": \"550c6e62c2e62b5640673e93\"}, e:3}}}", "{f:4}"));
+        Assert.assertTrue(checkGetPropsFromPath(json1, "$.*.*", "{b:1}", "{c: {d:{\"$oid\": \"550c6e62c2e62b5640673e93\"}, e:3}}"));
         
         Assert.assertTrue(checkGetPropsFromPath(json1, "$.a", "{b:1, c: {d:{\"$oid\": \"550c6e62c2e62b5640673e93\"},e:3}}, f:4}"));
         Assert.assertTrue(checkType(json1, "$.a", "object"));

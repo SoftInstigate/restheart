@@ -17,6 +17,7 @@
  */
 package org.restheart.handlers.files;
 
+import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.document.GetDocumentHandler;
 
 /**
@@ -24,5 +25,13 @@ import org.restheart.handlers.document.GetDocumentHandler;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class GetFileHandler extends GetDocumentHandler {
+    /**
+     * Default ctor
+     *
+     * @param next
+     */
+    public GetFileHandler(PipedHttpHandler next) {
+        super(next);
+    }
     
 }

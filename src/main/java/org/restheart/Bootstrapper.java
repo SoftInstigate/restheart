@@ -556,9 +556,8 @@ public final class Bootstrapper {
         PipedHttpHandler coreHandlerChain
                 = new DbPropsInjectorHandler(
                         new CollectionPropsInjectorHandler(
-                                new RequestTransformerMetadataHandler(
-                                        new RequestDispacherHandler()
-                                )));
+                                new RequestDispacherHandler()
+                        ));
 
         PathHandler paths = path();
 
@@ -572,7 +571,7 @@ public final class Bootstrapper {
                                     new OptionsHandler(
                                             new BodyInjectorHandler(
                                                     new SecurityHandler(coreHandlerChain, identityManager, accessManager))))
-            ));
+                    ));
 
             LOGGER.info("URL {} bound to MongoDB resource {}", url, db);
         });

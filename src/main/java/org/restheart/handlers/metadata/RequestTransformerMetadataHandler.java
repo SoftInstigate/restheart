@@ -55,7 +55,7 @@ public class RequestTransformerMetadataHandler extends AbstractTransformerHandle
     @Override
     boolean canDBRepresentationTransformersAppy(RequestContext context) {
         return ((context.getMethod() == RequestContext.METHOD.PUT || context.getMethod() == RequestContext.METHOD.PATCH)
-                && (context.getType() == RequestContext.TYPE.DB || context.getType() == RequestContext.TYPE.COLLECTION)
+                && (context.getType() == RequestContext.TYPE.DB || context.getType() == RequestContext.TYPE.COLLECTION || context.getType() == RequestContext.TYPE.FILES_BUCKET)
                 && context.getDbProps() != null
                 && context.getDbProps().containsField(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
@@ -64,7 +64,7 @@ public class RequestTransformerMetadataHandler extends AbstractTransformerHandle
     void enforceDbRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
         List<RepresentationTransformer> dbRts = RepresentationTransformer.getFromJson(context.getDbProps());
 
-        RequestContext.TYPE requestType = context.getType(); // DB or COLLECTION
+        RequestContext.TYPE requestType = context.getType(); // DB, COLLECTION or FILES_BUCKET
 
         for (RepresentationTransformer rt : dbRts) {
             Transformer t;
@@ -92,11 +92,12 @@ public class RequestTransformerMetadataHandler extends AbstractTransformerHandle
 
     @Override
     void enforceCollRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
-        List<RepresentationTransformer> dbRts = RepresentationTransformer.getFromJson(context.getCollectionProps());
+        List<RepresentationTransformer> collRts = RepresentationTransformer.getFromJson(context.getCollectionProps());
 
-        RequestContext.TYPE requestType = context.getType(); // DOCUMENT or COLLECTION
+        RequestContext.TYPE requestType = context.getType(); // DOCUMENT, FILE or COLLECTION
+        RequestContext.METHOD requestMethod = context.getMethod(); // PUT, PATCH or POST
 
-        for (RepresentationTransformer rt : dbRts) {
+        for (RepresentationTransformer rt : collRts) {
             if (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST) {
                 Transformer t = (Transformer) NamedSingletonsFactory.getInstance().get("transformers", rt.getName());
 
@@ -104,9 +105,11 @@ public class RequestTransformerMetadataHandler extends AbstractTransformerHandle
                     throw new IllegalArgumentException("cannot find singleton " + rt.getName() + " in singleton group transformers");
                 }
 
-                if (rt.getScope() == RepresentationTransformer.SCOPE.THIS && requestType == RequestContext.TYPE.COLLECTION) {
+                if ((requestMethod == RequestContext.METHOD.PUT || requestMethod == RequestContext.METHOD.PATCH) && rt.getScope() == RepresentationTransformer.SCOPE.THIS && requestType == RequestContext.TYPE.COLLECTION) {
                     t.tranform(exchange, context, context.getContent(), rt.getArgs());
-                } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.DOCUMENT) {
+                } else if ((requestMethod == RequestContext.METHOD.PUT || requestMethod == RequestContext.METHOD.PATCH) && rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && (requestType == RequestContext.TYPE.DOCUMENT || requestType == RequestContext.TYPE.FILE)) {
+                    t.tranform(exchange, context, context.getContent(), rt.getArgs());
+                } else if (requestMethod == RequestContext.METHOD.POST && rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.COLLECTION) {
                     t.tranform(exchange, context, context.getContent(), rt.getArgs());
                 }
             }

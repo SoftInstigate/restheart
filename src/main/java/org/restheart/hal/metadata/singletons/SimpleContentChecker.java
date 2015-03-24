@@ -22,6 +22,8 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -36,7 +38,7 @@ import org.slf4j.LoggerFactory;
  *
  * the args arguments is an array of condition. a condition is json object as
  * follows: { "path": "PATHEXPR", [ "type": "TYPE]"] ["count": COUNT ] ["regex":
- * "REGEX"]}
+ * "REGEX"] ["nullable": BOOLEAN]}
  *
  * where
  *
@@ -44,26 +46,36 @@ import org.slf4j.LoggerFactory;
  * <br>COUNT is the number of expected values
  * <br>TYPE can be any BSON type: null, object, array, string, number, boolean *
  * objectid, date,timestamp, maxkey, minkey, symbol, code, objectid
- * <br>REGEX regular expression
+ * <br>REGEX regular expression. note that string values to match come enclosed
+ * in quotation marks, i.e. the regex will need to match "the value", included
+ * the quotation marks
  *
  * <br>examples of path expressions:
  *
  * <br>root = {a: {b:1, c: {d:2, e:3}}, f:4}
- * <br> a -> {b:1, c: {d:2, e:3}}, f:4}
- * <br> a.b -> 1
- * <br> a.c -> {d:2,e:3}
- * <br> a.c.d -> 2
+ * <br> $.a -> {b:1, c: {d:2, e:3}}, f:4}
+ * <br> $.* -> {a: {b:1, c: {d:2, e:3}}}, {f:4}
+ * <br> $.a.b -> 1
+ * <br> $.a.c -> {d:2,e:3}
+ * <br> $.a.c.d -> 2
  *
  * <br>root = {a: [{b:1}, {c:2,d:3}}, true]}
  *
- * <br>a -> [{b:1}, {c:2,d:3}, true]
- * <br>a.[*] -> {b:1}, {c:2,d:3}, true
- * <br>a.[*].c -> null, 2, null
+ * <br> $.a -> [{b:1}, {c:2,d:3}, true]
+ * <br> $.a.[*] -> {b:1}, {c:2,d:3}, true
+ * <br> $.a.[*].c -> null, 2, null
  *
  *
  * <br>root = {a: [{b:1}, {b:2}, {b:3}]}"
  *
- * <br>*.a.[*].b -> [1,2,3]
+ * <br> $.*.a.[*].b -> [1,2,3]
+ *
+ * <br>example rexex condition that matches email addresses:
+ *
+ * <br>{"path":"$._id", "regex":
+ * "^\"[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}\"$"}
+ * <br>with unicode escapes (used by httpie): {"path":"$._id", "regex":
+ * "^\\u0022[A-Z0-9._%+-]+@[A-Z0-9.-]+\\u005C\\u005C.[A-Z]{2,6}\\u0022$"}
  *
  */
 public class SimpleContentChecker implements Checker {
@@ -72,7 +84,7 @@ public class SimpleContentChecker implements Checker {
     @Override
     public boolean check(HttpServerExchange exchange, RequestContext context, DBObject args) {
         if (args instanceof BasicDBList) {
-            BasicDBList conditions = (BasicDBList) args;
+            BasicDBList conditions = getApplicableConditions((BasicDBList) args, context.getMethod(), context.getContent());
 
             return conditions.stream().allMatch(_condition -> {
                 if (_condition instanceof BasicDBObject) {
@@ -88,11 +100,15 @@ public class SimpleContentChecker implements Checker {
                     String type = null;
                     Object _type = condition.get("type");
 
+                    if (_type != null && _type instanceof String) {
+                        type = (String) _type;
+                    }
+
                     int count = -1;
                     Object _count = condition.get("count");
 
-                    if (_count != null && _type instanceof Integer) {
-                        count = (Integer) count;
+                    if (_count != null && _count instanceof Integer) {
+                        count = (Integer) _count;
                     }
 
                     String regex = null;
@@ -102,8 +118,15 @@ public class SimpleContentChecker implements Checker {
                         regex = (String) _regex;
                     }
 
+                    Boolean nullable = false;
+                    Object _nullable = condition.get("nullable");
+
+                    if (_nullable != null && _nullable instanceof Boolean) {
+                        nullable = (Boolean) _nullable;
+                    }
+
                     if (count < 0 && type == null && regex == null) {
-                        context.addWarning("condition in the args list does not have any of 'count', 'type' and 'regex' properties, specify at least one: " + _condition);
+                        context.addWarning("condition does not have any of 'count', 'type' and 'regex' properties, specify at least one: " + _condition);
                         return true;
                     }
 
@@ -113,22 +136,21 @@ public class SimpleContentChecker implements Checker {
                     }
 
                     if (type != null && count >= 0 && regex != null) {
-                        return checkCount(context.getContent(), path, count) && checkType(context.getContent(), path, type) && checkRegex(context.getContent(), path, regex);
+                        return checkCount(context.getContent(), path, count) && checkType(context.getContent(), path, type, nullable) && checkRegex(context.getContent(), path, regex, nullable);
                     } else if (type != null && count >= 0) {
-                        return checkCount(context.getContent(), path, count) && checkType(context.getContent(), path, type);
+                        return checkCount(context.getContent(), path, count) && checkType(context.getContent(), path, type, nullable);
                     } else if (type != null && regex != null) {
-                        return checkType(context.getContent(), path, type) && checkRegex(context.getContent(), path, regex);
-                    }
-                    if (count >= 0 && regex != null) {
-                        return checkCount(context.getContent(), path, count) && checkRegex(context.getContent(), path, regex);
+                        return checkType(context.getContent(), path, type, nullable) && checkRegex(context.getContent(), path, regex, nullable);
+                    } else if (count >= 0 && regex != null) {
+                        return checkCount(context.getContent(), path, count) && checkRegex(context.getContent(), path, regex, nullable);
                     } else if (type != null) {
-                        return checkType(context.getContent(), path, type);
+                        return checkType(context.getContent(), path, type, nullable);
                     } else if (count >= 0) {
                         return checkCount(context.getContent(), path, count);
                     } else if (regex != null) {
-                        checkRegex(context.getContent(), path, regex);
-                    } 
-                    
+                        return checkRegex(context.getContent(), path, regex, nullable);
+                    }
+
                     return true;
                 } else {
                     context.addWarning("property in the args list is not an object: " + _condition);
@@ -141,21 +163,118 @@ public class SimpleContentChecker implements Checker {
         }
     }
 
-    private boolean checkType(DBObject json, String path, String type) {
+    private BasicDBList getApplicableConditions(BasicDBList conditions, RequestContext.METHOD method, DBObject content) {
+        if (method == RequestContext.METHOD.POST || method == RequestContext.METHOD.PUT) {
+            return conditions;
+        } else if (method == RequestContext.METHOD.PATCH) {
+            List filtered = conditions.stream().filter(condition -> {
+                if (!(condition instanceof BasicDBObject)) {
+                    return false;
+                }
+
+                BasicDBObject _condition = (BasicDBObject) condition;
+
+                String path = null;
+                Object _path = _condition.get("path");
+
+                if (_path != null && _path instanceof String) {
+                    path = (String) _path;
+                }
+
+                if (path == null) {
+                    return false;
+                }
+
+                Object _count = _condition.get("count");
+
+                LOGGER.debug("count ? {}", _count != null);
+                LOGGER.debug(JsonUtils.getPropsFromPath(content, path.concat(".*")).toString());
+                
+                if (_count != null) {
+                    // count $.*
+                    // patch data = {a:[1,2]}
+                    
+                    
+                    
+                    return false;
+                } else {
+                    List<Object> matches = JsonUtils.getPropsFromPath(content, path);
+                    
+                    if (matches.isEmpty())
+                        return false;
+                    
+                    return !(matches.size() == 1 && matches.get(0) == null);
+                }
+            }).collect(Collectors.toList());
+
+            BasicDBList ret = new BasicDBList();
+
+            filtered.stream().forEach((fc) -> {
+                ret.add(fc);
+            });
+
+            return ret;
+
+        } else {
+            return new BasicDBList();
+        }
+    }
+
+    private boolean checkType(DBObject json, String path, String type, boolean nullable) {
         BasicDBObject _json = (BasicDBObject) json;
 
         List<Object> props = JsonUtils.getPropsFromPath(_json, path);
 
-        return props.stream().map((prop) -> JsonUtils.checkType(prop, type)).noneMatch((thisCheck) -> (!thisCheck));
+        boolean ret;
+
+        if (nullable) {
+            ret = props.stream().allMatch(prop -> {
+                return JsonUtils.checkType(prop, type) || JsonUtils.checkType(prop, "null");
+            });
+        } else {
+            ret = props.stream().map((prop) -> JsonUtils.checkType(prop, type)).allMatch((thisCheck) -> (thisCheck));
+        }
+
+        LOGGER.debug("checkType({}, {}, {}) -> {} -> {}", json, path, type, props, ret);
+
+        return ret;
     }
 
-    private boolean checkCount(DBObject json, String path, int count) {
-        return count == JsonUtils.countPropsFromPath(json, path);
+    private boolean checkCount(DBObject json, String path, int expectedCount) {
+        boolean ret = expectedCount == JsonUtils.countPropsFromPath(json, path);
+
+        LOGGER.debug("checkCount({}, {}, {}) -> {}", json, path, expectedCount, ret);
+
+        return ret;
     }
 
-    private boolean checkRegex(Object value, String path, String regex) {
-        String svalue = JsonUtils.serialize(value);
+    private boolean checkRegex(DBObject json, String path, String regex, boolean nullable) {
+        BasicDBObject _json = (BasicDBObject) json;
 
-        return svalue.matches(regex);
+        List<Object> props = JsonUtils.getPropsFromPath(_json, path);
+
+        boolean ret;
+
+        if (nullable) {
+            Pattern p = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+
+            ret = props.stream().allMatch(prop -> {
+                return p.matcher(JsonUtils.serialize(prop)).find() || JsonUtils.checkType(prop, "null");
+            });
+        } else {
+            Pattern p = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+            ret = props.stream().allMatch(prop -> {
+                LOGGER.debug("**** regex {}", regex);
+                LOGGER.debug("**** prop {}", prop);
+                LOGGER.debug("**** JsonUtils.serialize(prop) {}", JsonUtils.serialize(prop));
+                LOGGER.debug("**** regex matches  {}", p.matcher(JsonUtils.serialize(prop)).find());
+
+                return p.matcher(JsonUtils.serialize(prop)).find();
+            });
+        }
+
+        LOGGER.debug("checkRegex({}, {}, {}) -> {} -> {}", json, path, regex, props, ret);
+
+        return ret;
     }
 }
