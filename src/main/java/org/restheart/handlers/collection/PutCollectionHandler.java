@@ -119,7 +119,12 @@ public class PutCollectionHandler extends PipedHttpHandler {
         } else {
             exchange.setResponseCode(httpCode);
         }
-
+        
+        if (httpCode == HttpStatus.SC_CREATED || httpCode == HttpStatus.SC_OK) {
+            content.put("_etag", etag);
+            ResponseHelper.injectEtagHeader(exchange, content);
+        }
+        
         exchange.endExchange();
         LocalCachesSingleton.getInstance().invalidateCollection(context.getDBName(), context.getCollectionName());
     }

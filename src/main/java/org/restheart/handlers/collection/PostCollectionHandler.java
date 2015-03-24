@@ -30,8 +30,6 @@ import io.undertow.util.HttpString;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
-import org.restheart.hal.UnsupportedDocumentIdException;
-import org.restheart.utils.URLUtils;
 import static org.restheart.utils.URLUtils.getReferenceLink;
 
 /**
@@ -107,6 +105,11 @@ public class PostCollectionHandler extends PipedHttpHandler {
             sendWarnings(httpCode, exchange, context);
         } else {
             exchange.setResponseCode(httpCode);
+        }
+        
+        if (httpCode == HttpStatus.SC_CREATED || httpCode == HttpStatus.SC_OK) {
+            content.put("_etag", etag);
+            ResponseHelper.injectEtagHeader(exchange, content);
         }
 
         exchange.endExchange();

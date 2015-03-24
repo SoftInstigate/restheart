@@ -96,6 +96,10 @@ public class PatchDBHandler extends PipedHttpHandler {
         } else {
             exchange.setResponseCode(httpCode);
         }
+        
+        if (httpCode == HttpStatus.SC_CREATED || httpCode == HttpStatus.SC_OK) {
+            ResponseHelper.injectEtagHeader(exchange, content);
+        }
 
         exchange.endExchange();
 
