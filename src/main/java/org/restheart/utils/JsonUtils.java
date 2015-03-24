@@ -82,12 +82,12 @@ public class JsonUtils {
     public static List<Object> getPropsFromPath(Object root, String path) throws IllegalArgumentException {
         String pathTokens[] = path.split(Pattern.quote("."));
 
-        if (pathTokens == null || pathTokens.length == 0 || !pathTokens[0].equals("*")) {
-            throw new IllegalArgumentException("wrong path. it must use the . notation and start with *");
+        if (pathTokens == null || pathTokens.length == 0 || !pathTokens[0].equals("$")) {
+            throw new IllegalArgumentException("wrong path. it must use the . notation and start with $");
         } else if (!(root instanceof BasicDBObject)) {
             throw new IllegalArgumentException("wrong json. it must be an object");
         } else {
-            return _getPropsFromPath(root, path.split(Pattern.quote(".")), "*");
+            return _getPropsFromPath(root, pathTokens, "$", pathTokens.length);
         }
     }
     
@@ -95,7 +95,7 @@ public class JsonUtils {
         return getPropsFromPath(root, path).size();
     }
 
-    private static List<Object> _getPropsFromPath(Object json, String[] pathTokens, String currentPath) throws IllegalArgumentException {
+    private static List<Object> _getPropsFromPath(Object json, String[] pathTokens, String currentPath, int startTokensNo) throws IllegalArgumentException {
         List<Object> nullRet = new ArrayList<>();
         nullRet.add(null);
         
@@ -120,25 +120,37 @@ public class JsonUtils {
 
         if (pathToken == null) {
             ret.add(json);
+        } else if (pathToken.equals("$")) {
+            if (!(json instanceof BasicDBObject)) {
+                throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; it should be an object but found " + serializer.serialize(json));
+            }
+            
+            if (pathTokens.length != startTokensNo) {
+                throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; $ can only start the expression");
+            }
+
+            ret.addAll(_getPropsFromPath(json, subpath(pathTokens), addpath(currentPath, pathToken), startTokensNo));
         } else if (pathToken.equals("*")) {
             if (!(json instanceof BasicDBObject)) {
                 throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; it should be an object but found " + serializer.serialize(json));
             }
 
-            ret.addAll(_getPropsFromPath(json, subpath(pathTokens), addpath(currentPath, pathToken)));
+            for (String key : ((BasicDBObject) json).keySet()) {
+                ret.addAll(_getPropsFromPath(((BasicDBObject) json).get(key), subpath(pathTokens), addpath(currentPath, pathToken), startTokensNo));
+            }
         } else if (pathToken.equals("[*]")) {
             if (!(json instanceof BasicDBList)) {
                 throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; it should be a list " + "but found " + serializer.serialize(json));
             }
 
             for (String key : ((BasicDBList) json).keySet()) {
-                ret.addAll(_getPropsFromPath(((BasicDBList) json).get(key), subpath(pathTokens), addpath(currentPath, pathToken)));
+                ret.addAll(_getPropsFromPath(((BasicDBList) json).get(key), subpath(pathTokens), addpath(currentPath, pathToken), startTokensNo));
             }
         } else {
             if (json instanceof BasicDBList) {
                 throw new IllegalArgumentException("wrong path " + pathFromTokens(pathTokens) + " at token " + pathToken + "; it should be '[*]'");
             } else if (json instanceof BasicDBObject) {
-                ret.addAll(_getPropsFromPath(((DBObject) json).get(pathToken), subpath(pathTokens), addpath(currentPath, pathToken)));
+                ret.addAll(_getPropsFromPath(((DBObject) json).get(pathToken), subpath(pathTokens), addpath(currentPath, pathToken), startTokensNo));
             } else {
                 return nullRet;
             }

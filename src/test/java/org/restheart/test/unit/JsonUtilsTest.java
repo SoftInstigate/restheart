@@ -66,32 +66,34 @@ public class JsonUtilsTest {
         Object json4 = JSON.parse(_json4);
         
         
-        Assert.assertTrue(checkGetPropsFromPath(json1, "*.notexists", "null"));
-        Assert.assertTrue(checkType(json1, "*.notexists", "null"));
+        Assert.assertTrue(checkGetPropsFromPath(json1, "$.notexists", "null"));
+        Assert.assertTrue(checkType(json1, "$.notexists", "null"));
         
-        Assert.assertTrue(checkGetPropsFromPath(json1, "*", _json1));
-        Assert.assertTrue(checkType(json1, "*", "object"));
-        Assert.assertFalse(checkType(json1, "*", "number"));
+        Assert.assertTrue(checkGetPropsFromPath(json1, "$", _json1));
+        Assert.assertTrue(checkType(json1, "$", "object"));
+        Assert.assertFalse(checkType(json1, "$", "number"));
         
-        Assert.assertTrue(checkGetPropsFromPath(json1, "*.a", "{b:1, c: {d:{\"$oid\": \"550c6e62c2e62b5640673e93\"},e:3}}, f:4}"));
-        Assert.assertTrue(checkType(json1, "*.a", "object"));
+        Assert.assertTrue(checkGetPropsFromPath(json1, "$.*", "{b:1, c: {d:{\"$oid\": \"550c6e62c2e62b5640673e93\"}, e:3}}", "4"));
         
-        Assert.assertTrue(checkGetPropsFromPath(json1, "*.a.b", "1"));
-        Assert.assertTrue(checkType(json1, "*.a.b", "number"));
+        Assert.assertTrue(checkGetPropsFromPath(json1, "$.a", "{b:1, c: {d:{\"$oid\": \"550c6e62c2e62b5640673e93\"},e:3}}, f:4}"));
+        Assert.assertTrue(checkType(json1, "$.a", "object"));
         
-        Assert.assertTrue(checkGetPropsFromPath(json1, "*.a.c", "{d:{\"$oid\": \"550c6e62c2e62b5640673e93\"},e:3}"));
-        Assert.assertTrue(checkType(json1, "*.a.c", "object"));
+        Assert.assertTrue(checkGetPropsFromPath(json1, "$.a.b", "1"));
+        Assert.assertTrue(checkType(json1, "$.a.b", "number"));
         
-        Assert.assertTrue(checkGetPropsFromPath(json1, "*.a.c.d", "{\"$oid\": \"550c6e62c2e62b5640673e93\"}"));
-        Assert.assertTrue(checkType(json1, "*.a.c.d", "objectid"));
+        Assert.assertTrue(checkGetPropsFromPath(json1, "$.a.c", "{d:{\"$oid\": \"550c6e62c2e62b5640673e93\"},e:3}"));
+        Assert.assertTrue(checkType(json1, "$.a.c", "object"));
         
-        Assert.assertTrue(checkGetPropsFromPath(json2, "*.a", "[{b:1}, {b:2,c:3}, true]"));
-        Assert.assertTrue(checkType(json2, "*.a", "array"));
+        Assert.assertTrue(checkGetPropsFromPath(json1, "$.a.c.d", "{\"$oid\": \"550c6e62c2e62b5640673e93\"}"));
+        Assert.assertTrue(checkType(json1, "$.a.c.d", "objectid"));
         
-        Assert.assertTrue(checkGetPropsFromPath(json2, "*.a.[*]", "{b:1}", "{b:2,c:3}", "true"));
-        Assert.assertFalse(checkType(json2, "*.a.[*]", "object"));
+        Assert.assertTrue(checkGetPropsFromPath(json2, "$.a", "[{b:1}, {b:2,c:3}, true]"));
+        Assert.assertTrue(checkType(json2, "$.a", "array"));
         
-        Assert.assertTrue(checkGetPropsFromPath(json2, "*.a.[*].c", "null", "3", "null"));
+        Assert.assertTrue(checkGetPropsFromPath(json2, "$.a.[*]", "{b:1}", "{b:2,c:3}", "true"));
+        Assert.assertFalse(checkType(json2, "$.a.[*]", "object"));
+        
+        Assert.assertTrue(checkGetPropsFromPath(json2, "$.a.[*].c", "null", "3", "null"));
         
         try {
             checkGetPropsFromPath(json2, "a.[*].c", "exception, third element of array is not an object");
@@ -99,27 +101,27 @@ public class JsonUtilsTest {
             Assert.assertNotNull(ex);
         }
         
-        Assert.assertTrue(checkGetPropsFromPath(json3, "*.a", "[{b:1}, {b:2}, {b:3}]"));
-        Assert.assertTrue(checkType(json3, "*.a", "array"));
+        Assert.assertTrue(checkGetPropsFromPath(json3, "$.a", "[{b:1}, {b:2}, {b:3}]"));
+        Assert.assertTrue(checkType(json3, "$.a", "array"));
         
         
-        Assert.assertTrue(checkGetPropsFromPath(json3, "*.a.[*]", "{b:1}", "{b:2}", "{b:3}"));
-        Assert.assertTrue(checkType(json3, "*.a.[*]", "object"));
+        Assert.assertTrue(checkGetPropsFromPath(json3, "$.a.[*]", "{b:1}", "{b:2}", "{b:3}"));
+        Assert.assertTrue(checkType(json3, "$.a.[*]", "object"));
         
-        Assert.assertTrue(checkGetPropsFromPath(json3, "*.a.[*].b", "1", "2", "3"));
-        Assert.assertTrue(checkType(json3, "*.a.[*].b", "number"));
+        Assert.assertTrue(checkGetPropsFromPath(json3, "$.a.[*].b", "1", "2", "3"));
+        Assert.assertTrue(checkType(json3, "$.a.[*].b", "number"));
         
-        Assert.assertTrue(checkGetPropsFromPath(json4, "*", "{a: [[{b:1}], [{b:2}], [{b:3}]]}"));
-        Assert.assertTrue(checkType(json4, "*", "object"));
+        Assert.assertTrue(checkGetPropsFromPath(json4, "$", "{a: [[{b:1}], [{b:2}], [{b:3}]]}"));
+        Assert.assertTrue(checkType(json4, "$", "object"));
         
-        Assert.assertTrue(checkGetPropsFromPath(json4, "*.a", "[[{b:1}], [{b:2}], [{b:3}]]"));
-        Assert.assertTrue(checkType(json4, "*.a", "array"));
+        Assert.assertTrue(checkGetPropsFromPath(json4, "$.a", "[[{b:1}], [{b:2}], [{b:3}]]"));
+        Assert.assertTrue(checkType(json4, "$.a", "array"));
         
-        Assert.assertTrue(checkGetPropsFromPath(json4, "*.a.[*]", "[{b:1}]", "[{b:2}]", "[{b:3}]"));
-        Assert.assertTrue(checkType(json4, "*.a.[*]", "array"));
+        Assert.assertTrue(checkGetPropsFromPath(json4, "$.a.[*]", "[{b:1}]", "[{b:2}]", "[{b:3}]"));
+        Assert.assertTrue(checkType(json4, "$.a.[*]", "array"));
         
-        Assert.assertTrue(checkGetPropsFromPath(json4, "*.a.[*].[*].b", "1", "2", "3"));
-        Assert.assertTrue(checkType(json4, "*.a.[*].[*].b", "number"));
+        Assert.assertTrue(checkGetPropsFromPath(json4, "$.a.[*].[*].b", "1", "2", "3"));
+        Assert.assertTrue(checkType(json4, "$.a.[*].[*].b", "number"));
     }
     
     private boolean checkGetPropsFromPath(Object json, String path, String... expected) {

@@ -35,16 +35,18 @@ import org.slf4j.LoggerFactory;
  * expression
  *
  * the args arguments is an array of condition. a condition is json object as
- * follows: { "path": "PATHEXPR", [ "type": "TYPE]" | "count": COUNT ]}
+ * follows: { "path": "PATHEXPR", [ "type": "TYPE]"] ["count": COUNT ] ["regex":
+ * "REGEX"]}
  *
  * where
  *
- * <br>[pathexpr] use the . notation to identity the property
- * <br>[count] is the number of expected values
- * <br>[type] can be any BSON type: null, object, array, string, number, boolean
+ * <br>PATHEXPR the path expression. use the . notation to identity the property
+ * <br>COUNT is the number of expected values
+ * <br>TYPE can be any BSON type: null, object, array, string, number, boolean *
  * objectid, date,timestamp, maxkey, minkey, symbol, code, objectid
+ * <br>REGEX regular expression
  *
- * <br>examples of path expressions
+ * <br>examples of path expressions:
  *
  * <br>root = {a: {b:1, c: {d:2, e:3}}, f:4}
  * <br> a -> {b:1, c: {d:2, e:3}}, f:4}
@@ -93,28 +95,49 @@ public class SimpleContentChecker implements Checker {
                         count = (Integer) count;
                     }
 
-                    if (count < 0 && type == null) {
-                        context.addWarning("condition in the args list does not have count and type property, specify at least one: " + _condition);
+                    String regex = null;
+                    Object _regex = condition.get("regex");
+
+                    if (_regex != null && _regex instanceof String) {
+                        regex = (String) _regex;
                     }
 
-                    if (path != null && type != null) {
-                        return checkType(context.getContent(), path, type);
-                    } else if (path != null && count >= 0) {
-                        return checkCount(context.getContent(), path, count);
-                    } else if (path != null && type != null && count >= 0) {
+                    if (count < 0 && type == null && regex == null) {
+                        context.addWarning("condition in the args list does not have any of 'count', 'type' and 'regex' properties, specify at least one: " + _condition);
+                        return true;
+                    }
+
+                    if (path == null) {
+                        context.addWarning("condition in the args list does not have the 'path' property: " + _condition);
+                        return true;
+                    }
+
+                    if (type != null && count >= 0 && regex != null) {
+                        return checkCount(context.getContent(), path, count) && checkType(context.getContent(), path, type) && checkRegex(context.getContent(), path, regex);
+                    } else if (type != null && count >= 0) {
                         return checkCount(context.getContent(), path, count) && checkType(context.getContent(), path, type);
-                    } else {
-                        return false;
+                    } else if (type != null && regex != null) {
+                        return checkType(context.getContent(), path, type) && checkRegex(context.getContent(), path, regex);
                     }
-
+                    if (count >= 0 && regex != null) {
+                        return checkCount(context.getContent(), path, count) && checkRegex(context.getContent(), path, regex);
+                    } else if (type != null) {
+                        return checkType(context.getContent(), path, type);
+                    } else if (count >= 0) {
+                        return checkCount(context.getContent(), path, count);
+                    } else if (regex != null) {
+                        checkRegex(context.getContent(), path, regex);
+                    } 
+                    
+                    return true;
                 } else {
                     context.addWarning("property in the args list is not an object: " + _condition);
-                    return false;
+                    return true;
                 }
             });
         } else {
-            context.addWarning("transformer wrong definition: args property must be an arrary of string property names.");
-            return false;
+            context.addWarning("checker wrong definition: args property must be an arrary of string property names.");
+            return true;
         }
     }
 
@@ -127,8 +150,12 @@ public class SimpleContentChecker implements Checker {
     }
 
     private boolean checkCount(DBObject json, String path, int count) {
-        BasicDBObject _json = (BasicDBObject) json;
+        return count == JsonUtils.countPropsFromPath(json, path);
+    }
 
-        return count == JsonUtils.countPropsFromPath(count, path);
+    private boolean checkRegex(Object value, String path, String regex) {
+        String svalue = JsonUtils.serialize(value);
+
+        return svalue.matches(regex);
     }
 }
