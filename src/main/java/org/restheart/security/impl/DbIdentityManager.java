@@ -244,8 +244,9 @@ public final class DbIdentityManager extends AbstractSimpleSecurityManager imple
         
         ((BasicDBList)_roles).forEach(el -> {
             if ((el != null && el instanceof String)) {
-                LOGGER.debug("account with _id: {} has a role that is not a string and it is not taken into account: {}", _id, el);
                 roles.add((String)el);
+            } else {
+                LOGGER.debug("account with _id: {} has a role that is not a string and it is not taken into account: {}", _id, el);
             }
         });
         
