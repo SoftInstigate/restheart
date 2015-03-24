@@ -102,7 +102,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         // COLLECTION handlres
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.GET, new GetCollectionHandler(new ResponseTranformerMetadataHandler(null)));
-        putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST, new RequestTransformerMetadataHandler(new PostCollectionHandler()));
+        putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PostCollectionHandler())));
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.PUT, new RequestTransformerMetadataHandler(new PutCollectionHandler()));
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.DELETE, new DeleteCollectionHandler());
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.PATCH, new RequestTransformerMetadataHandler(new PatchCollectionHandler()));
@@ -122,7 +122,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         // FILES_BUCKET and FILE handlers
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.GET, new GetCollectionHandler(new ResponseTranformerMetadataHandler(null)));
-        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.POST, new RequestTransformerMetadataHandler(new PostFileHandler()));
+        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.POST, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PostFileHandler())));
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.PUT, new RequestTransformerMetadataHandler(new PutBucketHandler()));
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.DELETE, new DeleteBucketHandler());
         
@@ -153,13 +153,20 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * @param handler the PipedHttpHandler
      */
     void putPipedHttpHandler(TYPE type, METHOD method, PipedHttpHandler handler) {
-        LOGGER.info("putPipedHttpHandler( {}, {}, {} )", type, method, handler.getClass().getCanonicalName());
+        LOGGER.info("putPipedHttpHandler( {}, {}, {} )", type, method, getHandlerToLog(handler).getClass().getCanonicalName());
         Map<METHOD, PipedHttpHandler> methodsMap = handlersMultimap.get(type);
         if (methodsMap == null) {
             methodsMap = new HashMap<>();
             handlersMultimap.put(type, methodsMap);
         }
         methodsMap.put(method, handler);
+    }
+    
+    private PipedHttpHandler getHandlerToLog(PipedHttpHandler handler) {
+        if (handler instanceof CheckMetadataHandler || handler instanceof RequestTransformerMetadataHandler) {
+            return getHandlerToLog(handler.getNext());
+        } else
+            return handler;
     }
 
     /**
