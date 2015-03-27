@@ -47,7 +47,8 @@ public class RequestTransformerMetadataHandler extends AbstractTransformerHandle
     @Override
     boolean canCollRepresentationTransformersAppy(RequestContext context) {
         return ((context.getMethod() == RequestContext.METHOD.PUT || context.getMethod() == RequestContext.METHOD.PATCH || context.getMethod() == RequestContext.METHOD.POST)
-                && (context.getType() == RequestContext.TYPE.DOCUMENT || context.getType() == RequestContext.TYPE.COLLECTION)
+                && (context.getType() == RequestContext.TYPE.DOCUMENT || context.getType() == RequestContext.TYPE.COLLECTION || 
+                context.getType() == RequestContext.TYPE.FILE || context.getType() == RequestContext.TYPE.FILES_BUCKET)
                 && context.getCollectionProps() != null
                 && context.getCollectionProps().containsField(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
@@ -94,7 +95,7 @@ public class RequestTransformerMetadataHandler extends AbstractTransformerHandle
     void enforceCollRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
         List<RepresentationTransformer> collRts = RepresentationTransformer.getFromJson(context.getCollectionProps());
 
-        RequestContext.TYPE requestType = context.getType(); // DOCUMENT, FILE or COLLECTION
+        RequestContext.TYPE requestType = context.getType(); // DOCUMENT, FILE, COLLECTION or FILES_BUCKET
         RequestContext.METHOD requestMethod = context.getMethod(); // PUT, PATCH or POST
 
         for (RepresentationTransformer rt : collRts) {
@@ -110,6 +111,8 @@ public class RequestTransformerMetadataHandler extends AbstractTransformerHandle
                 } else if ((requestMethod == RequestContext.METHOD.PUT || requestMethod == RequestContext.METHOD.PATCH) && rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && (requestType == RequestContext.TYPE.DOCUMENT || requestType == RequestContext.TYPE.FILE)) {
                     t.tranform(exchange, context, context.getContent(), rt.getArgs());
                 } else if (requestMethod == RequestContext.METHOD.POST && rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.COLLECTION) {
+                    t.tranform(exchange, context, context.getContent(), rt.getArgs());
+                } else if (requestMethod == RequestContext.METHOD.POST && rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.FILES_BUCKET) {
                     t.tranform(exchange, context, context.getContent(), rt.getArgs());
                 }
             }

@@ -24,6 +24,7 @@ import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.server.HttpServerExchange;
 import java.util.HashMap;
 import java.util.Objects;
+import org.bson.BSONObject;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -33,20 +34,29 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  *
- * this transformer adds log info to the properties of the resource
- * representation.
+ * this transformer adds properties to the resource representation. usually it
+ * is applied on REQUEST phase to store properties evaluated server side
+ *
+ * the properties to add are passed in the args argumenet
+ *
+ * ags can be an array of strings, each specifiying the names of the properties
+ * to add or an object with a single property of an array of strings. in the
+ * latter case, the properties are added to the representation nested in the
+ * passed object property key.
+ *
+ * the properties that can be added are: userName, userRoles, dateTime, localIp,
+ * localPort, localServerName, queryString, relativePath, remoteIp,
+ * requestMethod, requestProtocol
  *
  * <br>for instance, with the following definition:
- * <br>{name:"addRequestProperties", "phase":"REQUEST", "scope":"CHILDREN", args:{"log": ["userName", "remoteIp"]}}
- * <br>injected properties are: _log: { userName:"andrea", remoteIp:"127.0.0.1"}
+ * <br>{name:"addRequestProperties", "phase":"REQUEST", "scope":"CHILDREN",
+ * args:{"log": ["userName", "remoteIp"]}}
+ * <br>injected properties are: log: { userName:"andrea", remoteIp:"127.0.0.1"}
  *
- * it is intended to be applied on REQUEST phase
- *
- * the properties to log are passed in the args argumenet as an array of
- * strings, each sting specifiying the property name:
- *
- * userName, userRoles, dateTime, localIp, localPort, localServerName,
- * queryString, relativePath, remoteIp, requestMethod, requestProtocol
+ * <br>for instance, with the following definition:
+ * <br>{name:"addRequestProperties", "phase":"REQUEST", "scope":"CHILDREN",
+ * args:["userName", "remoteIp"]}
+ * <br>injected properties are: userName:"andrea", remoteIp:"127.0.0.1"
  *
  */
 public class RequetPropsInjecterTransformer implements Transformer {
@@ -91,10 +101,28 @@ public class RequetPropsInjecterTransformer implements Transformer {
             } else {
                 context.addWarning("transformer wrong definition: args must be an object with a array containing the names of the properties to inject. got " + JsonUtils.serialize(args));
             }
+        } else if (args instanceof BasicDBList) {
+            HashMap<String, String> properties = getPropsValues(exchange, context);
+            
+            BasicDBList toinject = (BasicDBList) args;
+
+            toinject.forEach(_el -> {
+                if (_el instanceof String) {
+                    String el = (String) _el;
+
+                    String value = properties.get(el);
+
+                    injected.put(el, value);
+
+                } else {
+                    context.addWarning("property in the args list is not a string: " + _el);
+                }
+            });
+
+            contentToTransform.putAll((BSONObject)injected);
         } else {
             context.addWarning("transformer wrong definition: args must be an object with a array containing the names of the properties to inject. got " + JsonUtils.serialize(args));
         }
-
     }
 
     HashMap<String, String> getPropsValues(final HttpServerExchange exchange, final RequestContext context) {
