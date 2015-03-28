@@ -52,7 +52,7 @@ public class PipedWrappingHandler extends PipedHttpHandler {
         } else {
             wrapped.handleRequest(exchange);
 
-            if (!exchange.isResponseComplete()) {
+            if (!exchange.isResponseComplete() && getNext() != null) {
                 getNext().handleRequest(exchange, context);
             }
         }
