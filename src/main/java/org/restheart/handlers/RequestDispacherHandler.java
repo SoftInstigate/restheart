@@ -44,7 +44,7 @@ import org.restheart.handlers.files.DeleteBucketHandler;
 import org.restheart.handlers.files.DeleteFileHandler;
 import org.restheart.handlers.files.GetFileBinaryHandler;
 import org.restheart.handlers.files.GetFileHandler;
-import org.restheart.handlers.files.PostFileHandler;
+import org.restheart.handlers.files.PostBucketHandler;
 import org.restheart.handlers.files.PutBucketHandler;
 import org.restheart.handlers.files.PutFileHandler;
 import org.restheart.handlers.metadata.ResponseTranformerMetadataHandler;
@@ -122,7 +122,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         // FILES_BUCKET and FILE handlers
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.GET, new GetCollectionHandler(new ResponseTranformerMetadataHandler(null)));
-        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.POST, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PostFileHandler())));
+        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.POST, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PostBucketHandler())));
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.PUT, new RequestTransformerMetadataHandler(new PutBucketHandler()));
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.DELETE, new DeleteBucketHandler());
         

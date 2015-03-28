@@ -30,7 +30,7 @@ import org.junit.Test;
 import org.restheart.handlers.collection.GetCollectionHandler;
 import org.restheart.handlers.collection.PutCollectionHandler;
 import org.restheart.handlers.database.GetDBHandler;
-import org.restheart.handlers.files.PostFileHandler;
+import org.restheart.handlers.files.PostBucketHandler;
 import org.restheart.handlers.root.GetRootHandler;
 import org.restheart.utils.HttpStatus;
 
@@ -88,7 +88,7 @@ public class RequestDispacherHandlerTest {
         exchange.setRequestMethod(new HttpString("POST"));
         RequestContext context = new RequestContext(exchange, "/", "*");
 
-        dispacher.putPipedHttpHandler(RequestContext.TYPE.FILES_BUCKET, RequestContext.METHOD.POST, new PostFileHandler(null, null));
+        dispacher.putPipedHttpHandler(RequestContext.TYPE.FILES_BUCKET, RequestContext.METHOD.POST, new PostBucketHandler(null, null));
         dispacher.handleRequest(exchange, context);
 
         assertEquals(HttpStatus.SC_NOT_IMPLEMENTED, exchange.getResponseCode());

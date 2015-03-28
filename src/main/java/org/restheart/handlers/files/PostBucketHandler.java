@@ -29,23 +29,21 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import static org.restheart.utils.URLUtils.getReferenceLink;
 
 /**
  *
  * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
-public class PostFileHandler extends PipedHttpHandler {
+public class PostBucketHandler extends PipedHttpHandler {
     private final GridFsRepository gridFsDAO;
 
-    public PostFileHandler() {
+    public PostBucketHandler() {
         super();
         this.gridFsDAO = new GridFsDAO();
     }
 
-    public PostFileHandler(PipedHttpHandler next, Database dbsDAO) {
+    public PostBucketHandler(PipedHttpHandler next, Database dbsDAO) {
         super(next, dbsDAO);
         this.gridFsDAO = new GridFsDAO();
     }
