@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  *
  * where
  *
- * <br>PATHEXPR the path expression. use the . notation to identity the property
+ * <br>PATHEXPR the path expression. use the . notation to identify the property
  * <br>COUNT is the number of expected values
  * <br>TYPE can be any BSON type: null, object, array, string, number, boolean *
  * objectid, date,timestamp, maxkey, minkey, symbol, code, objectid
@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * in quotation marks, i.e. the regex will need to match "the value", included
  * the quotation marks
  *
- * <br>examples of path expressions:
+ * <br>examples for path expressions:
  *
  * <br>root = {a: {b:1, c: {d:2, e:3}}, f:4}
  * <br> $.a -> {b:1, c: {d:2, e:3}}, f:4}
@@ -70,7 +70,7 @@ import org.slf4j.LoggerFactory;
  *
  * <br> $.*.a.[*].b -> [1,2,3]
  *
- * <br>example rexex condition that matches email addresses:
+ * <br>example regex condition that matches email addresses:
  *
  * <br>{"path":"$._id", "regex":
  * "^\"[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}\"$"}

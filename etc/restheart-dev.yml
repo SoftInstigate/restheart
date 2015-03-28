@@ -109,6 +109,8 @@ metadata-named-singletons:
       singletons:
         - name: checkContent
           class: org.restheart.hal.metadata.singletons.SimpleContentChecker
+        - name: checkContentSize
+          class: org.restheart.hal.metadata.singletons.ContentSizeChecker
 
     # checkers group used by handlers: 
     # org.restheart.handlers.metadata.RequestTransformerMetadataHandler and
