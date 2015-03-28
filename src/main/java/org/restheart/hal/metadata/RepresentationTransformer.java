@@ -103,7 +103,11 @@ public class RepresentationTransformer {
         List<RepresentationTransformer> ret = new ArrayList<>();
 
         for (Object o : rts) {
-            ret.add(getSingleFromJson((DBObject) o));
+            if (o instanceof DBObject) {
+                ret.add(getSingleFromJson((DBObject) o));
+            } else {
+                throw new InvalidMetadataException("invalid '" + RTS_ELEMENT_NAME + "'. Array elements must be json objects");
+            }
         }
 
         return ret;

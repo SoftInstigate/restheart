@@ -30,7 +30,7 @@ import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
 import org.restheart.hal.metadata.RepresentationTransformer;
-import org.restheart.hal.metadata.SchemaChecker;
+import org.restheart.hal.metadata.RequestChecker;
 
 /**
  *
@@ -96,9 +96,9 @@ public class PatchCollectionHandler extends PipedHttpHandler {
         }
         
         // check SC metadata
-        if (content.containsField(SchemaChecker.SC_ELEMENT_NAME)) {
+        if (content.containsField(RequestChecker.SCS_ELEMENT_NAME)) {
             try {
-                SchemaChecker.getFromJson(content);
+                RequestChecker.getFromJson(content);
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong schema checker definition. " + ex.getMessage(), ex);

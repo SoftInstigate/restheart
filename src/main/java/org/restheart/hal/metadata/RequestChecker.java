@@ -17,14 +17,17 @@
  */
 package org.restheart.hal.metadata;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class SchemaChecker {
-    public static final String SC_ELEMENT_NAME = "schemaCheck";
+public class RequestChecker {
+    public static final String SCS_ELEMENT_NAME = "checkers";
     public static final String SC_CHECKER_ELEMENT_NAME = "name";
     public static final String SC_ARGS_ELEMENT_NAME = "args";
 
@@ -36,7 +39,7 @@ public class SchemaChecker {
      * @param checker
      * @param args
      */
-    public SchemaChecker(String checker, DBObject args) {
+    public RequestChecker(String checker, DBObject args) {
         this.name = checker;
         this.args = args;
     }
@@ -55,36 +58,46 @@ public class SchemaChecker {
         return args;
     }
 
-    public static SchemaChecker getFromJson(DBObject props) throws InvalidMetadataException {
-        String name;
-        DBObject args = null;
+    public static List<RequestChecker> getFromJson(DBObject props) throws InvalidMetadataException {
+        Object _scs = props.get(SCS_ELEMENT_NAME);
 
-        Object _sc = props.get(SC_ELEMENT_NAME);
-
-        if (_sc == null || !(_sc instanceof DBObject)) {
-            throw new InvalidMetadataException((_sc == null ? "missing '" : "invalid '") + SC_ELEMENT_NAME + "' element. it must be a json object");
+        if (_scs == null || !(_scs instanceof BasicDBList)) {
+            throw new InvalidMetadataException((_scs == null ? "missing '" : "invalid '") + SCS_ELEMENT_NAME + "' element. it must be a json array");
         }
 
-        DBObject sc = (DBObject) _sc;
+        BasicDBList scs = (BasicDBList) _scs;
 
-        Object _name = sc.get(SC_CHECKER_ELEMENT_NAME);
+        List<RequestChecker> ret = new ArrayList<>();
+
+        for (Object o : scs) {
+            if (o instanceof DBObject) {
+                ret.add(getSingleFromJson((DBObject) o));
+            } else {
+                throw new InvalidMetadataException("invalid '" + SCS_ELEMENT_NAME + "'. Array elements must be json objects");
+            }
+        }
+
+        return ret;
+    }
+
+    private static RequestChecker getSingleFromJson(DBObject props) throws InvalidMetadataException {
+        Object _name = props.get(SC_CHECKER_ELEMENT_NAME);
 
         if (_name == null || !(_name instanceof String)) {
             throw new InvalidMetadataException((_name == null ? "missing '" : "invalid '") + SC_CHECKER_ELEMENT_NAME + "' element. it must be of type String");
         }
 
-        name = (String) _name;
+        String name = (String) _name;
 
-        Object _args = sc.get(SC_ARGS_ELEMENT_NAME);
+        Object _args = props.get(SC_ARGS_ELEMENT_NAME);
 
         // args is optional
         if (_args != null && !(_args instanceof DBObject)) {
             throw new InvalidMetadataException("invalid '" + SC_ARGS_ELEMENT_NAME + "' element. it must be a json object");
         }
 
-        args = (DBObject) _args;
-        
-        return new SchemaChecker(name, args);
+        DBObject args = (DBObject) _args;
 
+        return new RequestChecker(name, args);
     }
 }

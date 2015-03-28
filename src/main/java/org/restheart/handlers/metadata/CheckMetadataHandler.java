@@ -18,8 +18,9 @@
 package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
+import java.util.List;
 import org.restheart.hal.metadata.InvalidMetadataException;
-import org.restheart.hal.metadata.SchemaChecker;
+import org.restheart.hal.metadata.RequestChecker;
 import org.restheart.hal.metadata.singletons.Checker;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -60,25 +61,26 @@ public class CheckMetadataHandler extends PipedHttpHandler {
 
     private boolean doesCheckerAppy(RequestContext context) {
         return context.getCollectionProps() != null
-                && context.getCollectionProps().containsField(SchemaChecker.SC_ELEMENT_NAME);
+                && context.getCollectionProps().containsField(RequestChecker.SCS_ELEMENT_NAME);
     }
 
     private boolean check(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
-        SchemaChecker sc = SchemaChecker.getFromJson(context.getCollectionProps());
+        List<RequestChecker> checkers = RequestChecker.getFromJson(context.getCollectionProps());
 
-        Checker checker;
+        return checkers.stream().allMatch(checker -> {
+            try {
+                Checker _checker = (Checker) NamedSingletonsFactory.getInstance().get("checkers", checker.getName());
 
-        try {
-            checker = (Checker) NamedSingletonsFactory.getInstance().get("checkers", sc.getName());
-        } catch (IllegalArgumentException ex) {
-            context.addWarning("error applying checker: " + ex.getMessage());
-            return false;
-        }
+                if (_checker == null) {
+                    throw new IllegalArgumentException("cannot find singleton " + checker.getName() + " in singleton group checkers");
+                }
 
-        if (checker == null) {
-            throw new IllegalArgumentException("cannot find singleton " + sc.getName() + " in singleton group checkers");
-        }
+                return _checker.check(exchange, context, checker.getArgs());
 
-        return checker.check(exchange, context, sc.getArgs());
+            } catch (IllegalArgumentException ex) {
+                context.addWarning("error applying checker: " + ex.getMessage());
+                return false;
+            }
+        });
     }
 }

@@ -28,10 +28,12 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  *
- * ContentSizeChecker allows to check the request content size
+ * ContentSizeChecker allows to check the request content length
  *
  * the args arguments is the size condition: a is json object as follows: {
  * "max": MAX_SIZE, "min": MIN_SIZE }
+ * 
+ * sizes are in bytes
  *
  */
 public class ContentSizeChecker implements Checker {
