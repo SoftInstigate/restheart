@@ -116,15 +116,19 @@ application-logic-mounts:
 metadata-named-singletons:
     # checkers group used by handler:
     # org.restheart.handlers.metadata.CheckMetadataHandler
+    # more information in checkers javadoc
     - group: checkers
       interface: org.restheart.hal.metadata.singletons.Checker
       singletons:
         - name: checkContent
           class: org.restheart.hal.metadata.singletons.SimpleContentChecker
+        - name: checkContentSize
+          class: org.restheart.hal.metadata.singletons.ContentSizeChecker
 
     # checkers group used by handlers: 
     # org.restheart.handlers.metadata.RequestTransformerMetadataHandler and
     # org.restheart.handlers.metadata.ResponseTransformerMetadataHandler
+    # more information in transformers javadoc
     - group: transformers
       interface: org.restheart.hal.metadata.singletons.Transformer
       singletons:
