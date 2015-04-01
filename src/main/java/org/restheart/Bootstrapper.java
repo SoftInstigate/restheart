@@ -481,7 +481,7 @@ public final class Bootstrapper {
                 String storename = "rakeystore.jks";
 
                 sslContext = SSLContext.getInstance("TLS");
-                kmf = KeyManagerFactory.getInstance("SunX509");
+                kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
                 ks = KeyStore.getInstance("JKS");
                 ks.load(Bootstrapper.class.getClassLoader().getResourceAsStream(storename), storepass);
 
@@ -490,7 +490,7 @@ public final class Bootstrapper {
                 sslContext.init(kmf.getKeyManagers(), null, null);
             } else {
                 sslContext = SSLContext.getInstance("TLS");
-                kmf = KeyManagerFactory.getInstance("SunX509");
+                kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
                 ks = KeyStore.getInstance("JKS");
 
                 try (FileInputStream fis = new FileInputStream(new File(configuration.getKeystoreFile()))) {

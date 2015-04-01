@@ -100,7 +100,7 @@ public class MongoDBClientSingleton {
                             && mongoUser instanceof String 
                             && mongoPwd != null 
                             && mongoPwd instanceof String) {
-                        credentials.add(MongoCredential.createMongoCRCredential((String) mongoUser, (String) mongoAuthDb, ((String) mongoPwd).toCharArray()));
+                        credentials.add(MongoCredential.createCredential((String) mongoUser, (String) mongoAuthDb, ((String) mongoPwd).toCharArray()));
                     }
                 });
             }
