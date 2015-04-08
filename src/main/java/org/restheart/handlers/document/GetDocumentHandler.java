@@ -28,6 +28,7 @@ import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import org.bson.types.ObjectId;
+import org.restheart.hal.Representation;
 
 /**
  *
@@ -40,6 +41,15 @@ public class GetDocumentHandler extends PipedHttpHandler {
      */
     public GetDocumentHandler() {
         super();
+    }
+
+    /**
+     * Default ctor
+     *
+     * @param next
+     */
+    public GetDocumentHandler(PipedHttpHandler next) {
+        super(next);
     }
 
     /**
@@ -74,12 +84,12 @@ public class GetDocumentHandler extends PipedHttpHandler {
                 return;
             }
         }
-        
+
         Object id = document.get("_id");
-        
+
         // generate the _created_on timestamp from the _id if this is an instance of ObjectId
         if (document.get("_created_on") == null && id != null && id instanceof ObjectId) {
-            document.put("_created_on", Instant.ofEpochSecond(((ObjectId)id).getTimestamp()).toString());
+            document.put("_created_on", Instant.ofEpochSecond(((ObjectId) id).getTimestamp()).toString());
         }
 
         String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
@@ -87,7 +97,20 @@ public class GetDocumentHandler extends PipedHttpHandler {
         ResponseHelper.injectEtagHeader(exchange, document);
         exchange.setResponseCode(HttpStatus.SC_OK);
 
-        DocumentRepresentationFactory.sendDocument(requestPath, exchange, context, document);
+        DocumentRepresentationFactory drp = new DocumentRepresentationFactory();
+        Representation rep = drp.getRepresentation(requestPath, exchange, context, document);
+
+        exchange.setResponseCode(HttpStatus.SC_OK);
+
+        // call the ResponseScriptMetadataHanlder if piped in
+        if (getNext() != null) {
+            DBObject responseContent = rep.asDBObject();
+            context.setResponseContent(responseContent);
+
+            getNext().handleRequest(exchange, context);
+        }
+
+        drp.sendRepresentation(exchange, context, rep);
         exchange.endExchange();
     }
 }

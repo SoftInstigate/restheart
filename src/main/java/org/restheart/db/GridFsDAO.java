@@ -28,6 +28,8 @@ import java.io.File;
 import java.io.IOException;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -64,18 +66,7 @@ public class GridFsDAO implements GridFsRepository {
         // add etag
         properties.put("_etag", new ObjectId());
 
-        // contentType
-        Object _contentType = properties.removeField("contentType");
-        String contentType;
-
-        if (_contentType != null && _contentType instanceof String) {
-            contentType = (String) _contentType;
-        } else {
-            contentType = null;
-        }
-
         gfsFile.setId(fileId);
-        gfsFile.setContentType(contentType);
         gfsFile.setFilename(fileName);
 
         properties.toMap().keySet().stream().forEach(k -> gfsFile.put((String) k, properties.get((String) k)));

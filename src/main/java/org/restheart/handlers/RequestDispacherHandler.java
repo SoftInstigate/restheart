@@ -44,9 +44,12 @@ import org.restheart.handlers.files.DeleteBucketHandler;
 import org.restheart.handlers.files.DeleteFileHandler;
 import org.restheart.handlers.files.GetFileBinaryHandler;
 import org.restheart.handlers.files.GetFileHandler;
-import org.restheart.handlers.files.PostFileHandler;
+import org.restheart.handlers.files.PostBucketHandler;
 import org.restheart.handlers.files.PutBucketHandler;
 import org.restheart.handlers.files.PutFileHandler;
+import org.restheart.handlers.metadata.ResponseTranformerMetadataHandler;
+import org.restheart.handlers.metadata.CheckMetadataHandler;
+import org.restheart.handlers.metadata.RequestTransformerMetadataHandler;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,24 +95,23 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         putPipedHttpHandler(TYPE.ROOT, METHOD.GET, new GetRootHandler());
 
         // DB handlres
-        putPipedHttpHandler(TYPE.DB, METHOD.GET, new GetDBHandler());
-        putPipedHttpHandler(TYPE.DB, METHOD.PUT, new PutDBHandler());
+        putPipedHttpHandler(TYPE.DB, METHOD.GET, new GetDBHandler(new ResponseTranformerMetadataHandler(null)));
+        putPipedHttpHandler(TYPE.DB, METHOD.PUT, new RequestTransformerMetadataHandler(new PutDBHandler()));
         putPipedHttpHandler(TYPE.DB, METHOD.DELETE, new DeleteDBHandler());
-        putPipedHttpHandler(TYPE.DB, METHOD.PATCH, new PatchDBHandler());
+        putPipedHttpHandler(TYPE.DB, METHOD.PATCH, new RequestTransformerMetadataHandler(new PatchDBHandler()));
 
         // COLLECTION handlres
-        final GetCollectionHandler getCollectionHandler = new GetCollectionHandler();
-        putPipedHttpHandler(TYPE.COLLECTION, METHOD.GET, getCollectionHandler);
-        putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST, new PostCollectionHandler());
-        putPipedHttpHandler(TYPE.COLLECTION, METHOD.PUT, new PutCollectionHandler());
+        putPipedHttpHandler(TYPE.COLLECTION, METHOD.GET, new GetCollectionHandler(new ResponseTranformerMetadataHandler(null)));
+        putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PostCollectionHandler())));
+        putPipedHttpHandler(TYPE.COLLECTION, METHOD.PUT, new RequestTransformerMetadataHandler(new PutCollectionHandler()));
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.DELETE, new DeleteCollectionHandler());
-        putPipedHttpHandler(TYPE.COLLECTION, METHOD.PATCH, new PatchCollectionHandler());
+        putPipedHttpHandler(TYPE.COLLECTION, METHOD.PATCH, new RequestTransformerMetadataHandler(new PatchCollectionHandler()));
 
         // DOCUMENT handlers
-        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.GET, new GetDocumentHandler());
-        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PUT, new PutDocumentHandler());
+        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.GET, new GetDocumentHandler(new ResponseTranformerMetadataHandler(null)));
+        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PUT, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PutDocumentHandler())));
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.DELETE, new DeleteDocumentHandler());
-        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PATCH, new PatchDocumentHandler());
+        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PATCH, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PatchDocumentHandler())));
 
         // COLLECTION_INDEXES handlers
         putPipedHttpHandler(TYPE.COLLECTION_INDEXES, METHOD.GET, new GetIndexesHandler());
@@ -119,13 +121,14 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         putPipedHttpHandler(TYPE.INDEX, METHOD.DELETE, new DeleteIndexHandler());
 
         // FILES_BUCKET and FILE handlers
-        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.GET, new GetCollectionHandler());
-        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.POST, new PostFileHandler());
-        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.PUT, new PutBucketHandler());
+        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.GET, new GetCollectionHandler(new ResponseTranformerMetadataHandler(null)));
+        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.POST, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PostBucketHandler())));
+        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.PUT, new RequestTransformerMetadataHandler(new PutBucketHandler()));
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.DELETE, new DeleteBucketHandler());
-        putPipedHttpHandler(TYPE.FILE, METHOD.GET, new GetFileHandler());
+        
+        putPipedHttpHandler(TYPE.FILE, METHOD.GET, new GetFileHandler(new ResponseTranformerMetadataHandler(null)));
         putPipedHttpHandler(TYPE.FILE_BINARY, METHOD.GET, new GetFileBinaryHandler());
-        putPipedHttpHandler(TYPE.FILE, METHOD.PUT, new PutFileHandler());
+        putPipedHttpHandler(TYPE.FILE, METHOD.PUT, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PutFileHandler())));
         putPipedHttpHandler(TYPE.FILE, METHOD.DELETE, new DeleteFileHandler());
     }
 
@@ -150,13 +153,20 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * @param handler the PipedHttpHandler
      */
     void putPipedHttpHandler(TYPE type, METHOD method, PipedHttpHandler handler) {
-        LOGGER.info("putPipedHttpHandler( {}, {}, {} )", type, method, handler.getClass().getCanonicalName());
+        LOGGER.info("putPipedHttpHandler( {}, {}, {} )", type, method, getHandlerToLog(handler).getClass().getCanonicalName());
         Map<METHOD, PipedHttpHandler> methodsMap = handlersMultimap.get(type);
         if (methodsMap == null) {
             methodsMap = new HashMap<>();
             handlersMultimap.put(type, methodsMap);
         }
         methodsMap.put(method, handler);
+    }
+    
+    private PipedHttpHandler getHandlerToLog(PipedHttpHandler handler) {
+        if (handler instanceof CheckMetadataHandler || handler instanceof RequestTransformerMetadataHandler) {
+            return getHandlerToLog(handler.getNext());
+        } else
+            return handler;
     }
 
     /**
@@ -169,19 +179,19 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
     @Override
     public final void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getType() == TYPE.ERROR) {
-            LOGGER.error("This is a bad request: returning a <{}> HTTP code", HttpStatus.SC_BAD_REQUEST);
+            LOGGER.debug("This is a bad request: returning a <{}> HTTP code", HttpStatus.SC_BAD_REQUEST);
             ResponseHelper.endExchange(exchange, HttpStatus.SC_BAD_REQUEST);
             return;
         }
 
         if (context.getMethod() == METHOD.OTHER) {
-            LOGGER.error("This method is not allowed: returning a <{}> HTTP code", HttpStatus.SC_METHOD_NOT_ALLOWED);
+            LOGGER.debug("This method is not allowed: returning a <{}> HTTP code", HttpStatus.SC_METHOD_NOT_ALLOWED);
             ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
             return;
         }
 
         if (context.isReservedResource()) {
-            LOGGER.error("The resource is reserved: returning a <{}> HTTP code", HttpStatus.SC_FORBIDDEN);
+            LOGGER.debug("The resource is reserved: returning a <{}> HTTP code", HttpStatus.SC_FORBIDDEN);
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "reserved resource");
             return;
         }

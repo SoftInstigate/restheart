@@ -56,7 +56,7 @@ public class AccessManagerHandler extends PipedHttpHandler {
                 getNext().handleRequest(exchange, context);
             }
         } else {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_UNAUTHORIZED);
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_FORBIDDEN);
         }
     }
 }

@@ -24,6 +24,11 @@ import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.restheart.db.Database;
+import org.restheart.db.DbsDAO;
+import org.restheart.hal.Representation;
+import org.restheart.handlers.IllegalQueryParamenterException;
+import org.restheart.handlers.collection.CollectionRepresentationFactory;
+import org.restheart.utils.ResponseHelper;
 
 /**
  *
@@ -36,6 +41,10 @@ public class GetDBHandler extends PipedHttpHandler {
      */
     public GetDBHandler() {
         super();
+    }
+
+    public GetDBHandler(PipedHttpHandler next) {
+        super(next, new DbsDAO());
     }
 
     public GetDBHandler(PipedHttpHandler next, Database dbsDAO) {
@@ -58,9 +67,21 @@ public class GetDBHandler extends PipedHttpHandler {
             data = getDatabase().getData(context.getDBName(), colls, context.getPage(), context.getPagesize());
         }
 
+        DBRepresentationFactory repf = new DBRepresentationFactory();
+        Representation rep = repf.getRepresentation(exchange, context, data, getDatabase().getDBSize(colls));
+
         exchange.setResponseCode(HttpStatus.SC_OK);
 
-        new DBRepresentationFactory().sendHal(exchange, context, data, getDatabase().getDBSize(colls));
+        // call the ResponseScriptMetadataHanlder if piped in
+        if (getNext() != null) {
+            DBObject responseContent = rep.asDBObject();
+            context.setResponseContent(responseContent);
+
+            getNext().handleRequest(exchange, context);
+        }
+
+        repf.sendRepresentation(exchange, context, rep);
+
         exchange.endExchange();
     }
 }

@@ -91,12 +91,16 @@ public class PatchDocumentHandler extends PipedHttpHandler {
                 content,
                 etag,
                 true);
-
+        
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             sendWarnings(httpCode, exchange, context);
         } else {
             exchange.setResponseCode(httpCode);
+        }
+        
+        if (httpCode == HttpStatus.SC_CREATED || httpCode == HttpStatus.SC_OK) {
+            ResponseHelper.injectEtagHeader(exchange, content);
         }
 
         exchange.endExchange();

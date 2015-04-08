@@ -23,6 +23,7 @@ import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
+import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -37,7 +38,6 @@ import java.util.List;
 public class RequestContext {
 
     public enum TYPE {
-
         ERROR,
         ROOT,
         DB,
@@ -51,7 +51,6 @@ public class RequestContext {
     };
 
     public enum METHOD {
-
         GET,
         POST,
         PUT,
@@ -88,7 +87,7 @@ public class RequestContext {
     public static final String FS_FILES_SUFFIX = ".files";
     public static final String _INDEXES = "_indexes";
     public static final String BINARY_CONTENT = "binary";
-    
+
     public static final String MAX_KEY_ID = "_MaxKey";
     public static final String MIN_KEY_ID = "_MinKey";
 
@@ -99,10 +98,14 @@ public class RequestContext {
     private final METHOD method;
     private final String[] pathTokens;
 
-    private DBObject dbProperties;
+    private DBObject dbProps;
     private DBObject collectionProps;
 
     private DBObject content;
+    
+    private File file;
+
+    private DBObject responseContent;
 
     private final List<String> warnings = new ArrayList<>();
 
@@ -370,10 +373,10 @@ public class RequestContext {
             return false;
         }
 
-        return documentIdRaw.startsWith(UNDERSCORE) &&
-                !documentIdRaw.equalsIgnoreCase(_INDEXES) && 
-                !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID) &&
-                !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID);
+        return documentIdRaw.startsWith(UNDERSCORE)
+                && !documentIdRaw.equalsIgnoreCase(_INDEXES)
+                && !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID)
+                && !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID);
     }
 
     /**
@@ -489,17 +492,17 @@ public class RequestContext {
     }
 
     /**
-     * @return the dbProperties
+     * @return the dbProps
      */
-    public DBObject getDbProperties() {
-        return dbProperties;
+    public DBObject getDbProps() {
+        return dbProps;
     }
 
     /**
-     * @param dbProperties the dbProperties to set
+     * @param dbProps the dbProps to set
      */
-    public void setDbProperties(DBObject dbProperties) {
-        this.dbProperties = dbProperties;
+    public void setDbProps(DBObject dbProps) {
+        this.dbProps = dbProps;
     }
 
     /**
@@ -594,5 +597,33 @@ public class RequestContext {
      */
     public Object getDocumentId() {
         return documentId;
+    }
+
+    /**
+     * @return the responseContent
+     */
+    public DBObject getResponseContent() {
+        return responseContent;
+    }
+
+    /**
+     * @param responseContent the responseContent to set
+     */
+    public void setResponseContent(DBObject responseContent) {
+        this.responseContent = responseContent;
+    }
+
+    /**
+     * @return the file
+     */
+    public File getFile() {
+        return file;
+    }
+
+    /**
+     * @param file the file to set
+     */
+    public void setFile(File file) {
+        this.file = file;
     }
 }

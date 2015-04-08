@@ -16,14 +16,14 @@
 package org.restheart.security.handlers;
 
 import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.PipedWrappingHandler;
 import org.restheart.security.AccessManager;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.impl.BasicAuthenticationMechanism;
-import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
 import java.util.List;
+import org.restheart.handlers.RequestContext;
 import static org.restheart.security.RestheartIdentityManager.RESTHEART_REALM;
 import org.restheart.security.AuthTokenAuthenticationMechanism;
 
@@ -31,7 +31,7 @@ import org.restheart.security.AuthTokenAuthenticationMechanism;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class ChallengingSecurityHandler extends PipedWrappingHandler {
+public class ChallengingSecurityHandler extends PipedHttpHandler {
 
     /**
      *
@@ -40,18 +40,23 @@ public class ChallengingSecurityHandler extends PipedWrappingHandler {
      * @param accessManager
      */
     public ChallengingSecurityHandler(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager) {
-        super(next, getSecurityHandlerChain(identityManager, accessManager));
+        super(getSecurityHandlerChain(next, identityManager, accessManager));
+    }
+    
+    @Override
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        getNext().handleRequest(exchange, context);
     }
 
-    private static HttpHandler getSecurityHandlerChain(final IdentityManager identityManager, final AccessManager accessManager) {
-        HttpHandler handler = null;
+    private static PipedHttpHandler getSecurityHandlerChain(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager) {
+        PipedHttpHandler handler = null;
         if (identityManager != null) {
             final List<AuthenticationMechanism> mechanisms = new ArrayList<>();
             
             mechanisms.add(new AuthTokenAuthenticationMechanism(RESTHEART_REALM));
             mechanisms.add(new BasicAuthenticationMechanism(RESTHEART_REALM));
             
-            handler = buildSecurityHandlerChain(accessManager, identityManager, mechanisms);
+            handler = buildSecurityHandlerChain(next, accessManager, identityManager, mechanisms);
         }
         return handler;
     }

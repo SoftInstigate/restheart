@@ -18,10 +18,7 @@
 package org.restheart.security;
 
 import org.restheart.handlers.RequestContext;
-import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
-import java.util.HashMap;
-import java.util.Set;
 
 /**
  *
@@ -33,13 +30,14 @@ public interface AccessManager {
      *
      * @param exchange
      * @param context
-     * @return
+     * @return true if request is allowed
      */
     boolean isAllowed(HttpServerExchange exchange, RequestContext context);
-
+    
     /**
      *
-     * @return
+     * @param exchange
+     * @return true if not authenticated user won't be allowed
      */
-    HashMap<String, Set<Predicate>> getAcl();
+    boolean isAuthenticationRequired(final HttpServerExchange exchange);
 }

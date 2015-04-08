@@ -1,6 +1,6 @@
 /*
  * RESTHeart - the data REST API server
- * Copyright (C) 2014 - 2015 SoftInstigate Srl
+ * Copyright (C) SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,35 +15,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.metadata;
+package org.restheart.security;
 
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.handlers.RequestContext;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class MetadataEnforcerHandler extends PipedHttpHandler {
+public class FullAccessManager implements AccessManager {
 
     /**
-     * Creates a new instance of MetadataEnforcerHandler
-     *
-     * @param next
+     * this access manager allows any operation to any user
      */
-    public MetadataEnforcerHandler(PipedHttpHandler next) {
-        super(next);
+    public FullAccessManager() {
+    }
+    
+    @Override
+    public boolean isAllowed(HttpServerExchange exchange, RequestContext context) {
+        return true;
     }
 
-    /**
-     *
-     * @param exchange
-     * @param context
-     * @throws Exception
-     */
+
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        getNext().handleRequest(exchange, context);
+    public boolean isAuthenticationRequired(HttpServerExchange exchange) {
+        return false;
     }
 }

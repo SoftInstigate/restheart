@@ -47,12 +47,12 @@ public class DBCursorPool {
     private final DbsDAO dbsDAO;
 
     //TODO make those configurable
-    private final int SKIP_SLICE_LINEAR_DELTA = Bootstrapper.getConf().getEagerLinearSliceDelta();
-    private final int SKIP_SLICE_LINEAR_WIDTH = Bootstrapper.getConf().getEagerLinearSliceWidht();
-    private final int[] SKIP_SLICES_HEIGHTS = Bootstrapper.getConf().getEagerLinearSliceHeights();
+    private final int SKIP_SLICE_LINEAR_DELTA = Bootstrapper.getConfiguration().getEagerLinearSliceDelta();
+    private final int SKIP_SLICE_LINEAR_WIDTH = Bootstrapper.getConfiguration().getEagerLinearSliceWidht();
+    private final int[] SKIP_SLICES_HEIGHTS = Bootstrapper.getConfiguration().getEagerLinearSliceHeights();
 
-    private final int SKIP_SLICE_RND_MIN_WIDTH = Bootstrapper.getConf().getEagerRndSliceMinWidht();
-    private final int SKIP_SLICE_RND_MAX_CURSORS = Bootstrapper.getConf().getEagerRndMaxCursors();
+    private final int SKIP_SLICE_RND_MIN_WIDTH = Bootstrapper.getConfiguration().getEagerRndSliceMinWidht();
+    private final int SKIP_SLICE_RND_MAX_CURSORS = Bootstrapper.getConfiguration().getEagerRndMaxCursors();
 
     public enum EAGER_CURSOR_ALLOCATION_POLICY {
 
@@ -65,7 +65,7 @@ public class DBCursorPool {
     private final LoadingCache<DBCursorPoolEntryKey, Long> collSizes;
 
     private static final long TTL = 8*60*1000; // in minutes - MUST BE < 10 since this 10 the TTL of the cursor in mongodb
-    private static final long POOL_SIZE = Bootstrapper.getConf().getEagerPoolSize();
+    private static final long POOL_SIZE = Bootstrapper.getConfiguration().getEagerPoolSize();
 
     ExecutorService executor = Executors.newSingleThreadExecutor();
 

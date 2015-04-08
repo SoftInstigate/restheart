@@ -101,7 +101,8 @@ public class IndexesRepresentationFactory {
                 
                 rep.addRepresentation("rh:index", nrep);
             } else {
-                logger.error("index missing string _id field", d);
+                rep.addWarning("index with _id " + _id + (_id == null ? " " :  " of type " + _id.getClass().getSimpleName()) + "filtered out. Indexes can only have ids of type String");
+                logger.debug("index missing string _id field", d);
             }
         });
     }

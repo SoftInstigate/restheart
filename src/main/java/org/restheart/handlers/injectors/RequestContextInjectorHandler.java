@@ -30,11 +30,12 @@ import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
+import java.util.Arrays;
 import java.util.Deque;
 import org.bson.BSONObject;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_KEY;
-import org.restheart.utils.UnsupportedDocumentIdException;
+import org.restheart.hal.UnsupportedDocumentIdException;
 
 /**
  *
@@ -217,7 +218,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 try {
                     docIdType = DOC_ID_TYPE.valueOf(_docIdType.trim().toUpperCase());
                 } catch (IllegalArgumentException iae) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal " + DOC_ID_TYPE_KEY + " paramenter (must be STRING_OBJECTID, INT, LONG, FLOAT, DOUBLE, STRING or OBJECTID)");
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal " + DOC_ID_TYPE_KEY + " paramenter; must be " + Arrays.toString(DOC_ID_TYPE.values()));
                     return;
                 }
             }

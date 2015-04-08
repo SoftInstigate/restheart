@@ -243,7 +243,7 @@ public class SecurityIT extends AbstactIT {
     public void testGetAsPowerUser() throws Exception {
         // *** GET root
         Response resp = user1Executor.execute(Request.Get(rootUri));
-        check("check get root as user1", resp, HttpStatus.SC_UNAUTHORIZED);
+        check("check get root as user1", resp, HttpStatus.SC_FORBIDDEN);
 
         // *** GET db
         resp = user1Executor.execute(Request.Get(dbUri));
@@ -271,11 +271,11 @@ public class SecurityIT extends AbstactIT {
         try {
             // *** PUT root
             Response resp = user1Executor.execute(Request.Put(rootUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-            check("check put root as user1", resp, HttpStatus.SC_UNAUTHORIZED);
+            check("check put root as user1", resp, HttpStatus.SC_FORBIDDEN);
 
             // *** PUT db
             resp = user1Executor.execute(Request.Put(dbUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-            check("check put db as user1", resp, HttpStatus.SC_UNAUTHORIZED);
+            check("check put db as user1", resp, HttpStatus.SC_FORBIDDEN);
 
             // *** PUT tmpdb
             resp = user1Executor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
@@ -291,5 +291,23 @@ public class SecurityIT extends AbstactIT {
         } finally {
             mongoClient.dropDatabase(dbTmpName);
         }
+    }
+    
+    @Test
+    public void testPathPefixAndRegexPredicates() throws Exception {
+        // *** create dbs
+        Response resp = user2Executor.execute(Request.Put(dbTmpUri2).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check create " + dbTmpName2 + " as user2", resp, HttpStatus.SC_CREATED);
+
+        resp = user2Executor.execute(Request.Put(dbTmpUri3).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check create " + dbTmpName3 + " as user2", resp, HttpStatus.SC_CREATED);
+        
+        // *** create user collection
+        resp = user2Executor.execute(Request.Put(collectionTmpUserUri2).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check path predicate creating user collection " +  collectionTmpUserUri2 + " as user2", resp, HttpStatus.SC_CREATED);
+
+        // *** create user collection
+        resp = user2Executor.execute(Request.Put(collectionTmpUserUri3).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check regex predicate creating user collection " +  collectionTmpUserUri3 + " as user2", resp, HttpStatus.SC_CREATED);
     }
 }

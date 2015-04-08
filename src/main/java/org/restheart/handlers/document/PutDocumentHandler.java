@@ -29,7 +29,7 @@ import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
 import org.restheart.utils.URLUtils;
-import org.restheart.utils.UnsupportedDocumentIdException;
+import org.restheart.hal.UnsupportedDocumentIdException;
 
 /**
  *
@@ -85,14 +85,6 @@ public class PutDocumentHandler extends PipedHttpHandler {
             return;
         }
         
-        try {
-            URLUtils.checkId(id);
-        } catch (UnsupportedDocumentIdException udie) {
-            String errMsg = "the type of _id in content body is not supported: " + id.getClass().getSimpleName();
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
-            return;
-        }
-
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
         int httpCode = this.documentDAO.upsertDocument(
@@ -108,6 +100,11 @@ public class PutDocumentHandler extends PipedHttpHandler {
             sendWarnings(httpCode, exchange, context);
         } else {
             exchange.setResponseCode(httpCode);
+        }
+        
+        if (httpCode == HttpStatus.SC_CREATED || httpCode == HttpStatus.SC_OK) {
+            content.put("_etag", etag);
+            ResponseHelper.injectEtagHeader(exchange, content);
         }
 
         exchange.endExchange();

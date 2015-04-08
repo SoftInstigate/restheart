@@ -17,6 +17,7 @@
  */
 package org.restheart.security.impl;
 
+import com.google.common.collect.Sets;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.PasswordCredential;
 import java.security.Principal;
@@ -27,10 +28,9 @@ import java.util.Set;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class SimpleAccount implements Account {
-
-    private Principal principal;
-    private PasswordCredential credential;
-    private Set<String> roles;
+    final private Principal principal;
+    final private PasswordCredential credential;
+    final private Set<String> roles;
 
     /**
      *
@@ -48,7 +48,7 @@ public class SimpleAccount implements Account {
         }
 
         if (roles == null || roles.isEmpty()) {
-            throw new IllegalArgumentException("argument roles cannot be null nor empty");
+            roles = Sets.newHashSet();
         }
 
         this.principal = new SimplePrincipal(name);

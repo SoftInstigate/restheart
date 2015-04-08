@@ -15,24 +15,26 @@
  */
 package org.restheart.security.handlers;
 
+import io.undertow.security.api.AuthenticationMechanism;
+import io.undertow.security.api.AuthenticationMode;
+import io.undertow.security.idm.IdentityManager;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.PipedWrappingHandler;
 import org.restheart.security.AccessManager;
 import org.restheart.security.SilentBasicAuthenticationMechanism;
 import static org.restheart.security.RestheartIdentityManager.RESTHEART_REALM;
-import io.undertow.security.api.AuthenticationMechanism;
-import io.undertow.security.idm.IdentityManager;
-import io.undertow.server.HttpHandler;
 import java.util.ArrayList;
 import java.util.List;
+import org.restheart.handlers.RequestContext;
 import org.restheart.security.AuthTokenAuthenticationMechanism;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class SilentSecurityHandler extends PipedWrappingHandler {
-
+public class SilentSecurityHandler extends PipedHttpHandler {
     /**
      *
      * @param next
@@ -40,18 +42,23 @@ public class SilentSecurityHandler extends PipedWrappingHandler {
      * @param accessManager
      */
     public SilentSecurityHandler(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager) {
-        super(next, getSecurityHandlerChain(identityManager, accessManager));
+        super(getSecurityHandlerChain(next, identityManager, accessManager));
     }
 
-    private static HttpHandler getSecurityHandlerChain(final IdentityManager identityManager, final AccessManager accessManager) {
-        HttpHandler handler = null;
+    @Override
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        getNext().handleRequest(exchange, context);
+    }
+    
+    private static PipedHttpHandler getSecurityHandlerChain(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager) {
+        PipedHttpHandler handler = null;
         if (identityManager != null) {
             final List<AuthenticationMechanism> mechanisms = new ArrayList<>();
             
             mechanisms.add(new AuthTokenAuthenticationMechanism(RESTHEART_REALM));
             mechanisms.add(new SilentBasicAuthenticationMechanism(RESTHEART_REALM));
             
-            handler = buildSecurityHandlerChain(accessManager, identityManager, mechanisms);
+            handler = buildSecurityHandlerChain(next, accessManager, identityManager, mechanisms);
         }
         return handler;
     }

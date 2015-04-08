@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.utils;
+package org.restheart.test.unit;
 
+import org.restheart.hal.UnsupportedDocumentIdException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import org.bson.types.ObjectId;
@@ -27,6 +28,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.restheart.handlers.RequestContext;
+import org.restheart.utils.URLUtils;
 
 /**
  *

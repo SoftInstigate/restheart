@@ -27,7 +27,7 @@ import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.types.ObjectId;
-import org.restheart.handlers.AbstractRepresentationFactory;
+import org.restheart.hal.AbstractRepresentationFactory;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -43,11 +43,11 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     @Override
-    protected Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
+    public Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
         final Representation representation = createRepresentation(exchange, context, requestPath);
-        final DBObject dbProps = context.getDbProperties();
+        final DBObject dbProps = context.getDbProps();
 
         if (dbProps != null) {
             representation.addProperties(dbProps);
@@ -111,6 +111,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
                     rep.addRepresentation("rh:coll", nrep);
                 }
             } else {
+                // this shoudn't be possible
                 LOGGER.error("collection missing string _id field", d);
             }
         });

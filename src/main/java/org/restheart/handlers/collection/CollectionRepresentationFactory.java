@@ -27,7 +27,7 @@ import org.restheart.handlers.document.DocumentRepresentationFactory;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
-import org.restheart.handlers.AbstractRepresentationFactory;
+import org.restheart.hal.AbstractRepresentationFactory;
 
 /**
  *
@@ -48,7 +48,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
      * @throws IllegalQueryParamenterException
      */
     @Override
-    protected Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
+    public Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
         final Representation rep = createRepresentation(exchange, context, requestPath);
@@ -102,8 +102,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
             if (RequestContext.isReservedResourceCollection(_id.toString())) {
                 rep.addWarning("filtered out reserved resource " + requestPath + "/" + _id.toString());;
             } else {
-
-                Representation nrep = DocumentRepresentationFactory.getDocument(requestPath + "/" + _id.toString(), exchange, context, d);
+                Representation nrep = new DocumentRepresentationFactory().getRepresentation(requestPath + "/" + _id.toString(), exchange, context, d);
 
                 if (rep.getType() == RequestContext.TYPE.FILES_BUCKET) {
                     nrep.addProperty("_type", RequestContext.TYPE.FILE.name());

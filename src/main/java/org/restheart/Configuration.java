@@ -79,6 +79,8 @@ public class Configuration {
     private final List<Map<String, Object>> staticResourcesMounts;
 
     private final List<Map<String, Object>> applicationLogicMounts;
+    
+    private final List<Map<String, Object>> metadataNamedSingletons;
 
     private final String idmImpl;
     private final Map<String, Object> idmArgs;
@@ -299,6 +301,11 @@ public class Configuration {
     public static final String APPLICATION_LOGIC_MOUNTS_KEY = "application-logic-mounts";
 
     /**
+     * the key for the application-logic-mounts property.
+     */
+    public static final String METADATA_NAMED_SINGLETONS_KEY = "metadata-named-singletons";
+    
+    /**
      * the key for the args property.
      */
     public static final String APPLICATION_LOGIC_MOUNT_ARGS_KEY = "args";
@@ -490,8 +497,10 @@ public class Configuration {
         mongoMounts.add(defaultMongoMounts);
 
         applicationLogicMounts = new ArrayList<>();
-
+        
         staticResourcesMounts = new ArrayList<>();
+        
+        metadataNamedSingletons = new ArrayList<>();
 
         HashMap<String, Object> browserStaticResourcesMountArgs = new HashMap<>();
 
@@ -620,6 +629,8 @@ public class Configuration {
         applicationLogicMounts = getAsListOfMaps(conf, APPLICATION_LOGIC_MOUNTS_KEY, new ArrayList<>());
 
         staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, new ArrayList<>());
+        
+        metadataNamedSingletons = getAsListOfMaps(conf, METADATA_NAMED_SINGLETONS_KEY, new ArrayList<>());
 
         Map<String, Object> idm = getAsMap(conf, IDM_KEY);
         Map<String, Object> am = getAsMap(conf, ACCESS_MANAGER_KEY);
@@ -714,7 +725,7 @@ public class Configuration {
             return null;
         }
     }
-
+    
     private Boolean getAsBooleanOrDefault(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
         if (conf == null) {
             if (!silent) {
@@ -1108,6 +1119,13 @@ public class Configuration {
      */
     public final List<Map<String, Object>> getStaticResourcesMounts() {
         return staticResourcesMounts;
+    }
+    
+    /**
+     * @return the metadataNamedSingletons
+     */
+    public final List<Map<String, Object>> getMetadaNamedSingletons() {
+        return metadataNamedSingletons;
     }
 
     /**

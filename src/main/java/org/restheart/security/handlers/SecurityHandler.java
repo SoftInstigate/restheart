@@ -41,7 +41,7 @@ public class SecurityHandler extends PipedHttpHandler {
      */
     public SecurityHandler(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager) {
         super(null);
-
+        
         silentHandler = new SilentSecurityHandler(next, identityManager, accessManager);
         challengingHandler = new ChallengingSecurityHandler(next, identityManager, accessManager);
     }

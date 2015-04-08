@@ -77,6 +77,10 @@ public abstract class AbstactIT {
     protected static final String dbName = "mydb";
     protected static URI dbTmpUri;
     protected static final String dbTmpName = "mytmpdb";
+    protected static URI dbTmpUri2;
+    protected static final String dbTmpName2 = "tmpdb2";
+    protected static URI dbTmpUri3;
+    protected static final String dbTmpName3 = "tmpdb3";
     protected static URI collection1Uri;
     protected static URI collection1UriRemappedAll;
     protected static URI collection1UriRemappedDb;
@@ -89,6 +93,9 @@ public abstract class AbstactIT {
     protected static final String collection2Name = "refcoll2";
     protected static URI collectionTmpUri;
     protected static final String collectionTmpName = "tmpcoll";
+    protected static URI collectionTmpUserUri2;
+    protected static URI collectionTmpUserUri3;
+    protected static final String collectionTmpUserName2 = "user2";
     protected static URI docsCollectionUri;
     protected static URI docsCollectionUriPaging;
     protected static URI docsCollectionUriCountAndPaging;
@@ -248,6 +255,12 @@ public abstract class AbstactIT {
         if (databases.contains(dbTmpName)) {
             MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbTmpName);
         }
+        if (databases.contains(dbTmpName2)) {
+            MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbTmpName2);
+        }
+        if (databases.contains(dbTmpName3)) {
+            MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbTmpName3);
+        }
         LOGGER.info("test data deleted");
     }
 
@@ -264,6 +277,9 @@ public abstract class AbstactIT {
         dbUriRemappedAll = buildURI(REMAPPEDALL + "/" + dbName);
         dbUriRemappedDb = buildURI(REMAPPEDDB);
         dbTmpUri = buildURI("/" + dbTmpName);
+        
+        dbTmpUri2 = buildURI("/" + dbTmpName2);
+        dbTmpUri3 = buildURI("/" + dbTmpName3);
 
         collection1Uri = buildURI("/" + dbName + "/" + collection1Name);
         collection1UriRemappedAll = buildURI(REMAPPEDALL + "/" + dbName + "/" + collection1Name);
@@ -274,6 +290,9 @@ public abstract class AbstactIT {
         collection2UriRemappedDb = buildURI(REMAPPEDDB + "/" + collection2Name);
         collection2UriRemappedCollection = buildURI(REMAPPEDREFCOLL2);
         collectionTmpUri = buildURI("/" + dbTmpName + "/" + collectionTmpName);
+
+        collectionTmpUserUri2 = buildURI("/" + dbTmpName2 + "/" + collectionTmpUserName2);
+        collectionTmpUserUri3 = buildURI("/" + dbTmpName3 + "/" + collectionTmpUserName2);
 
         docsCollectionUri = buildURI("/" + dbName + "/" + docsCollectionName);
         docsCollectionUriPaging = buildURI("/" + dbName + "/" + docsCollectionName,

@@ -94,7 +94,7 @@ static-resources-mounts:
 
 # In the following example two built-in application logic handlers are defined:
 # PingHandler bound to /_logic/ping that implements a simple ping service
-# GetRoleHandler bound to /_logic/roles/mine that returns the current user authentication status and eventually its roles
+# GetRoleHandler bound to /_logic/roles that returns the current user authentication status and eventually its roles
 
 application-logic-mounts:
     - what: org.restheart.handlers.applicationlogic.PingHandler
@@ -103,13 +103,39 @@ application-logic-mounts:
       args:
           msg: "ciao from the restheart team"
     - what: org.restheart.handlers.applicationlogic.GetRoleHandler
-      where: /roles/mine
+      where: /roles
       secured: false
       args:
-          url: /_logic/roles/mine
-          send-challenge: false
-          idm-implementation-class: org.restheart.security.impl.SimpleFileIdentityManager
-          idm-conf-file: ../etc/security-integrationtest.yml
+          url: /_logic/roles
+
+### metadata named singletons
+
+# metadata implementation can rely on singletons, this section configures the
+# singleton factory #org.restheart.hal.metadata.singletons.NamedSingletonsFactory
+
+metadata-named-singletons:
+    # checkers group used by handler:
+    # org.restheart.handlers.metadata.CheckMetadataHandler
+    # more information in checkers javadoc
+    - group: checkers
+      interface: org.restheart.hal.metadata.singletons.Checker
+      singletons:
+        - name: checkContent
+          class: org.restheart.hal.metadata.singletons.SimpleContentChecker
+        - name: checkContentSize
+          class: org.restheart.hal.metadata.singletons.ContentSizeChecker
+
+    # checkers group used by handlers: 
+    # org.restheart.handlers.metadata.RequestTransformerMetadataHandler and
+    # org.restheart.handlers.metadata.ResponseTransformerMetadataHandler
+    # more information in transformers javadoc
+    - group: transformers
+      interface: org.restheart.hal.metadata.singletons.Transformer
+      singletons:
+        - name: addRequestProperties
+          class: org.restheart.hal.metadata.singletons.RequetPropsInjecterTransformer
+        - name: filterProperties
+          class: org.restheart.hal.metadata.singletons.FilterTransformer
 
 ### security 
 
@@ -118,8 +144,10 @@ application-logic-mounts:
 # idm: the Identity Manager responsible of authentication
 # access-manager: the Access Manager responsible of authorization
 # The RESTHeart security is pluggable and you can provide you own implementation of both IDM and AM.
-# the provided default implementations of IDM and AM are SimpleFileIdentityManager and SimpleAccessManager.
+# the provided default implementations of IDM and AM are SimpleFileIdentityManager, DbIdentityManager and SimpleAccessManager.
 # conf-file paths are either absolute (starting with /) or relative to the restheart.jar directory
+
+# can also use org.restheart.security.impl.DbIdentityManager for testing
 
 idm:    
     implementation-class: org.restheart.security.impl.SimpleFileIdentityManager

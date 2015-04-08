@@ -30,8 +30,6 @@ import io.undertow.util.HttpString;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
-import org.restheart.utils.UnsupportedDocumentIdException;
-import org.restheart.utils.URLUtils;
 import static org.restheart.utils.URLUtils.getReferenceLink;
 
 /**
@@ -91,13 +89,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
             }
 
         } else {
-            try {
-                URLUtils.checkId(content.get("_id"));
-                docId = content.get("_id");
-            } catch (UnsupportedDocumentIdException idide) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "the type of _id in content body is not supported: " + content.get("_id").getClass().getSimpleName());
-                return;
-            }
+            docId = content.get("_id");
         }
 
         int httpCode = this.documentDAO
@@ -113,6 +105,11 @@ public class PostCollectionHandler extends PipedHttpHandler {
             sendWarnings(httpCode, exchange, context);
         } else {
             exchange.setResponseCode(httpCode);
+        }
+        
+        if (httpCode == HttpStatus.SC_CREATED || httpCode == HttpStatus.SC_OK) {
+            content.put("_etag", etag);
+            ResponseHelper.injectEtagHeader(exchange, content);
         }
 
         exchange.endExchange();

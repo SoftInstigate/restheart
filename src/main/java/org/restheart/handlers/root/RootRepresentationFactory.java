@@ -26,7 +26,7 @@ import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.types.ObjectId;
-import org.restheart.handlers.AbstractRepresentationFactory;
+import org.restheart.hal.AbstractRepresentationFactory;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -42,7 +42,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     @Override
-    protected Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
+    public Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
         final Representation rep = createRepresentation(exchange, context, requestPath);
@@ -92,6 +92,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
 
                 rep.addRepresentation("rh:db", nrep);
             } else {
+                // this shoudn't be possible
                 logger.error("db missing string _id field", d);
             }
         });

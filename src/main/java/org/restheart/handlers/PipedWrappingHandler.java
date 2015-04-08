@@ -17,19 +17,8 @@
  */
 package org.restheart.handlers;
 
-import org.restheart.security.AccessManager;
-import org.restheart.security.handlers.AccessManagerHandler;
-import org.restheart.security.handlers.PredicateAuthenticationConstraintHandler;
-import io.undertow.security.api.AuthenticationMechanism;
-import io.undertow.security.api.AuthenticationMode;
-import io.undertow.security.handlers.AuthenticationCallHandler;
-import io.undertow.security.handlers.AuthenticationMechanismsHandler;
-import io.undertow.security.handlers.SecurityInitialHandler;
-import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import java.util.List;
-import org.restheart.security.handlers.AuthTokenInjecterHandler;
 
 /**
  *
@@ -63,24 +52,9 @@ public class PipedWrappingHandler extends PipedHttpHandler {
         } else {
             wrapped.handleRequest(exchange);
 
-            if (!exchange.isResponseComplete()) {
+            if (!exchange.isResponseComplete() && getNext() != null) {
                 getNext().handleRequest(exchange, context);
             }
         }
     }
-
-    protected static HttpHandler buildSecurityHandlerChain(final AccessManager accessManager, final IdentityManager identityManager, final List<AuthenticationMechanism> mechanisms) {
-        HttpHandler handler = null;
-        
-        if (accessManager != null) {
-            handler = new AccessManagerHandler(accessManager, new AuthTokenInjecterHandler(null));
-        }
-        handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE,
-                identityManager,
-                new AuthenticationMechanismsHandler(
-                        new PredicateAuthenticationConstraintHandler(
-                                new AuthenticationCallHandler(handler), accessManager), mechanisms));
-        return handler;
-    }
-
 }

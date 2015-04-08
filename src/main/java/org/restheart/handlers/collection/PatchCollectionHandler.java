@@ -29,6 +29,8 @@ import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
+import org.restheart.hal.metadata.RepresentationTransformer;
+import org.restheart.hal.metadata.RequestChecker;
 
 /**
  *
@@ -71,12 +73,35 @@ public class PatchCollectionHandler extends PipedHttpHandler {
             return;
         }
 
+        // check RELS metadata
         if (content.containsField(Relationship.RELATIONSHIPS_ELEMENT_NAME)) {
             try {
                 Relationship.getFromJson(content);
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong relationships definition. " + ex.getMessage(), ex);
+                return;
+            }
+        }
+        
+        // check RT metadata
+        if (content.containsField(RepresentationTransformer.RTS_ELEMENT_NAME)) {
+            try {
+                RepresentationTransformer.getFromJson(content);
+            } catch (InvalidMetadataException ex) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+                        "wrong representation transformer definition. " + ex.getMessage(), ex);
+                return;
+            }
+        }
+        
+        // check SC metadata
+        if (content.containsField(RequestChecker.SCS_ELEMENT_NAME)) {
+            try {
+                RequestChecker.getFromJson(content);
+            } catch (InvalidMetadataException ex) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+                        "wrong schema checker definition. " + ex.getMessage(), ex);
                 return;
             }
         }
@@ -95,6 +120,11 @@ public class PatchCollectionHandler extends PipedHttpHandler {
             sendWarnings(httpCode, exchange, context);
         } else {
             exchange.setResponseCode(httpCode);
+        }
+        
+        if (httpCode == HttpStatus.SC_CREATED || httpCode == HttpStatus.SC_OK) {
+            content.put("_etag", etag);
+            ResponseHelper.injectEtagHeader(exchange, content);
         }
 
         exchange.endExchange();

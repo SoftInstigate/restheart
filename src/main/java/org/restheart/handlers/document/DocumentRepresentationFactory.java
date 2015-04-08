@@ -29,13 +29,9 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import java.net.URISyntaxException;
 import java.util.List;
 import java.util.TreeMap;
-import jdk.nashorn.internal.runtime.URIUtils;
-import org.bson.types.ObjectId;
-import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
-import org.restheart.utils.UnsupportedDocumentIdException;
+import org.restheart.hal.UnsupportedDocumentIdException;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -44,6 +40,10 @@ import org.slf4j.Logger;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class DocumentRepresentationFactory {
+    
+    public DocumentRepresentationFactory() {
+        
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DocumentRepresentationFactory.class);
 
@@ -56,7 +56,7 @@ public class DocumentRepresentationFactory {
      * @return
      * @throws IllegalQueryParamenterException
      */
-    public static Representation getDocument(String href, HttpServerExchange exchange, RequestContext context, DBObject data)
+    public Representation getRepresentation(String href, HttpServerExchange exchange, RequestContext context, DBObject data)
             throws IllegalQueryParamenterException {
         Representation rep;
 
@@ -90,17 +90,20 @@ public class DocumentRepresentationFactory {
 
         if (isBinaryFile(data)) {
             if (_docIdType == null) {
-                rep.addLink(new Link("rh:download",
+                rep.addLink(new Link("rh:data",
                         String.format("%s/%s", href, RequestContext.BINARY_CONTENT)));
             } else {
-                rep.addLink(new Link("rh:download",
+                rep.addLink(new Link("rh:data",
                         String.format("%s/%s?%s", href, RequestContext.BINARY_CONTENT, _docIdType)));
             }
-        }
-
-        if (context.isParentAccessible()) {
-            // this can happen due to mongo-mounts mapped URL
-            rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath)));
+            
+            if (context.isParentAccessible()) {
+                rep.addLink(new Link("rh:bucket", URLUtils.getParentPath(requestPath)));
+            }
+        } else {
+            if (context.isParentAccessible()) {
+                rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath)));
+            }
         }
 
         rep.addLink(
@@ -115,25 +118,18 @@ public class DocumentRepresentationFactory {
 
     /**
      *
-     * @param href
      * @param exchange
      * @param context
-     * @param data
-     * @throws IllegalQueryParamenterException
-     * @throws URISyntaxException
+     * @param rep
      */
-    public static void sendDocument(String href, HttpServerExchange exchange, RequestContext context, DBObject data)
-            throws IllegalQueryParamenterException, URISyntaxException {
-        Representation rep = getDocument(href, exchange, context, data);
-
-        if (context.getWarnings() != null) {
+    public void sendRepresentation(HttpServerExchange exchange, RequestContext context, Representation rep) {
+        if (context.getWarnings() != null)
             context.getWarnings().forEach(w -> rep.addWarning(w));
-        }
-
+        
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
     }
-
+    
     private static TreeMap<String, String> getRelationshipsLinks(Representation rep, RequestContext context, DBObject data) {
         TreeMap<String, String> links = new TreeMap<>();
 

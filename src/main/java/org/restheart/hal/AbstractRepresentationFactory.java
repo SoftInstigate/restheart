@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers;
+package org.restheart.hal;
 
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
@@ -25,6 +25,8 @@ import java.util.TreeMap;
 import org.restheart.hal.HALUtils;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
+import org.restheart.handlers.IllegalQueryParamenterException;
+import org.restheart.handlers.RequestContext;
 import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import org.restheart.utils.URLUtils;
 
@@ -33,19 +35,13 @@ import org.restheart.utils.URLUtils;
  * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
 public abstract class AbstractRepresentationFactory {
-
     /**
      *
      * @param exchange
      * @param context
-     * @param embeddedData
-     * @param size
-     * @throws IllegalQueryParamenterException
+     * @param rep
      */
-    public void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
-            throws IllegalQueryParamenterException {
-        Representation rep = getRepresentation(exchange, context, embeddedData, size);
-        
+    public void sendRepresentation(HttpServerExchange exchange, RequestContext context, Representation rep) {
         if (context.getWarnings() != null)
             context.getWarnings().forEach(w -> rep.addWarning(w));
         
@@ -53,7 +49,16 @@ public abstract class AbstractRepresentationFactory {
         exchange.getResponseSender().send(rep.toString());
     }
 
-    protected abstract Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param embeddedData
+     * @param size
+     * @return the resource HAL representation
+     * @throws IllegalQueryParamenterException
+     */
+    public abstract Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException;
 
     protected void addSizeAndTotalPagesProperties(final long size, final RequestContext context, final Representation rep) {

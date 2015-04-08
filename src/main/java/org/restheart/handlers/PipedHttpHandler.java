@@ -18,13 +18,24 @@
 package org.restheart.handlers;
 
 import com.mongodb.BasicDBObject;
+import io.undertow.security.api.AuthenticationMechanism;
+import io.undertow.security.api.AuthenticationMode;
+import io.undertow.security.idm.IdentityManager;
 import org.restheart.handlers.document.DocumentRepresentationFactory;
 import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import java.net.URISyntaxException;
+import java.util.List;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
+import org.restheart.security.AccessManager;
+import org.restheart.security.handlers.AccessManagerHandler;
+import org.restheart.security.handlers.AuthTokenInjecterHandler;
+import org.restheart.security.handlers.AuthenticationCallHandler;
+import org.restheart.security.handlers.AuthenticationConstraintHandler;
+import org.restheart.security.handlers.AuthenticationMechanismsHandler;
+import org.restheart.security.handlers.SecurityInitialHandler;
 
 /**
  *
@@ -82,7 +93,8 @@ public abstract class PipedHttpHandler implements HttpHandler {
             exchange.setResponseCode(SC);
         }
 
-        DocumentRepresentationFactory.sendDocument(exchange.getRequestPath(), exchange, context, new BasicDBObject());
+        DocumentRepresentationFactory rf = new DocumentRepresentationFactory();
+        rf.sendRepresentation(exchange, context, rf.getRepresentation(exchange.getRequestPath(), exchange, context, new BasicDBObject()));
     }
 
     /**
@@ -97,5 +109,23 @@ public abstract class PipedHttpHandler implements HttpHandler {
      */
     protected PipedHttpHandler getNext() {
         return next;
+    }
+    
+    protected static PipedHttpHandler buildSecurityHandlerChain(PipedHttpHandler next, final AccessManager accessManager, final IdentityManager identityManager, final List<AuthenticationMechanism> mechanisms) {
+        PipedHttpHandler handler;
+        
+        if (accessManager == null) {
+            throw new IllegalArgumentException("Error, accessManager cannot be null. Eventually use FullAccessManager that gives full access power ");
+        }
+
+        handler = new AuthTokenInjecterHandler(new AccessManagerHandler(accessManager, next));
+        
+        handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE,
+                identityManager,
+                new AuthenticationMechanismsHandler(
+                        new AuthenticationConstraintHandler(
+                                new AuthenticationCallHandler(handler), accessManager), mechanisms));
+        
+        return handler;
     }
 }
