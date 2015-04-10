@@ -25,7 +25,9 @@ import com.mongodb.util.ObjectSerializer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 import org.bson.types.BSONTimestamp;
 import org.bson.types.Code;
@@ -92,7 +94,31 @@ public class JsonUtils {
     }
 
     public static int countPropsFromPath(Object root, String path) throws IllegalArgumentException {
-        return getPropsFromPath(root, path).size();
+        return countPropsFromPath(root, path, true);
+    }
+
+    public static int countPropsFromPath(Object root, String path, boolean distinct) throws IllegalArgumentException {
+        List<Object> items = getPropsFromPath(root, path);
+
+        if (!distinct) {
+            return items.size();
+        } else {
+            int ret = 0;
+            
+            Set<String> propsKeys = new HashSet<>();
+
+            for (Object item : items) {
+                if (item instanceof BasicDBList) {
+                    ret = ret + 1;
+                } else if (item instanceof BasicDBObject) {
+                    propsKeys.addAll(((BasicDBObject)item).keySet());
+                } else {
+                    ret++;
+                }
+            }
+            
+            return ret + propsKeys.size();
+        }
     }
 
     private static List<Object> _getPropsFromPath(Object json, String[] pathTokens, String currentPath, int totalTokensLength) throws IllegalArgumentException {
