@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.restheart.hal.UnsupportedDocumentIdException;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +56,6 @@ public class Relationship {
     public static final String TARGET_DB_ELEMENT_NAME = "target-db";
     public static final String TARGET_COLLECTION_ELEMENT_NAME = "target-coll";
     public static final String REF_ELEMENT_NAME = "ref-field";
-    public static final String DETECT_OIDS_ELEMENT_NAME = "detect-oids";
 
     private final String rel;
     private final TYPE type;
@@ -63,7 +63,6 @@ public class Relationship {
     private final String targetDb;
     private final String targetCollection;
     private final String referenceField;
-    private final boolean detectOids;
 
     /**
      *
@@ -73,16 +72,14 @@ public class Relationship {
      * @param targetDb
      * @param targetCollection
      * @param referenceField
-     * @param detectOids
      */
-    public Relationship(String rel, TYPE type, ROLE role, String targetDb, String targetCollection, String referenceField, boolean detectOids) {
+    public Relationship(String rel, TYPE type, ROLE role, String targetDb, String targetCollection, String referenceField) {
         this.rel = rel;
         this.type = type;
         this.role = role;
         this.targetDb = targetDb;
         this.targetCollection = targetCollection;
         this.referenceField = referenceField;
-        this.detectOids = detectOids;
     }
 
     /**
@@ -93,10 +90,9 @@ public class Relationship {
      * @param targetDb
      * @param targetCollection
      * @param referenceField
-     * @param detectOids
      * @throws InvalidMetadataException
      */
-    public Relationship(String rel, String type, String role, String targetDb, String targetCollection, String referenceField, Boolean detectOids) throws InvalidMetadataException {
+    public Relationship(String rel, String type, String role, String targetDb, String targetCollection, String referenceField) throws InvalidMetadataException {
         this.rel = rel;
 
         try {
@@ -114,7 +110,6 @@ public class Relationship {
         this.targetDb = targetDb;
         this.targetCollection = targetCollection;
         this.referenceField = referenceField;
-        this.detectOids = detectOids == null ? true: detectOids;
     }
 
     /**
@@ -161,7 +156,6 @@ public class Relationship {
         Object _targetDb = content.get(TARGET_DB_ELEMENT_NAME);
         Object _targetCollection = content.get(TARGET_COLLECTION_ELEMENT_NAME);
         Object _referenceField = content.get(REF_ELEMENT_NAME);
-        Object _detectOids = content.get(DETECT_OIDS_ELEMENT_NAME);
 
         if (_rel == null || !(_rel instanceof String)) {
             throw new InvalidMetadataException((_rel == null ? "missing " : "invalid ") + REL_ELEMENT_NAME + " element.");
@@ -187,10 +181,6 @@ public class Relationship {
             throw new InvalidMetadataException((_referenceField == null ? "missing " : "invalid ") + REF_ELEMENT_NAME + " element.");
         }
 
-        if (_detectOids != null && !(_detectOids instanceof Boolean)) {
-            throw new InvalidMetadataException("invalid " + DETECT_OIDS_ELEMENT_NAME + " element.");
-        }
-
         String rel = (String) _rel;
         String type = (String) _type;
         String role = (String) _role;
@@ -198,7 +188,7 @@ public class Relationship {
         String targetCollection = (String) _targetCollection;
         String referenceField = (String) _referenceField;
 
-        return new Relationship(rel, type, role, targetDb, targetCollection, referenceField, (Boolean) _detectOids);
+        return new Relationship(rel, type, role, targetDb, targetCollection, referenceField);
     }
 
     /**
@@ -212,9 +202,10 @@ public class Relationship {
      * @throws org.restheart.hal.UnsupportedDocumentIdException
      */
     public String getRelationshipLink(RequestContext context, String dbName, String collName, DBObject data) throws IllegalArgumentException, UnsupportedDocumentIdException {
-        Object _referenceValue = data.get(referenceField);
-        String db = (targetDb == null ? dbName : targetDb);
+        Object _referenceValue = getReferenceFieldValue(referenceField, data);
         
+        String db = (targetDb == null ? dbName : targetDb);
+
         // check _referenceValue
         if (role == ROLE.OWNING) {
             if (_referenceValue == null) {
@@ -223,7 +214,13 @@ public class Relationship {
 
             if (type == TYPE.ONE_TO_ONE || type == TYPE.MANY_TO_ONE) {
                 Object id = _referenceValue;
-                return URLUtils.getUriWithDocId(context, db, targetCollection, id, detectOids);
+
+                // can be a BasicDBList if ref-field is a json path expression
+                if (id instanceof BasicDBList && ((BasicDBList)id).size() == 1) {
+                    id = ((BasicDBList)id).get(0);
+                }
+                
+                return URLUtils.getUriWithDocId(context, db, targetCollection, id);
             } else {
                 if (!(_referenceValue instanceof BasicDBList)) {
                     throw new IllegalArgumentException("in resource " + dbName + "/" + collName + "/" + data.get("_id")
@@ -231,21 +228,64 @@ public class Relationship {
                 }
 
                 Object[] ids = ((BasicDBList) _referenceValue).toArray();
-                return URLUtils.getUriWithFilterMany(context, db, targetCollection, ids, detectOids);
+                return URLUtils.getUriWithFilterMany(context, db, targetCollection, ids);
             }
         } else {
             // INVERSE
             Object id = data.get("_id");
-            
+
             if (type == TYPE.ONE_TO_ONE || type == TYPE.ONE_TO_MANY) {
-                return URLUtils.getUriWithFilterOne(context, db, targetCollection, referenceField, id, detectOids);
+                return URLUtils.getUriWithFilterOne(context, db, targetCollection, referenceField, id);
             } else if (type == TYPE.MANY_TO_ONE || type == TYPE.MANY_TO_MANY) {
-                return URLUtils.getUriWithFilterManyInverse(context, db, targetCollection, referenceField, id, detectOids);
+                return URLUtils.getUriWithFilterManyInverse(context, db, targetCollection, referenceField, id);
             }
         }
 
         LOGGER.debug("returned null link. this = {}, data = {}", this, data);
         return null;
+    }
+
+    /**
+     *
+     * @returns the reference field value, either it is an object or, in case
+     * referenceField is a json path, a BasicDBObject
+     *
+     *
+     */
+    private Object getReferenceFieldValue(String referenceField, DBObject data) throws IllegalArgumentException {
+        if (referenceField.startsWith("$.")) {
+            // it is a json path expression
+
+            List<Object> objs = JsonUtils.getPropsFromPath(data, referenceField);
+            
+            if (objs != null && objs.size() == 1 && objs.get(0) == null)
+                return null;
+            
+            if (objs == null) {
+                LOGGER.debug("cound not get the value of the reference field " + referenceField + " from " + data.toString() + "\nThe json path expression resolved to null");
+                throw new IllegalArgumentException("ref-field json path expression resolved to null");
+            }
+
+            // check that objs are all 
+            if (objs.stream().allMatch(obj -> {
+                if (obj == null || obj instanceof DBObject) {
+                    return false;
+                } else {
+                    return true;
+                }
+            })) {
+                BasicDBList ret = new BasicDBList();
+
+                ret.addAll(objs);
+
+                return ret;
+            } else {
+                LOGGER.debug("cound not get the value of the reference field " + referenceField + " from " + data.toString() + "\nThe json path expression resolved to " + objs.toString());
+                throw new IllegalArgumentException("ref-field json path expression resolved to "+ objs.toString());
+            }
+        } else {
+            return data.get(referenceField);
+        }
     }
 
     /**
@@ -288,12 +328,5 @@ public class Relationship {
      */
     public String getReferenceField() {
         return referenceField;
-    }
-
-    /**
-     * @return the detectOids
-     */
-    public boolean isDetectOids() {
-        return detectOids;
     }
 }
