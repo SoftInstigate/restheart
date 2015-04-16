@@ -18,7 +18,7 @@
 package org.restheart.test.integration;
 
 import org.restheart.hal.Representation;
-import org.restheart.security.handlers.SecurityHandler;
+import org.restheart.security.handlers.SecurityHandlerDispacher;
 import org.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
 import static org.junit.Assert.*;
@@ -77,10 +77,10 @@ public class SecurityIT extends AbstactIT {
         check("check get doc2 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
 
         // *** GET root with silent authorization (no auth challenge must be sent)
-        resp = unauthExecutor.execute(Request.Get(rootUri).addHeader(SecurityHandler.SILENT_HEADER_KEY, ""));
+        resp = unauthExecutor.execute(Request.Get(rootUri).addHeader(SecurityHandlerDispacher.SILENT_HEADER_KEY, ""));
         check("check get root unauthorized", resp, HttpStatus.SC_FORBIDDEN);
 
-        resp = unauthExecutor.execute(Request.Get(rootUri).addHeader(SecurityHandler.SILENT_HEADER_KEY, ""));
+        resp = unauthExecutor.execute(Request.Get(rootUri).addHeader(SecurityHandlerDispacher.SILENT_HEADER_KEY, ""));
         HttpResponse httpResp = resp.returnResponse();
 
         assertTrue("check get root unauthorized silent", httpResp.getHeaders(Headers.WWW_AUTHENTICATE_STRING).length == 0);

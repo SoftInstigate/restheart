@@ -38,7 +38,7 @@ import org.restheart.handlers.OptionsHandler;
 import org.restheart.handlers.PipedWrappingHandler;
 import org.restheart.handlers.injectors.BodyInjectorHandler;
 import org.restheart.handlers.metadata.RequestTransformerMetadataHandler;
-import org.restheart.security.handlers.SecurityHandler;
+import org.restheart.security.handlers.SecurityHandlerDispacher;
 import org.restheart.security.handlers.CORSHandler;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.OSChecker;
@@ -570,7 +570,7 @@ public final class Bootstrapper {
                             new RequestContextInjectorHandler(url, db,
                                     new OptionsHandler(
                                             new BodyInjectorHandler(
-                                                    new SecurityHandler(coreHandlerChain, identityManager, accessManager))))
+                                                    new SecurityHandlerDispacher(coreHandlerChain, identityManager, accessManager))))
                     ));
 
             LOGGER.info("URL {} bound to MongoDB resource {}", url, db);
@@ -581,7 +581,7 @@ public final class Bootstrapper {
         pipeApplicationLogicHandlers(configuration, paths, identityManager, accessManager);
 
         // pipe the auth tokens invalidation handler
-        paths.addPrefixPath("/_authtokens", new CORSHandler(new SecurityHandler(new AuthTokenHandler(), identityManager, new FullAccessManager())));
+        paths.addPrefixPath("/_authtokens", new CORSHandler(new SecurityHandlerDispacher(new AuthTokenHandler(), identityManager, new FullAccessManager())));
 
         return new GracefulShutdownHandler(
                 new RequestLimitingHandler(new RequestLimit(configuration.getRequestLimit()),
@@ -675,7 +675,7 @@ public final class Bootstrapper {
 
                     if (secured) {
                         paths.addPrefixPath(where,
-                                new SecurityHandler(
+                                new SecurityHandlerDispacher(
                                         new PipedWrappingHandler(null, handler), identityManager, accessManager));
                     } else {
                         paths.addPrefixPath(where, handler);
@@ -725,9 +725,9 @@ public final class Bootstrapper {
                         PipedHttpHandler handler = new RequestContextInjectorHandler("/_logic", "*", alHandler);
 
                         if (alSecured) {
-                            paths.addPrefixPath("/_logic" + alWhere, new CORSHandler(new SecurityHandler(handler, identityManager, accessManager)));
+                            paths.addPrefixPath("/_logic" + alWhere, new CORSHandler(new SecurityHandlerDispacher(handler, identityManager, accessManager)));
                         } else {
-                            paths.addPrefixPath("/_logic" + alWhere, new CORSHandler(new SecurityHandler(handler, identityManager, new FullAccessManager())));
+                            paths.addPrefixPath("/_logic" + alWhere, new CORSHandler(new SecurityHandlerDispacher(handler, identityManager, new FullAccessManager())));
                         }
 
                         LOGGER.info("URL {} bound to application logic handler {}."
