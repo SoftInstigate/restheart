@@ -56,7 +56,7 @@ public class AuthTokenHandler extends PipedHttpHandler {
                 || exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null
                 || !("/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName())
                         .equals(exchange.getRequestURI())) {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_UNAUTHORIZED);
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_FORBIDDEN);
             return;
         }
 

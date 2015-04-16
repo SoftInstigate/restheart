@@ -86,7 +86,7 @@ public class GetRoleHandler extends ApplicationLogicHandler {
                     || !(context.getUnmappedRequestUri().equals(URLUtils.removeTrailingSlashes(url) + "/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName()))) {
 
                 {
-                    exchange.setResponseCode(HttpStatus.SC_UNAUTHORIZED);
+                    exchange.setResponseCode(HttpStatus.SC_FORBIDDEN);
 
                     // REMOVE THE AUTH TOKEN HEADERS!!!!!!!!!!!
                     exchange.getResponseHeaders().remove(AUTH_TOKEN_HEADER);
