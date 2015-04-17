@@ -52,7 +52,15 @@ public class CheckMetadataHandler extends PipedHttpHandler {
             if (check(exchange, context)) {
                 getNext().handleRequest(exchange, context);
             } else {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "request data does not fulfill the collection schema check constraint");
+                String msg = "request data does not fulfill the collection schema check constraint";
+                
+                List<String> warnings = context.getWarnings();
+                
+                if (warnings != null && !warnings.isEmpty()) {
+                    msg = msg + ". " + warnings.get(0);
+                }
+                
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, msg);
             }
         } else {
             getNext().handleRequest(exchange, context);

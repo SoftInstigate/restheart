@@ -58,7 +58,7 @@ public class JsonUtils {
      * @param root the DBOject to extract properties from
      * @param path the path of the properties to extract
      * @return the List of Objects extracted from root ojbect and identifie by
-     * the path
+     * the path or null if path does not exist
      *
      * examples
      * <br>root = {a: {b:1, c: {d:2, e:3}}, f:4}
@@ -89,46 +89,11 @@ public class JsonUtils {
         } else if (!(root instanceof BasicDBObject)) {
             throw new IllegalArgumentException("wrong json. it must be an object");
         } else {
-            return _getPropsFromPath(root, pathTokens, "$", pathTokens.length);
+            return _getPropsFromPath(root, pathTokens, pathTokens.length);
         }
     }
 
-    public static int countPropsFromPath(Object root, String path) throws IllegalArgumentException {
-        return countPropsFromPath(root, path, true);
-    }
-
-    public static int countPropsFromPath(Object root, String path, boolean distinct) throws IllegalArgumentException {
-        List<Object> items = getPropsFromPath(root, path);
-
-        if (!distinct) {
-            return items.size();
-        } else {
-            int ret = 0;
-            
-            Set<String> propsKeys = new HashSet<>();
-
-            for (Object item : items) {
-                if (item instanceof BasicDBList) {
-                    ret = ret + 1;
-                } else if (item instanceof BasicDBObject) {
-                    propsKeys.addAll(((BasicDBObject)item).keySet());
-                } else {
-                    ret++;
-                }
-            }
-            
-            return ret + propsKeys.size();
-        }
-    }
-
-    private static List<Object> _getPropsFromPath(Object json, String[] pathTokens, String currentPath, int totalTokensLength) throws IllegalArgumentException {
-        List<Object> nullRet = new ArrayList<>();
-        nullRet.add(null);
-
-        if (json == null) {
-            return nullRet;
-        }
-
+    private static List<Object> _getPropsFromPath(Object json, String[] pathTokens, int totalTokensLength) throws IllegalArgumentException {
         if (pathTokens == null) {
             throw new IllegalArgumentException("pathTokens argument cannot be null");
         }
@@ -140,12 +105,11 @@ public class JsonUtils {
         if (pathTokens.length > 0) {
             pathToken = pathTokens[0];
         } else {
-            pathToken = null;
+            ret.add(json);
+            return ret;
         }
 
-        if (pathToken == null) {
-            ret.add(json);
-        } else if (pathToken.equals("$")) {
+        if (pathToken.equals("$")) {
             if (!(json instanceof BasicDBObject)) {
                 throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; it should be an object but found " + serializer.serialize(json));
             }
@@ -154,19 +118,26 @@ public class JsonUtils {
                 throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; $ can only start the expression");
             }
 
-            ret.addAll(_getPropsFromPath(json, subpath(pathTokens), addpath(currentPath, pathToken), totalTokensLength));
+            List<Object> nested = _getPropsFromPath(json, subpath(pathTokens), totalTokensLength);
+
+            if (nested == null) {
+                return null;
+            } else {
+                ret.addAll(nested);
+            }
         } else if (pathToken.equals("*")) {
             if (json instanceof BasicDBObject) {
-
                 for (String key : ((BasicDBObject) json).keySet()) {
-                    List<Object> nested = _getPropsFromPath(((BasicDBObject) json).get(key), subpath(pathTokens), addpath(currentPath, pathToken), totalTokensLength);
+                    List<Object> nested = _getPropsFromPath(((BasicDBObject) json).get(key), subpath(pathTokens), totalTokensLength);
 
-                    if (nested.size() > 0 && pathTokens.length == 1) {
-                        BasicDBObject toadd = new BasicDBObject(key, nested.get(0));
+                    if (nested != null) {
+                        if (nested.size() > 0 && pathTokens.length == 1) {
+                            BasicDBObject toadd = new BasicDBObject(key, nested.get(0));
 
-                        ret.add(toadd);
-                    } else {
-                        ret.addAll(nested);
+                            ret.add(toadd);
+                        } else {
+                            ret.addAll(nested);
+                        }
                     }
                 }
             }
@@ -175,20 +146,91 @@ public class JsonUtils {
                 throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; it should be a list " + "but found " + serializer.serialize(json));
             }
 
-            for (String key : ((BasicDBList) json).keySet()) {
-                ret.addAll(_getPropsFromPath(((BasicDBList) json).get(key), subpath(pathTokens), addpath(currentPath, pathToken), totalTokensLength));
+            if (((BasicDBList) json).isEmpty()) {
+                if (pathTokens.length > 1) {
+                    // the array is empty and pathTokens.length > 1 (still tokens to process)
+                    return null;
+                } else {
+                    // return an emtpy the list
+                    return new ArrayList<>();
+                }
+            } else {
+                for (String key : ((BasicDBList) json).keySet()) {
+                    List<Object> nested = _getPropsFromPath(((BasicDBList) json).get(key), subpath(pathTokens), totalTokensLength);
+
+                    if (nested != null) {
+                        ret.addAll(nested);
+                    }
+                }
             }
         } else {
             if (json instanceof BasicDBList) {
                 throw new IllegalArgumentException("wrong path " + pathFromTokens(pathTokens) + " at token " + pathToken + "; it should be '[*]'");
             } else if (json instanceof BasicDBObject) {
-                ret.addAll(_getPropsFromPath(((DBObject) json).get(pathToken), subpath(pathTokens), addpath(currentPath, pathToken), totalTokensLength));
+                if (((DBObject) json).containsField(pathToken)) {
+                    List<Object> nested = _getPropsFromPath(((DBObject) json).get(pathToken), subpath(pathTokens), totalTokensLength);
+
+                    if (nested == null) {
+                        return null;
+                    } else {
+                        ret.addAll(nested);
+                    }
+                } else {
+                    return null;
+                }
             } else {
-                return nullRet;
+                return null;
             }
         }
 
         return ret;
+    }
+
+    /**
+     * alias method for rootcountPropsFromPath(Object root, String path, true)
+     * 
+     * @param root
+     * @param path
+     * @return then number of properties identitified by the json path expression or null if path does not exist
+     * @throws IllegalArgumentException 
+     */
+    public static Integer countPropsFromPath(Object root, String path) throws IllegalArgumentException {
+        return countPropsFromPath(root, path, true);
+    }
+
+    /**
+     * @param root
+     * @param path
+     * @param distinct
+     * @return then number of properties identitified by the json path expression or null if path does not exist
+     * @throws IllegalArgumentException 
+     */
+    public static Integer countPropsFromPath(Object root, String path, boolean distinct) throws IllegalArgumentException {
+        List<Object> items = getPropsFromPath(root, path);
+        
+        if (items == null) {
+            return null;
+        }
+
+        if (!distinct) {
+            return items.size();
+        } else {
+            int ret = 0;
+
+            Set<String> propsKeys = new HashSet<>();
+
+            for (Object item : items) {
+                if (item instanceof BasicDBList) {
+                    ret = ret + 1;
+                } else if (item instanceof BasicDBObject) {
+                    propsKeys.addAll(((BasicDBObject) item).keySet());
+                } else {
+                    ret++;
+                }
+            }
+
+            return ret + propsKeys.size();
+        }
     }
 
     private static String pathFromTokens(String[] pathTokens) {
@@ -217,10 +259,6 @@ public class JsonUtils {
         }
 
         return subpath.toArray(new String[0]);
-    }
-
-    private static String addpath(String path, String pathToken) {
-        return path.concat(".").concat(pathToken);
     }
 
     public static boolean checkType(Object o, String type) {
