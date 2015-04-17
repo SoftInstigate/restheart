@@ -266,18 +266,13 @@ public class SimpleContentChecker implements Checker {
 
                 Object _count = _condition.get("count");
 
-                LOGGER.debug("count ? {}", _count != null);
-                LOGGER.debug("path {}", path);
-                LOGGER.debug("condition {}", _condition);
-                LOGGER.debug(JsonUtils.getPropsFromPath(content, path.concat(".*")).toString());
-
                 if (_count != null) {
                     if (path.equals("$") || path.equals("$.*")) {
                         return false;
                     } else {
                         List<Object> matches = JsonUtils.getPropsFromPath(content, path);
 
-                        if (matches.isEmpty()) {
+                        if (matches == null || matches.isEmpty()) {
                             return false;
                         }
 
@@ -286,7 +281,7 @@ public class SimpleContentChecker implements Checker {
                 } else {
                     List<Object> matches = JsonUtils.getPropsFromPath(content, path);
 
-                    if (matches.isEmpty()) {
+                    if (matches == null || matches.isEmpty()) {
                         return false;
                     }
 
@@ -359,6 +354,11 @@ public class SimpleContentChecker implements Checker {
         BasicDBObject _json = (BasicDBObject) json;
 
         List<Object> props = JsonUtils.getPropsFromPath(_json, path);
+        
+        // props is null when path does not exist. in this case check is meaningless
+        if (props == null) {
+            return true;
+        }
 
         boolean ret;
 
