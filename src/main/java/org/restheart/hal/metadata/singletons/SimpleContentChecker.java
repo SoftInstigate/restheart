@@ -295,7 +295,7 @@ public class SimpleContentChecker implements Checker {
                 ret.add(fc);
             });
 
-            return filterNullableAndOptionalNullConditions(conditions, ret);
+            return filterNullableAndOptionalNullConditions(ret, content);
 
         } else {
             return new BasicDBList();
