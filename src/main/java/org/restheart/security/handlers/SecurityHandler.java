@@ -51,7 +51,6 @@ public class SecurityHandler extends PipedHttpHandler {
     }
 
     private static PipedHttpHandler getSecurityHandlerChain(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager, final boolean challenging) {
-        PipedHttpHandler handler = null;
         if (identityManager != null) {
             final List<AuthenticationMechanism> mechanisms = new ArrayList<>();
 
@@ -63,8 +62,9 @@ public class SecurityHandler extends PipedHttpHandler {
                 mechanisms.add(new SilentBasicAuthenticationMechanism(RESTHEART_REALM));
             }
 
-            handler = buildSecurityHandlerChain(next, accessManager, identityManager, mechanisms);
+            return buildSecurityHandlerChain(next, accessManager, identityManager, mechanisms);
+        } else {
+            return next;
         }
-        return handler;
     }
 }
