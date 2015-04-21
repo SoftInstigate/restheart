@@ -258,14 +258,11 @@ public class Relationship {
 
             List<Object> objs = JsonUtils.getPropsFromPath(data, referenceField);
             
-            if (objs != null && objs.size() == 1 && objs.get(0) == null)
+            if (objs == null) {
+                return null;
+            } else if (objs.size() == 1 && objs.get(0) == null)
                 return null;
             
-            if (objs == null) {
-                LOGGER.debug("cound not get the value of the reference field " + referenceField + " from " + data.toString() + "\nThe json path expression resolved to null");
-                throw new IllegalArgumentException("ref-field json path expression resolved to null");
-            }
-
             // check that objs are all 
             if (objs.stream().allMatch(obj -> {
                 if (obj == null || obj instanceof DBObject) {
