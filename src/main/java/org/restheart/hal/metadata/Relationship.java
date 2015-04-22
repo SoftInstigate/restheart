@@ -24,6 +24,7 @@ import org.restheart.utils.URLUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -203,7 +204,7 @@ public class Relationship {
      */
     public String getRelationshipLink(RequestContext context, String dbName, String collName, DBObject data) throws IllegalArgumentException, UnsupportedDocumentIdException {
         Object _referenceValue = getReferenceFieldValue(referenceField, data);
-        
+
         String db = (targetDb == null ? dbName : targetDb);
 
         // check _referenceValue
@@ -216,10 +217,10 @@ public class Relationship {
                 Object id = _referenceValue;
 
                 // can be a BasicDBList if ref-field is a json path expression
-                if (id instanceof BasicDBList && ((BasicDBList)id).size() == 1) {
-                    id = ((BasicDBList)id).get(0);
+                if (id instanceof BasicDBList && ((BasicDBList) id).size() == 1) {
+                    id = ((BasicDBList) id).get(0);
                 }
-                
+
                 return URLUtils.getUriWithDocId(context, db, targetCollection, id);
             } else {
                 if (!(_referenceValue instanceof BasicDBList)) {
@@ -256,30 +257,30 @@ public class Relationship {
         if (referenceField.startsWith("$.")) {
             // it is a json path expression
 
-            List<Object> objs = JsonUtils.getPropsFromPath(data, referenceField);
-            
+            List<Optional<Object>> objs;
+
+            try {
+                objs = JsonUtils.getPropsFromPath(data, referenceField);
+            } catch (IllegalArgumentException ex) {
+                return null;
+            }
+
             if (objs == null) {
                 return null;
-            } else if (objs.size() == 1 && objs.get(0) == null)
-                return null;
-            
-            // check that objs are all 
-            if (objs.stream().allMatch(obj -> {
-                if (obj == null || obj instanceof DBObject) {
-                    return false;
-                } else {
-                    return true;
-                }
-            })) {
-                BasicDBList ret = new BasicDBList();
-
-                ret.addAll(objs);
-
-                return ret;
-            } else {
-                LOGGER.debug("cound not get the value of the reference field " + referenceField + " from " + data.toString() + "\nThe json path expression resolved to " + objs.toString());
-                throw new IllegalArgumentException("ref-field json path expression resolved to "+ objs.toString());
             }
+            
+            BasicDBList ret = new BasicDBList();
+
+            objs.stream().forEach((Optional<Object> obj) -> {
+                if (obj != null && obj.isPresent()) {
+                    ret.add(obj.get());
+                } else {
+                    LOGGER.debug("cound not get the value of the reference field " + referenceField + " from " + data.toString() + "\nThe json path expression resolved to " + objs.toString());
+                    throw new IllegalArgumentException("xxxx ref-field json path expression resolved to " + objs.toString());
+                }
+            });
+
+            return ret;
         } else {
             return data.get(referenceField);
         }

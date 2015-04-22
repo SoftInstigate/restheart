@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import org.bson.types.BSONTimestamp;
@@ -35,12 +36,16 @@ import org.bson.types.MaxKey;
 import org.bson.types.MinKey;
 import org.bson.types.ObjectId;
 import org.bson.types.Symbol;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class JsonUtils {
+    static final Logger LOGGER = LoggerFactory.getLogger(JsonUtils.class);
+
     private static final ObjectSerializer serializer = JSONSerializers.getStrict();
 
     /**
@@ -57,31 +62,13 @@ public class JsonUtils {
      *
      * @param root the DBOject to extract properties from
      * @param path the path of the properties to extract
-     * @return the List of Objects extracted from root ojbect and identifie by
-     * the path or null if path does not exist
-     *
-     * examples
-     * <br>root = {a: {b:1, c: {d:2, e:3}}, f:4}
-     * <br> a -> {b:1, c: {d:2, e:3}}, f:4}
-     * <br> a.b -> 1
-     * <br> a.c -> {d:2,e:3}
-     * <br> a.c.d -> 2
-     *
-     * <br>root = {a: [{b:1}, {c:2,d:3}}, true]}
-     *
-     * <br>a -> [{b:1}, {c:2,d:3}, true]
-     * <br>a.[*] -> {b:1}, {c:2,d:3}, true
-     * <br>a.[*].c -> null, 2, null
-     *
-     *
-     * <br>root = {a: [{b:1}, {b:2}, {b:3}]}"
-     *
-     * <br>*.a.[*].b -> [1,2,3]
+     * @return the List of Optional<Object>s extracted from root ojbect and
+     * identified by the path or null if path does not exist
      *
      * @see org.restheart.test.unit.JsonUtilsTest form code examples
      *
      */
-    public static List<Object> getPropsFromPath(Object root, String path) throws IllegalArgumentException {
+    public static List<Optional<Object>> getPropsFromPath(Object root, String path) throws IllegalArgumentException {
         String pathTokens[] = path.split(Pattern.quote("."));
 
         if (pathTokens == null || pathTokens.length == 0 || !pathTokens[0].equals("$")) {
@@ -93,144 +80,117 @@ public class JsonUtils {
         }
     }
 
-    private static List<Object> _getPropsFromPath(Object json, String[] pathTokens, int totalTokensLength) throws IllegalArgumentException {
+    private static List<Optional<Object>> _getPropsFromPath(Object json, String[] pathTokens, int totalTokensLength) throws IllegalArgumentException {
         if (pathTokens == null) {
             throw new IllegalArgumentException("pathTokens argument cannot be null");
         }
 
-        ArrayList<Object> ret = new ArrayList<>();
-
         String pathToken;
 
         if (pathTokens.length > 0) {
-            pathToken = pathTokens[0];
+            if (json == null) {
+                return null;
+            } else {
+
+                pathToken = pathTokens[0];
+
+                if ("".equals(pathToken)) {
+                    throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " path tokens cannot be empty strings");
+                }
+            }
         } else {
-            ret.add(json);
+            ArrayList<Optional<Object>> ret = new ArrayList<>();
+            ret.add(Optional.ofNullable(json));
             return ret;
         }
 
-        if (pathToken.equals("$")) {
-            if (!(json instanceof BasicDBObject)) {
-                throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; it should be an object but found " + serializer.serialize(json));
-            }
+        List<Optional<Object>> nested;
 
-            if (pathTokens.length != totalTokensLength) {
-                throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; $ can only start the expression");
-            }
+        switch (pathToken) {
+            case "$":
+                if (!(json instanceof BasicDBObject)) {
+                    throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; it should be an object but found " + serializer.serialize(json));
+                }
 
-            List<Object> nested = _getPropsFromPath(json, subpath(pathTokens), totalTokensLength);
+                if (pathTokens.length != totalTokensLength) {
+                    throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; $ can only start the expression");
+                }
 
-            if (nested == null) {
-                return null;
-            } else {
-                ret.addAll(nested);
-            }
-        } else if (pathToken.equals("*")) {
-            if (json instanceof BasicDBObject) {
-                for (String key : ((BasicDBObject) json).keySet()) {
-                    List<Object> nested = _getPropsFromPath(((BasicDBObject) json).get(key), subpath(pathTokens), totalTokensLength);
+                return _getPropsFromPath(json, subpath(pathTokens), totalTokensLength);
+            case "*":
+                if (!(json instanceof BasicDBObject)) {
+                    return null;
+                } else {
+                    ArrayList<Optional<Object>> ret = new ArrayList<>();
 
-                    if (nested != null) {
-                        if (nested.size() > 0 && pathTokens.length == 1) {
-                            BasicDBObject toadd = new BasicDBObject(key, nested.get(0));
+                    for (String key : ((BasicDBObject) json).keySet()) {
+                        nested = _getPropsFromPath(((BasicDBObject) json).get(key), subpath(pathTokens), totalTokensLength);
 
-                            ret.add(toadd);
+                        if (nested == null) {
+                            ret.add(null);
                         } else {
                             ret.addAll(nested);
                         }
                     }
-                }
-            }
-        } else if (pathToken.equals("[*]")) {
-            if (!(json instanceof BasicDBList)) {
-                throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; it should be a list " + "but found " + serializer.serialize(json));
-            }
 
-            if (((BasicDBList) json).isEmpty()) {
-                if (pathTokens.length > 1) {
-                    // the array is empty and pathTokens.length > 1 (still tokens to process)
+                    return ret;
+                }
+            case "[*]":
+                if (!(json instanceof BasicDBList)) {
                     return null;
                 } else {
-                    // return an emtpy the list
-                    return new ArrayList<>();
-                }
-            } else {
-                for (String key : ((BasicDBList) json).keySet()) {
-                    List<Object> nested = _getPropsFromPath(((BasicDBList) json).get(key), subpath(pathTokens), totalTokensLength);
+                    ArrayList<Optional<Object>> ret = new ArrayList<>();
 
-                    if (nested != null) {
-                        ret.addAll(nested);
-                    }
-                }
-            }
-        } else {
-            if (json instanceof BasicDBList) {
-                throw new IllegalArgumentException("wrong path " + pathFromTokens(pathTokens) + " at token " + pathToken + "; it should be '[*]'");
-            } else if (json instanceof BasicDBObject) {
-                if (((DBObject) json).containsField(pathToken)) {
-                    List<Object> nested = _getPropsFromPath(((DBObject) json).get(pathToken), subpath(pathTokens), totalTokensLength);
-
-                    if (nested == null) {
-                        return null;
+                    if (((BasicDBList) json).isEmpty()) {
+                        if (pathTokens.length > 1) {
+                            return null;
+                        } else {
+                            ret.add(Optional.of(json));
+                        }
                     } else {
-                        ret.addAll(nested);
+                        for (String key : ((BasicDBList) json).keySet()) {
+                            nested = _getPropsFromPath(((BasicDBList) json).get(key), subpath(pathTokens), totalTokensLength);
+
+                            if (nested == null) {
+                                ret.add(null);
+                            } else {
+                                ret.addAll(nested);
+                            }
+                        }
+                    }
+
+                    return ret;
+                }
+            default:
+                if (json instanceof BasicDBList) {
+                    throw new IllegalArgumentException("wrong path " + pathFromTokens(pathTokens) + " at token " + pathToken + "; it should be '[*]'");
+                } else if (json instanceof BasicDBObject) {
+                    if (((DBObject) json).containsField(pathToken)) {
+                        return _getPropsFromPath(((DBObject) json).get(pathToken), subpath(pathTokens), totalTokensLength);
+                    } else {
+                        return null;
                     }
                 } else {
                     return null;
                 }
-            } else {
-                return null;
-            }
         }
-
-        return ret;
     }
 
     /**
-     * alias method for rootcountPropsFromPath(Object root, String path, true)
-     * 
      * @param root
      * @param path
-     * @return then number of properties identitified by the json path expression or null if path does not exist
-     * @throws IllegalArgumentException 
+     * @return then number of properties identitified by the json path
+     * expression or null if path does not exist
+     * @throws IllegalArgumentException
      */
     public static Integer countPropsFromPath(Object root, String path) throws IllegalArgumentException {
-        return countPropsFromPath(root, path, true);
-    }
+        List<Optional<Object>> items = getPropsFromPath(root, path);
 
-    /**
-     * @param root
-     * @param path
-     * @param distinct
-     * @return then number of properties identitified by the json path expression or null if path does not exist
-     * @throws IllegalArgumentException 
-     */
-    public static Integer countPropsFromPath(Object root, String path, boolean distinct) throws IllegalArgumentException {
-        List<Object> items = getPropsFromPath(root, path);
-        
         if (items == null) {
             return null;
         }
 
-        if (!distinct) {
-            return items.size();
-        } else {
-            int ret = 0;
-
-            Set<String> propsKeys = new HashSet<>();
-
-            for (Object item : items) {
-                if (item instanceof BasicDBList) {
-                    ret = ret + 1;
-                } else if (item instanceof BasicDBObject) {
-                    propsKeys.addAll(((BasicDBObject) item).keySet());
-                } else {
-                    ret++;
-                }
-            }
-
-            return ret + propsKeys.size();
-        }
+        return items.size();
     }
 
     private static String pathFromTokens(String[] pathTokens) {
@@ -261,36 +221,40 @@ public class JsonUtils {
         return subpath.toArray(new String[0]);
     }
 
-    public static boolean checkType(Object o, String type) {
+    public static boolean checkType(Optional<Object> o, String type) {
+        if (!o.isPresent() && !"null".equals(type) && !"notnull".equals(type)) {
+            return false;
+        }
+
         switch (type.toLowerCase().trim()) {
             case "null":
-                return o == null;
+                return !o.isPresent();
             case "notnull":
-                return o != null;
+                return o.isPresent();
             case "object":
-                return o instanceof BasicDBObject;
+                return o.get() instanceof BasicDBObject;
             case "array":
-                return o instanceof BasicDBList;
+                return o.get() instanceof BasicDBList;
             case "string":
-                return o instanceof String;
+                return o.get() instanceof String;
             case "number":
-                return o instanceof Number;
+                return o.get() instanceof Number;
             case "boolean":
-                return o instanceof Boolean;
+                return o.get() instanceof Boolean;
             case "objectid":
-                return o instanceof ObjectId;
+                return o.get() instanceof ObjectId;
             case "date":
-                return o instanceof Date;
+                return o.get() instanceof Date;
             case "timestamp":
-                return o instanceof BSONTimestamp;
+                return o.get() instanceof BSONTimestamp;
             case "maxkey":
-                return o instanceof MaxKey;
+                return o.get() instanceof MaxKey;
             case "minkey":
-                return o instanceof MinKey;
+                return o.get() instanceof MinKey;
             case "symbol":
-                return o instanceof Symbol;
+                return o.get() instanceof Symbol;
             case "code":
-                return o instanceof Code;
+                return o.get() instanceof Code;
             default:
                 return false;
         }

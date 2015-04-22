@@ -23,6 +23,7 @@ import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -209,10 +210,15 @@ public class SimpleContentChecker implements Checker {
 
                     if (_path != null && _path instanceof String) {
                         String path = (String) _path;
-                        
-                        List<Object> props = JsonUtils.getPropsFromPath(content, path);
-                        
-                        if (props == null) {
+
+                        List<Optional<Object>> props;
+                        try {
+                            props = JsonUtils.getPropsFromPath(content, path);
+
+                            if (props == null) {
+                                nullPaths.add(path);
+                            }
+                        } catch (IllegalArgumentException ex) {
                             nullPaths.add(path);
                         }
                     }
@@ -270,22 +276,30 @@ public class SimpleContentChecker implements Checker {
                     if (path.equals("$") || path.equals("$.*")) {
                         return false;
                     } else {
-                        List<Object> matches = JsonUtils.getPropsFromPath(content, path);
+                        try {
+                            List<Optional<Object>> matches = JsonUtils.getPropsFromPath(content, path);
+
+                            if (matches == null || matches.isEmpty()) {
+                                return false;
+                            }
+
+                            return !(matches.size() == 1 && matches.get(0) == null);
+                        } catch (IllegalArgumentException ex) {
+                            return false;
+                        }
+                    }
+                } else {
+                    try {
+                        List<Optional<Object>> matches = JsonUtils.getPropsFromPath(content, path);
 
                         if (matches == null || matches.isEmpty()) {
                             return false;
                         }
 
                         return !(matches.size() == 1 && matches.get(0) == null);
-                    }
-                } else {
-                    List<Object> matches = JsonUtils.getPropsFromPath(content, path);
-
-                    if (matches == null || matches.isEmpty()) {
+                    } catch (IllegalArgumentException ex) {
                         return false;
                     }
-
-                    return !(matches.size() == 1 && matches.get(0) == null);
                 }
             }).collect(Collectors.toList());
 
@@ -303,8 +317,13 @@ public class SimpleContentChecker implements Checker {
     }
 
     private boolean checkCount(DBObject json, String path, Set<Integer> expectedCounts, RequestContext context) {
-        Integer count = JsonUtils.countPropsFromPath(json, path);
-        
+        Integer count;
+        try {
+            count = JsonUtils.countPropsFromPath(json, path);
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
+
         // props is null when path does not exist. in this case, check is meaningless
         if (count == null) {
             return true;
@@ -324,11 +343,17 @@ public class SimpleContentChecker implements Checker {
     private boolean checkType(DBObject json, String path, String type, boolean optional, boolean nullable, RequestContext context) {
         BasicDBObject _json = (BasicDBObject) json;
 
-        List<Object> props = JsonUtils.getPropsFromPath(_json, path);
-        
-        // props is null when path does not exist. in this case check is meaningless
+        List<Optional<Object>> props;
+
+        try {
+            props = JsonUtils.getPropsFromPath(_json, path);
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
+
+        // props is null when path does not exist.
         if (props == null) {
-            return true;
+            return optional;
         }
 
         boolean ret;
@@ -353,27 +378,29 @@ public class SimpleContentChecker implements Checker {
     private boolean checkRegex(DBObject json, String path, String regex, boolean optional, boolean nullable, RequestContext context) {
         BasicDBObject _json = (BasicDBObject) json;
 
-        List<Object> props = JsonUtils.getPropsFromPath(_json, path);
-        
-        // props is null when path does not exist. in this case check is meaningless
+        List<Optional<Object>> props;
+        try {
+            props = JsonUtils.getPropsFromPath(_json, path);
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
+
+        // props is null when path does not exist.
         if (props == null) {
-            return true;
+            return optional;
         }
 
         boolean ret;
 
-        if (nullable || optional) {
-            Pattern p = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Pattern p = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
 
-            ret = props.stream().allMatch(prop -> {
-                return p.matcher(JsonUtils.serialize(prop)).find() || JsonUtils.checkType(prop, "null");
-            });
-        } else {
-            Pattern p = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
-            ret = props.stream().allMatch(prop -> {
-                return p.matcher(JsonUtils.serialize(prop)).find();
-            });
-        }
+        ret = props.stream().allMatch((Optional<Object> prop) -> {
+            if (prop.isPresent()) {
+                return p.matcher(JsonUtils.serialize(prop.get())).find();
+            } else {
+                return nullable;
+            }
+        });
 
         LOGGER.debug("checkRegex({}, {}) -> {} -> {}", path, regex, props, ret);
 

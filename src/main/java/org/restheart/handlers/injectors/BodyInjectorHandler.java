@@ -39,12 +39,15 @@ import java.util.HashSet;
 import org.apache.tika.Tika;
 import org.restheart.utils.URLUtils;
 import org.restheart.hal.UnsupportedDocumentIdException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class BodyInjectorHandler extends PipedHttpHandler {
+    static final Logger LOGGER = LoggerFactory.getLogger(BodyInjectorHandler.class);
 
     private static final String ERROR_INVALID_CONTENTTYPE = "Content-Type must be either: "
             + Representation.HAL_JSON_MEDIA_TYPE
@@ -174,6 +177,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     /**
      * need this to workaroung angularjs issue
      * https://github.com/angular/angular.js/issues/1463
+     * 
+     * TODO: allow enabling the workaround via configuration option
      *
      * @param content
      * @return
@@ -182,7 +187,13 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         if (contentString == null)
             return null;
         
-        return contentString.replaceAll("\"€oid\" *:", "\"\\$oid\" :");
+        String ret = contentString.replaceAll("\"€oid\" *:", "\"\\$oid\" :");
+        
+        if (!ret.equals(contentString)) {
+            LOGGER.debug("Replaced €oid alias with $oid in message body. This is to workaround angularjs issue 1463 (https://github.com/angular/angular.js/issues/1463)");
+        }
+        
+        return ret;
     }
 
     /**
