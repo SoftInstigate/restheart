@@ -124,6 +124,44 @@ public class SimpleContentChecker implements Checker {
                         }
                     }
 
+                    Set<String> mandatoryFields;
+                    Object _mandatoryFields = condition.get("mandatoryFields");
+
+                    if (_mandatoryFields != null) {
+                        mandatoryFields = new HashSet<>();
+
+                        if (_mandatoryFields instanceof BasicDBList) {
+                            BasicDBList mandatoryFieldsArray = (BasicDBList) _mandatoryFields;
+
+                            mandatoryFieldsArray.forEach(element -> {
+                                if (element instanceof String) {
+                                    mandatoryFields.add((String) element);
+                                }
+                            });
+                        }
+                    } else {
+                        mandatoryFields = null;
+                    }
+
+                    Set<String> optionalFields;
+                    Object _optionalFields = condition.get("optionalFields");
+
+                    if (_optionalFields != null) {
+                        optionalFields = new HashSet<>();
+
+                        if (_optionalFields instanceof BasicDBList) {
+                            BasicDBList optionalFieldsArray = (BasicDBList) _optionalFields;
+
+                            optionalFieldsArray.forEach(element -> {
+                                if (element instanceof String) {
+                                    optionalFields.add((String) element);
+                                }
+                            });
+                        }
+                    } else {
+                        optionalFields = null;
+                    }
+
                     String regex = null;
                     Object _regex = condition.get("regex");
 
@@ -156,15 +194,15 @@ public class SimpleContentChecker implements Checker {
                     }
 
                     if (type != null && !counts.isEmpty() && regex != null) {
-                        return checkCount(context.getContent(), path, counts, context) && checkType(context.getContent(), path, type, optional, nullable, context) && checkRegex(context.getContent(), path, regex, optional, nullable, context);
+                        return checkCount(context.getContent(), path, counts, context) && checkType(context.getContent(), path, type, mandatoryFields, optionalFields, optional, nullable, context) && checkRegex(context.getContent(), path, regex, optional, nullable, context);
                     } else if (type != null && !counts.isEmpty()) {
-                        return checkCount(context.getContent(), path, counts, context) && checkType(context.getContent(), path, type, optional, nullable, context);
+                        return checkCount(context.getContent(), path, counts, context) && checkType(context.getContent(), path, type, mandatoryFields, optionalFields, optional, nullable, context);
                     } else if (type != null && regex != null) {
-                        return checkType(context.getContent(), path, type, optional, nullable, context) && checkRegex(context.getContent(), path, regex, optional, nullable, context);
+                        return checkType(context.getContent(), path, type, mandatoryFields, optionalFields, optional, nullable, context) && checkRegex(context.getContent(), path, regex, optional, nullable, context);
                     } else if (!counts.isEmpty() && regex != null) {
                         return checkCount(context.getContent(), path, counts, context) && checkRegex(context.getContent(), path, regex, optional, nullable, context);
                     } else if (type != null) {
-                        return checkType(context.getContent(), path, type, optional, nullable, context);
+                        return checkType(context.getContent(), path, type, mandatoryFields, optionalFields, optional, nullable, context);
                     } else if (!counts.isEmpty()) {
                         return checkCount(context.getContent(), path, counts, context);
                     } else if (regex != null) {
@@ -324,9 +362,9 @@ public class SimpleContentChecker implements Checker {
             return false;
         }
 
-        // props is null when path does not exist. in this case, check is meaningless
+        // props is null when path does not exist. count is false
         if (count == null) {
-            return true;
+            return false;
         }
 
         boolean ret = expectedCounts.contains(count);
@@ -340,7 +378,8 @@ public class SimpleContentChecker implements Checker {
         return ret;
     }
 
-    private boolean checkType(DBObject json, String path, String type, boolean optional, boolean nullable, RequestContext context) {
+    private boolean checkType(DBObject json, String path, String type, Set<String> mandatoryFields, Set<String> optionalFields,
+            boolean optional, boolean nullable, RequestContext context) {
         BasicDBObject _json = (BasicDBObject) json;
 
         List<Optional<Object>> props;
@@ -358,18 +397,63 @@ public class SimpleContentChecker implements Checker {
 
         boolean ret;
 
-        if (nullable || optional) {
-            ret = props.stream().allMatch(prop -> {
-                return JsonUtils.checkType(prop, type) || JsonUtils.checkType(prop, "null");
+        ret = props.stream().allMatch((Optional<Object> prop) -> {
+            if (prop == null) {
+                return optional;
+            }
+
+            if (prop.isPresent()) {
+                return JsonUtils.checkType(prop, type);
+            } else {
+                return nullable;
+            }
+        });
+
+        boolean failedFieldsCheck = false;
+
+        // check object fields
+        if (ret && "object".equals(type) && (mandatoryFields != null || optionalFields != null)) {
+            Set<String> allFields = new HashSet<>();
+
+            if (mandatoryFields != null) {
+                allFields.addAll(mandatoryFields);
+            }
+
+            if (optionalFields != null) {
+                allFields.addAll(optionalFields);
+            }
+
+            ret = props.stream().allMatch((Optional<Object> prop) -> {
+                if (prop == null) {
+                    return optional;
+                }
+
+                if (prop.isPresent()) {
+                    BasicDBObject obj = (BasicDBObject) prop.get();
+
+                    if (mandatoryFields != null) {
+                        return obj.keySet().containsAll(mandatoryFields) && allFields.containsAll(obj.keySet());
+                    } else {
+                        return allFields.containsAll(obj.keySet());
+                    }
+                } else {
+                    return nullable;
+                }
             });
-        } else {
-            ret = props.stream().map((prop) -> JsonUtils.checkType(prop, type)).allMatch((thisCheck) -> (thisCheck));
+
+            if (ret == false) {
+                failedFieldsCheck = true;
+            }
         }
 
-        LOGGER.debug("checkType({}, {}) -> {} -> {}", path, type, props, ret);
+        LOGGER.debug("checkType({}, {}, {}, {}) -> {} -> {}", path, type, mandatoryFields, optionalFields, props, ret);
 
         if (ret == false) {
-            context.addWarning("checkType condition failed: path: " + path + ", expected type: " + type + ", got: " + props);
+            if (!failedFieldsCheck) {
+                context.addWarning("checkType condition failed: path: " + path + ", expected type: " + type + ", got: " + props);
+            } else {
+                context.addWarning("checkType condition failed: path: " + path + ", mandatory fields: " + mandatoryFields + ", optional fields: " + optionalFields + ", got: " + props);
+            }
         }
 
         return ret;
@@ -395,6 +479,10 @@ public class SimpleContentChecker implements Checker {
         Pattern p = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
 
         ret = props.stream().allMatch((Optional<Object> prop) -> {
+            if (prop == null) {
+                return optional;
+            }
+
             if (prop.isPresent()) {
                 return p.matcher(JsonUtils.serialize(prop.get())).find();
             } else {

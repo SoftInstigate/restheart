@@ -239,7 +239,7 @@ public class JsonUtilsTest {
         return typeMatch;
     }
 
-    //@Test
+    @Test
     public void checkCountOnComplexJson() {
         String _json = "{\n"
                 + "    \"_id\": \"project-processes\",\n"
@@ -555,25 +555,26 @@ public class JsonUtilsTest {
 
         Object json = JSON.parse(_json);
 
-        //System.out.println("$.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.*"));
-        //System.out.println("$._id" + " -> "+ JsonUtils.getPropsFromPath(json, "$._id"));
-        //System.out.println("$.descr" + " -> "+ JsonUtils.getPropsFromPath(json, "$.descr"));
-        //System.out.println("$.items" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items"));
-        //System.out.println("$.items.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*"));
-        //System.out.println("$.items.*.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.*"));
-        //System.out.println("$.items.*.descr" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.descr"));
-        //System.out.println("$.items.*.items" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items"));
-        //System.out.println("$.items.*.items.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*"));
-        //System.out.println("$.items.*.items.*.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.*"));
-        //System.out.println("$.items.*.items.*.descr" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.descr"));
-        //System.out.println("$.items.*.items.*.values" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values"));
-        //System.out.println("$.items.*.items.*.values.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*"));
-        //System.out.println("$.items.*.items.*.values.*.descr" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.descr"));
-        //System.out.println("$.items.*.items.*.values.*.svalue" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.svalue"));
+        System.out.println("$.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.*"));
+        System.out.println("$._id" + " -> "+ JsonUtils.getPropsFromPath(json, "$._id"));
+        System.out.println("$.descr" + " -> "+ JsonUtils.getPropsFromPath(json, "$.descr"));
+        System.out.println("$.items" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items"));
+        System.out.println("$.items.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*"));
+        System.out.println("$.items.*.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.*"));
+        System.out.println("$.items.*.descr" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.descr"));
+        System.out.println("$.items.*.items" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items"));
+        System.out.println("$.items.*.items.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*"));
+        System.out.println("$.items.*.items.*.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.*"));
+        System.out.println("$.items.*.items.*.descr" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.descr"));
+        System.out.println("$.items.*.items.*.values" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values"));
+        System.out.println("$.items.*.items.*.values.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*"));
+        System.out.println("$.items.*.items.*.values.*.descr" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.descr"));
+        System.out.println("$.items.*.items.*.values.*.svalue" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.svalue"));
+        
         String path = "$.items.*.*";
 
         try {
-            Assert.assertTrue(JsonUtils.countPropsFromPath(json, path) == 2);
+            Assert.assertTrue(JsonUtils.countPropsFromPath(json, path) == 4);
         } catch (IllegalArgumentException ex) {
             Assert.fail(ex.toString());
         }
