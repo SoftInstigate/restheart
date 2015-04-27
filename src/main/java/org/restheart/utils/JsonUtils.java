@@ -197,37 +197,46 @@ public class JsonUtils {
             throw new IllegalArgumentException("wrong right path: " + right);
         }
 
-        if (right.startsWith(left)) {
-            return true;
-        } else {
+        boolean ret = true;
+
+        if (!right.startsWith(left)) {
             String leftPathTokens[] = left.split(Pattern.quote("."));
             String rightPathTokens[] = right.split(Pattern.quote("."));
 
             if (leftPathTokens.length > rightPathTokens.length) {
-                return false;
-            }
+                ret = false;
+            } else {
+                outerloop:
+                for (int cont = 0; cont < leftPathTokens.length; cont++) {
+                    String lt = leftPathTokens[cont];
+                    String rt = rightPathTokens[cont];
 
-            for (int cont = 0; cont < leftPathTokens.length; cont++) {
-                String lt = leftPathTokens[cont];
-                String rt = rightPathTokens[cont];
-
-                switch (lt) {
-                    case "*":
-                        break;
-                    case "[*]":
-                        try {
-                            Integer.parseInt(rt);
+                    switch (lt) {
+                        case "*":
                             break;
-                        } catch (NumberFormatException nfe) {
-                            return false;
-                        }
-                    default:
-                        return rt.equals(lt);
+                        case "[*]":
+                            try {
+                                Integer.parseInt(rt);
+                                break;
+                            } catch (NumberFormatException nfe) {
+                                ret = false;
+                                break outerloop;
+                            }
+                        default:
+                            ret = rt.equals(lt);
+
+                            if (!ret) {
+                                break outerloop;
+                            } else {
+                                break;
+                            }
+                    }
                 }
             }
         }
 
-        return true;
+        LOGGER.debug("{} -> {} -> {}", left, right, ret);
+        return ret;
     }
 
     /**

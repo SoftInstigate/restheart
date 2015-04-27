@@ -89,8 +89,6 @@ public class SimpleContentChecker implements Checker {
         if (args instanceof BasicDBList) {
             boolean patching = context.getMethod() == RequestContext.METHOD.PATCH;
 
-            BasicDBList conditions = filterMissingOptionalAndNullNullableConditions((BasicDBList) args, context.getContent());
-
             if (patching) {
                 // if patching the keys can use the dot notation
                 // example {"a.b": 1, "a.c": 2}
@@ -99,9 +97,15 @@ public class SimpleContentChecker implements Checker {
                 DBObject content = context.getContent();
 
                 return !content.keySet().stream().anyMatch(key -> {
-                    return !applyConditions(conditions, remapJson(key, content.get(key)), context);
+                    DBObject remappedContent = remapJson(key, content.get(key));
+
+                    BasicDBList conditions = filterMissingOptionalAndNullNullableConditions((BasicDBList) args, remappedContent, true);
+
+                    return !applyConditions(conditions, remappedContent, context);
                 });
             } else {
+                BasicDBList conditions = filterMissingOptionalAndNullNullableConditions((BasicDBList) args, context.getContent(), false);
+
                 return applyConditions(conditions, context.getContent(), context);
             }
         } else {
@@ -239,7 +243,7 @@ public class SimpleContentChecker implements Checker {
         });
     }
 
-    private BasicDBList filterMissingOptionalAndNullNullableConditions(BasicDBList conditions, DBObject content) {
+    private BasicDBList filterMissingOptionalAndNullNullableConditions(BasicDBList conditions, DBObject content, boolean patching) {
         // nullPaths contains all paths that result to null and condition is nullable or optional
         Set<String> nullPaths = new HashSet<>();
 
@@ -283,7 +287,7 @@ public class SimpleContentChecker implements Checker {
                     }
                 }
 
-                if (optional) {
+                if (optional || patching) {
                     Object _path = ((BasicDBObject) condition).get("path");
 
                     if (_path != null && _path instanceof String) {
@@ -452,29 +456,31 @@ public class SimpleContentChecker implements Checker {
         try {
             props = JsonUtils.getPropsFromPath(_json, path);
         } catch (IllegalArgumentException ex) {
+            LOGGER.debug("checkRegex({}, {}) -> {}", path, regex, ex.getMessage());
+            context.addWarning("checkRegex condition failed: path: " + path + ", regex: " + regex + ", got: " + ex.getMessage());
             return false;
-        }
-
-        // props is null when path does not exist.
-        if (props == null) {
-            return optional;
         }
 
         boolean ret;
 
-        Pattern p = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        // props is null when path does not exist.
+        if (props == null) {
+            ret = optional;
+        } else {
+            Pattern p = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
 
-        ret = props.stream().allMatch((Optional<Object> prop) -> {
-            if (prop == null) {
-                return optional;
-            }
+            ret = props.stream().allMatch((Optional<Object> prop) -> {
+                if (prop == null) {
+                    return optional;
+                }
 
-            if (prop.isPresent()) {
-                return p.matcher(JsonUtils.serialize(prop.get())).find();
-            } else {
-                return nullable;
-            }
-        });
+                if (prop.isPresent()) {
+                    return p.matcher(JsonUtils.serialize(prop.get())).find();
+                } else {
+                    return nullable;
+                }
+            });
+        }
 
         LOGGER.debug("checkRegex({}, {}) -> {} -> {}", path, regex, props, ret);
 
