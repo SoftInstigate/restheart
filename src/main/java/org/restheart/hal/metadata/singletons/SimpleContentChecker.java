@@ -294,7 +294,7 @@ public class SimpleContentChecker implements Checker {
                         try {
                             props = JsonUtils.getPropsFromPath(content, path);
 
-                            if (props.stream().allMatch((Optional<Object> prop) -> {
+                            if (props == null || props.stream().allMatch((Optional<Object> prop) -> {
                                 return prop == null;
                             })) {
                                 nullPaths.add(path);
