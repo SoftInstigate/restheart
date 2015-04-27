@@ -54,6 +54,7 @@ public class JsonUtilsTest {
     @After
     public void tearDown() {
     }
+
     @Test
     public void testGetPropFromPath() throws Exception {
         String _json1 = "{a: {b:1, c: {d:{\"$oid\": \"550c6e62c2e62b5640673e93\"}, e:3}}, f: null}";
@@ -555,22 +556,22 @@ public class JsonUtilsTest {
 
         Object json = JSON.parse(_json);
 
-        System.out.println("$.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.*"));
-        System.out.println("$._id" + " -> "+ JsonUtils.getPropsFromPath(json, "$._id"));
-        System.out.println("$.descr" + " -> "+ JsonUtils.getPropsFromPath(json, "$.descr"));
-        System.out.println("$.items" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items"));
-        System.out.println("$.items.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*"));
+        System.out.println("$.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.*"));
+        System.out.println("$._id" + " -> " + JsonUtils.getPropsFromPath(json, "$._id"));
+        System.out.println("$.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.descr"));
+        System.out.println("$.items" + " -> " + JsonUtils.getPropsFromPath(json, "$.items"));
+        System.out.println("$.items.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*"));
         System.out.println("$.items.*.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.*"));
-        System.out.println("$.items.*.descr" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.descr"));
-        System.out.println("$.items.*.items" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items"));
-        System.out.println("$.items.*.items.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*"));
-        System.out.println("$.items.*.items.*.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.*"));
-        System.out.println("$.items.*.items.*.descr" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.descr"));
-        System.out.println("$.items.*.items.*.values" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values"));
-        System.out.println("$.items.*.items.*.values.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*"));
-        System.out.println("$.items.*.items.*.values.*.descr" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.descr"));
-        System.out.println("$.items.*.items.*.values.*.svalue" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.svalue"));
-        
+        System.out.println("$.items.*.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.descr"));
+        System.out.println("$.items.*.items" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items"));
+        System.out.println("$.items.*.items.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*"));
+        System.out.println("$.items.*.items.*.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.*"));
+        System.out.println("$.items.*.items.*.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.descr"));
+        System.out.println("$.items.*.items.*.values" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values"));
+        System.out.println("$.items.*.items.*.values.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*"));
+        System.out.println("$.items.*.items.*.values.*.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.descr"));
+        System.out.println("$.items.*.items.*.values.*.svalue" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.svalue"));
+
         String path = "$.items.*.*";
 
         try {
@@ -579,4 +580,5 @@ public class JsonUtilsTest {
             Assert.fail(ex.toString());
         }
     }
+
 }
