@@ -70,7 +70,7 @@ public class JsonUtilsTest {
         Object json5 = JSON.parse(_json5);
 
         Assert.assertTrue(checkGetPropsFromPath(json5, "$.a", "[]"));
-        Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.[*]", "[]"));
+        Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.[*]"));
         Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.[*].*", (String[]) null));
 
         Assert.assertTrue(checkGetPropsFromPath(json1, "$.notexists", (String[]) null));
@@ -198,7 +198,7 @@ public class JsonUtilsTest {
         }
 
         if (expected == null) {
-            System.out.println(json + " | " + path + " -> " + gots + " exprected empty result []");
+            System.out.println(json + " | " + path + " -> " + gots + " exprected null result (missing field)");
             return gots == null;
         }
 
