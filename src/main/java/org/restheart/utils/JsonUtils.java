@@ -25,10 +25,8 @@ import com.mongodb.util.ObjectSerializer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Pattern;
 import org.bson.types.BSONTimestamp;
 import org.bson.types.Code;
@@ -144,8 +142,6 @@ public class JsonUtils {
                     if (((BasicDBList) json).isEmpty()) {
                         if (pathTokens.length > 1) {
                             return null;
-                        } else {
-                            ret.add(Optional.of(json));
                         }
                     } else {
                         for (String key : ((BasicDBList) json).keySet()) {
