@@ -302,6 +302,8 @@ public class JsonUtils {
                 return o.get() instanceof Boolean;
             case "objectid":
                 return o.get() instanceof ObjectId;
+            case "objectidstring":
+                return o.get() instanceof String && ObjectId.isValid((String)o.get());
             case "date":
                 return o.get() instanceof Date;
             case "timestamp":
