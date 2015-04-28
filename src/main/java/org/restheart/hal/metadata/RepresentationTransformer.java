@@ -149,11 +149,13 @@ public class RepresentationTransformer {
 
         String name = (String) _name;
 
-        if (_args == null || !(_args instanceof DBObject)) {
-            throw new InvalidMetadataException((_args == null ? "missing '" : "invalid '") + RT_ARGS_ELEMENT_NAME + "' element. it must be an Object");
-        }
+        DBObject args;
 
-        DBObject args = (DBObject) _args;
+        if (_args == null || !(_args instanceof DBObject)) {
+            args = null;
+        } else {
+            args = (DBObject) _args;
+        }
 
         return new RepresentationTransformer(phase, scope, name, args);
     }
