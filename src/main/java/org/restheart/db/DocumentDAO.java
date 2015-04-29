@@ -25,17 +25,12 @@ import com.mongodb.MongoClient;
 import org.restheart.utils.HttpStatus;
 import java.time.Instant;
 import org.bson.types.ObjectId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class DocumentDAO implements Repository {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(DocumentDAO.class);
-
     private final MongoClient client;
 
     public DocumentDAO() {
