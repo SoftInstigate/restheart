@@ -124,9 +124,10 @@ public class JsonUtils {
                     for (String key : ((BasicDBObject) json).keySet()) {
                         nested = _getPropsFromPath(((BasicDBObject) json).get(key), subpath(pathTokens), totalTokensLength);
 
-                        if (nested == null) {
-                            ret.add(null);
-                        } else {
+                        // only add null if subpath(pathTokens) was the last token
+                        if (nested == null && pathTokens.length == 2) {
+                                ret.add(null);
+                        } else if (nested != null) {
                             ret.addAll(nested);
                         }
                     }
@@ -147,9 +148,10 @@ public class JsonUtils {
                         for (String key : ((BasicDBList) json).keySet()) {
                             nested = _getPropsFromPath(((BasicDBList) json).get(key), subpath(pathTokens), totalTokensLength);
 
-                            if (nested == null) {
+                            // only add null if subpath(pathTokens) was the last token
+                            if (nested == null && pathTokens.length == 2) {
                                 ret.add(null);
-                            } else {
+                            } else if (nested != null) {
                                 ret.addAll(nested);
                             }
                         }

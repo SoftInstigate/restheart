@@ -62,12 +62,17 @@ public class JsonUtilsTest {
         String _json3 = "{a: [{b:1}, {b:2}, {b:3}]}";
         String _json4 = "{a: [[{b:1}], [{b:2}], [{b:3}]]}";
         String _json5 = "{a: []}";
-
+        String _json6 = "{a1: [{f1:1, f2:2, a2:[{f1:1,f2:2}]}, {f1:1, f2:2}]}";
+        
         Object json1 = JSON.parse(_json1);
         Object json2 = JSON.parse(_json2);
         Object json3 = JSON.parse(_json3);
         Object json4 = JSON.parse(_json4);
         Object json5 = JSON.parse(_json5);
+        Object json6 = JSON.parse(_json6);
+        
+        Assert.assertTrue(checkGetPropsFromPath(json6, "$.a1.[*].a2", "[{f1:1,f2:2}]", null));
+        Assert.assertTrue(checkGetPropsFromPath(json6, "$.a1.[*].a2.[*].f1", "1"));
 
         Assert.assertTrue(checkGetPropsFromPath(json5, "$.a", "[]"));
         Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.[*]"));
@@ -109,7 +114,7 @@ public class JsonUtilsTest {
 
         Assert.assertTrue(checkGetPropsFromPath(json2, "$.a.[*].c", null, "3", "null", null));
 
-        Assert.assertTrue(checkGetPropsFromPath(json2, "$.a.[*].c.*", null, null, null, null));
+        Assert.assertTrue(checkGetPropsFromPath(json2, "$.a.[*].c.*"));
 
         Assert.assertTrue(checkGetPropsFromPath(json3, "$.a", "[{b:1}, {b:2}, {b:3}]"));
         Assert.assertTrue(checkType(json3, "$.a", "array"));
@@ -131,6 +136,7 @@ public class JsonUtilsTest {
 
         Assert.assertTrue(checkGetPropsFromPath(json4, "$.a.[*].[*].b", "1", "2", "3"));
         Assert.assertTrue(checkType(json4, "$.a.[*].[*].b", "number"));
+        
     }
 
     private boolean eq(List<Optional<Object>> left, List<Optional<Object>> right) {
