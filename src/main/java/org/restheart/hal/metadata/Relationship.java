@@ -276,7 +276,7 @@ public class Relationship {
                     ret.add(obj.get());
                 } else {
                     LOGGER.debug("cound not get the value of the reference field " + referenceField + " from " + data.toString() + "\nThe json path expression resolved to " + objs.toString());
-                    throw new IllegalArgumentException("xxxx ref-field json path expression resolved to " + objs.toString());
+                    throw new IllegalArgumentException("ref-field: json path expression " + referenceField + " resolved to " + objs.toString());
                 }
             });
 
