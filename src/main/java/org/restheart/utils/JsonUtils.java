@@ -140,11 +140,7 @@ public class JsonUtils {
                 } else {
                     ArrayList<Optional<Object>> ret = new ArrayList<>();
 
-                    if (((BasicDBList) json).isEmpty()) {
-                        if (pathTokens.length > 1) {
-                            return null;
-                        }
-                    } else {
+                    if (!((BasicDBList) json).isEmpty()) {
                         for (String key : ((BasicDBList) json).keySet()) {
                             nested = _getPropsFromPath(((BasicDBList) json).get(key), subpath(pathTokens), totalTokensLength);
 
@@ -233,7 +229,7 @@ public class JsonUtils {
             }
         }
 
-        LOGGER.debug("{} -> {} -> {}", left, right, ret);
+        LOGGER.trace("isAncestorPath: {} -> {} -> {}", left, right, ret);
         return ret;
     }
 
