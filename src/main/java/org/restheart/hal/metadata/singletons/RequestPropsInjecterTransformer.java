@@ -59,8 +59,8 @@ import org.slf4j.LoggerFactory;
  * <br>injected properties are: userName:"andrea", remoteIp:"127.0.0.1"
  *
  */
-public class RequetPropsInjecterTransformer implements Transformer {
-    static final Logger LOGGER = LoggerFactory.getLogger(RequetPropsInjecterTransformer.class);
+public class RequestPropsInjecterTransformer implements Transformer {
+    static final Logger LOGGER = LoggerFactory.getLogger(RequestPropsInjecterTransformer.class);
 
     /**
      *
