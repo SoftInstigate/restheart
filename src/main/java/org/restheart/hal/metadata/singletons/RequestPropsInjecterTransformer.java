@@ -22,6 +22,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.server.HttpServerExchange;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Objects;
 import org.bson.BSONObject;
@@ -74,7 +75,7 @@ public class RequestPropsInjecterTransformer implements Transformer {
         BasicDBObject injected = new BasicDBObject();
 
         if (args instanceof BasicDBObject) {
-            HashMap<String, String> properties = getPropsValues(exchange, context);
+            HashMap<String, Object> properties = getPropsValues(exchange, context);
 
             String firstKey = args.keySet().iterator().next();
 
@@ -88,10 +89,13 @@ public class RequestPropsInjecterTransformer implements Transformer {
                     if (_el instanceof String) {
                         String el = (String) _el;
 
-                        String value = properties.get(el);
+                        Object value = properties.get(el);
 
-                        injected.put(el, value);
-
+                        if (value != null) {
+                            injected.put(el, value);
+                        } else {
+                            context.addWarning("property in the args list does not have a value: " + _el);
+                        }
                     } else {
                         context.addWarning("property in the args list is not a string: " + _el);
                     }
@@ -102,31 +106,34 @@ public class RequestPropsInjecterTransformer implements Transformer {
                 context.addWarning("transformer wrong definition: args must be an object with a array containing the names of the properties to inject. got " + JsonUtils.serialize(args));
             }
         } else if (args instanceof BasicDBList) {
-            HashMap<String, String> properties = getPropsValues(exchange, context);
-            
+            HashMap<String, Object> properties = getPropsValues(exchange, context);
+
             BasicDBList toinject = (BasicDBList) args;
 
             toinject.forEach(_el -> {
                 if (_el instanceof String) {
                     String el = (String) _el;
 
-                    String value = properties.get(el);
+                    Object value = properties.get(el);
 
-                    injected.put(el, value);
-
+                    if (value != null) {
+                        injected.put(el, value);
+                    } else {
+                        context.addWarning("property in the args list does not have a value: " + _el);
+                    }
                 } else {
                     context.addWarning("property in the args list is not a string: " + _el);
                 }
             });
 
-            contentToTransform.putAll((BSONObject)injected);
+            contentToTransform.putAll((BSONObject) injected);
         } else {
             context.addWarning("transformer wrong definition: args must be an object with a array containing the names of the properties to inject. got " + JsonUtils.serialize(args));
         }
     }
 
-    HashMap<String, String> getPropsValues(final HttpServerExchange exchange, final RequestContext context) {
-        HashMap<String, String> properties = new HashMap<>();
+    HashMap<String, Object> getPropsValues(final HttpServerExchange exchange, final RequestContext context) {
+        HashMap<String, Object> properties = new HashMap<>();
 
         // remote user
         properties.put("userName", ExchangeAttributes.remoteUser().readAttribute(exchange));
@@ -139,6 +146,9 @@ public class RequestPropsInjecterTransformer implements Transformer {
         } else {
             properties.put("userRoles", null);
         }
+
+        // dateTime
+        properties.put("epochTimeStamp", Instant.now().getEpochSecond());
 
         // dateTime
         properties.put("dateTime", ExchangeAttributes.dateTime().readAttribute(exchange));
