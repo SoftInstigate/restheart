@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data Repository API server
+ * RESTHeart - the data REST API server
  * Copyright (C) SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -17,19 +17,35 @@
  */
 package org.restheart.db;
 
-import com.mongodb.DBObject;
-import org.bson.types.ObjectId;
-
 /**
  *
- * @author Maurizio Turatti <maurizio@softinstigate.com>
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface Repository {
+public class OperationResult {
+    private final int httpCode;
+    private final Object etag;
     
-    OperationResult upsertDocument(String dbName, String collName, Object documentId, DBObject content, ObjectId requestEtag, boolean patching);
+    public OperationResult(int httpCode) {
+        this.httpCode = httpCode;
+        this.etag = null;
+    }
     
-    OperationResult upsertDocumentPost(String dbName, String collName, Object documentId, DBObject content, ObjectId requestEtag);
-    
-    OperationResult deleteDocument(String dbName, String collName, Object documentId, ObjectId requestEtag);
-    
+    public OperationResult(int httpCode, Object etag) {
+        this.httpCode = httpCode;
+        this.etag = etag;
+    }
+
+    /**
+     * @return the httpCode
+     */
+    public int getHttpCode() {
+        return httpCode;
+    }
+
+    /**
+     * @return the etag
+     */
+    public Object getEtag() {
+        return etag;
+    }
 }
