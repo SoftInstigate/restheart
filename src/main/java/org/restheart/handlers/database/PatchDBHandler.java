@@ -26,7 +26,9 @@ import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import org.bson.types.ObjectId;
+import org.restheart.db.OperationResult;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.RepresentationTransformer;
 
@@ -88,17 +90,17 @@ public class PatchDBHandler extends PipedHttpHandler {
             return;
         }
 
-        int httpCode = getDatabase().upsertDB(context.getDBName(), content, etag, true);
+        OperationResult result = getDatabase().upsertDB(context.getDBName(), content, etag, true);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(httpCode, exchange, context);
+            sendWarnings(result.getHttpCode(), exchange, context);
         } else {
-            exchange.setResponseCode(httpCode);
+            exchange.setResponseCode(result.getHttpCode());
         }
         
-        if (httpCode == HttpStatus.SC_CREATED || httpCode == HttpStatus.SC_OK) {
-            ResponseHelper.injectEtagHeader(exchange, content);
+        if (result.getEtag() != null) {
+            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
 
         exchange.endExchange();

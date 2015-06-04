@@ -45,7 +45,7 @@ public interface Database {
      * @param etag
      * @return HTTP status code
      */
-    int deleteCollection(String dbName, String collectionName, ObjectId etag);
+    OperationResult deleteCollection(String dbName, String collectionName, ObjectId etag);
 
     /**
      *
@@ -53,7 +53,7 @@ public interface Database {
      * @param requestEtag
      * @return HTTP status code
      */
-    int deleteDatabase(String dbName, ObjectId requestEtag);
+    OperationResult deleteDatabase(String dbName, ObjectId requestEtag);
 
     /**
      * WARNING: slow method.
@@ -159,7 +159,7 @@ public interface Database {
      * @param patching
      * @return
      */
-    int upsertCollection(String dbName, String collectionName, DBObject content, ObjectId etag, boolean updating, boolean patching);
+    OperationResult upsertCollection(String dbName, String collectionName, DBObject content, ObjectId etag, boolean updating, boolean patching);
 
     /**
      *
@@ -169,7 +169,7 @@ public interface Database {
      * @param patching
      * @return
      */
-    int upsertDB(String dbName, DBObject content, ObjectId etag, boolean patching);
+    OperationResult upsertDB(String dbName, DBObject content, ObjectId etag, boolean patching);
 
     /**
      *
