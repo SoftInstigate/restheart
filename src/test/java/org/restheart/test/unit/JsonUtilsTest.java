@@ -144,10 +144,14 @@ public class JsonUtilsTest {
         String _json1 = "{a: []}}";
         String _json2 = "{a: [{}]}}";
         String _json3 = "{a: [{f: 1}]}}";
+        String _json4 = "{a: [{e: 1}, {e: 2}, {e: 3}]}}";
+        String _json5 = "{a: {1: {e: 1}, 2: {e: 2}, 3: {e: 3}}}}";
 
         Object json1 = JSON.parse(_json1);
         Object json2 = JSON.parse(_json2);
         Object json3 = JSON.parse(_json3);
+        Object json4 = JSON.parse(_json4);
+        Object json5 = JSON.parse(_json5);
 
         Assert.assertTrue(checkGetPropsFromPath(json1, "$.a", "[]"));
         Assert.assertTrue(checkGetPropsFromPath(json1, "$.a.[*]"));
@@ -160,6 +164,18 @@ public class JsonUtilsTest {
         Assert.assertTrue(checkGetPropsFromPath(json3, "$.a", "[{f: 1}]"));
         Assert.assertTrue(checkGetPropsFromPath(json3, "$.a.[*]", "{f: 1}"));
         Assert.assertTrue(checkGetPropsFromPath(json3, "$.a.[*].f", "1"));
+        
+        Assert.assertTrue(checkGetPropsFromPath(json4, "$.a.[*].e", "1", "2", "3"));
+        
+        Assert.assertTrue(checkGetPropsFromPath(json4, "$.a.[*].e", "1", "2", "3"));
+        
+        Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.*", "{e: 1}", "{e: 2}", "{e: 3}"));
+        
+        // justification of the following: even if "a! is an object, it has all numeric values
+        // on mongodb you can use the dot notation on arrays and do the following on RESTHeart
+        // PATCH /db/coll/doc {"a.1", {"e": 1000}} 
+        // the content turns internally to {"a": {"1": {"e":1000}}}
+        Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.[*]", "{e: 1}", "{e: 2}", "{e: 3}"));
     }
     
     @Test

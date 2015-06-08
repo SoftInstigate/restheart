@@ -379,14 +379,29 @@ public class SimpleContentChecker implements Checker {
         if (props == null) {
             ret = patching || optional;
         } else {
-
             ret = props.stream().allMatch((Optional<Object> prop) -> {
                 if (prop == null) {
                     return patching || optional;
                 }
 
                 if (prop.isPresent()) {
-                    return JsonUtils.checkType(prop, type);
+                    if (patching && "array".equals(type) && prop.get() instanceof DBObject) {
+                        // this might be the case of PATCHING an element array using the dot notation
+                        // e.g. object.array.2
+                        // if so, the array comes as an BasicDBObject with all numberic keys
+                        // in any case, it might also be the object { "object": { "array": {"2": xxx }}}
+                        
+                        return ((DBObject) prop.get()).keySet().stream().allMatch(k -> {
+                            try {
+                                Integer.parseInt(k);
+                                return true;
+                            } catch (NumberFormatException nfe) {
+                                return false;
+                            }
+                        }) || JsonUtils.checkType(prop, type);
+                    } else {
+                        return JsonUtils.checkType(prop, type);
+                    }
                 } else {
                     return nullable;
                 }

@@ -126,7 +126,7 @@ public class JsonUtils {
 
                         // only add null if subpath(pathTokens) was the last token
                         if (nested == null && pathTokens.length == 2) {
-                                ret.add(null);
+                            ret.add(null);
                         } else if (nested != null) {
                             ret.addAll(nested);
                         }
@@ -136,6 +136,39 @@ public class JsonUtils {
                 }
             case "[*]":
                 if (!(json instanceof BasicDBList)) {
+                    if (json instanceof BasicDBObject) {
+                        // this might be the case of PATCHING an element array using the dot notation
+                        // e.g. object.array.2
+                        // if so, the array comes as an BasicDBObject with all numberic keys
+                        // in any case, it might also be the object { "object": { "array": {"2": xxx }}}
+
+                        boolean allNumbericKeys = ((BasicDBObject) json).keySet().stream().allMatch(k -> {
+                            try {
+                                Integer.parseInt(k);
+                                return true;
+                            } catch (NumberFormatException nfe) {
+                                return false;
+                            }
+                        });
+
+                        if (allNumbericKeys) {
+                            ArrayList<Optional<Object>> ret = new ArrayList<>();
+
+                            for (String key : ((BasicDBObject) json).keySet()) {
+                                nested = _getPropsFromPath(((BasicDBObject) json).get(key), subpath(pathTokens), totalTokensLength);
+
+                                // only add null if subpath(pathTokens) was the last token
+                                if (nested == null && pathTokens.length == 2) {
+                                    ret.add(null);
+                                } else if (nested != null) {
+                                    ret.addAll(nested);
+                                }
+                            }
+                            
+                            return ret;
+                        }
+                    }
+
                     return null;
                 } else {
                     ArrayList<Optional<Object>> ret = new ArrayList<>();
@@ -301,7 +334,7 @@ public class JsonUtils {
             case "objectid":
                 return o.get() instanceof ObjectId;
             case "objectidstring":
-                return o.get() instanceof String && ObjectId.isValid((String)o.get());
+                return o.get() instanceof String && ObjectId.isValid((String) o.get());
             case "date":
                 return o.get() instanceof Date;
             case "timestamp":
