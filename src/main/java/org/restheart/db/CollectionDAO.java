@@ -56,6 +56,7 @@ class CollectionDAO {
     static {
         fieldsToReturn = new BasicDBObject();
         fieldsToReturn.put("_id", 1);
+        fieldsToReturn.put("_etag", 1);
         fieldsToReturn.put("_created_on", 1);
     }
 
@@ -270,36 +271,42 @@ class CollectionDAO {
      * @param dbName the database name of the collection
      * @param collName the collection name
      * @param content the new collection properties
-     * @param etag the entity tag. must match to allow actual write (otherwise
-     * http error code is returned)
+     * @param requestEtag the entity tag. must match to allow actual write
+     * (otherwise http error code is returned)
      * @param updating true if updating existing document
      * @param patching true if use patch semantic (update only specified fields)
      * @return the HttpStatus code to set in the http response
      */
-    int upsertCollection(String dbName, String collName, DBObject content, ObjectId etag, boolean updating, boolean patching) {
+    OperationResult upsertCollection(String dbName, String collName, DBObject content, ObjectId requestEtag, boolean updating, boolean patching) {
         DB db = client.getDB(dbName);
+
+        if (patching && !updating) {
+            return new OperationResult(HttpStatus.SC_NOT_FOUND);
+        }
 
         DBCollection propsColl = db.getCollection("_properties");
 
-        if (patching && !updating) {
-            return HttpStatus.SC_NOT_FOUND;
+        DBObject exists = propsColl.findOne(new BasicDBObject("_id", "_properties.".concat(collName)), fieldsToReturn);
+
+        if (exists == null && updating) {
+            LOGGER.error("updating but cannot find collection _properties.{} for {}/{}", collName, dbName, collName);
+            return new OperationResult(HttpStatus.SC_NOT_FOUND);
+        } else if (exists != null) {
+            Object oldEtag = exists.get("_etag");
+
+            if (oldEtag != null) {
+                if (requestEtag == null) {
+                    return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
+                }
+
+                if (!oldEtag.equals(requestEtag)) {
+                    return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+                }
+            }
         }
 
-        if (updating) {
-            if (etag == null) {
-                return HttpStatus.SC_CONFLICT;
-            }
-
-            BasicDBObject idAndEtagQuery = new BasicDBObject("_id", "_properties.".concat(collName));
-            idAndEtagQuery.append("_etag", etag);
-
-            if (propsColl.count(idAndEtagQuery) < 1) {
-                return HttpStatus.SC_PRECONDITION_FAILED;
-            }
-        }
-
-        ObjectId timestamp = new ObjectId();
-        Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
+        ObjectId newEtag = new ObjectId();
+        Instant now = Instant.ofEpochSecond(newEtag.getTimestamp());
 
         if (content == null) {
             content = new BasicDBObject();
@@ -309,18 +316,18 @@ class CollectionDAO {
 
         if (updating) {
             content.removeField("_crated_on"); // don't allow to update this field
-            content.put("_etag", timestamp);
+            content.put("_etag", newEtag);
         } else {
             content.put("_id", "_properties.".concat(collName));
             content.put("_created_on", now.toString());
-            content.put("_etag", timestamp);
+            content.put("_etag", newEtag);
         }
 
         if (patching) {
             propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)), new BasicDBObject("$set", content), true, false);
-            return HttpStatus.SC_OK;
+            return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else {
-            // we use findAndModify to get the @created_on field value from the existing properties document
+                // we use findAndModify to get the @created_on field value from the existing properties document
             // we need to put this field back using a second update 
             // it is not possible in a single update even using $setOnInsert update operator
             // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
@@ -340,7 +347,7 @@ class CollectionDAO {
                 createdContent.markAsPartialObject();
                 propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)), new BasicDBObject("$set", createdContent), true, false);
 
-                return HttpStatus.SC_OK;
+                return new OperationResult(HttpStatus.SC_OK, newEtag);
             } else {
                 // need to readd the @created_on field 
                 BasicDBObject createdContent = new BasicDBObject("_created_on", now.toString());
@@ -349,7 +356,7 @@ class CollectionDAO {
 
                 initDefaultIndexes(db.getCollection(collName));
 
-                return HttpStatus.SC_CREATED;
+                return new OperationResult(HttpStatus.SC_CREATED, newEtag);
             }
         }
     }
@@ -359,25 +366,35 @@ class CollectionDAO {
      *
      * @param dbName the database name of the collection
      * @param collName the collection name
-     * @param etag the entity tag. must match to allow actual write (otherwise
-     * http error code is returned)
+     * @param requestEtag the entity tag. must match to allow actual write
+     * (otherwise http error code is returned)
      * @return the HttpStatus code to set in the http response
      */
-    int deleteCollection(String dbName, String collName, ObjectId etag) {
+    OperationResult deleteCollection(String dbName, String collName, ObjectId requestEtag) {
         DBCollection coll = getCollection(dbName, collName);
         DBCollection propsColl = getCollection(dbName, "_properties");
 
         BasicDBObject checkEtag = new BasicDBObject("_id", "_properties.".concat(collName));
-        checkEtag.append("_etag", etag);
 
         DBObject exists = propsColl.findOne(checkEtag, fieldsToReturn);
 
-        if (exists == null) {
-            return HttpStatus.SC_PRECONDITION_FAILED;
+        if (exists != null) {
+            Object oldEtag = exists.get("_etag");
+
+            if (oldEtag != null && requestEtag == null) {
+                return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
+            }
+
+            if (requestEtag.equals(oldEtag)) {
+                propsColl.remove(new BasicDBObject("_id", "_properties.".concat(collName)));
+                coll.drop();
+                return new OperationResult(HttpStatus.SC_NO_CONTENT);
+            } else {
+                return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+            }
         } else {
-            propsColl.remove(new BasicDBObject("_id", "_properties.".concat(collName)));
-            coll.drop();
-            return HttpStatus.SC_NO_CONTENT;
+            LOGGER.error("cannot find collection _properties.{} for {}/{}", collName, dbName, collName);
+            return new OperationResult(HttpStatus.SC_NOT_FOUND);
         }
     }
 

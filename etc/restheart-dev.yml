@@ -121,9 +121,13 @@ metadata-named-singletons:
       interface: org.restheart.hal.metadata.singletons.Transformer
       singletons:
         - name: addRequestProperties
-          class: org.restheart.hal.metadata.singletons.RequetPropsInjecterTransformer
+          class: org.restheart.hal.metadata.singletons.RequestPropsInjecterTransformer
         - name: filterProperties
           class: org.restheart.hal.metadata.singletons.FilterTransformer
+        - name: stringsToOids
+          class: org.restheart.hal.metadata.singletons.ValidOidsStringsAsOidsTransformer
+        - name: oidsToStrings
+          class: org.restheart.hal.metadata.singletons.OidsAsStringsTransformer
 
 ### security 
 

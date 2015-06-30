@@ -103,7 +103,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         DBObject content;
 
         if (isNotFormData(contentTypes)) { // json or hal+json
-            final String contentString = workaroundAngularJSIssue1463(ChannelReader.read(exchange.getRequestChannel()));
+            final String contentString = ChannelReader.read(exchange.getRequestChannel());
 
             try {
                 content = (DBObject) JSON.parse(contentString);
@@ -172,28 +172,6 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         }
 
         getNext().handleRequest(exchange, context);
-    }
-
-    /**
-     * need this to workaroung angularjs issue
-     * https://github.com/angular/angular.js/issues/1463
-     * 
-     * TODO: allow enabling the workaround via configuration option
-     *
-     * @param content
-     * @return
-     */
-    private static String workaroundAngularJSIssue1463(String contentString) {
-        if (contentString == null)
-            return null;
-        
-        String ret = contentString.replaceAll("\"€oid\" *:", "\"\\$oid\" :");
-        
-        if (!ret.equals(contentString)) {
-            LOGGER.debug("Replaced €oid alias with $oid in message body. This is to workaround angularjs issue 1463 (https://github.com/angular/angular.js/issues/1463)");
-        }
-        
-        return ret;
     }
 
     /**

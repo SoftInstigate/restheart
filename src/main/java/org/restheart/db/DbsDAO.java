@@ -52,6 +52,7 @@ public class DbsDAO implements Database {
     static {
         fieldsToReturn = new BasicDBObject();
         fieldsToReturn.put("_id", 1);
+        fieldsToReturn.put("_etag", 1);
         fieldsToReturn.put("_created_on", 1);
     }
 
@@ -118,11 +119,11 @@ public class DbsDAO implements Database {
     @Override
     public List<String> getCollectionNames(DB db) {
         List<String> _colls = new ArrayList(db.getCollectionNames());
-        
+
         // filter out reserved dbs
         return _colls.stream().filter(coll -> !RequestContext.isReservedResourceCollection(coll)).sorted().collect(Collectors.toList());
     }
-    
+
     /**
      * @param colls the collections list got from getCollectionNames()
      * @return the number of collections in this db
@@ -161,7 +162,7 @@ public class DbsDAO implements Database {
             Object etag = row.get("_etag");
 
             if (etag != null && etag instanceof ObjectId) {
-                row.put("_lastupdated_on", Instant.ofEpochSecond(((ObjectId)etag).getTimestamp()).toString());
+                row.put("_lastupdated_on", Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString());
             }
         } else if (fixMissingProperties) {
             new PropsFixer().addDbProps(dbName);
@@ -244,52 +245,54 @@ public class DbsDAO implements Database {
      *
      * @param dbName
      * @param content
-     * @param etag
+     * @param requestEtag
      * @param patching
      * @return
      */
     @Override
-    public int upsertDB(String dbName, DBObject content, ObjectId etag, boolean patching) {
+    public OperationResult upsertDB(String dbName, DBObject content, ObjectId requestEtag, boolean patching) {
         DB db = client.getDB(dbName);
 
         boolean existing = db.getCollectionNames().size() > 0;
 
         if (patching && !existing) {
-            return HttpStatus.SC_NOT_FOUND;
+            return new OperationResult(HttpStatus.SC_NOT_FOUND);
         }
-
-        DBCollection coll = db.getCollection("_properties");
 
         // check the etag
-        if (db.collectionExists("_properties")) {
-            if (etag == null) {
-                return HttpStatus.SC_CONFLICT;
-            }
+        DBCollection coll = db.getCollection("_properties");
 
-            BasicDBObject idAndEtagQuery = new BasicDBObject("_id", "_properties");
-            idAndEtagQuery.append("_etag", etag);
+        DBObject exists = coll.findOne(new BasicDBObject("_id", "_properties"), fieldsToReturn);
 
-            if (coll.count(idAndEtagQuery) < 1) {
-                return HttpStatus.SC_PRECONDITION_FAILED;
+        if (exists != null) {
+            Object oldEtag = exists.get("_etag");
+
+            if (oldEtag != null) {
+                if (requestEtag == null) {
+                    return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
+                }
+
+                if (!oldEtag.equals(requestEtag)) {
+                    return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+                }
             }
         }
 
-        // apply new values
-        ObjectId timestamp = new ObjectId();
-        Instant now = Instant.ofEpochSecond(timestamp.getTimestamp());
+        ObjectId newEtag = new ObjectId();
+        Instant now = Instant.ofEpochSecond(newEtag.getTimestamp());
 
         if (content == null) {
             content = new BasicDBObject();
         }
 
-        content.put("_etag", timestamp);
+        content.put("_etag", newEtag);
         content.removeField("_created_on"); // make sure we don't change this field
         content.removeField("_id"); // make sure we don't change this field
 
         if (patching) {
             coll.update(PROPS_QUERY, new BasicDBObject("$set", content), true, false);
 
-            return HttpStatus.SC_OK;
+            return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else {
             // we use findAndModify to get the @created_on field value from the existing document
             // we need to put this field back using a second update 
@@ -310,14 +313,14 @@ public class DbsDAO implements Database {
                 createdContent.markAsPartialObject();
                 coll.update(PROPS_QUERY, new BasicDBObject("$set", createdContent), true, false);
 
-                return HttpStatus.SC_OK;
+                return new OperationResult(HttpStatus.SC_OK, newEtag);
             } else {
                 // need to readd the @created_on field 
                 BasicDBObject createdContent = new BasicDBObject("_created_on", now.toString());
                 createdContent.markAsPartialObject();
                 coll.update(PROPS_QUERY, new BasicDBObject("$set", createdContent), true, false);
 
-                return HttpStatus.SC_CREATED;
+                return new OperationResult(HttpStatus.SC_CREATED, newEtag);
             }
         }
     }
@@ -329,21 +332,31 @@ public class DbsDAO implements Database {
      * @return
      */
     @Override
-    public int deleteDatabase(String dbName, ObjectId requestEtag) {
+    public OperationResult deleteDatabase(String dbName, ObjectId requestEtag) {
         DB db = getDB(dbName);
 
         DBCollection coll = db.getCollection("_properties");
 
         BasicDBObject checkEtag = new BasicDBObject("_id", "_properties");
-        checkEtag.append("_etag", requestEtag);
 
         DBObject exists = coll.findOne(checkEtag, fieldsToReturn);
 
-        if (exists == null) {
-            return HttpStatus.SC_PRECONDITION_FAILED;
+        if (exists != null) {
+            Object oldEtag = exists.get("_etag");
+
+            if (oldEtag != null && requestEtag == null) {
+                return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
+            }
+
+            if (requestEtag.equals(oldEtag)) {
+                db.dropDatabase();
+                return new OperationResult(HttpStatus.SC_NO_CONTENT);
+            } else {
+                return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+            }
         } else {
-            db.dropDatabase();
-            return HttpStatus.SC_NO_CONTENT;
+            LOGGER.error("cannot find _properties for db " + dbName);
+            return new OperationResult(HttpStatus.SC_NOT_FOUND);
         }
     }
 
@@ -358,12 +371,12 @@ public class DbsDAO implements Database {
     }
 
     @Override
-    public int upsertCollection(String dbName, String collName, DBObject content, ObjectId etag, boolean updating, boolean patching) {
+    public OperationResult upsertCollection(String dbName, String collName, DBObject content, ObjectId etag, boolean updating, boolean patching) {
         return collectionDAO.upsertCollection(dbName, collName, content, etag, updating, patching);
     }
 
     @Override
-    public int deleteCollection(String dbName, String collectionName, ObjectId etag) {
+    public OperationResult deleteCollection(String dbName, String collectionName, ObjectId etag) {
         return collectionDAO.deleteCollection(dbName, collectionName, etag);
     }
 

@@ -26,8 +26,10 @@ import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import org.bson.types.ObjectId;
+import org.restheart.db.OperationResult;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import static org.restheart.utils.URLUtils.getReferenceLink;
@@ -92,7 +94,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
             docId = content.get("_id");
         }
 
-        int httpCode = this.documentDAO
+        OperationResult result = this.documentDAO
                 .upsertDocumentPost(context.getDBName(), context.getCollectionName(), docId, content, etag);
 
         // insert the Location handler
@@ -102,15 +104,14 @@ public class PostCollectionHandler extends PipedHttpHandler {
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(httpCode, exchange, context);
+            sendWarnings(result.getHttpCode(), exchange, context);
         } else {
-            exchange.setResponseCode(httpCode);
+            exchange.setResponseCode(result.getHttpCode());
         }
         
-        if (httpCode == HttpStatus.SC_CREATED || httpCode == HttpStatus.SC_OK) {
-            content.put("_etag", etag);
-            ResponseHelper.injectEtagHeader(exchange, content);
-        }
+        if (result.getEtag() != null) {
+            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+        } 
 
         exchange.endExchange();
     }

@@ -25,10 +25,8 @@ import com.mongodb.util.ObjectSerializer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Pattern;
 import org.bson.types.BSONTimestamp;
 import org.bson.types.Code;
@@ -126,9 +124,10 @@ public class JsonUtils {
                     for (String key : ((BasicDBObject) json).keySet()) {
                         nested = _getPropsFromPath(((BasicDBObject) json).get(key), subpath(pathTokens), totalTokensLength);
 
-                        if (nested == null) {
+                        // only add null if subpath(pathTokens) was the last token
+                        if (nested == null && pathTokens.length == 2) {
                             ret.add(null);
-                        } else {
+                        } else if (nested != null) {
                             ret.addAll(nested);
                         }
                     }
@@ -137,23 +136,51 @@ public class JsonUtils {
                 }
             case "[*]":
                 if (!(json instanceof BasicDBList)) {
+                    if (json instanceof BasicDBObject) {
+                        // this might be the case of PATCHING an element array using the dot notation
+                        // e.g. object.array.2
+                        // if so, the array comes as an BasicDBObject with all numberic keys
+                        // in any case, it might also be the object { "object": { "array": {"2": xxx }}}
+
+                        boolean allNumbericKeys = ((BasicDBObject) json).keySet().stream().allMatch(k -> {
+                            try {
+                                Integer.parseInt(k);
+                                return true;
+                            } catch (NumberFormatException nfe) {
+                                return false;
+                            }
+                        });
+
+                        if (allNumbericKeys) {
+                            ArrayList<Optional<Object>> ret = new ArrayList<>();
+
+                            for (String key : ((BasicDBObject) json).keySet()) {
+                                nested = _getPropsFromPath(((BasicDBObject) json).get(key), subpath(pathTokens), totalTokensLength);
+
+                                // only add null if subpath(pathTokens) was the last token
+                                if (nested == null && pathTokens.length == 2) {
+                                    ret.add(null);
+                                } else if (nested != null) {
+                                    ret.addAll(nested);
+                                }
+                            }
+                            
+                            return ret;
+                        }
+                    }
+
                     return null;
                 } else {
                     ArrayList<Optional<Object>> ret = new ArrayList<>();
 
-                    if (((BasicDBList) json).isEmpty()) {
-                        if (pathTokens.length > 1) {
-                            return null;
-                        } else {
-                            ret.add(Optional.of(json));
-                        }
-                    } else {
+                    if (!((BasicDBList) json).isEmpty()) {
                         for (String key : ((BasicDBList) json).keySet()) {
                             nested = _getPropsFromPath(((BasicDBList) json).get(key), subpath(pathTokens), totalTokensLength);
 
-                            if (nested == null) {
+                            // only add null if subpath(pathTokens) was the last token
+                            if (nested == null && pathTokens.length == 2) {
                                 ret.add(null);
-                            } else {
+                            } else if (nested != null) {
                                 ret.addAll(nested);
                             }
                         }
@@ -174,6 +201,69 @@ public class JsonUtils {
                     return null;
                 }
         }
+    }
+
+    /**
+     *
+     * @param left the json path expression
+     * @param right the json path expression
+     *
+     * @return true if the left json path is an acestor of the right path, i.e.
+     * left path selects a values set that includes the one selected by the
+     * right path
+     *
+     * examples: ($, $.a) -> true, ($.a, $.b) -> false, ($.*, $.a) -> true,
+     * ($.a.[*].c, $.a.0.c) -> true, ($.a.[*], $.a.b) -> false
+     *
+     */
+    public static boolean isAncestorPath(final String left, final String right) {
+        if (left == null || !left.startsWith("$")) {
+            throw new IllegalArgumentException("wrong left path: " + left);
+        }
+        if (right == null || !right.startsWith("$")) {
+            throw new IllegalArgumentException("wrong right path: " + right);
+        }
+
+        boolean ret = true;
+
+        if (!right.startsWith(left)) {
+            String leftPathTokens[] = left.split(Pattern.quote("."));
+            String rightPathTokens[] = right.split(Pattern.quote("."));
+
+            if (leftPathTokens.length > rightPathTokens.length) {
+                ret = false;
+            } else {
+                outerloop:
+                for (int cont = 0; cont < leftPathTokens.length; cont++) {
+                    String lt = leftPathTokens[cont];
+                    String rt = rightPathTokens[cont];
+
+                    switch (lt) {
+                        case "*":
+                            break;
+                        case "[*]":
+                            try {
+                                Integer.parseInt(rt);
+                                break;
+                            } catch (NumberFormatException nfe) {
+                                ret = false;
+                                break outerloop;
+                            }
+                        default:
+                            ret = rt.equals(lt);
+
+                            if (!ret) {
+                                break outerloop;
+                            } else {
+                                break;
+                            }
+                    }
+                }
+            }
+        }
+
+        LOGGER.trace("isAncestorPath: {} -> {} -> {}", left, right, ret);
+        return ret;
     }
 
     /**
@@ -243,6 +333,8 @@ public class JsonUtils {
                 return o.get() instanceof Boolean;
             case "objectid":
                 return o.get() instanceof ObjectId;
+            case "objectidstring":
+                return o.get() instanceof String && ObjectId.isValid((String) o.get());
             case "date":
                 return o.get() instanceof Date;
             case "timestamp":

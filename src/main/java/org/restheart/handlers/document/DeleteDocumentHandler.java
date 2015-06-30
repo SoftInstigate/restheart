@@ -22,7 +22,9 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.RequestHelper;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import org.bson.types.ObjectId;
+import org.restheart.db.OperationResult;
 
 /**
  *
@@ -59,15 +61,19 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
-        int httpCode = this.documentDAO
+        OperationResult result = this.documentDAO
                 .deleteDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), etag);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(httpCode, exchange, context);
+            sendWarnings(result.getHttpCode(), exchange, context);
         } else {
-            exchange.setResponseCode(httpCode);
+            exchange.setResponseCode(result.getHttpCode());
         }
+
+        if (result.getEtag() != null) {
+            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+        } 
 
         exchange.endExchange();
     }

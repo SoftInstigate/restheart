@@ -27,7 +27,9 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import org.bson.types.ObjectId;
+import org.restheart.db.OperationResult;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.RepresentationTransformer;
 
@@ -82,18 +84,17 @@ public class PutDBHandler extends PipedHttpHandler {
 
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
-        int httpCode = getDatabase().upsertDB(context.getDBName(), content, etag, false);
+        OperationResult result = getDatabase().upsertDB(context.getDBName(), content, etag, false);
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(httpCode, exchange, context);
+            sendWarnings(result.getHttpCode(), exchange, context);
         } else {
-            exchange.setResponseCode(httpCode);
+            exchange.setResponseCode(result.getHttpCode());
         }
         
-        if (httpCode == HttpStatus.SC_CREATED || httpCode == HttpStatus.SC_OK) {
-            content.put("_etag", etag);
-            ResponseHelper.injectEtagHeader(exchange, content);
+        if (result.getEtag() != null) {
+            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
 
         exchange.endExchange();

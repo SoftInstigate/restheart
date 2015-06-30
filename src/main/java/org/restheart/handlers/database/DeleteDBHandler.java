@@ -17,7 +17,6 @@
  */
 package org.restheart.handlers.database;
 
-import org.restheart.db.DbsDAO;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.utils.HttpStatus;
@@ -27,7 +26,7 @@ import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.bson.types.ObjectId;
-import org.restheart.db.Database;
+import org.restheart.db.OperationResult;
 
 /**
  *
@@ -57,15 +56,19 @@ public class DeleteDBHandler extends PipedHttpHandler {
             return;
         }
 
-        int httpCode = getDatabase().deleteDatabase(context.getDBName(), etag);
+        OperationResult result = getDatabase().deleteDatabase(context.getDBName(), etag);
 
-        exchange.setResponseCode(httpCode);
+        exchange.setResponseCode(result.getHttpCode());
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(httpCode, exchange, context);
+            sendWarnings(result.getHttpCode(), exchange, context);
         } else {
-            exchange.setResponseCode(httpCode);
+            exchange.setResponseCode(result.getHttpCode());
+        }
+        
+        if (result.getEtag() != null) {
+            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
 
         exchange.endExchange();

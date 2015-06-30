@@ -27,9 +27,9 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import org.bson.types.ObjectId;
-import org.restheart.utils.URLUtils;
-import org.restheart.hal.UnsupportedDocumentIdException;
+import org.restheart.db.OperationResult;
 
 /**
  *
@@ -87,7 +87,7 @@ public class PutDocumentHandler extends PipedHttpHandler {
         
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
-        int httpCode = this.documentDAO.upsertDocument(
+        OperationResult result = this.documentDAO.upsertDocument(
                 context.getDBName(),
                 context.getCollectionName(),
                 context.getDocumentId(),
@@ -97,14 +97,13 @@ public class PutDocumentHandler extends PipedHttpHandler {
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(httpCode, exchange, context);
+            sendWarnings(result.getHttpCode(), exchange, context);
         } else {
-            exchange.setResponseCode(httpCode);
+            exchange.setResponseCode(result.getHttpCode());
         }
         
-        if (httpCode == HttpStatus.SC_CREATED || httpCode == HttpStatus.SC_OK) {
-            content.put("_etag", etag);
-            ResponseHelper.injectEtagHeader(exchange, content);
+        if (result.getEtag() != null) {
+            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
 
         exchange.endExchange();

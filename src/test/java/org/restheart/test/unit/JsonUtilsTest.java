@@ -54,6 +54,7 @@ public class JsonUtilsTest {
     @After
     public void tearDown() {
     }
+
     @Test
     public void testGetPropFromPath() throws Exception {
         String _json1 = "{a: {b:1, c: {d:{\"$oid\": \"550c6e62c2e62b5640673e93\"}, e:3}}, f: null}";
@@ -61,16 +62,21 @@ public class JsonUtilsTest {
         String _json3 = "{a: [{b:1}, {b:2}, {b:3}]}";
         String _json4 = "{a: [[{b:1}], [{b:2}], [{b:3}]]}";
         String _json5 = "{a: []}";
+        String _json6 = "{a1: [{f1:1, f2:2, a2:[{f1:1,f2:2}]}, {f1:1, f2:2}]}";
 
         Object json1 = JSON.parse(_json1);
         Object json2 = JSON.parse(_json2);
         Object json3 = JSON.parse(_json3);
         Object json4 = JSON.parse(_json4);
         Object json5 = JSON.parse(_json5);
+        Object json6 = JSON.parse(_json6);
+
+        Assert.assertTrue(checkGetPropsFromPath(json6, "$.a1.[*].a2", "[{f1:1,f2:2}]", null));
+        Assert.assertTrue(checkGetPropsFromPath(json6, "$.a1.[*].a2.[*].f1", "1"));
 
         Assert.assertTrue(checkGetPropsFromPath(json5, "$.a", "[]"));
-        Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.[*]", "[]"));
-        Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.[*].*", (String[]) null));
+        Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.[*]"));
+        Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.[*].*"));
 
         Assert.assertTrue(checkGetPropsFromPath(json1, "$.notexists", (String[]) null));
 
@@ -108,7 +114,7 @@ public class JsonUtilsTest {
 
         Assert.assertTrue(checkGetPropsFromPath(json2, "$.a.[*].c", null, "3", "null", null));
 
-        Assert.assertTrue(checkGetPropsFromPath(json2, "$.a.[*].c.*", null, null, null, null));
+        Assert.assertTrue(checkGetPropsFromPath(json2, "$.a.[*].c.*"));
 
         Assert.assertTrue(checkGetPropsFromPath(json3, "$.a", "[{b:1}, {b:2}, {b:3}]"));
         Assert.assertTrue(checkType(json3, "$.a", "array"));
@@ -130,115 +136,76 @@ public class JsonUtilsTest {
 
         Assert.assertTrue(checkGetPropsFromPath(json4, "$.a.[*].[*].b", "1", "2", "3"));
         Assert.assertTrue(checkType(json4, "$.a.[*].[*].b", "number"));
+
     }
 
-    private boolean eq(List<Optional<Object>> left, List<Optional<Object>> right) {
-        if (left == null && right != null) {
-            return false;
-        }
+    @Test
+    public void testJsonArray() throws Exception {
+        String _json1 = "{a: []}}";
+        String _json2 = "{a: [{}]}}";
+        String _json3 = "{a: [{f: 1}]}}";
+        String _json4 = "{a: [{e: 1}, {e: 2}, {e: 3}]}}";
+        String _json5 = "{a: {1: {e: 1}, 2: {e: 2}, 3: {e: 3}}}}";
 
-        if (left != null && right == null) {
-            return false;
-        }
+        Object json1 = JSON.parse(_json1);
+        Object json2 = JSON.parse(_json2);
+        Object json3 = JSON.parse(_json3);
+        Object json4 = JSON.parse(_json4);
+        Object json5 = JSON.parse(_json5);
 
-        if (left == null && right == null) {
-            return true;
-        }
+        Assert.assertTrue(checkGetPropsFromPath(json1, "$.a", "[]"));
+        Assert.assertTrue(checkGetPropsFromPath(json1, "$.a.[*]"));
+        Assert.assertTrue(checkGetPropsFromPath(json1, "$.a.[*].f"));
 
-        if (left.size() != right.size()) {
-            return false;
-        }
+        Assert.assertTrue(checkGetPropsFromPath(json2, "$.a", "[{}]"));
+        Assert.assertTrue(checkGetPropsFromPath(json2, "$.a.[*]", "{}"));
+        Assert.assertTrue(checkGetPropsFromPath(json2, "$.a.[*].f", (String) null));
 
-        boolean ret = true;
-
-        for (int cont = 0; cont < left.size(); cont++) {
-            Optional<Object> lo = left.get(cont);
-            Optional<Object> ro = right.get(cont);
-
-            if (lo == null && ro != null) {
-                ret = false;
-                break;
-            }
-
-            if (lo != null && ro == null) {
-                ret = false;
-                break;
-            }
-
-            if (lo != null && ro != null) {
-                if (lo.isPresent() && !ro.isPresent()) {
-                    ret = false;
-                    break;
-                }
-
-                if (!lo.isPresent() && ro.isPresent()) {
-                    ret = false;
-                    break;
-                }
-
-                if (lo.isPresent() && ro.isPresent() && !lo.get().equals(ro.get())) {
-                    ret = false;
-                    break;
-                }
-            }
-        }
-
-        return ret;
+        Assert.assertTrue(checkGetPropsFromPath(json3, "$.a", "[{f: 1}]"));
+        Assert.assertTrue(checkGetPropsFromPath(json3, "$.a.[*]", "{f: 1}"));
+        Assert.assertTrue(checkGetPropsFromPath(json3, "$.a.[*].f", "1"));
+        
+        Assert.assertTrue(checkGetPropsFromPath(json4, "$.a.[*].e", "1", "2", "3"));
+        
+        Assert.assertTrue(checkGetPropsFromPath(json4, "$.a.[*].e", "1", "2", "3"));
+        
+        Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.*", "{e: 1}", "{e: 2}", "{e: 3}"));
+        
+        // justification of the following: even if "a! is an object, it has all numeric values
+        // on mongodb you can use the dot notation on arrays and do the following on RESTHeart
+        // PATCH /db/coll/doc {"a.1", {"e": 1000}} 
+        // the content turns internally to {"a": {"1": {"e":1000}}}
+        Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.[*]", "{e: 1}", "{e: 2}", "{e: 3}"));
     }
+    
+    @Test
+    public void testJsonObject() throws Exception {
+        String _json1 = "{o: {}}";
+        String _json2 = "{o: {o: {}}}";
+        String _json3 = "{o: {o: {f: 1}}}";
 
-    private boolean checkGetPropsFromPath(Object json, String path, String... expected) {
-        List<Optional<Object>> gots;
+        Object json1 = JSON.parse(_json1);
+        Object json2 = JSON.parse(_json2);
+        Object json3 = JSON.parse(_json3);
 
-        try {
-            gots = JsonUtils.getPropsFromPath(json, path);
-        } catch (IllegalArgumentException ex) {
-            Assert.fail(ex.toString());
-            return false;
-        }
+        Assert.assertTrue(checkGetPropsFromPath(json1, "$.o", "{}"));
+        Assert.assertTrue(checkGetPropsFromPath(json1, "$.*", "{}"));
+        Assert.assertTrue(checkGetPropsFromPath(json1, "$.o.*"));
+        Assert.assertTrue(checkGetPropsFromPath(json1, "$.o.*.f"));
 
-        if (expected == null) {
-            System.out.println(json + " | " + path + " -> " + gots + " exprected empty result []");
-            return gots == null;
-        }
+        Assert.assertTrue(checkGetPropsFromPath(json2, "$.o", "{o: {}}"));
+        Assert.assertTrue(checkGetPropsFromPath(json2, "$.*", "{o: {}}"));
+        Assert.assertTrue(checkGetPropsFromPath(json2, "$.o.o", "{}"));
+        Assert.assertTrue(checkGetPropsFromPath(json2, "$.o.*", "{}"));
+        Assert.assertTrue(checkGetPropsFromPath(json2, "$.o.*.f", (String) null));
 
-        List<Optional<Object>> exps = new ArrayList<>();
-
-        for (String exp : expected) {
-            if (exp == null) {
-                exps.add(null);
-            } else {
-                exps.add(Optional.ofNullable(JSON.parse(exp)));
-            }
-        }
-
-        System.out.println(json + " | " + path + " -> " + gots + " exprected " + Arrays.toString(expected));
-
-        return eq(exps, gots);
+        Assert.assertTrue(checkGetPropsFromPath(json3, "$.o", "{o: {f: 1}}"));
+        Assert.assertTrue(checkGetPropsFromPath(json3, "$.*", "{o: {f: 1}}"));
+        Assert.assertTrue(checkGetPropsFromPath(json3, "$.o.o", "{f: 1}"));
+        Assert.assertTrue(checkGetPropsFromPath(json3, "$.o.*", "{f: 1}"));
+        Assert.assertTrue(checkGetPropsFromPath(json3, "$.o.*.f", "1"));
     }
-
-    private boolean checkType(Object json, String path, String expectedType) {
-        List<Optional<Object>> gots;
-        try {
-            gots = JsonUtils.getPropsFromPath(json, path);
-        } catch (IllegalArgumentException ex) {
-            Assert.fail(ex.toString());
-            return false;
-        }
-
-        // null means that the path does not exist
-        if (gots == null) {
-            return false;
-        }
-
-        boolean typeMatch = true;
-
-        for (Optional<Object> got : gots) {
-            typeMatch = typeMatch && JsonUtils.checkType(got, expectedType);
-        }
-
-        return typeMatch;
-    }
-
+    
     @Test
     public void checkCountOnComplexJson() {
         String _json = "{\n"
@@ -555,22 +522,22 @@ public class JsonUtilsTest {
 
         Object json = JSON.parse(_json);
 
-        System.out.println("$.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.*"));
-        System.out.println("$._id" + " -> "+ JsonUtils.getPropsFromPath(json, "$._id"));
-        System.out.println("$.descr" + " -> "+ JsonUtils.getPropsFromPath(json, "$.descr"));
-        System.out.println("$.items" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items"));
-        System.out.println("$.items.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*"));
+        System.out.println("$.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.*"));
+        System.out.println("$._id" + " -> " + JsonUtils.getPropsFromPath(json, "$._id"));
+        System.out.println("$.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.descr"));
+        System.out.println("$.items" + " -> " + JsonUtils.getPropsFromPath(json, "$.items"));
+        System.out.println("$.items.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*"));
         System.out.println("$.items.*.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.*"));
-        System.out.println("$.items.*.descr" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.descr"));
-        System.out.println("$.items.*.items" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items"));
-        System.out.println("$.items.*.items.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*"));
-        System.out.println("$.items.*.items.*.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.*"));
-        System.out.println("$.items.*.items.*.descr" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.descr"));
-        System.out.println("$.items.*.items.*.values" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values"));
-        System.out.println("$.items.*.items.*.values.*" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*"));
-        System.out.println("$.items.*.items.*.values.*.descr" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.descr"));
-        System.out.println("$.items.*.items.*.values.*.svalue" + " -> "+ JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.svalue"));
-        
+        System.out.println("$.items.*.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.descr"));
+        System.out.println("$.items.*.items" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items"));
+        System.out.println("$.items.*.items.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*"));
+        System.out.println("$.items.*.items.*.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.*"));
+        System.out.println("$.items.*.items.*.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.descr"));
+        System.out.println("$.items.*.items.*.values" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values"));
+        System.out.println("$.items.*.items.*.values.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*"));
+        System.out.println("$.items.*.items.*.values.*.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.descr"));
+        System.out.println("$.items.*.items.*.values.*.svalue" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.svalue"));
+
         String path = "$.items.*.*";
 
         try {
@@ -578,5 +545,112 @@ public class JsonUtilsTest {
         } catch (IllegalArgumentException ex) {
             Assert.fail(ex.toString());
         }
+    }
+
+    private boolean eq(List<Optional<Object>> left, List<Optional<Object>> right) {
+        if (left == null && right != null) {
+            return false;
+        }
+
+        if (left != null && right == null) {
+            return false;
+        }
+
+        if (left == null && right == null) {
+            return true;
+        }
+
+        if (left.size() != right.size()) {
+            return false;
+        }
+
+        boolean ret = true;
+
+        for (int cont = 0; cont < left.size(); cont++) {
+            Optional<Object> lo = left.get(cont);
+            Optional<Object> ro = right.get(cont);
+
+            if (lo == null && ro != null) {
+                ret = false;
+                break;
+            }
+
+            if (lo != null && ro == null) {
+                ret = false;
+                break;
+            }
+
+            if (lo != null && ro != null) {
+                if (lo.isPresent() && !ro.isPresent()) {
+                    ret = false;
+                    break;
+                }
+
+                if (!lo.isPresent() && ro.isPresent()) {
+                    ret = false;
+                    break;
+                }
+
+                if (lo.isPresent() && ro.isPresent() && !lo.get().equals(ro.get())) {
+                    ret = false;
+                    break;
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    private boolean checkGetPropsFromPath(Object json, String path, String... expected) {
+        List<Optional<Object>> gots;
+
+        try {
+            gots = JsonUtils.getPropsFromPath(json, path);
+        } catch (IllegalArgumentException ex) {
+            Assert.fail(ex.toString());
+            return false;
+        }
+
+        if (expected == null) {
+            System.out.println(json + " | " + path + " -> " + gots + " exprected null result (missing field)");
+            return gots == null;
+        }
+
+        List<Optional<Object>> exps = new ArrayList<>();
+
+        for (String exp : expected) {
+            if (exp == null) {
+                exps.add(null);
+            } else {
+                exps.add(Optional.ofNullable(JSON.parse(exp)));
+            }
+        }
+
+        System.out.println(json + " | " + path + " -> " + gots + " exprected " + Arrays.toString(expected));
+
+        return eq(exps, gots);
+    }
+
+    private boolean checkType(Object json, String path, String expectedType) {
+        List<Optional<Object>> gots;
+        try {
+            gots = JsonUtils.getPropsFromPath(json, path);
+        } catch (IllegalArgumentException ex) {
+            Assert.fail(ex.toString());
+            return false;
+        }
+
+        // null means that the path does not exist
+        if (gots == null) {
+            return false;
+        }
+
+        boolean typeMatch = true;
+
+        for (Optional<Object> got : gots) {
+            typeMatch = typeMatch && JsonUtils.checkType(got, expectedType);
+        }
+
+        return typeMatch;
     }
 }

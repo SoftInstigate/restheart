@@ -141,6 +141,10 @@ public class NamedSingletonsFactory {
     public Object get(String group, String name) throws IllegalArgumentException {
         Optional op = cache.get(group + SEPARATOR + name);
 
+        if (op == null) {
+            throw new IllegalArgumentException("no singleton configured with name : " + name);
+        }
+        
         if (op.isPresent()) {
             return op.get();
         } else {
