@@ -94,6 +94,10 @@ public class PatchDocumentHandler extends PipedHttpHandler {
                 requestEtag,
                 true);
         
+        if (result.getEtag() != null) {
+            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+        }
+        
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
@@ -101,10 +105,6 @@ public class PatchDocumentHandler extends PipedHttpHandler {
             exchange.setResponseCode(result.getHttpCode());
         }
         
-        if (result.getEtag() != null) {
-            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
-        }
-
         exchange.endExchange();
     }
 }

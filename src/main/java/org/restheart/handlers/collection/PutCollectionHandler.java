@@ -115,15 +115,15 @@ public class PutCollectionHandler extends PipedHttpHandler {
 
         OperationResult result = getDatabase().upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, updating, false);
 
+        if (result.getEtag() != null) {
+            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+        }
+        
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
         } else {
             exchange.setResponseCode(result.getHttpCode());
-        }
-        
-        if (result.getEtag() != null) {
-            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
         
         exchange.endExchange();

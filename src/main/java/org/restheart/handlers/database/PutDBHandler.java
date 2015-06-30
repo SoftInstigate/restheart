@@ -86,6 +86,10 @@ public class PutDBHandler extends PipedHttpHandler {
 
         OperationResult result = getDatabase().upsertDB(context.getDBName(), content, etag, false);
 
+        if (result.getEtag() != null) {
+            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+        }
+        
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
@@ -93,10 +97,6 @@ public class PutDBHandler extends PipedHttpHandler {
             exchange.setResponseCode(result.getHttpCode());
         }
         
-        if (result.getEtag() != null) {
-            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
-        }
-
         exchange.endExchange();
 
         LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());

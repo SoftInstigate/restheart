@@ -117,6 +117,10 @@ public class PatchCollectionHandler extends PipedHttpHandler {
 
         OperationResult result = getDatabase().upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, true, true);
 
+        if (result.getEtag() != null) {
+            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+        }
+        
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
@@ -124,10 +128,6 @@ public class PatchCollectionHandler extends PipedHttpHandler {
             exchange.setResponseCode(result.getHttpCode());
         }
         
-        if (result.getEtag() != null) {
-            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
-        }
-
         exchange.endExchange();
 
         LocalCachesSingleton.getInstance().invalidateCollection(context.getDBName(), context.getCollectionName());

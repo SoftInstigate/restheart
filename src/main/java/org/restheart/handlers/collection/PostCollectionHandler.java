@@ -102,6 +102,10 @@ public class PostCollectionHandler extends PipedHttpHandler {
                 .add(HttpString.tryFromString("Location"),
                         getReferenceLink(context, exchange.getRequestURL(), docId));
 
+        if (result.getEtag() != null) {
+            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+        }
+        
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
@@ -109,10 +113,6 @@ public class PostCollectionHandler extends PipedHttpHandler {
             exchange.setResponseCode(result.getHttpCode());
         }
         
-        if (result.getEtag() != null) {
-            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
-        } 
-
         exchange.endExchange();
     }
 }
