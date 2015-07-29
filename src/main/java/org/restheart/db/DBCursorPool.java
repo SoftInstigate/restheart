@@ -157,14 +157,14 @@ public class DBCursorPool {
 
             for (int tohave : SKIP_SLICES_HEIGHTS) {
                 int sliceSkips = slice * SKIP_SLICE_LINEAR_WIDTH - SKIP_SLICE_LINEAR_DELTA;
-                DBCursorPoolEntryKey sliceKey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), sliceSkips, -1);
+                DBCursorPoolEntryKey sliceKey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), key.getFilter(), sliceSkips, -1);
 
                 long existing = getSliceHeight(sliceKey);
 
                 for (long cont = tohave - existing; cont > 0; cont--) {
-                    DBCursor cursor = dbsDAO.getCollectionDBCursor(key.getCollection(), key.getSort(), key.getFilter());
+                    DBCursor cursor = dbsDAO.getCollectionDBCursor(key.getCollection(), key.getSort(), key.getFilter(), key.getKeys());
                     cursor.skip(sliceSkips);
-                    DBCursorPoolEntryKey newkey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), sliceSkips, System.nanoTime());
+                    DBCursorPoolEntryKey newkey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), key.getKeys(), sliceSkips, System.nanoTime());
                     cache.put(newkey, cursor);
                     LOGGER.debug("created new cursor in pool: {}", newkey);
                 }
@@ -193,14 +193,14 @@ public class DBCursorPool {
             for (int slice = 1; slice < slices; slice++) {
                 int sliceSkips = (int) slice * sliceWidht;
 
-                DBCursorPoolEntryKey sliceKey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), sliceSkips, -1);
+                DBCursorPoolEntryKey sliceKey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), key.getKeys(), sliceSkips, -1);
 
                 long existing = getSliceHeight(sliceKey);
 
                 for (long cont = 1 - existing; cont > 0; cont--) {
-                    DBCursor cursor = dbsDAO.getCollectionDBCursor(key.getCollection(), key.getSort(), key.getFilter());
+                    DBCursor cursor = dbsDAO.getCollectionDBCursor(key.getCollection(), key.getSort(), key.getFilter(), key.getKeys());
                     cursor.skip(sliceSkips);
-                    DBCursorPoolEntryKey newkey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), sliceSkips, System.nanoTime());
+                    DBCursorPoolEntryKey newkey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), key.getKeys(), sliceSkips, System.nanoTime());
                     cache.put(newkey, cursor);
                     LOGGER.debug("created new cursor in pool: {}", newkey);
                 }

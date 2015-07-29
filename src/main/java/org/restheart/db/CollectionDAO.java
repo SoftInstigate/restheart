@@ -25,10 +25,13 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
+
 import org.restheart.utils.HttpStatus;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Deque;
+
 import org.bson.BSONObject;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -140,10 +143,11 @@ class CollectionDAO {
      * field name with - for descending sorting)
      * @param filters the filters to apply. it is a Deque collection of mongodb
      * query conditions.
+     * @param keys 
      * @return
      * @throws JSONParseException
      */
-    DBCursor getCollectionDBCursor(DBCollection coll, Deque<String> sortBy, Deque<String> filters) throws JSONParseException {
+    DBCursor getCollectionDBCursor(DBCollection coll, Deque<String> sortBy, Deque<String> filters, Deque<String> keys) throws JSONParseException {
         // apply sort_by
         DBObject sort = new BasicDBObject();
 
@@ -174,8 +178,17 @@ class CollectionDAO {
                 query.putAll(filterQuery);  // this can throw JSONParseException for invalid filter parameters
             });
         }
+        
+        final BasicDBObject fields = new BasicDBObject();
+        
+        if (keys != null) {
+            keys.stream().forEach((String f) -> {
+                BSONObject keyQuery = (BSONObject) JSON.parse(f);
 
-        return coll.find(query).sort(sort);
+                fields.putAll(keyQuery);  // this can throw JSONParseException for invalid filter parameters
+            });
+        }        
+        return coll.find(query, fields).sort(sort);
     }
 
     ArrayList<DBObject> getCollectionData(
@@ -184,7 +197,7 @@ class CollectionDAO {
             int pagesize,
             Deque<String> sortBy,
             Deque<String> filters,
-            DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager) throws JSONParseException {
+            Deque<String> keys, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager) throws JSONParseException {
         ArrayList<DBObject> ret = new ArrayList<>();
 
         int toskip = pagesize * (page - 1);
@@ -194,14 +207,14 @@ class CollectionDAO {
 
         if (eager != DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE) {
 
-            _cursor = DBCursorPool.getInstance().get(new DBCursorPoolEntryKey(coll, sortBy, filters, toskip, 0), eager);
+            _cursor = DBCursorPool.getInstance().get(new DBCursorPoolEntryKey(coll, sortBy, filters, keys, toskip, 0), eager);
         }
 
         int alreadySkipped;
 
         // in case there is not cursor in the pool to reuse
         if (_cursor == null) {
-            cursor = getCollectionDBCursor(coll, sortBy, filters);
+            cursor = getCollectionDBCursor(coll, sortBy, filters, keys);
             alreadySkipped = 0;
         } else {
             cursor = _cursor.getCursor();

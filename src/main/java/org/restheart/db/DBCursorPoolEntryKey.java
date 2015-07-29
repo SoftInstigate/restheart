@@ -18,6 +18,7 @@
 package org.restheart.db;
 
 import com.mongodb.DBCollection;
+
 import java.util.Deque;
 import java.util.Formatter;
 import java.util.Objects;
@@ -30,12 +31,14 @@ public class DBCursorPoolEntryKey {
     private final DBCollection collection;
     private final Deque<String> sort;
     private final Deque<String> filter;
+    private final Deque<String> keys;
     private final int skipped;
     private final long cursorId;
 
-    public DBCursorPoolEntryKey(DBCollection collection, Deque<String> sort, Deque<String> filter, int skipped, long cursorId) {
+    public DBCursorPoolEntryKey(DBCollection collection, Deque<String> sort, Deque<String> filter, Deque<String> keys, int skipped, long cursorId) {
         this.collection = collection;
         this.filter = filter;
+        this.keys = keys;
         this.sort = sort;
         this.skipped = skipped;
         this.cursorId = cursorId;
@@ -75,10 +78,17 @@ public class DBCursorPoolEntryKey {
     public long getCursorId() {
         return cursorId;
     }
-    
-    @Override
+
+    /**
+     * @return keys
+     */
+	public Deque<String> getKeys() {
+		return keys;
+	}    
+
+	@Override
     public int hashCode() {
-        return Objects.hash(collection, filter, sort, skipped, cursorId);
+        return Objects.hash(collection, filter, keys, sort, skipped, cursorId);
     }
 
     @Override
@@ -96,6 +106,9 @@ public class DBCursorPoolEntryKey {
         if (!Objects.equals(this.filter, other.filter)) {
             return false;
         }
+        if (!Objects.equals(this.keys, other.keys)) {
+            return false;
+        }
         if (!Objects.equals(this.sort, other.sort)) {
             return false;
         }
@@ -107,7 +120,7 @@ public class DBCursorPoolEntryKey {
         }
         return true;
     }
-
+    
     @Override
     public String toString() {
         return "{ collection: " + collection.getFullName() + ", " +
@@ -122,4 +135,6 @@ public class DBCursorPoolEntryKey {
         
         return (filter == null ? "no filter" : filter.toString()) + " - " + (sort == null ? "no sort_by" : sort.toString()) + " - " + f.format("%10d", getSkipped());
     }
+
+
 }

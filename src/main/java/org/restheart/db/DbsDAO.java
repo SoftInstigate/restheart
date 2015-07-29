@@ -23,17 +23,21 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+
 import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.utils.ResponseHelper;
+
 import io.undertow.server.HttpServerExchange;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.stream.Collectors;
+
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -386,8 +390,8 @@ public class DbsDAO implements Database {
     }
 
     @Override
-    public ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filter, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
-        return collectionDAO.getCollectionData(coll, page, pagesize, sortBy, filter, cursorAllocationPolicy);
+    public ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filter,Deque<String> keys, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
+        return collectionDAO.getCollectionData(coll, page, pagesize, sortBy, filter, keys, cursorAllocationPolicy);
     }
 
     @Override
@@ -406,8 +410,8 @@ public class DbsDAO implements Database {
     }
 
     @Override
-    public DBCursor getCollectionDBCursor(DBCollection collection, Deque<String> sortBy, Deque<String> filters) {
-        return collectionDAO.getCollectionDBCursor(collection, sortBy, filters);
+    public DBCursor getCollectionDBCursor(DBCollection collection, Deque<String> sortBy, Deque<String> filters, Deque<String> keys ) {
+        return collectionDAO.getCollectionDBCursor(collection, sortBy, filters, keys);
     }
 
     @Override

@@ -23,10 +23,13 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSONParseException;
+
 import io.undertow.server.HttpServerExchange;
+
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+
 import org.bson.types.ObjectId;
 import org.restheart.handlers.IllegalQueryParamenterException;
 
@@ -82,7 +85,7 @@ public interface Database {
      * @param cursorAllocationPolicy
      * @return Collection Data as ArrayList of DBObject
      */
-    ArrayList<DBObject> getCollectionData(DBCollection collection, int page, int pagesize, Deque<String> sortBy, Deque<String> filter, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy);
+    ArrayList<DBObject> getCollectionData(DBCollection collection, int page, int pagesize, Deque<String> sortBy, Deque<String> filter,Deque<String> keys, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy);
 
     /**
      *
@@ -210,7 +213,7 @@ public interface Database {
      * @return
      * @throws JSONParseException
      */
-    DBCursor getCollectionDBCursor(DBCollection collection, Deque<String> sortBy, Deque<String> filters) throws JSONParseException;
+    DBCursor getCollectionDBCursor(DBCollection collection, Deque<String> sortBy, Deque<String> filters, Deque<String> keys) throws JSONParseException;
 
     /**
      *
@@ -220,4 +223,5 @@ public interface Database {
      * @param options
      */
     void createIndex(String dbName, String collection, DBObject keys, DBObject options);
+
 }

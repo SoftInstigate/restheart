@@ -23,6 +23,7 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import static org.restheart.handlers.RequestContext.EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.FILTER_QPARAM_KEY;
+import static org.restheart.handlers.RequestContext.KEYS_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.PAGESIZE_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.PAGE_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.SORT_BY_QPARAM_KEY;
@@ -150,6 +151,35 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             rcontext.setSortBy(exchange.getQueryParameters().get(SORT_BY_QPARAM_KEY));
         }
 
+        Deque<String> keys = exchange.getQueryParameters().get(KEYS_QPARAM_KEY);
+        if (keys != null){
+            if (keys.stream().anyMatch(f -> {
+                if (f == null || f.isEmpty()) {
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                            "illegal keys paramenter (empty)");
+                    return true;
+                }
+
+                try {
+                    Object _keys = JSON.parse(f);
+                    
+                    if (!(_keys instanceof BSONObject)) {
+                        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                            "illegal keys paramenter, it is not a json object: " + f + " => " + f.getClass().getSimpleName());
+                    return true;
+                    }
+                } catch (Throwable t) {
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                            "illegal filter paramenter: " + f, t);
+                    return true;
+                }
+
+                return false;
+            })) {
+                return; // an error occurred
+            }
+            rcontext.setKeys(exchange.getQueryParameters().get(KEYS_QPARAM_KEY));
+        }
         // get and check filter parameter
         Deque<String> filters = exchange.getQueryParameters().get(FILTER_QPARAM_KEY);
 
