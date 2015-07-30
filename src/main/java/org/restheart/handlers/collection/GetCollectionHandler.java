@@ -76,7 +76,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
 
             try {
                 data = getDatabase().getCollectionData(coll, context.getPage(), context.getPagesize(),
-                        context.getSortBy(), context.getFilter(), context.getCursorAllocationPolicy());
+                        context.getSortBy(), context.getFilter(), context.getKeys(), context.getCursorAllocationPolicy());
             } catch (JSONParseException jpe) {
                 // the filter expression is not a valid json string
                 LOGGER.debug("invalid filter expression {}", context.getFilter(), jpe);
