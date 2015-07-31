@@ -53,7 +53,7 @@ public class DeleteCollectionHandler extends PipedHttpHandler {
 
         if (etag == null) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
-                    "the " + Headers.ETAG + " header must be provided");
+                    "The collection's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
             return;
         }
 

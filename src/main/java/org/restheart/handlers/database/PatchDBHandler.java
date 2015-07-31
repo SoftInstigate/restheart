@@ -71,7 +71,7 @@ public class PatchDBHandler extends PipedHttpHandler {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
             return;
         }
-        
+
         // check RTL metadata
         if (content.containsField(RepresentationTransformer.RTS_ELEMENT_NAME)) {
             try {
@@ -86,7 +86,8 @@ public class PatchDBHandler extends PipedHttpHandler {
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
         if (etag == null) {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
+                    "The database's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
             return;
         }
 
@@ -95,14 +96,14 @@ public class PatchDBHandler extends PipedHttpHandler {
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
-        
+
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
         } else {
             exchange.setResponseCode(result.getHttpCode());
         }
-        
+
         exchange.endExchange();
 
         LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());

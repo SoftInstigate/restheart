@@ -111,7 +111,8 @@ public class PatchCollectionHandler extends PipedHttpHandler {
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
         if (etag == null) {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_CONFLICT);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
+                    "The collection's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
             return;
         }
 
