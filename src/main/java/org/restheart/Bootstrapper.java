@@ -37,7 +37,6 @@ import org.restheart.handlers.applicationlogic.ApplicationLogicHandler;
 import org.restheart.handlers.OptionsHandler;
 import org.restheart.handlers.PipedWrappingHandler;
 import org.restheart.handlers.injectors.BodyInjectorHandler;
-import org.restheart.handlers.metadata.RequestTransformerMetadataHandler;
 import org.restheart.security.handlers.SecurityHandlerDispacher;
 import org.restheart.security.handlers.CORSHandler;
 import org.restheart.utils.FileUtils;
