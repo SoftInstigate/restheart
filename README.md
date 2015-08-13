@@ -18,7 +18,7 @@ Develop branch:
 * Super easy setup with convention over configuration approach
 * Pluggable security with User Management and ACL
 * [HAL](http://stateless.co/hal_specification.html) hypermedia type
-* Super lightweight: pipeline architecture, ~6Mb footprint, ~200Mb RAM peek usage, starts in milliseconds,..
+* Super lightweight: pipeline architecture, ~7Mb footprint, ~200Mb RAM peek usage, starts in milliseconds,..
 * High throughput: very small overhead on MongoDB performance
 * Horizontally scalable: fully stateless architecture supporting MongoDB replica sets and shards
 * Built on top of [Undertow](http://undertow.io) non-blocking web server
@@ -27,6 +27,18 @@ Develop branch:
 * Ideal as a [AngularJS](https://angularjs.org) (or any other MVW javascript framework) back-end
 
 ## How to run it
+
+### Vagrant
+
+If you don’t want to install and run all the components manually on your host, there is a handy [Vagrant box](https://github.com/SoftInstigate/restheart-vagrant) available for creating a complete virtual development environment, using a Ubuntu 14.04 image with JDK 8, MongoDB 3 and the latest RESTHeart server. You can then skip section 2 to 6 and jump directly to section 7, in case you want to know how to change the default security settings.
+
+### Docker
+
+Docker is even simpler. There is a [Docker container](https://hub.docker.com/r/softinstigate/restheart/) with a JVM running RESTHeart, linked to another container running MongoDB, which makes use of the official MongoDB image.
+
+### Bare metal
+
+Please follow the next sections for a full local installation.
 
 > RESTHeart requires [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/index.html), make sure you have it and available on your path. It builds with [Maven](http://www.oracle.com/technetwork/java/javase/downloads/index.html).
 
