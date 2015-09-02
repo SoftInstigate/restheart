@@ -107,7 +107,7 @@ public class DBCursorPool {
 
         // return the dbcursor with the closest skips to the request
         Optional<DBCursorPoolEntryKey> _bestKey = cache.asMap().keySet().stream()
-                .filter(cursorsPoolFilterGt(key))
+                .filter(cursorsPoolFilterGte(key))
                 .sorted(Comparator.comparingInt(DBCursorPoolEntryKey::getSkipped).reversed())
                 .findFirst();
 
@@ -227,13 +227,13 @@ public class DBCursorPool {
                 && k.getSkipped() == key.getSkipped();
     }
     
-    private Predicate<? super DBCursorPoolEntryKey> cursorsPoolFilterGt(DBCursorPoolEntryKey key) {
+    private Predicate<? super DBCursorPoolEntryKey> cursorsPoolFilterGte(DBCursorPoolEntryKey key) {
         return k
                 -> Objects.equals(k.getCollection().getDB().getName(), key.getCollection().getDB().getName())
                 && Objects.equals(k.getCollection().getName(), key.getCollection().getName())
                 && Arrays.equals(k.getFilter() != null ? k.getFilter().toArray() : null, key.getFilter() != null ? key.getFilter().toArray() : null)
                 && Arrays.equals(k.getSort() != null ? k.getSort().toArray() : null, key.getSort() != null ? key.getSort().toArray() : null)
-                && k.getSkipped() < key.getSkipped();
+                && k.getSkipped() <= key.getSkipped();
     }
 
     private TreeMap<String, Long> getCacheSizes() {

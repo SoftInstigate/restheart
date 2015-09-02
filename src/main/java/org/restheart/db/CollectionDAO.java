@@ -221,8 +221,10 @@ class CollectionDAO {
             alreadySkipped = _cursor.getAlreadySkipped();
         }
 
-        if (toskip - alreadySkipped > 0) {
-            cursor.skip(toskip - alreadySkipped);
+        while (toskip > alreadySkipped) {
+            cursor.next();
+            alreadySkipped++;
+            //cursor.skip(toskip - alreadySkipped);
         }
 
         while (pagesize > 0 && cursor.hasNext()) {
