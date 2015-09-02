@@ -21,7 +21,7 @@ package org.restheart.test.performance;
  * install ldt from https://github.com/bazhenov/load-test-tool run it from
  * target/class directory (current directory is added to classpath) as follows:
  * <PATH_TO_ldt-assembly-1.1>/bin/ldt.sh -z
- * org.restheart.LoadTestRestHeartTask#get -c 20 -n 500 -w 5 -p
+ * org.restheart.test.performance.LoadGetPT#get -c 20 -n 500 -w 5 -p
  * "url=http://127.0.0.1:8080/testdb/testcoll?page=10&pagesize=5,id=a,pwd=a"
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Executor;
@@ -82,7 +83,7 @@ public class LoadGetPT {
     private int page = 1;
     private int pagesize = 5;
 
-    private final Path CONF_FILE = new File("./etc/restheart-perftest.yml").toPath();
+    private final Path CONF_FILE = new File("./etc/restheart-dev.yml").toPath();
     private Executor httpExecutor;
 
     private final ConcurrentHashMap<Long, Integer> threadPages = new ConcurrentHashMap<>();
@@ -114,9 +115,9 @@ public class LoadGetPT {
             System.exit(-1);
         }
 
-        httpExecutor = Executor.newInstance();
-            // for perf test we disable the restheart security
-        //.authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), id, pwd);
+        // for perf test better to disable the restheart security
+        httpExecutor = Executor.newInstance()
+        .authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), id, pwd);
     }
 
     /**

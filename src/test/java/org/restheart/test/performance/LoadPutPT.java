@@ -20,9 +20,9 @@ package org.restheart.test.performance;
 /**
  * install ldt from https://github.com/bazhenov/load-test-tool run it from
  * target/class directory (current directory is added to classpath) as follows:
- * <PATH_TO_ldt-assembly-1.1>/bin/ldt.sh -z org.restheart.perftest.LoadPutPT#put
- * -c 20 -n 500 -w 5 -p
- * "url=http://127.0.0.1:8080/testdb/testcoll?page=10&pagesize=5,id=a,pwd=a"
+ * <PATH_TO_ldt-assembly-1.1>/bin/ldt.sh -z
+ * org.restheart.test.performance.LoadPutPT#put -c 20 -n 500 -w 5 -p
+ * "url=http://127.0.0.1:8080/testdb/testcoll,id=a,pwd=a"
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
@@ -36,6 +36,7 @@ import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.nio.file.Path;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Executor;
@@ -66,7 +67,7 @@ public class LoadPutPT {
 
     private Executor httpExecutor;
 
-    private final Path CONF_FILE = new File("./etc/restheart-perftest.yml").toPath();
+    private final Path CONF_FILE = new File("./etc/restheart-dev.yml").toPath();
 
     /**
      *
@@ -86,9 +87,9 @@ public class LoadPutPT {
             System.exit(-1);
         }
 
-        httpExecutor = Executor.newInstance();
-            // for perf test we disable the restheart security
-        //.authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), id, pwd);
+        // for perf test better to disable the restheart security
+        httpExecutor = Executor.newInstance()
+                .authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), id, pwd);
     }
 
     /**
@@ -96,7 +97,7 @@ public class LoadPutPT {
      * @throws IOException
      */
     public void put() throws Exception {
-        BasicDBObject content = new BasicDBObject("random", Math.random());
+        BasicDBObject content = new BasicDBObject("nanostamp", System.nanoTime());
 
         Response resp = httpExecutor.execute(Request.Post(url).bodyString(content.toString(), halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
