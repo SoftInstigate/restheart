@@ -87,9 +87,12 @@ public class LoadPutPT {
             System.exit(-1);
         }
 
+        httpExecutor = Executor.newInstance();
+        
         // for perf test better to disable the restheart security
-        httpExecutor = Executor.newInstance()
-                .authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), id, pwd);
+        if (id != null && pwd != null) {
+            httpExecutor.authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), id, pwd);
+        } 
     }
 
     /**
