@@ -51,7 +51,7 @@ public class PropsFixer {
      * @throws MongoException
      */
     public boolean addCollectionProps(String dbName, String collName) throws MongoException {
-        
+
         DBObject dbmd = dbsDAO.getDatabaseProperties(dbName, false);
 
         if (dbmd == null) {
@@ -126,7 +126,12 @@ public class PropsFixer {
     }
 
     /**
+     * adds default properties to any db and collection, despite the mongo-mount
+     * configuration. It can also lead to slow startup time on big mongodb
+     * installations.
      *
+     * @see https://github.com/SoftInstigate/restheart/issues/45
+     * @deprecated
      */
     public void fixAllMissingProps() {
         try {
