@@ -19,6 +19,7 @@ package org.restheart.handlers.document;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.util.JSON;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.RequestContext;
@@ -27,6 +28,8 @@ import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
+import java.util.Deque;
+import org.bson.BSONObject;
 import org.bson.types.ObjectId;
 import org.restheart.hal.Representation;
 
@@ -61,8 +64,20 @@ public class GetDocumentHandler extends PipedHttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         BasicDBObject query = new BasicDBObject("_id", context.getDocumentId());
+        
+        final BasicDBObject fieldsToReturn = new BasicDBObject();
+        
+        Deque<String> keys = context.getKeys();
+        
+        if (keys != null) {
+            keys.stream().forEach((String f) -> {
+                BSONObject keyQuery = (BSONObject) JSON.parse(f);
 
-        DBObject document = getDatabase().getCollection(context.getDBName(), context.getCollectionName()).findOne(query);
+                fieldsToReturn.putAll(keyQuery);  // this can throw JSONParseException for invalid filter parameters
+            });
+        }
+
+        DBObject document = getDatabase().getCollection(context.getDBName(), context.getCollectionName()).findOne(query, fieldsToReturn);
 
         if (document == null) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "document does not exist");

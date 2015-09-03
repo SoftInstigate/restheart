@@ -187,7 +187,8 @@ class CollectionDAO {
 
                 fields.putAll(keyQuery);  // this can throw JSONParseException for invalid filter parameters
             });
-        }        
+        }
+        
         return coll.find(query, fields).sort(sort);
     }
 

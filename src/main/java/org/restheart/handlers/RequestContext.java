@@ -103,7 +103,7 @@ public class RequestContext {
     private DBObject collectionProps;
 
     private DBObject content;
-    
+
     private File file;
 
     private DBObject responseContent;
@@ -628,17 +628,18 @@ public class RequestContext {
     public void setFile(File file) {
         this.file = file;
     }
-    
+
     /**
      * @return keys
      */
-	public Deque<String> getKeys() {
-		return keys;
-	}
+    public Deque<String> getKeys() {
+        return keys;
+    }
+
     /**
      * @param keys keys to set
      */
-	public void setKeys(Deque<String> keys) {
-		this.keys = keys;
-	}
+    public void setKeys(Deque<String> keys) {
+        this.keys = keys;
+    }
 }
