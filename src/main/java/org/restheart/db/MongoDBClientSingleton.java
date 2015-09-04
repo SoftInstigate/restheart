@@ -44,7 +44,7 @@ public class MongoDBClientSingleton {
 
     private MongoClient mongoClient;
 
-    private static final Logger logger = LoggerFactory.getLogger(MongoDBClientSingleton.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MongoDBClientSingleton.class);
 
     private MongoDBClientSingleton() {
         if (!initialized) {
@@ -54,9 +54,9 @@ public class MongoDBClientSingleton {
         try {
             setup();
         } catch (UnknownHostException ex) {
-            logger.error("error initializing mongodb client", ex);
+            LOGGER.error("error initializing mongodb client", ex);
         } catch (Throwable tr) {
-            logger.error("error initializing mongodb client", tr);
+            LOGGER.error("error initializing mongodb client", tr);
         }
     }
 
@@ -71,7 +71,7 @@ public class MongoDBClientSingleton {
         if (mongoServers != null && !mongoServers.isEmpty()) {
             initialized = true;
         } else {
-            logger.error("error initializing mongodb client, no servers found in configuration");
+            LOGGER.error("error initializing mongodb client, no servers found in configuration");
         }
     }
 

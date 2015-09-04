@@ -33,12 +33,12 @@ class IndexDAO {
 
     public static final BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "_properties");
 
-    private static final BasicDBObject fieldsToReturnIndexes;
+    private static final BasicDBObject FIELDS_TO_RETURN_INDEXES;
 
     static {
-        fieldsToReturnIndexes = new BasicDBObject();
-        fieldsToReturnIndexes.put("key", 1);
-        fieldsToReturnIndexes.put("name", 1);
+        FIELDS_TO_RETURN_INDEXES = new BasicDBObject();
+        FIELDS_TO_RETURN_INDEXES.put("key", 1);
+        FIELDS_TO_RETURN_INDEXES.put("name", 1);
     }
 
     IndexDAO(MongoClient client) {
@@ -53,7 +53,7 @@ class IndexDAO {
      */
     List<DBObject> getCollectionIndexes(String dbName, String collName) {
         List<DBObject> indexes = client.getDB(dbName).getCollection("system.indexes")
-                .find(new BasicDBObject("ns", dbName + "." + collName), fieldsToReturnIndexes)
+                .find(new BasicDBObject("ns", dbName + "." + collName), FIELDS_TO_RETURN_INDEXES)
                 .sort(new BasicDBObject("name", 1))
                 .toArray();
 

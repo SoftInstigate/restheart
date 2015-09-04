@@ -51,13 +51,13 @@ public class DbsDAO implements Database {
     private static final Logger LOGGER = LoggerFactory.getLogger(DbsDAO.class);
     public static final BasicDBObject PROPS_QUERY = new BasicDBObject("_id", "_properties");
 
-    private static final BasicDBObject fieldsToReturn;
+    private static final BasicDBObject FIELDS_TO_RETURN;
 
     static {
-        fieldsToReturn = new BasicDBObject();
-        fieldsToReturn.put("_id", 1);
-        fieldsToReturn.put("_etag", 1);
-        fieldsToReturn.put("_created_on", 1);
+        FIELDS_TO_RETURN = new BasicDBObject();
+        FIELDS_TO_RETURN.put("_id", 1);
+        FIELDS_TO_RETURN.put("_etag", 1);
+        FIELDS_TO_RETURN.put("_created_on", 1);
     }
 
     /**
@@ -121,7 +121,7 @@ public class DbsDAO implements Database {
      * @return A ordered List of collection names
      */
     @Override
-    public List<String> getCollectionNames(DB db) {
+    public List<String> getCollectionNames(final DB db) {
         List<String> _colls = new ArrayList(db.getCollectionNames());
 
         // filter out reserved dbs
@@ -134,7 +134,7 @@ public class DbsDAO implements Database {
      *
      */
     @Override
-    public long getDBSize(List<String> colls) {
+    public long getDBSize(final List<String> colls) {
         // filter out reserved resources
         List<String> _colls = colls.stream()
                 .filter(coll -> !RequestContext.isReservedResourceCollection(coll))
@@ -150,7 +150,7 @@ public class DbsDAO implements Database {
      *
      */
     @Override
-    public DBObject getDatabaseProperties(String dbName, boolean fixMissingProperties) {
+    public DBObject getDatabaseProperties(final String dbName, final boolean fixMissingProperties) {
         if (!existsDatabaseWithName(dbName)) {
             // this check is important, otherwise the db would get created if not existing after the query
             return null;
@@ -186,7 +186,7 @@ public class DbsDAO implements Database {
      *
      */
     @Override
-    public List<DBObject> getData(String dbName, List<String> colls, int page, int pagesize)
+    public List<DBObject> getData(final String dbName, final List<String> colls, final int page, final int pagesize)
             throws IllegalQueryParamenterException {
         // filter out reserved resources
         List<String> _colls = colls.stream()
@@ -248,13 +248,18 @@ public class DbsDAO implements Database {
     /**
      *
      * @param dbName
-     * @param content
+     * @param newContent
      * @param requestEtag
      * @param patching
      * @return
      */
     @Override
-    public OperationResult upsertDB(String dbName, DBObject content, ObjectId requestEtag, boolean patching) {
+    public OperationResult upsertDB(
+            final String dbName,
+            final DBObject newContent,
+            final ObjectId requestEtag,
+            final boolean patching) {
+
         DB db = client.getDB(dbName);
 
         boolean existing = db.getCollectionNames().size() > 0;
@@ -266,7 +271,7 @@ public class DbsDAO implements Database {
         // check the etag
         DBCollection coll = db.getCollection("_properties");
 
-        DBObject exists = coll.findOne(new BasicDBObject("_id", "_properties"), fieldsToReturn);
+        DBObject exists = coll.findOne(new BasicDBObject("_id", "_properties"), FIELDS_TO_RETURN);
 
         if (exists != null) {
             Object oldEtag = exists.get("_etag");
@@ -285,9 +290,7 @@ public class DbsDAO implements Database {
         ObjectId newEtag = new ObjectId();
         Instant now = Instant.ofEpochSecond(newEtag.getTimestamp());
 
-        if (content == null) {
-            content = new BasicDBObject();
-        }
+        DBObject content = DAOUtils.validContent(newContent);
 
         content.put("_etag", newEtag);
         content.removeField("_created_on"); // make sure we don't change this field
@@ -302,7 +305,7 @@ public class DbsDAO implements Database {
             // we need to put this field back using a second update 
             // it is not possible in a single update even using $setOnInsert update operator
             // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
-            DBObject old = coll.findAndModify(PROPS_QUERY, fieldsToReturn, null, false, content, false, true);
+            DBObject old = coll.findAndModify(PROPS_QUERY, FIELDS_TO_RETURN, null, false, content, false, true);
 
             if (old != null) {
                 Object oldTimestamp = old.get("_created_on");
@@ -329,6 +332,7 @@ public class DbsDAO implements Database {
         }
     }
 
+
     /**
      *
      * @param dbName
@@ -336,14 +340,14 @@ public class DbsDAO implements Database {
      * @return
      */
     @Override
-    public OperationResult deleteDatabase(String dbName, ObjectId requestEtag) {
+    public OperationResult deleteDatabase(final String dbName, final ObjectId requestEtag) {
         DB db = getDB(dbName);
 
         DBCollection coll = db.getCollection("_properties");
 
         BasicDBObject checkEtag = new BasicDBObject("_id", "_properties");
 
-        DBObject exists = coll.findOne(checkEtag, fieldsToReturn);
+        DBObject exists = coll.findOne(checkEtag, FIELDS_TO_RETURN);
 
         if (exists != null) {
             Object oldEtag = exists.get("_etag");
@@ -390,7 +394,7 @@ public class DbsDAO implements Database {
     }
 
     @Override
-    public ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filter,Deque<String> keys, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
+    public ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filter, Deque<String> keys, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
         return collectionDAO.getCollectionData(coll, page, pagesize, sortBy, filter, keys, cursorAllocationPolicy);
     }
 
@@ -410,7 +414,7 @@ public class DbsDAO implements Database {
     }
 
     @Override
-    public DBCursor getCollectionDBCursor(DBCollection collection, Deque<String> sortBy, Deque<String> filters, Deque<String> keys ) {
+    public DBCursor getCollectionDBCursor(DBCollection collection, Deque<String> sortBy, Deque<String> filters, Deque<String> keys) {
         return collectionDAO.getCollectionDBCursor(collection, sortBy, filters, keys);
     }
 
