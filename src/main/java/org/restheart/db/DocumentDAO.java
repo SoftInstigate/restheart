@@ -62,7 +62,7 @@ public class DocumentDAO implements Repository {
         ObjectId newEtag = new ObjectId();
 
         
-        DBObject content = DAOUtils.validContent(newContent);
+        final DBObject content = DAOUtils.validContent(newContent);
 
         content.put("_etag", newEtag);
 

@@ -290,7 +290,7 @@ public class DbsDAO implements Database {
         ObjectId newEtag = new ObjectId();
         Instant now = Instant.ofEpochSecond(newEtag.getTimestamp());
 
-        DBObject content = DAOUtils.validContent(newContent);
+        final DBObject content = DAOUtils.validContent(newContent);
 
         content.put("_etag", newEtag);
         content.removeField("_created_on"); // make sure we don't change this field

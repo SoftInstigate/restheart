@@ -34,7 +34,6 @@ import java.util.Deque;
 
 import org.bson.BSONObject;
 import org.bson.types.ObjectId;
-import static org.restheart.db.DAOUtils.validContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -329,7 +328,7 @@ class CollectionDAO {
         ObjectId newEtag = new ObjectId();
         Instant now = Instant.ofEpochSecond(newEtag.getTimestamp());
 
-        final DBObject content = validContent(properties);
+        final DBObject content = DAOUtils.validContent(properties);
 
         content.removeField("_id"); // make sure we don't change this field
 
