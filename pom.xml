@@ -17,6 +17,8 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <checkstyle.file.path>checkstyle-checker.xml</checkstyle.file.path>
+        <!-- By default skip integration tests. Use 'mvn install -DskipITs=false' to run them. -->
+        <skipITs>true</skipITs>
     </properties>
     
     <prerequisites>
@@ -262,6 +264,9 @@
                             <goal>integration-test</goal>
                             <goal>verify</goal>
                         </goals>
+                        <configuration>
+                            <skipITs>${skipITs}</skipITs>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -275,6 +280,7 @@
                         <id>start-server</id>
                         <phase>pre-integration-test</phase>
                         <configuration>
+                            <skip>${skipITs}</skip>
                             <target>
                                 <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
                                 <echo>1 - Linux, OSX or Solaris (server is started via bash scripts)</echo>
@@ -292,6 +298,7 @@
                         <id>stop-server</id>
                         <phase>post-integration-test</phase>
                         <configuration>
+                            <skip>${skipITs}</skip>
                             <target>
                                 <exec dir="${basedir}" executable="${basedir}/bin/stop.sh">
                                     <arg value="${basedir}/etc/restheart-integrationtest.yml"/>
