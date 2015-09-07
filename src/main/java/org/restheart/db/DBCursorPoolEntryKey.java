@@ -28,6 +28,7 @@ import java.util.Objects;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class DBCursorPoolEntryKey {
+
     private final DBCollection collection;
     private final Deque<String> sort;
     private final Deque<String> filter;
@@ -64,14 +65,14 @@ public class DBCursorPoolEntryKey {
     public Deque<String> getSort() {
         return sort;
     }
-    
+
     /**
      * @return the skipped
      */
     public int getSkipped() {
         return skipped;
     }
-    
+
     /**
      * @return the cursorId
      */
@@ -82,11 +83,11 @@ public class DBCursorPoolEntryKey {
     /**
      * @return keys
      */
-	public Deque<String> getKeys() {
-		return keys;
-	}    
+    public Deque<String> getKeys() {
+        return keys;
+    }
 
-	@Override
+    @Override
     public int hashCode() {
         return Objects.hash(collection, filter, keys, sort, skipped, cursorId);
     }
@@ -117,21 +118,22 @@ public class DBCursorPoolEntryKey {
         }
         return Objects.equals(this.cursorId, other.cursorId);
     }
-    
+
     @Override
     public String toString() {
-        return "{ collection: " + collection.getFullName() + ", " +
-                "filter: " + (filter == null ? "null": filter.toString()) + ", " + 
-                "sort: " + (sort == null ? "null": sort.toString()) + ", "  +
-                "skipped: " + skipped + ", "  +
-                "cursorId: " + cursorId + "}"; 
-    }
-    
-    String getCacheStatsGroup() {
-        Formatter f = new Formatter();
-        
-        return (filter == null ? "no filter" : filter.toString()) + " - " + (sort == null ? "no sort_by" : sort.toString()) + " - " + f.format("%10d", getSkipped());
+        return "{ collection: " + collection.getFullName() + ", "
+                + "filter: " + (filter == null ? "null" : filter.toString()) + ", "
+                + "sort: " + (sort == null ? "null" : sort.toString()) + ", "
+                + "skipped: " + skipped + ", "
+                + "cursorId: " + cursorId + "}";
     }
 
+    String getCacheStatsGroup() {
+        Formatter f = new Formatter();
+
+        return (filter == null ? "no filter" : filter.toString())
+                + " - " + (sort == null ? "no sort_by" : sort.toString())
+                + " - " + f.format("%10d", getSkipped());
+    }
 
 }

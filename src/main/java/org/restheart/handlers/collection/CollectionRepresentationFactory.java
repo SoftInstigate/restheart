@@ -18,16 +18,16 @@
 package org.restheart.handlers.collection;
 
 import com.mongodb.DBObject;
+import io.undertow.server.HttpServerExchange;
+import java.util.List;
 import org.restheart.Configuration;
+import org.restheart.hal.AbstractRepresentationFactory;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.document.DocumentRepresentationFactory;
 import org.restheart.utils.URLUtils;
-import io.undertow.server.HttpServerExchange;
-import java.util.List;
-import org.restheart.hal.AbstractRepresentationFactory;
 
 /**
  *
@@ -100,7 +100,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
             Object _id = d.get("_id");
 
             if (RequestContext.isReservedResourceCollection(_id.toString())) {
-                rep.addWarning("filtered out reserved resource " + requestPath + "/" + _id.toString());;
+                rep.addWarning("filtered out reserved resource " + requestPath + "/" + _id.toString());
             } else {
                 Representation nrep = new DocumentRepresentationFactory().getRepresentation(requestPath + "/" + _id.toString(), exchange, context, d);
 

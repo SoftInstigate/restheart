@@ -17,23 +17,23 @@
  */
 package org.restheart.handlers.document;
 
+import com.mongodb.DBObject;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
+import java.util.List;
+import java.util.TreeMap;
+import org.restheart.Configuration;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
-import com.mongodb.DBObject;
-import org.restheart.Configuration;
 import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
+import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.Relationship;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.URLUtils;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
-import java.util.List;
-import java.util.TreeMap;
-import org.restheart.hal.UnsupportedDocumentIdException;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -123,8 +123,9 @@ public class DocumentRepresentationFactory {
      * @param rep
      */
     public void sendRepresentation(HttpServerExchange exchange, RequestContext context, Representation rep) {
-        if (context.getWarnings() != null)
+        if (context.getWarnings() != null) {
             context.getWarnings().forEach(w -> rep.addWarning(w));
+        }
         
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());

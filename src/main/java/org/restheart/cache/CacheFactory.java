@@ -68,4 +68,7 @@ public class CacheFactory {
     public static <K,V> Cache<K,V> createLocalCache(long size, Cache.EXPIRE_POLICY expirePolicy, long ttl, Consumer<Map.Entry<K, Optional<V>>> remover) {
         return new GuavaCache(size, expirePolicy, ttl, remover);
     }
+
+    private CacheFactory() {
+    }
 }

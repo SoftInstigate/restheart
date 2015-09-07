@@ -19,20 +19,20 @@ package org.restheart.handlers.collection;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
-import org.restheart.hal.metadata.InvalidMetadataException;
-import org.restheart.hal.metadata.Relationship;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.utils.HttpStatus;
-import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.injectors.LocalCachesSingleton;
-import org.restheart.utils.RequestHelper;
-import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.bson.types.ObjectId;
 import org.restheart.db.OperationResult;
+import org.restheart.hal.metadata.InvalidMetadataException;
+import org.restheart.hal.metadata.Relationship;
 import org.restheart.hal.metadata.RepresentationTransformer;
 import org.restheart.hal.metadata.RequestChecker;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.injectors.LocalCachesSingleton;
+import org.restheart.utils.HttpStatus;
+import org.restheart.utils.RequestHelper;
+import org.restheart.utils.ResponseHelper;
 
 /**
  *

@@ -26,9 +26,6 @@ import java.util.List;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.hal.Representation;
-import org.restheart.handlers.IllegalQueryParamenterException;
-import org.restheart.handlers.collection.CollectionRepresentationFactory;
-import org.restheart.utils.ResponseHelper;
 
 /**
  *

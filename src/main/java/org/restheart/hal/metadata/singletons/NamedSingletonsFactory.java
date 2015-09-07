@@ -44,7 +44,7 @@ public class NamedSingletonsFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NamedSingletonsFactory.class);
 
-    private static final Cache cache = CacheFactory.createLocalCache(Integer.MAX_VALUE, Cache.EXPIRE_POLICY.NEVER, -1);
+    private static final Cache CACHE = CacheFactory.createLocalCache(Integer.MAX_VALUE, Cache.EXPIRE_POLICY.NEVER, -1);
     
     private static NamedSingletonsFactory HOLDER;
     
@@ -132,14 +132,14 @@ public class NamedSingletonsFactory {
                 }
                 
                 LOGGER.debug("added singleton {} of class {} to group {}", sName, sClazz, gName);
-                cache.put(gName + SEPARATOR + sName, singleton);
+                CACHE.put(gName + SEPARATOR + sName, singleton);
             });
 
         });
     }
 
     public Object get(String group, String name) throws IllegalArgumentException {
-        Optional op = cache.get(group + SEPARATOR + name);
+        Optional op = CACHE.get(group + SEPARATOR + name);
 
         if (op == null) {
             throw new IllegalArgumentException("no singleton configured with name : " + name);
