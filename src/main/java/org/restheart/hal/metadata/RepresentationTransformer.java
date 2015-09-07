@@ -132,7 +132,7 @@ public class RepresentationTransformer {
         }
 
         if (_scope == null || !(_scope instanceof String)) {
-            throw new InvalidMetadataException((_phase == null ? "missing '" : "invalid '") + RT_SCOPE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(SCOPE.values()));
+            throw new InvalidMetadataException((phase == null ? "missing '" : "invalid '") + RT_SCOPE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(SCOPE.values()));
         }
 
         SCOPE scope;

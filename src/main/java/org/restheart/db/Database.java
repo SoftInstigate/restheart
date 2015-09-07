@@ -211,6 +211,7 @@ public interface Database {
      * field name with - for descending sorting)
      * @param filters the filters to apply. it is a Deque collection of mongodb
      * query conditions.
+     * @param keys
      * @return
      * @throws JSONParseException
      */

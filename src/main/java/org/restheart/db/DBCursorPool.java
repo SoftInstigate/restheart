@@ -206,7 +206,7 @@ public class DBCursorPool {
             }
 
             for (int slice = 1; slice < slices; slice++) {
-                int sliceSkips = (int) slice * sliceWidht;
+                int sliceSkips = slice * sliceWidht;
 
                 DBCursorPoolEntryKey sliceKey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), key.getKeys(), sliceSkips, -1);
 

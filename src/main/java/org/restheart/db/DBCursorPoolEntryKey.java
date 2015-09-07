@@ -115,10 +115,7 @@ public class DBCursorPoolEntryKey {
         if (!Objects.equals(this.skipped, other.skipped)) {
             return false;
         }
-        if (!Objects.equals(this.cursorId, other.cursorId)) {
-            return false;
-        }
-        return true;
+        return Objects.equals(this.cursorId, other.cursorId);
     }
     
     @Override
