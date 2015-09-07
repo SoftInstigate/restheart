@@ -18,17 +18,17 @@
 package org.restheart.handlers.root;
 
 import com.mongodb.DBObject;
+import io.undertow.server.HttpServerExchange;
+import java.util.List;
+import org.bson.types.ObjectId;
 import org.restheart.Configuration;
+import org.restheart.hal.AbstractRepresentationFactory;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
-import io.undertow.server.HttpServerExchange;
-import java.util.List;
-import org.bson.types.ObjectId;
-import org.restheart.hal.AbstractRepresentationFactory;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -36,7 +36,7 @@ import org.slf4j.Logger;
  */
 public class RootRepresentationFactory extends AbstractRepresentationFactory {
 
-    private static final Logger logger = LoggerFactory.getLogger(RootRepresentationFactory.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RootRepresentationFactory.class);
 
     public RootRepresentationFactory() {
     }
@@ -93,7 +93,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
                 rep.addRepresentation("rh:db", nrep);
             } else {
                 // this shoudn't be possible
-                logger.error("db missing string _id field", d);
+                LOGGER.error("db missing string _id field", d);
             }
         });
     }

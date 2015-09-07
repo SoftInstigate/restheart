@@ -24,10 +24,10 @@ import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.RepresentationTransformer;
+import org.restheart.hal.metadata.singletons.NamedSingletonsFactory;
 import org.restheart.hal.metadata.singletons.Transformer;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.hal.metadata.singletons.NamedSingletonsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

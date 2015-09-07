@@ -21,12 +21,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
-import org.restheart.hal.Representation;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
-import org.restheart.utils.ChannelReader;
-import org.restheart.utils.HttpStatus;
-import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.form.FormData;
 import io.undertow.server.handlers.form.FormDataParser;
@@ -37,8 +31,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import org.apache.tika.Tika;
-import org.restheart.utils.URLUtils;
+import org.restheart.hal.Representation;
 import org.restheart.hal.UnsupportedDocumentIdException;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.RequestContext;
+import org.restheart.utils.ChannelReader;
+import org.restheart.utils.HttpStatus;
+import org.restheart.utils.ResponseHelper;
+import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class BodyInjectorHandler extends PipedHttpHandler {
+
     static final Logger LOGGER = LoggerFactory.getLogger(BodyInjectorHandler.class);
 
     private static final String ERROR_INVALID_CONTENTTYPE = "Content-Type must be either: "
@@ -93,11 +94,9 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE_FILE);
                 return;
             }
-        } else {
-            if (unsupportedContentType(contentTypes)) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE);
-                return;
-            }
+        } else if (unsupportedContentType(contentTypes)) {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE);
+            return;
         }
 
         DBObject content;
@@ -153,21 +152,17 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             injectContentTypeFromFile(content, file);
         }
 
-        if (content == null) {
-            context.setContent(null);
-        } else {
-            filterJsonContent(content, context);
+        filterJsonContent(content, context);
 
-            Object _id = content.get("_id");
+        Object _id = content.get("_id");
 
-            if (_id != null) {
-                try {
-                    URLUtils.checkId(_id);
-                } catch (UnsupportedDocumentIdException udie) {
-                    String errMsg = "the type of _id in content body is not supported: " + _id.getClass().getSimpleName();
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
-                    return;
-                }
+        if (_id != null) {
+            try {
+                URLUtils.checkId(_id);
+            } catch (UnsupportedDocumentIdException udie) {
+                String errMsg = "the type of _id in content body is not supported: " + _id.getClass().getSimpleName();
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
+                return;
             }
         }
 
@@ -186,8 +181,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     }
 
     /**
-     * Clean-up the JSON content, filtering out reserved keys and injecting the
-     * request content in the ctx
+     * Clean-up the JSON content, filtering out reserved keys and injecting the request content in the ctx
      *
      * @param content
      * @param ctx
@@ -219,24 +213,17 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         });
     }
 
-    private void injectContentTypeFromFile(DBObject content, File file) throws IOException {
-        if (content.get("contentType") != null) {
-            return;
+    /**
+     * Set the "contentType" property of the content DBObject
+     * 
+     * @param content the DBObject which will contain the detected contentType 
+     * @param file the file to be detected
+     * @throws IOException if the file can't be read
+     */
+    private void injectContentTypeFromFile(final DBObject content, final File file) throws IOException {
+        if (content.get("contentType") == null && file != null) {
+            content.put("contentType", detectMediaType(file));
         }
-
-        String contentType;
-
-        if (file == null) {
-            return;
-        } else {
-            contentType = detectMediaType(file);
-        }
-
-        if (content == null && contentType != null) {
-            content = new BasicDBObject();
-        }
-
-        content.put("contentType", contentType);
     }
 
     /**
@@ -271,8 +258,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      * Search request for a field named 'properties' which contains JSON
      *
      * @param data
-     * @return the parsed DBObject from the form data or an empty DBObject the
-     * etag value)
+     * @return the parsed DBObject from the form data or an empty DBObject the etag value)
      */
     private DBObject findProps(final FormData data) throws JSONParseException {
         DBObject result = new BasicDBObject();
@@ -303,8 +289,15 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         return fileField;
     }
 
-    public static String detectMediaType(File data) throws IOException {
+    /**
+     * Detect the file media type using Apache Tika https://tika.apache.org
+     * 
+     * @param file the input file to be detected
+     * @return detected media type
+     * @throws IOException if the file can't be read
+     */
+    public static String detectMediaType(File file) throws IOException {
         Tika tika = new Tika();
-        return tika.detect(data);
+        return tika.detect(file);
     }
 }

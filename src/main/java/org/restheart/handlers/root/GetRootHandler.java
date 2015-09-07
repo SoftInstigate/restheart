@@ -18,16 +18,16 @@
 package org.restheart.handlers.root;
 
 import com.mongodb.DBObject;
-import org.restheart.utils.HttpStatus;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.injectors.LocalCachesSingleton;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.restheart.db.Database;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.injectors.LocalCachesSingleton;
+import org.restheart.utils.HttpStatus;
 
 /**
  *

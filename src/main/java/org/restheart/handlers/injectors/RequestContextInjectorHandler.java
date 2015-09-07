@@ -18,9 +18,16 @@
 package org.restheart.handlers.injectors;
 
 import com.mongodb.util.JSON;
+import io.undertow.server.HttpServerExchange;
+import java.util.Arrays;
+import java.util.Deque;
+import org.bson.BSONObject;
 import org.restheart.db.DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
+import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
+import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_KEY;
 import static org.restheart.handlers.RequestContext.EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.FILTER_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.KEYS_QPARAM_KEY;
@@ -30,13 +37,6 @@ import static org.restheart.handlers.RequestContext.SORT_BY_QPARAM_KEY;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
-import io.undertow.server.HttpServerExchange;
-import java.util.Arrays;
-import java.util.Deque;
-import org.bson.BSONObject;
-import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
-import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_KEY;
-import org.restheart.hal.UnsupportedDocumentIdException;
 
 /**
  *
@@ -97,7 +97,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             }
         }
 
-        if (pagesize < 0 || pagesize > 1000) {
+        if (pagesize < 0 || pagesize > 1_000) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
                     "illegal page parameter, pagesize must be >= 0 and <= 1000");
             return;
