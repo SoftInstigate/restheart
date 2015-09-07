@@ -21,6 +21,7 @@ import com.mongodb.DBObject;
 import com.mongodb.DuplicateKeyException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
+import java.io.IOException;
 import org.bson.types.ObjectId;
 import org.restheart.db.Database;
 import org.restheart.db.GridFsDAO;
@@ -67,7 +68,7 @@ public class PostBucketHandler extends PipedHttpHandler {
             } else {
                 throw new RuntimeException("error. file data is null");
             }
-        } catch (Throwable t) {
+        } catch (IOException | RuntimeException t) {
             if (t instanceof DuplicateKeyException) {
                 // update not supported
                 String errMsg = "file resource update is not yet implemented";

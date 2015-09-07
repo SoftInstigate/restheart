@@ -17,14 +17,14 @@
  */
 package org.restheart.handlers.files;
 
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
-import org.restheart.utils.RequestHelper;
-import org.restheart.db.GridFsDAO;
 import io.undertow.server.HttpServerExchange;
 import org.bson.types.ObjectId;
+import org.restheart.db.GridFsDAO;
 import org.restheart.db.GridFsRepository;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 
 /**
