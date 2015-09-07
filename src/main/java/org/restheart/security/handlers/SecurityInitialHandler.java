@@ -77,12 +77,9 @@ public class SecurityInitialHandler extends PipedHttpHandler {
         if (System.getSecurityManager() == null) {
             exchange.setSecurityContext(securityContext);
         } else {
-            AccessController.doPrivileged(new PrivilegedAction<Object>() {
-                @Override
-                public Object run() {
-                    exchange.setSecurityContext(securityContext);
-                    return null;
-                }
+            AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
+                exchange.setSecurityContext(securityContext);
+                return null;
             });
         }
     }

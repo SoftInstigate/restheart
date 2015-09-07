@@ -24,9 +24,7 @@ package org.restheart.security.handlers;
 
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-
 import java.util.List;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;

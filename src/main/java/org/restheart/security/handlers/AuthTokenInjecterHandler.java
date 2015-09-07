@@ -18,18 +18,17 @@
 package org.restheart.security.handlers;
 
 import io.undertow.security.idm.Account;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 import org.restheart.Bootstrapper;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.RequestContext;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_HEADER;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_VALID_HEADER;
-
 import org.restheart.security.impl.AuthTokenIdentityManager;
 import org.restheart.security.impl.SimpleAccount;
 

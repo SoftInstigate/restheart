@@ -71,4 +71,7 @@ public class RequestHelper {
             return new ObjectId();
         }
     }
+
+    private RequestHelper() {
+    }
 }

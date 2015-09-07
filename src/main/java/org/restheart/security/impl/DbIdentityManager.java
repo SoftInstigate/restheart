@@ -30,7 +30,6 @@ import io.undertow.security.idm.PasswordCredential;
 import java.io.FileNotFoundException;
 import java.util.Arrays;
 import java.util.HashSet;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -54,8 +53,8 @@ public final class DbIdentityManager extends AbstractSimpleSecurityManager imple
     private String db;
     private String coll;
     private Boolean cacheEnabled = false;
-    private Long cacheSize = 1000l; // 1000 entries
-    private Long cacheTTL = 60 * 1000l; // 1 minute
+    private Long cacheSize = 1_000l; // 1000 entries
+    private Long cacheTTL = 60 * 1_000l; // 1 minute
     private Cache.EXPIRE_POLICY cacheExpirePolicy = Cache.EXPIRE_POLICY.AFTER_WRITE;
 
     private LoadingCache<String, SimpleAccount> cache = null;
@@ -178,8 +177,9 @@ public final class DbIdentityManager extends AbstractSimpleSecurityManager imple
         
         SimpleAccount ourAccount = getAccount(id);
         
-        if (ourAccount == null)
+        if (ourAccount == null) {
             return false;
+        }
         
         if (credential instanceof PasswordCredential && account instanceof SimpleAccount) {
             char[] password = ((PasswordCredential) credential).getPassword();

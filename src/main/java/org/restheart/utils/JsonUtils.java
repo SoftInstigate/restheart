@@ -20,7 +20,6 @@ package org.restheart.utils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import com.mongodb.util.JSON;
 import com.mongodb.util.JSONSerializers;
 import com.mongodb.util.ObjectSerializer;
 import java.util.ArrayList;
@@ -28,9 +27,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.bson.BSONObject;
 import org.bson.types.BSONTimestamp;
 import org.bson.types.Code;
 import org.bson.types.MaxKey;
@@ -45,6 +42,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class JsonUtils {
+
     static final Logger LOGGER = LoggerFactory.getLogger(JsonUtils.class);
 
     private static final ObjectSerializer serializer = JSONSerializers.getStrict();
@@ -63,8 +61,8 @@ public class JsonUtils {
      *
      * @param root the DBOject to extract properties from
      * @param path the path of the properties to extract
-     * @return the List of Optional<Object>s extracted from root ojbect and
-     * identified by the path or null if path does not exist
+     * @return the List of Optional<Object>s extracted from root ojbect and identified by the path or null if path does
+     * not exist
      *
      * @see org.restheart.test.unit.JsonUtilsTest form code examples
      *
@@ -211,12 +209,11 @@ public class JsonUtils {
      * @param left the json path expression
      * @param right the json path expression
      *
-     * @return true if the left json path is an acestor of the right path, i.e.
-     * left path selects a values set that includes the one selected by the
-     * right path
+     * @return true if the left json path is an acestor of the right path, i.e. left path selects a values set that
+     * includes the one selected by the right path
      *
-     * examples: ($, $.a) -> true, ($.a, $.b) -> false, ($.*, $.a) -> true,
-     * ($.a.[*].c, $.a.0.c) -> true, ($.a.[*], $.a.b) -> false
+     * examples: ($, $.a) -> true, ($.a, $.b) -> false, ($.*, $.a) -> true, ($.a.[*].c, $.a.0.c) -> true, ($.a.[*],
+     * $.a.b) -> false
      *
      */
     public static boolean isAncestorPath(final String left, final String right) {
@@ -272,8 +269,7 @@ public class JsonUtils {
     /**
      * @param root
      * @param path
-     * @return then number of properties identitified by the json path
-     * expression or null if path does not exist
+     * @return then number of properties identitified by the json path expression or null if path does not exist
      * @throws IllegalArgumentException
      */
     public static Integer countPropsFromPath(Object root, String path) throws IllegalArgumentException {
@@ -311,7 +307,7 @@ public class JsonUtils {
             subpath.add(pathTokens[cont]);
         }
 
-        return subpath.toArray(new String[0]);
+        return subpath.toArray(new String[subpath.size()]);
     }
 
     public static boolean checkType(Optional<Object> o, String type) {
@@ -394,23 +390,25 @@ public class JsonUtils {
                     in_multiline_comment = false;
                     ++i;
                 }
-            } else {
-                // we're outside of the special modes, so look for mode openers (comment start, string start)
-                if (cc.equals("/*")) {
-                    in_multiline_comment = true;
-                    ++i;
-                } else if (cc.equals("//")) {
-                    in_singleline_comment = true;
-                    ++i;
-                } else if (c == '"' || c == '\'') {
-                    in_string = true;
-                    string_opener = c;
-                    out.append(c);
-                } else if (!Character.isWhitespace(c)) {
-                    out.append(c);
-                }
+            } else // we're outside of the special modes, so look for mode openers (comment start, string start)
+            if (cc.equals("/*")) {
+                in_multiline_comment = true;
+                ++i;
+            } else if (cc.equals("//")) {
+                in_singleline_comment = true;
+                ++i;
+            } else if (c == '"' || c == '\'') {
+                in_string = true;
+                string_opener = c;
+                out.append(c);
+            } else if (!Character.isWhitespace(c)) {
+                out.append(c);
             }
         }
         return out.toString();
     }
+
+    private JsonUtils() {
+    }
+
 }
