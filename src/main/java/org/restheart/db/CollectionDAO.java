@@ -31,6 +31,7 @@ import org.restheart.utils.HttpStatus;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.Iterator;
 
 import org.bson.BSONObject;
 import org.bson.types.ObjectId;
@@ -143,7 +144,7 @@ class CollectionDAO {
      * field name with - for descending sorting)
      * @param filters the filters to apply. it is a Deque collection of mongodb
      * query conditions.
-     * @param keys 
+     * @param keys
      * @return
      * @throws JSONParseException
      */
@@ -178,9 +179,9 @@ class CollectionDAO {
                 query.putAll(filterQuery);  // this can throw JSONParseException for invalid filter parameters
             });
         }
-        
+
         final BasicDBObject fields = new BasicDBObject();
-        
+
         if (keys != null) {
             keys.stream().forEach((String f) -> {
                 BSONObject keyQuery = (BSONObject) JSON.parse(f);
@@ -188,7 +189,7 @@ class CollectionDAO {
                 fields.putAll(keyQuery);  // this can throw JSONParseException for invalid filter parameters
             });
         }
-        
+
         return coll.find(query, fields).sort(sort);
     }
 
@@ -211,26 +212,30 @@ class CollectionDAO {
             _cursor = DBCursorPool.getInstance().get(new DBCursorPoolEntryKey(coll, sortBy, filters, keys, toskip, 0), eager);
         }
 
-        int alreadySkipped;
-
         // in case there is not cursor in the pool to reuse
         if (_cursor == null) {
             cursor = getCollectionDBCursor(coll, sortBy, filters, keys);
-            alreadySkipped = 0;
+            cursor.skip(toskip);
+            
+            while (pagesize > 0 && cursor.hasNext()) {
+                ret.add(cursor.next());
+                pagesize--;
+            }
         } else {
+            int alreadySkipped;
+
             cursor = _cursor.getCursor();
             alreadySkipped = _cursor.getAlreadySkipped();
-        }
 
-        while (toskip > alreadySkipped) {
-            cursor.next();
-            alreadySkipped++;
-            //cursor.skip(toskip - alreadySkipped);
-        }
+            while (toskip > alreadySkipped && cursor.hasNext()) {
+                cursor.next();
+                alreadySkipped++;
+            }
 
-        while (pagesize > 0 && cursor.hasNext()) {
-            ret.add(cursor.next());
-            pagesize--;
+            while (pagesize > 0 && cursor.hasNext()) {
+                ret.add(cursor.next());
+                pagesize--;
+            }
         }
 
         // add the _lastupdated_on and _created_on
@@ -249,6 +254,8 @@ class CollectionDAO {
             }
         }
         );
+
+        DBCursorPool.getInstance().populateCache(new DBCursorPoolEntryKey(coll, sortBy, filters, keys, toskip, 0), eager);
 
         return ret;
     }
@@ -343,7 +350,7 @@ class CollectionDAO {
             propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)), new BasicDBObject("$set", content), true, false);
             return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else {
-                // we use findAndModify to get the @created_on field value from the existing properties document
+            // we use findAndModify to get the @created_on field value from the existing properties document
             // we need to put this field back using a second update 
             // it is not possible in a single update even using $setOnInsert update operator
             // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 

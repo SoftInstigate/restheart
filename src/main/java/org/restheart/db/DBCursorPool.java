@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 public class DBCursorPool {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DBCursorPool.class);
-    
+
     private final DbsDAO dbsDAO;
 
     //TODO make those configurable
@@ -64,7 +64,7 @@ public class DBCursorPool {
     private final Cache<DBCursorPoolEntryKey, DBCursor> cache;
     private final LoadingCache<DBCursorPoolEntryKey, Long> collSizes;
 
-    private static final long TTL = 8*60*1000; // in minutes - MUST BE < 10 since this 10 the TTL of the cursor in mongodb
+    private static final long TTL = 8 * 60 * 1000; // MUST BE < 10 since this 10 the TTL of the default cursor in mongodb
     private static final long POOL_SIZE = Bootstrapper.getConfiguration().getEagerPoolSize();
 
     ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -75,14 +75,10 @@ public class DBCursorPool {
 
     private DBCursorPool(DbsDAO dbsDAO) {
         this.dbsDAO = dbsDAO;
-        
-        cache = CacheFactory.createLocalCache(POOL_SIZE, Cache.EXPIRE_POLICY.AFTER_READ, TTL, (Map.Entry<DBCursorPoolEntryKey, Optional<DBCursor>> entry) -> {
-            if (entry != null && entry.getValue() != null) {
-                entry.getValue().ifPresent(v -> v.close());
-            }
-        });
 
-        collSizes = CacheFactory.createLocalLoadingCache(100, org.restheart.cache.Cache.EXPIRE_POLICY.AFTER_WRITE, 60*1000, (DBCursorPoolEntryKey key) -> {
+        cache = CacheFactory.createLocalCache(POOL_SIZE, Cache.EXPIRE_POLICY.AFTER_READ, TTL);
+
+        collSizes = CacheFactory.createLocalLoadingCache(100, org.restheart.cache.Cache.EXPIRE_POLICY.AFTER_WRITE, 60 * 1000, (DBCursorPoolEntryKey key) -> {
             return dbsDAO.getCollectionSize(key.getCollection(), key.getFilter());
         }
         );
@@ -137,7 +133,7 @@ public class DBCursorPool {
         return ret;
     }
 
-    private void populateCache(DBCursorPoolEntryKey key, EAGER_CURSOR_ALLOCATION_POLICY allocationPolicy) {
+    void populateCache(DBCursorPoolEntryKey key, EAGER_CURSOR_ALLOCATION_POLICY allocationPolicy) {
         if (allocationPolicy == EAGER_CURSOR_ALLOCATION_POLICY.LINEAR) {
             populateCacheLinear(key);
         } else if (allocationPolicy == EAGER_CURSOR_ALLOCATION_POLICY.RANDOM) {
@@ -161,12 +157,31 @@ public class DBCursorPool {
 
                 long existing = getSliceHeight(sliceKey);
 
-                for (long cont = tohave - existing; cont > 0; cont--) {
+                long tocreate = tohave - existing;
+
+                if (tocreate > 0) {
+                    // create the first cursor
                     DBCursor cursor = dbsDAO.getCollectionDBCursor(key.getCollection(), key.getSort(), key.getFilter(), key.getKeys());
-                    cursor.skip(sliceSkips);
+                    cursor
+                            .limit(1000 + SKIP_SLICE_LINEAR_DELTA)
+                            .skip(sliceSkips);
+                    
+                    cursor.hasNext(); // this forces the actual skipping
+                    
                     DBCursorPoolEntryKey newkey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), key.getKeys(), sliceSkips, System.nanoTime());
                     cache.put(newkey, cursor);
+                    
+                    
                     LOGGER.debug("created new cursor in pool: {}", newkey);
+
+                    tocreate--;
+
+                    // copy the first cursor for better performance
+                    for (long cont = tocreate; cont > 0; cont--) {
+                        newkey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), key.getKeys(), sliceSkips, System.nanoTime());
+                        cache.put(newkey, cursor.copy());
+                        LOGGER.debug("created new cursor in pool: {}", newkey);
+                    }
                 }
 
                 slice++;
@@ -179,7 +194,7 @@ public class DBCursorPool {
             Long size = collSizes.getLoading(key).get();
 
             int sliceWidht;
-            int slices = 0;
+            int slices;
             int totalSlices = size.intValue() / SKIP_SLICE_RND_MIN_WIDTH + 1;
 
             if (totalSlices <= SKIP_SLICE_RND_MAX_CURSORS) {
@@ -196,10 +211,15 @@ public class DBCursorPool {
                 DBCursorPoolEntryKey sliceKey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), key.getKeys(), sliceSkips, -1);
 
                 long existing = getSliceHeight(sliceKey);
-
-                for (long cont = 1 - existing; cont > 0; cont--) {
+                
+                if (existing == 0) {
                     DBCursor cursor = dbsDAO.getCollectionDBCursor(key.getCollection(), key.getSort(), key.getFilter(), key.getKeys());
-                    cursor.skip(sliceSkips);
+                    cursor
+                            .skip(sliceSkips)
+                            .limit(1000 + sliceWidht);
+                    
+                    cursor.hasNext(); // this forces the actual skipping
+                    
                     DBCursorPoolEntryKey newkey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), key.getKeys(), sliceSkips, System.nanoTime());
                     cache.put(newkey, cursor);
                     LOGGER.debug("created new cursor in pool: {}", newkey);
@@ -226,7 +246,7 @@ public class DBCursorPool {
                 && Arrays.equals(k.getSort() != null ? k.getSort().toArray() : null, key.getSort() != null ? key.getSort().toArray() : null)
                 && k.getSkipped() == key.getSkipped();
     }
-    
+
     private Predicate<? super DBCursorPoolEntryKey> cursorsPoolFilterGte(DBCursorPoolEntryKey key) {
         return k
                 -> Objects.equals(k.getCollection().getDB().getName(), key.getCollection().getDB().getName())

@@ -82,6 +82,7 @@ public class LoadGetPT {
     private String filter = null;
     private int page = 1;
     private int pagesize = 5;
+    private String eager;
 
     private final Path CONF_FILE = new File("./etc/restheart-dev.yml").toPath();
     private Executor httpExecutor;
@@ -232,6 +233,10 @@ public class LoadGetPT {
         }
 
         String pagedUrl = url + "?page=" + (_page % 10000);
+        
+        if (getEager() != null) {
+            pagedUrl = pagedUrl + "&eager=" + getEager();
+        }
 
         _page++;
         threadPages.put(Thread.currentThread().getId(), _page);
@@ -339,5 +344,19 @@ public class LoadGetPT {
      */
     public void setDoc(String doc) {
         this.doc = doc;
+    }
+
+    /**
+     * @return the eager
+     */
+    public String getEager() {
+        return eager;
+    }
+
+    /**
+     * @param eager the eager to set
+     */
+    public void setEager(String eager) {
+        this.eager = eager;
     }
 }
