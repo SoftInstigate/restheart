@@ -54,6 +54,16 @@ public class JsonUtilsTest {
     @After
     public void tearDown() {
     }
+    
+    @Test
+    public void testMinify() {
+        
+        
+        String json = "{ '_id'  :   {   '$in' : [1, 20.0, 'id']}}";
+        String minified = "{'_id':{'$in':[1,20.0,'id']}}";
+        
+        Assert.assertEquals(minified, JsonUtils.minify(json));
+    }
 
     @Test
     public void testGetPropFromPath() throws Exception {

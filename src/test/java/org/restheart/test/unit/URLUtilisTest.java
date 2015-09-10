@@ -138,6 +138,21 @@ public class URLUtilisTest {
             fail(ex.getMessage());
         }
     }
+    
+    @Test
+    public void testGetUriWithFilterManyIdsWithSpaces() {
+        System.out.println("getUriWithFilterMany");
+        Object[] ids = new Object[]{"Three Imaginary Boys", "Seventeen Seconds"};
+        RequestContext context = prepareRequestContext();
+        String expResult = "/dbName/collName?filter={'_id':{'$in':[\'Three Imaginary Boys\','Seventeen Seconds\']}}";
+        String result;
+        try {
+            result = URLUtils.getUriWithFilterMany(context, "dbName", "collName", ids);
+            assertEquals(expResult, result);
+        } catch (UnsupportedDocumentIdException ex) {
+            fail(ex.getMessage());
+        }
+    }
 
     @Test
     public void testGetUriWithFilterManyString() {
