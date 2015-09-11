@@ -99,7 +99,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             return;
         }
 
-        DBObject content;
+        DBObject content = null;
 
         if (isNotFormData(contentTypes)) { // json or hal+json
             final String contentString = ChannelReader.read(exchange.getRequestChannel());
@@ -152,17 +152,21 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             injectContentTypeFromFile(content, file);
         }
 
-        filterJsonContent(content, context);
+        if (content == null) {
+            context.setContent(null);
+        } else {
+            filterJsonContent(content, context);
 
-        Object _id = content.get("_id");
+            Object _id = content.get("_id");
 
-        if (_id != null) {
-            try {
-                URLUtils.checkId(_id);
-            } catch (UnsupportedDocumentIdException udie) {
-                String errMsg = "the type of _id in content body is not supported: " + _id.getClass().getSimpleName();
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
-                return;
+            if (_id != null) {
+                try {
+                    URLUtils.checkId(_id);
+                } catch (UnsupportedDocumentIdException udie) {
+                    String errMsg = "the type of _id in content body is not supported: " + _id.getClass().getSimpleName();
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
+                    return;
+                }
             }
         }
 
@@ -213,16 +217,12 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         });
     }
 
-    /**
-     * Set the "contentType" property of the content DBObject
-     * 
-     * @param content the DBObject which will contain the detected contentType 
-     * @param file the file to be detected
-     * @throws IOException if the file can't be read
-     */
     private void injectContentTypeFromFile(final DBObject content, final File file) throws IOException {
         if (content.get("contentType") == null && file != null) {
-            content.put("contentType", detectMediaType(file));
+            final String contentType = detectMediaType(file);
+            if (contentType != null) {
+                content.put("contentType", contentType);
+            }
         }
     }
 
@@ -289,15 +289,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         return fileField;
     }
 
-    /**
-     * Detect the file media type using Apache Tika https://tika.apache.org
-     * 
-     * @param file the input file to be detected
-     * @return detected media type
-     * @throws IOException if the file can't be read
-     */
-    public static String detectMediaType(File file) throws IOException {
+    public static String detectMediaType(File data) throws IOException {
         Tika tika = new Tika();
-        return tika.detect(file);
+        return tika.detect(data);
     }
 }
