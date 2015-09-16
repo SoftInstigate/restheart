@@ -24,6 +24,7 @@ import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 import java.util.Map;
+import org.restheart.Bootstrapper;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.utils.ResponseHelper;
 
@@ -49,6 +50,12 @@ public class CacheInvalidator extends ApplicationLogicHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (!Bootstrapper.getConfiguration().isLocalCacheEnabled()) {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_MODIFIED, "caching is off");
+            exchange.endExchange();
+            return;
+        }
+
         if (context.getMethod() == METHOD.POST) {
             Deque<String> _db = exchange.getQueryParameters().get("db");
             Deque<String> _coll = exchange.getQueryParameters().get("coll");
