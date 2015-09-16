@@ -32,7 +32,6 @@ import org.restheart.db.DbsDAO;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class LocalCachesSingleton {
-
     private static final String SEPARATOR = "_@_@_";
     private static boolean initialized = false;
 
@@ -192,6 +191,7 @@ public class LocalCachesSingleton {
     public void invalidateDb(String dbName) {
         if (enabled && dbPropsCache != null) {
             dbPropsCache.invalidate(dbName);
+            collectionPropsCache.asMap().keySet().stream().filter(k -> k.startsWith(dbName + SEPARATOR)).forEach(k -> collectionPropsCache.invalidate(k));
         }
     }
 

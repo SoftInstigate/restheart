@@ -114,6 +114,9 @@ public class PutCollectionHandler extends PipedHttpHandler {
         boolean updating = context.getCollectionProps() != null;
 
         OperationResult result = getDatabase().upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, updating, false);
+        
+        // invalidate the cache collection item
+        LocalCachesSingleton.getInstance().invalidateCollection(context.getDBName(), context.getCollectionName());
 
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
@@ -127,7 +130,6 @@ public class PutCollectionHandler extends PipedHttpHandler {
         }
         
         exchange.endExchange();
-        LocalCachesSingleton.getInstance().invalidateCollection(context.getDBName(), context.getCollectionName());
     }
 
     private static final String UNDERSCORE = "_";

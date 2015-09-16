@@ -21,12 +21,27 @@ import java.io.InputStream;
 import org.apache.tika.Tika;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Rule;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
 public class GridFsDAOTest {
+    private static final Logger LOG = LoggerFactory.getLogger(GridFsDAOTest.class);
+
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+        @Override
+        protected void starting(Description description) {
+            LOG.info("executing test {}", description.toString());
+        }
+    };
     
     public static final String FILENAME = "RESTHeart_documentation.pdf";
     
@@ -35,7 +50,6 @@ public class GridFsDAOTest {
 
     @Test
     public void testDetectMediatype() throws Exception {
-        System.out.println("testDetectMediatype");
         InputStream is = GridFsDAOTest.class.getResourceAsStream("/" + FILENAME);
         Tika tika = new Tika();
         assertEquals("application/pdf", tika.detect(is));

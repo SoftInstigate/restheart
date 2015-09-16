@@ -49,12 +49,9 @@ public class GetFileHandlerIT extends AbstactIT {
 
     @Test
     public void testHandleRequest() throws Exception {
-        System.out.println("testHandleRequest");
-        
         createFile();
         
         String url = dbTmpUri + "/" + BUCKET + ".files/" + OID + "/binary";
-        System.out.println("URL = " + url);
         Response resp = adminExecutor.execute(Request.Get(url));
         File tempFile = tempFolder.newFile(FILENAME);
         resp.saveContent(tempFile);
@@ -74,5 +71,4 @@ public class GetFileHandlerIT extends AbstactIT {
     private static DB getDatabase() throws UnknownHostException {
         return mongoClient.getDB(dbTmpName);
     }
-
 }

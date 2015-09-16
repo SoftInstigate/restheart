@@ -44,56 +44,52 @@ public class PutIndexIT extends AbstactIT {
 
     @Test
     public void testPutDocument() throws Exception {
-        try {
-            Response resp;
+        Response resp;
 
-            // *** PUT tmpdb
-            resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-            check("check put db", resp, HttpStatus.SC_CREATED);
+        // *** PUT tmpdb
+        resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check put db", resp, HttpStatus.SC_CREATED);
 
-            // *** PUT tmpcoll
-            resp = adminExecutor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-            check("check put coll1", resp, HttpStatus.SC_CREATED);
+        // *** PUT tmpcoll
+        resp = adminExecutor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check put coll1", resp, HttpStatus.SC_CREATED);
 
             // *** PUT wrong index
-            //resp = adminExecutor.execute(Request.Put(indexTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-            //check("check put wrong index", resp, HttpStatus.SC_NOT_ACCEPTABLE);
-            // try to put without etag
-            resp = adminExecutor.execute(Request.Put(indexTmpUri).bodyString("{ keys: {a:1,b:2}, ops: { name: \"ciao\"} }", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-            check("check put correct index", resp, HttpStatus.SC_CREATED);
+        //resp = adminExecutor.execute(Request.Put(indexTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        //check("check put wrong index", resp, HttpStatus.SC_NOT_ACCEPTABLE);
+        // try to put without etag
+        resp = adminExecutor.execute(Request.Put(indexTmpUri).bodyString("{ keys: {a:1,b:2}, ops: { name: \"ciao\"} }", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check put correct index", resp, HttpStatus.SC_CREATED);
 
-            resp = adminExecutor.execute(Request.Get(indexesTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        resp = adminExecutor.execute(Request.Get(indexesTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
-            HttpResponse httpResp = resp.returnResponse();
-            assertNotNull(httpResp);
-            HttpEntity entity = httpResp.getEntity();
-            assertNotNull(entity);
-            StatusLine statusLine = httpResp.getStatusLine();
-            assertNotNull(statusLine);
+        HttpResponse httpResp = resp.returnResponse();
+        assertNotNull(httpResp);
+        HttpEntity entity = httpResp.getEntity();
+        assertNotNull(entity);
+        StatusLine statusLine = httpResp.getStatusLine();
+        assertNotNull(statusLine);
 
-            assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
-            assertNotNull("content type not null", entity.getContentType());
-            assertEquals("check content type", Representation.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
+        assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
+        assertNotNull("content type not null", entity.getContentType());
+        assertEquals("check content type", Representation.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
 
-            String content = EntityUtils.toString(entity);
+        String content = EntityUtils.toString(entity);
 
-            assertNotNull("", content);
+        assertNotNull("", content);
 
-            JsonObject json = null;
+        JsonObject json = null;
 
-            try {
-                json = JsonObject.readFrom(content);
-            } catch (Throwable t) {
-                fail("parsing received json");
-            }
-
-            assertNotNull("check json not null", json);
-            assertNotNull("check not null _returned property", json.get("_returned"));
-            assertNotNull("check not null _size property", json.get("_size"));
-            assertEquals("check _size value to be 4", 4, json.get("_size").asInt());
-            assertEquals("check _returned value to be 4", 4, json.get("_returned").asInt());
-        } finally {
-            mongoClient.dropDatabase(dbTmpName);
+        try {
+            json = JsonObject.readFrom(content);
+        } catch (Throwable t) {
+            fail("parsing received json");
         }
+
+        assertNotNull("check json not null", json);
+        assertNotNull("check not null _returned property", json.get("_returned"));
+        assertNotNull("check not null _size property", json.get("_size"));
+        assertEquals("check _size value to be 4", 4, json.get("_size").asInt());
+        assertEquals("check _returned value to be 4", 4, json.get("_returned").asInt());
     }
 }

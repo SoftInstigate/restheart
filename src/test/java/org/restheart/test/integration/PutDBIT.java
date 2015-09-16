@@ -38,39 +38,35 @@ public class PutDBIT extends AbstactIT {
 
     @Test
     public void testPutCollection() throws Exception {
-        try {
-            Response resp;
+        Response resp;
 
-            // *** PUT tmpdb
-            resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-            check("check put db", resp, HttpStatus.SC_CREATED);
+        // *** PUT tmpdb
+        resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check put db", resp, HttpStatus.SC_CREATED);
 
-            // try to put without etag
-            resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-            check("check put tmp db without etag", resp, HttpStatus.SC_CONFLICT);
+        // try to put without etag
+        resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check put tmp db without etag", resp, HttpStatus.SC_CONFLICT);
 
-            // try to put with wrong etag
-            resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
-            check("check put tmp db with wrong etag", resp, HttpStatus.SC_PRECONDITION_FAILED);
+        // try to put with wrong etag
+        resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
+        check("check put tmp db with wrong etag", resp, HttpStatus.SC_PRECONDITION_FAILED);
 
-            resp = adminExecutor.execute(Request.Get(dbTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        resp = adminExecutor.execute(Request.Get(dbTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
-            JsonObject content = JsonObject.readFrom(resp.returnContent().asString());
+        JsonObject content = JsonObject.readFrom(resp.returnContent().asString());
 
-            String etag = content.get("_etag").asObject().get("$oid").asString();
+        String etag = content.get("_etag").asObject().get("$oid").asString();
 
-            // try to put with correct etag
-            resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{b:2}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
-            check("check put tmp db with correct etag", resp, HttpStatus.SC_OK);
+        // try to put with correct etag
+        resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{b:2}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
+        check("check put tmp db with correct etag", resp, HttpStatus.SC_OK);
 
-            resp = adminExecutor.execute(Request.Get(dbTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        resp = adminExecutor.execute(Request.Get(dbTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
-            content = JsonObject.readFrom(resp.returnContent().asString());
-            assertNull("check put content", content.get("a"));
-            assertNotNull("check put content", content.get("b"));
-            assertTrue("check put content", content.get("b").asInt() == 2);
-        } finally {
-            mongoClient.dropDatabase(dbTmpName);
-        }
+        content = JsonObject.readFrom(resp.returnContent().asString());
+        assertNull("check put content", content.get("a"));
+        assertNotNull("check put content", content.get("b"));
+        assertTrue("check put content", content.get("b").asInt() == 2);
     }
 }

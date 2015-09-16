@@ -20,15 +20,18 @@ package org.restheart.test.integration;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.util.JSON;
+import io.undertow.util.Headers;
 import org.restheart.Configuration;
 import org.restheart.db.DbsDAO;
 import org.restheart.db.DocumentDAO;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.hal.Representation;
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import static org.junit.Assert.*;
@@ -37,6 +40,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Executor;
+import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
@@ -46,6 +50,10 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.restheart.db.Database;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +64,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstactIT {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstactIT.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstactIT.class);
 
     protected static final String CLIENT_HOST = "127.0.0.1";
     protected static final String HTTP = "http";
@@ -176,13 +184,16 @@ public abstract class AbstactIT {
 
     private final Database dbsDAO = new DbsDAO();
 
-    public AbstactIT() {
-    }
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+        @Override
+        protected void starting(Description description) {
+            LOG.info("executing test {}", description.toString());
+        }
+    };
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        LOGGER.info("@@@ setUpClass");
-
         conf = new Configuration(confFilePath);
         MongoDBClientSingleton.init(conf);
         mongoClient = MongoDBClientSingleton.getInstance().getClient();
@@ -199,18 +210,18 @@ public abstract class AbstactIT {
 
     @AfterClass
     public static void tearDownClass() {
-        LOGGER.info("@@@ tearDownClass");
+    }
+
+    public AbstactIT() {
     }
 
     @Before
     public void setUp() {
-        LOGGER.info("setUp");
         createTestData();
     }
 
     @After
     public void tearDown() {
-        LOGGER.info("tearDown");
         deleteTestData();
     }
 
@@ -244,7 +255,7 @@ public abstract class AbstactIT {
         for (String doc : docsPropsStrings) {
             documentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), ((DBObject) JSON.parse(doc)), new ObjectId(), false);
         }
-        LOGGER.info("test data created");
+        LOG.debug("test data created");
     }
 
     private void deleteTestData() {
@@ -261,7 +272,28 @@ public abstract class AbstactIT {
         if (databases.contains(dbTmpName3)) {
             MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbTmpName3);
         }
-        LOGGER.info("test data deleted");
+
+        LOG.debug("test data deleted");
+
+        if (conf.isLocalCacheEnabled()) {
+            List<String> dbs = new ArrayList<>();
+            dbs.add(dbName);
+            dbs.add(dbTmpName);
+            dbs.add(dbTmpName2);
+            dbs.add(dbTmpName3);
+
+            dbs.stream().forEach(db -> {
+                try {
+                    Response rep = adminExecutor.execute(Request.Post(buildURI("/_logic/ic",
+                            new NameValuePair[]{new BasicNameValuePair("db", db)})).
+                            addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE)
+                    );
+                    LOG.debug("invalidating cache for {}, repospose {}", db, rep.returnResponse().getStatusLine());
+                } catch (IOException | URISyntaxException ex) {
+                    LOG.warn("Error invalidating cache", ex);
+                }
+            });
+        }
     }
 
     private static void createURIs() throws URISyntaxException {
@@ -277,7 +309,7 @@ public abstract class AbstactIT {
         dbUriRemappedAll = buildURI(REMAPPEDALL + "/" + dbName);
         dbUriRemappedDb = buildURI(REMAPPEDDB);
         dbTmpUri = buildURI("/" + dbTmpName);
-        
+
         dbTmpUri2 = buildURI("/" + dbTmpName2);
         dbTmpUri3 = buildURI("/" + dbTmpName3);
 
@@ -299,19 +331,19 @@ public abstract class AbstactIT {
                 new NameValuePair[]{
                     new BasicNameValuePair("pagesize", "2")
                 });
-        
+
         docsCollectionUriCountAndPaging = buildURI("/" + dbName + "/" + docsCollectionName,
                 new NameValuePair[]{
                     new BasicNameValuePair("count", null),
                     new BasicNameValuePair("page", "2"),
                     new BasicNameValuePair("pagesize", "2")
                 });
-        
+
         docsCollectionUriSort = buildURI("/" + dbName + "/" + docsCollectionName,
                 new NameValuePair[]{
                     new BasicNameValuePair("sort_by", "surname")
                 });
-        
+
         docsCollectionUriFilter = buildURI("/" + dbName + "/" + docsCollectionName,
                 new NameValuePair[]{
                     new BasicNameValuePair("filter", "{'name':{'$regex':'.*k$'}}"),

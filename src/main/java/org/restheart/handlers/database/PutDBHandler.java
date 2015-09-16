@@ -85,6 +85,9 @@ public class PutDBHandler extends PipedHttpHandler {
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
         OperationResult result = getDatabase().upsertDB(context.getDBName(), content, etag, false);
+        
+        // invalidate the cache db item
+        LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());
 
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
@@ -96,9 +99,7 @@ public class PutDBHandler extends PipedHttpHandler {
         } else {
             exchange.setResponseCode(result.getHttpCode());
         }
-        
-        exchange.endExchange();
 
-        LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());
+        exchange.endExchange();
     }
 }

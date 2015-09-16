@@ -9,12 +9,27 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Rule;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
 public class DAOUtilsTest {
+    private static final Logger LOG = LoggerFactory.getLogger(DAOUtilsTest.class);
+
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+        @Override
+        protected void starting(Description description) {
+            LOG.info("executing test {}", description.toString());
+        }
+    };
     
     public DAOUtilsTest() {
     }
@@ -31,7 +46,6 @@ public class DAOUtilsTest {
 
     @Test
     public void testValidContent() {
-        System.out.println("validContent");
         DBObject dbo = DAOUtils.validContent(null);
         assertNotNull(dbo);
         assertTrue(dbo instanceof BasicDBObject);

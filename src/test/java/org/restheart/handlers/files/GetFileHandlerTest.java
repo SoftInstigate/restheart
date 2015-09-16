@@ -19,20 +19,33 @@ package org.restheart.handlers.files;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Rule;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
 public class GetFileHandlerTest {
+    private static final Logger LOG = LoggerFactory.getLogger(GetFileHandlerTest.class);
+
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+        @Override
+        protected void starting(Description description) {
+            LOG.info("executing test {}", description.toString());
+        }
+    };
     
     public GetFileHandlerTest() {
     }
 
     @Test
     public void testExtractBucket() {
-        System.out.println("testExtractBucket");
         assertEquals("mybucket", GetFileBinaryHandler.extractBucketName("mybucket.files"));
     }
-    
 }

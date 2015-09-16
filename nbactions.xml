@@ -50,4 +50,14 @@
                 <goal>package</goal>
             </goals>
         </action>
+        <action>
+            <actionName>CUSTOM-Integration Tests</actionName>
+            <displayName>Integration Tests</displayName>
+            <goals>
+                <goal>verify</goal>
+            </goals>
+            <properties>
+                <skipITs>false</skipITs>
+            </properties>
+        </action>
     </actions>
