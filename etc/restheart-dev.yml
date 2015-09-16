@@ -83,6 +83,7 @@ static-resources-mounts:
 # In the following example two built-in application logic handlers are defined:
 # PingHandler bound to /_logic/ping that implements a simple ping service
 # GetRoleHandler bound to /_logic/roles that returns the current user authentication status and eventually its roles
+# CacheInvalidator bound to /_logic/ic that invalidates a db or collection cache entry
 
 application-logic-mounts:
     - what: org.restheart.handlers.applicationlogic.PingHandler
@@ -95,6 +96,9 @@ application-logic-mounts:
       secured: false
       args:
           url: /_logic/roles
+    - what: org.restheart.handlers.applicationlogic.CacheInvalidator
+      where: /ic
+      secured: true
 
 ### metadata named singletons
 
