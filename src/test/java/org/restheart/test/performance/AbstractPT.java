@@ -98,7 +98,7 @@ public abstract class AbstractPT {
         httpExecutor = Executor.newInstance();
 
         // for perf test better to disable the restheart security
-        if (id != null && pwd != null) {
+        if (url != null && id != null && pwd != null) {
             String host = "127.0.0.1";
             int port = 8080;
             String scheme = "http";
