@@ -31,7 +31,7 @@ import org.restheart.handlers.RequestContext;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class Representation {
-    private final ObjectSerializer serializer = JSONSerializers.getStrict();
+    private final static ObjectSerializer serializer = JSONSerializers.getStrict();
 
     /**
      * Supported content types
