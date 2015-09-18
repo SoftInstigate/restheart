@@ -29,33 +29,23 @@ package org.restheart.test.performance;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import org.restheart.ConfigurationException;
 import org.restheart.db.DBCursorPool;
-import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.utils.FileUtils;
 import org.restheart.utils.HttpStatus;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.Authenticator;
-import java.net.MalformedURLException;
-import java.net.PasswordAuthentication;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
-import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.bson.types.ObjectId;
@@ -69,64 +59,22 @@ import org.restheart.db.DbsDAO;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class LoadGetPT {
+public class LoadGetPT extends AbstractPT {
 
-    private String url;
-
-    private String id;
-    private String pwd;
     private boolean printData = false;
-    private String db;
-    private String coll;
     private String doc;
     private String filter = null;
     private int page = 1;
     private int pagesize = 5;
     private String eager;
 
-    private final Path CONF_FILE = new File("./etc/restheart-dev.yml").toPath();
-    private Executor httpExecutor;
 
     private final ConcurrentHashMap<Long, Integer> threadPages = new ConcurrentHashMap<>();
 
     /**
      *
-     * @param url
-     * @throws MalformedURLException
-     */
-    public void setUrl(String url) throws MalformedURLException {
-        this.url = url;
-    }
-
-    /**
-     *
-     */
-    public void prepare() {
-        Authenticator.setDefault(new Authenticator() {
-            @Override
-            protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(id, pwd.toCharArray());
-            }
-        });
-
-        try {
-            MongoDBClientSingleton.init(FileUtils.getConfiguration(CONF_FILE, false));
-        } catch (ConfigurationException ex) {
-            System.out.println(ex.getMessage() + ", exiting...");
-            System.exit(-1);
-        }
-
-        // for perf test better to disable the restheart security
-        httpExecutor = Executor.newInstance();
-        
-        // for perf test better to disable the restheart security
-        if (id != null && pwd != null) {
-            httpExecutor.authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), id, pwd);
-        } 
-    }
-
-    /**
-     *
+     * arguments passed via 
+     * *
      * @throws IOException
      */
     public void get() throws IOException {
@@ -276,39 +224,13 @@ public class LoadGetPT {
         assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
     }
 
-    /**
-     * @param id the id to set
-     */
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    /**
-     * @param pwd the pwd to set
-     */
-    public void setPwd(String pwd) {
-        this.pwd = pwd;
-    }
+    
 
     /**
      * @param printData the printData to set
      */
     public void setPrintData(String printData) {
         this.printData = Boolean.valueOf(printData);
-    }
-
-    /**
-     * @param db the db to set
-     */
-    public void setDb(String db) {
-        this.db = db;
-    }
-
-    /**
-     * @param coll the coll to set
-     */
-    public void setColl(String coll) {
-        this.coll = coll;
     }
 
     /**

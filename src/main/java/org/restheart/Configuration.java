@@ -462,7 +462,7 @@ public class Configuration {
     public static final String AUTH_TOKEN_TTL = "auth-token-ttl";
 
     /**
-     * Creates a new instance of ErrorHandler with defaults values.
+     * Creates a new instance of Configuration with defaults values.
      */
     public Configuration() {
         httpsListener = true;
@@ -546,9 +546,9 @@ public class Configuration {
         authTokenEnabled = true;
         authTokenTtl = 15; // minutes
     }
-
+    
     /**
-     * Creates a new instance of ErrorHandler from the configuration file For
+     * Creates a new instance of Configuration from the configuration file For
      * any missing property the default value is used.
      *
      * @param confFilePath the path of the configuration file
@@ -559,7 +559,7 @@ public class Configuration {
     }
 
     /**
-     * Creates a new instance of ErrorHandler from the configuration file For
+     * Creates a new instance of Configuration from the configuration file For
      * any missing property the default value is used.
      *
      * @param confFilePath the path of the configuration file
@@ -567,8 +567,10 @@ public class Configuration {
      * @throws org.restheart.ConfigurationException
      */
     public Configuration(final Path confFilePath, boolean silent) throws ConfigurationException {
-        this.silent = silent;
-
+        this(getConfigurationFromFile(confFilePath), silent);
+    }
+    
+    private static Map<String, Object> getConfigurationFromFile(final Path confFilePath) throws ConfigurationException {
         Yaml yaml = new Yaml();
 
         Map<String, Object> conf = null;
@@ -591,6 +593,20 @@ public class Configuration {
                 }
             }
         }
+        
+        return conf;
+    }
+
+    /**
+     * Creates a new instance of Configuration from the configuration file For
+     * any missing property the default value is used.
+     *
+     * @param conf the key-value configuration map
+     * @param silent
+     * @throws org.restheart.ConfigurationException
+     */
+    public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
+        this.silent = silent;
 
         httpsListener = getAsBooleanOrDefault(conf, HTTPS_LISTENER, true);
         httpsPort = getAsIntegerOrDefault(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);

@@ -29,71 +29,24 @@ package org.restheart.test.performance;
 import com.mongodb.BasicDBObject;
 import io.undertow.util.Headers;
 import org.restheart.db.DocumentDAO;
-import org.restheart.db.MongoDBClientSingleton;
-import java.io.File;
 import java.io.IOException;
-import java.net.Authenticator;
-import java.net.PasswordAuthentication;
-import java.nio.file.Path;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
-import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.entity.ContentType;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import org.restheart.ConfigurationException;
 import org.restheart.hal.Representation;
-import org.restheart.utils.FileUtils;
 import org.restheart.utils.HttpStatus;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class LoadPutPT {
-
-    private String url;
-
-    private String id;
-    private String pwd;
-    private String db;
-    private String coll;
-
+public class LoadPutPT extends AbstractPT {
     private static final ContentType halCT = ContentType.create(Representation.HAL_JSON_MEDIA_TYPE);
-
-    private Executor httpExecutor;
-
-    private final Path CONF_FILE = new File("./etc/restheart-dev.yml").toPath();
-
-    /**
-     *
-     */
-    public void prepare() {
-        Authenticator.setDefault(new Authenticator() {
-            @Override
-            protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(id, pwd.toCharArray());
-            }
-        });
-
-        try {
-            MongoDBClientSingleton.init(FileUtils.getConfiguration(CONF_FILE, false));
-        } catch (ConfigurationException ex) {
-            System.out.println(ex.getMessage() + ", exiting...");
-            System.exit(-1);
-        }
-
-        httpExecutor = Executor.newInstance();
-        
-        // for perf test better to disable the restheart security
-        if (id != null && pwd != null) {
-            httpExecutor.authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), id, pwd);
-        } 
-    }
 
     /**
      *
@@ -122,41 +75,5 @@ public class LoadPutPT {
         BasicDBObject content = new BasicDBObject("random", Math.random());
 
         new DocumentDAO().upsertDocument(db, coll, null, content, null, false);
-    }
-
-    /**
-     * @param id the id to set
-     */
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    /**
-     * @param pwd the pwd to set
-     */
-    public void setPwd(String pwd) {
-        this.pwd = pwd;
-    }
-
-    /**
-     * @param db the db to set
-     */
-    public void setDb(String db) {
-        this.db = db;
-    }
-
-    /**
-     * @param coll the coll to set
-     */
-    public void setColl(String coll) {
-        this.coll = coll;
-    }
-
-    /**
-     *
-     * @param url
-     */
-    public void setUrl(String url) {
-        this.url = url;
     }
 }
