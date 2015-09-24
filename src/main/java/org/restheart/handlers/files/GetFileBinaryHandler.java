@@ -50,7 +50,7 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        LOGGER.debug("GET " + exchange.getRequestURL());
+        LOGGER.trace("GET " + exchange.getRequestURL());
         final String bucket = extractBucketName(context.getCollectionName());
 
         GridFS gridfs = new GridFS(getDatabase().getDB(context.getDBName()), bucket);
@@ -87,13 +87,13 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
 
     private void fileNotFound(RequestContext context, HttpServerExchange exchange) {
         final String errMsg = String.format("File with ID <%s> not found", context.getDocumentId());
-        LOGGER.error(errMsg);
+        LOGGER.trace(errMsg);
         ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, errMsg);
     }
 
     private void sendBinaryContent(final GridFSDBFile dbsfile, final HttpServerExchange exchange) throws IOException {
-        LOGGER.debug("Filename = {}", dbsfile.getFilename());
-        LOGGER.debug("Content length = {}", dbsfile.getLength());
+        LOGGER.trace("Filename = {}", dbsfile.getFilename());
+        LOGGER.trace("Content length = {}", dbsfile.getLength());
 
         if (dbsfile.get("contentType") != null) {
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, dbsfile.get("contentType").toString());
