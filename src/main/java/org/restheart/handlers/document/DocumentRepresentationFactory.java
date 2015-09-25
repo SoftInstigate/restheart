@@ -106,8 +106,9 @@ public class DocumentRepresentationFactory {
             }
         }
 
-        rep.addLink(
-                new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-doc-{rel}", false), true);
+        // curies
+        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
+                + "/{rel}.html", true), true);
 
         return rep;
     }

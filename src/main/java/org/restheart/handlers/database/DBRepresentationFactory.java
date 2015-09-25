@@ -86,7 +86,10 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
             rep.addLink(new Link("rh:root", URLUtils.getParentPath(requestPath)));
         }
         rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
-        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-db-{rel}", false), true);
+        
+        // curies
+        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
+                + "/{rel}.html", true), true);
     }
 
     private void embeddedCollections(

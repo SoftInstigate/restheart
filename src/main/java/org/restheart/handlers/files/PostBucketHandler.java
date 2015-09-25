@@ -85,7 +85,7 @@ public class PostBucketHandler extends PipedHttpHandler {
                         getReferenceLink(context, exchange.getRequestURL(), _id));
 
         exchange.setResponseCode(code);
-
+        
         exchange.endExchange();
     }
 }

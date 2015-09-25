@@ -182,7 +182,6 @@ public class GetCollectionIT extends AbstactIT {
         assertNotNull("check not null self", links.get("self"));
         assertNotNull("check not null rh:db", links.get("rh:db"));
         assertNotNull("check not null rh:paging", links.get("rh:paging"));
-        assertNotNull("check not null rh:countandpaging", links.get("rh:countandpaging"));
         assertNotNull("check not null rh:filter", links.get("rh:filter"));
         assertNotNull("check not null rh:sort", links.get("rh:filter"));
         assertNotNull("check not null next", links.get("next"));
