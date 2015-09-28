@@ -100,12 +100,16 @@ public class DocumentRepresentationFactory {
             if (context.isParentAccessible()) {
                 rep.addLink(new Link("rh:bucket", URLUtils.getParentPath(requestPath)));
             }
+            
+            rep.addLink(new Link("rh:file", URLUtils.getParentPath(requestPath) + "/{fileid}?id_type={type}", true));
         } else {
             if (context.isParentAccessible()) {
                 rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath)));
             }
+            
+            rep.addLink(new Link("rh:document", URLUtils.getParentPath(requestPath) + "/{docid}?id_type={type}", true));
         }
-
+        
         // curies
         rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
                 + "/{rel}.html", true), true);

@@ -26,6 +26,7 @@ import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.document.DocumentRepresentationFactory;
 import org.restheart.utils.URLUtils;
 
@@ -87,6 +88,18 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
             // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link("rh:db", URLUtils.getParentPath(requestPath)));
         }
+        
+        if (TYPE.FILES_BUCKET.equals(context.getType())) {
+            rep.addLink(new Link("rh:bucket", URLUtils.getParentPath(requestPath) + "/{bucketname}.files", true));
+            rep.addLink(new Link("rh:file", requestPath + "/{fileid}?id_type={type}", true));
+        } else if (TYPE.COLLECTION.equals(context.getType())) {
+            
+            rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath) + "/{collname}", true));
+            rep.addLink(new Link("rh:document", requestPath + "/{docid}?id_type={type}", true));
+        }
+        
+        rep.addLink(new Link("rh:indexes", requestPath + "/" + context.getDBName() + "/" + context.getCollectionName() + "/_indexes"));
+        
         rep.addLink(new Link("rh:filter", requestPath + "/{?filter}", true));
         rep.addLink(new Link("rh:sort", requestPath + "/{?sort_by}", true));
         rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));

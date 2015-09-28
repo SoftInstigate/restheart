@@ -68,8 +68,11 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     private void addLinkTemplatesAndCuries(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath) {
+        rep.addLink(new Link("rh:root", requestPath));
+        rep.addLink(new Link("rh:db", requestPath + "{dbname}", true));
+
         rep.addLink(new Link("rh:paging", requestPath + "{?page}{&pagesize}", true));
-        
+
         //curies
         rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
                 + "/{rel}.html", true), true);

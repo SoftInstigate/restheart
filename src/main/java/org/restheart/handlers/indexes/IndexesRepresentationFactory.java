@@ -75,13 +75,19 @@ public class IndexesRepresentationFactory {
                 embeddedDocuments(embeddedData, requestPath, rep);
             }
         }
-
+        
+        // curies
         if (context.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
-            rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath)));
+            if (context.getCollectionName().endsWith(".files")) {
+                rep.addLink(new Link("rh:bucket", URLUtils.getParentPath(requestPath)));
+            } else {
+                rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath)));
+            }
         }
-
-        // curies
+        
+        rep.addLink(new Link("rh:indexes", requestPath));
+        
         rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL 
                 + "/{rel}.html", true), true);
 

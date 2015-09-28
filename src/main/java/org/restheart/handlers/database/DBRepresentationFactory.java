@@ -85,9 +85,13 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
             // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link("rh:root", URLUtils.getParentPath(requestPath)));
         }
+        
+        rep.addLink(new Link("rh:db", URLUtils.getParentPath(requestPath) + "/{dbname}", true));
+        rep.addLink(new Link("rh:coll", requestPath + "/{collname}", true));
+        rep.addLink(new Link("rh:bucket", requestPath + "/{bucketname}.files", true));
+        
         rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
         
-        // curies
         rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
                 + "/{rel}.html", true), true);
     }
