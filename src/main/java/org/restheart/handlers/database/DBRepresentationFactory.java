@@ -88,7 +88,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
         
         rep.addLink(new Link("rh:db", URLUtils.getParentPath(requestPath) + "/{dbname}", true));
         rep.addLink(new Link("rh:coll", requestPath + "/{collname}", true));
-        rep.addLink(new Link("rh:bucket", requestPath + "/{bucketname}.files", true));
+        rep.addLink(new Link("rh:bucket", requestPath + "/{bucketname}" + RequestContext.FS_FILES_SUFFIX, true));
         
         rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
         

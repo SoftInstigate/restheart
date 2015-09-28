@@ -31,6 +31,7 @@ import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.Relationship;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +88,15 @@ public class DocumentRepresentationFactory {
 
         // link templates and curies
         String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
+        
+        String parentPath;
+        
+        // the document (file) representation can be asked for requests to collection (bucket)
+        if (TYPE.COLLECTION.equals(context.getType()) || TYPE.FILES_BUCKET.equals(context.getType())) {
+            parentPath = requestPath;
+        } else {
+            parentPath = URLUtils.getParentPath(requestPath);
+        }
 
         if (isBinaryFile(data)) {
             if (_docIdType == null) {
@@ -98,16 +108,16 @@ public class DocumentRepresentationFactory {
             }
             
             if (context.isParentAccessible()) {
-                rep.addLink(new Link("rh:bucket", URLUtils.getParentPath(requestPath)));
+                rep.addLink(new Link("rh:bucket", parentPath));
             }
             
-            rep.addLink(new Link("rh:file", URLUtils.getParentPath(requestPath) + "/{fileid}?id_type={type}", true));
+            rep.addLink(new Link("rh:file", parentPath + "/{fileid}?id_type={type}", true));
         } else {
             if (context.isParentAccessible()) {
-                rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath)));
+                rep.addLink(new Link("rh:coll", parentPath));
             }
             
-            rep.addLink(new Link("rh:document", URLUtils.getParentPath(requestPath) + "/{docid}?id_type={type}", true));
+            rep.addLink(new Link("rh:document", parentPath + "/{docid}?id_type={type}", true));
         }
         
         // curies

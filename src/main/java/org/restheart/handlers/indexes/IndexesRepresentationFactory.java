@@ -79,7 +79,7 @@ public class IndexesRepresentationFactory {
         // curies
         if (context.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
-            if (context.getCollectionName().endsWith(".files")) {
+            if (context.getCollectionName().endsWith(RequestContext.FS_FILES_SUFFIX)) {
                 rep.addLink(new Link("rh:bucket", URLUtils.getParentPath(requestPath)));
             } else {
                 rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath)));

@@ -90,7 +90,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         }
         
         if (TYPE.FILES_BUCKET.equals(context.getType())) {
-            rep.addLink(new Link("rh:bucket", URLUtils.getParentPath(requestPath) + "/{bucketname}.files", true));
+            rep.addLink(new Link("rh:bucket", URLUtils.getParentPath(requestPath) + "/{bucketname}" + RequestContext.FS_FILES_SUFFIX, true));
             rep.addLink(new Link("rh:file", requestPath + "/{fileid}?id_type={type}", true));
         } else if (TYPE.COLLECTION.equals(context.getType())) {
             
