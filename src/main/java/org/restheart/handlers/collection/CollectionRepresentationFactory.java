@@ -18,16 +18,17 @@
 package org.restheart.handlers.collection;
 
 import com.mongodb.DBObject;
+import io.undertow.server.HttpServerExchange;
+import java.util.List;
 import org.restheart.Configuration;
+import org.restheart.hal.AbstractRepresentationFactory;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.document.DocumentRepresentationFactory;
 import org.restheart.utils.URLUtils;
-import io.undertow.server.HttpServerExchange;
-import java.util.List;
-import org.restheart.hal.AbstractRepresentationFactory;
 
 /**
  *
@@ -87,12 +88,26 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
             // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link("rh:db", URLUtils.getParentPath(requestPath)));
         }
+        
+        if (TYPE.FILES_BUCKET.equals(context.getType())) {
+            rep.addLink(new Link("rh:bucket", URLUtils.getParentPath(requestPath) + "/{bucketname}" + RequestContext.FS_FILES_SUFFIX, true));
+            rep.addLink(new Link("rh:file", requestPath + "/{fileid}?id_type={type}", true));
+        } else if (TYPE.COLLECTION.equals(context.getType())) {
+            
+            rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath) + "/{collname}", true));
+            rep.addLink(new Link("rh:document", requestPath + "/{docid}?id_type={type}", true));
+        }
+        
+        rep.addLink(new Link("rh:indexes", requestPath + "/" + context.getDBName() + "/" + context.getCollectionName() + "/_indexes"));
+        
         rep.addLink(new Link("rh:filter", requestPath + "/{?filter}", true));
         rep.addLink(new Link("rh:sort", requestPath + "/{?sort_by}", true));
         rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
-        rep.addLink(new Link("rh:countandpaging", requestPath + "/{?page}{&pagesize}&count", true));
         rep.addLink(new Link("rh:indexes", requestPath + "/_indexes"));
-        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-coll-{rel}", true), true);
+        
+        // curies
+        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
+                + "/{rel}.html", true), true);
     }
 
     private void embeddedDocuments(List<DBObject> embeddedData, String requestPath, HttpServerExchange exchange, RequestContext context, Representation rep) throws IllegalQueryParamenterException {
@@ -100,7 +115,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
             Object _id = d.get("_id");
 
             if (RequestContext.isReservedResourceCollection(_id.toString())) {
-                rep.addWarning("filtered out reserved resource " + requestPath + "/" + _id.toString());;
+                rep.addWarning("filtered out reserved resource " + requestPath + "/" + _id.toString());
             } else {
                 Representation nrep = new DocumentRepresentationFactory().getRepresentation(requestPath + "/" + _id.toString(), exchange, context, d);
 

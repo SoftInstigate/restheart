@@ -24,7 +24,6 @@ import io.undertow.security.idm.PasswordCredential;
 import java.util.Arrays;
 import java.util.Optional;
 import org.restheart.Bootstrapper;
-
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 
@@ -43,22 +42,24 @@ public final class AuthTokenIdentityManager implements IdentityManager {
      * @param next
      */
     private AuthTokenIdentityManager() {
-        this.cachedAccounts = CacheFactory.createLocalCache(Long.MAX_VALUE, Cache.EXPIRE_POLICY.AFTER_READ, TTL*60*1000);
+        this.cachedAccounts = CacheFactory.createLocalCache(Long.MAX_VALUE, Cache.EXPIRE_POLICY.AFTER_READ, TTL*60*1_000);
     }
 
 
     @Override
     public Account verify(Account account) {
-        if (!enabled)
+        if (!enabled) {
             return null;
+        }
         
         return account;
     }
 
     @Override
     public Account verify(String id, Credential credential) {
-         if (!enabled)
-            return null;
+         if (!enabled) {
+             return null;
+        }
         
         final Optional<SimpleAccount> _account = cachedAccounts.get(id);
         
@@ -94,5 +95,8 @@ public final class AuthTokenIdentityManager implements IdentityManager {
 
     private static class SessionTokenIdentityManagerHolder {
         private static final AuthTokenIdentityManager INSTANCE = new AuthTokenIdentityManager();
+
+        private SessionTokenIdentityManagerHolder() {
+        }
     }
 }

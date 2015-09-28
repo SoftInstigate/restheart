@@ -31,7 +31,7 @@ import org.restheart.handlers.RequestContext;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class Representation {
-    private final ObjectSerializer serializer = JSONSerializers.getStrict();
+    private final static ObjectSerializer serializer = JSONSerializers.getStrict();
 
     /**
      * Supported content types
@@ -81,7 +81,7 @@ public class Representation {
      * @param link
      */
     public void addLink(Link link) {
-        links.putAll((BSONObject) ((Link) link).getDBObject());
+        links.putAll((BSONObject) link.getDBObject());
     }
 
     /**
@@ -171,9 +171,6 @@ public class Representation {
         if (!Objects.equals(this.embedded, other.embedded)) {
             return false;
         }
-        if (!Objects.equals(this.links, other.links)) {
-            return false;
-        }
-        return true;
+        return Objects.equals(this.links, other.links);
     }
 }

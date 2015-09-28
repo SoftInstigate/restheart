@@ -50,5 +50,8 @@ public class ExecutorServiceSingleton {
     private static class ExecutorServiceSingletonHolder {
 
         private static final ExecutorServiceSingleton INSTANCE = new ExecutorServiceSingleton();
+
+        private ExecutorServiceSingletonHolder() {
+        }
     }
 }

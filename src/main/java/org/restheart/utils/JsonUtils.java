@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class JsonUtils {
+
     static final Logger LOGGER = LoggerFactory.getLogger(JsonUtils.class);
 
     private static final ObjectSerializer serializer = JSONSerializers.getStrict();
@@ -60,8 +61,8 @@ public class JsonUtils {
      *
      * @param root the DBOject to extract properties from
      * @param path the path of the properties to extract
-     * @return the List of Optional<Object>s extracted from root ojbect and
-     * identified by the path or null if path does not exist
+     * @return the List of Optional<Object>s extracted from root ojbect and identified by the path or null if path does
+     * not exist
      *
      * @see org.restheart.test.unit.JsonUtilsTest form code examples
      *
@@ -164,7 +165,7 @@ public class JsonUtils {
                                     ret.addAll(nested);
                                 }
                             }
-                            
+
                             return ret;
                         }
                     }
@@ -208,12 +209,11 @@ public class JsonUtils {
      * @param left the json path expression
      * @param right the json path expression
      *
-     * @return true if the left json path is an acestor of the right path, i.e.
-     * left path selects a values set that includes the one selected by the
-     * right path
+     * @return true if the left json path is an acestor of the right path, i.e. left path selects a values set that
+     * includes the one selected by the right path
      *
-     * examples: ($, $.a) -> true, ($.a, $.b) -> false, ($.*, $.a) -> true,
-     * ($.a.[*].c, $.a.0.c) -> true, ($.a.[*], $.a.b) -> false
+     * examples: ($, $.a) -> true, ($.a, $.b) -> false, ($.*, $.a) -> true, ($.a.[*].c, $.a.0.c) -> true, ($.a.[*],
+     * $.a.b) -> false
      *
      */
     public static boolean isAncestorPath(final String left, final String right) {
@@ -269,8 +269,7 @@ public class JsonUtils {
     /**
      * @param root
      * @param path
-     * @return then number of properties identitified by the json path
-     * expression or null if path does not exist
+     * @return then number of properties identitified by the json path expression or null if path does not exist
      * @throws IllegalArgumentException
      */
     public static Integer countPropsFromPath(Object root, String path) throws IllegalArgumentException {
@@ -308,7 +307,7 @@ public class JsonUtils {
             subpath.add(pathTokens[cont]);
         }
 
-        return subpath.toArray(new String[0]);
+        return subpath.toArray(new String[subpath.size()]);
     }
 
     public static boolean checkType(Optional<Object> o, String type) {
@@ -350,6 +349,66 @@ public class JsonUtils {
             default:
                 return false;
         }
+    }
+
+    /**
+     * @author Stefan Reich http://tinybrain.de/
+     * @see http://tinybrain.de:8080/jsonminify/
+     * @param jsonString
+     * @return
+     */
+    public static String minify(String jsonString) {
+        boolean in_string = false;
+        boolean in_multiline_comment = false;
+        boolean in_singleline_comment = false;
+        char string_opener = 'x'; // unused value, just something that makes compiler happy
+
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < jsonString.length(); i++) {
+            // get next (c) and next-next character (cc)
+
+            char c = jsonString.charAt(i);
+            String cc = jsonString.substring(i, Math.min(i + 2, jsonString.length()));
+
+            // big switch is by what mode we're in (in_string etc.)
+            if (in_string) {
+                if (c == string_opener) {
+                    in_string = false;
+                    out.append(c);
+                } else if (c == '\\') { // no special treatment needed for \\u, it just works like this too
+                    out.append(cc);
+                    ++i;
+                } else {
+                    out.append(c);
+                }
+            } else if (in_singleline_comment) {
+                if (c == '\r' || c == '\n') {
+                    in_singleline_comment = false;
+                }
+            } else if (in_multiline_comment) {
+                if (cc.equals("*/")) {
+                    in_multiline_comment = false;
+                    ++i;
+                }
+            } else // we're outside of the special modes, so look for mode openers (comment start, string start)
+            if (cc.equals("/*")) {
+                in_multiline_comment = true;
+                ++i;
+            } else if (cc.equals("//")) {
+                in_singleline_comment = true;
+                ++i;
+            } else if (c == '"' || c == '\'') {
+                in_string = true;
+                string_opener = c;
+                out.append(c);
+            } else if (!Character.isWhitespace(c)) {
+                out.append(c);
+            }
+        }
+        return out.toString();
+    }
+
+    private JsonUtils() {
     }
 
 }

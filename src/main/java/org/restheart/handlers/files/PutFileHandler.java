@@ -20,6 +20,7 @@ package org.restheart.handlers.files;
 import com.mongodb.DBObject;
 import com.mongodb.DuplicateKeyException;
 import io.undertow.server.HttpServerExchange;
+import java.io.IOException;
 import org.restheart.db.Database;
 import org.restheart.db.GridFsDAO;
 import org.restheart.db.GridFsRepository;
@@ -67,7 +68,7 @@ public class PutFileHandler extends PipedHttpHandler {
             } else {
                 throw new RuntimeException("error. file data is null");
             }
-        } catch (Throwable t) {
+        } catch (IOException | RuntimeException t) {
             if (t instanceof DuplicateKeyException) {
                 // update not supported
                 String errMsg = "file resource update is not yet implemented";

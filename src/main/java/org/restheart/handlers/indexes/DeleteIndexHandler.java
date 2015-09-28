@@ -17,11 +17,11 @@
  */
 package org.restheart.handlers.indexes;
 
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.utils.HttpStatus;
-import org.restheart.handlers.RequestContext;
-import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.RequestContext;
+import org.restheart.utils.HttpStatus;
+import org.restheart.utils.ResponseHelper;
 
 /**
  *

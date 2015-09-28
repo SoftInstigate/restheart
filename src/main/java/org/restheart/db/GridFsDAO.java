@@ -28,8 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -43,7 +41,14 @@ public class GridFsDAO implements GridFsRepository {
     }
 
     @Override
-    public int createFile(Database db, String dbName, String bucketName, Object fileId, DBObject properties, File data) throws IOException, DuplicateKeyException {
+    public int createFile(
+            final Database db, 
+            final String dbName, 
+            final String bucketName, 
+            final Object fileId, 
+            final DBObject properties, 
+            final File data) throws IOException, DuplicateKeyException {
+        
         final String bucket = extractBucketName(bucketName);
         GridFS gridfs = new GridFS(db.getDB(dbName), bucket);
         GridFSInputFile gfsFile = gridfs.createFile(data);
@@ -77,7 +82,13 @@ public class GridFsDAO implements GridFsRepository {
     }
 
     @Override
-    public int deleteFile(Database db, String dbName, String bucketName, Object fileId, ObjectId requestEtag) {
+    public int deleteFile(
+            final Database db, 
+            final String dbName, 
+            final String bucketName, 
+            final Object fileId, 
+            final ObjectId requestEtag) {
+        
         GridFS gridfs = new GridFS(db.getDB(dbName), extractBucketName(bucketName));
         GridFSDBFile dbsfile = gridfs.findOne(new BasicDBObject("_id", fileId));
 
@@ -95,7 +106,7 @@ public class GridFsDAO implements GridFsRepository {
     }
 
     @Override
-    public void deleteChunksCollection(Database db, String dbName, String bucketName) {
+    public void deleteChunksCollection(final Database db, final String dbName, final String bucketName) {
         String chunksCollName = extractBucketName(bucketName).concat(".chunks");
         client.getDB(dbName).getCollection(chunksCollName).drop();
     }
@@ -106,7 +117,7 @@ public class GridFsDAO implements GridFsRepository {
      * @param dbsfile
      * @return HttpStatus.SC_NO_CONTENT if check is ok
      */
-    private int checkEtag(ObjectId requestEtag, GridFSDBFile dbsfile) {
+    private int checkEtag(final ObjectId requestEtag, final GridFSDBFile dbsfile) {
         if (dbsfile != null) {
             Object etag = dbsfile.get("_etag");
 

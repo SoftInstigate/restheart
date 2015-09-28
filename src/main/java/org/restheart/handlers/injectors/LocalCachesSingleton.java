@@ -19,20 +19,19 @@ package org.restheart.handlers.injectors;
 
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
-import org.restheart.Configuration;
-import org.restheart.db.DbsDAO;
 import java.util.Optional;
+import org.restheart.Configuration;
 import org.restheart.cache.Cache;
-import org.restheart.cache.LoadingCache;
 import org.restheart.cache.CacheFactory;
+import org.restheart.cache.LoadingCache;
 import org.restheart.db.Database;
+import org.restheart.db.DbsDAO;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class LocalCachesSingleton {
-
     private static final String SEPARATOR = "_@_@_";
     private static boolean initialized = false;
 
@@ -41,9 +40,9 @@ public class LocalCachesSingleton {
     private LoadingCache<String, DBObject> dbPropsCache = null;
     private LoadingCache<String, DBObject> collectionPropsCache = null;
 
-    private static long ttl = 1000;
+    private static long ttl = 1_000;
     private static boolean enabled = false;
-    private static final long maxCacheSize = 1000;
+    private static final long MAX_CACHE_SIZE = 1_000;
 
     /**
      * Default ctor
@@ -69,12 +68,12 @@ public class LocalCachesSingleton {
         }
 
         if (enabled) {
-            this.dbPropsCache = CacheFactory.createLocalLoadingCache(maxCacheSize, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl,
+            this.dbPropsCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl,
                     (String key) -> {
                         return this.dbsDAO.getDatabaseProperties(key, true);
                     });
 
-            this.collectionPropsCache = CacheFactory.createLocalLoadingCache(maxCacheSize, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl,
+            this.collectionPropsCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl,
                     (String key) -> {
                         String[] dbNameAndCollectionName = key.split(SEPARATOR);
                         return this.dbsDAO.getCollectionProperties(dbNameAndCollectionName[0], dbNameAndCollectionName[1], true);
@@ -93,6 +92,9 @@ public class LocalCachesSingleton {
     private static class LocalCachesSingletonHolder {
 
         private static final LocalCachesSingleton INSTANCE = new LocalCachesSingleton(new DbsDAO());
+
+        private LocalCachesSingletonHolder() {
+        }
     }
 
     /**
@@ -121,7 +123,7 @@ public class LocalCachesSingleton {
                 _dbProps = dbPropsCache.getLoading(dbName);
             } catch (Throwable uex) {
                 if (uex.getCause() instanceof MongoException) {
-                    throw (MongoException) uex.getCause();
+                    throw (RuntimeException) uex.getCause();
                 } else {
                     throw uex;
                 }
@@ -165,7 +167,7 @@ public class LocalCachesSingleton {
                 _collProps = collectionPropsCache.getLoading(dbName + SEPARATOR + collName);
             } catch (Throwable uex) {
                 if (uex.getCause() instanceof MongoException) {
-                    throw (MongoException) uex.getCause();
+                    throw (RuntimeException) uex.getCause();
                 } else {
                     throw uex;
                 }
@@ -189,6 +191,7 @@ public class LocalCachesSingleton {
     public void invalidateDb(String dbName) {
         if (enabled && dbPropsCache != null) {
             dbPropsCache.invalidate(dbName);
+            collectionPropsCache.asMap().keySet().stream().filter(k -> k.startsWith(dbName + SEPARATOR)).forEach(k -> collectionPropsCache.invalidate(k));
         }
     }
 

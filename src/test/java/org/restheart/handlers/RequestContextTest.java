@@ -24,15 +24,30 @@ import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
 public class RequestContextTest {
+    private static final Logger LOG = LoggerFactory.getLogger(RequestContextTest.class);
+
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+        @Override
+        protected void starting(Description description) {
+            LOG.info("executing test {}", description.toString());
+        }
+    };
 
     public RequestContextTest() {
     }
@@ -55,8 +70,6 @@ public class RequestContextTest {
 
     @Test
     public void testSelectRequestMethod() {
-        System.out.println("testSelectRequestMethod");
-
         HttpString _method = new HttpString("UNKNOWN");
         assertEquals(RequestContext.METHOD.OTHER, RequestContext.selectRequestMethod(_method));
 
@@ -69,8 +82,6 @@ public class RequestContextTest {
 
     @Test
     public void testSelectRequestType() {
-        System.out.println("testSelectRequestType");
-
         String[] pathTokens = "/".split("/");
         assertEquals(RequestContext.TYPE.ROOT, RequestContext.selectRequestType(pathTokens));
 
@@ -92,16 +103,12 @@ public class RequestContextTest {
 
     @Test
     public void test_COLLECTION_FILES_selectRequestType() {
-        System.out.println("test_COLLECTION_FILES_selectRequestType");
-
         String[] pathTokens = "/db/mybucket.files".split("/");
         assertEquals(RequestContext.TYPE.FILES_BUCKET, RequestContext.selectRequestType(pathTokens));
     }
 
     @Test
     public void test_FILE_selectRequestType() {
-        System.out.println("test_FILE_selectRequestType");
-
         String[] pathTokens = "/db/mybucket.files/123".split("/");
         assertEquals(RequestContext.TYPE.FILE, RequestContext.selectRequestType(pathTokens));
         
@@ -114,8 +121,6 @@ public class RequestContextTest {
 
     @Test
     public void testGetMappedRequestUri() {
-        System.out.println("testGetMappedRequestUri");
-
         HttpServerExchange ex = mock(HttpServerExchange.class);
         when(ex.getRequestPath()).thenReturn("/");
         when(ex.getRequestMethod()).thenReturn(HttpString.EMPTY);
@@ -132,5 +137,4 @@ public class RequestContextTest {
         context = new RequestContext(ex, whereUri, whatUri);
         assertEquals("/", context.getMappedRequestUri());
     }
-
 }

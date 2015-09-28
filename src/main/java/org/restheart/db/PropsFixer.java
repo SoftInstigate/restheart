@@ -18,7 +18,7 @@
 package org.restheart.db;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.CommandFailureException;
+import com.mongodb.MongoCommandException;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
@@ -51,7 +51,7 @@ public class PropsFixer {
      * @throws MongoException
      */
     public boolean addCollectionProps(String dbName, String collName) throws MongoException {
-        
+
         DBObject dbmd = dbsDAO.getDatabaseProperties(dbName, false);
 
         if (dbmd == null) {
@@ -126,7 +126,12 @@ public class PropsFixer {
     }
 
     /**
+     * adds default properties to any db and collection, despite the mongo-mount
+     * configuration. It can also lead to slow startup time on big mongodb
+     * installations.
      *
+     * @see https://github.com/SoftInstigate/restheart/issues/45
+     * @deprecated
      */
     public void fixAllMissingProps() {
         try {
@@ -149,10 +154,10 @@ public class PropsFixer {
                 }
                 );
             });
-        } catch (CommandFailureException cfe) {
-            Object errmsg = cfe.getCommandResult().get("errmsg");
+        } catch (MongoCommandException cfe) {
+            String errmsg = cfe.getErrorMessage();
 
-            if (errmsg != null && errmsg instanceof String && ("unauthorized".equals(errmsg) || ((String) errmsg).contains("not authorized"))) {
+            if (errmsg != null && ("unauthorized".equals(errmsg) || errmsg.contains("not authorized"))) {
                 LOGGER.error("error looking for dbs and collections with missing _properties due to insuffient mongo user privileges. note that requests to dbs and collections with no _properties result on NOT_FOUND", cfe);
             } else {
                 LOGGER.error("eorro looking for dbs and collections with missing _properties. note that requests to dbs and collections with no _properties result on NOT_FOUND", cfe);

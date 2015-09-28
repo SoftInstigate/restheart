@@ -66,8 +66,6 @@ public class GetCollectionIT extends AbstactIT {
 
     @Test
     public void testGetCollectionCountAndPaging() throws Exception {
-        LOG.info("@@@ testGetCollectionCountAndPaging URI: " + docsCollectionUriCountAndPaging);
-
         Response resp = adminExecutor.execute(Request.Get(docsCollectionUriCountAndPaging));
 
         HttpResponse httpResp = resp.returnResponse();
@@ -143,8 +141,6 @@ public class GetCollectionIT extends AbstactIT {
 
     @Test
     public void testGetCollectionPaging() throws Exception {
-        LOG.info("@@@ testGetCollectionPaging URI: " + docsCollectionUriPaging);
-
         Response resp = adminExecutor.execute(Request.Get(docsCollectionUriPaging));
 
         HttpResponse httpResp = resp.returnResponse();
@@ -186,7 +182,6 @@ public class GetCollectionIT extends AbstactIT {
         assertNotNull("check not null self", links.get("self"));
         assertNotNull("check not null rh:db", links.get("rh:db"));
         assertNotNull("check not null rh:paging", links.get("rh:paging"));
-        assertNotNull("check not null rh:countandpaging", links.get("rh:countandpaging"));
         assertNotNull("check not null rh:filter", links.get("rh:filter"));
         assertNotNull("check not null rh:sort", links.get("rh:filter"));
         assertNotNull("check not null next", links.get("next"));
@@ -208,8 +203,6 @@ public class GetCollectionIT extends AbstactIT {
     }
 
     private void testGetCollection(URI uri) throws Exception {
-        LOG.info("@@@ testGetCollection URI: " + uri);
-
         Response resp = adminExecutor.execute(Request.Get(uri));
 
         HttpResponse httpResp = resp.returnResponse();
@@ -305,8 +298,6 @@ public class GetCollectionIT extends AbstactIT {
 
     @Test
     public void testGetCollectionSort() throws Exception {
-        LOG.info("@@@ testGetCollectionSort URI: " + docsCollectionUriSort);
-
         Response resp = adminExecutor.execute(Request.Get(docsCollectionUriSort));
 
         HttpResponse httpResp = resp.returnResponse();
@@ -365,8 +356,6 @@ public class GetCollectionIT extends AbstactIT {
 
     @Test
     public void testGetCollectionFilter() throws Exception {
-        LOG.info("@@@ testGetCollectionFilter URI: " + docsCollectionUriFilter);
-
         Response resp = adminExecutor.execute(Request.Get(docsCollectionUriFilter));
 
         HttpResponse httpResp = resp.returnResponse();

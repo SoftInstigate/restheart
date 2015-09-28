@@ -15,15 +15,15 @@
  */
 package org.restheart.security.handlers;
 
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.security.AccessManager;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
 import java.util.List;
+import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.security.AccessManager;
 import org.restheart.security.AuthTokenAuthenticationMechanism;
 import static org.restheart.security.RestheartIdentityManager.RESTHEART_REALM;
 import org.restheart.security.SilentBasicAuthenticationMechanism;

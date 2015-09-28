@@ -18,7 +18,6 @@
 package org.restheart.utils;
 
 import ch.qos.logback.classic.Level;
-
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
@@ -92,5 +91,8 @@ public class LoggingInitializer {
         rfAppender.start();
 
         logger.addAppender(rfAppender);
+    }
+
+    private LoggingInitializer() {
     }
 }

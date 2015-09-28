@@ -17,7 +17,6 @@
  */
 package org.restheart.utils;
 
-import org.restheart.Bootstrapper;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -33,6 +32,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
+import org.restheart.Bootstrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -178,5 +178,8 @@ public class ResourcesExtractor {
                 logger.warn("failted to delete file " + file.getPath());
             }
         }
+    }
+
+    private ResourcesExtractor() {
     }
 }

@@ -27,14 +27,29 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.restheart.utils.JsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class JsonUtilsTest {
+    private static final Logger LOG = LoggerFactory.getLogger(JsonUtilsTest.class);
+    
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+        @Override
+        protected void starting(Description description) {
+            LOG.info("executing test {}", description.toString());
+        }
+    };
 
     public JsonUtilsTest() {
     }
@@ -53,6 +68,16 @@ public class JsonUtilsTest {
 
     @After
     public void tearDown() {
+    }
+    
+    @Test
+    public void testMinify() {
+        
+        
+        String json = "{ '_id'  :   {   '$in' : [1, 20.0, 'id']}}";
+        String minified = "{'_id':{'$in':[1,20.0,'id']}}";
+        
+        Assert.assertEquals(minified, JsonUtils.minify(json));
     }
 
     @Test
@@ -522,21 +547,21 @@ public class JsonUtilsTest {
 
         Object json = JSON.parse(_json);
 
-        System.out.println("$.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.*"));
-        System.out.println("$._id" + " -> " + JsonUtils.getPropsFromPath(json, "$._id"));
-        System.out.println("$.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.descr"));
-        System.out.println("$.items" + " -> " + JsonUtils.getPropsFromPath(json, "$.items"));
-        System.out.println("$.items.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*"));
-        System.out.println("$.items.*.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.*"));
-        System.out.println("$.items.*.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.descr"));
-        System.out.println("$.items.*.items" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items"));
-        System.out.println("$.items.*.items.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*"));
-        System.out.println("$.items.*.items.*.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.*"));
-        System.out.println("$.items.*.items.*.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.descr"));
-        System.out.println("$.items.*.items.*.values" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values"));
-        System.out.println("$.items.*.items.*.values.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*"));
-        System.out.println("$.items.*.items.*.values.*.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.descr"));
-        System.out.println("$.items.*.items.*.values.*.svalue" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.svalue"));
+        LOG.debug("$.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.*"));
+        LOG.debug("$._id" + " -> " + JsonUtils.getPropsFromPath(json, "$._id"));
+        LOG.debug("$.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.descr"));
+        LOG.debug("$.items" + " -> " + JsonUtils.getPropsFromPath(json, "$.items"));
+        LOG.debug("$.items.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*"));
+        LOG.debug("$.items.*.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.*"));
+        LOG.debug("$.items.*.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.descr"));
+        LOG.debug("$.items.*.items" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items"));
+        LOG.debug("$.items.*.items.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*"));
+        LOG.debug("$.items.*.items.*.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.*"));
+        LOG.debug("$.items.*.items.*.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.descr"));
+        LOG.debug("$.items.*.items.*.values" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values"));
+        LOG.debug("$.items.*.items.*.values.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*"));
+        LOG.debug("$.items.*.items.*.values.*.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.descr"));
+        LOG.debug("$.items.*.items.*.values.*.svalue" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.svalue"));
 
         String path = "$.items.*.*";
 
@@ -612,7 +637,7 @@ public class JsonUtilsTest {
         }
 
         if (expected == null) {
-            System.out.println(json + " | " + path + " -> " + gots + " exprected null result (missing field)");
+            LOG.debug(json + " | " + path + " -> " + gots + " exprected null result (missing field)");
             return gots == null;
         }
 
@@ -626,7 +651,7 @@ public class JsonUtilsTest {
             }
         }
 
-        System.out.println(json + " | " + path + " -> " + gots + " exprected " + Arrays.toString(expected));
+        LOG.debug(json + " | " + path + " -> " + gots + " exprected " + Arrays.toString(expected));
 
         return eq(exps, gots);
     }

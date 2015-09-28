@@ -50,4 +50,7 @@ public class ChannelReader {
 
         return content.toString();
     }
+
+    private ChannelReader() {
+    }
 }

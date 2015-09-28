@@ -19,7 +19,6 @@ package org.restheart;
 
 import com.mongodb.MongoClient;
 import static org.restheart.Configuration.RESTHEART_VERSION;
-import org.restheart.db.PropsFixer;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.handlers.ErrorHandler;
 import org.restheart.handlers.GzipEncodingHandler;
@@ -316,7 +315,6 @@ public final class Bootstrapper {
         try {
             MongoDBClientSingleton.init(configuration);
             LOGGER.info("MongoDB connection pool initialized");
-            new PropsFixer().fixAllMissingProps();
         } catch (Throwable t) {
             LOGGER.error("Error connecting to MongoDB. exiting..", t);
             stopServer(false);

@@ -26,7 +26,6 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
-import org.bson.types.ObjectId;
 import org.restheart.hal.AbstractRepresentationFactory;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -86,8 +85,15 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
             // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link("rh:root", URLUtils.getParentPath(requestPath)));
         }
+        
+        rep.addLink(new Link("rh:db", URLUtils.getParentPath(requestPath) + "/{dbname}", true));
+        rep.addLink(new Link("rh:coll", requestPath + "/{collname}", true));
+        rep.addLink(new Link("rh:bucket", requestPath + "/{bucketname}" + RequestContext.FS_FILES_SUFFIX, true));
+        
         rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
-        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL + "/#api-db-{rel}", false), true);
+        
+        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
+                + "/{rel}.html", true), true);
     }
 
     private void embeddedCollections(

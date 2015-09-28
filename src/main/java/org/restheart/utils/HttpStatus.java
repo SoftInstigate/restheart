@@ -381,4 +381,7 @@ public class HttpStatus {
         addStatusCodeMap(SC_FAILED_DEPENDENCY, "Failed Dependency");
     }
 
+    private HttpStatus() {
+    }
+
 }

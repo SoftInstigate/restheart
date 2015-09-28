@@ -19,7 +19,6 @@ package org.restheart.utils;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
-import org.restheart.hal.Representation;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.io.PrintWriter;
@@ -27,6 +26,7 @@ import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Map;
 import org.bson.types.ObjectId;
+import org.restheart.hal.Representation;
 
 /**
  *
@@ -153,5 +153,8 @@ public class ResponseHelper {
 
             exchange.getResponseHeaders().put(Headers.ETAG, etag.toString());
         }
+    }
+
+    private ResponseHelper() {
     }
 }

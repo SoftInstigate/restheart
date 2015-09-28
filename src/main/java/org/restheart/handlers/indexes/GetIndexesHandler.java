@@ -18,11 +18,11 @@
 package org.restheart.handlers.indexes;
 
 import com.mongodb.DBObject;
+import io.undertow.server.HttpServerExchange;
+import java.util.List;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
-import io.undertow.server.HttpServerExchange;
-import java.util.List;
 
 /**
  *

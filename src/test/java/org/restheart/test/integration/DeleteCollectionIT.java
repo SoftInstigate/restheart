@@ -37,40 +37,36 @@ public class DeleteCollectionIT extends AbstactIT {
 
     @Test
     public void testDeleteCollection() throws Exception {
-        try {
-            Response resp;
+        Response resp;
 
-            // *** PUT tmpdb
-            resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-            check("check put db", resp, HttpStatus.SC_CREATED);
+        // *** PUT tmpdb
+        resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check put db", resp, HttpStatus.SC_CREATED);
 
-            // *** PUT tmpcoll
-            resp = adminExecutor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-            check("check put coll1", resp, HttpStatus.SC_CREATED);
+        // *** PUT tmpcoll
+        resp = adminExecutor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check put coll1", resp, HttpStatus.SC_CREATED);
 
-            // try to delete without etag
-            resp = adminExecutor.execute(Request.Delete(collectionTmpUri));
-            check("check delete tmp doc without etag", resp, HttpStatus.SC_CONFLICT);
+        // try to delete without etag
+        resp = adminExecutor.execute(Request.Delete(collectionTmpUri));
+        check("check delete tmp doc without etag", resp, HttpStatus.SC_CONFLICT);
 
-            // try to delete with wrong etag
-            resp = adminExecutor.execute(Request.Delete(collectionTmpUri).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
-            check("check delete tmp doc with wrong etag", resp, HttpStatus.SC_PRECONDITION_FAILED);
+        // try to delete with wrong etag
+        resp = adminExecutor.execute(Request.Delete(collectionTmpUri).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
+        check("check delete tmp doc with wrong etag", resp, HttpStatus.SC_PRECONDITION_FAILED);
 
-            resp = adminExecutor.execute(Request.Get(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-            //check("getting etag of tmp doc", resp, HttpStatus.SC_OK);
+        resp = adminExecutor.execute(Request.Get(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        //check("getting etag of tmp doc", resp, HttpStatus.SC_OK);
 
-            JsonObject content = JsonObject.readFrom(resp.returnContent().asString());
+        JsonObject content = JsonObject.readFrom(resp.returnContent().asString());
 
-            String etag = content.get("_etag").asObject().get("$oid").asString();
+        String etag = content.get("_etag").asObject().get("$oid").asString();
 
-            // try to delete with correct etag
-            resp = adminExecutor.execute(Request.Delete(collectionTmpUri).addHeader(Headers.IF_MATCH_STRING, etag));
-            check("check delete tmp doc with correct etag", resp, HttpStatus.SC_NO_CONTENT);
+        // try to delete with correct etag
+        resp = adminExecutor.execute(Request.Delete(collectionTmpUri).addHeader(Headers.IF_MATCH_STRING, etag));
+        check("check delete tmp doc with correct etag", resp, HttpStatus.SC_NO_CONTENT);
 
-            resp = adminExecutor.execute(Request.Get(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-            check("check get deleted tmp doc", resp, HttpStatus.SC_NOT_FOUND);
-        } finally {
-            mongoClient.dropDatabase(dbTmpName);
-        }
+        resp = adminExecutor.execute(Request.Get(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check get deleted tmp doc", resp, HttpStatus.SC_NOT_FOUND);
     }
 }

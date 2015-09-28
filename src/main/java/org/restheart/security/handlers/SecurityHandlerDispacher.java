@@ -15,11 +15,11 @@
  */
 package org.restheart.security.handlers;
 
+import io.undertow.security.idm.IdentityManager;
+import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.security.AccessManager;
-import io.undertow.security.idm.IdentityManager;
-import io.undertow.server.HttpServerExchange;
 
 /**
  *

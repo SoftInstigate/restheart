@@ -30,6 +30,7 @@ import org.bson.types.ObjectId;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class DocumentDAO implements Repository {
+
     private final MongoClient client;
 
     public DocumentDAO() {
@@ -40,22 +41,28 @@ public class DocumentDAO implements Repository {
      * @param dbName
      * @param collName
      * @param documentId
-     * @param content
+     * @param newContent
      * @param requestEtag
      * @param patching
      * @return the HttpStatus code
      */
     @Override
-    public OperationResult upsertDocument(String dbName, String collName, Object documentId, DBObject content, ObjectId requestEtag, boolean patching) {
+    public OperationResult upsertDocument(
+            final String dbName,
+            final String collName,
+            final Object documentId,
+            final DBObject newContent,
+            final ObjectId requestEtag,
+            final boolean patching) {
+
         DB db = client.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
 
         ObjectId newEtag = new ObjectId();
 
-        if (content == null) {
-            content = new BasicDBObject();
-        }
+        
+        final DBObject content = DAOUtils.validContent(newContent);
 
         content.put("_etag", newEtag);
 
@@ -90,21 +97,25 @@ public class DocumentDAO implements Repository {
      * @param dbName
      * @param collName
      * @param documentId
-     * @param content
+     * @param newContent
      * @param requestEtag
      * @return
      */
     @Override
-    public OperationResult upsertDocumentPost(String dbName, String collName, Object documentId, DBObject content, ObjectId requestEtag) {
+    public OperationResult upsertDocumentPost(
+            final String dbName,
+            final String collName,
+            final Object documentId,
+            final DBObject newContent,
+            final ObjectId requestEtag) {
+
         DB db = client.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
 
         ObjectId newEtag = new ObjectId();
 
-        if (content == null) {
-            content = new BasicDBObject();
-        }
+        final DBObject content = (newContent == null) ? new BasicDBObject() : newContent;
 
         content.put("_etag", newEtag);
 
@@ -117,7 +128,7 @@ public class DocumentDAO implements Repository {
             content.put("_id", documentId);
 
             coll.insert(content);
-            
+
             return new OperationResult(HttpStatus.SC_CREATED, newEtag);
         }
 
@@ -141,8 +152,12 @@ public class DocumentDAO implements Repository {
      * @return
      */
     @Override
-    public OperationResult deleteDocument(String dbName, String collName, Object documentId, ObjectId requestEtag
-    ) {
+    public OperationResult deleteDocument(
+            final String dbName,
+            final String collName,
+            final Object documentId,
+            final ObjectId requestEtag) {
+
         DB db = client.getDB(dbName);
 
         DBCollection coll = db.getCollection(collName);
@@ -159,7 +174,13 @@ public class DocumentDAO implements Repository {
         }
     }
 
-    private OperationResult optimisticCheckEtag(DBCollection coll, DBObject oldDocument, ObjectId newEtag, ObjectId requestEtag, int httpStatusIfOk) {
+    private OperationResult optimisticCheckEtag(
+            final DBCollection coll,
+            final DBObject oldDocument,
+            final ObjectId newEtag,
+            final ObjectId requestEtag,
+            final int httpStatusIfOk) {
+
         Object oldEtag = oldDocument.get("_etag");
 
         if (oldEtag == null) {  // well we don't had an etag there so fine

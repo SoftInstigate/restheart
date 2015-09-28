@@ -17,8 +17,8 @@
  */
 package org.restheart.security;
 
-import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.handlers.RequestContext;
 
 /**
  *

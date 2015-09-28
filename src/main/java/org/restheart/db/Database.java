@@ -82,10 +82,11 @@ public interface Database {
      * @param pagesize
      * @param sortBy
      * @param filter
+     * @param keys
      * @param cursorAllocationPolicy
      * @return Collection Data as ArrayList of DBObject
      */
-    ArrayList<DBObject> getCollectionData(DBCollection collection, int page, int pagesize, Deque<String> sortBy, Deque<String> filter,Deque<String> keys, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy);
+    ArrayList<DBObject> getCollectionData(DBCollection collection, int page, int pagesize, Deque<String> sortBy, Deque<String> filter, Deque<String> keys, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy);
 
     /**
      *
@@ -210,6 +211,7 @@ public interface Database {
      * field name with - for descending sorting)
      * @param filters the filters to apply. it is a Deque collection of mongodb
      * query conditions.
+     * @param keys
      * @return
      * @throws JSONParseException
      */

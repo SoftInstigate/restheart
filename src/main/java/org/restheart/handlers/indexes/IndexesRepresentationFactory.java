@@ -18,6 +18,10 @@
 package org.restheart.handlers.indexes;
 
 import com.mongodb.DBObject;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
+import java.util.List;
+import org.bson.types.ObjectId;
 import org.restheart.Configuration;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
@@ -25,12 +29,8 @@ import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.URLUtils;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
-import java.util.List;
-import org.bson.types.ObjectId;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -38,7 +38,7 @@ import org.slf4j.Logger;
  */
 public class IndexesRepresentationFactory {
 
-    private static final Logger logger = LoggerFactory.getLogger(IndexesRepresentationFactory.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(IndexesRepresentationFactory.class);
 
     /**
      *
@@ -51,8 +51,8 @@ public class IndexesRepresentationFactory {
     static public void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
         String requestPath = URLUtils.removeTrailingSlashes(context.getMappedRequestUri());
-        String queryString = exchange.getQueryString() == null || exchange.getQueryString().isEmpty() 
-                ? "" 
+        String queryString = exchange.getQueryString() == null || exchange.getQueryString().isEmpty()
+                ? ""
                 : "?" + URLUtils.decodeQueryString(exchange.getQueryString());
 
         Representation rep = new Representation(requestPath + queryString);
@@ -75,14 +75,21 @@ public class IndexesRepresentationFactory {
                 embeddedDocuments(embeddedData, requestPath, rep);
             }
         }
-
-        // link templates and curies
+        
+        // curies
         if (context.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
-            rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath)));
+            if (context.getCollectionName().endsWith(RequestContext.FS_FILES_SUFFIX)) {
+                rep.addLink(new Link("rh:bucket", URLUtils.getParentPath(requestPath)));
+            } else {
+                rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath)));
+            }
         }
+        
+        rep.addLink(new Link("rh:indexes", requestPath));
+        
         rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL 
-                + "/#api-indexes-{rel}", false), true);
+                + "/{rel}.html", true), true);
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
@@ -91,19 +98,22 @@ public class IndexesRepresentationFactory {
     private static void embeddedDocuments(List<DBObject> embeddedData, String requestPath, Representation rep) {
         embeddedData.stream().forEach((d) -> {
             Object _id = d.get("_id");
-            
+
             if (_id != null && (_id instanceof String || _id instanceof ObjectId)) {
                 Representation nrep = new Representation(requestPath + "/" + _id.toString());
-                
+
                 nrep.addProperty("_type", RequestContext.TYPE.INDEX.name());
-                
+
                 nrep.addProperties(d);
-                
+
                 rep.addRepresentation("rh:index", nrep);
             } else {
-                rep.addWarning("index with _id " + _id + (_id == null ? " " :  " of type " + _id.getClass().getSimpleName()) + "filtered out. Indexes can only have ids of type String");
-                logger.debug("index missing string _id field", d);
+                rep.addWarning("index with _id " + _id + (_id == null ? " " : " of type " + _id.getClass().getSimpleName()) + "filtered out. Indexes can only have ids of type String");
+                LOGGER.debug("index missing string _id field", d);
             }
         });
+    }
+
+    private IndexesRepresentationFactory() {
     }
 }

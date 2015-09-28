@@ -25,13 +25,28 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Rule;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.restheart.handlers.RequestContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
 public class CollectionPropsInjectorHandlerTest {
+    private static final Logger LOG = LoggerFactory.getLogger(CollectionPropsInjectorHandlerTest.class);
+
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+        @Override
+        protected void starting(Description description) {
+            LOG.info("executing test {}", description.toString());
+        }
+    };
 
     public CollectionPropsInjectorHandlerTest() {
     }
@@ -54,8 +69,6 @@ public class CollectionPropsInjectorHandlerTest {
 
     @Test
     public void testCheckCollectionPut() {
-        System.out.println("testCheckCollectionPut");
-
         RequestContext context = createContext("/db/collection", "PUT");
 
         assertEquals(context.getType(), RequestContext.TYPE.COLLECTION);
@@ -65,8 +78,6 @@ public class CollectionPropsInjectorHandlerTest {
 
     @Test
     public void testCheckCollectionFilesPost() {
-        System.out.println("testCheckCollectionFilesPost");
-        
         RequestContext context = createContext("/db/fs.files", "POST");
 
         assertEquals(context.getType(), RequestContext.TYPE.FILES_BUCKET);
@@ -76,8 +87,6 @@ public class CollectionPropsInjectorHandlerTest {
 
     @Test
     public void testCheckCollectionRoot() {
-        System.out.println("testCheckCollectionRoot");
-
         RequestContext context = createContext("/", "PUT");
 
         assertEquals(context.getType(), RequestContext.TYPE.ROOT);

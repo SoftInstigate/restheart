@@ -31,6 +31,7 @@ import org.restheart.utils.HttpStatus;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.Iterator;
 
 import org.bson.BSONObject;
 import org.bson.types.ObjectId;
@@ -50,17 +51,17 @@ class CollectionDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CollectionDAO.class);
 
-    private static final BasicDBObject fieldsToReturn;
+    private static final BasicDBObject FIELDS_TO_RETURN;
 
     CollectionDAO(MongoClient client) {
         this.client = client;
     }
 
     static {
-        fieldsToReturn = new BasicDBObject();
-        fieldsToReturn.put("_id", 1);
-        fieldsToReturn.put("_etag", 1);
-        fieldsToReturn.put("_created_on", 1);
+        FIELDS_TO_RETURN = new BasicDBObject();
+        FIELDS_TO_RETURN.put("_id", 1);
+        FIELDS_TO_RETURN.put("_etag", 1);
+        FIELDS_TO_RETURN.put("_created_on", 1);
     }
 
     /**
@@ -74,7 +75,7 @@ class CollectionDAO {
      * @param collName the collection name
      * @return true if the specified collection exits in the db dbName
      */
-    boolean doesCollectionExist(String dbName, String collName) {
+    boolean doesCollectionExist(final String dbName, final String collName) {
         if (dbName == null || dbName.isEmpty() || dbName.contains(" ")) {
             return false;
         }
@@ -92,7 +93,7 @@ class CollectionDAO {
      * @param collName the collection name
      * @return the mongodb DBCollection object for the collection in db dbName
      */
-    DBCollection getCollection(String dbName, String collName) {
+    DBCollection getCollection(final String dbName, final String collName) {
         return client.getDB(dbName).getCollection(collName);
     }
 
@@ -105,7 +106,7 @@ class CollectionDAO {
      * @param coll the mongodb DBCollection object
      * @return true if the commection is empty
      */
-    public boolean isCollectionEmpty(DBCollection coll) {
+    public boolean isCollectionEmpty(final DBCollection coll) {
         return coll.count() == 0;
     }
 
@@ -119,7 +120,7 @@ class CollectionDAO {
      * @return the number of documents in the given collection (taking into
      * account the filters in case)
      */
-    public long getCollectionSize(DBCollection coll, Deque<String> filters) {
+    public long getCollectionSize(final DBCollection coll, final Deque<String> filters) {
         final BasicDBObject query = new BasicDBObject();
 
         if (filters != null) {
@@ -138,16 +139,24 @@ class CollectionDAO {
     /**
      * Returs the DBCursor of the collection applying sorting and filtering.
      *
-     * @param coll the mongodb DBCollection object
+     * @param coll the mongodb DBCollection object <<<<<<< HEAD
      * @param sortBy the Deque collection of fields to use for sorting (prepend
      * field name with - for descending sorting)
      * @param filters the filters to apply. it is a Deque collection of mongodb
-     * query conditions.
-     * @param keys 
+     * query conditions. =======
+     * @param sortBy the Deque collection of fields to use for sorting (prepend
+     * field name with - for descending sorting)
+     * @param filters the filters to apply. it is a Deque collection of mongodb
+     * query conditions. >>>>>>> 3d60559d7f3582061f69b35b54ef03c3a01c20de
+     * @param keys
      * @return
      * @throws JSONParseException
      */
-    DBCursor getCollectionDBCursor(DBCollection coll, Deque<String> sortBy, Deque<String> filters, Deque<String> keys) throws JSONParseException {
+    DBCursor getCollectionDBCursor(
+            final DBCollection coll,
+            final Deque<String> sortBy,
+            final Deque<String> filters,
+            final Deque<String> keys) throws JSONParseException {
         // apply sort_by
         DBObject sort = new BasicDBObject();
 
@@ -178,31 +187,32 @@ class CollectionDAO {
                 query.putAll(filterQuery);  // this can throw JSONParseException for invalid filter parameters
             });
         }
-        
+
         final BasicDBObject fields = new BasicDBObject();
-        
+
         if (keys != null) {
             keys.stream().forEach((String f) -> {
                 BSONObject keyQuery = (BSONObject) JSON.parse(f);
 
                 fields.putAll(keyQuery);  // this can throw JSONParseException for invalid filter parameters
             });
-        }        
+        }
+
         return coll.find(query, fields).sort(sort);
     }
 
     ArrayList<DBObject> getCollectionData(
-            DBCollection coll,
-            int page,
-            int pagesize,
-            Deque<String> sortBy,
-            Deque<String> filters,
-            Deque<String> keys, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager) throws JSONParseException {
+            final DBCollection coll,
+            final int page,
+            final int pagesize,
+            final Deque<String> sortBy,
+            final Deque<String> filters,
+            final Deque<String> keys, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager) throws JSONParseException {
+
         ArrayList<DBObject> ret = new ArrayList<>();
 
         int toskip = pagesize * (page - 1);
 
-        DBCursor cursor;
         SkippedDBCursor _cursor = null;
 
         if (eager != DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE) {
@@ -210,24 +220,33 @@ class CollectionDAO {
             _cursor = DBCursorPool.getInstance().get(new DBCursorPoolEntryKey(coll, sortBy, filters, keys, toskip, 0), eager);
         }
 
-        int alreadySkipped;
+        int _pagesize = pagesize;
 
         // in case there is not cursor in the pool to reuse
+        DBCursor cursor;
         if (_cursor == null) {
             cursor = getCollectionDBCursor(coll, sortBy, filters, keys);
-            alreadySkipped = 0;
+            cursor.skip(toskip);
+
+            while (_pagesize > 0 && cursor.hasNext()) {
+                ret.add(cursor.next());
+                _pagesize--;
+            }
         } else {
+            int alreadySkipped;
+
             cursor = _cursor.getCursor();
             alreadySkipped = _cursor.getAlreadySkipped();
-        }
 
-        if (toskip - alreadySkipped > 0) {
-            cursor.skip(toskip - alreadySkipped);
-        }
+            while (toskip > alreadySkipped && cursor.hasNext()) {
+                cursor.next();
+                alreadySkipped++;
+            }
 
-        while (pagesize > 0 && cursor.hasNext()) {
-            ret.add(cursor.next());
-            pagesize--;
+            while (_pagesize > 0 && cursor.hasNext()) {
+                ret.add(cursor.next());
+                _pagesize--;
+            }
         }
 
         // add the _lastupdated_on and _created_on
@@ -244,9 +263,9 @@ class CollectionDAO {
             if (row.get("_created_on") == null && id != null && id instanceof ObjectId) {
                 row.put("_created_on", Instant.ofEpochSecond(((ObjectId) id).getTimestamp()).toString());
             }
-        }
-        );
+        });
 
+        
         return ret;
     }
 
@@ -257,7 +276,7 @@ class CollectionDAO {
      * @param collName the collection name
      * @return the collection properties document
      */
-    public DBObject getCollectionProps(String dbName, String collName, boolean fixMissingProperties) {
+    public DBObject getCollectionProps(final String dbName, final String collName, final boolean fixMissingProperties) {
         DBCollection propsColl = getCollection(dbName, "_properties");
 
         DBObject properties = propsColl.findOne(new BasicDBObject("_id", "_properties.".concat(collName)));
@@ -283,23 +302,30 @@ class CollectionDAO {
      *
      * @param dbName the database name of the collection
      * @param collName the collection name
-     * @param content the new collection properties
+     * @param properties the new collection properties
      * @param requestEtag the entity tag. must match to allow actual write
      * (otherwise http error code is returned)
      * @param updating true if updating existing document
      * @param patching true if use patch semantic (update only specified fields)
      * @return the HttpStatus code to set in the http response
      */
-    OperationResult upsertCollection(String dbName, String collName, DBObject content, ObjectId requestEtag, boolean updating, boolean patching) {
+    OperationResult upsertCollection(
+            final String dbName,
+            final String collName,
+            final DBObject properties,
+            final ObjectId requestEtag,
+            final boolean updating,
+            final boolean patching) {
+
         DB db = client.getDB(dbName);
 
         if (patching && !updating) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
         }
 
-        DBCollection propsColl = db.getCollection("_properties");
+        final DBCollection propsColl = db.getCollection("_properties");
 
-        DBObject exists = propsColl.findOne(new BasicDBObject("_id", "_properties.".concat(collName)), fieldsToReturn);
+        final DBObject exists = propsColl.findOne(new BasicDBObject("_id", "_properties.".concat(collName)), FIELDS_TO_RETURN);
 
         if (exists == null && updating) {
             LOGGER.error("updating but cannot find collection _properties.{} for {}/{}", collName, dbName, collName);
@@ -321,9 +347,7 @@ class CollectionDAO {
         ObjectId newEtag = new ObjectId();
         Instant now = Instant.ofEpochSecond(newEtag.getTimestamp());
 
-        if (content == null) {
-            content = new BasicDBObject();
-        }
+        final DBObject content = DAOUtils.validContent(properties);
 
         content.removeField("_id"); // make sure we don't change this field
 
@@ -337,15 +361,17 @@ class CollectionDAO {
         }
 
         if (patching) {
-            propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)), new BasicDBObject("$set", content), true, false);
+            propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)),
+                    new BasicDBObject("$set", content), true, false);
             return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else {
-                // we use findAndModify to get the @created_on field value from the existing properties document
+            // we use findAndModify to get the @created_on field value from the existing properties document
             // we need to put this field back using a second update 
             // it is not possible in a single update even using $setOnInsert update operator
             // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
 
-            DBObject old = propsColl.findAndModify(new BasicDBObject("_id", "_properties.".concat(collName)), fieldsToReturn, null, false, content, false, true);
+            DBObject old = propsColl.findAndModify(new BasicDBObject("_id", "_properties.".concat(collName)),
+                    FIELDS_TO_RETURN, null, false, content, false, true);
 
             if (old != null) {
                 Object oldTimestamp = old.get("_created_on");
@@ -358,14 +384,16 @@ class CollectionDAO {
                 // need to readd the @created_on field 
                 BasicDBObject createdContent = new BasicDBObject("_created_on", "" + oldTimestamp);
                 createdContent.markAsPartialObject();
-                propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)), new BasicDBObject("$set", createdContent), true, false);
+                propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)),
+                        new BasicDBObject("$set", createdContent), true, false);
 
                 return new OperationResult(HttpStatus.SC_OK, newEtag);
             } else {
                 // need to readd the @created_on field 
                 BasicDBObject createdContent = new BasicDBObject("_created_on", now.toString());
                 createdContent.markAsPartialObject();
-                propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)), new BasicDBObject("$set", createdContent), true, false);
+                propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)),
+                        new BasicDBObject("$set", createdContent), true, false);
 
                 initDefaultIndexes(db.getCollection(collName));
 
@@ -383,13 +411,13 @@ class CollectionDAO {
      * (otherwise http error code is returned)
      * @return the HttpStatus code to set in the http response
      */
-    OperationResult deleteCollection(String dbName, String collName, ObjectId requestEtag) {
+    OperationResult deleteCollection(final String dbName, final String collName, final ObjectId requestEtag) {
         DBCollection coll = getCollection(dbName, collName);
         DBCollection propsColl = getCollection(dbName, "_properties");
 
-        BasicDBObject checkEtag = new BasicDBObject("_id", "_properties.".concat(collName));
+        final BasicDBObject checkEtag = new BasicDBObject("_id", "_properties.".concat(collName));
 
-        DBObject exists = propsColl.findOne(checkEtag, fieldsToReturn);
+        final DBObject exists = propsColl.findOne(checkEtag, FIELDS_TO_RETURN);
 
         if (exists != null) {
             Object oldEtag = exists.get("_etag");
@@ -411,7 +439,7 @@ class CollectionDAO {
         }
     }
 
-    private void initDefaultIndexes(DBCollection coll) {
+    private void initDefaultIndexes(final DBCollection coll) {
         coll.createIndex(new BasicDBObject("_id", 1).append("_etag", 1), new BasicDBObject("name", "_id_etag_idx"));
         coll.createIndex(new BasicDBObject("_etag", 1), new BasicDBObject("name", "_etag_idx"));
     }

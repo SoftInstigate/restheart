@@ -19,8 +19,6 @@ package org.restheart.utils;
 
 import com.mongodb.util.JSONSerializers;
 import com.mongodb.util.ObjectSerializer;
-import org.restheart.hal.UnsupportedDocumentIdException;
-import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -30,6 +28,8 @@ import java.util.Deque;
 import org.bson.types.MaxKey;
 import org.bson.types.MinKey;
 import org.bson.types.ObjectId;
+import org.restheart.hal.UnsupportedDocumentIdException;
+import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.STRING;
 import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_KEY;
@@ -191,7 +191,7 @@ public class URLUtils {
      * @return
      */
     static public String getParentPath(String path) {
-        if (path == null || path.equals("") || path.equals("/")) {
+        if (path == null || path.isEmpty() || path.equals("/")) {
             return path;
         }
 
@@ -237,7 +237,7 @@ public class URLUtils {
             sb.append("?id_type=").append(docIdType.name());
         }
         
-        return context.mapUri(sb.toString().replaceAll(" ", ""));
+        return context.mapUri(sb.toString());
     }
 
     /**
@@ -257,7 +257,7 @@ public class URLUtils {
                 .append("filter={").append("'").append("_id").append("'").append(":")
                 .append("{'$in'").append(":").append(getIdsString(ids)).append("}}");
 
-        return context.mapUri(sb.toString().replaceAll(" ", ""));
+        return context.mapUri(sb.toString());
     }
 
     /**
@@ -278,7 +278,7 @@ public class URLUtils {
                 .append("filter={").append("'").append(referenceField).append("'")
                 .append(":").append(getIdString(id)).append("}");
 
-        return context.mapUri(sb.toString().replaceAll(" ", ""));
+        return context.mapUri(sb.toString());
     }
 
     /**
@@ -299,7 +299,7 @@ public class URLUtils {
                 .append("filter={'").append(referenceField)
                 .append("':{").append("'$elemMatch':{'$eq':").append(getIdString(id)).append("}}}");
 
-        return context.mapUri(sb.toString().replaceAll(" ", ""));
+        return JsonUtils.minify(context.mapUri(sb.toString()));
     }
 
     /**
@@ -387,7 +387,7 @@ public class URLUtils {
         if (id == null) {
             return null;
         } else {
-            return serializer.serialize(id).replace("\"", "'");
+            return JsonUtils.minify(serializer.serialize(id).replace("\"", "'"));
         }
     }
 
@@ -404,6 +404,9 @@ public class URLUtils {
             cont++;
         }
 
-        return Arrays.toString(_ids);
+        return JsonUtils.minify(Arrays.toString(_ids));
+    }
+
+    private URLUtils() {
     }
 }

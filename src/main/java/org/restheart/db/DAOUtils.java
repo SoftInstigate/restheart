@@ -36,7 +36,7 @@ public class DAOUtils {
      * @param rows list of DBObject rows as returned by getDataFromCursor()
      * @return
      */
-    public static List<Map<String, Object>> getDataFromRows(List<DBObject> rows) {
+    public static List<Map<String, Object>> getDataFromRows(final List<DBObject> rows) {
         if (rows == null) {
             return null;
         }
@@ -59,7 +59,7 @@ public class DAOUtils {
      * @param fieldsToFilter list of field names to filter
      * @return
      */
-    public static TreeMap<String, Object> getDataFromRow(DBObject row, String... fieldsToFilter) {
+    public static TreeMap<String, Object> getDataFromRow(final DBObject row, String... fieldsToFilter) {
         if (row == null) {
             return null;
         }
@@ -86,7 +86,7 @@ public class DAOUtils {
      * @param fieldsToFilter list of field names to filter
      * @return
      */
-    private static Object getElement(Object element) {
+    private static Object getElement(final Object element) {
         if (element == null) {
             return null;
         }
@@ -114,5 +114,14 @@ public class DAOUtils {
         } else {
             return element;
         }
+    }
+
+    /**
+     *
+     * @param newContent the value of newContent
+     * @return a not null DBObject
+     */
+    protected static DBObject validContent(final DBObject newContent) {
+        return (newContent == null) ? new BasicDBObject() : newContent;
     }
 }

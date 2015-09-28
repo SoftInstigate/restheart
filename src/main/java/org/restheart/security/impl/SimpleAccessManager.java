@@ -17,8 +17,9 @@
  */
 package org.restheart.security.impl;
 
-import org.restheart.handlers.RequestContext;
+import static com.google.common.collect.Sets.newHashSet;
 import io.undertow.predicate.Predicate;
+import static io.undertow.predicate.Predicate.PREDICATE_CONTEXT;
 import io.undertow.predicate.PredicateParser;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
@@ -27,12 +28,10 @@ import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
-
-import static com.google.common.collect.Sets.newHashSet;
-import static io.undertow.predicate.Predicate.PREDICATE_CONTEXT;
 import java.util.TreeMap;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
+import org.restheart.handlers.RequestContext;
 import org.restheart.security.AccessManager;
 
 /**
@@ -70,7 +69,7 @@ public final class SimpleAccessManager extends AbstractSimpleSecurityManager imp
             try {
                 predicate = PredicateParser.parse((String) _predicate, this.getClass().getClassLoader());
             } catch (Throwable t) {
-                throw new IllegalArgumentException("wrong configuration file format. wrong predicate " + (String) _predicate, t);
+                throw new IllegalArgumentException("wrong configuration file format. wrong predicate " + _predicate, t);
             }
 
             aclForRole(role).add(predicate);
@@ -99,8 +98,9 @@ public final class SimpleAccessManager extends AbstractSimpleSecurityManager imp
     
     @Override
     public boolean isAuthenticationRequired(final HttpServerExchange exchange) {
-        if (getAcl() == null)
+        if (getAcl() == null) {
             return true;
+        }
         
         Set<Predicate> ps = getAcl().get("$unauthenticated");
         return ps == null ? true : !ps.stream().anyMatch(p -> p.resolve(exchange));

@@ -27,14 +27,29 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Rule;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.URLUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Maurizio Turatti <maurizio@softinstigate.com>
  */
 public class URLUtilisTest {
+    private static final Logger LOG = LoggerFactory.getLogger(URLUtilisTest.class);
+    
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+        @Override
+        protected void starting(Description description) {
+            LOG.info("executing test {}", description.toString());
+        }
+    };
 
     public URLUtilisTest() {
     }
@@ -57,7 +72,6 @@ public class URLUtilisTest {
 
     @Test
     public void testRemoveTrailingSlashes() {
-        System.out.println("removeTrailingSlashes");
         String s = "/ciao/this/has/trailings/////";
         String expResult = "/ciao/this/has/trailings";
         String result = URLUtils.removeTrailingSlashes(s);
@@ -66,7 +80,6 @@ public class URLUtilisTest {
 
     @Test
     public void testDecodeQueryString() {
-        System.out.println("decodeQueryString");
         String qs = "one%2Btwo";
         String expResult = "one+two";
         String result = URLUtils.decodeQueryString(qs);
@@ -75,7 +88,6 @@ public class URLUtilisTest {
 
     @Test
     public void testGetParentPath() {
-        System.out.println("getParentPath");
         String path = "/a/b/c/d";
         String expResult = "/a/b/c";
         String result = URLUtils.getParentPath(path);
@@ -84,7 +96,6 @@ public class URLUtilisTest {
 
     @Test
     public void testGetUriWithDocId() {
-        System.out.println("getUriWithDocId String");
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName/documentId";
         String result;
@@ -98,7 +109,6 @@ public class URLUtilisTest {
     
     @Test
     public void testGetUriWithDocIdStringValidObjectId() {
-        System.out.println("getUriWithDocId String");
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName/54d13711c2e692941728e1d3?id_type=STRING";
         String result;
@@ -112,7 +122,6 @@ public class URLUtilisTest {
 
     @Test
     public void testGetUriWithLongDocId() {
-        System.out.println("getUriWithDocId Integer");
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName/123?id_type=NUMBER";
         String result;
@@ -126,7 +135,6 @@ public class URLUtilisTest {
 
     @Test
     public void testGetUriWithFilterMany() {
-        System.out.println("getUriWithFilterMany");
         Object[] ids = new Object[]{1, 20.0f, "id"};
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName?filter={'_id':{'$in':[1,20.0,\'id\']}}";
@@ -138,10 +146,23 @@ public class URLUtilisTest {
             fail(ex.getMessage());
         }
     }
+    
+    @Test
+    public void testGetUriWithFilterManyIdsWithSpaces() {
+        Object[] ids = new Object[]{"Three Imaginary Boys", "Seventeen Seconds"};
+        RequestContext context = prepareRequestContext();
+        String expResult = "/dbName/collName?filter={'_id':{'$in':[\'Three Imaginary Boys\','Seventeen Seconds\']}}";
+        String result;
+        try {
+            result = URLUtils.getUriWithFilterMany(context, "dbName", "collName", ids);
+            assertEquals(expResult, result);
+        } catch (UnsupportedDocumentIdException ex) {
+            fail(ex.getMessage());
+        }
+    }
 
     @Test
     public void testGetUriWithFilterManyString() {
-        System.out.println("getUriWithFilterMany");
         Object[] ids = new Object[]{1, 20.0f, "id"};
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName?filter={'_id':{'$in':[1,20.0,'id']}}";
@@ -156,7 +177,6 @@ public class URLUtilisTest {
 
     @Test
     public void testGetUriWithFilterOne() {
-        System.out.println("getUriWithFilterOne  String");
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName?filter={'referenceField':'id'}";
         String result;
@@ -170,7 +190,6 @@ public class URLUtilisTest {
 
     @Test
     public void testGetUriWithFilterOneInteger() {
-        System.out.println("getUriWithFilterOne  Integer");
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName?filter={'referenceField':123}";
         String result;
@@ -184,7 +203,6 @@ public class URLUtilisTest {
 
     @Test
     public void testGetUriWithFilterOneObjectId() {
-        System.out.println("getUriWithFilterOne  ObjectId");
         ObjectId id = new ObjectId();
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName?filter={'referenceField':{'$oid':'" + id.toString() + "'}}";
@@ -199,7 +217,6 @@ public class URLUtilisTest {
 
     @Test
     public void testGetUriWithFilterManyInverse() {
-        System.out.println("getUriWithFilterManyInverse String");
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':'ids'}}}";
         String result;
@@ -213,7 +230,6 @@ public class URLUtilisTest {
 
     @Test
     public void testGetUriWithFilterManyInverseLong() {
-        System.out.println("getUriWithFilterManyInverse Long");
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':123}}}";
         String result;
@@ -227,7 +243,6 @@ public class URLUtilisTest {
 
     @Test
     public void testGetUriWithFilterManyInverseObjectId() {
-        System.out.println("getUriWithFilterManyInverse ObjectId");
         RequestContext context = prepareRequestContext();
         ObjectId id = new ObjectId();
         String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':{'$oid':'" + id.toString() + "'}}}}";
@@ -242,7 +257,6 @@ public class URLUtilisTest {
 
     @Test
     public void testGetQueryStringRemovingParams() {
-        System.out.println("getQueryStringRemovingParams");
         HttpServerExchange exchange = new HttpServerExchange();
         exchange.setQueryString("a=1&b=2&c=3");
         exchange.addQueryParam("a", "1").addQueryParam("b", "2").addQueryParam("c", "3");

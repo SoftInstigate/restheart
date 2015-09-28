@@ -17,10 +17,10 @@
  */
 package org.restheart.handlers.metadata;
 
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.hal.metadata.InvalidMetadataException;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.RequestContext;
 
 /**
  *

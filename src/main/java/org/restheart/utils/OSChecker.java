@@ -39,4 +39,7 @@ public class OSChecker {
     public static boolean isSolaris() {
         return OS.contains("sunos");
     }
+
+    private OSChecker() {
+    }
 }
