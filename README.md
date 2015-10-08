@@ -2,15 +2,13 @@
 
 The data REST API server for MongoDB.
 
-Open your data, quickly build HATEOAS applications, use it as your mobile apps back-end,...
+> Open your data, quickly build HATEOAS applications, use it as your mobile apps back-end,...
 
-__You'll find the full documentation at [http://www.restheart.org](http://www.restheart.org).__
-
-Develop branch:
+### >>> Read the full documentation at: [www.restheart.org](http://www.restheart.org) <<<
 
 [![Build Status](https://travis-ci.org/SoftInstigate/restheart.svg?branch=develop)](https://travis-ci.org/SoftInstigate/restheart)
 
-## RESTHeart is the REST API server for [MongoDB](http://www.mongodb.org/).
+## RESTHeart, the REST API server for [MongoDB](http://www.mongodb.org/).
 
 * Zero development time: just start it and the data REST API is ready to use
 * CRUD operations API on your data
@@ -34,7 +32,7 @@ If you don’t want to install and run all the components manually on your host,
 
 ### Docker
 
-Docker is even simpler. There is a [Docker container](https://hub.docker.com/r/softinstigate/restheart/) with a JVM running RESTHeart, linked to another container running MongoDB, which makes use of the official MongoDB image.
+Docker is even simpler and ours favorite. There is a [Docker container](https://hub.docker.com/r/softinstigate/restheart/) available, with a JVM running RESTHeart linked to another container running MongoDB.
 
 ### Bare metal
 
@@ -45,25 +43,26 @@ Please follow the next sections for a full local installation.
 Download the latest release from [github releases page](https://github.com/SoftInstigate/restheart/releases/latest), unpack the archive and just run the jar.
 
 	$ java -server -jar restheart.jar
-	
+
 You might also want to specify a configuration file:
 
 	$ java -server -jar restheart.jar etc/restheart.yml
-	
+
 * configuration file [documentation](http://restheart.org/docs/configuration.html)
 * example configuration file [restheart.yml](http://restheart.org/docs/configuration.html#conf-example)
-	
+
 ## How to build it
 
-Clone the repository and update the git submodules (the HAL browser is included in restheart as a submodule):
+Clone the repository and update the git submodules (the __HAL browser__ is included in restheart as a submodule):
 
-    $ git submodule update --init --recursive 
-    
-Build the project with maven
+    $ git submodule update --init --recursive
+
+Build the project with Maven:
 
     $ mvn clean package
-    
-Optionally run the integration test suite (make sure mongod is running on localhost on default port 27017 without authentication, i.e. no --auth option specified)
 
-    $ mvn verify
-   
+## Integration tests
+
+Optionally you can run the integration test suite. Make sure __mongod is running__ on localhost on default port 27017 without authentication, i.e. no `--auth` option is specified.
+
+    $ mvn verify -DskipITs=false
