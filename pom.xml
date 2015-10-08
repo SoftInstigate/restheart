@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.restheart</groupId>
     <artifactId>restheart</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Restheart</name>
     <description>
@@ -20,17 +20,17 @@
         <!-- By default skip integration tests. Use 'mvn install -DskipITs=false' to run them. -->
         <skipITs>true</skipITs>
     </properties>
-    
+
     <prerequisites>
         <maven>3.0.5</maven>
     </prerequisites>
-    
+
     <!-- Project Information -->
     <organization>
         <name>SoftInstigate</name>
         <url>http://www.softinstigate.com</url>
     </organization>
-  
+
     <licenses>
         <license>
             <name>GNU AFFERO GENERAL PUBLIC LICENSE</name>
@@ -39,7 +39,7 @@
             <comments>A business-friendly OSS license</comments>
         </license>
     </licenses>
-    
+
     <developers>
         <developer>
             <id>ujibang</id>
@@ -73,92 +73,92 @@
             </properties>
         </developer>
     </developers>
-    
+
     <issueManagement>
         <url>https://github.com/SoftInstigate/restheart/issues</url>
         <system>GitHub Issues</system>
     </issueManagement>
-    
+
     <scm>
         <url>https://github.com/SoftInstigate/restheart</url>
         <connection>scm:git:git@github.com:SoftInstigate/restheart.git</connection>
         <developerConnection>scm:git:git@github.com:SoftInstigate/restheart.git</developerConnection>
     </scm>
-    
+
     <!-- TODO: Continuous Integration Management -->
-    
+
     <dependencies>
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongo-java-driver</artifactId>
             <version>2.13.3</version>
         </dependency>
-        
+
         <dependency>
             <groupId>io.undertow</groupId>
             <artifactId>undertow-core</artifactId>
             <version>1.2.12.Final</version>
         </dependency>
-        
+
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>18.0</version>
         </dependency>
-        
+
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
             <version>1.15</version>
         </dependency>
-        
+
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.1.3</version>
         </dependency>
-        
+
         <dependency>
             <groupId>org.kohsuke</groupId>
             <artifactId>akuma</artifactId>
             <version>1.10</version>
         </dependency>
-        
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.12</version>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>1.10.19</version>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>4.4.1</version>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>fluent-hc</artifactId>
             <version>4.4.1</version>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>com.eclipsesource.minimal-json</groupId>
             <artifactId>minimal-json</artifactId>
             <version>0.9.4</version>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId>
@@ -229,13 +229,13 @@
                     </execution>
                 </executions>
             </plugin>
-            
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.6</version>
                 <configuration>
-                    <archive>                   
+                    <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <mainClass>org.restheart.Bootstrapper</mainClass>
@@ -245,7 +245,7 @@
                     </archive>
                 </configuration>
             </plugin>
-            
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -254,7 +254,7 @@
                     <debug>true</debug>
                 </configuration>
             </plugin>
-                 
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
@@ -271,10 +271,10 @@
                     </execution>
                 </executions>
             </plugin>
-            
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId> 
+                <artifactId>maven-antrun-plugin</artifactId>
                 <version>1.8</version>
                 <executions>
                     <execution>
@@ -312,13 +312,13 @@
                     </execution>
                 </executions>
             </plugin>
-            
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-project-info-reports-plugin</artifactId>
                 <version>2.8</version>
             </plugin>
-            
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
@@ -334,7 +334,7 @@
                     <configLocation>${checkstyle.file.path}</configLocation>
                 </configuration>
             </plugin>
-            
+
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -413,7 +413,7 @@
                 <artifactId>maven-pmd-plugin</artifactId>
                 <version>3.5</version>
             </plugin>
-            
+
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
