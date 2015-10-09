@@ -11,9 +11,10 @@ For an example, check our **AngularJs** [Notes Example Application](https://gith
 
 Built on strong foundations
 ----
-* Resources are represented with the [HAL+json](https://softinstigate.atlassian.net/wiki/x/UICM) format
-* Built on top of [Undertow](http://undertow.io) web server
-* 
+* The API strictly follows the **RESTful** paradigm.
+* Resources are represented with the [HAL+json](https://softinstigate.atlassian.net/wiki/x/UICM) format.
+* Built on top of [Undertow](http://undertow.io) web server.
+* Makes use of few, best of breed libraries, check the [pom.xml](https://github.com/SoftInstigate/restheart/blob/master/pom.xml)!
 
 No Development required
 ----
