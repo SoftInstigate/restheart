@@ -172,7 +172,7 @@ public class DocumentRepresentationFactory {
                 }
             } catch (IllegalArgumentException | UnsupportedDocumentIdException ex) {
                 rep.addWarning(ex.getMessage());
-                LOGGER.debug(ex.getMessage(), ex);
+                LOGGER.debug(ex.getMessage());
             }
         }
 
