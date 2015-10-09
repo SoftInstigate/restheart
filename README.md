@@ -3,7 +3,7 @@ RESTHeart
 
 > The leading Web API for MongoDB. 
 > 
-> &nbsp;&nbsp;Done with **love** by the [SoftInstigate Team](http://www.softinstigate.com)
+> &nbsp;&nbsp;Done with :heart: by the [SoftInstigate Team](http://www.softinstigate.com)
 
 
 **RESTHeart** connects to **MongoDB** and its **WebAPI** is **ready to use**, opening the data to the Web.
@@ -53,7 +53,7 @@ An Example
 In the following example, a web client sends an HTTP GET request to the /blog/posts URI and gets back the list of blog posts documents.
 
 
-![alt text](http://restheart.org/images/what%20restheart%20does.png =650x)
+![what restheart does](http://restheart.org/images/what%20restheart%20does.png)
 
 Installation
 ---
