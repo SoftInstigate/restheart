@@ -3,14 +3,29 @@ RESTHeart
 
 > The leading Web API for MongoDB. 
 > 
-> &nbsp;&nbsp;Done with :heart: by the [SoftInstigate Team](http://www.softinstigate.com)
+> &nbsp;&nbsp;Done with **love** by the [SoftInstigate Team](http://www.softinstigate.com)
 
+**RESTHeart** connects to **MongoDB** and opens data to the Web: Mobile and JavaScript applications can use the database via **RESTful HTTP API** calls.
 
-**RESTHeart** connects to **MongoDB** and its **WebAPI** is **ready to use**, opening the data to the Web.
+For an example, check our **AngularJs** [Notes Example Application](https://github.com/softinstigate/restheart-notes-example).
 
-Web and Mobile applications can use the database via REST HTTP API calls.
+Built on strong foundations
+----
+* Resources are represented with the [HAL+json](https://softinstigate.atlassian.net/wiki/x/UICM) format
+* Built on top of [Undertow](http://undertow.io) web server
+* 
 
-Check the **AngularJs** [Notes Example Application](https://github.com/softinstigate/restheart-notes-example).
+No Development required
+----
+* **No server side development is required** for your web and mobile applications.
+* The **Setup** is simple with convention over configuration approach; **Docker Container** and **Vagrant Box** are available.
+* **Access Control** and **Schema Check** are provided out of the box.
+
+Production ready
+----
+* High quality **Documentation** and active development **community**.
+* Severe **Unit** and **Integration** test suite, **Code Check** and **Continuous Integration** process.
+* **Commercial Support** available from [SoftInstigate](http://www.softinstigate.com), the company behind RESTHeart.
 
 Fast
 ----
@@ -20,21 +35,8 @@ Fast
 * **Horizontally Scalable** with **Stateless Architecture** and full support for MongoDB **replica sets** and **shards**.
 * **µService**: it does one think and it does it well.
 
-No Dev
-----
-* **No server side development is required** for your web and mobile applications.
-* The **Setup** is simple with convention over configuration approach; **Docker Container** and **Vagrant Box** are available.
-* **Access Control** and **Schema Check** are provided out of the box.
 
-Prod
-----
-* **Production ready**.
-* High quality **Documentation** and active development **community**.
-* Severe **Unit** and **Integration** test suite, **Code Check** and **Continuous Integration** process.
-* **Commercial Support** available from [SoftInstigate](http://www.softinstigate.com), the company behind RESTHeart.
-
-
-Documentaion
+Documentation
 ----
 * Web site: [http://restheart.org](http://restheart.org)
 
@@ -47,13 +49,15 @@ Documentaion
 An Example
 ----
 
-> RESTHeart enables clients to access MongoDB via a HTTP REST API
+> RESTHeart enables clients to access MongoDB via a HTTP RESTful API
 
 
 In the following example, a web client sends an HTTP GET request to the /blog/posts URI and gets back the list of blog posts documents.
 
 
 ![what restheart does](http://restheart.org/images/what%20restheart%20does.png)
+
+> For more examples, check the [API tutorial](https://softinstigate.atlassian.net/wiki/x/GICM) 
 
 Installation
 ---
@@ -67,8 +71,6 @@ Complete instruction at [Installation and Setup](https://softinstigate.atlassian
 
 How to run it
 ---
-
-Please follow the next sections for a full local installation.
 
 > Running RESTHeart requires [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 
