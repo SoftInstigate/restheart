@@ -225,7 +225,7 @@ public class Relationship {
             } else {
                 if (!(_referenceValue instanceof BasicDBList)) {
                     throw new IllegalArgumentException("in resource " + dbName + "/" + collName + "/" + data.get("_id")
-                            + " the " + type.name() + " relationship ref-field " + this.referenceField + " should be an array, but is " + _referenceValue);
+                            + " the " + type.name() + " relationship ref-field " + this.referenceField + " should be an array, but it is " + _referenceValue);
                 }
 
                 Object[] ids = ((BasicDBList) _referenceValue).toArray();
@@ -253,7 +253,7 @@ public class Relationship {
      *
      *
      */
-    private Object getReferenceFieldValue(String referenceField, DBObject data) throws IllegalArgumentException {
+    private Object getReferenceFieldValue(String referenceField, DBObject data) {
         if (referenceField.startsWith("$.")) {
             // it is a json path expression
 
@@ -268,19 +268,22 @@ public class Relationship {
             if (objs == null) {
                 return null;
             }
-            
+
             BasicDBList ret = new BasicDBList();
 
             objs.stream().forEach((Optional<Object> obj) -> {
                 if (obj != null && obj.isPresent()) {
                     ret.add(obj.get());
                 } else {
-                    LOGGER.debug("cound not get the value of the reference field " + referenceField + " from " + data.toString() + "\nThe json path expression resolved to " + objs.toString());
-                    throw new IllegalArgumentException("ref-field: json path expression " + referenceField + " resolved to " + objs.toString());
+                    LOGGER.debug("the reference field {} resolved to {} from {}", referenceField, objs, data);
                 }
             });
 
-            return ret;
+            if (ret.isEmpty()) {
+                return null;
+            } else {
+                return ret;
+            }
         } else {
             return data.get(referenceField);
         }
