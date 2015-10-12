@@ -17,7 +17,8 @@
  */
 package org.restheart.handlers;
 
-import com.mongodb.CommandFailureException;
+import com.mongodb.MongoCommandException;
+import com.mongodb.MongoTimeoutException;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
@@ -48,21 +49,25 @@ public class ErrorHandler implements HttpHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         try {
             next.handleRequest(exchange);
-        } catch (CommandFailureException cfe) {
-            LOGGER.error("mongodb command failure handling the request", cfe);
+        } catch (MongoCommandException mce) {
+            LOGGER.error("Mongodb error", mce);
 
-            Object errmsg = cfe.getCommandResult().get("errmsg");
-
-            if (errmsg != null && errmsg instanceof String && ("unauthorized".equals(errmsg) || ((String) errmsg).contains("not authorized"))) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "not authorized to access the resource in mongodb. check mongo-credentials in the configuration.", cfe);
+            int errCode = mce.getErrorCode();
+            
+            // error code 13 is "not authorized on admin to execute command { listDatabases: 1 }"
+            if (errCode == 13) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Not authorized to access MongoDB. Check mongo-credentials in the configuration.", mce);
             } else {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error handling the request", cfe);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request", mce);
             }
 
+        } catch (MongoTimeoutException nte) {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Timeout connecting to MongoDB, is it running?", nte);
+            
         } catch (Throwable t) {
-            LOGGER.error("error handling the request", t);
+            LOGGER.error("Error handling the request", t);
 
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error handling the request", t);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request", t);
         }
     }
 }
