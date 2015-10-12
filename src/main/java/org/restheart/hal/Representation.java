@@ -55,7 +55,7 @@ public class Representation {
         links = new BasicDBObject();
 
         properties.append("_links", links);
-
+        
         links.put("self", new BasicDBObject("href", href));
     }
 
@@ -90,6 +90,22 @@ public class Representation {
     public void addLink(Link link) {
         links.putAll((BSONObject) link.getDBObject());
     }
+    
+    /**
+     *
+     * @param linkArrayRef
+     * @return the created or existing link array
+     */
+    public BasicDBList addLinkArray(String linkArrayRef) {
+        BasicDBList linkArray = (BasicDBList) links.get(linkArrayRef);
+
+        if (linkArray == null) {
+            linkArray = new BasicDBList();
+            links.append(linkArrayRef, linkArray);
+        }
+        
+        return linkArray;
+    }
 
     /**
      *
@@ -97,12 +113,7 @@ public class Representation {
      * @param inArray
      */
     public void addLink(Link link, boolean inArray) {
-        BasicDBList linkArray = (BasicDBList) links.get(link.getRef());
-
-        if (linkArray == null) {
-            linkArray = new BasicDBList();
-            links.append(link.getRef(), linkArray);
-        }
+        BasicDBList linkArray = addLinkArray(link.getRef());
 
         linkArray.add(link.getDBObject().get(link.getRef()));
 

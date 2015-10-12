@@ -73,7 +73,10 @@ public abstract class AbstractRepresentationFactory {
             float _pagesize = context.getPagesize() + 0f;
 
             rep.addProperty("_size", size);
-            rep.addProperty("_total_pages", Math.max(1, Math.round(Math.ceil(_size / _pagesize))));
+
+            if (context.getPagesize() > 0) {
+                rep.addProperty("_total_pages", Math.max(1, Math.round(Math.ceil(_size / _pagesize))));
+            }
         }
     }
 
@@ -82,7 +85,7 @@ public abstract class AbstractRepresentationFactory {
                 .filter((props) -> props.keySet().stream()
                         .anyMatch((k) -> k.equals("id") || k.equals("_id")))
                 .count();
-        
+
         rep.addProperty("_returned", count);
     }
 

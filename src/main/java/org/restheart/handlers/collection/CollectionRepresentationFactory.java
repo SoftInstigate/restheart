@@ -58,25 +58,29 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         final Representation rep = createRepresentation(exchange, context, requestPath);
 
         addEmbeddedData(embeddedData, rep, requestPath, exchange, context);
-        
+
         if (context.getHalMode() == HAL_MODE.FULL
                 || context.getHalMode() == HAL_MODE.F) {
             addProperties(rep, context, size);
-            
+
             addPaginationLinks(exchange, context, size, rep);
 
             addLinkTemplates(exchange, context, rep, requestPath);
-        }
-        
-        addSizeAndTotalPagesProperties(size, context, rep);
 
-        // curies
-        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
-                + "/{rel}.html", true), true);
+            // curies
+            rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
+                    + "/{rel}.html", true), true);
+        } else {
+            // empty curies section. this is needed due to HAL browser issue
+            // https://github.com/mikekelly/hal-browser/issues/71
+            rep.addLinkArray("curies");
+        }
+
+        addSizeAndTotalPagesProperties(size, context, rep);
 
         return rep;
     }
-    
+
     private void addProperties(final Representation rep, final RequestContext context, long size) {
         // add the collection properties
         final DBObject collProps = context.getCollectionProps();
@@ -95,7 +99,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
             throws IllegalQueryParamenterException {
         if (embeddedData != null) {
             addReturnedProperty(embeddedData, rep);
-            
+
             if (!embeddedData.isEmpty()) {
                 embeddedDocuments(embeddedData, requestPath, exchange, context, rep);
             }

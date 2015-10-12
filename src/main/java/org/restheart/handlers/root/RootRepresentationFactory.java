@@ -28,7 +28,6 @@ import org.restheart.hal.Representation;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.HAL_MODE;
-import org.restheart.handlers.database.DBRepresentationFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,11 +57,15 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
             addPaginationLinks(exchange, context, size, rep);
 
             addLinkTemplates(exchange, context, rep, requestPath);
-        }
 
-        //curies link
-        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
-                + "/{rel}.html", true), true);
+            //curies
+            rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
+                    + "/{rel}.html", true), true);
+        } else {
+            // empty curies section. this is needed due to HAL browser issue
+            // https://github.com/mikekelly/hal-browser/issues/71
+            rep.addLinkArray("curies");
+        }
 
         return rep;
     }

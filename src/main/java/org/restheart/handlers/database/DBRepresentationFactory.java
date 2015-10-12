@@ -57,19 +57,23 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
         if (context.getHalMode() == HAL_MODE.FULL
                 || context.getHalMode() == HAL_MODE.F) {
             addProperties(rep, context);
-            
+
             addPaginationLinks(exchange, context, size, rep);
-            
+
             addLinkTemplates(exchange, context, rep, requestPath);
+
+            // curies
+            rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
+                    + "/{rel}.html", true), true);
+        } else {
+            // empty curies section. this is needed due to HAL browser issue
+            // https://github.com/mikekelly/hal-browser/issues/71
+            rep.addLinkArray("curies");
         }
-        
-        // curies
-        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
-                + "/{rel}.html", true), true);
 
         return rep;
     }
-    
+
     private void addProperties(final Representation rep, RequestContext context) {
         final DBObject dbProps = context.getDbProps();
 
@@ -83,7 +87,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
             }
         }
     }
-    
+
     private void addEmbeddedData(
             final List<DBObject> embeddedData,
             final Representation rep,

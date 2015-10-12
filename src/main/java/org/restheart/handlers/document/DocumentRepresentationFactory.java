@@ -122,13 +122,17 @@ public class DocumentRepresentationFactory {
 
                 rep.addLink(new Link("rh:document", parentPath + "/{docid}?id_type={type}", true));
             }
+
+            if (!isEmbedded) {
+                rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
+                        + "/{rel}.html", true), true);
+            }
+        } else if (!isEmbedded) {
+            // empty curies section. this is needed due to HAL browser issue
+            // https://github.com/mikekelly/hal-browser/issues/71
+            rep.addLinkArray("curies");
         }
 
-        if (!isEmbedded) {
-            rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
-                    + "/{rel}.html", true), true);
-        }
-        
         return rep;
     }
 
