@@ -34,6 +34,10 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class GridFsDAO implements GridFsRepository {
+
+    private static final String FILENAME = "filename";
+    private static final String _ID = "_id";
+
     private final MongoClient client;
 
     public GridFsDAO() {
@@ -42,37 +46,24 @@ public class GridFsDAO implements GridFsRepository {
 
     @Override
     public int createFile(
-            final Database db, 
-            final String dbName, 
-            final String bucketName, 
-            final Object fileId, 
-            final DBObject properties, 
+            final Database db,
+            final String dbName,
+            final String bucketName,
+            final Object fileId,
+            final DBObject properties,
             final File data) throws IOException, DuplicateKeyException {
-        
+
         final String bucket = extractBucketName(bucketName);
         GridFS gridfs = new GridFS(db.getDB(dbName), bucket);
         GridFSInputFile gfsFile = gridfs.createFile(data);
 
-        // remove from the properties the fields that are managed directly by the GridFs
-        properties.removeField("_id");
-        Object _fileName = properties.removeField("filename");
-        properties.removeField("chunkSize");
-        properties.removeField("uploadDate");
-        properties.removeField("length");
-        properties.removeField("md5");
-
-        String fileName;
-        if (_fileName != null && _fileName instanceof String) {
-            fileName = (String) _fileName;
-        } else {
-            fileName = null;
-        }
+        String filename = extractFilenameFromProperties(properties);
+        gfsFile.setFilename(filename);
 
         // add etag
         properties.put("_etag", new ObjectId());
 
         gfsFile.setId(fileId);
-        gfsFile.setFilename(fileName);
 
         properties.toMap().keySet().stream().forEach(k -> gfsFile.put((String) k, properties.get((String) k)));
 
@@ -81,16 +72,25 @@ public class GridFsDAO implements GridFsRepository {
         return HttpStatus.SC_CREATED;
     }
 
+    private String extractFilenameFromProperties(final DBObject properties) {
+        String filename = null;
+        if (properties != null && properties.containsField(FILENAME)) {
+            filename = (String) properties.get(FILENAME);
+        }
+
+        return filename;
+    }
+
     @Override
     public int deleteFile(
-            final Database db, 
-            final String dbName, 
-            final String bucketName, 
-            final Object fileId, 
+            final Database db,
+            final String dbName,
+            final String bucketName,
+            final Object fileId,
             final ObjectId requestEtag) {
-        
+
         GridFS gridfs = new GridFS(db.getDB(dbName), extractBucketName(bucketName));
-        GridFSDBFile dbsfile = gridfs.findOne(new BasicDBObject("_id", fileId));
+        GridFSDBFile dbsfile = gridfs.findOne(new BasicDBObject(_ID, fileId));
 
         if (dbsfile == null) {
             return HttpStatus.SC_NOT_FOUND;
@@ -98,7 +98,7 @@ public class GridFsDAO implements GridFsRepository {
             int code = checkEtag(requestEtag, dbsfile);
             if (code == HttpStatus.SC_NO_CONTENT) {
                 // delete file
-                gridfs.remove(new BasicDBObject("_id", fileId));
+                gridfs.remove(new BasicDBObject(_ID, fileId));
             }
 
             return code;

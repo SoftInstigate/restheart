@@ -50,6 +50,11 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
     static final Logger LOGGER = LoggerFactory.getLogger(BodyInjectorHandler.class);
 
+    private static final String PROPERTIES = "properties";
+    private static final String _ID = "_id";
+    private static final String CONTENT_TYPE = "contentType";
+    private static final String FILENAME = "filename";
+
     private static final String ERROR_INVALID_CONTENTTYPE = "Content-Type must be either: "
             + Representation.HAL_JSON_MEDIA_TYPE
             + " or " + Representation.JSON_MEDIA_TYPE;
@@ -77,7 +82,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(final HttpServerExchange exchange, final RequestContext context) throws Exception {
         if (context.getMethod() == RequestContext.METHOD.GET
                 || context.getMethod() == RequestContext.METHOD.OPTIONS
                 || context.getMethod() == RequestContext.METHOD.DELETE) {
@@ -88,9 +93,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         // check the content type
         HeaderValues contentTypes = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
 
-        if ((context.getType() == RequestContext.TYPE.FILE && context.getMethod() == RequestContext.METHOD.PUT)
-                || (context.getType() == RequestContext.TYPE.FILES_BUCKET && context.getMethod() == RequestContext.METHOD.POST)) {
-            if (unsupportedContentTypeFiles(contentTypes)) {
+        if (isPutFileRequest(context) || isPostFilesbucketRequest(context)) {
+            if (unsupportedContentTypeForFiles(contentTypes)) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE_FILE);
                 return;
             }
@@ -99,7 +103,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             return;
         }
 
-        DBObject content = null;
+        DBObject content;
 
         if (isNotFormData(contentTypes)) { // json or hal+json
             final String contentString = ChannelReader.read(exchange.getRequestChannel());
@@ -107,45 +111,51 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             try {
                 content = (DBObject) JSON.parse(contentString);
             } catch (JSONParseException | IllegalArgumentException ex) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Invalid data", ex);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Invalid data: No Form data found", ex);
                 return;
             }
         } else { // multipart form -> file
             FormDataParser parser = this.formParserFactory.createParser(exchange);
 
             if (parser == null) {
-                String errMsg = "This request is not form encoded";
+                String errMsg = "There is no form parser registered for the request content type";
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
                 return;
             }
 
-            FormData data;
+            FormData formData;
 
             try {
-                data = parser.parseBlocking();
+                formData = parser.parseBlocking();
             } catch (IOException ioe) {
-                String errMsg = "Error parsing the multipart form";
+                String errMsg = "Error parsing the multipart form: data could not be read";
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, ioe);
                 return;
             }
 
             try {
-                content = findProps(data);
+                content = extractProperties(formData);
             } catch (JSONParseException | IllegalArgumentException ex) {
-                String errMsg = "Invalid data";
+                String errMsg = "Invalid data: 'properties' field is not a valid JSON";
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, ex);
                 return;
             }
 
-            final String fileFieldName = findFile(data);
+            final String fileField = extractFileField(formData);
 
-            if (fileFieldName == null) {
-                String errMsg = "This request does not contain any file";
+            if (fileField == null) {
+                String errMsg = "This request does not contain any binary file";
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
                 return;
             }
 
-            File file = data.getFirst(fileFieldName).getFile();
+            final File file = formData.getFirst(fileField).getFile();
+
+            String filename = extractFilename(formData, fileField, file.getName());
+            
+            content.put(FILENAME, filename);
+
+            LOGGER.info("@@@ content = " + content.toString());
 
             context.setFile(file);
 
@@ -157,7 +167,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         } else {
             filterJsonContent(content, context);
 
-            Object _id = content.get("_id");
+            Object _id = content.get(_ID);
 
             if (_id != null) {
                 try {
@@ -173,24 +183,42 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         getNext().handleRequest(exchange, context);
     }
 
+    private String extractFilename(FormData formData, final String fileField, final String defaultFilename) {
+        String filename = formData.getFirst(fileField).getFileName();
+        if (filename == null) {
+            LOGGER.warn("Filename is not present! Using a default");
+            filename = defaultFilename;
+        }
+        return filename;
+    }
+
+    private static boolean isPostFilesbucketRequest(final RequestContext context) {
+        return context.getType() == RequestContext.TYPE.FILES_BUCKET && context.getMethod() == RequestContext.METHOD.POST;
+    }
+
+    private static boolean isPutFileRequest(final RequestContext context) {
+        return context.getType() == RequestContext.TYPE.FILE && context.getMethod() == RequestContext.METHOD.PUT;
+    }
+
     /**
      *
      * @param contentTypes
      * @return false if the content-type is form data
      */
-    private static boolean isNotFormData(HeaderValues contentTypes) {
+    private static boolean isNotFormData(final HeaderValues contentTypes) {
         return contentTypes.stream()
                 .noneMatch(ct -> ct.startsWith(Representation.APP_FORM_URLENCODED_TYPE)
                         || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE));
     }
 
     /**
-     * Clean-up the JSON content, filtering out reserved keys and injecting the request content in the ctx
+     * Clean-up the JSON content, filtering out reserved keys and injecting the
+     * request content in the ctx
      *
      * @param content
      * @param ctx
      */
-    private void filterJsonContent(DBObject content, RequestContext ctx) {
+    private static void filterJsonContent(final DBObject content, final RequestContext ctx) {
         filterOutReservedKeys(content, ctx);
         ctx.setContent(content);
     }
@@ -201,10 +229,10 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      * @param content
      * @param context
      */
-    private void filterOutReservedKeys(DBObject content, RequestContext context) {
+    private static void filterOutReservedKeys(final DBObject content, final RequestContext context) {
         final HashSet<String> keysToRemove = new HashSet<>();
         content.keySet().stream()
-                .filter(key -> key.startsWith("_") && !key.equals("_id"))
+                .filter(key -> key.startsWith("_") && !key.equals(_ID))
                 .forEach(key -> {
                     keysToRemove.add(key);
                 });
@@ -213,15 +241,15 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             content.removeField(keyToRemove);
             return keyToRemove;
         }).forEach(keyToRemove -> {
-            context.addWarning("the reserved field " + keyToRemove + " was filtered out from the request");
+            context.addWarning("Reserved field " + keyToRemove + " was filtered out from the request");
         });
     }
 
-    private void injectContentTypeFromFile(final DBObject content, final File file) throws IOException {
-        if (content.get("contentType") == null && file != null) {
+    private static void injectContentTypeFromFile(final DBObject content, final File file) throws IOException {
+        if (content.get(CONTENT_TYPE) == null && file != null) {
             final String contentType = detectMediaType(file);
             if (contentType != null) {
-                content.put("contentType", contentType);
+                content.put(CONTENT_TYPE, contentType);
             }
         }
     }
@@ -232,7 +260,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      * @param contentTypes
      * @return
      */
-    private static boolean unsupportedContentType(HeaderValues contentTypes) {
+    private static boolean unsupportedContentType(final HeaderValues contentTypes) {
         return contentTypes == null
                 || contentTypes.isEmpty()
                 || contentTypes.stream().noneMatch(
@@ -246,7 +274,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      * @param contentTypes
      * @return
      */
-    private static boolean unsupportedContentTypeFiles(HeaderValues contentTypes) {
+    private static boolean unsupportedContentTypeForFiles(final HeaderValues contentTypes) {
         return contentTypes == null
                 || contentTypes.isEmpty()
                 || contentTypes.stream().noneMatch(
@@ -258,27 +286,30 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      * Search request for a field named 'properties' which contains JSON
      *
      * @param data
-     * @return the parsed DBObject from the form data or an empty DBObject the etag value)
+     * @return the parsed DBObject from the form data or an empty DBObject the
+     * etag value)
      */
-    private DBObject findProps(final FormData data) throws JSONParseException {
-        DBObject result = new BasicDBObject();
-        if (data.getFirst("properties") != null) {
-            String propsString = data.getFirst("properties").getValue();
-            if (propsString != null) {
-                result = (DBObject) JSON.parse(propsString);
-            }
+    private static DBObject extractProperties(final FormData data) throws JSONParseException {
+        DBObject properties = new BasicDBObject();
+
+        final String propsString = data.getFirst(PROPERTIES) != null
+                ? data.getFirst(PROPERTIES).getValue()
+                : null;
+
+        if (propsString != null) {
+            properties = (DBObject) JSON.parse(propsString);
         }
 
-        return result;
+        return properties;
     }
 
     /**
      * Find the name of the first file field in this request
      *
      * @param data
-     * @return the file field name or null
+     * @return the first file field name or null
      */
-    private String findFile(final FormData data) {
+    private static String extractFileField(final FormData data) {
         String fileField = null;
         for (String f : data) {
             if (data.getFirst(f) != null && data.getFirst(f).isFile()) {
@@ -289,8 +320,14 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         return fileField;
     }
 
-    public static String detectMediaType(File data) throws IOException {
-        Tika tika = new Tika();
-        return tika.detect(data);
+    /**
+     * Uses Apache Tika to detect the file's media type
+     * 
+     * @param file
+     * @return
+     * @throws IOException 
+     */
+    public static String detectMediaType(File file) throws IOException {
+        return new Tika().detect(file);
     }
 }
