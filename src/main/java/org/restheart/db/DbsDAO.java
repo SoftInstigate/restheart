@@ -32,7 +32,6 @@ import org.restheart.utils.ResponseHelper;
 
 import io.undertow.server.HttpServerExchange;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
@@ -57,7 +56,6 @@ public class DbsDAO implements Database {
         FIELDS_TO_RETURN = new BasicDBObject();
         FIELDS_TO_RETURN.put("_id", 1);
         FIELDS_TO_RETURN.put("_etag", 1);
-        FIELDS_TO_RETURN.put("_created_on", 1);
     }
 
     /**
@@ -162,12 +160,6 @@ public class DbsDAO implements Database {
 
         if (row != null) {
             row.put("_id", dbName);
-
-            Object etag = row.get("_etag");
-
-            if (etag != null && etag instanceof ObjectId) {
-                row.put("_lastupdated_on", Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString());
-            }
         } else if (fixMissingProperties) {
             new PropsFixer().addDbProps(dbName);
             return getDatabaseProperties(dbName, false);
@@ -288,48 +280,19 @@ public class DbsDAO implements Database {
         }
 
         ObjectId newEtag = new ObjectId();
-        Instant now = Instant.ofEpochSecond(newEtag.getTimestamp());
 
         final DBObject content = DAOUtils.validContent(newContent);
 
         content.put("_etag", newEtag);
-        content.removeField("_created_on"); // make sure we don't change this field
         content.removeField("_id"); // make sure we don't change this field
 
         if (patching) {
             coll.update(PROPS_QUERY, new BasicDBObject("$set", content), true, false);
-
-            return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else {
-            // we use findAndModify to get the @created_on field value from the existing document
-            // we need to put this field back using a second update 
-            // it is not possible in a single update even using $setOnInsert update operator
-            // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
-            DBObject old = coll.findAndModify(PROPS_QUERY, FIELDS_TO_RETURN, null, false, content, false, true);
-
-            if (old != null) {
-                Object oldTimestamp = old.get("_created_on");
-
-                if (oldTimestamp == null) {
-                    oldTimestamp = now.toString();
-                    LOGGER.warn("properties of collection {} had no @created_on field. set to now", coll.getFullName());
-                }
-
-                // need to readd the @created_on field 
-                BasicDBObject createdContent = new BasicDBObject("_created_on", "" + oldTimestamp);
-                createdContent.markAsPartialObject();
-                coll.update(PROPS_QUERY, new BasicDBObject("$set", createdContent), true, false);
-
-                return new OperationResult(HttpStatus.SC_OK, newEtag);
-            } else {
-                // need to readd the @created_on field 
-                BasicDBObject createdContent = new BasicDBObject("_created_on", now.toString());
-                createdContent.markAsPartialObject();
-                coll.update(PROPS_QUERY, new BasicDBObject("$set", createdContent), true, false);
-
-                return new OperationResult(HttpStatus.SC_CREATED, newEtag);
-            }
+            coll.update(PROPS_QUERY, content, true, false);
         }
+        
+        return new OperationResult(HttpStatus.SC_OK, newEtag);
     }
 
 
