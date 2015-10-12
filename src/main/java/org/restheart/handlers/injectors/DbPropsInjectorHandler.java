@@ -52,7 +52,7 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getDBName() != null) {
-            DBObject dbProps = null;
+            DBObject dbProps;
 
             if (!LocalCachesSingleton.isEnabled()) {
                 dbProps = getDatabase().getDatabaseProperties(context.getDBName(), true);

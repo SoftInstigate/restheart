@@ -229,8 +229,7 @@ public class GetCollectionIT extends AbstactIT {
         }
 
         assertNotNull("check json not null", json);
-        assertNotNull("check not null _created_on property", json.get("_type"));
-        assertNotNull("check not null _created_on property", json.get("_created_on"));
+        assertNotNull("check not null _type property", json.get("_type"));
         assertNotNull("check not null _etag property", json.get("_etag"));
         assertNotNull("check not null _lastupdated_on property", json.get("_lastupdated_on"));
         assertNotNull("check not null _collection-props-cached property", json.get("_collection-props-cached"));

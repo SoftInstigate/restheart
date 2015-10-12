@@ -26,12 +26,11 @@ import org.restheart.handlers.document.GetDocumentHandler;
  */
 public class GetFileHandler extends GetDocumentHandler {
     /**
-     * Default ctor
+     * Default constructor
      *
      * @param next
      */
     public GetFileHandler(PipedHttpHandler next) {
         super(next);
     }
-    
 }

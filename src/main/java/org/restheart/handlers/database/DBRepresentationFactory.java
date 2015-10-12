@@ -25,8 +25,11 @@ import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
+import java.time.Instant;
 import java.util.List;
+import org.bson.types.ObjectId;
 import org.restheart.hal.AbstractRepresentationFactory;
+import org.restheart.handlers.RequestContext.HAL_MODE;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -45,37 +48,56 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
     public Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
-        final Representation representation = createRepresentation(exchange, context, requestPath);
+        final Representation rep = createRepresentation(exchange, context, requestPath);
+
+        addSizeAndTotalPagesProperties(size, context, rep);
+
+        addEmbeddedData(embeddedData, rep, requestPath);
+
+        if (context.getHalMode() == HAL_MODE.FULL
+                || context.getHalMode() == HAL_MODE.F) {
+            addProperties(rep, context);
+            
+            addPaginationLinks(exchange, context, size, rep);
+            
+            addLinkTemplates(exchange, context, rep, requestPath);
+        }
+        
+        // curies
+        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
+                + "/{rel}.html", true), true);
+
+        return rep;
+    }
+    
+    private void addProperties(final Representation rep, RequestContext context) {
         final DBObject dbProps = context.getDbProps();
 
+        rep.addProperties(dbProps);
+
         if (dbProps != null) {
-            representation.addProperties(dbProps);
+            Object etag = dbProps.get("_etag");
+
+            if (etag != null && etag instanceof ObjectId) {
+                rep.addProperty("_lastupdated_on", Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString());
+            }
         }
-
-        addSizeAndTotalPagesProperties(size, context, representation);
-
-        addEmbeddedData(embeddedData, representation, requestPath);
-
-        addPaginationLinks(exchange, context, size, representation);
-
-        addLinkTemplatesAndCuries(exchange, context, representation, requestPath);
-
-        return representation;
     }
-
+    
     private void addEmbeddedData(
             final List<DBObject> embeddedData,
             final Representation rep,
             final String requestPath) {
         if (embeddedData != null) {
             addReturnedProperty(embeddedData, rep);
+
             if (!embeddedData.isEmpty()) {
                 embeddedCollections(embeddedData, requestPath, rep);
             }
         }
     }
 
-    private void addLinkTemplatesAndCuries(
+    private void addLinkTemplates(
             final HttpServerExchange exchange,
             final RequestContext context,
             final Representation rep,
@@ -85,15 +107,12 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
             // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link("rh:root", URLUtils.getParentPath(requestPath)));
         }
-        
+
         rep.addLink(new Link("rh:db", URLUtils.getParentPath(requestPath) + "/{dbname}", true));
         rep.addLink(new Link("rh:coll", requestPath + "/{collname}", true));
         rep.addLink(new Link("rh:bucket", requestPath + "/{bucketname}" + RequestContext.FS_FILES_SUFFIX, true));
-        
+
         rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
-        
-        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
-                + "/{rel}.html", true), true);
     }
 
     private void embeddedCollections(
@@ -118,7 +137,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
                 }
             } else {
                 // this shoudn't be possible
-                LOGGER.error("collection missing string _id field", d);
+                LOGGER.error("Collection missing string _id field: {}", _id);
             }
         });
     }

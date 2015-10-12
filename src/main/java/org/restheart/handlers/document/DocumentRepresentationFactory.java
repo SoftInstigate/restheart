@@ -31,6 +31,7 @@ import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.Relationship;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.RequestContext.HAL_MODE;
 import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
@@ -41,9 +42,9 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class DocumentRepresentationFactory {
-    
+
     public DocumentRepresentationFactory() {
-        
+
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DocumentRepresentationFactory.class);
@@ -67,14 +68,11 @@ public class DocumentRepresentationFactory {
 
         rep = new Representation(URLUtils.getReferenceLink(context, URLUtils.getParentPath(href), id));
 
-        rep.addProperty(
-                "_type", context.getType().name());
+        rep.addProperty("_type", context.getType().name());
 
-        // document properties
         data.keySet()
                 .stream().forEach((key) -> rep.addProperty(key, data.get(key)));
 
-        // document links
         TreeMap<String, String> links;
 
         links = getRelationshipsLinks(rep, context, data);
@@ -88,42 +86,49 @@ public class DocumentRepresentationFactory {
 
         // link templates and curies
         String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
-        
+
         String parentPath;
-        
+
         // the document (file) representation can be asked for requests to collection (bucket)
-        if (TYPE.COLLECTION.equals(context.getType()) || TYPE.FILES_BUCKET.equals(context.getType())) {
+        boolean isEmbedded = TYPE.COLLECTION.equals(context.getType()) || TYPE.FILES_BUCKET.equals(context.getType());
+
+        if (isEmbedded) {
             parentPath = requestPath;
         } else {
             parentPath = URLUtils.getParentPath(requestPath);
         }
 
-        if (isBinaryFile(data)) {
-            if (_docIdType == null) {
-                rep.addLink(new Link("rh:data",
-                        String.format("%s/%s", href, RequestContext.BINARY_CONTENT)));
+        // link templates
+        if (!isEmbedded && (context.getHalMode() == HAL_MODE.FULL
+                || context.getHalMode() == HAL_MODE.F)) {
+            if (isBinaryFile(data)) {
+                if (_docIdType == null) {
+                    rep.addLink(new Link("rh:data",
+                            String.format("%s/%s", href, RequestContext.BINARY_CONTENT)));
+                } else {
+                    rep.addLink(new Link("rh:data",
+                            String.format("%s/%s?%s", href, RequestContext.BINARY_CONTENT, _docIdType)));
+                }
+
+                if (context.isParentAccessible()) {
+                    rep.addLink(new Link("rh:bucket", parentPath));
+                }
+
+                rep.addLink(new Link("rh:file", parentPath + "/{fileid}?id_type={type}", true));
             } else {
-                rep.addLink(new Link("rh:data",
-                        String.format("%s/%s?%s", href, RequestContext.BINARY_CONTENT, _docIdType)));
+                if (context.isParentAccessible()) {
+                    rep.addLink(new Link("rh:coll", parentPath));
+                }
+
+                rep.addLink(new Link("rh:document", parentPath + "/{docid}?id_type={type}", true));
             }
-            
-            if (context.isParentAccessible()) {
-                rep.addLink(new Link("rh:bucket", parentPath));
-            }
-            
-            rep.addLink(new Link("rh:file", parentPath + "/{fileid}?id_type={type}", true));
-        } else {
-            if (context.isParentAccessible()) {
-                rep.addLink(new Link("rh:coll", parentPath));
-            }
-            
-            rep.addLink(new Link("rh:document", parentPath + "/{docid}?id_type={type}", true));
+        }
+
+        if (!isEmbedded) {
+            rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
+                    + "/{rel}.html", true), true);
         }
         
-        // curies
-        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
-                + "/{rel}.html", true), true);
-
         return rep;
     }
 
@@ -141,11 +146,11 @@ public class DocumentRepresentationFactory {
         if (context.getWarnings() != null) {
             context.getWarnings().forEach(w -> rep.addWarning(w));
         }
-        
+
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
     }
-    
+
     private static TreeMap<String, String> getRelationshipsLinks(Representation rep, RequestContext context, DBObject data) {
         TreeMap<String, String> links = new TreeMap<>();
 

@@ -27,6 +27,8 @@ import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.RequestContext.HAL_MODE;
+import org.restheart.handlers.database.DBRepresentationFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,9 +53,16 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
 
         addEmbeddedData(embeddedData, rep, requestPath);
 
-        addPaginationLinks(exchange, context, size, rep);
+        if (context.getHalMode() == HAL_MODE.FULL
+                || context.getHalMode() == HAL_MODE.F) {
+            addPaginationLinks(exchange, context, size, rep);
 
-        addLinkTemplatesAndCuries(exchange, context, rep, requestPath);
+            addLinkTemplates(exchange, context, rep, requestPath);
+        }
+
+        //curies link
+        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
+                + "/{rel}.html", true), true);
 
         return rep;
     }
@@ -62,23 +71,19 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
         if (embeddedData != null) {
             addReturnedProperty(embeddedData, rep);
             if (!embeddedData.isEmpty()) {
-                embeddedDocuments(embeddedData, hasTrailingSlash(requestPath), requestPath, rep);
+                embeddedDbs(embeddedData, hasTrailingSlash(requestPath), requestPath, rep);
             }
         }
     }
 
-    private void addLinkTemplatesAndCuries(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath) {
+    private void addLinkTemplates(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath) {
         rep.addLink(new Link("rh:root", requestPath));
         rep.addLink(new Link("rh:db", requestPath + "{dbname}", true));
 
         rep.addLink(new Link("rh:paging", requestPath + "{?page}{&pagesize}", true));
-
-        //curies
-        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
-                + "/{rel}.html", true), true);
     }
 
-    private void embeddedDocuments(List<DBObject> embeddedData, boolean trailingSlash, String requestPath, Representation rep) {
+    private void embeddedDbs(List<DBObject> embeddedData, boolean trailingSlash, String requestPath, Representation rep) {
         embeddedData.stream().forEach((d) -> {
             Object _id = d.get("_id");
 

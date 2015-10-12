@@ -238,7 +238,7 @@ public abstract class AbstactIT {
     }
 
     private void createTestData() {
-        dbsDAO.upsertDB(dbName, dbProps, new ObjectId(), false);
+        dbsDAO.upsertDB(dbName, dbProps, new ObjectId(), false, false);
 
         dbsDAO.upsertCollection(dbName, collection1Name, coll1Props, new ObjectId(), false, false);
         dbsDAO.upsertCollection(dbName, collection2Name, coll2Props, new ObjectId(), false, false);

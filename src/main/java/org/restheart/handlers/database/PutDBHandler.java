@@ -83,8 +83,9 @@ public class PutDBHandler extends PipedHttpHandler {
         }
 
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
+        boolean updating = context.getDbProps() != null;
 
-        OperationResult result = getDatabase().upsertDB(context.getDBName(), content, etag, false);
+        OperationResult result = getDatabase().upsertDB(context.getDBName(), content, etag, updating, false);
         
         // invalidate the cache db item
         LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());

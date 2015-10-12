@@ -60,7 +60,9 @@ public class GetDBHandler extends PipedHttpHandler {
 
         List<DBObject> data = null;
 
-        if (context.getPagesize() > 0) {
+        if (context.getPagesize() > 0 && 
+                (context.getHalMode() == RequestContext.HAL_MODE.F ||
+                context.getHalMode() == RequestContext.HAL_MODE.FULL)) {
             data = getDatabase().getData(context.getDBName(), colls, context.getPage(), context.getPagesize());
         }
 
@@ -69,7 +71,7 @@ public class GetDBHandler extends PipedHttpHandler {
 
         exchange.setResponseCode(HttpStatus.SC_OK);
 
-        // call the ResponseScriptMetadataHanlder if piped in
+        // call the next handler if existing
         if (getNext() != null) {
             DBObject responseContent = rep.asDBObject();
             context.setResponseContent(responseContent);

@@ -169,10 +169,11 @@ public interface Database {
      * @param dbName
      * @param content
      * @param etag
+     * @param updating
      * @param patching
      * @return
      */
-    OperationResult upsertDB(String dbName, DBObject content, ObjectId etag, boolean patching);
+    OperationResult upsertDB(String dbName, DBObject content, ObjectId etag, boolean updating, boolean patching);
 
     /**
      *

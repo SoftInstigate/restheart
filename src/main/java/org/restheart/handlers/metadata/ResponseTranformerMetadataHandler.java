@@ -122,14 +122,16 @@ public class ResponseTranformerMetadataHandler extends AbstractTransformerHandle
                 } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.COLLECTION) {
                     BasicDBObject _embedded = (BasicDBObject) context.getResponseContent().get("_embedded");
 
-                    // execute the logic on children documents
-                    BasicDBList docs = (BasicDBList) _embedded.get("rh:doc");
+                    if (_embedded != null) {
+                        // execute the logic on children documents
+                        BasicDBList docs = (BasicDBList) _embedded.get("rh:doc");
 
-                    if (docs != null) {
-                        for (String k : docs.keySet()) {
-                            DBObject doc = (DBObject) docs.get(k);
+                        if (docs != null) {
+                            for (String k : docs.keySet()) {
+                                DBObject doc = (DBObject) docs.get(k);
 
-                            t.tranform(exchange, context, doc, rt.getArgs());
+                                t.tranform(exchange, context, doc, rt.getArgs());
+                            }
                         }
                     }
 

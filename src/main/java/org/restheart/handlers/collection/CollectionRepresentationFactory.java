@@ -19,13 +19,16 @@ package org.restheart.handlers.collection;
 
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
+import java.time.Instant;
 import java.util.List;
+import org.bson.types.ObjectId;
 import org.restheart.Configuration;
 import org.restheart.hal.AbstractRepresentationFactory;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.RequestContext.HAL_MODE;
 import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.document.DocumentRepresentationFactory;
 import org.restheart.utils.URLUtils;
@@ -54,60 +57,73 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         final String requestPath = buildRequestPath(exchange);
         final Representation rep = createRepresentation(exchange, context, requestPath);
 
+        addEmbeddedData(embeddedData, rep, requestPath, exchange, context);
+        
+        if (context.getHalMode() == HAL_MODE.FULL
+                || context.getHalMode() == HAL_MODE.F) {
+            addProperties(rep, context, size);
+            
+            addPaginationLinks(exchange, context, size, rep);
+
+            addLinkTemplates(exchange, context, rep, requestPath);
+        }
+        
+        addSizeAndTotalPagesProperties(size, context, rep);
+
+        // curies
+        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
+                + "/{rel}.html", true), true);
+
+        return rep;
+    }
+    
+    private void addProperties(final Representation rep, final RequestContext context, long size) {
         // add the collection properties
         final DBObject collProps = context.getCollectionProps();
 
-        if (collProps != null) {
-            rep.addProperties(collProps);
+        rep.addProperties(collProps);
+
+        // add the _lastupdated_on and _created_on
+        Object etag = collProps.get("_etag");
+
+        if (collProps.get("_lastupdated_on") == null && etag != null && etag instanceof ObjectId) {
+            rep.addProperty("_lastupdated_on", Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString());
         }
-
-        addSizeAndTotalPagesProperties(size, context, rep);
-
-        addEmbeddedData(embeddedData, rep, requestPath, exchange, context);
-
-        addPaginationLinks(exchange, context, size, rep);
-
-        addLinkTemplatesAndCuries(exchange, context, rep, requestPath);
-
-        return rep;
     }
 
     private void addEmbeddedData(List<DBObject> embeddedData, final Representation rep, final String requestPath, final HttpServerExchange exchange, final RequestContext context)
             throws IllegalQueryParamenterException {
         if (embeddedData != null) {
             addReturnedProperty(embeddedData, rep);
+            
             if (!embeddedData.isEmpty()) {
                 embeddedDocuments(embeddedData, requestPath, exchange, context, rep);
             }
         }
     }
 
-    private void addLinkTemplatesAndCuries(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath) {
+    private void addLinkTemplates(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath) {
         // link templates and curies
         if (context.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link("rh:db", URLUtils.getParentPath(requestPath)));
         }
-        
+
         if (TYPE.FILES_BUCKET.equals(context.getType())) {
             rep.addLink(new Link("rh:bucket", URLUtils.getParentPath(requestPath) + "/{bucketname}" + RequestContext.FS_FILES_SUFFIX, true));
             rep.addLink(new Link("rh:file", requestPath + "/{fileid}?id_type={type}", true));
         } else if (TYPE.COLLECTION.equals(context.getType())) {
-            
+
             rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath) + "/{collname}", true));
             rep.addLink(new Link("rh:document", requestPath + "/{docid}?id_type={type}", true));
         }
-        
+
         rep.addLink(new Link("rh:indexes", requestPath + "/" + context.getDBName() + "/" + context.getCollectionName() + "/_indexes"));
-        
+
         rep.addLink(new Link("rh:filter", requestPath + "/{?filter}", true));
         rep.addLink(new Link("rh:sort", requestPath + "/{?sort_by}", true));
         rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
         rep.addLink(new Link("rh:indexes", requestPath + "/_indexes"));
-        
-        // curies
-        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
-                + "/{rel}.html", true), true);
     }
 
     private void embeddedDocuments(List<DBObject> embeddedData, String requestPath, HttpServerExchange exchange, RequestContext context, Representation rep) throws IllegalQueryParamenterException {

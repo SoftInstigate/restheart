@@ -17,6 +17,7 @@
  */
 package org.restheart.handlers;
 
+import com.google.common.collect.Sets;
 import com.mongodb.DBObject;
 import org.restheart.db.DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.utils.URLUtils;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -69,6 +71,13 @@ public class RequestContext {
         MINKEY, //org.bson.types.MinKey;
         MAXKEY // org.bson.types.MaxKey
     }
+    
+    public enum HAL_MODE {
+        FULL, // default value
+        F, // alias for full
+        COMPACT,
+        C // alias for compact
+    }
 
     public static final String PAGE_QPARAM_KEY = "page";
     public static final String PAGESIZE_QPARAM_KEY = "pagesize";
@@ -88,6 +97,8 @@ public class RequestContext {
     public static final String FS_FILES_SUFFIX = ".files";
     public static final String _INDEXES = "_indexes";
     public static final String BINARY_CONTENT = "binary";
+    
+    public static final String HAL_QPARAM_KEY = "hal";
 
     public static final String MAX_KEY_ID = "_MaxKey";
     public static final String MIN_KEY_ID = "_MinKey";
@@ -122,6 +133,11 @@ public class RequestContext {
 
     private String unmappedRequestUri = null;
     private String mappedRequestUri = null;
+    
+    /**
+     * the HAL mode
+     */
+    private HAL_MODE halMode = HAL_MODE.FULL;
 
     /**
      *
@@ -641,5 +657,19 @@ public class RequestContext {
      */
     public void setKeys(Deque<String> keys) {
         this.keys = keys;
+    }
+
+    /**
+     * @return the halMode
+     */
+    public HAL_MODE getHalMode() {
+        return halMode;
+    }
+
+    /**
+     * @param halMode the halMode to set
+     */
+    public void setHalMode(HAL_MODE halMode) {
+        this.halMode = halMode;
     }
 }

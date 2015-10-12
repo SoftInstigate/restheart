@@ -29,6 +29,7 @@ import org.restheart.hal.Representation;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.RequestContext.HAL_MODE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
@@ -72,7 +73,9 @@ public class GetCollectionHandler extends PipedHttpHandler {
         // ***** get data
         ArrayList<DBObject> data = null;
 
-        if (context.getPagesize() > 0) {
+        if (context.getPagesize() > 0 && 
+                (context.getHalMode() == HAL_MODE.F ||
+                context.getHalMode() == HAL_MODE.FULL)) {
 
             try {
                 data = getDatabase().getCollectionData(coll, context.getPage(), context.getPagesize(),

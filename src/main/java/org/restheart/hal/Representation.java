@@ -53,26 +53,33 @@ public class Representation {
         properties = new BasicDBObject();
         embedded = new BasicDBObject();
         links = new BasicDBObject();
-        
-        properties.append("_embedded", embedded);
+
         properties.append("_links", links);
-        
+
         links.put("self", new BasicDBObject("href", href));
     }
-    
+
     public RequestContext.TYPE getType() {
-        if (properties == null)
+        if (properties == null) {
             return null;
-        
+        }
+
         Object _type = properties.get("_type");
-        
-        if (_type == null)
+
+        if (_type == null) {
             return null;
-        
+        }
+
         return RequestContext.TYPE.valueOf(_type.toString());
     }
 
     public BasicDBObject asDBObject() {
+        if (embedded == null || embedded.isEmpty()) {
+            properties.remove("_embedded");
+        } else {
+            properties.append("_embedded", embedded);
+        }
+        
         return properties;
     }
 

@@ -61,7 +61,6 @@ class CollectionDAO {
         FIELDS_TO_RETURN = new BasicDBObject();
         FIELDS_TO_RETURN.put("_id", 1);
         FIELDS_TO_RETURN.put("_etag", 1);
-        FIELDS_TO_RETURN.put("_created_on", 1);
     }
 
     /**
@@ -249,23 +248,6 @@ class CollectionDAO {
             }
         }
 
-        // add the _lastupdated_on and _created_on
-        ret.forEach(row -> {
-            Object etag = row.get("_etag");
-
-            if (row.get("_lastupdated_on") == null && etag != null && etag instanceof ObjectId) {
-                row.put("_lastupdated_on", Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString());
-            }
-
-            Object id = row.get("_id");
-
-            // generate the _created_on timestamp from the _id if this is an instance of ObjectId
-            if (row.get("_created_on") == null && id != null && id instanceof ObjectId) {
-                row.put("_created_on", Instant.ofEpochSecond(((ObjectId) id).getTimestamp()).toString());
-            }
-        });
-
-        
         return ret;
     }
 
@@ -283,12 +265,6 @@ class CollectionDAO {
 
         if (properties != null) {
             properties.put("_id", collName);
-
-            Object etag = properties.get("_etag");
-
-            if (etag != null && etag instanceof ObjectId) {
-                properties.put("_lastupdated_on", Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString());
-            }
         } else if (fixMissingProperties) {
             new PropsFixer().addCollectionProps(dbName, collName);
             return getCollectionProps(dbName, collName, false);
@@ -316,12 +292,11 @@ class CollectionDAO {
             final ObjectId requestEtag,
             final boolean updating,
             final boolean patching) {
-
-        DB db = client.getDB(dbName);
-
         if (patching && !updating) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
         }
+        
+        DB db = client.getDB(dbName);
 
         final DBCollection propsColl = db.getCollection("_properties");
 
@@ -345,7 +320,6 @@ class CollectionDAO {
         }
 
         ObjectId newEtag = new ObjectId();
-        Instant now = Instant.ofEpochSecond(newEtag.getTimestamp());
 
         final DBObject content = DAOUtils.validContent(properties);
 
@@ -356,47 +330,24 @@ class CollectionDAO {
             content.put("_etag", newEtag);
         } else {
             content.put("_id", "_properties.".concat(collName));
-            content.put("_created_on", now.toString());
             content.put("_etag", newEtag);
         }
 
         if (patching) {
             propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)),
                     new BasicDBObject("$set", content), true, false);
+            
             return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else {
-            // we use findAndModify to get the @created_on field value from the existing properties document
-            // we need to put this field back using a second update 
-            // it is not possible in a single update even using $setOnInsert update operator
-            // in this case we need to provide the other data using $set operator and this makes it a partial update (patch semantic) 
-
-            DBObject old = propsColl.findAndModify(new BasicDBObject("_id", "_properties.".concat(collName)),
-                    FIELDS_TO_RETURN, null, false, content, false, true);
-
-            if (old != null) {
-                Object oldTimestamp = old.get("_created_on");
-
-                if (oldTimestamp == null) {
-                    oldTimestamp = now.toString();
-                    LOGGER.warn("properties of collection {} had no @created_on field. set it to now", dbName + "." + collName);
-                }
-
-                // need to readd the @created_on field 
-                BasicDBObject createdContent = new BasicDBObject("_created_on", "" + oldTimestamp);
-                createdContent.markAsPartialObject();
-                propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)),
-                        new BasicDBObject("$set", createdContent), true, false);
-
+            propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)),
+                    content, true, false);
+            
+            // create the default indexes
+            createDefaultIndexes(db.getCollection(collName));
+            
+            if (updating) {
                 return new OperationResult(HttpStatus.SC_OK, newEtag);
             } else {
-                // need to readd the @created_on field 
-                BasicDBObject createdContent = new BasicDBObject("_created_on", now.toString());
-                createdContent.markAsPartialObject();
-                propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)),
-                        new BasicDBObject("$set", createdContent), true, false);
-
-                initDefaultIndexes(db.getCollection(collName));
-
                 return new OperationResult(HttpStatus.SC_CREATED, newEtag);
             }
         }
@@ -439,7 +390,7 @@ class CollectionDAO {
         }
     }
 
-    private void initDefaultIndexes(final DBCollection coll) {
+    private void createDefaultIndexes(final DBCollection coll) {
         coll.createIndex(new BasicDBObject("_id", 1).append("_etag", 1), new BasicDBObject("name", "_id_etag_idx"));
         coll.createIndex(new BasicDBObject("_etag", 1), new BasicDBObject("name", "_etag_idx"));
     }

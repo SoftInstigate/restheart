@@ -51,22 +51,24 @@ public class GetRootHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        List<String> _dbs = getDatabase().getDatabaseNames();
-
-        // filter out reserved resources
-        List<String> dbs = _dbs.stream().filter(db -> !RequestContext.isReservedResourceDb(db)).collect(Collectors.toList());
-
-        if (dbs == null) {
-            dbs = new ArrayList<>();
-        }
-
-        int size = dbs.size();
-
-        Collections.sort(dbs); // sort by id
+        int size = 0;
 
         List<DBObject> data = new ArrayList<>();
 
         if (context.getPagesize() > 0) {
+            List<String> _dbs = getDatabase().getDatabaseNames();
+
+            // filter out reserved resources
+            List<String> dbs = _dbs.stream().filter(db -> !RequestContext.isReservedResourceDb(db)).collect(Collectors.toList());
+
+            if (dbs == null) {
+                dbs = new ArrayList<>();
+            }
+
+            size = dbs.size();
+
+            Collections.sort(dbs); // sort by id
+
             // apply page and pagesize
             dbs = dbs.subList((context.getPage() - 1) * context.getPagesize(), (context.getPage() - 1) * context.getPagesize()
                     + context.getPagesize() > dbs.size() ? dbs.size() : (context.getPage() - 1) * context.getPagesize() + context.getPagesize());

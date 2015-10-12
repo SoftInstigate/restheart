@@ -39,9 +39,10 @@ public abstract class AbstractRepresentationFactory {
      * @param rep
      */
     public void sendRepresentation(HttpServerExchange exchange, RequestContext context, Representation rep) {
-        if (context.getWarnings() != null)
+        if (context.getWarnings() != null) {
             context.getWarnings().forEach(w -> rep.addWarning(w));
-        
+        }
+
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
     }
@@ -59,7 +60,15 @@ public abstract class AbstractRepresentationFactory {
             throws IllegalQueryParamenterException;
 
     protected void addSizeAndTotalPagesProperties(final long size, final RequestContext context, final Representation rep) {
-        if (size >= 0) {
+        if (size == 0) {
+            rep.addProperty("_size", 0);
+
+            if (context.getPagesize() > 0) {
+                rep.addProperty("_total_pages", 0);
+            }
+        }
+
+        if (size > 0) {
             float _size = size + 0f;
             float _pagesize = context.getPagesize() + 0f;
 
@@ -73,6 +82,7 @@ public abstract class AbstractRepresentationFactory {
                 .filter((props) -> props.keySet().stream()
                         .anyMatch((k) -> k.equals("id") || k.equals("_id")))
                 .count();
+        
         rep.addProperty("_returned", count);
     }
 
@@ -80,8 +90,11 @@ public abstract class AbstractRepresentationFactory {
         String queryString = exchange.getQueryString() == null || exchange.getQueryString().isEmpty()
                 ? ""
                 : "?" + URLUtils.decodeQueryString(exchange.getQueryString());
+
         Representation rep = new Representation(requestPath + queryString);
+
         rep.addProperty("_type", context.getType().name());
+
         return rep;
     }
 

@@ -250,7 +250,12 @@ public class DbsDAO implements Database {
             final String dbName,
             final DBObject newContent,
             final ObjectId requestEtag,
+            final boolean updating,
             final boolean patching) {
+        
+        if (patching && !updating) {
+            return new OperationResult(HttpStatus.SC_NOT_FOUND);
+        }
 
         DB db = client.getDB(dbName);
 
@@ -288,13 +293,18 @@ public class DbsDAO implements Database {
 
         if (patching) {
             coll.update(PROPS_QUERY, new BasicDBObject("$set", content), true, false);
+            
+            return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else {
             coll.update(PROPS_QUERY, content, true, false);
+            
+            if (updating) {
+                return new OperationResult(HttpStatus.SC_OK, newEtag);
+            } else {
+                return new OperationResult(HttpStatus.SC_CREATED, newEtag);
+            }
         }
-        
-        return new OperationResult(HttpStatus.SC_OK, newEtag);
     }
-
 
     /**
      *

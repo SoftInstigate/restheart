@@ -34,6 +34,8 @@ import static org.restheart.handlers.RequestContext.KEYS_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.PAGESIZE_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.PAGE_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.SORT_BY_QPARAM_KEY;
+import static org.restheart.handlers.RequestContext.HAL_QPARAM_KEY;
+import static org.restheart.handlers.RequestContext.HAL_MODE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
@@ -139,12 +141,12 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                         "illegal sort_by paramenter");
                 return;
             }
-            
-            if (sort_by.stream().anyMatch(s -> s.trim().equals("_last_updated_on") || s.trim().equals("+_last_updated_on") || s.trim().equals("-_last_updated_on") )) {
+
+            if (sort_by.stream().anyMatch(s -> s.trim().equals("_last_updated_on") || s.trim().equals("+_last_updated_on") || s.trim().equals("-_last_updated_on"))) {
                 rcontext.addWarning("unexepecting sorting; the _last_updated_on timestamp is generated from the _etag property if present");
             }
-            
-            if (sort_by.stream().anyMatch(s -> s.trim().equals("_created_on") ||s.trim().equals("_created_on") || s.trim().equals("_created_on"))) {
+
+            if (sort_by.stream().anyMatch(s -> s.trim().equals("_created_on") || s.trim().equals("_created_on") || s.trim().equals("_created_on"))) {
                 rcontext.addWarning("unexepecting sorting; the _created_on timestamp is generated from the _id property if it is an ObjectId");
             }
 
@@ -152,7 +154,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         }
 
         Deque<String> keys = exchange.getQueryParameters().get(KEYS_QPARAM_KEY);
-        if (keys != null){
+        if (keys != null) {
             if (keys.stream().anyMatch(f -> {
                 if (f == null || f.isEmpty()) {
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
@@ -162,11 +164,11 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
                 try {
                     Object _keys = JSON.parse(f);
-                    
+
                     if (!(_keys instanceof BSONObject)) {
                         ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
-                            "illegal keys paramenter, it is not a json object: " + f + " => " + f.getClass().getSimpleName());
-                    return true;
+                                "illegal keys paramenter, it is not a json object: " + f + " => " + f.getClass().getSimpleName());
+                        return true;
                     }
                 } catch (Throwable t) {
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
@@ -193,11 +195,11 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
                 try {
                     Object _filter = JSON.parse(f);
-                    
+
                     if (!(_filter instanceof BSONObject)) {
                         ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
-                            "illegal filter paramenter, it is not a json object: " + f + " => " + f.getClass().getSimpleName());
-                    return true;
+                                "illegal filter paramenter, it is not a json object: " + f + " => " + f.getClass().getSimpleName());
+                        return true;
                     }
                 } catch (Throwable t) {
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
@@ -255,16 +257,31 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         }
 
         rcontext.setDocIdType(docIdType);
-        
+
         // get and check the document id
-        
         String _docId = rcontext.getDocumentIdRaw();
-        
+
         try {
             rcontext.setDocumentId(URLUtils.getId(_docId, docIdType));
-        } catch(UnsupportedDocumentIdException idide) {
+        } catch (UnsupportedDocumentIdException idide) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong document id format: not a valid " + docIdType.name(), idide);
             return;
+        }
+
+        // get the HAL query parameter
+        Deque<String> __halMode = exchange.getQueryParameters().get(HAL_QPARAM_KEY);
+        
+        if (__halMode == null || __halMode.isEmpty()) {
+            // default is all
+            rcontext.setHalMode(HAL_MODE.FULL);
+        } else {
+            String _halMode = __halMode.getFirst();
+            
+            try {
+                rcontext.setHalMode(HAL_MODE.valueOf(_halMode.trim().toUpperCase()));
+            } catch (IllegalArgumentException iae) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal " + HAL_QPARAM_KEY + " paramenter; valid values are " + Arrays.toString(HAL_MODE.values()));
+            }
         }
 
         getNext().handleRequest(exchange, rcontext);

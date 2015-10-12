@@ -91,7 +91,7 @@ public class PatchDBHandler extends PipedHttpHandler {
             return;
         }
 
-        OperationResult result = getDatabase().upsertDB(context.getDBName(), content, etag, true);
+        OperationResult result = getDatabase().upsertDB(context.getDBName(), content, etag, true, true);
 
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
