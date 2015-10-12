@@ -99,6 +99,8 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
             if (!embeddedData.isEmpty()) {
                 embeddedDocuments(embeddedData, requestPath, exchange, context, rep);
             }
+        } else {
+            rep.addProperty("_returned", 0);
         }
     }
 

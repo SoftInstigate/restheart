@@ -60,9 +60,7 @@ public class GetDBHandler extends PipedHttpHandler {
 
         List<DBObject> data = null;
 
-        if (context.getPagesize() > 0 && 
-                (context.getHalMode() == RequestContext.HAL_MODE.F ||
-                context.getHalMode() == RequestContext.HAL_MODE.FULL)) {
+        if (context.getPagesize() > 0) {
             data = getDatabase().getData(context.getDBName(), colls, context.getPage(), context.getPagesize());
         }
 

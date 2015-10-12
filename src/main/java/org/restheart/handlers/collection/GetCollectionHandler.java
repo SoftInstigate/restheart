@@ -64,6 +64,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         DBCollection coll = getDatabase().getCollection(context.getDBName(), context.getCollectionName());
+        
         long size = -1;
 
         if (context.isCount()) {
@@ -73,9 +74,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
         // ***** get data
         ArrayList<DBObject> data = null;
 
-        if (context.getPagesize() > 0 && 
-                (context.getHalMode() == HAL_MODE.F ||
-                context.getHalMode() == HAL_MODE.FULL)) {
+        if (context.getPagesize() > 0) {
 
             try {
                 data = getDatabase().getCollectionData(coll, context.getPage(), context.getPagesize(),

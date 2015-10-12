@@ -94,6 +94,8 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
             if (!embeddedData.isEmpty()) {
                 embeddedCollections(embeddedData, requestPath, rep);
             }
+        } else {
+            rep.addProperty("_returned", 0);
         }
     }
 
