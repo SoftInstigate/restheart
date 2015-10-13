@@ -50,10 +50,10 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
     static final Logger LOGGER = LoggerFactory.getLogger(BodyInjectorHandler.class);
 
-    private static final String PROPERTIES = "properties";
-    private static final String _ID = "_id";
-    private static final String CONTENT_TYPE = "contentType";
-    private static final String FILENAME = "filename";
+    static final String PROPERTIES = "properties";
+    static final String _ID = "_id";
+    static final String CONTENT_TYPE = "contentType";
+    static final String FILENAME = "filename";
 
     private static final String ERROR_INVALID_CONTENTTYPE = "Content-Type must be either: "
             + Representation.HAL_JSON_MEDIA_TYPE
@@ -103,13 +103,13 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             return;
         }
 
-        DBObject content;
+        DBObject properties;
 
         if (isNotFormData(contentTypes)) { // json or hal+json
             final String contentString = ChannelReader.read(exchange.getRequestChannel());
 
             try {
-                content = (DBObject) JSON.parse(contentString);
+                properties = (DBObject) JSON.parse(contentString);
             } catch (JSONParseException | IllegalArgumentException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Invalid data: No Form data found", ex);
                 return;
@@ -134,7 +134,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             }
 
             try {
-                content = extractProperties(formData);
+                properties = extractProperties(formData);
             } catch (JSONParseException | IllegalArgumentException ex) {
                 String errMsg = "Invalid data: 'properties' field is not a valid JSON";
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, ex);
@@ -151,23 +151,21 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
             final File file = formData.getFirst(fileField).getFile();
 
-            String filename = extractFilename(formData, fileField, file.getName());
-            
-            content.put(FILENAME, filename);
+            putFilename(formData.getFirst(fileField).getFileName(), file.getName(), properties);
 
-            LOGGER.info("@@@ content = " + content.toString());
+            LOGGER.debug("@@@ content = " + properties.toString());
 
             context.setFile(file);
 
-            injectContentTypeFromFile(content, file);
+            injectContentTypeFromFile(properties, file);
         }
 
-        if (content == null) {
+        if (properties == null) {
             context.setContent(null);
         } else {
-            filterJsonContent(content, context);
+            filterJsonContent(properties, context);
 
-            Object _id = content.get(_ID);
+            Object _id = properties.get(_ID);
 
             if (_id != null) {
                 try {
@@ -183,13 +181,32 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         getNext().handleRequest(exchange, context);
     }
 
-    private String extractFilename(FormData formData, final String fileField, final String defaultFilename) {
-        String filename = formData.getFirst(fileField).getFileName();
-        if (filename == null) {
-            LOGGER.warn("Filename is not present! Using a default");
+    /**
+     * put the filename into target DBObject
+     * 
+     * If filename is not null and properties don't have a filename then put the
+     * filename.
+     *
+     * If filename is not null but properties contain a filename key then put
+     * the properties filename value.
+     *
+     * If both filename is null and properties don't contain a filename then use
+     * the default value.
+     *
+     * @param formDataFilename
+     * @param defaultFilename
+     * @param target
+     */
+    protected static void putFilename(final String formDataFilename, final String defaultFilename, final DBObject target) {
+        // a filename attribute in optional properties overrides the provided part's filename 
+        String filename = target.containsField(FILENAME) && target.get(FILENAME) instanceof String
+                ? (String) target.get(FILENAME)
+                : formDataFilename;
+        if (filename == null || filename.isEmpty()) {
+            LOGGER.warn("No filename in neither multipart content disposition header nor in properties! Using default value");
             filename = defaultFilename;
         }
-        return filename;
+        target.put(FILENAME, filename);
     }
 
     private static boolean isPostFilesbucketRequest(final RequestContext context) {
@@ -203,7 +220,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     /**
      *
      * @param contentTypes
-     * @return false if the content-type is form data
+     * @return true if the content-type is NOT form data
      */
     private static boolean isNotFormData(final HeaderValues contentTypes) {
         return contentTypes.stream()
@@ -283,17 +300,17 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     }
 
     /**
-     * Search request for a field named 'properties' which contains JSON
+     * Search the request for a field named 'properties' which must contain
+     * valid JSON
      *
-     * @param data
-     * @return the parsed DBObject from the form data or an empty DBObject the
-     * etag value)
+     * @param formData
+     * @return the parsed DBObject from the form data or an empty DBObject
      */
-    private static DBObject extractProperties(final FormData data) throws JSONParseException {
+    protected static DBObject extractProperties(final FormData formData) throws JSONParseException {
         DBObject properties = new BasicDBObject();
 
-        final String propsString = data.getFirst(PROPERTIES) != null
-                ? data.getFirst(PROPERTIES).getValue()
+        final String propsString = formData.getFirst(PROPERTIES) != null
+                ? formData.getFirst(PROPERTIES).getValue()
                 : null;
 
         if (propsString != null) {
@@ -306,13 +323,13 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     /**
      * Find the name of the first file field in this request
      *
-     * @param data
+     * @param formData
      * @return the first file field name or null
      */
-    private static String extractFileField(final FormData data) {
+    private static String extractFileField(final FormData formData) {
         String fileField = null;
-        for (String f : data) {
-            if (data.getFirst(f) != null && data.getFirst(f).isFile()) {
+        for (String f : formData) {
+            if (formData.getFirst(f) != null && formData.getFirst(f).isFile()) {
                 fileField = f;
                 break;
             }
@@ -321,11 +338,11 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     }
 
     /**
-     * Uses Apache Tika to detect the file's media type
-     * 
-     * @param file
-     * @return
-     * @throws IOException 
+     * Detect the file's mediatype
+     *
+     * @param file input file
+     * @return the content-type as a String
+     * @throws IOException
      */
     public static String detectMediaType(File file) throws IOException {
         return new Tika().detect(file);
