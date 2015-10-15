@@ -1,5 +1,8 @@
 RESTHeart
 =========
+[![Build Status](https://travis-ci.org/SoftInstigate/restheart.svg?branch=develop)](https://travis-ci.org/SoftInstigate/restheart)
+[![Issue Stats](http://issuestats.com/github/SoftInstigate/restheart/badge/pr)](http://issuestats.com/github/SoftInstigate/restheart)
+[![Issue Stats](http://issuestats.com/github/SoftInstigate/restheart/badge/issue)](http://issuestats.com/github/SoftInstigate/restheart)
 
 > The leading Web API for MongoDB. 
 > 
@@ -44,8 +47,6 @@ Documentation
 * Issues: [https://softinstigate.atlassian.net/projects/RH](https://softinstigate.atlassian.net/projects/RH)
 
 * Documentation: [https://softinstigate.atlassian.net/wiki/display/RH/Documentation](https://softinstigate.atlassian.net/wiki/x/l4CM)
-
-* Status: [![Build Status](https://travis-ci.org/SoftInstigate/restheart.svg?branch=develop)](https://travis-ci.org/SoftInstigate/restheart)
 
 An Example
 ----
