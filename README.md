@@ -1,12 +1,13 @@
-RESTHeart
+RESTHeart 
 =========
+
+> The leading Web API for MongoDB.
+>
+> &nbsp;&nbsp;Done with :heart: by the [SoftInstigate Team](http://www.softinstigate.com)
+
 [![Build Status](https://travis-ci.org/SoftInstigate/restheart.svg?branch=develop)](https://travis-ci.org/SoftInstigate/restheart)
 [![Issue Stats](http://issuestats.com/github/SoftInstigate/restheart/badge/pr)](http://issuestats.com/github/SoftInstigate/restheart)
 [![Issue Stats](http://issuestats.com/github/SoftInstigate/restheart/badge/issue)](http://issuestats.com/github/SoftInstigate/restheart)
-
-> The leading Web API for MongoDB. 
-> 
-> &nbsp;&nbsp;Done with **love** by the [SoftInstigate Team](http://www.softinstigate.com)
 
 **RESTHeart** connects to **MongoDB** and opens data to the Web: Mobile and JavaScript applications can use the database via **RESTful HTTP API** calls.
 
