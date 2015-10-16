@@ -16,9 +16,9 @@ Built on strong foundations
 * Built on top of [Undertow](http://undertow.io) web server.
 * Makes use of few, best of breed libraries, check the [pom.xml](https://github.com/SoftInstigate/restheart/blob/master/pom.xml)!
 
-No Development required
+Rapid Development
 ----
-* **No server side development is required** for your web and mobile applications.
+* **No server side development is required** in most of the cases for your web and mobile applications.
 * The **Setup** is simple with convention over configuration approach; **Docker Container** and **Vagrant Box** are available.
 * **Access Control** and **Schema Check** are provided out of the box.
 
@@ -28,7 +28,7 @@ Production ready
 * Severe **Unit** and **Integration** test suite, **Code Check** and **Continuous Integration** process.
 * **Commercial Support** available from [SoftInstigate](http://www.softinstigate.com), the company behind RESTHeart.
 
-Fast
+Fast & Light
 ----
 
 * **High throughput** check the [performance tests](https://softinstigate.atlassian.net/wiki/x/gICM).
