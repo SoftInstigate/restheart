@@ -91,18 +91,18 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         
         if (TYPE.FILES_BUCKET.equals(context.getType())) {
             rep.addLink(new Link("rh:bucket", URLUtils.getParentPath(requestPath) + "/{bucketname}" + RequestContext.FS_FILES_SUFFIX, true));
-            rep.addLink(new Link("rh:file", requestPath + "/{fileid}?id_type={type}", true));
+            rep.addLink(new Link("rh:file", requestPath + "/{fileid}{?id_type}", true));
         } else if (TYPE.COLLECTION.equals(context.getType())) {
             
             rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath) + "/{collname}", true));
-            rep.addLink(new Link("rh:document", requestPath + "/{docid}?id_type={type}", true));
+            rep.addLink(new Link("rh:document", requestPath + "/{docid}{?id_type}", true));
         }
         
         rep.addLink(new Link("rh:indexes", requestPath + "/" + context.getDBName() + "/" + context.getCollectionName() + "/_indexes"));
         
-        rep.addLink(new Link("rh:filter", requestPath + "/{?filter}", true));
-        rep.addLink(new Link("rh:sort", requestPath + "/{?sort_by}", true));
-        rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
+        rep.addLink(new Link("rh:filter", requestPath + "{?filter}", true));
+        rep.addLink(new Link("rh:sort", requestPath + "{?sort_by}", true));
+        rep.addLink(new Link("rh:paging", requestPath + "{?page}{&pagesize}", true));
         rep.addLink(new Link("rh:indexes", requestPath + "/_indexes"));
         
         // curies
