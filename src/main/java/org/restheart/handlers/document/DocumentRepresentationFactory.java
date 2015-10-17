@@ -114,13 +114,13 @@ public class DocumentRepresentationFactory {
                     rep.addLink(new Link("rh:bucket", parentPath));
                 }
 
-                rep.addLink(new Link("rh:file", parentPath + "/{fileid}?id_type={type}", true));
+                rep.addLink(new Link("rh:file", parentPath + "/{fileid}{?id_type}", true));
             } else {
                 if (context.isParentAccessible()) {
                     rep.addLink(new Link("rh:coll", parentPath));
                 }
 
-                rep.addLink(new Link("rh:document", parentPath + "/{docid}?id_type={type}", true));
+                rep.addLink(new Link("rh:document", parentPath + "/{docid}{?id_type}", true));
             }
 
             if (!isEmbedded) {

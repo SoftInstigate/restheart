@@ -108,17 +108,27 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
             final RequestContext context,
             final Representation rep,
             final String requestPath) {
+        String parentPath = URLUtils.getParentPath(requestPath);
+
         // link templates and curies
         if (context.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
-            rep.addLink(new Link("rh:root", URLUtils.getParentPath(requestPath)));
+            rep.addLink(new Link("rh:root", parentPath));
         }
 
-        rep.addLink(new Link("rh:db", URLUtils.getParentPath(requestPath) + "/{dbname}", true));
+        if (parentPath.endsWith("/")) {
+            rep.addLink(new Link("rh:db", URLUtils.removeTrailingSlashes(URLUtils.getParentPath(requestPath)) + "{dbname}", true));
+        } else {
+            rep.addLink(new Link("rh:db", URLUtils.removeTrailingSlashes(URLUtils.getParentPath(requestPath)) + "/{dbname}", true));
+        }
+
         rep.addLink(new Link("rh:coll", requestPath + "/{collname}", true));
         rep.addLink(new Link("rh:bucket", requestPath + "/{bucketname}" + RequestContext.FS_FILES_SUFFIX, true));
 
-        rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
+        rep.addLink(new Link("rh:paging", requestPath + "{?page}{&pagesize}", true));
+
+        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
+                + "/{rel}.html", true), true);
     }
 
     private void embeddedCollections(
