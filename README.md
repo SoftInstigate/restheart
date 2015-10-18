@@ -1,8 +1,8 @@
 RESTHeart 
 =========
 
-> The leading Web API for MongoDB.
->
+The leading Web API for MongoDB.
+
 > &nbsp;&nbsp;Done with :heart: by the [SoftInstigate Team](http://www.softinstigate.com) ([Follow us on Twitter](https://twitter.com/softinstigate))
 
 [![Build Status](https://travis-ci.org/SoftInstigate/restheart.svg?branch=develop)](https://travis-ci.org/SoftInstigate/restheart)
