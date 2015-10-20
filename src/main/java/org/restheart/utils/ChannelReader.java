@@ -17,9 +17,12 @@
  */
 package org.restheart.utils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xnio.channels.Channels;
 import org.xnio.channels.StreamSourceChannel;
 
@@ -29,7 +32,7 @@ import org.xnio.channels.StreamSourceChannel;
  */
 public class ChannelReader {
 
-    final static Charset charset = Charset.forName("utf-8");
+    final static Charset CHARSET = Charset.forName("utf-8");
 
     /**
      *
@@ -38,17 +41,18 @@ public class ChannelReader {
      * @throws IOException
      */
     public static String read(StreamSourceChannel channel) throws IOException {
-        StringBuilder content = new StringBuilder();
-
-        ByteBuffer buf = ByteBuffer.allocate(128);
+        final int capacity = 1024;
+        
+        ByteArrayOutputStream os = new ByteArrayOutputStream(capacity);
+        ByteBuffer buf = ByteBuffer.allocate(capacity);
 
         while (Channels.readBlocking(channel, buf) != -1) {
             buf.flip();
-            content.append(charset.decode(buf));
+            os.write(buf.array());
             buf.clear();
         }
 
-        return content.toString();
+        return new String(os.toByteArray(), CHARSET);
     }
 
     private ChannelReader() {
