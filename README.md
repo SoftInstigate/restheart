@@ -1,9 +1,7 @@
 RESTHeart 
 =========
 
-The leading Web API for MongoDB.
-
-> &nbsp;&nbsp;Done with :heart: by the [SoftInstigate Team](http://www.softinstigate.com) ([Follow us on Twitter](https://twitter.com/softinstigate))
+The leading REST API Server for MongoDB.
 
 [![Build Status](https://travis-ci.org/SoftInstigate/restheart.svg?branch=develop)](https://travis-ci.org/SoftInstigate/restheart)
 [![Issue Stats](http://issuestats.com/github/SoftInstigate/restheart/badge/pr)](http://issuestats.com/github/SoftInstigate/restheart)
@@ -110,3 +108,7 @@ Integration tests
 Optionally you can run the integration test suite. Make sure __mongod is running__ on localhost on default port 27017 without authentication enabled, i.e. no `--auth` option is specified.
 
     $ mvn verify -DskipITs=false
+
+<hr></hr>
+
+_Made with :heart: by [The SoftInstigate Team](http://www.softinstigate.com/). Follow us on [Twitter](https://twitter.com/softinstigate)_.
