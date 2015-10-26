@@ -66,10 +66,10 @@ public abstract class AbstactIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstactIT.class);
 
-    protected static final String CLIENT_HOST = "127.0.0.1";
+    protected static final String MONGO_HOST = System.getenv("MONGO_HOST") == null ? "127.0.0.1" : System.getenv("MONGO_HOST");
     protected static final String HTTP = "http";
 
-    protected static final Path confFilePath = new File("etc/restheart-integrationtest.yml").toPath();
+    protected static final Path CONF_FILE_PATH = new File("etc/restheart-integrationtest.yml").toPath();
     protected static MongoClient mongoClient;
     protected static Configuration conf = null;
     protected static Executor adminExecutor = null;
@@ -194,13 +194,13 @@ public abstract class AbstactIT {
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        conf = new Configuration(confFilePath);
+        conf = new Configuration(CONF_FILE_PATH);
         MongoDBClientSingleton.init(conf);
         mongoClient = MongoDBClientSingleton.getInstance().getClient();
 
         createURIs();
 
-        final String host = CLIENT_HOST;
+        final String host = MONGO_HOST;
         final int port = conf.getHttpPort();
         adminExecutor = Executor.newInstance().authPreemptive(new HttpHost(host, port, HTTP)).auth(new HttpHost(host), "admin", "changeit");
         user1Executor = Executor.newInstance().authPreemptive(new HttpHost(host, port, HTTP)).auth(new HttpHost(host), "user1", "changeit");
@@ -384,7 +384,7 @@ public abstract class AbstactIT {
     private static URIBuilder createURIBuilder(String path) {
         return new URIBuilder()
                 .setScheme(HTTP)
-                .setHost(CLIENT_HOST)
+                .setHost(MONGO_HOST)
                 .setPort(conf.getHttpPort())
                 .setPath(path);
     }
