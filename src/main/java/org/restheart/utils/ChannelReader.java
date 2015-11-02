@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import org.xnio.channels.Channels;
 import org.xnio.channels.StreamSourceChannel;
 
@@ -29,8 +30,8 @@ import org.xnio.channels.StreamSourceChannel;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class ChannelReader {
-
-    final static Charset CHARSET = Charset.forName("utf-8");
+    
+    final static Charset CHARSET = StandardCharsets.UTF_8;
 
     /**
      *
@@ -42,15 +43,22 @@ public class ChannelReader {
         final int capacity = 1024;
         
         ByteArrayOutputStream os = new ByteArrayOutputStream(capacity);
+        
         ByteBuffer buf = ByteBuffer.allocate(capacity);
 
-        while (Channels.readBlocking(channel, buf) != -1) {
+        int read = Channels.readBlocking(channel, buf);
+        
+        while (read != -1) {
             buf.flip();
-            os.write(buf.array());
+            os.write(buf.array(), 0, read);
             buf.clear();
+            
+            read = Channels.readBlocking(channel, buf);
         }
-
-        return new String(os.toByteArray(), CHARSET);
+        
+        String ret = os.toString(CHARSET.name());
+        
+        return ret;
     }
 
     private ChannelReader() {
