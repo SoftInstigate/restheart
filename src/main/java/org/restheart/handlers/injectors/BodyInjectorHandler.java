@@ -111,7 +111,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             try {
                 properties = (DBObject) JSON.parse(contentString);
             } catch (JSONParseException | IllegalArgumentException ex) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Invalid data: No Form data found", ex);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON", ex);
                 return;
             }
         } else { // multipart form -> file
