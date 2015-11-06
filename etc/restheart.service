@@ -1,0 +1,17 @@
+# Service file for RESTHeart daemon
+#
+# Date: Nov 06, 2015
+# Author: Srdjan Grubor <sgnn7@sgnn7.org>
+
+[Unit]
+Description=RESTHeart Daemon
+After=syslog.target network.target
+
+[Service]
+ExecStart=/usr/bin/java -server -jar /usr/share/restheart/restheart.jar /etc/restheart/restheart.yml
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
