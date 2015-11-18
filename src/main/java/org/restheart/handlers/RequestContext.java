@@ -47,7 +47,8 @@ public class RequestContext {
         INDEX,
         FILES_BUCKET,
         FILE,
-        FILE_BINARY
+        FILE_BINARY,
+        QUERY
     };
 
     public enum METHOD {
@@ -94,6 +95,7 @@ public class RequestContext {
     public static final String FS_CHUNKS_SUFFIX = ".chunks";
     public static final String FS_FILES_SUFFIX = ".files";
     public static final String _INDEXES = "_indexes";
+    public static final String _QUERIES = "_queries";
     public static final String BINARY_CONTENT = "binary";
     
     public static final String HAL_QPARAM_KEY = "hal";
@@ -222,8 +224,8 @@ public class RequestContext {
             type = TYPE.COLLECTION;
         } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.COLLECTION_INDEXES;
-        } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
-            type = TYPE.INDEX;
+        } else if (pathTokens.length == 5 && pathTokens[3].equalsIgnoreCase(_QUERIES)) {
+            type = TYPE.QUERY;
         } else {
             type = TYPE.DOCUMENT;
         }
@@ -338,6 +340,14 @@ public class RequestContext {
     public String getIndexId() {
         return getPathTokenAt(4);
     }
+    
+    /**
+     *
+     * @return collection name
+     */
+    public String getQuery() {
+        return getPathTokenAt(4);
+    }
 
     /**
      *
@@ -400,7 +410,7 @@ public class RequestContext {
      * @return isReservedResource
      */
     public boolean isReservedResource() {
-        if (type == TYPE.ROOT) {
+        if (type == TYPE.ROOT || type == TYPE.QUERY) {
             return false;
         }
 
