@@ -93,6 +93,19 @@ public class DocumentDAO implements Repository {
         }
     }
 
+    @Override
+    public DBObject getDocumentEtag(final String dbName, final String collName, final Object documentId) {
+        
+        DBObject document = client.getDB(dbName).getCollection(collName).findOne(new BasicDBObject("_id", documentId), new BasicDBObject("_etag", 1));
+
+        if (document != null && document.get("_etag") != null) {
+            return document;
+        }
+        
+        return null;
+    }
+        
+    
     /**
      * @param dbName
      * @param collName

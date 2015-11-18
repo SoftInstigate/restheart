@@ -52,6 +52,8 @@ public class DeleteDBHandler extends PipedHttpHandler {
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
         if (etag == null) {
+            ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
+            
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
                     "The database's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
             return;

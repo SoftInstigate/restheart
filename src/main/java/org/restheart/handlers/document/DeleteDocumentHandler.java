@@ -64,6 +64,8 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
         if (etag == null) {
+            ResponseHelper.injectEtagHeader(exchange, this.documentDAO.getDocumentEtag(context.getDBName(), context.getCollectionName(), context.getDocumentId()));
+            
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
                     "The document's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
             return;
