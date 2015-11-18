@@ -52,8 +52,11 @@ public class DeleteCollectionHandler extends PipedHttpHandler {
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
         if (etag == null) {
+            ResponseHelper.injectEtagHeader(exchange, context.getCollectionProps());
+            
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
                     "The collection's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
+
             return;
         }
 
@@ -62,18 +65,17 @@ public class DeleteCollectionHandler extends PipedHttpHandler {
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
-        
+
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
         } else {
             exchange.setResponseCode(result.getHttpCode());
         }
-        
+
         exchange.endExchange();
 
         LocalCachesSingleton.getInstance()
                 .invalidateCollection(context.getDBName(), context.getCollectionName());
     }
-
 }

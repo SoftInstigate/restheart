@@ -147,12 +147,12 @@ public class ResponseHelper {
         }
 
         Object _etag = properties.get("_etag");
-
-        if (ObjectId.isValid("" + _etag)) {
-            ObjectId etag = (ObjectId) _etag;
-
-            exchange.getResponseHeaders().put(Headers.ETAG, etag.toString());
+        
+        if (_etag == null || ! (_etag instanceof ObjectId)) {
+            return;
         }
+
+        exchange.getResponseHeaders().put(Headers.ETAG, _etag.toString());
     }
 
     private ResponseHelper() {
