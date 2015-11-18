@@ -107,6 +107,7 @@ public final class Bootstrapper {
             // read configuration silently, to avoid logging before initializing the logger
             configuration = FileUtils.getConfiguration(args, true);
         } catch (ConfigurationException ex) {
+            LOGGER.info("Starting RESTHeart ********************************************");
             LOGGER.error(ex.getMessage() + ", exiting...", ex);
             stopServer(false);
             System.exit(-1);
@@ -306,11 +307,7 @@ public final class Bootstrapper {
             LOGGER.info("RESTHeart version {}", RESTHEART_VERSION);
         }
 
-        String mongoHosts = configuration.getMongoServers().stream()
-                .map(s -> s.get(Configuration.MONGO_HOST_KEY) + ":" + s.get(Configuration.MONGO_PORT_KEY) + " ")
-                .reduce("", String::concat);
-
-        LOGGER.info("Initializing MongoDB connection pool to {}", mongoHosts);
+        LOGGER.info("Initializing MongoDB connection pool to {} with options {}", configuration.getMongoUri().getHosts(), configuration.getMongoUri().getOptions());
 
         try {
             MongoDBClientSingleton.init(configuration);

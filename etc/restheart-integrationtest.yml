@@ -42,11 +42,13 @@ use-embedded-keystore: true
 
 #### mongodb 
 
-# Secify the ip and port of mongodb with mongo-servers. For mongodb replica set, specify all your servers.
+# secify the mongodb connection using a Mongo Client URI. 
+# the format of the URI is:
+# mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
+#
+# more information at http://api.mongodb.org/java/current/com/mongodb/MongoClientURI.html
 
-mongo-servers:
-    - host: 127.0.0.1
-      port: 27017
+mongo-uri: mongodb://127.0.0.1
       
 # Provide mongodb users credentials with mongo-credentials.
 # mongo-credentials:
