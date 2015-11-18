@@ -272,8 +272,8 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         Deque<String> __halMode = exchange.getQueryParameters().get(HAL_QPARAM_KEY);
         
         if (__halMode == null || __halMode.isEmpty()) {
-            // default is all
-            rcontext.setHalMode(HAL_MODE.FULL);
+            // default is compact mode
+            rcontext.setHalMode(HAL_MODE.COMPACT);
         } else {
             String _halMode = __halMode.getFirst();
             
