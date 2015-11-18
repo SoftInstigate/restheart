@@ -56,7 +56,14 @@ public class Representation {
 
         properties.append("_links", links);
         
-        links.put("self", new BasicDBObject("href", href));
+        if (href != null) links.put("self", new BasicDBObject("href", href));
+    }
+    
+    /**
+     *
+     */
+    public Representation() {
+        this(null);
     }
 
     public RequestContext.TYPE getType() {
@@ -78,6 +85,12 @@ public class Representation {
             properties.remove("_embedded");
         } else {
             properties.append("_embedded", embedded);
+        }
+        
+        if (links == null || links.isEmpty()) {
+            properties.remove("_links");
+        } else {
+            properties.append("_links", links);
         }
         
         return properties;

@@ -117,7 +117,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
 
         exchange.setResponseCode(HttpStatus.SC_OK);
 
-        // call the ResponseScriptMetadataHanlder if piped in
+        // call the ResponseTranformerMetadataHandler if piped in
         if (getNext() != null) {
             DBObject responseContent = rep.asDBObject();
             context.setResponseContent(responseContent);
