@@ -50,13 +50,14 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
         final String requestPath = buildRequestPath(exchange);
         final Representation rep = createRepresentation(exchange, context, requestPath);
 
+        addProperties(rep, context);
+        
         addSizeAndTotalPagesProperties(size, context, rep);
 
         addEmbeddedData(embeddedData, rep, requestPath);
 
         if (context.getHalMode() == HAL_MODE.FULL
                 || context.getHalMode() == HAL_MODE.F) {
-            addProperties(rep, context);
 
             addPaginationLinks(exchange, context, size, rep);
 

@@ -57,11 +57,15 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         final String requestPath = buildRequestPath(exchange);
         final Representation rep = createRepresentation(exchange, context, requestPath);
 
+        addProperties(rep, context, size);
+        
+        addSizeAndTotalPagesProperties(size, context, rep);
+        
         addEmbeddedData(embeddedData, rep, requestPath, exchange, context);
 
         if (context.getHalMode() == HAL_MODE.FULL
                 || context.getHalMode() == HAL_MODE.F) {
-            addProperties(rep, context, size);
+            
 
             addPaginationLinks(exchange, context, size, rep);
 
@@ -75,8 +79,6 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
             // https://github.com/mikekelly/hal-browser/issues/71
             rep.addLinkArray("curies");
         }
-
-        addSizeAndTotalPagesProperties(size, context, rep);
 
         return rep;
     }

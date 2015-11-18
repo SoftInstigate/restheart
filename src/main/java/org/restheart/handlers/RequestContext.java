@@ -17,7 +17,6 @@
  */
 package org.restheart.handlers;
 
-import com.google.common.collect.Sets;
 import com.mongodb.DBObject;
 import org.restheart.db.DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.utils.URLUtils;
@@ -31,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
-import java.util.Set;
 
 /**
  *
