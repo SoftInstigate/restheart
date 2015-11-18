@@ -17,7 +17,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <checkstyle.file.path>checkstyle-checker.xml</checkstyle.file.path>
-        <!-- By default skip integration tests. Use 'mvn install -DskipITs=false' to run them. -->
+        <!-- By default skip integration tests. Use 'mvn verify -DskipITs=false' to run them. -->
         <skipITs>true</skipITs>
     </properties>
 
@@ -335,6 +335,7 @@
                 </configuration>
             </plugin>
 
+            <!--
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -354,9 +355,11 @@
                     </execution>
                 </executions>
             </plugin>
+            -->
         </plugins>
     </build>
 
+    <!--
     <reporting>
         <plugins>
             <plugin>
@@ -421,4 +424,5 @@
             </plugin>
         </plugins>
     </reporting>
+    -->
 </project>

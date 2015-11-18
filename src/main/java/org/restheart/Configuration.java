@@ -18,6 +18,7 @@
 package org.restheart;
 
 import ch.qos.logback.classic.Level;
+import com.mongodb.MongoClientURI;
 import org.restheart.utils.URLUtils;
 import java.io.File;
 import java.io.FileInputStream;
@@ -72,14 +73,14 @@ public class Configuration {
     private final String keystorePassword;
     private final String certPassword;
 
-    private final List<Map<String, Object>> mongoServers;
-    private final List<Map<String, Object>> mongoCredentials;
+    private final MongoClientURI mongoUri;
+
     private final List<Map<String, Object>> mongoMounts;
 
     private final List<Map<String, Object>> staticResourcesMounts;
 
     private final List<Map<String, Object>> applicationLogicMounts;
-    
+
     private final List<Map<String, Object>> metadataNamedSingletons;
 
     private final String idmImpl;
@@ -111,19 +112,14 @@ public class Configuration {
     private final int[] eagerLinearSliceHeights;
     private final int eagerRndSliceMinWidht;
     private final int eagerRndMaxCursors;
-    
+
     private final boolean authTokenEnabled;
     private final int authTokenTtl;
 
     /**
-     * default mongodb port 27017.
+     * default mongo uri mongodb://127.0.0.1
      */
-    public static final int DEFAULT_MONGO_PORT = 27017;
-
-    /**
-     * default mongodb host 127.0.0.1.
-     */
-    public static final String DEFAULT_MONGO_HOST = "127.0.0.1";
+    public static final String DEFAULT_MONGO_URI = "mongodb://127.0.0.1";
 
     /**
      * default ajp host 0.0.0.0.
@@ -246,14 +242,9 @@ public class Configuration {
     public static final String IDM_KEY = "idm";
 
     /**
-     * the key for the mongo-servers property.
+     * the key for the mongo-uri property.
      */
-    public static final String MONGO_SERVERS_KEY = "mongo-servers";
-
-    /**
-     * the key for the mongo-credentials property.
-     */
-    public static final String MONGO_CREDENTIALS_KEY = "mongo-credentials";
+    public static final String MONGO_URI_KEY = "mongo-uri";
 
     /**
      * the key for the mongo-mounts property.
@@ -286,16 +277,6 @@ public class Configuration {
     public static final String MONGO_USER_KEY = "user";
 
     /**
-     * the key for the port property.
-     */
-    public static final String MONGO_PORT_KEY = "port";
-
-    /**
-     * the key for the host property.
-     */
-    public static final String MONGO_HOST_KEY = "host";
-
-    /**
      * the key for the application-logic-mounts property.
      */
     public static final String APPLICATION_LOGIC_MOUNTS_KEY = "application-logic-mounts";
@@ -304,7 +285,7 @@ public class Configuration {
      * the key for the application-logic-mounts property.
      */
     public static final String METADATA_NAMED_SINGLETONS_KEY = "metadata-named-singletons";
-    
+
     /**
      * the key for the args property.
      */
@@ -450,12 +431,12 @@ public class Configuration {
      * property.
      */
     public static final String EAGER_RND_MAX_CURSORS = "eager-cursor-allocation-random-max-cursors";
-    
+
     /**
      * the key for the auth-token-enabled property.
      */
     public static final String AUTH_TOKEN_ENABLED = "auth-token-enabled";
-    
+
     /**
      * the key for the auth-token-ttl property.
      */
@@ -482,13 +463,7 @@ public class Configuration {
         keystorePassword = null;
         certPassword = null;
 
-        mongoServers = new ArrayList<>();
-        Map<String, Object> defaultMongoServer = new HashMap<>();
-        defaultMongoServer.put(MONGO_HOST_KEY, DEFAULT_MONGO_HOST);
-        defaultMongoServer.put(MONGO_PORT_KEY, DEFAULT_MONGO_PORT);
-        mongoServers.add(defaultMongoServer);
-
-        mongoCredentials = null;
+        mongoUri = new MongoClientURI(DEFAULT_MONGO_URI);
 
         mongoMounts = new ArrayList<>();
         Map<String, Object> defaultMongoMounts = new HashMap<>();
@@ -497,9 +472,9 @@ public class Configuration {
         mongoMounts.add(defaultMongoMounts);
 
         applicationLogicMounts = new ArrayList<>();
-        
+
         staticResourcesMounts = new ArrayList<>();
-        
+
         metadataNamedSingletons = new ArrayList<>();
 
         HashMap<String, Object> browserStaticResourcesMountArgs = new HashMap<>();
@@ -542,11 +517,11 @@ public class Configuration {
         eagerLinearSliceHeights = new int[]{4, 2, 1};
         eagerRndSliceMinWidht = 1000;
         eagerRndMaxCursors = 50;
-        
+
         authTokenEnabled = true;
         authTokenTtl = 15; // minutes
     }
-    
+
     /**
      * Creates a new instance of Configuration from the configuration file For
      * any missing property the default value is used.
@@ -569,7 +544,7 @@ public class Configuration {
     public Configuration(final Path confFilePath, boolean silent) throws ConfigurationException {
         this(getConfigurationFromFile(confFilePath), silent);
     }
-    
+
     private static Map<String, Object> getConfigurationFromFile(final Path confFilePath) throws ConfigurationException {
         Yaml yaml = new Yaml();
 
@@ -593,7 +568,7 @@ public class Configuration {
                 }
             }
         }
-        
+
         return conf;
     }
 
@@ -625,14 +600,11 @@ public class Configuration {
         keystorePassword = getAsStringOrDefault(conf, KEYSTORE_PASSWORD_KEY, null);
         certPassword = getAsStringOrDefault(conf, CERT_PASSWORD_KEY, null);
 
-        List<Map<String, Object>> mongoServersDefault = new ArrayList<>();
-        Map<String, Object> defaultMongoServer = new HashMap<>();
-        defaultMongoServer.put(MONGO_HOST_KEY, DEFAULT_MONGO_HOST);
-        defaultMongoServer.put(MONGO_PORT_KEY, DEFAULT_MONGO_PORT);
-        mongoServersDefault.add(defaultMongoServer);
-
-        mongoServers = getAsListOfMaps(conf, MONGO_SERVERS_KEY, mongoServersDefault);
-        mongoCredentials = getAsListOfMaps(conf, MONGO_CREDENTIALS_KEY, null);
+        try {
+            mongoUri = new MongoClientURI(getAsStringOrDefault(conf, MONGO_URI_KEY, DEFAULT_MONGO_URI));
+        } catch (IllegalArgumentException iae) {
+            throw new ConfigurationException("wrong parameter " + MONGO_URI_KEY, iae);
+        }
 
         List<Map<String, Object>> mongoMountsDefault = new ArrayList<>();
         Map<String, Object> defaultMongoMounts = new HashMap<>();
@@ -645,7 +617,7 @@ public class Configuration {
         applicationLogicMounts = getAsListOfMaps(conf, APPLICATION_LOGIC_MOUNTS_KEY, new ArrayList<>());
 
         staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, new ArrayList<>());
-        
+
         metadataNamedSingletons = getAsListOfMaps(conf, METADATA_NAMED_SINGLETONS_KEY, new ArrayList<>());
 
         Map<String, Object> idm = getAsMap(conf, IDM_KEY);
@@ -696,7 +668,7 @@ public class Configuration {
         eagerLinearSliceHeights = getAsArrayOfInts(conf, EAGER_LINEAR_HEIGHTS, new int[]{4, 2, 1});
         eagerRndSliceMinWidht = getAsIntegerOrDefault(conf, EAGER_RND_SLICE_MIN_WIDHT, 1000);
         eagerRndMaxCursors = getAsIntegerOrDefault(conf, EAGER_RND_MAX_CURSORS, 50);
-        
+
         authTokenEnabled = getAsBooleanOrDefault(conf, AUTH_TOKEN_ENABLED, true);
         authTokenTtl = getAsIntegerOrDefault(conf, AUTH_TOKEN_TTL, 15);
     }
@@ -741,7 +713,7 @@ public class Configuration {
             return null;
         }
     }
-    
+
     private Boolean getAsBooleanOrDefault(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
         if (conf == null) {
             if (!silent) {
@@ -1082,20 +1054,6 @@ public class Configuration {
     }
 
     /**
-     * @return the mongoServers
-     */
-    public final List<Map<String, Object>> getMongoServers() {
-        return mongoServers;
-    }
-
-    /**
-     * @return the mongoCredentials
-     */
-    public final List<Map<String, Object>> getMongoCredentials() {
-        return mongoCredentials;
-    }
-
-    /**
      * @return the mongoMountsDefault
      */
     public final List<Map<String, Object>> getMongoMounts() {
@@ -1136,7 +1094,7 @@ public class Configuration {
     public final List<Map<String, Object>> getStaticResourcesMounts() {
         return staticResourcesMounts;
     }
-    
+
     /**
      * @return the metadataNamedSingletons
      */
@@ -1198,5 +1156,12 @@ public class Configuration {
      */
     public int getAuthTokenTtl() {
         return authTokenTtl;
+    }
+
+    /**
+     * @return the mongoUri
+     */
+    public MongoClientURI getMongoUri() {
+        return mongoUri;
     }
 }

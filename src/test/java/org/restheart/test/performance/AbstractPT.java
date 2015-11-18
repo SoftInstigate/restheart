@@ -38,11 +38,7 @@ import org.yaml.snakeyaml.Yaml;
 public abstract class AbstractPT {
     protected String url;
 
-    protected String mongoHost;
-    protected Integer mongoPort;
-    protected String mongoAuthDb;
-    protected String mongoUser;
-    protected String mongoPassword;
+    protected String mongoUri;
 
     protected String id;
     protected String pwd;
@@ -63,25 +59,8 @@ public abstract class AbstractPT {
 
         StringBuilder ymlSB = new StringBuilder();
 
-        if (mongoPort == null) {
-            mongoPort = 27017;
-        }
-
-        if (mongoHost == null) {
-            mongoHost = "127.0.0.1";
-        }
-
-        if (mongoHost != null) {
-            ymlSB.append(Configuration.MONGO_SERVERS_KEY).append(":").append("\n");
-            ymlSB.append("    - ").append(Configuration.MONGO_HOST_KEY).append(": ").append(mongoHost).append("\n");
-            ymlSB.append("      ").append(Configuration.MONGO_PORT_KEY).append(": ").append(mongoPort).append("\n");
-        }
-
-        if (mongoAuthDb != null && mongoUser != null && mongoPassword != null) {
-            ymlSB.append(Configuration.MONGO_CREDENTIALS_KEY).append(":").append("\n");
-            ymlSB.append("    - ").append(Configuration.MONGO_AUTH_DB_KEY).append(": ").append(mongoAuthDb).append("\n");
-            ymlSB.append("      ").append(Configuration.MONGO_USER_KEY).append(": ").append(mongoUser).append("\n");
-            ymlSB.append("      ").append(Configuration.MONGO_PASSWORD_KEY).append(": ").append(mongoPassword).append("\n");
+        if (mongoUri != null) {
+            ymlSB.append(Configuration.MONGO_URI_KEY).append(": ").append(mongoUri).append("\n");
         }
 
         Yaml yaml = new Yaml();
@@ -125,38 +104,10 @@ public abstract class AbstractPT {
     }
 
     /**
-     * @param mongoHost the mongoHost to set
+     * @param mongoUri the mongoHost to set
      */
-    public void setMongoHost(String mongoHost) {
-        this.mongoHost = mongoHost;
-    }
-
-    /**
-     * @param mongoPort the mongoPort to set
-     */
-    public void setMongoPort(Integer mongoPort) {
-        this.mongoPort = mongoPort;
-    }
-
-    /**
-     * @param mongoAuthDb the mongoAuthDb to set
-     */
-    public void setMongoAuthDb(String mongoAuthDb) {
-        this.mongoAuthDb = mongoAuthDb;
-    }
-
-    /**
-     * @param mongoUser the mongoUser to set
-     */
-    public void setMongoUser(String mongoUser) {
-        this.mongoUser = mongoUser;
-    }
-
-    /**
-     * @param mongoPassword the mongoPassword to set
-     */
-    public void setMongoPassword(String mongoPassword) {
-        this.mongoPassword = mongoPassword;
+    public void setMongoUri(String mongoUri) {
+        this.mongoUri = mongoUri;
     }
 
     /**

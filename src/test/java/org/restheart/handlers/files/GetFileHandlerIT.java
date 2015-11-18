@@ -25,13 +25,10 @@ import java.io.InputStream;
 import java.net.UnknownHostException;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
-import static org.junit.Assert.assertTrue;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.restheart.test.integration.AbstactIT;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertTrue;
 
 /**
