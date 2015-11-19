@@ -99,6 +99,9 @@ public class RequestContextTest {
 
         pathTokens = "/db/collection/_indexes/123".split("/");
         assertEquals(RequestContext.TYPE.INDEX, RequestContext.selectRequestType(pathTokens));
+        
+        pathTokens = "/db/collection/_queries/test".split("/");
+        assertEquals(RequestContext.TYPE.QUERY, RequestContext.selectRequestType(pathTokens));
     }
 
     @Test

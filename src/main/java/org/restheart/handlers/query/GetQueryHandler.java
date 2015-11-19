@@ -30,7 +30,9 @@ import java.util.Optional;
 import org.restheart.hal.Representation;
 import org.restheart.hal.metadata.AbstractQuery;
 import org.restheart.hal.metadata.AggregationPipelineQuery;
+import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.MapReduceQuery;
+import org.restheart.hal.metadata.QueryVariableNotBoundException;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -95,13 +97,17 @@ public class GetQueryHandler extends PipedHttpHandler {
             try {
                 mrOutput = getDatabase()
                         .getCollection(context.getDBName(), context.getCollectionName())
-                        .mapReduce(mapReduce.getMap(), mapReduce.getReduce(), null, OutputType.INLINE, mapReduce.getUnescapedQuery());
-            } catch (MongoCommandException ce) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing mapReduce", ce);
+                        .mapReduce(mapReduce.getMap(), mapReduce.getReduce(), null, OutputType.INLINE,
+                                mapReduce.getResolvedQuery(context.getQvars()));
+            } catch (MongoCommandException | InvalidMetadataException ex) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing mapReduce", ex);
+                return;
+            } catch (QueryVariableNotBoundException qvnbe) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "error executing mapReduce", qvnbe);
                 return;
             }
-            
-            if (mrOutput == null)  {
+
+            if (mrOutput == null) {
                 ResponseHelper.endExchange(exchange, HttpStatus.SC_NO_CONTENT);
                 return;
             }
@@ -110,7 +116,7 @@ public class GetQueryHandler extends PipedHttpHandler {
             for (DBObject obj : mrOutput.results()) {
                 data.add(obj);
             }
-            
+
             size = mrOutput.getOutputCount();
         } else if (query.getType() == AbstractQuery.TYPE.AGGREGATION_PIPELINE) {
             AggregationOutput agrOutput;
@@ -119,13 +125,16 @@ public class GetQueryHandler extends PipedHttpHandler {
                 agrOutput = getDatabase()
                         .getCollection(context.getDBName(), context.getCollectionName())
                         .aggregate(((AggregationPipelineQuery) query)
-                                .getStagesAsList());
-            } catch (MongoCommandException ce) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing aggreation pipeline", ce);
+                                .getResolvedStagesAsList(context.getQvars()));
+            } catch (MongoCommandException | InvalidMetadataException ex) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing aggreation pipeline", ex);
+                return;
+            } catch (QueryVariableNotBoundException qvnbe) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "error executing aggreation pipeline", qvnbe);
                 return;
             }
 
-            if (agrOutput == null)  {
+            if (agrOutput == null) {
                 ResponseHelper.endExchange(exchange, HttpStatus.SC_NO_CONTENT);
                 return;
             }
@@ -134,7 +143,7 @@ public class GetQueryHandler extends PipedHttpHandler {
             for (DBObject obj : agrOutput.results()) {
                 data.add(obj);
             }
-            
+
             size = data.size();
 
         } else {
@@ -149,7 +158,7 @@ public class GetQueryHandler extends PipedHttpHandler {
 
         try {
             QueryResultRepresentationFactory crp = new QueryResultRepresentationFactory();
-            
+
             // create representation applying pagination
             Representation rep = crp.getRepresentation(exchange, context, applyPagination(data, context), size);
 
@@ -169,13 +178,14 @@ public class GetQueryHandler extends PipedHttpHandler {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
         }
     }
-    
+
     private List<DBObject> applyPagination(List<DBObject> data, RequestContext context) {
-        if (data == null)
+        if (data == null) {
             return data;
-        
+        }
+
         int start = context.getPagesize() * (context.getPage() - 1);
-        int end = start + context.getPagesize(); 
+        int end = start + context.getPagesize();
 
         if (data.size() < start) {
             return Collections.emptyList();
