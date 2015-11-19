@@ -17,6 +17,7 @@
  */
 package org.restheart.handlers.query;
 
+import com.mongodb.AggregationOutput;
 import com.mongodb.DBObject;
 import com.mongodb.MapReduceCommand.OutputType;
 import com.mongodb.MapReduceOutput;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 import org.restheart.hal.Representation;
 import org.restheart.hal.metadata.AbstractQuery;
+import org.restheart.hal.metadata.AggregationPipelineQuery;
 import org.restheart.hal.metadata.MapReduceQuery;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.PipedHttpHandler;
@@ -79,36 +81,64 @@ public class GetQueryHandler extends PipedHttpHandler {
             return;
         }
 
-        MapReduceOutput mrOutput;
+        ArrayList<DBObject> data = new ArrayList();
+        int size = 0;
 
         AbstractQuery query = _query.get();
 
         if (query.getType() == AbstractQuery.TYPE.MAP_REDUCE) {
+            MapReduceOutput mrOutput;
+
             MapReduceQuery mapReduce = (MapReduceQuery) query;
 
             try {
-            mrOutput = getDatabase()
-                    .getCollection(context.getDBName(), context.getCollectionName())
-                    .mapReduce(mapReduce.getMap(), mapReduce.getReduce(), null, OutputType.INLINE, mapReduce.getQuery());
+                mrOutput = getDatabase()
+                        .getCollection(context.getDBName(), context.getCollectionName())
+                        .mapReduce(mapReduce.getMap(), mapReduce.getReduce(), null, OutputType.INLINE, mapReduce.getUnescapedQuery());
             } catch (MongoCommandException ce) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing query", ce);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing mapReduce", ce);
                 return;
             }
+            
+            if (mrOutput == null)  {
+                ResponseHelper.endExchange(exchange, HttpStatus.SC_NO_CONTENT);
+                return;
+            }
+
+            // ***** get data
+            for (DBObject obj : mrOutput.results()) {
+                data.add(obj);
+            }
+            
+            size = mrOutput.getOutputCount();
+        } else if (query.getType() == AbstractQuery.TYPE.AGGREGATION_PIPELINE) {
+            AggregationOutput agrOutput;
+
+            try {
+                agrOutput = getDatabase()
+                        .getCollection(context.getDBName(), context.getCollectionName())
+                        .aggregate(((AggregationPipelineQuery) query)
+                                .getStagesAsList());
+            } catch (MongoCommandException ce) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing aggreation pipeline", ce);
+                return;
+            }
+
+            if (agrOutput == null)  {
+                ResponseHelper.endExchange(exchange, HttpStatus.SC_NO_CONTENT);
+                return;
+            }
+
+            // ***** get data
+            for (DBObject obj : agrOutput.results()) {
+                data.add(obj);
+            }
+            
+            size = data.size();
+
         } else {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_IMPLEMENTED, "query type not yet implemented");
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
             return;
-        }
-
-        if (mrOutput == null) {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NO_CONTENT);
-            return;
-        }
-
-        ArrayList<DBObject> data = new ArrayList();
-        
-        // ***** get data
-        for (DBObject obj : mrOutput.results()) {
-            data.add(obj);
         }
 
         if (exchange.isComplete()) {
@@ -118,7 +148,7 @@ public class GetQueryHandler extends PipedHttpHandler {
 
         try {
             QueryResultRepresentationFactory crp = new QueryResultRepresentationFactory();
-            Representation rep = crp.getRepresentation(exchange, context, data, mrOutput.getOutputCount());
+            Representation rep = crp.getRepresentation(exchange, context, data, size);
 
             exchange.setResponseCode(HttpStatus.SC_OK);
 
