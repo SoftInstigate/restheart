@@ -34,8 +34,8 @@ public class MapReduceQuery extends AbstractQuery {
     public static final String QUERY_ELEMENT_NAME = "query";
 
     /**
-     * @param properties the json properties object. It must include the following
-     * properties:
+     * @param properties the json properties object. It must include the
+     * following properties:
      * <ul>
      * <li><code>type</code></li>
      * <li><code>uri</code></li>
@@ -46,18 +46,20 @@ public class MapReduceQuery extends AbstractQuery {
      * <ul>
      * <li><code>query</code></li>
      * </ul>
-     * <strong>Note</strong> that the dollar prefixed operators in the query must be underscore
-     * escaped, e.g. "_$exits"
+     * <strong>Note</strong> that the dollar prefixed operators in the query
+     * must be underscore escaped, e.g. "_$exits"
      * <p>
-     * Example:
-     * <code>
+     * Example:      <code>
+     * queries: [
      * {
-     * "type":"MAP_REDUCE",
-     * "uri":"test",
-     * "map":"function() { emit(this.name, this.age) }",
-     * "reduce":"function(key, values) { return Array.avg(values) }",
-     * "query":{"name":{"_$exists":true}}}
+     *   "type":"MAP_REDUCE",
+     *   "uri":"test",
+     *   "map":"function() { emit(this.name, this.age) }",
+     *   "reduce":"function(key, values) { return Array.avg(values) }", 
+     *   "query":{"name":{"_$exists":true}} 
+     * }]
      * </code>
+     * @throws org.restheart.hal.metadata.InvalidMetadataException
      */
     public MapReduceQuery(DBObject properties) throws InvalidMetadataException {
         super(properties);
@@ -101,20 +103,14 @@ public class MapReduceQuery extends AbstractQuery {
      * @return the query
      */
     public DBObject getQuery() {
-        replaceUnderscoreEscapedDollarPrefixes(query);
         return query;
     }
 
-    private void replaceUnderscoreEscapedDollarPrefixes(DBObject obj) {
-        obj.keySet().stream().forEach(k -> {
-            if (k.startsWith("_$")) {
-                Object nested = obj.removeField(k);
-                obj.put(k.substring(1), nested);
-            }
-
-            if (obj.get(k) instanceof DBObject) {
-                replaceUnderscoreEscapedDollarPrefixes((DBObject) obj.get(k));
-            }
-        });
+    /**
+     * @return the query where underscore escaped operator keys are replaced
+     * with $ prefixed values
+     */
+    public DBObject getUnescapedQuery() {
+        return (DBObject) replaceEscapedOperators(query);
     }
 }

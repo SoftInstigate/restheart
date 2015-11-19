@@ -17,20 +17,30 @@
  */
 package org.restheart.hal.metadata;
 
+import com.google.common.collect.Sets;
 import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public abstract class AbstractQuery {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractQuery.class);
+
     public enum TYPE {
         MAP_REDUCE,
-        AGGREGATION
+        AGGREGATION_PIPELINE,
     };
+
+    private static final Set<String> MAP_REDUCE_ALIASES = Sets.newHashSet(new String[]{TYPE.MAP_REDUCE.name(), "map reduce", "mapReduce", "map-reduce", "mr"});
+    private static final Set<String> AGGREGATION_PIPELINE_ALIASES = Sets.newHashSet(new String[]{TYPE.AGGREGATION_PIPELINE.name(), "aggregation pipeline", "aggregationPipeline", "aggregation-pipeline", "aggregation", "aggregate", "ap"});
 
     public static final String QUERIES_ELEMENT_NAME = "queries";
     public static final String URI_ELEMENT_NAME = "uri";
@@ -51,17 +61,19 @@ public abstract class AbstractQuery {
         Object _uri = properties.get(URI_ELEMENT_NAME);
 
         if (_type == null || !(_type instanceof String)) {
-            throw new InvalidMetadataException("query element does not have " + TYPE_ELEMENT_NAME + " property");
+            throw new InvalidMetadataException("query element does not have '" + TYPE_ELEMENT_NAME + "' property");
         }
 
         if (_uri == null || !(_uri instanceof String)) {
-            throw new InvalidMetadataException("query element does not have " + URI_ELEMENT_NAME + " property");
+            throw new InvalidMetadataException("query element does not have '" + URI_ELEMENT_NAME + "' property");
         }
 
-        try {
-            this.type = TYPE.valueOf((String) _type);
-        } catch (IllegalArgumentException iae) {
-            throw new InvalidMetadataException("query element has invalid " + TYPE_ELEMENT_NAME + " property: " + _type);
+        if (MAP_REDUCE_ALIASES.contains((String) _type)) {
+            this.type = TYPE.MAP_REDUCE;
+        } else if (AGGREGATION_PIPELINE_ALIASES.contains((String) _type)) {
+            this.type = TYPE.AGGREGATION_PIPELINE;
+        } else {
+            throw new InvalidMetadataException("query element has invalid '" + TYPE_ELEMENT_NAME + "' property: " + _type);
         }
 
         this.uri = (String) _uri;
@@ -104,20 +116,19 @@ public abstract class AbstractQuery {
     }
 
     private static AbstractQuery getQuery(DBObject query) throws InvalidMetadataException {
-        
-        
+
         Object _type = query.get(TYPE_ELEMENT_NAME);
 
         if (_type == null) {
-            throw new InvalidMetadataException("query element does not have " + TYPE_ELEMENT_NAME + " property");
+            throw new InvalidMetadataException("query element does not have '" + TYPE_ELEMENT_NAME + "' property");
         }
 
-        if (TYPE.MAP_REDUCE.name().equals(_type.toString())) {
+        if (MAP_REDUCE_ALIASES.contains(_type.toString())) {
             return new MapReduceQuery(query);
-        } else if (TYPE.AGGREGATION.name().equals(_type.toString())) {
-            throw new InvalidMetadataException("AGGREGATION NOT YET IMPLEMENTED");
+        } else if (AGGREGATION_PIPELINE_ALIASES.contains(_type.toString())) {
+            return new AggregationPipelineQuery(query);
         } else {
-            throw new InvalidMetadataException("query element has invalid " + TYPE_ELEMENT_NAME + ": " + _type.toString());
+            throw new InvalidMetadataException("query element has invalid '" + TYPE_ELEMENT_NAME + "': " + _type.toString());
         }
     }
 
@@ -133,5 +144,71 @@ public abstract class AbstractQuery {
      */
     public String getUri() {
         return uri;
+    }
+
+    /**
+     * replaces the underscore prefixed operators (eg _$exists) with the
+     * corresponding operator (eg $exists). This is needed because MongoDB does
+     * not allow to store keys that are valid operators.
+     *
+     * @param obj
+     * @return the json object where the underscore prefixed operators are
+     * replaced with the corresponding operator
+     */
+    protected Object replaceEscapedOperators(Object obj) {
+        if (obj instanceof BasicDBObject) {
+            BasicDBObject ret = new BasicDBObject();
+
+            ((BasicDBObject) obj).keySet().stream().forEach(k -> {
+                String newKey = k.startsWith("_$") ? k.substring(1) : k;
+                Object value = ((BasicDBObject) obj).get(k);
+
+                if (value instanceof BasicDBObject) {
+                    ret.put(newKey, replaceEscapedOperators((BasicDBObject) value));
+                } else if (value instanceof BasicDBList) {
+                    BasicDBList newList = new BasicDBList();
+
+                    ((BasicDBList) value).stream().forEach(v -> {
+                        newList.add(replaceEscapedOperators(v));
+                    });
+
+                    ret.put(newKey, newList);
+                } else {
+                    ret.put(newKey, replaceEscapedOperators(value));
+                }
+
+            });
+
+            LOGGER.trace("@@@ {}", ret);
+            return ret;
+        } else if (obj instanceof BasicDBList) {
+            BasicDBList ret = new BasicDBList();
+
+            ((BasicDBList) obj).stream().forEach(value -> {
+                if (value instanceof BasicDBObject) {
+                    ret.add(replaceEscapedOperators((BasicDBObject) value));
+                } else if (value instanceof BasicDBList) {
+                    BasicDBList newList = new BasicDBList();
+
+                    ((BasicDBList) value).stream().forEach(v -> {
+                        newList.add(replaceEscapedOperators(v));
+                    });
+
+                    ret.add(newList);
+                } else {
+                    ret.add(replaceEscapedOperators(value));
+                }
+
+            });
+
+            LOGGER.trace("@@@ {}", ret);
+            return ret;
+        } else if (obj instanceof String) {
+            LOGGER.trace("@@@ {}", ((String) obj).startsWith("_$") ? ((String) obj).substring(1) : obj);
+            return ((String) obj).startsWith("_$") ? ((String) obj).substring(1) : obj;
+        } else {
+            LOGGER.trace("@@@ {}", obj);
+            return obj;
+        }
     }
 }
