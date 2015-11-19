@@ -17,6 +17,7 @@
  */
 package org.restheart.handlers.collection;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
@@ -61,12 +62,13 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         
         addSizeAndTotalPagesProperties(size, context, rep);
         
+        addQueriesLinks(context, rep, requestPath);
+        
         addEmbeddedData(embeddedData, rep, requestPath, exchange, context);
 
         if (context.getHalMode() == HAL_MODE.FULL
                 || context.getHalMode() == HAL_MODE.F) {
             
-
             addPaginationLinks(exchange, context, size, rep);
 
             addLinkTemplates(exchange, context, rep, requestPath);
@@ -110,6 +112,27 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         }
     }
 
+    private void addQueriesLinks(final RequestContext context, final Representation rep, final String requestPath) {
+    
+        Object _queries = context.getCollectionProps().get("queries");
+        
+        if (_queries instanceof BasicDBList) {
+            BasicDBList queries = (BasicDBList) _queries;
+            
+            queries.forEach(q -> {
+                if (q instanceof DBObject) {
+                    Object _uri = ((DBObject)q).get("uri");
+                    
+                    if (_uri != null && _uri instanceof String) {
+                        rep.addLink(
+                                new Link(((String) _uri), 
+                                        requestPath + "/" + RequestContext._QUERIES + "/" + ((String) _uri)));
+                    }
+                }
+            });
+        }
+    }
+    
     private void addLinkTemplates(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath) {
         // link templates and curies
         if (context.isParentAccessible()) {
