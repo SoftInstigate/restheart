@@ -179,7 +179,6 @@ public abstract class AbstractQuery {
 
             });
 
-            LOGGER.trace("@@@ {}", ret);
             return ret;
         } else if (obj instanceof BasicDBList) {
             BasicDBList ret = new BasicDBList();
@@ -201,13 +200,10 @@ public abstract class AbstractQuery {
 
             });
 
-            LOGGER.trace("@@@ {}", ret);
             return ret;
         } else if (obj instanceof String) {
-            LOGGER.trace("@@@ {}", ((String) obj).startsWith("_$") ? ((String) obj).substring(1) : obj);
             return ((String) obj).startsWith("_$") ? ((String) obj).substring(1) : obj;
         } else {
-            LOGGER.trace("@@@ {}", obj);
             return obj;
         }
     }

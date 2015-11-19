@@ -60,6 +60,8 @@ public class QueryResultRepresentationFactory extends AbstractRepresentationFact
         if (context.getHalMode() == HAL_MODE.FULL
                 || context.getHalMode() == HAL_MODE.F) {
 
+            addPaginationLinks(exchange, context, size, rep);
+            
             addLinkTemplates(exchange, context, rep, requestPath);
 
             // curies
