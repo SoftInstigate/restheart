@@ -91,6 +91,7 @@ public class QueryResultRepresentationFactory extends AbstractRepresentationFact
 
     private void addLinkTemplates(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath) {
         rep.addLink(new Link("rh:collection", URLUtils.getParentPath(URLUtils.getParentPath(requestPath))));
+        rep.addLink(new Link("rh:paging", requestPath + "{?page}{&pagesize}", true));
     }
 
     private void embeddedDocuments(List<DBObject> embeddedData, Representation rep) throws IllegalQueryParamenterException {
