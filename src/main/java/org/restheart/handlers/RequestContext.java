@@ -17,6 +17,7 @@
  */
 package org.restheart.handlers;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.restheart.db.DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.utils.URLUtils;
@@ -83,6 +84,7 @@ public class RequestContext {
     public static final String COUNT_QPARAM_KEY = "count";
     public static final String SORT_BY_QPARAM_KEY = "sort_by";
     public static final String FILTER_QPARAM_KEY = "filter";
+    public static final String QUERY_VARIABLES_QPARAM_KEY = "qvars";
     public static final String KEYS_QPARAM_KEY = "keys";
     public static final String EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY = "eager";
     public static final String DOC_ID_TYPE_KEY = "id_type";
@@ -126,6 +128,7 @@ public class RequestContext {
     private boolean count = false;
     private EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy;
     private Deque<String> filter = null;
+    private BasicDBObject qvars = null;
     private Deque<String> keys = null;
     private Deque<String> sortBy = null;
     private DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OID;
@@ -224,7 +227,9 @@ public class RequestContext {
             type = TYPE.COLLECTION;
         } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.COLLECTION_INDEXES;
-        } else if (pathTokens.length == 5 && pathTokens[3].equalsIgnoreCase(_QUERIES)) {
+        } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
+            type = TYPE.INDEX;
+        } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_QUERIES)) {
             type = TYPE.QUERY;
         } else {
             type = TYPE.DOCUMENT;
@@ -481,12 +486,25 @@ public class RequestContext {
     public Deque<String> getFilter() {
         return filter;
     }
-
+    
     /**
      * @param filter the filter to set
      */
     public void setFilter(Deque<String> filter) {
         this.filter = filter;
+    }
+    
+    /**
+     * @return the qvars
+     */
+    public BasicDBObject getQvars() {
+        return qvars;
+    }
+    /**
+     * @param qvars the qvars to set
+     */
+    public void setQvars(BasicDBObject qvars) {
+        this.qvars = qvars;
     }
 
     /**

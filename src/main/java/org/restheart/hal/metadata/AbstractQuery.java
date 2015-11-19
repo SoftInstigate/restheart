@@ -156,6 +156,10 @@ public abstract class AbstractQuery {
      * replaced with the corresponding operator
      */
     protected Object replaceEscapedOperators(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+
         if (obj instanceof BasicDBObject) {
             BasicDBObject ret = new BasicDBObject();
 
@@ -203,6 +207,57 @@ public abstract class AbstractQuery {
             return ret;
         } else if (obj instanceof String) {
             return ((String) obj).startsWith("_$") ? ((String) obj).substring(1) : obj;
+        } else {
+            return obj;
+        }
+    }
+
+    /**
+     * @param obj
+     * @param qvars RequestContext.getQvars()
+     * @return the json object where the variables ({"_$var": "var") are replaced
+     * with the values defined in the qvar URL query parameter
+     * @throws org.restheart.hal.metadata.InvalidMetadataException
+     * @throws org.restheart.hal.metadata.QueryVariableNotBoundException
+     */
+    protected Object bindQueryVariables(Object obj, DBObject qvars) throws InvalidMetadataException, QueryVariableNotBoundException {
+        if (obj == null) {
+            return null;
+        }
+
+        if (obj instanceof BasicDBObject) {
+            BasicDBObject _obj = (BasicDBObject) obj;
+
+            if (_obj.size() == 1 && _obj.get("$var") != null) {
+                Object varName = _obj.get("$var");
+
+                if (!(varName instanceof String)) {
+                    throw new InvalidMetadataException("wrong variable name " + varName.toString());
+                }
+
+                if (qvars == null || qvars.get((String) varName) == null) {
+                    throw new QueryVariableNotBoundException("variable " + varName + " not bound");
+                }
+
+                return qvars.get((String) varName);
+            } else {
+                BasicDBObject ret = new BasicDBObject();
+
+                for (String key : ((BasicDBObject) obj).keySet()) {
+                    ret.put(key, bindQueryVariables(((BasicDBObject) obj).get(key), qvars));
+                }
+                
+                return ret;
+            }
+        } else if (obj instanceof BasicDBList) {
+            BasicDBList ret = new BasicDBList();
+
+            for (Object el : ((BasicDBList) obj).toArray()) {
+                ret.add(bindQueryVariables((BasicDBObject) el, qvars));
+            }
+
+            return ret;
+
         } else {
             return obj;
         }

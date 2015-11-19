@@ -17,10 +17,12 @@
  */
 package org.restheart.handlers.injectors;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.util.JSON;
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.Optional;
 import org.bson.BSONObject;
 import org.restheart.db.DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.hal.UnsupportedDocumentIdException;
@@ -182,6 +184,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             }
             rcontext.setKeys(exchange.getQueryParameters().get(KEYS_QPARAM_KEY));
         }
+
         // get and check filter parameter
         Deque<String> filters = exchange.getQueryParameters().get(FILTER_QPARAM_KEY);
 
@@ -213,6 +216,35 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             }
 
             rcontext.setFilter(exchange.getQueryParameters().get(FILTER_QPARAM_KEY));
+        }
+
+        // get and check qarvs parameter
+        Deque<String> dqvars = exchange.getQueryParameters().get(RequestContext.QUERY_VARIABLES_QPARAM_KEY);
+
+        if (dqvars != null) {
+            Optional<String> _qvars = dqvars.stream().findFirst();
+
+            if (!_qvars.isPresent()) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                        "illegal qvars paramenter (empty)");
+                return;
+            }
+
+            try {
+                Object qvars = JSON.parse(_qvars.get());
+
+                if (!(qvars instanceof BasicDBObject)) {
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                            "illegal qvars paramenter, it is not a json object: " + qvars + " => " + qvars.getClass().getSimpleName());
+                    return;
+                } else {
+                    rcontext.setQvars((BasicDBObject) qvars);
+                }
+            } catch (Throwable t) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                        "illegal qvars paramenter: " + _qvars.get(), t);
+                return;
+            }
         }
 
         // get and check eager parameter
@@ -270,13 +302,13 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
         // get the HAL query parameter
         Deque<String> __halMode = exchange.getQueryParameters().get(HAL_QPARAM_KEY);
-        
+
         if (__halMode == null || __halMode.isEmpty()) {
             // default is compact mode
             rcontext.setHalMode(HAL_MODE.COMPACT);
         } else {
             String _halMode = __halMode.getFirst();
-            
+
             try {
                 rcontext.setHalMode(HAL_MODE.valueOf(_halMode.trim().toUpperCase()));
             } catch (IllegalArgumentException iae) {

@@ -17,6 +17,7 @@
  */
 package org.restheart.hal.metadata;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 /**
@@ -107,10 +108,13 @@ public class MapReduceQuery extends AbstractQuery {
     }
 
     /**
-     * @return the query where underscore escaped operator keys are replaced
-     * with $ prefixed values
+     * @param vars RequestContext.getQvar()
+     * @return the query with unescaped operators and bound variables
+     * @throws org.restheart.hal.metadata.InvalidMetadataException
+     * @throws org.restheart.hal.metadata.QueryVariableNotBoundException
      */
-    public DBObject getUnescapedQuery() {
-        return (DBObject) replaceEscapedOperators(query);
+    public DBObject getResolvedQuery(BasicDBObject vars) throws InvalidMetadataException, QueryVariableNotBoundException {
+        return (DBObject) bindQueryVariables(
+                replaceEscapedOperators(query), vars);
     }
 }

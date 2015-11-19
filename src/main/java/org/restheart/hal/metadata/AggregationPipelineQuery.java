@@ -22,6 +22,7 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.util.List;
+import org.restheart.handlers.RequestContext;
 
 /**
  * represents a map reduce.
@@ -82,10 +83,15 @@ public class AggregationPipelineQuery extends AbstractQuery {
     }
 
     /**
-     * @return the stages
+     * @param vars RequestContext.getQvars()
+     * @return the stages, with unescaped operators and bound variables
+     * @throws org.restheart.hal.metadata.InvalidMetadataException
+     * @throws org.restheart.hal.metadata.QueryVariableNotBoundException
      */
-    public List<DBObject> getStagesAsList() {
-        Object replacedStages = replaceEscapedOperators(stages);
+    public List<DBObject> getResolvedStagesAsList(BasicDBObject vars) 
+            throws InvalidMetadataException, QueryVariableNotBoundException {
+        Object replacedStages = bindQueryVariables(
+                replaceEscapedOperators(stages), vars);
 
         return Lists.newArrayList(
                 ((BasicDBList) replacedStages)
