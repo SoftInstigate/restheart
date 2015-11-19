@@ -24,6 +24,7 @@ import com.mongodb.MapReduceOutput;
 import com.mongodb.MongoCommandException;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.restheart.hal.Representation;
@@ -82,7 +83,7 @@ public class GetQueryHandler extends PipedHttpHandler {
         }
 
         ArrayList<DBObject> data = new ArrayList();
-        int size = 0;
+        int size;
 
         AbstractQuery query = _query.get();
 
@@ -148,7 +149,9 @@ public class GetQueryHandler extends PipedHttpHandler {
 
         try {
             QueryResultRepresentationFactory crp = new QueryResultRepresentationFactory();
-            Representation rep = crp.getRepresentation(exchange, context, data, size);
+            
+            // create representation applying pagination
+            Representation rep = crp.getRepresentation(exchange, context, applyPagination(data, context), size);
 
             exchange.setResponseCode(HttpStatus.SC_OK);
 
@@ -164,6 +167,20 @@ public class GetQueryHandler extends PipedHttpHandler {
             exchange.endExchange();
         } catch (IllegalQueryParamenterException ex) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
+        }
+    }
+    
+    private List<DBObject> applyPagination(List<DBObject> data, RequestContext context) {
+        if (data == null)
+            return data;
+        
+        int start = context.getPagesize() * (context.getPage() - 1);
+        int end = start + context.getPagesize(); 
+
+        if (data.size() < start) {
+            return Collections.emptyList();
+        } else {
+            return data.subList(start, end > data.size() ? data.size() : end);
         }
     }
 }
