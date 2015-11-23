@@ -100,8 +100,8 @@ public class GetAggregationHandler extends PipedHttpHandler {
                 mrOutput = getDatabase()
                         .getCollection(context.getDBName(),
                                 context.getCollectionName())
-                        .mapReduce(mapReduce.getMap(),
-                                mapReduce.getReduce(),
+                        .mapReduce(mapReduce.getResolvedMap(context.getAggreationVars()),
+                                mapReduce.getResolvedReduce(context.getAggreationVars()),
                                 null,
                                 OutputType.INLINE,
                                 mapReduce.getResolvedQuery(context.getAggreationVars()));
