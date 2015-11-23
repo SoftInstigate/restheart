@@ -43,9 +43,6 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class GetAggreationIT extends AbstactIT {
-
-    private static final Logger LOG = LoggerFactory.getLogger(GetAggreationIT.class);
-
     public GetAggreationIT() {
     }
 
@@ -64,7 +61,7 @@ public class GetAggreationIT extends AbstactIT {
                 + "{\"_id\": \"$name\", \"value\": {\"_$avg\": \"$age\"} }}"
                 + "]"
                 + "}]}";
-        
+
         createTmpCollection();
         createMetadataAndTestData(aggregationsMetadata);
         _testGetAggregation(uri);
@@ -82,7 +79,7 @@ public class GetAggreationIT extends AbstactIT {
                 + "\"reduce\":\"function(key, values) { return Array.avg(values) }\"" + ","
                 + "\"query\":{\"name\":{\"_$exists\":true}}"
                 + "}]}";
-        
+
         createTmpCollection();
         createMetadataAndTestData(aggregationsMetadata);
         _testGetAggregation(uri);
@@ -96,7 +93,7 @@ public class GetAggreationIT extends AbstactIT {
                 + "{"
                 + "\"type\":\"mapReduce\"" + ","
                 + "\"uri\": \"" + uri + "\","
-                + "\"map\": \"function() { emit(this.name, this.age) }\"" + ","
+                + "\"map\": \"function() { var minage = JSON.parse($vars).minage; if (this.age > minage ) { emit(this.name, this.age); }; }\","
                 + "\"reduce\":\"function(key, values) { return Array.avg(values) }\"" + ","
                 + "\"query\":{\"name\":{\"_$var\":\"name\"}}"
                 + "}]}";
@@ -107,9 +104,9 @@ public class GetAggreationIT extends AbstactIT {
         Response resp;
 
         URI aggrUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/" + RequestContext._AGGREGATIONS + "/" + uri, new NameValuePair[]{
-            new BasicNameValuePair("avars", "{\"name\": \"a\"}")
+            new BasicNameValuePair("avars", "{\"name\": \"a\", \"minage\": 20}")
         });
-        
+
         resp = adminExecutor.execute(Request.Get(aggrUri));
 
         HttpResponse httpResp = resp.returnResponse();
@@ -119,8 +116,6 @@ public class GetAggreationIT extends AbstactIT {
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
-        System.out.println(EntityUtils.toString(entity));
-        
         assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
         assertNotNull("content type not null", entity.getContentType());
         assertEquals("check content type", Representation.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
@@ -171,7 +166,7 @@ public class GetAggreationIT extends AbstactIT {
                     v.asObject().get("value").isNumber());
         });
     }
-    
+
     @Test
     public void testUnboundVariable() throws Exception {
         String uri = "avg_ages";
@@ -191,7 +186,7 @@ public class GetAggreationIT extends AbstactIT {
         Response resp;
 
         URI aggrUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/" + RequestContext._AGGREGATIONS + "/" + uri);
-        
+
         resp = adminExecutor.execute(Request.Get(aggrUri));
 
         HttpResponse httpResp = resp.returnResponse();
@@ -201,8 +196,6 @@ public class GetAggreationIT extends AbstactIT {
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
-        System.out.println(EntityUtils.toString(entity));
-        
         assertEquals("check status code", HttpStatus.SC_BAD_REQUEST, statusLine.getStatusCode());
         assertNotNull("content type not null", entity.getContentType());
         assertEquals("check content type", Representation.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
@@ -259,7 +252,7 @@ public class GetAggreationIT extends AbstactIT {
         Response resp;
 
         URI aggrUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/" + RequestContext._AGGREGATIONS + "/" + uri);
-        
+
         resp = adminExecutor.execute(Request.Get(aggrUri));
 
         HttpResponse httpResp = resp.returnResponse();
@@ -290,7 +283,7 @@ public class GetAggreationIT extends AbstactIT {
         assertTrue("check _embedded", json.get("_embedded").isObject());
 
         assertNotNull("", json.get("_embedded").asObject().get("rh:result"));
-        
+
         assertTrue("check _embedded[\"rh:result\"]",
                 json.get("_embedded").asObject().get("rh:result").isArray());
 
@@ -298,8 +291,6 @@ public class GetAggreationIT extends AbstactIT {
                 = json.get("_embedded").asObject().get("rh:result").asArray();
 
         assertTrue("check we have 2 results", results.size() == 2);
-        
-        System.out.println("results: " + results.toString());
 
         results.values().stream().map((v) -> {
             assertNotNull("check not null _id property",
@@ -313,9 +304,10 @@ public class GetAggreationIT extends AbstactIT {
             assertNotNull("check not null value property",
                     v.asObject().get("value"));
             return v;
-        }).forEach((v) -> {
+        }).map((v) -> {
             assertTrue("check results value property is number",
                     v.asObject().get("value").isNumber());
+            return v;
         });
     }
 
