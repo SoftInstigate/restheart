@@ -29,8 +29,6 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class MapReduce extends AbstractAggregationOperation {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractAggregationOperation.class);
-
     private final String map;
     private final String reduce;
     private final DBObject query;
@@ -151,9 +149,6 @@ public class MapReduce extends AbstractAggregationOperation {
                             Matcher.quoteReplacement("$") + "vars",
                             escapedAVars);
 
-            LOGGER.trace("map function with aVars {}: {} -> {}",
-                    aVars, map, ret);
-
             return ret;
         }
     }
@@ -170,15 +165,12 @@ public class MapReduce extends AbstractAggregationOperation {
                     + aVars.toString().replaceAll("\"", "\\\\\\\\\"")
                     + "\"";
             
-            LOGGER.trace("escaped aVars: {}", escapedAVars);
-
             String ret = reduce == null ? null
                     : reduce.replaceAll(
                             Matcher.quoteReplacement("$") + "vars",
                             escapedAVars
                     );
 
-            LOGGER.trace("reduce function with aVars {}: {} -> {}", aVars, reduce, ret);
             return ret;
         }
     }
