@@ -25,7 +25,7 @@ import com.mongodb.DBObject;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class MapReduceQuery extends AbstractQuery {
+public class MapReduce extends AbstractAggregationOperation {
     private final String map;
     private final String reduce;
     private final DBObject query;
@@ -56,13 +56,14 @@ public class MapReduceQuery extends AbstractQuery {
      *   "type":"MAP_REDUCE",
      *   "uri":"test",
      *   "map":"function() { emit(this.name, this.age) }",
-     *   "reduce":"function(key, values) { return Array.avg(values) }", 
-     *   "query":{"name":{"_$exists":true}} 
+     *   "reduce":"function(key, values) { return Array.avg(values) }",
+     *   "query":{"name":{"_$exists":true}}
      * }]
      * </code>
      * @throws org.restheart.hal.metadata.InvalidMetadataException
      */
-    public MapReduceQuery(DBObject properties) throws InvalidMetadataException {
+    public MapReduce(DBObject properties)
+            throws InvalidMetadataException {
         super(properties);
 
         Object _map = properties.get(MAP_ELEMENT_NAME);
@@ -70,15 +71,24 @@ public class MapReduceQuery extends AbstractQuery {
         Object _query = properties.get(QUERY_ELEMENT_NAME);
 
         if (_map == null || !(_map instanceof String)) {
-            throw new InvalidMetadataException("invalid query with uri " + getUri() + "; the " + MAP_ELEMENT_NAME + " property is not valid: " + _map);
+            throw new InvalidMetadataException("invalid query with uri "
+                    + getUri() + "; the "
+                    + MAP_ELEMENT_NAME
+                    + " property is not valid: " + _map);
         }
 
         if (_reduce == null || !(_reduce instanceof String)) {
-            throw new InvalidMetadataException("invalid query with uri " + getUri() + "; the " + REDUCE_ELEMENT_NAME + " property is not valid: " + _reduce);
+            throw new InvalidMetadataException("invalid query with uri "
+                    + getUri()
+                    + "; the " + REDUCE_ELEMENT_NAME
+                    + " property is not valid: " + _reduce);
         }
 
         if (_query != null && !(_query instanceof DBObject)) {
-            throw new InvalidMetadataException("invalid query with uri " + getUri() + "; the " + QUERY_ELEMENT_NAME + " property is not valid: " + _query);
+            throw new InvalidMetadataException("invalid query with uri "
+                    + getUri()
+                    + "; the " + QUERY_ELEMENT_NAME
+                    + " property is not valid: " + _query);
         }
 
         this.map = (String) _map;
@@ -113,7 +123,8 @@ public class MapReduceQuery extends AbstractQuery {
      * @throws org.restheart.hal.metadata.InvalidMetadataException
      * @throws org.restheart.hal.metadata.QueryVariableNotBoundException
      */
-    public DBObject getResolvedQuery(BasicDBObject vars) throws InvalidMetadataException, QueryVariableNotBoundException {
+    public DBObject getResolvedQuery(BasicDBObject vars)
+            throws InvalidMetadataException, QueryVariableNotBoundException {
         return (DBObject) bindQueryVariables(
                 replaceEscapedOperators(query), vars);
     }

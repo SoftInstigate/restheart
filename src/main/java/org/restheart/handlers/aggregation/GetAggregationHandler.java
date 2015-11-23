@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.query;
+package org.restheart.handlers.aggregation;
 
 import com.mongodb.AggregationOutput;
 import com.mongodb.DBObject;
@@ -28,31 +28,27 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.restheart.hal.Representation;
-import org.restheart.hal.metadata.AbstractQuery;
-import org.restheart.hal.metadata.AggregationPipelineQuery;
+import org.restheart.hal.metadata.AbstractAggregationOperation;
+import org.restheart.hal.metadata.AggregationPipeline;
 import org.restheart.hal.metadata.InvalidMetadataException;
-import org.restheart.hal.metadata.MapReduceQuery;
+import org.restheart.hal.metadata.MapReduce;
 import org.restheart.hal.metadata.QueryVariableNotBoundException;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class GetQueryHandler extends PipedHttpHandler {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(GetQueryHandler.class);
+public class GetAggregationHandler extends PipedHttpHandler {
 
     /**
      * Default ctor
      */
-    public GetQueryHandler() {
+    public GetAggregationHandler() {
         super();
     }
 
@@ -61,7 +57,7 @@ public class GetQueryHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public GetQueryHandler(PipedHttpHandler next) {
+    public GetAggregationHandler(PipedHttpHandler next) {
         super(next);
     }
 
@@ -72,38 +68,52 @@ public class GetQueryHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange,
+            RequestContext context) throws Exception {
         String queryUri = context.getQuery();
 
-        List<AbstractQuery> queries = AbstractQuery.getFromJson(context.getCollectionProps());
+        List<AbstractAggregationOperation> queries
+                = AbstractAggregationOperation
+                .getFromJson(context.getCollectionProps());
 
-        Optional<AbstractQuery> _query = queries.stream().filter(q -> q.getUri().equals(queryUri)).findFirst();
+        Optional<AbstractAggregationOperation> _query
+                = queries.stream().filter(q
+                        -> q.getUri().equals(queryUri)).findFirst();
 
         if (!_query.isPresent()) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "query does not exist");
+            ResponseHelper.endExchangeWithMessage(exchange,
+                    HttpStatus.SC_NOT_FOUND, "query does not exist");
             return;
         }
 
         ArrayList<DBObject> data = new ArrayList();
         int size;
 
-        AbstractQuery query = _query.get();
+        AbstractAggregationOperation query = _query.get();
 
-        if (query.getType() == AbstractQuery.TYPE.MAP_REDUCE) {
+        if (query.getType() == AbstractAggregationOperation.TYPE.MAP_REDUCE) {
             MapReduceOutput mrOutput;
 
-            MapReduceQuery mapReduce = (MapReduceQuery) query;
+            MapReduce mapReduce = (MapReduce) query;
 
             try {
                 mrOutput = getDatabase()
-                        .getCollection(context.getDBName(), context.getCollectionName())
-                        .mapReduce(mapReduce.getMap(), mapReduce.getReduce(), null, OutputType.INLINE,
+                        .getCollection(context.getDBName(),
+                                context.getCollectionName())
+                        .mapReduce(mapReduce.getMap(),
+                                mapReduce.getReduce(),
+                                null,
+                                OutputType.INLINE,
                                 mapReduce.getResolvedQuery(context.getQvars()));
             } catch (MongoCommandException | InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing mapReduce", ex);
+                ResponseHelper.endExchangeWithMessage(exchange,
+                        HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                        "error executing mapReduce", ex);
                 return;
             } catch (QueryVariableNotBoundException qvnbe) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "error executing mapReduce", qvnbe);
+                ResponseHelper.endExchangeWithMessage(exchange,
+                        HttpStatus.SC_BAD_REQUEST,
+                        "error executing mapReduce", qvnbe);
                 return;
             }
 
@@ -118,19 +128,25 @@ public class GetQueryHandler extends PipedHttpHandler {
             }
 
             size = mrOutput.getOutputCount();
-        } else if (query.getType() == AbstractQuery.TYPE.AGGREGATION_PIPELINE) {
+        } else if (query.getType()
+                == AbstractAggregationOperation.TYPE.AGGREGATION_PIPELINE) {
             AggregationOutput agrOutput;
 
             try {
                 agrOutput = getDatabase()
-                        .getCollection(context.getDBName(), context.getCollectionName())
-                        .aggregate(((AggregationPipelineQuery) query)
+                        .getCollection(context.getDBName(),
+                                context.getCollectionName())
+                        .aggregate(((AggregationPipeline) query)
                                 .getResolvedStagesAsList(context.getQvars()));
             } catch (MongoCommandException | InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing aggreation pipeline", ex);
+                ResponseHelper.endExchangeWithMessage(exchange,
+                        HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                        "error executing aggreation pipeline", ex);
                 return;
             } catch (QueryVariableNotBoundException qvnbe) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "error executing aggreation pipeline", qvnbe);
+                ResponseHelper.endExchangeWithMessage(exchange,
+                        HttpStatus.SC_BAD_REQUEST,
+                        "error executing aggreation pipeline", qvnbe);
                 return;
             }
 
@@ -147,7 +163,8 @@ public class GetQueryHandler extends PipedHttpHandler {
             size = data.size();
 
         } else {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
+            ResponseHelper.endExchangeWithMessage(exchange,
+                    HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
             return;
         }
 
@@ -157,10 +174,12 @@ public class GetQueryHandler extends PipedHttpHandler {
         }
 
         try {
-            QueryResultRepresentationFactory crp = new QueryResultRepresentationFactory();
+            AggregationResultRepresentationFactory crp
+                    = new AggregationResultRepresentationFactory();
 
             // create representation applying pagination
-            Representation rep = crp.getRepresentation(exchange, context, applyPagination(data, context), size);
+            Representation rep = crp.getRepresentation(exchange,
+                    context, applyPagination(data, context), size);
 
             exchange.setResponseCode(HttpStatus.SC_OK);
 
@@ -175,11 +194,13 @@ public class GetQueryHandler extends PipedHttpHandler {
             crp.sendRepresentation(exchange, context, rep);
             exchange.endExchange();
         } catch (IllegalQueryParamenterException ex) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
+            ResponseHelper.endExchangeWithMessage(exchange,
+                    HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
         }
     }
 
-    private List<DBObject> applyPagination(List<DBObject> data, RequestContext context) {
+    private List<DBObject>
+            applyPagination(List<DBObject> data, RequestContext context) {
         if (data == null) {
             return data;
         }

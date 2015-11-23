@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.query;
+package org.restheart.handlers.aggregation;
 
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
@@ -33,9 +33,10 @@ import org.restheart.utils.URLUtils;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class QueryResultRepresentationFactory extends AbstractRepresentationFactory {
+public class AggregationResultRepresentationFactory
+        extends AbstractRepresentationFactory {
 
-    public QueryResultRepresentationFactory() {
+    public AggregationResultRepresentationFactory() {
     }
 
     /**
@@ -48,24 +49,29 @@ public class QueryResultRepresentationFactory extends AbstractRepresentationFact
      * @throws IllegalQueryParamenterException
      */
     @Override
-    public Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
+    public Representation getRepresentation(HttpServerExchange exchange,
+            RequestContext context,
+            List<DBObject> embeddedData,
+            long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
-        final Representation rep = createRepresentation(exchange, context, requestPath);
+        final Representation rep
+                = createRepresentation(exchange, context, requestPath);
 
         addSizeAndTotalPagesProperties(size, context, rep);
 
-        addEmbeddedData(embeddedData, rep, requestPath, exchange, context);
+        addEmbeddedData(embeddedData, rep);
 
         if (context.getHalMode() == HAL_MODE.FULL
                 || context.getHalMode() == HAL_MODE.F) {
 
             addPaginationLinks(exchange, context, size, rep);
-            
-            addLinkTemplates(exchange, context, rep, requestPath);
+
+            addLinkTemplates(rep, requestPath);
 
             // curies
-            rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
+            rep.addLink(new Link("rh", "curies",
+                    Configuration.RESTHEART_ONLINE_DOC_URL
                     + "/{rel}.html", true), true);
         } else {
             // empty curies section. this is needed due to HAL browser issue
@@ -76,7 +82,8 @@ public class QueryResultRepresentationFactory extends AbstractRepresentationFact
         return rep;
     }
 
-    private void addEmbeddedData(List<DBObject> embeddedData, final Representation rep, final String requestPath, final HttpServerExchange exchange, final RequestContext context)
+    private void addEmbeddedData(List<DBObject> embeddedData,
+            final Representation rep)
             throws IllegalQueryParamenterException {
         if (embeddedData != null) {
             addReturnedProperty(embeddedData, rep);
@@ -89,17 +96,21 @@ public class QueryResultRepresentationFactory extends AbstractRepresentationFact
         }
     }
 
-    private void addLinkTemplates(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath) {
-        rep.addLink(new Link("rh:collection", URLUtils.getParentPath(URLUtils.getParentPath(requestPath))));
-        rep.addLink(new Link("rh:paging", requestPath + "{?page}{&pagesize}", true));
+    private void addLinkTemplates(final Representation rep,
+            final String requestPath) {
+        rep.addLink(new Link("rh:collection",
+                URLUtils.getParentPath(URLUtils.getParentPath(requestPath))));
+        rep.addLink(new Link("rh:paging",
+                requestPath + "{?page}{&pagesize}", true));
     }
 
-    private void embeddedDocuments(List<DBObject> embeddedData, Representation rep) throws IllegalQueryParamenterException {
+    private void embeddedDocuments(List<DBObject> embeddedData,
+            Representation rep) throws IllegalQueryParamenterException {
         for (DBObject d : embeddedData) {
             Representation nrep = new Representation();
-            
+
             nrep.addProperties(d);
-            
+
             rep.addRepresentation("rh:result", nrep);
         }
     }

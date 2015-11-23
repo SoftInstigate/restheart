@@ -50,7 +50,7 @@ import org.restheart.handlers.files.PutFileHandler;
 import org.restheart.handlers.metadata.ResponseTranformerMetadataHandler;
 import org.restheart.handlers.metadata.CheckMetadataHandler;
 import org.restheart.handlers.metadata.RequestTransformerMetadataHandler;
-import org.restheart.handlers.query.GetQueryHandler;
+import org.restheart.handlers.aggregation.GetAggregationHandler;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,7 +133,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         putPipedHttpHandler(TYPE.FILE, METHOD.DELETE, new DeleteFileHandler());
         
         // QUERY handler
-        putPipedHttpHandler(TYPE.QUERY, METHOD.GET, new GetQueryHandler(new ResponseTranformerMetadataHandler(null)));
+        putPipedHttpHandler(TYPE.QUERY, METHOD.GET, new GetAggregationHandler(new ResponseTranformerMetadataHandler(null)));
     }
 
     /**

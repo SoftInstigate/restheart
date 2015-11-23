@@ -22,14 +22,13 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.util.List;
-import org.restheart.handlers.RequestContext;
 
 /**
  * represents a map reduce.
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class AggregationPipelineQuery extends AbstractQuery {
+public class AggregationPipeline extends AbstractAggregationOperation {
     private final BasicDBList stages;
 
     public static final String STAGES_ELEMENT_NAME = "stages";
@@ -44,32 +43,40 @@ public class AggregationPipelineQuery extends AbstractQuery {
      * must be underscore escaped, e.g. "_$exits"
      * <p>
      * Example:      <code>
-     * 
+     *
      * queries: [
      * {
      *   "type":"aggregate",
      *   "uri":"test_ap",
-     *   "stages": 
-     *     [ 
-     *       {"_$match": { "name": { "_$exists": true}}}, 
+     *   "stages":
+     *     [
+     *       {"_$match": { "name": { "_$exists": true}}},
      *       {"_$group": { "_id": "$name", "avg_age": {"_$avg": "$age"} }}
      *     ]
      * }]
      * </code>
      * @throws org.restheart.hal.metadata.InvalidMetadataException
      */
-    public AggregationPipelineQuery(DBObject properties) throws InvalidMetadataException {
+    public AggregationPipeline(DBObject properties)
+            throws InvalidMetadataException {
         super(properties);
 
         Object _stages = properties.get(STAGES_ELEMENT_NAME);
 
         if (_stages == null || !(_stages instanceof BasicDBList)) {
-            throw new InvalidMetadataException("query /" + getUri() + "has invalid '" + STAGES_ELEMENT_NAME + "': " + _stages + "; must be an array of stage objects");
+            throw new InvalidMetadataException("query /" + getUri()
+                    + "has invalid '" + STAGES_ELEMENT_NAME
+                    + "': " + _stages
+                    + "; must be an array of stage objects");
         }
 
         // chekcs that the _stages BasicDBList elements are all BasicDBObjects
-        if (((BasicDBList) _stages).stream().anyMatch(s -> !(s instanceof BasicDBObject))) {
-            throw new InvalidMetadataException("query /" + getUri() + "has invalid '" + STAGES_ELEMENT_NAME + "': " + _stages + "; must be an array of stage objects");
+        if (((BasicDBList) _stages).stream()
+                .anyMatch(s -> !(s instanceof BasicDBObject))) {
+            throw new InvalidMetadataException("query /" + getUri()
+                    + "has invalid '" + STAGES_ELEMENT_NAME
+                    + "': " + _stages
+                    + "; must be an array of stage objects");
         }
 
         this.stages = (BasicDBList) _stages;
@@ -88,7 +95,7 @@ public class AggregationPipelineQuery extends AbstractQuery {
      * @throws org.restheart.hal.metadata.InvalidMetadataException
      * @throws org.restheart.hal.metadata.QueryVariableNotBoundException
      */
-    public List<DBObject> getResolvedStagesAsList(BasicDBObject vars) 
+    public List<DBObject> getResolvedStagesAsList(BasicDBObject vars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
         Object replacedStages = bindQueryVariables(
                 replaceEscapedOperators(stages), vars);
