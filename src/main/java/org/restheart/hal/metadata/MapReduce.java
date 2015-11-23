@@ -53,7 +53,7 @@ public class MapReduce extends AbstractAggregationOperation {
      * Example:      <code>
      * aggregations: [
      * {
-     *   "type":"MAP_REDUCE",
+     *   "type":"mapReduce",
      *   "uri":"test",
      *   "map":"function() { emit(this.name, this.age) }",
      *   "reduce":"function(key, values) { return Array.avg(values) }",

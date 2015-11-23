@@ -99,21 +99,21 @@ public abstract class AbstractAggregationOperation {
 
         ArrayList<AbstractAggregationOperation> ret = new ArrayList<>();
 
-        Object _queries = collProps.get(AGGREGATIONS_ELEMENT_NAME);
+        Object _aggregations = collProps.get(AGGREGATIONS_ELEMENT_NAME);
 
-        if (_queries == null) {
+        if (_aggregations == null) {
             return ret;
         }
 
-        if (!(_queries instanceof BasicDBList)) {
+        if (!(_aggregations instanceof BasicDBList)) {
             throw new InvalidMetadataException("element '"
                     + AGGREGATIONS_ELEMENT_NAME
-                    + "' is not an array list." + _queries);
+                    + "' is not an array list." + _aggregations);
         }
 
-        BasicDBList queries = (BasicDBList) _queries;
+        BasicDBList aggregations = (BasicDBList) _aggregations;
 
-        for (Object _query : queries.toArray()) {
+        for (Object _query : aggregations.toArray()) {
             if (!(_query instanceof DBObject)) {
                 throw new InvalidMetadataException("element '"
                         + AGGREGATIONS_ELEMENT_NAME
