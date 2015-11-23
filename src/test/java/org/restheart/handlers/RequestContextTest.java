@@ -101,7 +101,7 @@ public class RequestContextTest {
         assertEquals(RequestContext.TYPE.INDEX, RequestContext.selectRequestType(pathTokens));
         
         pathTokens = "/db/collection/_queries/test".split("/");
-        assertEquals(RequestContext.TYPE.QUERY, RequestContext.selectRequestType(pathTokens));
+        assertEquals(RequestContext.TYPE.AGGREGATION, RequestContext.selectRequestType(pathTokens));
     }
 
     @Test

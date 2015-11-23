@@ -126,7 +126,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
                     if (_uri != null && _uri instanceof String) {
                         rep.addLink(
                                 new Link(((String) _uri), 
-                                        requestPath + "/" + RequestContext._QUERIES + "/" + ((String) _uri)));
+                                        requestPath + "/" + RequestContext._AGGREGATIONS + "/" + ((String) _uri)));
                     }
                 }
             });

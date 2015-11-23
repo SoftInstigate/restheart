@@ -219,7 +219,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         }
 
         // get and check qarvs parameter
-        Deque<String> dqvars = exchange.getQueryParameters().get(RequestContext.QUERY_VARIABLES_QPARAM_KEY);
+        Deque<String> dqvars = exchange.getQueryParameters().get(RequestContext.AGGREGATION_VARIABLES_QPARAM_KEY);
 
         if (dqvars != null) {
             Optional<String> _qvars = dqvars.stream().findFirst();

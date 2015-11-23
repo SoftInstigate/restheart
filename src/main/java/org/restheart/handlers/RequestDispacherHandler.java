@@ -132,8 +132,8 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         putPipedHttpHandler(TYPE.FILE, METHOD.PUT, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PutFileHandler())));
         putPipedHttpHandler(TYPE.FILE, METHOD.DELETE, new DeleteFileHandler());
         
-        // QUERY handler
-        putPipedHttpHandler(TYPE.QUERY, METHOD.GET, new GetAggregationHandler(new ResponseTranformerMetadataHandler(null)));
+        // AGGREGATION handler
+        putPipedHttpHandler(TYPE.AGGREGATION, METHOD.GET, new GetAggregationHandler(new ResponseTranformerMetadataHandler(null)));
     }
 
     /**

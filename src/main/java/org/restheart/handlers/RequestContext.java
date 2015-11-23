@@ -49,7 +49,7 @@ public class RequestContext {
         FILES_BUCKET,
         FILE,
         FILE_BINARY,
-        QUERY
+        AGGREGATION
     };
 
     public enum METHOD {
@@ -84,7 +84,7 @@ public class RequestContext {
     public static final String COUNT_QPARAM_KEY = "count";
     public static final String SORT_BY_QPARAM_KEY = "sort_by";
     public static final String FILTER_QPARAM_KEY = "filter";
-    public static final String QUERY_VARIABLES_QPARAM_KEY = "qvars";
+    public static final String AGGREGATION_VARIABLES_QPARAM_KEY = "avars";
     public static final String KEYS_QPARAM_KEY = "keys";
     public static final String EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY = "eager";
     public static final String DOC_ID_TYPE_KEY = "id_type";
@@ -97,7 +97,7 @@ public class RequestContext {
     public static final String FS_CHUNKS_SUFFIX = ".chunks";
     public static final String FS_FILES_SUFFIX = ".files";
     public static final String _INDEXES = "_indexes";
-    public static final String _QUERIES = "_queries";
+    public static final String _AGGREGATIONS = "_aggrs";
     public static final String BINARY_CONTENT = "binary";
     
     public static final String HAL_QPARAM_KEY = "hal";
@@ -229,8 +229,8 @@ public class RequestContext {
             type = TYPE.COLLECTION_INDEXES;
         } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.INDEX;
-        } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_QUERIES)) {
-            type = TYPE.QUERY;
+        } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
+            type = TYPE.AGGREGATION;
         } else {
             type = TYPE.DOCUMENT;
         }
@@ -415,7 +415,7 @@ public class RequestContext {
      * @return isReservedResource
      */
     public boolean isReservedResource() {
-        if (type == TYPE.ROOT || type == TYPE.QUERY) {
+        if (type == TYPE.ROOT || type == TYPE.AGGREGATION) {
             return false;
         }
 
