@@ -44,7 +44,7 @@ public class AggregationPipeline extends AbstractAggregationOperation {
      * <p>
      * Example:      <code>
      *
-     * queries: [
+     * aggregations: [
      * {
      *   "type":"aggregate",
      *   "uri":"test_ap",

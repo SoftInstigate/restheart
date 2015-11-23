@@ -51,7 +51,7 @@ public class MapReduce extends AbstractAggregationOperation {
      * must be underscore escaped, e.g. "_$exits"
      * <p>
      * Example:      <code>
-     * queries: [
+     * aggregations: [
      * {
      *   "type":"MAP_REDUCE",
      *   "uri":"test",
