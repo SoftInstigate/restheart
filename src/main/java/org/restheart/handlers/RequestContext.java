@@ -128,7 +128,7 @@ public class RequestContext {
     private boolean count = false;
     private EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy;
     private Deque<String> filter = null;
-    private BasicDBObject qvars = null;
+    private BasicDBObject aggregationVars = null; // aggregation vars
     private Deque<String> keys = null;
     private Deque<String> sortBy = null;
     private DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OID;
@@ -495,16 +495,16 @@ public class RequestContext {
     }
     
     /**
-     * @return the qvars
+     * @return the aggregationVars
      */
-    public BasicDBObject getQvars() {
-        return qvars;
+    public BasicDBObject getAggreationVars() {
+        return aggregationVars;
     }
     /**
-     * @param qvars the qvars to set
+     * @param aggregationVars the aggregationVars to set
      */
-    public void setQvars(BasicDBObject qvars) {
-        this.qvars = qvars;
+    public void setAggregationVars(BasicDBObject aggregationVars) {
+        this.aggregationVars = aggregationVars;
     }
 
     /**

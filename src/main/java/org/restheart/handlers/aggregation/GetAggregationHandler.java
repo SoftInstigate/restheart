@@ -104,7 +104,7 @@ public class GetAggregationHandler extends PipedHttpHandler {
                                 mapReduce.getReduce(),
                                 null,
                                 OutputType.INLINE,
-                                mapReduce.getResolvedQuery(context.getQvars()));
+                                mapReduce.getResolvedQuery(context.getAggreationVars()));
             } catch (MongoCommandException | InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange,
                         HttpStatus.SC_INTERNAL_SERVER_ERROR,
@@ -137,7 +137,7 @@ public class GetAggregationHandler extends PipedHttpHandler {
                         .getCollection(context.getDBName(),
                                 context.getCollectionName())
                         .aggregate(((AggregationPipeline) query)
-                                .getResolvedStagesAsList(context.getQvars()));
+                                .getResolvedStagesAsList(context.getAggreationVars()));
             } catch (MongoCommandException | InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange,
                         HttpStatus.SC_INTERNAL_SERVER_ERROR,

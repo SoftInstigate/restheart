@@ -230,13 +230,13 @@ public abstract class AbstractAggregationOperation {
 
     /**
      * @param obj
-     * @param qvars RequestContext.getQvars()
+     * @param avars RequestContext.getQvars()
      * @return the json object where the variables ({"_$var": "var") are
-     * replaced with the values defined in the qvar URL query parameter
+     * replaced with the values defined in the avars URL query parameter
      * @throws org.restheart.hal.metadata.InvalidMetadataException
      * @throws org.restheart.hal.metadata.QueryVariableNotBoundException
      */
-    protected Object bindQueryVariables(Object obj, DBObject qvars)
+    protected Object bindQueryVariables(Object obj, DBObject avars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
         if (obj == null) {
             return null;
@@ -253,18 +253,18 @@ public abstract class AbstractAggregationOperation {
                             + varName.toString());
                 }
 
-                if (qvars == null || qvars.get((String) varName) == null) {
+                if (avars == null || avars.get((String) varName) == null) {
                     throw new QueryVariableNotBoundException("variable "
                             + varName + " not bound");
                 }
 
-                return qvars.get((String) varName);
+                return avars.get((String) varName);
             } else {
                 BasicDBObject ret = new BasicDBObject();
 
                 for (String key : ((BasicDBObject) obj).keySet()) {
                     ret.put(key, bindQueryVariables(((BasicDBObject) obj)
-                            .get(key), qvars));
+                            .get(key), avars));
                 }
 
                 return ret;
@@ -273,7 +273,7 @@ public abstract class AbstractAggregationOperation {
             BasicDBList ret = new BasicDBList();
 
             for (Object el : ((BasicDBList) obj).toArray()) {
-                ret.add(bindQueryVariables((BasicDBObject) el, qvars));
+                ret.add(bindQueryVariables((BasicDBObject) el, avars));
             }
 
             return ret;
