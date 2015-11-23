@@ -46,7 +46,7 @@ public class AggregationPipeline extends AbstractAggregationOperation {
      *
      * aggregations: [
      * {
-     *   "type":"aggregate",
+     *   "type":"pipeline",
      *   "uri":"test_ap",
      *   "stages":
      *     [

@@ -41,7 +41,7 @@ public abstract class AbstractAggregationOperation {
 
     private static final Set<String> AGGREGATION_PIPELINE_ALIASES
             = Sets.newHashSet(new String[]{TYPE.AGGREGATION_PIPELINE.name(),
-                "aggregation pipeline", "aggregationPipeline",
+                "aggregation pipeline", "aggregationPipeline", "pipeline",
                 "aggregation-pipeline", "aggregation", "aggregate", "ap"});
 
     public static final String AGGREGATIONS_ELEMENT_NAME = "aggregations";
