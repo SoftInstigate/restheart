@@ -24,29 +24,30 @@ import com.mongodb.DBObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public abstract class AbstractQuery {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractQuery.class);
-
+public abstract class AbstractAggregationOperation {
     public enum TYPE {
         MAP_REDUCE,
         AGGREGATION_PIPELINE,
     };
 
-    private static final Set<String> MAP_REDUCE_ALIASES = Sets.newHashSet(new String[]{TYPE.MAP_REDUCE.name(), "map reduce", "mapReduce", "map-reduce", "mr"});
-    private static final Set<String> AGGREGATION_PIPELINE_ALIASES = Sets.newHashSet(new String[]{TYPE.AGGREGATION_PIPELINE.name(), "aggregation pipeline", "aggregationPipeline", "aggregation-pipeline", "aggregation", "aggregate", "ap"});
+    private static final Set<String> MAP_REDUCE_ALIASES
+            = Sets.newHashSet(new String[]{TYPE.MAP_REDUCE.name(),
+                "map reduce", "mapReduce", "map-reduce", "mr"});
 
-    public static final String QUERIES_ELEMENT_NAME = "queries";
+    private static final Set<String> AGGREGATION_PIPELINE_ALIASES
+            = Sets.newHashSet(new String[]{TYPE.AGGREGATION_PIPELINE.name(),
+                "aggregation pipeline", "aggregationPipeline",
+                "aggregation-pipeline", "aggregation", "aggregate", "ap"});
+
+    public static final String AGGREGATIONS_ELEMENT_NAME = "aggregations";
+
     public static final String URI_ELEMENT_NAME = "uri";
     public static final String TYPE_ELEMENT_NAME = "type";
-
-    public static final String PIPELINE_ELEMENT_NAME = "pipeline";
 
     private final TYPE type;
     private final String uri;
@@ -56,16 +57,19 @@ public abstract class AbstractQuery {
      * @param properties
      * @throws org.restheart.hal.metadata.InvalidMetadataException
      */
-    public AbstractQuery(DBObject properties) throws InvalidMetadataException {
+    public AbstractAggregationOperation(DBObject properties)
+            throws InvalidMetadataException {
         Object _type = properties.get(TYPE_ELEMENT_NAME);
         Object _uri = properties.get(URI_ELEMENT_NAME);
 
         if (_type == null || !(_type instanceof String)) {
-            throw new InvalidMetadataException("query element does not have '" + TYPE_ELEMENT_NAME + "' property");
+            throw new InvalidMetadataException("query element does not have '"
+                    + TYPE_ELEMENT_NAME + "' property");
         }
 
         if (_uri == null || !(_uri instanceof String)) {
-            throw new InvalidMetadataException("query element does not have '" + URI_ELEMENT_NAME + "' property");
+            throw new InvalidMetadataException("query element does not have '"
+                    + URI_ELEMENT_NAME + "' property");
         }
 
         if (MAP_REDUCE_ALIASES.contains((String) _type)) {
@@ -73,7 +77,8 @@ public abstract class AbstractQuery {
         } else if (AGGREGATION_PIPELINE_ALIASES.contains((String) _type)) {
             this.type = TYPE.AGGREGATION_PIPELINE;
         } else {
-            throw new InvalidMetadataException("query element has invalid '" + TYPE_ELEMENT_NAME + "' property: " + _type);
+            throw new InvalidMetadataException("query element has invalid '"
+                    + TYPE_ELEMENT_NAME + "' property: " + _type);
         }
 
         this.uri = (String) _uri;
@@ -85,28 +90,34 @@ public abstract class AbstractQuery {
      * @return
      * @throws InvalidMetadataException
      */
-    public static List<AbstractQuery> getFromJson(DBObject collProps) throws InvalidMetadataException {
+    public static List<AbstractAggregationOperation>
+            getFromJson(DBObject collProps)
+            throws InvalidMetadataException {
         if (collProps == null) {
             return null;
         }
 
-        ArrayList<AbstractQuery> ret = new ArrayList<>();
+        ArrayList<AbstractAggregationOperation> ret = new ArrayList<>();
 
-        Object _queries = collProps.get(QUERIES_ELEMENT_NAME);
+        Object _queries = collProps.get(AGGREGATIONS_ELEMENT_NAME);
 
         if (_queries == null) {
             return ret;
         }
 
         if (!(_queries instanceof BasicDBList)) {
-            throw new InvalidMetadataException("element '" + QUERIES_ELEMENT_NAME + "' is not an array list." + _queries);
+            throw new InvalidMetadataException("element '"
+                    + AGGREGATIONS_ELEMENT_NAME
+                    + "' is not an array list." + _queries);
         }
 
         BasicDBList queries = (BasicDBList) _queries;
 
         for (Object _query : queries.toArray()) {
             if (!(_query instanceof DBObject)) {
-                throw new InvalidMetadataException("element '" + QUERIES_ELEMENT_NAME + "' is not valid." + _query);
+                throw new InvalidMetadataException("element '"
+                        + AGGREGATIONS_ELEMENT_NAME
+                        + "' is not valid." + _query);
             }
 
             ret.add(getQuery((DBObject) _query));
@@ -115,20 +126,23 @@ public abstract class AbstractQuery {
         return ret;
     }
 
-    private static AbstractQuery getQuery(DBObject query) throws InvalidMetadataException {
+    private static AbstractAggregationOperation getQuery(DBObject query)
+            throws InvalidMetadataException {
 
         Object _type = query.get(TYPE_ELEMENT_NAME);
 
         if (_type == null) {
-            throw new InvalidMetadataException("query element does not have '" + TYPE_ELEMENT_NAME + "' property");
+            throw new InvalidMetadataException("query element does not have '"
+                    + TYPE_ELEMENT_NAME + "' property");
         }
 
         if (MAP_REDUCE_ALIASES.contains(_type.toString())) {
-            return new MapReduceQuery(query);
+            return new MapReduce(query);
         } else if (AGGREGATION_PIPELINE_ALIASES.contains(_type.toString())) {
-            return new AggregationPipelineQuery(query);
+            return new AggregationPipeline(query);
         } else {
-            throw new InvalidMetadataException("query element has invalid '" + TYPE_ELEMENT_NAME + "': " + _type.toString());
+            throw new InvalidMetadataException("query element has invalid '"
+                    + TYPE_ELEMENT_NAME + "': " + _type.toString());
         }
     }
 
@@ -168,7 +182,8 @@ public abstract class AbstractQuery {
                 Object value = ((BasicDBObject) obj).get(k);
 
                 if (value instanceof BasicDBObject) {
-                    ret.put(newKey, replaceEscapedOperators((BasicDBObject) value));
+                    ret.put(newKey,
+                            replaceEscapedOperators((BasicDBObject) value));
                 } else if (value instanceof BasicDBList) {
                     BasicDBList newList = new BasicDBList();
 
@@ -206,7 +221,8 @@ public abstract class AbstractQuery {
 
             return ret;
         } else if (obj instanceof String) {
-            return ((String) obj).startsWith("_$") ? ((String) obj).substring(1) : obj;
+            return ((String) obj)
+                    .startsWith("_$") ? ((String) obj).substring(1) : obj;
         } else {
             return obj;
         }
@@ -215,12 +231,13 @@ public abstract class AbstractQuery {
     /**
      * @param obj
      * @param qvars RequestContext.getQvars()
-     * @return the json object where the variables ({"_$var": "var") are replaced
-     * with the values defined in the qvar URL query parameter
+     * @return the json object where the variables ({"_$var": "var") are
+     * replaced with the values defined in the qvar URL query parameter
      * @throws org.restheart.hal.metadata.InvalidMetadataException
      * @throws org.restheart.hal.metadata.QueryVariableNotBoundException
      */
-    protected Object bindQueryVariables(Object obj, DBObject qvars) throws InvalidMetadataException, QueryVariableNotBoundException {
+    protected Object bindQueryVariables(Object obj, DBObject qvars)
+            throws InvalidMetadataException, QueryVariableNotBoundException {
         if (obj == null) {
             return null;
         }
@@ -232,11 +249,13 @@ public abstract class AbstractQuery {
                 Object varName = _obj.get("$var");
 
                 if (!(varName instanceof String)) {
-                    throw new InvalidMetadataException("wrong variable name " + varName.toString());
+                    throw new InvalidMetadataException("wrong variable name "
+                            + varName.toString());
                 }
 
                 if (qvars == null || qvars.get((String) varName) == null) {
-                    throw new QueryVariableNotBoundException("variable " + varName + " not bound");
+                    throw new QueryVariableNotBoundException("variable "
+                            + varName + " not bound");
                 }
 
                 return qvars.get((String) varName);
@@ -244,9 +263,10 @@ public abstract class AbstractQuery {
                 BasicDBObject ret = new BasicDBObject();
 
                 for (String key : ((BasicDBObject) obj).keySet()) {
-                    ret.put(key, bindQueryVariables(((BasicDBObject) obj).get(key), qvars));
+                    ret.put(key, bindQueryVariables(((BasicDBObject) obj)
+                            .get(key), qvars));
                 }
-                
+
                 return ret;
             }
         } else if (obj instanceof BasicDBList) {
