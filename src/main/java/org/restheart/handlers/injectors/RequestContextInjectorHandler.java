@@ -238,7 +238,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                             "illegal qvars paramenter, it is not a json object: " + qvars + " => " + qvars.getClass().getSimpleName());
                     return;
                 } else {
-                    rcontext.setQvars((BasicDBObject) qvars);
+                    rcontext.setAggregationVars((BasicDBObject) qvars);
                 }
             } catch (Throwable t) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
