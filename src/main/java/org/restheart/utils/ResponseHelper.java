@@ -80,7 +80,7 @@ public class ResponseHelper {
             rep.addProperty("message", message);
         }
 
-        Representation nrep = new Representation("#");
+        Representation nrep = new Representation();
 
         if (t != null) {
             nrep.addProperty("exception", t.getClass().getName());
