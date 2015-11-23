@@ -19,6 +19,9 @@ package org.restheart.hal.metadata;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import java.util.regex.Matcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * represents a map reduce.
@@ -26,6 +29,8 @@ import com.mongodb.DBObject;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class MapReduce extends AbstractAggregationOperation {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractAggregationOperation.class);
+
     private final String map;
     private final String reduce;
     private final DBObject query;
@@ -118,14 +123,63 @@ public class MapReduce extends AbstractAggregationOperation {
     }
 
     /**
-     * @param vars RequestContext.getQvar()
+     * @param aVars RequestContext.getAggregationVars()
      * @return the query with unescaped operators and bound variables
      * @throws org.restheart.hal.metadata.InvalidMetadataException
      * @throws org.restheart.hal.metadata.QueryVariableNotBoundException
      */
-    public DBObject getResolvedQuery(BasicDBObject vars)
+    public DBObject getResolvedQuery(BasicDBObject aVars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
-        return (DBObject) bindQueryVariables(
-                replaceEscapedOperators(query), vars);
+        return (DBObject) bindAggregationVariables(
+                replaceEscapedOperators(query), aVars);
+    }
+
+    /**
+     * @param aVars RequestContext.getAggregationVars()
+     * @return the map function with bound aggregation variables
+     */
+    public String getResolvedMap(BasicDBObject aVars) {
+        if (aVars == null || aVars.isEmpty()) {
+            return map;
+        } else {
+            String escapedAVars = "\""
+                    + aVars.toString().replaceAll("\"", "\\\\\\\\\"")
+                    + "\"";
+            
+            String ret = map == null ? null
+                    : map.replaceAll(
+                            Matcher.quoteReplacement("$") + "vars",
+                            escapedAVars);
+
+            LOGGER.trace("map function with aVars {}: {} -> {}",
+                    aVars, map, ret);
+
+            return ret;
+        }
+    }
+
+    /**
+     * @param aVars RequestContext.getAggregationVars()
+     * @return the reduce function with bound aggregation variables
+     */
+    public String getResolvedReduce(BasicDBObject aVars) {
+        if (aVars == null || aVars.isEmpty()) {
+            return map;
+        } else {
+            String escapedAVars = "\""
+                    + aVars.toString().replaceAll("\"", "\\\\\\\\\"")
+                    + "\"";
+            
+            LOGGER.trace("escaped aVars: {}", escapedAVars);
+
+            String ret = reduce == null ? null
+                    : reduce.replaceAll(
+                            Matcher.quoteReplacement("$") + "vars",
+                            escapedAVars
+                    );
+
+            LOGGER.trace("reduce function with aVars {}: {} -> {}", aVars, reduce, ret);
+            return ret;
+        }
     }
 }

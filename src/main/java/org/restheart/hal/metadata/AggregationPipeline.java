@@ -90,14 +90,14 @@ public class AggregationPipeline extends AbstractAggregationOperation {
     }
 
     /**
-     * @param vars RequestContext.getQvars()
+     * @param vars RequestContext.getAggregationVars()
      * @return the stages, with unescaped operators and bound variables
      * @throws org.restheart.hal.metadata.InvalidMetadataException
      * @throws org.restheart.hal.metadata.QueryVariableNotBoundException
      */
     public List<DBObject> getResolvedStagesAsList(BasicDBObject vars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
-        Object replacedStages = bindQueryVariables(
+        Object replacedStages = bindAggregationVariables(
                 replaceEscapedOperators(stages), vars);
 
         return Lists.newArrayList(
