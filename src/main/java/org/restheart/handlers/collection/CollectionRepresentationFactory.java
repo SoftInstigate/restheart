@@ -62,7 +62,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         
         addSizeAndTotalPagesProperties(size, context, rep);
         
-        addQueriesLinks(context, rep, requestPath);
+        addAggregationsLinks(context, rep, requestPath);
         
         addEmbeddedData(embeddedData, rep, requestPath, exchange, context);
 
@@ -112,14 +112,14 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         }
     }
 
-    private void addQueriesLinks(final RequestContext context, final Representation rep, final String requestPath) {
+    private void addAggregationsLinks(final RequestContext context, final Representation rep, final String requestPath) {
     
-        Object _queries = context.getCollectionProps().get("queries");
+        Object _aggregations = context.getCollectionProps().get(RequestContext._AGGREGATIONS);
         
-        if (_queries instanceof BasicDBList) {
-            BasicDBList queries = (BasicDBList) _queries;
+        if (_aggregations instanceof BasicDBList) {
+            BasicDBList aggregations = (BasicDBList) _aggregations;
             
-            queries.forEach(q -> {
+            aggregations.forEach(q -> {
                 if (q instanceof DBObject) {
                     Object _uri = ((DBObject)q).get("uri");
                     

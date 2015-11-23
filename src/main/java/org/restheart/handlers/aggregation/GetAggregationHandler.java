@@ -72,12 +72,12 @@ public class GetAggregationHandler extends PipedHttpHandler {
             RequestContext context) throws Exception {
         String queryUri = context.getQuery();
 
-        List<AbstractAggregationOperation> queries
+        List<AbstractAggregationOperation> aggregations
                 = AbstractAggregationOperation
                 .getFromJson(context.getCollectionProps());
 
         Optional<AbstractAggregationOperation> _query
-                = queries.stream().filter(q
+                = aggregations.stream().filter(q
                         -> q.getUri().equals(queryUri)).findFirst();
 
         if (!_query.isPresent()) {
