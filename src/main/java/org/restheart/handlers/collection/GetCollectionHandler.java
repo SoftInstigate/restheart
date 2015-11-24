@@ -17,8 +17,6 @@
  */
 package org.restheart.handlers.collection;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
@@ -28,8 +26,6 @@ import java.util.ArrayList;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.hal.Representation;
-import org.restheart.hal.metadata.InvalidMetadataException;
-import org.restheart.hal.metadata.QueryVariableNotBoundException;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
