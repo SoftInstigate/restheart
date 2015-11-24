@@ -22,12 +22,12 @@ import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.types.ObjectId;
 import org.restheart.Configuration;
+import static org.restheart.Configuration.RESTHEART_VERSION;
 import org.restheart.hal.AbstractRepresentationFactory;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.HAL_MODE;
 import org.restheart.handlers.database.DBRepresentationFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +73,12 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     private void addSpecialProperties(final Representation rep, RequestContext context) {
+        if (RESTHEART_VERSION == null) {
+            rep.addProperty("_restheart_version", "unknown, not packaged");
+        } else {
+            rep.addProperty("_restheart_version", RESTHEART_VERSION);
+        }
+
         rep.addProperty("_type", context.getType().name());
     }
 
@@ -108,7 +114,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
                 if (context.isFullHalMode()) {
                     DBRepresentationFactory.addSpecialProperties(nrep, RequestContext.TYPE.DB, d);
                 }
-                
+
                 nrep.addProperties(d);
 
                 rep.addRepresentation("rh:db", nrep);

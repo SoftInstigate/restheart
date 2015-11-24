@@ -105,12 +105,14 @@ public abstract class AbstractRepresentationFactory {
     }
 
     protected void addPaginationLinks(HttpServerExchange exchange, RequestContext context, long size, final Representation rep) throws IllegalQueryParamenterException {
-        TreeMap<String, String> links;
-        links = HALUtils.getPaginationLinks(exchange, context, size);
-        if (links != null) {
-            links.keySet().stream().forEach((k) -> {
-                rep.addLink(new Link(k, links.get(k)));
-            });
+        if (context.getPagesize() > 0) {
+            TreeMap<String, String> links;
+            links = HALUtils.getPaginationLinks(exchange, context, size);
+            if (links != null) {
+                links.keySet().stream().forEach((k) -> {
+                    rep.addLink(new Link(k, links.get(k)));
+                });
+            }
         }
     }
 
