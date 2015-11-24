@@ -71,7 +71,7 @@ public class RequestContext {
         MINKEY, //org.bson.types.MinKey;
         MAXKEY // org.bson.types.MaxKey
     }
-    
+
     public enum HAL_MODE {
         FULL, // default value
         F, // alias for full
@@ -99,7 +99,7 @@ public class RequestContext {
     public static final String _INDEXES = "_indexes";
     public static final String _AGGREGATIONS = "_aggrs";
     public static final String BINARY_CONTENT = "binary";
-    
+
     public static final String HAL_QPARAM_KEY = "hal";
 
     public static final String MAX_KEY_ID = "_MaxKey";
@@ -136,7 +136,7 @@ public class RequestContext {
 
     private String unmappedRequestUri = null;
     private String mappedRequestUri = null;
-    
+
     /**
      * the HAL mode
      */
@@ -345,7 +345,7 @@ public class RequestContext {
     public String getIndexId() {
         return getPathTokenAt(4);
     }
-    
+
     /**
      *
      * @return collection name
@@ -486,20 +486,21 @@ public class RequestContext {
     public Deque<String> getFilter() {
         return filter;
     }
-    
+
     /**
      * @param filter the filter to set
      */
     public void setFilter(Deque<String> filter) {
         this.filter = filter;
     }
-    
+
     /**
      * @return the aggregationVars
      */
     public BasicDBObject getAggreationVars() {
         return aggregationVars;
     }
+
     /**
      * @param aggregationVars the aggregationVars to set
      */
@@ -690,6 +691,10 @@ public class RequestContext {
      */
     public HAL_MODE getHalMode() {
         return halMode;
+    }
+
+    public boolean isFullHalMode() {
+        return halMode == HAL_MODE.FULL || halMode == HAL_MODE.F;
     }
 
     /**

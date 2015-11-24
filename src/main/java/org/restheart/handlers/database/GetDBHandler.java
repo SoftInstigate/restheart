@@ -69,6 +69,7 @@ public class GetDBHandler extends PipedHttpHandler {
         Representation rep = repf.getRepresentation(exchange, context, data, getDatabase().getDBSize(colls));
 
         ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
+        
         exchange.setResponseCode(HttpStatus.SC_OK);
 
         // call the next handler if existing

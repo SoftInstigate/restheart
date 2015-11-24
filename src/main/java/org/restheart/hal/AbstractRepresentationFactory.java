@@ -96,8 +96,6 @@ public abstract class AbstractRepresentationFactory {
 
         Representation rep = new Representation(requestPath + queryString);
 
-        rep.addProperty("_type", context.getType().name());
-
         return rep;
     }
 

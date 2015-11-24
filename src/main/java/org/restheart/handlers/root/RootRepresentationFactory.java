@@ -28,6 +28,7 @@ import org.restheart.hal.Representation;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.HAL_MODE;
+import org.restheart.handlers.database.DBRepresentationFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,13 +51,14 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
 
         addSizeAndTotalPagesProperties(size, context, rep);
 
-        addEmbeddedData(embeddedData, rep, requestPath);
+        addEmbeddedData(context, embeddedData, rep, requestPath);
 
-        if (context.getHalMode() == HAL_MODE.FULL
-                || context.getHalMode() == HAL_MODE.F) {
+        if (context.isFullHalMode()) {
+            addSpecialProperties(rep, context);
+
             addPaginationLinks(exchange, context, size, rep);
 
-            addLinkTemplates(exchange, context, rep, requestPath);
+            addLinkTemplates(rep, requestPath);
 
             //curies
             rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
@@ -70,23 +72,27 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
         return rep;
     }
 
-    private void addEmbeddedData(List<DBObject> embeddedData, final Representation rep, final String requestPath) {
+    private void addSpecialProperties(final Representation rep, RequestContext context) {
+        rep.addProperty("_type", context.getType().name());
+    }
+
+    private void addEmbeddedData(RequestContext context, List<DBObject> embeddedData, final Representation rep, final String requestPath) {
         if (embeddedData != null) {
             addReturnedProperty(embeddedData, rep);
             if (!embeddedData.isEmpty()) {
-                embeddedDbs(embeddedData, hasTrailingSlash(requestPath), requestPath, rep);
+                embeddedDbs(context, embeddedData, hasTrailingSlash(requestPath), requestPath, rep);
             }
         }
     }
 
-    private void addLinkTemplates(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath) {
+    private void addLinkTemplates(final Representation rep, final String requestPath) {
         rep.addLink(new Link("rh:root", requestPath));
         rep.addLink(new Link("rh:db", requestPath + "{dbname}", true));
 
         rep.addLink(new Link("rh:paging", requestPath + "{?page}{&pagesize}", true));
     }
 
-    private void embeddedDbs(List<DBObject> embeddedData, boolean trailingSlash, String requestPath, Representation rep) {
+    private void embeddedDbs(RequestContext context, List<DBObject> embeddedData, boolean trailingSlash, String requestPath, Representation rep) {
         embeddedData.stream().forEach((d) -> {
             Object _id = d.get("_id");
 
@@ -99,8 +105,10 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
                     nrep = new Representation(requestPath + "/" + _id.toString());
                 }
 
-                nrep.addProperty("_type", RequestContext.TYPE.DB.name());
-
+                if (context.isFullHalMode()) {
+                    DBRepresentationFactory.addSpecialProperties(nrep, RequestContext.TYPE.DB, d);
+                }
+                
                 nrep.addProperties(d);
 
                 rep.addRepresentation("rh:db", nrep);
