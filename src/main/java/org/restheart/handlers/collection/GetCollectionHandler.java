@@ -115,6 +115,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
             CollectionRepresentationFactory crp = new CollectionRepresentationFactory();
             Representation rep = crp.getRepresentation(exchange, context, data, size);
 
+            ResponseHelper.injectEtagHeader(exchange, context.getCollectionProps());
             exchange.setResponseCode(HttpStatus.SC_OK);
 
             // call the ResponseTranformerMetadataHandler if piped in
