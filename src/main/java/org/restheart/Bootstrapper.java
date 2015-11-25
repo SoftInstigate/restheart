@@ -293,8 +293,9 @@ public final class Bootstrapper {
                     d.daemonize();
                     stopServer(true);
                     System.exit(0);
-                } catch (Exception ex) {
-                    LOGGER.warn("Unable to fork process. Note that forking is only supported on Linux (x86, amd64), Solaris (x86, amd64, sparc, sparcv9) and Mac OS X", ex);
+                } catch (Throwable t) {
+                    LOGGER.warn("Unable to fork process. Note that forking is only supported on Linux (x86, amd64), Solaris (x86, amd64, sparc, sparcv9) and Mac OS X", t);
+                    System.exit(-4);
                 }
             } else {
                 LOGGER.info("Unable to fork process, this is only supported on POSIX compliant OSes");
