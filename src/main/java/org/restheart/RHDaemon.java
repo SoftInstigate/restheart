@@ -34,15 +34,16 @@ import org.slf4j.LoggerFactory;
 public class RHDaemon extends Daemon.WithoutChdir {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RHDaemon.class);
-    
+
     /**
-     * Returns true if the current process is already launched as a daemon
-     * via {@link #daemonize()}.
-     * @return 
+     * Returns true if the current process is already launched as a daemon via
+     * {@link #daemonize()}.
+     *
+     * @return
      */
     @Override
     public boolean isDaemonized() {
-        return System.getProperty(RHDaemon.class.getName())!=null;
+        return System.getProperty(RHDaemon.class.getName()) != null;
     }
 
     /**
@@ -50,6 +51,7 @@ public class RHDaemon extends Daemon.WithoutChdir {
      *
      * @param args
      */
+    @Override
     public void daemonize(JavaVMArguments args) {
         if (isDaemonized()) {
             throw new IllegalStateException("Already running as a daemon");
