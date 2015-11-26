@@ -41,6 +41,7 @@ import org.restheart.security.handlers.CORSHandler;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.OSChecker;
 import com.sun.akuma.Daemon;
+import com.sun.akuma.JavaVMArguments;
 import static io.undertow.Handlers.path;
 import io.undertow.Undertow;
 import io.undertow.security.idm.IdentityManager;
@@ -77,6 +78,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import org.restheart.security.FullAccessManager;
 import org.restheart.security.handlers.AuthTokenHandler;
 import org.slf4j.Logger;
@@ -141,6 +143,14 @@ public final class Bootstrapper {
             initLogging(args, d);
 
             if (d.isDaemonized()) {
+                try {
+                    d.init(null);
+                } catch (Throwable t) {
+                    LOGGER.error("Error staring forked process", t);
+                    stopServer(false, false);
+                    System.exit(-1);
+                }
+                
                 startServer(true);
             } else {
                 try {
@@ -148,7 +158,8 @@ public final class Bootstrapper {
 
                     logLoggingConfiguration(true);
                     LOGGER.info("Forking");
-                    d.daemonize();
+                    d.daemonize(JavaVMArguments.current());
+                    System.exit(0);
                 } catch (Throwable t) {
                     LOGGER.error("Error forking", t);
                     stopServer(false, false);
