@@ -93,6 +93,10 @@ public class FileUtils {
     }
 
     public static Path getPidFilePath(int configurationFileHash) {
+        if (OSChecker.isWindows()) {
+            return null;
+        }
+        
         if (Files.isWritable(DEFAULT_PID_DIR.toPath())) {
             return DEFAULT_PID_FILE.toPath();
         } else {

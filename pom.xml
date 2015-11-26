@@ -284,7 +284,7 @@
                             <skip>${skipITs}</skip>
                             <target>
                                 <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
-                                <echo>1 - Linux, OSX or Solaris (server is started via bash scripts)</echo>
+                                <echo>1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
                                 <echo>2 - mongodb already started on default port without authentication enabled (no --auth option)</echo>
                                 <exec dir="${basedir}" executable="${basedir}/bin/start.sh">
                                     <arg value="${basedir}/etc/restheart-integrationtest.yml"/>

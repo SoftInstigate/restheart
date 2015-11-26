@@ -46,7 +46,11 @@ public class Shutdowner {
             LOGGER.error("shutdown is not supported on windows.");
             System.exit(-5);
         }
-
+        
+        shutdown(args);
+    }
+    
+    protected static void shutdown(final String[] args) {
         if (FileUtils.getConfigurationFilePath(args) == null) {
             LOGGER.info("shutting down the RESTHeart instance run without configuration file");
         } else {
