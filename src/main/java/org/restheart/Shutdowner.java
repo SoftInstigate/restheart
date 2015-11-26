@@ -31,13 +31,11 @@ public class Shutdowner {
     private static final Logger LOGGER = LoggerFactory.getLogger(Shutdowner.class);
 
     public static void main(final String[] args) {
-        LOGGER.info("Shutdowner called...");
-        
         if (askingForHelp(args)) {
             LOGGER.info("usage: java -cp restheart.jar org.restheart.Shutdowner [configuration file].");
             LOGGER.info("shutdown --help\t\tprints this help message and exits.");
             LOGGER.info("shutdown\t\t\tshutdown the RESTHeart instance run without specifying the configuration file.");
-            LOGGER.info("shutdown restheart.yml\t\tshutdown the RESTHeart instance run with the restheart.yml configuration file.");
+            LOGGER.info("shutdown restheart.yml\tshutdown the RESTHeart instance run with the restheart.yml configuration file.");
             LOGGER.info("NOTE: shutdown is not supported on windows.");
             System.exit(0);
         }
@@ -52,16 +50,16 @@ public class Shutdowner {
     
     protected static void shutdown(final String[] args) {
         if (FileUtils.getConfigurationFilePath(args) == null) {
-            LOGGER.info("shutting down the RESTHeart instance run without configuration file");
+            LOGGER.info("Shutting down the RESTHeart instance run without configuration file");
         } else {
-            LOGGER.info("shutting down the RESTHeart instance run with configuration file {}", FileUtils.getConfigurationFilePath(args).toString());
+            LOGGER.info("Shutting down the RESTHeart instance run with configuration file {}", FileUtils.getConfigurationFilePath(args).toString());
         }
             
         int pid = FileUtils.getPidFromFile(FileUtils.getPidFilePath(FileUtils.getFileAbsoultePathHash(FileUtils.getConfigurationFilePath(args))));
 
         if (pid < 0) {
             LOGGER.warn("RESTHeart instance pid file not found. Is it actually running?");
-            LOGGER.info("eventually you need to stop it using your OS tools.");
+            LOGGER.info("Eventually you need to stop it using your OS tools.");
             System.exit(-1);
         }
         
@@ -73,7 +71,7 @@ public class Shutdowner {
         
         try {
             conf = FileUtils.getConfiguration(args, true);
-            LOGGER.info("you can check the log file {}", conf.getLogFilePath());
+            LOGGER.info("Check log file {}", conf.getLogFilePath());
         } catch (ConfigurationException ex) {
             LOGGER.warn(ex.getMessage());
         }
