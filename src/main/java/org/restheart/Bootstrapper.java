@@ -160,8 +160,6 @@ public final class Bootstrapper {
                             + "Don't use in production.");
                     logLoggingConfiguration(true);
                     
-//LOGGER.info("Forking...");
-                    
                     d.daemonize();
                     System.exit(0);
                 } catch (Throwable t) {
