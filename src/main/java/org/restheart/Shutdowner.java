@@ -20,6 +20,7 @@ package org.restheart;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.OSChecker;
 import com.sun.akuma.CLibrary;
+import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,13 +55,17 @@ public class Shutdowner {
         } else {
             LOGGER.info("Shutting down the RESTHeart instance run with configuration file {}", FileUtils.getConfigurationFilePath(args).toString());
         }
+        
+        Path pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsoultePathHash(FileUtils.getConfigurationFilePath(args)));
             
-        int pid = FileUtils.getPidFromFile(FileUtils.getPidFilePath(FileUtils.getFileAbsoultePathHash(FileUtils.getConfigurationFilePath(args))));
+        int pid = FileUtils.getPidFromFile(pidFilePath);
 
         if (pid < 0) {
             LOGGER.warn("RESTHeart instance pid file not found. Is it actually running?");
             LOGGER.info("Eventually you need to stop it using your OS tools.");
             System.exit(-1);
+        } else {
+            LOGGER.info("Pid file {}", pidFilePath);
         }
         
         CLibrary.LIBC.kill(pid, 15); // 15 is SIGTERM
