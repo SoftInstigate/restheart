@@ -184,7 +184,7 @@ auth-token-ttl: 15
 
 enable-log-file: true
 log-file-path: /tmp/restheart.log
-enable-log-console: true
+enable-log-console: false
 log-level: DEBUG
 
 #### performace settings

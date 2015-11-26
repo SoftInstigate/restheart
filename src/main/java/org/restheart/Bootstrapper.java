@@ -40,8 +40,6 @@ import org.restheart.security.handlers.SecurityHandlerDispacher;
 import org.restheart.security.handlers.CORSHandler;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.OSChecker;
-import com.sun.akuma.Daemon;
-import com.sun.akuma.JavaVMArguments;
 import static io.undertow.Handlers.path;
 import io.undertow.Undertow;
 import io.undertow.security.idm.IdentityManager;
@@ -78,7 +76,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
 import org.restheart.security.FullAccessManager;
 import org.restheart.security.handlers.AuthTokenHandler;
 import org.slf4j.Logger;
@@ -127,9 +124,10 @@ public final class Bootstrapper {
                 System.exit(-1);
             }
 
-            // Daemon only works on POSIX OSes
+            // RHDaemon only works on POSIX OSes
             final boolean isPosix = FileSystems.getDefault()
                     .supportedFileAttributeViews().contains("posix");
+            
             if (!isPosix) {
                 LOGGER.info("Unable to fork process, "
                         + "this is only supported on POSIX compliant OSes");
@@ -138,7 +136,7 @@ public final class Bootstrapper {
                 System.exit(-1);
             }
 
-            Daemon d = new Daemon.WithoutChdir();
+            RHDaemon d = new RHDaemon();
 
             initLogging(args, d);
 
@@ -150,15 +148,21 @@ public final class Bootstrapper {
                     stopServer(false, false);
                     System.exit(-1);
                 }
-                
+
                 startServer(true);
             } else {
                 try {
                     LOGGER.info("Starting RESTHeart ********************************************");
 
+                    // WARN about --fork option
+                    LOGGER.warn("--fork option is experimental. "
+                            + "It is reported to randomly fail on some systems. "
+                            + "Don't use in production.");
                     logLoggingConfiguration(true);
-                    LOGGER.info("Forking...");
-                    d.daemonize(JavaVMArguments.current());
+                    
+//LOGGER.info("Forking...");
+                    
+                    d.daemonize();
                     System.exit(0);
                 } catch (Throwable t) {
                     LOGGER.error("Error forking", t);
@@ -229,7 +233,7 @@ public final class Bootstrapper {
         stopServer(false);
     }
 
-    private static void initLogging(final String[] args, final Daemon d) {
+    private static void initLogging(final String[] args, final RHDaemon d) {
         LoggingInitializer.setLogLevel(configuration.getLogLevel());
 
         if (d != null && d.isDaemonized()) {
@@ -291,15 +295,14 @@ public final class Bootstrapper {
                 && !pidFileAlreadyExists) {
             FileUtils.createPidFile(pidFilePath);
         }
-        
+
         // log pid file path on supported OSes
         if (!OSChecker.isWindows()
                 && pidFilePath != null
                 && !pidFileAlreadyExists) {
             LOGGER.info("Pid file {}", pidFilePath);
         }
-        
-        
+
         logLoggingConfiguration(fork);
 
         if (RESTHEART_VERSION != null) {
