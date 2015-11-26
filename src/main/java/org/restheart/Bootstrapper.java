@@ -157,7 +157,7 @@ public final class Bootstrapper {
                     LOGGER.info("Starting RESTHeart ********************************************");
 
                     logLoggingConfiguration(true);
-                    LOGGER.info("Forking");
+                    LOGGER.info("Forking...");
                     d.daemonize(JavaVMArguments.current());
                     System.exit(0);
                 } catch (Throwable t) {
