@@ -40,8 +40,7 @@ import org.slf4j.LoggerFactory;
 public class FileUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileUtils.class);
 
-    private static final File DEFAULT_PID_DIR = new File("/var/run");
-    private static final File DEFAULT_PID_FILE = new File("/var/run/restheart.pid");
+    private static final Path DEFAULT_PID_DIR = new File("/var/run").toPath();
     private static final Path TMP_DIR = new File(System.getProperty("java.io.tmpdir")).toPath();
 
     public static Path getFileAbsoultePath(String path) {
@@ -97,8 +96,8 @@ public class FileUtils {
             return null;
         }
         
-        if (Files.isWritable(DEFAULT_PID_DIR.toPath())) {
-            return DEFAULT_PID_FILE.toPath();
+        if (Files.isWritable(DEFAULT_PID_DIR)) {
+            return DEFAULT_PID_DIR.resolve("restheart-" + configurationFileHash + ".pid");
         } else {
             return TMP_DIR.resolve("restheart-" + configurationFileHash + ".pid");
         }
