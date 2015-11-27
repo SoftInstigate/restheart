@@ -287,20 +287,6 @@ public final class Bootstrapper {
             pidFileAlreadyExists = checkPidFile(confFilePath);
         }
 
-        // create pid file on supported OSes and if not already existing
-        if (!OSChecker.isWindows()
-                && pidFilePath != null
-                && !pidFileAlreadyExists) {
-            FileUtils.createPidFile(pidFilePath);
-        }
-
-        // log pid file path on supported OSes
-        if (!OSChecker.isWindows()
-                && pidFilePath != null
-                && !pidFileAlreadyExists) {
-            LOGGER.info("Pid file {}", pidFilePath);
-        }
-
         logLoggingConfiguration(fork);
 
         if (RESTHEART_VERSION != null) {
@@ -332,6 +318,18 @@ public final class Bootstrapper {
                 stopServer(false);
             }
         });
+        
+        // create pid file on supported OSes
+        if (!OSChecker.isWindows()
+                && pidFilePath != null) {
+            FileUtils.createPidFile(pidFilePath);
+        }
+
+        // log pid file path on supported OSes
+        if (!OSChecker.isWindows()
+                && pidFilePath != null) {
+            LOGGER.info("Pid file {}", pidFilePath);
+        }
 
         LOGGER.info("RESTHeart started **********************************************");
     }
