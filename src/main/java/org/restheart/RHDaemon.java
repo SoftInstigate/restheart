@@ -77,22 +77,20 @@ public class RHDaemon extends Daemon.WithoutChdir {
         LOGGER.info("Forking...");
 
         int i = LIBC.fork();
-
+        
         if (i < 0) {
             LOGGER.error("Fork failed");
-            LIBC.perror("initial fork failed");
             System.exit(-1);
         }
         if (i == 0) {
             // with fork, we lose all the other critical threads, to exec to Java again
 
             LOGGER.info("Executing child process...");
-
+            
             LIBC.execv(exe, sa);
             LOGGER.error("exec failed");
             System.exit(-1);
-        }
-
+        } 
         // parent exits
     }
 }
