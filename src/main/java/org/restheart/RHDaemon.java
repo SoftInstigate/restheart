@@ -28,6 +28,9 @@ import com.sun.akuma.Daemon;
 import com.sun.akuma.JavaVMArguments;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,8 +65,8 @@ public class RHDaemon extends Daemon.WithoutChdir {
                 Method m = Class.forName("sun.management.Agent").getDeclaredMethod("stopRemoteManagementAgent");
                 m.setAccessible(true);
                 m.invoke(null);
-            } catch (Exception x) {
-                LOGGER.error("could not simulate jcmd $$ ManagementAgent.stop (JENKINS-14529)", x);
+            } catch (Throwable t) {
+                LOGGER.error("could not simulate jcmd $$ ManagementAgent.stop (JENKINS-14529)", t);
             }
         }
 
@@ -72,25 +75,44 @@ public class RHDaemon extends Daemon.WithoutChdir {
 
         // prepare for a fork
         String exe = getCurrentExecutable();
-        StringArray sa = new StringArray(args.toArray(new String[args.size()]));
 
         LOGGER.info("Forking...");
 
         int i = LIBC.fork();
-        
+
         if (i < 0) {
             LOGGER.error("Fork failed");
             System.exit(-1);
-        }
-        if (i == 0) {
-            // with fork, we lose all the other critical threads, to exec to Java again
+        } else if (i == 0) {
+            try {
+                // with fork, we lose all the other critical threads, to exec to Java again
+                String cmdarray[] = args.toArray(new String[args.size()]);
 
-            LOGGER.info("Executing child process...");
-            
-            LIBC.execv(exe, sa);
-            LOGGER.error("exec failed");
-            System.exit(-1);
-        } 
-        // parent exits
+                cmdarray[0] = exe;
+
+                LOGGER.debug("exe {}", exe);
+                LOGGER.debug("cmdarray {}", Arrays.toString(cmdarray));
+
+                new ProcessBuilder()
+                        .command(cmdarray)
+                        .start();
+
+            } catch (Throwable t) {
+                LOGGER.error("Fork failed", t);
+                System.exit(-4);
+            }
+        } else {
+            // need to kill the child process 
+            // because after executing process it hangs
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ex) {
+            } finally {
+                LIBC.kill(i, 9);
+            }
+
+            // parent exits
+            System.exit(0);
+        }
     }
 }
