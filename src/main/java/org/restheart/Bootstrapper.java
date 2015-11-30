@@ -78,6 +78,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import static org.fusesource.jansi.Ansi.Color.GREEN;
+import static org.fusesource.jansi.Ansi.Color.RED;
+import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.security.FullAccessManager;
 import org.restheart.security.handlers.AuthTokenHandler;
 import org.slf4j.Logger;
@@ -289,7 +292,7 @@ public final class Bootstrapper {
         logLoggingConfiguration(fork);
 
         if (RESTHEART_VERSION != null) {
-            LOGGER.info("RESTHeart version {}", RESTHEART_VERSION);
+            LOGGER.info(ansi().fg(RED).bold().a("RESTHeart").reset().toString() + " version {}", RESTHEART_VERSION);
         }
 
         LOGGER.info("Initializing MongoDB connection pool to {} with options {}", configuration.getMongoUri().getHosts(), configuration.getMongoUri().getOptions());
@@ -330,7 +333,7 @@ public final class Bootstrapper {
             LOGGER.info("Pid file {}", pidFilePath);
         }
 
-        LOGGER.info("RESTHeart started **********************************************");
+        LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart started").reset().toString() + " **********************************************");
     }
 
     private static void stopServer(boolean silent) {
@@ -404,7 +407,7 @@ public final class Bootstrapper {
         });
 
         if (!silent) {
-            LOGGER.info("RESTHeart stopped *********************************************");
+            LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart stopped").reset().toString() + " *********************************************");
         }
     }
 
