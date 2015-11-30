@@ -17,7 +17,9 @@
  */
 package org.restheart;
 
+import org.restheart.utils.RHDaemon;
 import com.mongodb.MongoClient;
+import static com.sun.akuma.CLibrary.LIBC;
 import static org.restheart.Configuration.RESTHEART_VERSION;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.handlers.ErrorHandler;
@@ -90,11 +92,11 @@ public final class Bootstrapper {
     private static final Logger LOGGER = LoggerFactory.getLogger(Bootstrapper.class);
     private static final Map<String, File> TMP_EXTRACTED_FILES = new HashMap<>();
 
+    private static Path CONF_FILE_PATH;
+
     private static Undertow server;
     private static GracefulShutdownHandler shutdownHandler = null;
     private static Configuration configuration;
-
-    private static Path confFilePath;
 
     /**
      * main method
@@ -102,7 +104,7 @@ public final class Bootstrapper {
      * @param args command line arguments
      */
     public static void main(final String[] args) {
-        confFilePath = FileUtils.getConfigurationFilePath(args);
+        CONF_FILE_PATH = FileUtils.getConfigurationFilePath(args);
 
         try {
             // read configuration silently, to avoid logging before initializing the logger
@@ -127,7 +129,7 @@ public final class Bootstrapper {
             // RHDaemon only works on POSIX OSes
             final boolean isPosix = FileSystems.getDefault()
                     .supportedFileAttributeViews().contains("posix");
-            
+
             if (!isPosix) {
                 LOGGER.info("Unable to fork process, "
                         + "this is only supported on POSIX compliant OSes");
@@ -138,11 +140,11 @@ public final class Bootstrapper {
 
             RHDaemon d = new RHDaemon();
 
-            initLogging(args, d);
-
             if (d.isDaemonized()) {
                 try {
-                    d.init(null);
+                    d.init();
+                    LOGGER.info("Forked process: {}", LIBC.getpid());
+                    initLogging(args, d);
                 } catch (Throwable t) {
                     LOGGER.error("Error staring forked process", t);
                     stopServer(false, false);
@@ -151,17 +153,14 @@ public final class Bootstrapper {
 
                 startServer(true);
             } else {
+                initLogging(args, d);
+                
                 try {
                     LOGGER.info("Starting RESTHeart ********************************************");
 
-                    // WARN about --fork option
-                    LOGGER.warn("--fork option is experimental. "
-                            + "It is reported to randomly fail on some systems. "
-                            + "Don't use in production.");
                     logLoggingConfiguration(true);
-                    
+
                     d.daemonize();
-                    System.exit(0);
                 } catch (Throwable t) {
                     LOGGER.error("Error forking", t);
                     stopServer(false, false);
@@ -279,12 +278,12 @@ public final class Bootstrapper {
         LOGGER.info("Starting RESTHeart ********************************************");
 
         Path pidFilePath = FileUtils.getPidFilePath(
-                FileUtils.getFileAbsoultePathHash(confFilePath));
+                FileUtils.getFileAbsoultePathHash(CONF_FILE_PATH));
 
         boolean pidFileAlreadyExists = false;
 
         if (!OSChecker.isWindows() && pidFilePath != null) {
-            pidFileAlreadyExists = checkPidFile(confFilePath);
+            pidFileAlreadyExists = checkPidFile(CONF_FILE_PATH);
         }
 
         logLoggingConfiguration(fork);
@@ -318,7 +317,7 @@ public final class Bootstrapper {
                 stopServer(false);
             }
         });
-        
+
         // create pid file on supported OSes
         if (!OSChecker.isWindows()
                 && pidFilePath != null) {
@@ -380,7 +379,7 @@ public final class Bootstrapper {
         }
 
         Path pidFilePath = FileUtils.getPidFilePath(
-                FileUtils.getFileAbsoultePathHash(confFilePath));
+                FileUtils.getFileAbsoultePathHash(CONF_FILE_PATH));
 
         if (removePid && pidFilePath != null) {
             if (!silent) {
