@@ -128,9 +128,16 @@ public final class Bootstrapper {
             startServer(false);
         } else {
             if (OSChecker.isWindows()) {
-                LOGGER.warn("Fork is not supported on Windows");
+                LOGGER.info("Starting " + ansi().fg(RED).bold().a("RESTHeart").reset().toString());
 
-                stopServer(false);
+                if (RESTHEART_VERSION != null) {
+                    LOGGER.info("version {}", RESTHEART_VERSION);
+                }
+                
+                LOGGER.error("Fork is not supported on Windows");
+
+                LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart stopped").reset().toString());
+                
                 System.exit(-1);
             }
 
