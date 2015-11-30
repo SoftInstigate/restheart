@@ -113,7 +113,12 @@ public final class Bootstrapper {
             // read configuration silently, to avoid logging before initializing the logger
             configuration = FileUtils.getConfiguration(args, true);
         } catch (ConfigurationException ex) {
-            LOGGER.info("Starting RESTHeart ********************************************");
+            LOGGER.info("Starting " + ansi().fg(RED).bold().a("RESTHeart").reset().toString());
+
+            if (RESTHEART_VERSION != null) {
+                LOGGER.info("version {}", RESTHEART_VERSION);
+            }
+
             LOGGER.error(ex.getMessage() + ", exiting...", ex);
             stopServer(false);
             System.exit(-1);
@@ -157,9 +162,13 @@ public final class Bootstrapper {
                 startServer(true);
             } else {
                 initLogging(args, d);
-                
+
                 try {
-                    LOGGER.info("Starting RESTHeart ********************************************");
+                    LOGGER.info("Starting " + ansi().fg(RED).bold().a("RESTHeart").reset().toString());
+
+                    if (RESTHEART_VERSION != null) {
+                        LOGGER.info("version {}", RESTHEART_VERSION);
+                    }
 
                     logLoggingConfiguration(true);
 
@@ -217,7 +226,10 @@ public final class Bootstrapper {
         try {
             configuration = FileUtils.getConfiguration(confFilePath, false);
         } catch (ConfigurationException ex) {
-            LOGGER.info("Starting RESTHeart ********************************************");
+            if (RESTHEART_VERSION != null) {
+                LOGGER.info(ansi().fg(RED).bold().a("RESTHeart").reset().toString() + " version {}", RESTHEART_VERSION);
+            }
+
             LOGGER.error(ex.getMessage() + ", exiting...", ex);
             stopServer(false);
             System.exit(-1);
@@ -278,7 +290,11 @@ public final class Bootstrapper {
     }
 
     private static void startServer(boolean fork) {
-        LOGGER.info("Starting RESTHeart ********************************************");
+        LOGGER.info("Starting " + ansi().fg(RED).bold().a("RESTHeart").reset().toString());
+
+        if (RESTHEART_VERSION != null) {
+            LOGGER.info("version {}", RESTHEART_VERSION);
+        }
 
         Path pidFilePath = FileUtils.getPidFilePath(
                 FileUtils.getFileAbsoultePathHash(CONF_FILE_PATH));
@@ -290,10 +306,6 @@ public final class Bootstrapper {
         }
 
         logLoggingConfiguration(fork);
-
-        if (RESTHEART_VERSION != null) {
-            LOGGER.info(ansi().fg(RED).bold().a("RESTHeart").reset().toString() + " version {}", RESTHEART_VERSION);
-        }
 
         LOGGER.info("Initializing MongoDB connection pool to {} with options {}", configuration.getMongoUri().getHosts(), configuration.getMongoUri().getOptions());
 
@@ -333,7 +345,7 @@ public final class Bootstrapper {
             LOGGER.info("Pid file {}", pidFilePath);
         }
 
-        LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart started").reset().toString() + " **********************************************");
+        LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart started").reset().toString());
     }
 
     private static void stopServer(boolean silent) {
@@ -407,7 +419,7 @@ public final class Bootstrapper {
         });
 
         if (!silent) {
-            LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart stopped").reset().toString() + " *********************************************");
+            LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart stopped").reset().toString());
         }
     }
 
