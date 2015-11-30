@@ -307,7 +307,7 @@ public final class Bootstrapper {
 
         logLoggingConfiguration(fork);
 
-        LOGGER.info("Initializing MongoDB connection pool to {} with options {}", configuration.getMongoUri().getHosts(), configuration.getMongoUri().getOptions());
+        LOGGER.debug("Initializing MongoDB connection pool to {} with options {}", configuration.getMongoUri().getHosts(), configuration.getMongoUri().getOptions());
 
         try {
             MongoDBClientSingleton.init(configuration);
