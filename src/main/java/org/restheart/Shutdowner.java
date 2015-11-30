@@ -17,9 +17,9 @@
  */
 package org.restheart;
 
+import com.sun.akuma.CLibrary;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.OSChecker;
-import com.sun.akuma.CLibrary;
 import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
