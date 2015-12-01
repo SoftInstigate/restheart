@@ -135,9 +135,77 @@ public class RequestContextTest {
         assertEquals("/mydb/mycollection", context.getMappedRequestUri());
 
         whatUri = "*";
+        whereUri = "/";
+
+        context = new RequestContext(ex, whereUri, whatUri);
+        assertEquals("/", context.getMappedRequestUri());
+        
+        whatUri = "*";
         whereUri = "/data";
 
         context = new RequestContext(ex, whereUri, whatUri);
         assertEquals("/", context.getMappedRequestUri());
+        
+        whatUri = "/data";
+        whereUri = "/";
+        
+        context = new RequestContext(ex, whereUri, whatUri);
+        assertEquals("/data", context.getMappedRequestUri());
+        
+        whatUri = "/db/coll";
+        whereUri = "/";
+        
+        context = new RequestContext(ex, whereUri, whatUri);
+        assertEquals("/db/coll", context.getMappedRequestUri());
+        
+        whatUri = "/db/coll/doc";
+        whereUri = "/";
+        
+        context = new RequestContext(ex, whereUri, whatUri);
+        assertEquals("/db/coll/doc", context.getMappedRequestUri());
+        
+        whatUri = "/db/coll/";
+        whereUri = "/";
+        
+        context = new RequestContext(ex, whereUri, whatUri);
+        assertEquals("/db/coll", context.getMappedRequestUri());
+        
+        
+        whatUri = "/db/coll////";
+        whereUri = "/";
+        
+        context = new RequestContext(ex, whereUri, whatUri);
+        assertEquals("/db/coll", context.getMappedRequestUri());
+    }
+    
+    @Test
+    public void testGetMappedRequestUri2() {
+        HttpServerExchange ex = mock(HttpServerExchange.class);
+        when(ex.getRequestPath()).thenReturn("/x");
+        when(ex.getRequestMethod()).thenReturn(HttpString.EMPTY);
+        
+        String whatUri = "/db/mycollection";
+        String whereUri = "/";
+
+        RequestContext context = new RequestContext(ex, whereUri, whatUri);
+        assertEquals("/db/mycollection/x", context.getMappedRequestUri());
+        
+        whatUri = "*";
+        whereUri = "/";
+
+        context = new RequestContext(ex, whereUri, whatUri);
+        assertEquals("/x", context.getMappedRequestUri());
+        
+        whatUri = "db";
+        whereUri = "/";
+        
+        context = new RequestContext(ex, whereUri, whatUri);
+        assertEquals("/db/x", context.getMappedRequestUri());
+        
+        whatUri = "db/coll";
+        whereUri = "/";
+        
+        context = new RequestContext(ex, whereUri, whatUri);
+        assertEquals("/db/coll/x", context.getMappedRequestUri());
     }
 }

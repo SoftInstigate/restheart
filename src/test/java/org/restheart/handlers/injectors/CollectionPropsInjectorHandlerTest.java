@@ -71,8 +71,8 @@ public class CollectionPropsInjectorHandlerTest {
     public void testCheckCollectionPut() {
         RequestContext context = createContext("/db/collection", "PUT");
 
-        assertEquals(context.getType(), RequestContext.TYPE.COLLECTION);
-        assertEquals(context.getMethod(), RequestContext.METHOD.PUT);
+        assertEquals(RequestContext.TYPE.COLLECTION, context.getType());
+        assertEquals(RequestContext.METHOD.PUT, context.getMethod());
         assertEquals(false, CollectionPropsInjectorHandler.checkCollection(context));
     }
 
@@ -80,8 +80,8 @@ public class CollectionPropsInjectorHandlerTest {
     public void testCheckCollectionFilesPost() {
         RequestContext context = createContext("/db/fs.files", "POST");
 
-        assertEquals(context.getType(), RequestContext.TYPE.FILES_BUCKET);
-        assertEquals(context.getMethod(), RequestContext.METHOD.POST);
+        assertEquals(RequestContext.TYPE.FILES_BUCKET, context.getType());
+        assertEquals(RequestContext.METHOD.POST, context.getMethod());
         assertEquals(true, CollectionPropsInjectorHandler.checkCollection(context));
     }
 
@@ -89,8 +89,8 @@ public class CollectionPropsInjectorHandlerTest {
     public void testCheckCollectionRoot() {
         RequestContext context = createContext("/", "PUT");
 
-        assertEquals(context.getType(), RequestContext.TYPE.ROOT);
-        assertEquals(context.getMethod(), RequestContext.METHOD.PUT);
+        assertEquals(RequestContext.TYPE.ROOT, context.getType());
+        assertEquals(RequestContext.METHOD.PUT, context.getMethod());
         assertEquals(false, CollectionPropsInjectorHandler.checkCollection(context));
     }
 
