@@ -167,8 +167,14 @@ public class RequestContext {
      * @param whatUri the uri to map
      */
     public RequestContext(HttpServerExchange exchange, String whereUri, String whatUri) {
-        this.whereUri = URLUtils.removeTrailingSlashes(whereUri);
-        this.whatUri = whatUri;
+        this.whereUri = URLUtils.removeTrailingSlashes(whereUri == null ? null
+                        : whereUri.startsWith("/") ? whereUri
+                                : "/" + whereUri);
+        
+        this.whatUri = URLUtils.removeTrailingSlashes(
+                whatUri == null ? null
+                        : whatUri.startsWith("/") ? whatUri
+                                : "/" + whatUri);
 
         this.unmappedRequestUri = exchange.getRequestPath();
         this.mappedRequestUri = unmapUri(exchange.getRequestPath());
@@ -253,7 +259,11 @@ public class RequestContext {
                 ret = ret.replaceFirst("^" + this.whereUri, "");
             }
         } else {
-            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + this.whereUri, this.whatUri));
+            if (!this.whereUri.equals(SLASH)) {
+                ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + this.whereUri, this.whatUri));
+            } else {
+                ret = URLUtils.removeTrailingSlashes(URLUtils.removeTrailingSlashes(this.whatUri) + ret);
+            }
         }
 
         if (ret.isEmpty()) {

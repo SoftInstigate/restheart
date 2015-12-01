@@ -97,7 +97,7 @@ public class PropsFixer {
      * @return
      */
     public boolean addDbProps(String dbName) {
-        if (!dbsDAO.existsDatabaseWithName(dbName)) {
+        if (!dbsDAO.doesDbExist(dbName)) {
             return false;
         }
 
