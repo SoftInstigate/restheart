@@ -173,7 +173,7 @@ public class RequestContext {
         
         this.whatUri = URLUtils.removeTrailingSlashes(
                 whatUri == null ? null
-                        : whatUri.startsWith("/") ? whatUri
+                        : whatUri.startsWith("/") || "*".equals(whatUri) ? whatUri
                                 : "/" + whatUri);
 
         this.unmappedRequestUri = exchange.getRequestPath();
