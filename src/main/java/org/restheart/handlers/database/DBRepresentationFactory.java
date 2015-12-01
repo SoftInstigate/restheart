@@ -52,7 +52,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
         final Representation rep = createRepresentation(exchange, context, requestPath);
 
         addProperties(rep, context);
-        
+
         addSizeAndTotalPagesProperties(size, context, rep);
 
         addEmbeddedData(embeddedData, context, rep, requestPath);
@@ -62,7 +62,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
             addPaginationLinks(exchange, context, size, rep);
 
             addSpecialProperties(rep, context.getType(), context.getDbProps());
-            
+
             addLinkTemplates(context, rep, requestPath);
 
             // curies
@@ -82,7 +82,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
 
         rep.addProperties(dbProps);
     }
-    
+
     public static void addSpecialProperties(final Representation rep, RequestContext.TYPE type, DBObject data) {
         rep.addProperty("_type", type.name());
 
@@ -149,7 +149,12 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
 
             if (_id != null && _id instanceof String) {
                 String id = (String) _id;
-                Representation nrep = new Representation(requestPath + "/" + id);
+
+                // avoid starting double slash in self href for root URI
+                String rp = URLUtils.removeTrailingSlashes(requestPath);
+                rp = "/".equals(rp) ? "" : rp;
+
+                Representation nrep = new Representation(rp + "/" + id);
 
                 nrep.addProperties(d);
 
@@ -157,13 +162,13 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
                     if (context.isFullHalMode()) {
                         CollectionRepresentationFactory.addSpecialProperties(nrep, TYPE.FILES_BUCKET, d);
                     }
-                    
+
                     rep.addRepresentation("rh:bucket", nrep);
                 } else {
                     if (context.isFullHalMode()) {
                         CollectionRepresentationFactory.addSpecialProperties(nrep, TYPE.COLLECTION, d);
                     }
-                    
+
                     rep.addRepresentation("rh:coll", nrep);
                 }
             } else {

@@ -65,7 +65,7 @@ public interface Database {
      * @return true if exists a DB with this name
      *
      */
-    boolean existsDatabaseWithName(String dbName);
+    boolean doesDbExist(String dbName);
 
     /**
      *

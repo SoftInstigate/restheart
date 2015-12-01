@@ -56,7 +56,7 @@ public class ErrorHandler implements HttpHandler {
             
             // error code 13 is "not authorized on admin to execute command { listDatabases: 1 }"
             if (errCode == 13) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Not authorized to access MongoDB. Check mongo-credentials in the configuration.", mce);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Not authorized to access MongoDB. Check the configuration.", mce);
             } else {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request", mce);
             }
