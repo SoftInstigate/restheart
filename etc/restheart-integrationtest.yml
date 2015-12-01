@@ -50,12 +50,6 @@ use-embedded-keystore: true
 
 mongo-uri: mongodb://127.0.0.1
       
-# Provide mongodb users credentials with mongo-credentials.
-# mongo-credentials:
-#    - auth-db: admin
-#      user: admin
-#      password: adminadmin
-      
 # Use mongo-mounts to bind URls to mongodb resources using the out-of-the-box URL rewrite feature.
 mongo-mounts:
     - what: "*"
