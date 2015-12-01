@@ -84,7 +84,7 @@ public class DbsDAO implements Database {
      */
     @Override
     public boolean checkDbExists(HttpServerExchange exchange, String dbName) {
-        if (!existsDatabaseWithName(dbName)) {
+        if (!doesDbExist(dbName)) {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
             return false;
         }
@@ -99,8 +99,12 @@ public class DbsDAO implements Database {
      *
      */
     @Override
-    public boolean existsDatabaseWithName(String dbName) {
-        return client.getDatabaseNames().contains(dbName);
+    public boolean doesDbExist(String dbName) {
+        if (dbName == null || dbName.isEmpty() || dbName.contains(" ")) {
+            return false;
+        }
+
+        return client.getDB(dbName).getCollection("system.namespaces").findOne() != null;
     }
 
     /**
@@ -149,7 +153,7 @@ public class DbsDAO implements Database {
      */
     @Override
     public DBObject getDatabaseProperties(final String dbName, final boolean fixMissingProperties) {
-        if (!existsDatabaseWithName(dbName)) {
+        if (!doesDbExist(dbName)) {
             // this check is important, otherwise the db would get created if not existing after the query
             return null;
         }
