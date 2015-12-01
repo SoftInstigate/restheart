@@ -17,7 +17,7 @@
  */
 package org.restheart.handlers;
 
-import com.mongodb.MongoCommandException;
+import com.mongodb.MongoException;
 import com.mongodb.MongoTimeoutException;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -49,21 +49,20 @@ public class ErrorHandler implements HttpHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         try {
             next.handleRequest(exchange);
-        } catch (MongoCommandException mce) {
+        } catch (MongoTimeoutException nte) {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Timeout connecting to MongoDB, is it running?", nte);
+
+        } catch (MongoException mce) {
             LOGGER.error("Mongodb error", mce);
 
-            int errCode = mce.getErrorCode();
-            
-            // error code 13 is "not authorized on admin to execute command { listDatabases: 1 }"
+            int errCode = mce.getCode();
+
             if (errCode == 13) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Not authorized to access MongoDB. Check the configuration.", mce);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "The MongoDB user is not authorized to access the resource (wrong password or insufficient permissions).");
             } else {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request", mce);
             }
 
-        } catch (MongoTimeoutException nte) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Timeout connecting to MongoDB, is it running?", nte);
-            
         } catch (Throwable t) {
             LOGGER.error("Error handling the request", t);
 
