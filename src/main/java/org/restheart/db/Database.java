@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -65,7 +65,7 @@ public interface Database {
      * @return true if exists a DB with this name
      *
      */
-    boolean existsDatabaseWithName(String dbName);
+    boolean doesDbExist(String dbName);
 
     /**
      *

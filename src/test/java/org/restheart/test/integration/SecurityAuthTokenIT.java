@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -125,7 +125,7 @@ public class SecurityAuthTokenIT extends AbstactIT {
 
         URI authTokenResourceUri = rootUri.resolve(locationURI);
         
-        final String host = CLIENT_HOST;
+        final String host = MONGO_HOST;
         final int port = conf.getHttpPort();
 
         Response resp2 = unauthExecutor.authPreemptive(new HttpHost(host, port, HTTP)).auth(new Credentials() {

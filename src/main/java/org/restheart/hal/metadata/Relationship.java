@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -133,14 +133,14 @@ public class Relationship {
         }
 
         if (!(_rels instanceof BasicDBList)) {
-            throw new InvalidMetadataException("element 'relationships' is not an array list." + _rels);
+            throw new InvalidMetadataException("element '" + RELATIONSHIPS_ELEMENT_NAME + "' is not an array list." + _rels);
         }
 
         BasicDBList rels = (BasicDBList) _rels;
 
         for (Object _rel : rels.toArray()) {
             if (!(_rel instanceof DBObject)) {
-                throw new InvalidMetadataException("element 'relationships' is not valid." + _rel);
+                throw new InvalidMetadataException("element '" + RELATIONSHIPS_ELEMENT_NAME + "' is not valid." + _rel);
             }
 
             DBObject rel = (DBObject) _rel;

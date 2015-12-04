@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -62,7 +62,7 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
                 } else if (!(context.getType() == RequestContext.TYPE.DB
                         && context.getMethod() == RequestContext.METHOD.PUT)
                         && context.getType() != RequestContext.TYPE.ROOT) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "db does not exist");
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "Db '" + context.getDBName() + "' does not exist");
                     return;
                 }
             } else {
@@ -73,7 +73,7 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
                     && !(context.getType() == RequestContext.TYPE.DB
                     && context.getMethod() == RequestContext.METHOD.PUT)
                     && context.getType() != RequestContext.TYPE.ROOT) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "db does not exist");
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "Db '" + context.getDBName() + "' does not exist");
                 return;
             }
 

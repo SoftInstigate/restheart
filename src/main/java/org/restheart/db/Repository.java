@@ -32,4 +32,13 @@ public interface Repository {
     
     OperationResult deleteDocument(String dbName, String collName, Object documentId, ObjectId requestEtag);
     
+    /**
+     * returns the ETag of the document
+     * @param dbName
+     * @param collName
+     * @param documentId
+     * @return DBObject containing _etag property
+     */
+    DBObject getDocumentEtag(String dbName, String collName, Object documentId);
+    
 }

@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -18,16 +18,9 @@
 package org.restheart.db;
 
 import com.mongodb.MongoClient;
-import com.mongodb.MongoClientOptions;
-import com.mongodb.MongoCredential;
-import com.mongodb.ReadPreference;
-import com.mongodb.ServerAddress;
-import com.mongodb.WriteConcern;
+import com.mongodb.MongoClientURI;
 import org.restheart.Configuration;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,11 +29,9 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class MongoDBClientSingleton {
-
     private static boolean initialized = false;
 
-    private static transient List<Map<String, Object>> mongoServers;
-    private static transient List<Map<String, Object>> mongoCredentials;
+    private static MongoClientURI mongoUri;
 
     private MongoClient mongoClient;
 
@@ -65,49 +56,13 @@ public class MongoDBClientSingleton {
      * @param conf
      */
     public static void init(Configuration conf) {
-        mongoServers = conf.getMongoServers();
-        mongoCredentials = conf.getMongoCredentials();
-
-        if (mongoServers != null && !mongoServers.isEmpty()) {
-            initialized = true;
-        } else {
-            LOGGER.error("error initializing mongodb client, no servers found in configuration");
-        }
+        mongoUri = conf.getMongoUri();
+        initialized = true;
     }
 
     private void setup() throws UnknownHostException {
         if (isInitialized()) {
-            List<ServerAddress> servers = new ArrayList<>();
-            List<MongoCredential> credentials = new ArrayList<>();
-
-            for (Map<String, Object> mongoServer : mongoServers) {
-                Object mongoHost = mongoServer.get(Configuration.MONGO_HOST_KEY);
-                Object mongoPort = mongoServer.get(Configuration.MONGO_PORT_KEY);
-
-                if (mongoHost != null && mongoHost instanceof String && mongoPort != null && mongoPort instanceof Integer) {
-                    servers.add(new ServerAddress((String) mongoHost, (int) mongoPort));
-                }
-            }
-
-            if (mongoCredentials != null) {
-                mongoCredentials.stream().forEach((mongoCredential) -> {
-                    Object mongoAuthDb = mongoCredential.get(Configuration.MONGO_AUTH_DB_KEY);
-                    Object mongoUser = mongoCredential.get(Configuration.MONGO_USER_KEY);
-                    Object mongoPwd = mongoCredential.get(Configuration.MONGO_PASSWORD_KEY);
-                    if (mongoAuthDb != null 
-                            && mongoAuthDb instanceof String 
-                            && mongoUser != null 
-                            && mongoUser instanceof String 
-                            && mongoPwd != null 
-                            && mongoPwd instanceof String) {
-                        credentials.add(MongoCredential.createCredential((String) mongoUser, (String) mongoAuthDb, ((String) mongoPwd).toCharArray()));
-                    }
-                });
-            }
-
-            MongoClientOptions opts = MongoClientOptions.builder().readPreference(ReadPreference.primaryPreferred()).writeConcern(WriteConcern.ACKNOWLEDGED).build();
-
-            mongoClient = new MongoClient(servers, credentials, opts);
+            mongoClient = new MongoClient(mongoUri);
         }
     }
 

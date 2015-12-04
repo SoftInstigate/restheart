@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -64,11 +64,11 @@ public class GetDocumentHandler extends PipedHttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         BasicDBObject query = new BasicDBObject("_id", context.getDocumentId());
-        
+
         final BasicDBObject fieldsToReturn = new BasicDBObject();
-        
+
         Deque<String> keys = context.getKeys();
-        
+
         if (keys != null) {
             keys.stream().forEach((String f) -> {
                 BSONObject keyQuery = (BSONObject) JSON.parse(f);
@@ -86,25 +86,11 @@ public class GetDocumentHandler extends PipedHttpHandler {
 
         Object etag = document.get("_etag");
 
-        if (etag != null && etag instanceof ObjectId) {
-            if (document.get("_lastupdated_on") == null) {
-                // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
-                document.put("_lastupdated_on", Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString());
-            }
-
-            // in case the request contains the IF_NONE_MATCH header with the current etag value,
-            // just return 304 NOT_MODIFIED code
-            if (RequestHelper.checkReadEtag(exchange, (ObjectId) etag)) {
-                ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_MODIFIED);
-                return;
-            }
-        }
-
-        Object id = document.get("_id");
-
-        // generate the _created_on timestamp from the _id if this is an instance of ObjectId
-        if (document.get("_created_on") == null && id != null && id instanceof ObjectId) {
-            document.put("_created_on", Instant.ofEpochSecond(((ObjectId) id).getTimestamp()).toString());
+        // in case the request contains the IF_NONE_MATCH header with the current etag value,
+        // just return 304 NOT_MODIFIED code
+        if (RequestHelper.checkReadEtag(exchange, (ObjectId) etag)) {
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_MODIFIED);
+            return;
         }
 
         String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
@@ -117,7 +103,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
 
         exchange.setResponseCode(HttpStatus.SC_OK);
 
-        // call the ResponseScriptMetadataHanlder if piped in
+        // call the ResponseTranformerMetadataHandler if piped in
         if (getNext() != null) {
             DBObject responseContent = rep.asDBObject();
             context.setResponseContent(responseContent);

@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -17,6 +17,7 @@
  */
 package org.restheart.handlers.collection;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
@@ -28,7 +29,6 @@ import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.HAL_MODE;
 import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.document.DocumentRepresentationFactory;
 import org.restheart.utils.URLUtils;
@@ -57,11 +57,17 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         final String requestPath = buildRequestPath(exchange);
         final Representation rep = createRepresentation(exchange, context, requestPath);
 
+        addProperties(rep, context);
+
+        addSizeAndTotalPagesProperties(size, context, rep);
+
+        addAggregationsLinks(context, rep, requestPath);
+
         addEmbeddedData(embeddedData, rep, requestPath, exchange, context);
 
-        if (context.getHalMode() == HAL_MODE.FULL
-                || context.getHalMode() == HAL_MODE.F) {
-            addProperties(rep, context, size);
+        if (context.isFullHalMode()) {
+
+            addSpecialProperties(rep, context.getType(), context.getCollectionProps());
 
             addPaginationLinks(exchange, context, size, rep);
 
@@ -76,22 +82,28 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
             rep.addLinkArray("curies");
         }
 
-        addSizeAndTotalPagesProperties(size, context, rep);
-
         return rep;
     }
 
-    private void addProperties(final Representation rep, final RequestContext context, long size) {
+    private void addProperties(final Representation rep, final RequestContext context) {
         // add the collection properties
         final DBObject collProps = context.getCollectionProps();
 
         rep.addProperties(collProps);
+    }
 
-        // add the _lastupdated_on and _created_on
-        Object etag = collProps.get("_etag");
+    public static void addSpecialProperties(final Representation rep,
+            final RequestContext.TYPE type,
+            final DBObject data) {
+        rep.addProperty("_type", type.name());
 
-        if (collProps.get("_lastupdated_on") == null && etag != null && etag instanceof ObjectId) {
-            rep.addProperty("_lastupdated_on", Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString());
+        Object etag = data.get("_etag");
+
+        if (etag != null && etag instanceof ObjectId) {
+            if (data.get("_lastupdated_on") == null) {
+                // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
+                rep.addProperty("_lastupdated_on", Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString());
+            }
         }
     }
 
@@ -108,6 +120,27 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         }
     }
 
+    private void addAggregationsLinks(final RequestContext context, final Representation rep, final String requestPath) {
+
+        Object _aggregations = context.getCollectionProps().get(RequestContext._AGGREGATIONS);
+
+        if (_aggregations instanceof BasicDBList) {
+            BasicDBList aggregations = (BasicDBList) _aggregations;
+
+            aggregations.forEach(q -> {
+                if (q instanceof DBObject) {
+                    Object _uri = ((DBObject) q).get("uri");
+
+                    if (_uri != null && _uri instanceof String) {
+                        rep.addLink(
+                                new Link(((String) _uri),
+                                        requestPath + "/" + RequestContext._AGGREGATIONS + "/" + ((String) _uri)));
+                    }
+                }
+            });
+        }
+    }
+
     private void addLinkTemplates(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath) {
         // link templates and curies
         if (context.isParentAccessible()) {
@@ -117,18 +150,18 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
 
         if (TYPE.FILES_BUCKET.equals(context.getType())) {
             rep.addLink(new Link("rh:bucket", URLUtils.getParentPath(requestPath) + "/{bucketname}" + RequestContext.FS_FILES_SUFFIX, true));
-            rep.addLink(new Link("rh:file", requestPath + "/{fileid}?id_type={type}", true));
+            rep.addLink(new Link("rh:file", requestPath + "/{fileid}{?id_type}", true));
         } else if (TYPE.COLLECTION.equals(context.getType())) {
 
             rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath) + "/{collname}", true));
-            rep.addLink(new Link("rh:document", requestPath + "/{docid}?id_type={type}", true));
+            rep.addLink(new Link("rh:document", requestPath + "/{docid}{?id_type}", true));
         }
 
         rep.addLink(new Link("rh:indexes", requestPath + "/" + context.getDBName() + "/" + context.getCollectionName() + "/_indexes"));
 
-        rep.addLink(new Link("rh:filter", requestPath + "/{?filter}", true));
-        rep.addLink(new Link("rh:sort", requestPath + "/{?sort_by}", true));
-        rep.addLink(new Link("rh:paging", requestPath + "/{?page}{&pagesize}", true));
+        rep.addLink(new Link("rh:filter", requestPath + "{?filter}", true));
+        rep.addLink(new Link("rh:sort", requestPath + "{?sort_by}", true));
+        rep.addLink(new Link("rh:paging", requestPath + "{?page}{&pagesize}", true));
         rep.addLink(new Link("rh:indexes", requestPath + "/_indexes"));
     }
 
@@ -142,10 +175,16 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
                 Representation nrep = new DocumentRepresentationFactory().getRepresentation(requestPath + "/" + _id.toString(), exchange, context, d);
 
                 if (rep.getType() == RequestContext.TYPE.FILES_BUCKET) {
-                    nrep.addProperty("_type", RequestContext.TYPE.FILE.name());
+                    if (context.isFullHalMode()) {
+                        DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.FILE, d);
+                    }
+
                     rep.addRepresentation("rh:file", nrep);
                 } else {
-                    nrep.addProperty("_type", RequestContext.TYPE.DOCUMENT.name());
+                    if (context.isFullHalMode()) {
+                        DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.DOCUMENT, d);
+                    }
+
                     rep.addRepresentation("rh:doc", nrep);
                 }
             }

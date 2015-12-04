@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -26,6 +26,7 @@ import java.util.List;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.hal.Representation;
+import org.restheart.utils.ResponseHelper;
 
 /**
  *
@@ -67,6 +68,8 @@ public class GetDBHandler extends PipedHttpHandler {
         DBRepresentationFactory repf = new DBRepresentationFactory();
         Representation rep = repf.getRepresentation(exchange, context, data, getDatabase().getDBSize(colls));
 
+        ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
+        
         exchange.setResponseCode(HttpStatus.SC_OK);
 
         // call the next handler if existing

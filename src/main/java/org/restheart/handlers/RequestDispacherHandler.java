@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -50,6 +50,7 @@ import org.restheart.handlers.files.PutFileHandler;
 import org.restheart.handlers.metadata.ResponseTranformerMetadataHandler;
 import org.restheart.handlers.metadata.CheckMetadataHandler;
 import org.restheart.handlers.metadata.RequestTransformerMetadataHandler;
+import org.restheart.handlers.aggregation.GetAggregationHandler;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,6 +131,9 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         putPipedHttpHandler(TYPE.FILE_BINARY, METHOD.GET, new GetFileBinaryHandler());
         putPipedHttpHandler(TYPE.FILE, METHOD.PUT, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PutFileHandler())));
         putPipedHttpHandler(TYPE.FILE, METHOD.DELETE, new DeleteFileHandler());
+        
+        // AGGREGATION handler
+        putPipedHttpHandler(TYPE.AGGREGATION, METHOD.GET, new GetAggregationHandler(new ResponseTranformerMetadataHandler(null)));
     }
 
     /**
@@ -153,7 +157,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * @param handler the PipedHttpHandler
      */
     void putPipedHttpHandler(TYPE type, METHOD method, PipedHttpHandler handler) {
-        LOGGER.info("putPipedHttpHandler( {}, {}, {} )", type, method, getHandlerToLog(handler).getClass().getCanonicalName());
+        LOGGER.debug("putPipedHttpHandler( {}, {}, {} )", type, method, getHandlerToLog(handler).getClass().getCanonicalName());
         Map<METHOD, PipedHttpHandler> methodsMap = handlersMultimap.get(type);
         if (methodsMap == null) {
             methodsMap = new HashMap<>();

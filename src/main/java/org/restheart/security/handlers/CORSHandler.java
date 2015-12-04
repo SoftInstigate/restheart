@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -17,6 +17,7 @@
  */
 package org.restheart.security.handlers;
 
+import com.google.common.net.HttpHeaders;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -39,6 +40,8 @@ import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_VALID_HEADER
  *
  * The Access-Control-Expose-Headers header indicates which headers are safe to
  * expose to the API of a CORS API specification.
+ * 
+ * IT also injects the X-Powered-By response header
  */
 public class CORSHandler extends PipedHttpHandler {
 
@@ -46,7 +49,7 @@ public class CORSHandler extends PipedHttpHandler {
     private final HttpHandler noPipedNext;
 
     /**
-     * Creates a new instance of GetRootHandler
+     * Creates a new instance of CORSHandler
      *
      * @param next
      */
@@ -73,13 +76,21 @@ public class CORSHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        injectAccessControlAllowHeaders(new HeadersManager(exchange));
+        HeadersManager hm = new HeadersManager(exchange);
+        
+        injectXPBHeader(hm);
+        
+        injectAccessControlAllowHeaders(hm);
 
         if (noPipedNext != null) {
             noPipedNext.handleRequest(exchange);
         } else {
             getNext().handleRequest(exchange, context);
         }
+    }
+    
+    private void injectXPBHeader(HeadersManager headers) {
+        headers.addResponseHeader(HttpString.tryFromString(HttpHeaders.X_POWERED_BY), "restheart.org");
     }
 
     private void injectAccessControlAllowHeaders(HeadersManager headers) {
@@ -98,7 +109,8 @@ public class CORSHandler extends PipedHttpHandler {
                 + Headers.ETAG + ", "
                 + AUTH_TOKEN_HEADER.toString() + ", "
                 + AUTH_TOKEN_VALID_HEADER.toString() + ", "
-                + AUTH_TOKEN_LOCATION_HEADER.toString());
+                + AUTH_TOKEN_LOCATION_HEADER.toString() + ", "
+                + HttpHeaders.X_POWERED_BY);
     }
 
     interface CORSHeaders {

@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
  */
 package org.restheart.handlers;
 
-import com.google.common.collect.Sets;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.restheart.db.DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.utils.URLUtils;
@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
-import java.util.Set;
 
 /**
  *
@@ -49,7 +48,8 @@ public class RequestContext {
         INDEX,
         FILES_BUCKET,
         FILE,
-        FILE_BINARY
+        FILE_BINARY,
+        AGGREGATION
     };
 
     public enum METHOD {
@@ -71,7 +71,7 @@ public class RequestContext {
         MINKEY, //org.bson.types.MinKey;
         MAXKEY // org.bson.types.MaxKey
     }
-    
+
     public enum HAL_MODE {
         FULL, // default value
         F, // alias for full
@@ -84,6 +84,7 @@ public class RequestContext {
     public static final String COUNT_QPARAM_KEY = "count";
     public static final String SORT_BY_QPARAM_KEY = "sort_by";
     public static final String FILTER_QPARAM_KEY = "filter";
+    public static final String AGGREGATION_VARIABLES_QPARAM_KEY = "avars";
     public static final String KEYS_QPARAM_KEY = "keys";
     public static final String EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY = "eager";
     public static final String DOC_ID_TYPE_KEY = "id_type";
@@ -96,8 +97,9 @@ public class RequestContext {
     public static final String FS_CHUNKS_SUFFIX = ".chunks";
     public static final String FS_FILES_SUFFIX = ".files";
     public static final String _INDEXES = "_indexes";
+    public static final String _AGGREGATIONS = "_aggrs";
     public static final String BINARY_CONTENT = "binary";
-    
+
     public static final String HAL_QPARAM_KEY = "hal";
 
     public static final String MAX_KEY_ID = "_MaxKey";
@@ -126,6 +128,7 @@ public class RequestContext {
     private boolean count = false;
     private EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy;
     private Deque<String> filter = null;
+    private BasicDBObject aggregationVars = null; // aggregation vars
     private Deque<String> keys = null;
     private Deque<String> sortBy = null;
     private DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OID;
@@ -133,7 +136,7 @@ public class RequestContext {
 
     private String unmappedRequestUri = null;
     private String mappedRequestUri = null;
-    
+
     /**
      * the HAL mode
      */
@@ -164,8 +167,14 @@ public class RequestContext {
      * @param whatUri the uri to map
      */
     public RequestContext(HttpServerExchange exchange, String whereUri, String whatUri) {
-        this.whereUri = URLUtils.removeTrailingSlashes(whereUri);
-        this.whatUri = whatUri;
+        this.whereUri = URLUtils.removeTrailingSlashes(whereUri == null ? null
+                        : whereUri.startsWith("/") ? whereUri
+                                : "/" + whereUri);
+        
+        this.whatUri = URLUtils.removeTrailingSlashes(
+                whatUri == null ? null
+                        : whatUri.startsWith("/") || "*".equals(whatUri) ? whatUri
+                                : "/" + whatUri);
 
         this.unmappedRequestUri = exchange.getRequestPath();
         this.mappedRequestUri = unmapUri(exchange.getRequestPath());
@@ -226,6 +235,8 @@ public class RequestContext {
             type = TYPE.COLLECTION_INDEXES;
         } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.INDEX;
+        } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
+            type = TYPE.AGGREGATION;
         } else {
             type = TYPE.DOCUMENT;
         }
@@ -248,7 +259,11 @@ public class RequestContext {
                 ret = ret.replaceFirst("^" + this.whereUri, "");
             }
         } else {
-            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + this.whereUri, this.whatUri));
+            if (!this.whereUri.equals(SLASH)) {
+                ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + this.whereUri, this.whatUri));
+            } else {
+                ret = URLUtils.removeTrailingSlashes(URLUtils.removeTrailingSlashes(this.whatUri) + ret);
+            }
         }
 
         if (ret.isEmpty()) {
@@ -343,6 +358,14 @@ public class RequestContext {
 
     /**
      *
+     * @return collection name
+     */
+    public String getQuery() {
+        return getPathTokenAt(4);
+    }
+
+    /**
+     *
      * @return URI
      * @throws URISyntaxException
      */
@@ -402,7 +425,7 @@ public class RequestContext {
      * @return isReservedResource
      */
     public boolean isReservedResource() {
-        if (type == TYPE.ROOT) {
+        if (type == TYPE.ROOT || type == TYPE.AGGREGATION) {
             return false;
         }
 
@@ -479,6 +502,20 @@ public class RequestContext {
      */
     public void setFilter(Deque<String> filter) {
         this.filter = filter;
+    }
+
+    /**
+     * @return the aggregationVars
+     */
+    public BasicDBObject getAggreationVars() {
+        return aggregationVars;
+    }
+
+    /**
+     * @param aggregationVars the aggregationVars to set
+     */
+    public void setAggregationVars(BasicDBObject aggregationVars) {
+        this.aggregationVars = aggregationVars;
     }
 
     /**
@@ -664,6 +701,10 @@ public class RequestContext {
      */
     public HAL_MODE getHalMode() {
         return halMode;
+    }
+
+    public boolean isFullHalMode() {
+        return halMode == HAL_MODE.FULL || halMode == HAL_MODE.F;
     }
 
     /**

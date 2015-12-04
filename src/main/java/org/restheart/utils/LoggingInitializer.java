@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -53,7 +53,7 @@ public class LoggingInitializer {
         Logger rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
 
         Appender<ILoggingEvent> appender = rootLogger.getAppender("STDOUT");
-
+        
         appender.stop();
     }
 
@@ -82,7 +82,7 @@ public class LoggingInitializer {
 
         PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setContext(loggerContext);
-        encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n");
+        encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n");
         encoder.start();
 
         rfAppender.setEncoder(encoder);

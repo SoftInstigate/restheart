@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,9 @@
  */
 package org.restheart;
 
+import org.restheart.utils.RHDaemon;
 import com.mongodb.MongoClient;
+import static com.sun.akuma.CLibrary.LIBC;
 import static org.restheart.Configuration.RESTHEART_VERSION;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.handlers.ErrorHandler;
@@ -40,7 +42,6 @@ import org.restheart.security.handlers.SecurityHandlerDispacher;
 import org.restheart.security.handlers.CORSHandler;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.OSChecker;
-import com.sun.akuma.Daemon;
 import static io.undertow.Handlers.path;
 import io.undertow.Undertow;
 import io.undertow.security.idm.IdentityManager;
@@ -77,6 +78,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import static org.fusesource.jansi.Ansi.Color.GREEN;
+import static org.fusesource.jansi.Ansi.Color.RED;
+import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.security.FullAccessManager;
 import org.restheart.security.handlers.AuthTokenHandler;
 import org.slf4j.Logger;
@@ -91,10 +95,11 @@ public final class Bootstrapper {
     private static final Logger LOGGER = LoggerFactory.getLogger(Bootstrapper.class);
     private static final Map<String, File> TMP_EXTRACTED_FILES = new HashMap<>();
 
+    private static Path CONF_FILE_PATH;
+
     private static Undertow server;
     private static GracefulShutdownHandler shutdownHandler = null;
     private static Configuration configuration;
-    private static Path pidFilePath;
 
     /**
      * main method
@@ -102,112 +107,112 @@ public final class Bootstrapper {
      * @param args command line arguments
      */
     public static void main(final String[] args) {
+        CONF_FILE_PATH = FileUtils.getConfigurationFilePath(args);
 
         try {
             // read configuration silently, to avoid logging before initializing the logger
             configuration = FileUtils.getConfiguration(args, true);
         } catch (ConfigurationException ex) {
+            LOGGER.info("Starting " + ansi().fg(RED).bold().a("RESTHeart").reset().toString());
+
+            if (RESTHEART_VERSION != null) {
+                LOGGER.info("version {}", RESTHEART_VERSION);
+            }
+
             LOGGER.error(ex.getMessage() + ", exiting...", ex);
             stopServer(false);
             System.exit(-1);
         }
 
-        Daemon d = null;
-
-        if (!OSChecker.isWindows()) {
-            d = new Daemon.WithoutChdir();
-
-            // pid file name include the hash of the configuration file so that for each configuration we can have just one instance running
-            // If we proceed we'd get a BindException for same port being already used by the running instance
-            pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsoultePathHash(FileUtils.getConfigurationFilePath(args)));
-
-            if (Files.exists(pidFilePath)) {
-                LOGGER.info("Starting RESTHeart ********************************************");
-                LOGGER.error("This instance is already running, exiting. {}", FileUtils.getConfigurationFilePath(args) == null ? "No configuration file specified" : "Configuration file is " + FileUtils.getConfigurationFilePath(args));
-                LOGGER.error("Running instance pid is {}", FileUtils.getPidFromFile(pidFilePath));
-                LOGGER.error("If it is not actually running, manually remove the pid file {} and retry", pidFilePath);
-                LOGGER.info("Exiting *********************************************");
-
-                // do not stopServer() here, since this might delete other running instace pid file and tmp resources
-                System.exit(-1);
-            }
-        }
-
-        initLogging(args, d);
-
-        if (!OSChecker.isWindows()) {
-            d = new Daemon.WithoutChdir();
+        if (!hasForkOption(args)) {
+            startServer(false);
         } else {
-            LOGGER.info("Starting RESTHeart ********************************************");
+            if (OSChecker.isWindows()) {
+                LOGGER.info("Starting " + ansi().fg(RED).bold().a("RESTHeart").reset().toString());
 
-            try {
-                configuration = FileUtils.getConfiguration(args);
-            } catch (ConfigurationException ex) {
-                LOGGER.error(ex.getMessage() + ", exiting...", ex);
+                if (RESTHEART_VERSION != null) {
+                    LOGGER.info("version {}", RESTHEART_VERSION);
+                }
+                
+                LOGGER.error("Fork is not supported on Windows");
+
+                LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart stopped").reset().toString());
+                
+                System.exit(-1);
+            }
+
+            // RHDaemon only works on POSIX OSes
+            final boolean isPosix = FileSystems.getDefault()
+                    .supportedFileAttributeViews().contains("posix");
+
+            if (!isPosix) {
+                LOGGER.info("Unable to fork process, "
+                        + "this is only supported on POSIX compliant OSes");
+
                 stopServer(false);
                 System.exit(-1);
             }
 
-            if (shouldDemonize(args) && OSChecker.isWindows()) {
-                LOGGER.warn("Fork is not supported on Windows");
-            }
+            RHDaemon d = new RHDaemon();
 
-            logLoggingConfiguration(args, d);
-        }
+            if (d.isDaemonized()) {
+                try {
+                    d.init();
+                    LOGGER.info("Forked process: {}", LIBC.getpid());
+                    initLogging(args, d);
+                } catch (Throwable t) {
+                    LOGGER.error("Error staring forked process", t);
+                    stopServer(false, false);
+                    System.exit(-1);
+                }
 
-        // we are not on Windows and this process is not daemonized
-        if (d != null && !d.isDaemonized()) {
-            LOGGER.info("Starting RESTHeart ********************************************");
+                startServer(true);
+            } else {
+                initLogging(args, d);
 
-            try {
-                configuration = FileUtils.getConfiguration(args);
-            } catch (ConfigurationException ex) {
-                LOGGER.error(ex.getMessage() + ", exiting...", ex);
-                stopServer(false);
-                System.exit(-1);
-            }
+                try {
+                    LOGGER.info("Starting " + ansi().fg(RED).bold().a("RESTHeart").reset().toString());
 
-            // we have to fork, this is done later by demonizeInCase(args, d), now just log some message
-            if (shouldDemonize(args)) {
-                LOGGER.info("Stopping logging to console");
-                LOGGER.info("Logging to {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
-                LOGGER.info("RESTHeart forked **********************************************");
-            } // we don't have to fork, let's create the pid file (otherwise done by Daemon.init() call in demonizeInCase())
-            else {
-                LOGGER.info("Creating pid file {}", pidFilePath);
-                FileUtils.createPidFile(pidFilePath);
-            }
+                    if (RESTHEART_VERSION != null) {
+                        LOGGER.info("version {}", RESTHEART_VERSION);
+                    }
 
-            logLoggingConfiguration(args, d);
-        }
+                    logLoggingConfiguration(true);
 
-        // we are not on windows and this process is daemonized
-        if (d != null && d.isDaemonized()) {
-            pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsoultePathHash(FileUtils.getConfigurationFilePath(args)));
-
-            LOGGER.info("Forking RESTHeart ********************************************");
-
-            logLoggingConfiguration(args, d);
-
-            // re-read configuration, to have warnings and errors logged to file
-            try {
-                configuration = FileUtils.getConfiguration(args);
-            } catch (ConfigurationException ex) {
-                LOGGER.error(ex.getMessage() + ", exiting...", ex);
-                stopServer(false);
-                System.exit(-1);
-            }
-
-            try {
-                LOGGER.info("pid file {}", pidFilePath);
-                d.init(pidFilePath.toString());
-            } catch (Exception ex) {
-                LOGGER.error("Error writing pid file to {}", pidFilePath, ex);
+                    d.daemonize();
+                } catch (Throwable t) {
+                    LOGGER.error("Error forking", t);
+                    stopServer(false, false);
+                    System.exit(-1);
+                }
             }
         }
+    }
 
-        demonizeInCase(args, d);
-        startServer();
+    /**
+     * logs warning message if pid file exists
+     *
+     * @param confFilePath
+     * @return true if pid file exists
+     */
+    private static boolean checkPidFile(Path confFilePath) {
+        if (OSChecker.isWindows()) {
+            return false;
+        }
+
+        // pid file name include the hash of the configuration file so that
+        // for each configuration we can have just one instance running
+        Path pidFilePath = FileUtils.getPidFilePath(
+                FileUtils.getFileAbsoultePathHash(confFilePath));
+
+        if (Files.exists(pidFilePath)) {
+            LOGGER.warn("Found pid file! If this instance is already "
+                    + "running, startup will fail with a BindException");
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -216,15 +221,28 @@ public final class Bootstrapper {
      * @param confFilePath the path of the configuration file
      */
     public static void startup(final String confFilePath) {
+        startup(FileUtils.getFileAbsoultePath(confFilePath));
+    }
+
+    /**
+     * Startups the RESTHeart server
+     *
+     * @param confFilePath the path of the configuration file
+     */
+    public static void startup(final Path confFilePath) {
         try {
-            configuration = FileUtils.getConfiguration(new String[]{confFilePath});
+            configuration = FileUtils.getConfiguration(confFilePath, false);
         } catch (ConfigurationException ex) {
+            if (RESTHEART_VERSION != null) {
+                LOGGER.info(ansi().fg(RED).bold().a("RESTHeart").reset().toString() + " version {}", RESTHEART_VERSION);
+            }
+
             LOGGER.error(ex.getMessage() + ", exiting...", ex);
             stopServer(false);
             System.exit(-1);
         }
 
-        startServer();
+        startServer(false);
     }
 
     /**
@@ -234,13 +252,13 @@ public final class Bootstrapper {
         stopServer(false);
     }
 
-    private static void initLogging(final String[] args, final Daemon d) {
+    private static void initLogging(final String[] args, final RHDaemon d) {
         LoggingInitializer.setLogLevel(configuration.getLogLevel());
 
         if (d != null && d.isDaemonized()) {
             LoggingInitializer.stopConsoleLogging();
             LoggingInitializer.startFileLogging(configuration.getLogFilePath());
-        } else if (!shouldDemonize(args)) {
+        } else if (!hasForkOption(args)) {
             if (!configuration.isLogToConsole()) {
                 LoggingInitializer.stopConsoleLogging();
             }
@@ -250,26 +268,25 @@ public final class Bootstrapper {
         }
     }
 
-    private static void logLoggingConfiguration(final String[] args, final Daemon d) {
-        if (d == null || !d.isDaemonized()) {
-            return;
+    private static void logLoggingConfiguration(boolean fork) {
+        if (configuration.isLogToFile()) {
+            LOGGER.info("Logging to {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
         }
 
-        if (!shouldDemonize(args)) {
+        if (!fork) {
             if (!configuration.isLogToConsole()) {
                 LOGGER.info("Stop logging to console ");
-                LOGGER.info("***************************************************************");
             } else {
                 LOGGER.info("Logging to console with level {}", configuration.getLogLevel());
-            }
-
-            if (configuration.isLogToFile()) {
-                LOGGER.info("Logging to {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
             }
         }
     }
 
-    private static boolean shouldDemonize(final String[] args) {
+    private static boolean hasForkOption(final String[] args) {
+        if (args == null || args.length < 1) {
+            return false;
+        }
+
         for (String arg : args) {
             if (arg.equals("--fork")) {
                 return true;
@@ -279,45 +296,32 @@ public final class Bootstrapper {
         return false;
     }
 
-    private static void demonizeInCase(final String[] args, Daemon d) {
-        if (d == null || d.isDaemonized() || args == null || args.length < 1) {
-            return;
-        }
+    private static void startServer(boolean fork) {
+        LOGGER.info("Starting " + ansi().fg(RED).bold().a("RESTHeart").reset().toString());
 
-        if (shouldDemonize(args)) {
-            // Daemon only works on POSIX OSes
-            final boolean isPosix = FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
-            if (isPosix) {
-                try {
-                    d.daemonize();
-                    stopServer(true);
-                    System.exit(0);
-                } catch (Exception ex) {
-                    LOGGER.warn("Unable to fork process. Note that forking is only supported on Linux (x86, amd64), Solaris (x86, amd64, sparc, sparcv9) and Mac OS X", ex);
-                }
-            } else {
-                LOGGER.info("Unable to fork process, this is only supported on POSIX compliant OSes");
-            }
-        }
-    }
-
-    private static void startServer() {
         if (RESTHEART_VERSION != null) {
-            LOGGER.info("RESTHeart version {}", RESTHEART_VERSION);
+            LOGGER.info("version {}", RESTHEART_VERSION);
         }
 
-        String mongoHosts = configuration.getMongoServers().stream()
-                .map(s -> s.get(Configuration.MONGO_HOST_KEY) + ":" + s.get(Configuration.MONGO_PORT_KEY) + " ")
-                .reduce("", String::concat);
+        Path pidFilePath = FileUtils.getPidFilePath(
+                FileUtils.getFileAbsoultePathHash(CONF_FILE_PATH));
 
-        LOGGER.info("Initializing MongoDB connection pool to {}", mongoHosts);
+        boolean pidFileAlreadyExists = false;
+
+        if (!OSChecker.isWindows() && pidFilePath != null) {
+            pidFileAlreadyExists = checkPidFile(CONF_FILE_PATH);
+        }
+
+        logLoggingConfiguration(fork);
+
+        LOGGER.debug("Initializing MongoDB connection pool to {} with options {}", configuration.getMongoUri().getHosts(), configuration.getMongoUri().getOptions());
 
         try {
             MongoDBClientSingleton.init(configuration);
             LOGGER.info("MongoDB connection pool initialized");
         } catch (Throwable t) {
             LOGGER.error("Error connecting to MongoDB. exiting..", t);
-            stopServer(false);
+            stopServer(false, !pidFileAlreadyExists);
             System.exit(-1);
         }
 
@@ -325,7 +329,7 @@ public final class Bootstrapper {
             startCoreSystem();
         } catch (Throwable t) {
             LOGGER.error("Error starting RESTHeart. Exiting...", t);
-            stopServer(false);
+            stopServer(false, !pidFileAlreadyExists);
             System.exit(-2);
         }
 
@@ -336,10 +340,26 @@ public final class Bootstrapper {
             }
         });
 
-        LOGGER.info("RESTHeart started **********************************************");
+        // create pid file on supported OSes
+        if (!OSChecker.isWindows()
+                && pidFilePath != null) {
+            FileUtils.createPidFile(pidFilePath);
+        }
+
+        // log pid file path on supported OSes
+        if (!OSChecker.isWindows()
+                && pidFilePath != null) {
+            LOGGER.info("Pid file {}", pidFilePath);
+        }
+
+        LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart started").reset().toString());
     }
 
     private static void stopServer(boolean silent) {
+        stopServer(silent, true);
+    }
+
+    private static void stopServer(boolean silent, boolean removePid) {
         if (!silent) {
             LOGGER.info("Stopping RESTHeart...");
         }
@@ -380,7 +400,10 @@ public final class Bootstrapper {
             LOGGER.error("Error flushing and closing the MongoDB client", t);
         }
 
-        if (pidFilePath != null) {
+        Path pidFilePath = FileUtils.getPidFilePath(
+                FileUtils.getFileAbsoultePathHash(CONF_FILE_PATH));
+
+        if (removePid && pidFilePath != null) {
             if (!silent) {
                 LOGGER.info("Removing the pid file {}", pidFilePath.toString());
             }
@@ -403,7 +426,7 @@ public final class Bootstrapper {
         });
 
         if (!silent) {
-            LOGGER.info("RESTHeart stopped *********************************************");
+            LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart stopped").reset().toString());
         }
     }
 

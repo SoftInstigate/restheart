@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -96,8 +96,6 @@ public abstract class AbstractRepresentationFactory {
 
         Representation rep = new Representation(requestPath + queryString);
 
-        rep.addProperty("_type", context.getType().name());
-
         return rep;
     }
 
@@ -107,12 +105,14 @@ public abstract class AbstractRepresentationFactory {
     }
 
     protected void addPaginationLinks(HttpServerExchange exchange, RequestContext context, long size, final Representation rep) throws IllegalQueryParamenterException {
-        TreeMap<String, String> links;
-        links = HALUtils.getPaginationLinks(exchange, context, size);
-        if (links != null) {
-            links.keySet().stream().forEach((k) -> {
-                rep.addLink(new Link(k, links.get(k)));
-            });
+        if (context.getPagesize() > 0) {
+            TreeMap<String, String> links;
+            links = HALUtils.getPaginationLinks(exchange, context, size);
+            if (links != null) {
+                links.keySet().stream().forEach((k) -> {
+                    rep.addLink(new Link(k, links.get(k)));
+                });
+            }
         }
     }
 

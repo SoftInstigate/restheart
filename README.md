@@ -1,9 +1,11 @@
-RESTHeart
+RESTHeart 
 =========
 
-> The leading Web API for MongoDB. 
-> 
-> &nbsp;&nbsp;Done with **love** by the [SoftInstigate Team](http://www.softinstigate.com)
+The leading REST API Server for MongoDB.
+
+[![Build Status](https://travis-ci.org/SoftInstigate/restheart.svg?branch=develop)](https://travis-ci.org/SoftInstigate/restheart)
+[![Issue Stats](http://issuestats.com/github/SoftInstigate/restheart/badge/pr)](http://issuestats.com/github/SoftInstigate/restheart)
+[![Issue Stats](http://issuestats.com/github/SoftInstigate/restheart/badge/issue)](http://issuestats.com/github/SoftInstigate/restheart)
 
 **RESTHeart** connects to **MongoDB** and opens data to the Web: Mobile and JavaScript applications can use the database via **RESTful HTTP API** calls.
 
@@ -16,9 +18,9 @@ Built on strong foundations
 * Built on top of [Undertow](http://undertow.io) web server.
 * Makes use of few, best of breed libraries, check the [pom.xml](https://github.com/SoftInstigate/restheart/blob/master/pom.xml)!
 
-No Development required
+Rapid Development
 ----
-* **No server side development is required** for your web and mobile applications.
+* **No server side development is required** in most of the cases for your web and mobile applications.
 * The **Setup** is simple with convention over configuration approach; **Docker Container** and **Vagrant Box** are available.
 * **Access Control** and **Schema Check** are provided out of the box.
 
@@ -28,7 +30,7 @@ Production ready
 * Severe **Unit** and **Integration** test suite, **Code Check** and **Continuous Integration** process.
 * **Commercial Support** available from [SoftInstigate](http://www.softinstigate.com), the company behind RESTHeart.
 
-Fast
+Fast & Light
 ----
 
 * **High throughput** check the [performance tests](https://softinstigate.atlassian.net/wiki/x/gICM).
@@ -44,8 +46,6 @@ Documentation
 * Issues: [https://softinstigate.atlassian.net/projects/RH](https://softinstigate.atlassian.net/projects/RH)
 
 * Documentation: [https://softinstigate.atlassian.net/wiki/display/RH/Documentation](https://softinstigate.atlassian.net/wiki/x/l4CM)
-
-* Status: [![Build Status](https://travis-ci.org/SoftInstigate/restheart.svg?branch=develop)](https://travis-ci.org/SoftInstigate/restheart)
 
 An Example
 ----
@@ -108,3 +108,7 @@ Integration tests
 Optionally you can run the integration test suite. Make sure __mongod is running__ on localhost on default port 27017 without authentication enabled, i.e. no `--auth` option is specified.
 
     $ mvn verify -DskipITs=false
+
+<hr></hr>
+
+_Made with :heart: by [The SoftInstigate Team](http://www.softinstigate.com/). Follow us on [Twitter](https://twitter.com/softinstigate)_.

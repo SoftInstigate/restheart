@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -20,8 +20,10 @@ package org.restheart.handlers.document;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import java.time.Instant;
 import java.util.List;
 import java.util.TreeMap;
+import org.bson.types.ObjectId;
 import org.restheart.Configuration;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
@@ -33,6 +35,9 @@ import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.HAL_MODE;
 import org.restheart.handlers.RequestContext.TYPE;
+import org.restheart.utils.HttpStatus;
+import org.restheart.utils.RequestHelper;
+import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,8 +73,6 @@ public class DocumentRepresentationFactory {
 
         rep = new Representation(URLUtils.getReferenceLink(context, URLUtils.getParentPath(href), id));
 
-        rep.addProperty("_type", context.getType().name());
-
         data.keySet()
                 .stream().forEach((key) -> rep.addProperty(key, data.get(key)));
 
@@ -99,8 +102,10 @@ public class DocumentRepresentationFactory {
         }
 
         // link templates
-        if (!isEmbedded && (context.getHalMode() == HAL_MODE.FULL
-                || context.getHalMode() == HAL_MODE.F)) {
+        if (!isEmbedded && context.isFullHalMode()) {
+            
+            addSpecialProperties(rep, context.getType(), data);
+            
             if (isBinaryFile(data)) {
                 if (_docIdType == null) {
                     rep.addLink(new Link("rh:data",
@@ -114,13 +119,13 @@ public class DocumentRepresentationFactory {
                     rep.addLink(new Link("rh:bucket", parentPath));
                 }
 
-                rep.addLink(new Link("rh:file", parentPath + "/{fileid}?id_type={type}", true));
+                rep.addLink(new Link("rh:file", parentPath + "/{fileid}{?id_type}", true));
             } else {
                 if (context.isParentAccessible()) {
                     rep.addLink(new Link("rh:coll", parentPath));
                 }
 
-                rep.addLink(new Link("rh:document", parentPath + "/{docid}?id_type={type}", true));
+                rep.addLink(new Link("rh:document", parentPath + "/{docid}{?id_type}", true));
             }
 
             if (!isEmbedded) {
@@ -138,6 +143,27 @@ public class DocumentRepresentationFactory {
 
     private static boolean isBinaryFile(DBObject data) {
         return data.containsField("filename") && data.containsField("chunkSize");
+    }
+    
+    
+    public static void addSpecialProperties(final Representation rep, RequestContext.TYPE type, DBObject data) {
+        rep.addProperty("_type", type.name());
+        
+        Object etag = data.get("_etag");
+
+        if (etag != null && etag instanceof ObjectId) {
+            if (data.get("_lastupdated_on") == null) {
+                // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
+                rep.addProperty("_lastupdated_on", Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString());
+            }
+        }
+
+        Object id = data.get("_id");
+
+        // generate the _created_on timestamp from the _id if this is an instance of ObjectId
+        if (data.get("_created_on") == null && id != null && id instanceof ObjectId) {
+            rep.addProperty("_created_on", Instant.ofEpochSecond(((ObjectId) id).getTimestamp()).toString());
+        }
     }
 
     /**

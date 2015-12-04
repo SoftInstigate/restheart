@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -111,9 +111,10 @@ public class GetCollectionHandler extends PipedHttpHandler {
             CollectionRepresentationFactory crp = new CollectionRepresentationFactory();
             Representation rep = crp.getRepresentation(exchange, context, data, size);
 
+            ResponseHelper.injectEtagHeader(exchange, context.getCollectionProps());
             exchange.setResponseCode(HttpStatus.SC_OK);
 
-            // call the ResponseScriptMetadataHanlder if piped in
+            // call the ResponseTranformerMetadataHandler if piped in
             if (getNext() != null) {
                 DBObject responseContent = rep.asDBObject();
                 context.setResponseContent(responseContent);

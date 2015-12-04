@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -86,6 +86,8 @@ public class PatchDBHandler extends PipedHttpHandler {
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
         if (etag == null) {
+            ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
+            
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
                     "The database's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
             return;

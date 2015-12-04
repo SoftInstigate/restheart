@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -17,9 +17,11 @@
  */
 package org.restheart.utils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import org.xnio.channels.Channels;
 import org.xnio.channels.StreamSourceChannel;
 
@@ -28,8 +30,8 @@ import org.xnio.channels.StreamSourceChannel;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class ChannelReader {
-
-    final static Charset charset = Charset.forName("utf-8");
+    
+    final static Charset CHARSET = StandardCharsets.UTF_8;
 
     /**
      *
@@ -38,17 +40,25 @@ public class ChannelReader {
      * @throws IOException
      */
     public static String read(StreamSourceChannel channel) throws IOException {
-        StringBuilder content = new StringBuilder();
+        final int capacity = 1024;
+        
+        ByteArrayOutputStream os = new ByteArrayOutputStream(capacity);
+        
+        ByteBuffer buf = ByteBuffer.allocate(capacity);
 
-        ByteBuffer buf = ByteBuffer.allocate(128);
-
-        while (Channels.readBlocking(channel, buf) != -1) {
+        int read = Channels.readBlocking(channel, buf);
+        
+        while (read != -1) {
             buf.flip();
-            content.append(charset.decode(buf));
+            os.write(buf.array(), 0, read);
             buf.clear();
+            
+            read = Channels.readBlocking(channel, buf);
         }
-
-        return content.toString();
+        
+        String ret = os.toString(CHARSET.name());
+        
+        return ret;
     }
 
     private ChannelReader() {

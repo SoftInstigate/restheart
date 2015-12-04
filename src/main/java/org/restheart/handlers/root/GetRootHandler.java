@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -55,7 +55,7 @@ public class GetRootHandler extends PipedHttpHandler {
 
         List<DBObject> data = new ArrayList<>();
 
-        if (context.getPagesize() > 0) {
+        if (context.getPagesize() >= 0) {
             List<String> _dbs = getDatabase().getDatabaseNames();
 
             // filter out reserved resources
@@ -67,26 +67,29 @@ public class GetRootHandler extends PipedHttpHandler {
 
             size = dbs.size();
 
-            Collections.sort(dbs); // sort by id
+            if (context.getPagesize() > 0) {
+                Collections.sort(dbs); // sort by id
 
-            // apply page and pagesize
-            dbs = dbs.subList((context.getPage() - 1) * context.getPagesize(), (context.getPage() - 1) * context.getPagesize()
-                    + context.getPagesize() > dbs.size() ? dbs.size() : (context.getPage() - 1) * context.getPagesize() + context.getPagesize());
+                // apply page and pagesize
+                dbs = dbs.subList((context.getPage() - 1) * context.getPagesize(), (context.getPage() - 1) * context.getPagesize()
+                        + context.getPagesize() > dbs.size() ? dbs.size() : (context.getPage() - 1) * context.getPagesize() + context.getPagesize());
 
-            dbs.stream().map((db) -> {
-                if (LocalCachesSingleton.isEnabled()) {
-                    return LocalCachesSingleton.getInstance().getDBProps(db);
-                } else {
-                    return getDatabase().getDatabaseProperties(db, true);
+                dbs.stream().map((db) -> {
+                    if (LocalCachesSingleton.isEnabled()) {
+                        return LocalCachesSingleton.getInstance().getDBProps(db);
+                    } else {
+                        return getDatabase().getDatabaseProperties(db, true);
+                    }
                 }
+                ).forEach((item) -> {
+                    data.add(item);
+                });
             }
-            ).forEach((item) -> {
-                data.add(item);
-            });
         }
 
         exchange.setResponseCode(HttpStatus.SC_OK);
         RootRepresentationFactory rf = new RootRepresentationFactory();
+
         rf.sendRepresentation(exchange, context, rf.getRepresentation(exchange, context, data, size));
         exchange.endExchange();
     }

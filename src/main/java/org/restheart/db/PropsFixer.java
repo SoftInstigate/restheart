@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -97,7 +97,7 @@ public class PropsFixer {
      * @return
      */
     public boolean addDbProps(String dbName) {
-        if (!dbsDAO.existsDatabaseWithName(dbName)) {
+        if (!dbsDAO.doesDbExist(dbName)) {
             return false;
         }
 

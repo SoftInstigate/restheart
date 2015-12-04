@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -111,7 +111,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             try {
                 properties = (DBObject) JSON.parse(contentString);
             } catch (JSONParseException | IllegalArgumentException ex) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Invalid data: No Form data found", ex);
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON", ex);
                 return;
             }
         } else { // multipart form -> file

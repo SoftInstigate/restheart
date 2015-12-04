@@ -1,5 +1,5 @@
 /*
- * RESTHeart - the data REST API server
+ * RESTHeart - the Web API for MongoDB
  * Copyright (C) 2014 - 2015 SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -80,7 +80,7 @@ public class ResponseHelper {
             rep.addProperty("message", message);
         }
 
-        Representation nrep = new Representation("#");
+        Representation nrep = new Representation();
 
         if (t != null) {
             nrep.addProperty("exception", t.getClass().getName());
@@ -147,12 +147,12 @@ public class ResponseHelper {
         }
 
         Object _etag = properties.get("_etag");
-
-        if (ObjectId.isValid("" + _etag)) {
-            ObjectId etag = (ObjectId) _etag;
-
-            exchange.getResponseHeaders().put(Headers.ETAG, etag.toString());
+        
+        if (_etag == null || ! (_etag instanceof ObjectId)) {
+            return;
         }
+
+        exchange.getResponseHeaders().put(Headers.ETAG, _etag.toString());
     }
 
     private ResponseHelper() {
