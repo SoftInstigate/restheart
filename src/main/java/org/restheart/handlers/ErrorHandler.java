@@ -58,7 +58,13 @@ public class ErrorHandler implements HttpHandler {
             int errCode = mce.getCode();
 
             if (errCode == 13) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "The MongoDB user is not authorized to access the resource (wrong password or insufficient permissions).");
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "The MongoDB user is not authorized to access the resource (insufficient permissions).");
+            } else {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request", mce);
+            }
+            
+            if (errCode == 18) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "Wrong MongoDB user credentials (wrong password or need to specify the authentication dababase with 'authSource=<db>' option in mongo-uri).");
             } else {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request", mce);
             }
