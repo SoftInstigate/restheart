@@ -18,12 +18,12 @@
 package org.restheart.db;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.CommandResult;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoException;
 
 import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.IllegalQueryParamenterException;
@@ -163,20 +163,28 @@ public class DbsDAO implements Database {
 
         DBCollection propsColl = collectionDAO.getCollection(dbName, "_properties");
 
-        DBObject row = propsColl.findOne(PROPS_QUERY);
+        DBObject properties = propsColl.findOne(PROPS_QUERY);
 
-        if (row != null) {
-            row.put("_id", dbName);
+        if (properties != null) {
+            properties.put("_id", dbName);
         } else if (fixMissingProperties) {
             try {
                 new PropsFixer().addDbProps(dbName);
                 return getDatabaseProperties(dbName, false);
-            } catch (Throwable t) {
-                LOGGER.error("error fixing _properties of db {}", dbName, t);
+            } catch (MongoException mce) {
+                int errCode = mce.getCode();
+
+                if (errCode == 13) {
+                    // mongodb user is not allowed to write (no readWrite role)
+                    // just return properties with _id
+                    properties = new BasicDBObject("_id", dbName);
+                } else {
+                    throw mce;
+                }
             }
         }
 
-        return row;
+        return properties;
     }
 
     /**

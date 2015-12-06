@@ -23,15 +23,14 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoException;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 
 import org.restheart.utils.HttpStatus;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.Iterator;
 
 import org.bson.BSONObject;
 import org.bson.types.ObjectId;
@@ -271,11 +270,19 @@ class CollectionDAO {
             try {
                 new PropsFixer().addCollectionProps(dbName, collName);
                 return getCollectionProps(dbName, collName, false);
-            } catch (Throwable t) {
-                LOGGER.error("error fixing _properties of collection {}.{}", dbName, collName, t);
+            } catch (MongoException mce) {
+                int errCode = mce.getCode();
+
+                if (errCode == 13) {
+                    // mongodb user is not allowed to write (no readWrite role)
+                    // just return properties with _id
+                    properties = new BasicDBObject("_id", collName);
+                } else {
+                    throw mce;
+                }
             }
         }
-
+        
         return properties;
     }
 
@@ -297,7 +304,8 @@ class CollectionDAO {
             final DBObject properties,
             final ObjectId requestEtag,
             final boolean updating,
-            final boolean patching) {
+            final boolean patching
+    ) {
         if (patching && !updating) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
         }
@@ -368,7 +376,10 @@ class CollectionDAO {
      * (otherwise http error code is returned)
      * @return the HttpStatus code to set in the http response
      */
-    OperationResult deleteCollection(final String dbName, final String collName, final ObjectId requestEtag) {
+    OperationResult deleteCollection(final String dbName,
+            final String collName,
+            final ObjectId requestEtag
+    ) {
         DBCollection coll = getCollection(dbName, collName);
         DBCollection propsColl = getCollection(dbName, "_properties");
 
