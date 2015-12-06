@@ -17,7 +17,9 @@
  */
 package org.restheart.db;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
+import com.mongodb.CommandResult;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -78,11 +80,22 @@ class CollectionDAO {
             return false;
         }
 
-        // collStats return an error for not existing collections
-        return (client.getDB(dbName)
-                .command("{ collStats: " + collName
-                        + " , scale : 1024, verbose: false } ")
-                .get("errmsg") != null);
+        BasicDBObject query = new BasicDBObject();
+        
+        query.put("listCollections", 1);
+        query.put("filter", 
+                new BasicDBObject("filter", 
+                        new BasicDBObject("name", collName)));
+        
+        CommandResult res = client.getDB(dbName)
+                .command(query);
+        
+        return (res.get("cursor") != null &&
+                res.get("cursor") instanceof BasicDBObject &&
+                ((BasicDBObject)res.get("cursor")).get("firstBatch") != null &&
+                ((BasicDBObject)res.get("cursor")).get("firstBatch") instanceof BasicDBList &&
+                ((BasicDBList)((BasicDBObject)res.get("cursor")).get("firstBatch")).isEmpty()
+                );
     }
 
     /**
