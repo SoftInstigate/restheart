@@ -95,8 +95,9 @@ public class PropsFixer {
      *
      * @param dbName
      * @return
+     * @throws MongoException
      */
-    public boolean addDbProps(String dbName) {
+    public boolean addDbProps(String dbName) throws MongoException {
         if (!dbsDAO.doesDbExist(dbName)) {
             return false;
         }

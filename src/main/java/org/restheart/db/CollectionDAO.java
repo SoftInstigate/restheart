@@ -79,9 +79,11 @@ class CollectionDAO {
             return false;
         }
 
-        BasicDBObject query = new BasicDBObject("name", dbName + "." + collName);
-
-        return client.getDB(dbName).getCollection("system.namespaces").findOne(query) != null;
+        // collStats return an error for not existing collections
+        return (client.getDB(dbName)
+                .command("{ collStats: " + collName
+                        + " , scale : 1024, verbose: false } ")
+                .get("errmsg") != null);
     }
 
     /**
@@ -266,8 +268,12 @@ class CollectionDAO {
         if (properties != null) {
             properties.put("_id", collName);
         } else if (fixMissingProperties) {
-            new PropsFixer().addCollectionProps(dbName, collName);
-            return getCollectionProps(dbName, collName, false);
+            try {
+                new PropsFixer().addCollectionProps(dbName, collName);
+                return getCollectionProps(dbName, collName, false);
+            } catch (Throwable t) {
+                LOGGER.error("error fixing _properties of collection {}.{}", dbName, collName, t);
+            }
         }
 
         return properties;
@@ -295,7 +301,7 @@ class CollectionDAO {
         if (patching && !updating) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
         }
-        
+
         DB db = client.getDB(dbName);
 
         final DBCollection propsColl = db.getCollection("_properties");
@@ -336,15 +342,15 @@ class CollectionDAO {
         if (patching) {
             propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)),
                     new BasicDBObject("$set", content), true, false);
-            
+
             return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else {
             propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)),
                     content, true, false);
-            
+
             // create the default indexes
             createDefaultIndexes(db.getCollection(collName));
-            
+
             if (updating) {
                 return new OperationResult(HttpStatus.SC_OK, newEtag);
             } else {

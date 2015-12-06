@@ -18,6 +18,7 @@
 package org.restheart.db;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.CommandResult;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -104,7 +105,9 @@ public class DbsDAO implements Database {
             return false;
         }
 
-        return client.getDB(dbName).getCollection("system.namespaces").findOne() != null;
+        // at least the system.indexes collection exists for an existing db
+        return (((int) client.getDB(dbName)
+                .command("dbStats").get("collections")) > 0);
     }
 
     /**
@@ -165,8 +168,12 @@ public class DbsDAO implements Database {
         if (row != null) {
             row.put("_id", dbName);
         } else if (fixMissingProperties) {
-            new PropsFixer().addDbProps(dbName);
-            return getDatabaseProperties(dbName, false);
+            try {
+                new PropsFixer().addDbProps(dbName);
+                return getDatabaseProperties(dbName, false);
+            } catch (Throwable t) {
+                LOGGER.error("error fixing _properties of db {}", dbName, t);
+            }
         }
 
         return row;
@@ -256,7 +263,7 @@ public class DbsDAO implements Database {
             final ObjectId requestEtag,
             final boolean updating,
             final boolean patching) {
-        
+
         if (patching && !updating) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
         }
@@ -297,11 +304,11 @@ public class DbsDAO implements Database {
 
         if (patching) {
             coll.update(PROPS_QUERY, new BasicDBObject("$set", content), true, false);
-            
+
             return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else {
             coll.update(PROPS_QUERY, content, true, false);
-            
+
             if (updating) {
                 return new OperationResult(HttpStatus.SC_OK, newEtag);
             } else {
