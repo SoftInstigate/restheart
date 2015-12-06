@@ -205,7 +205,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         if (httpHandler != null) {
             httpHandler.handleRequest(exchange, context);
         } else {
-            LOGGER.error("Call to getPipedHttpHandler({}, {}) can't find any PipedHttpHandler", context.getType(), context.getMethod());
+            LOGGER.debug("Call to getPipedHttpHandler({}, {}) can't find any PipedHttpHandler", context.getType(), context.getMethod());
             ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
     }
