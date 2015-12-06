@@ -57,8 +57,6 @@ public class IndexesRepresentationFactory {
 
         Representation rep = new Representation(requestPath + queryString);
 
-        rep.addProperty("_type", context.getType().name());
-
         if (size >= 0) {
             rep.addProperty("_size", size);
         }
@@ -72,40 +70,45 @@ public class IndexesRepresentationFactory {
             rep.addProperty("_returned", count);
 
             if (!embeddedData.isEmpty()) {
-                embeddedDocuments(embeddedData, requestPath, rep);
+                embeddedDocuments(embeddedData, requestPath, rep, context.isFullHalMode());
             }
         }
-        
-        // curies
-        if (context.isParentAccessible()) {
-            // this can happen due to mongo-mounts mapped URL
-            if (context.getCollectionName().endsWith(RequestContext.FS_FILES_SUFFIX)) {
-                rep.addLink(new Link("rh:bucket", URLUtils.getParentPath(requestPath)));
-            } else {
-                rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath)));
+
+        if (context.isFullHalMode()) {
+            rep.addProperty("_type", context.getType().name());
+
+            if (context.isParentAccessible()) {
+                // this can happen due to mongo-mounts mapped URL
+                if (context.getCollectionName().endsWith(RequestContext.FS_FILES_SUFFIX)) {
+                    rep.addLink(new Link("rh:bucket", URLUtils.getParentPath(requestPath)));
+                } else {
+                    rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath)));
+                }
             }
+
+            rep.addLink(new Link("rh:indexes", requestPath));
+
+            rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
+                    + "/{rel}.html", true), true);
         }
-        
-        rep.addLink(new Link("rh:indexes", requestPath));
-        
-        rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL 
-                + "/{rel}.html", true), true);
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
         exchange.getResponseSender().send(rep.toString());
     }
 
-    private static void embeddedDocuments(List<DBObject> embeddedData, String requestPath, Representation rep) {
+    private static void embeddedDocuments(List<DBObject> embeddedData, String requestPath, Representation rep, boolean isHalFull) {
         embeddedData.stream().forEach((d) -> {
             Object _id = d.get("_id");
 
             if (_id != null && (_id instanceof String || _id instanceof ObjectId)) {
-                Representation nrep = new Representation(requestPath + "/" + _id.toString());
+                Representation nrep = new Representation();
 
-                nrep.addProperty("_type", RequestContext.TYPE.INDEX.name());
+                if (isHalFull) {
+                    nrep.addProperty("_type", RequestContext.TYPE.INDEX.name());
+                }
 
                 nrep.addProperties(d);
-
+                
                 rep.addRepresentation("rh:index", nrep);
             } else {
                 rep.addWarning("index with _id " + _id + (_id == null ? " " : " of type " + _id.getClass().getSimpleName()) + "filtered out. Indexes can only have ids of type String");
