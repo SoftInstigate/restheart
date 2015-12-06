@@ -17,7 +17,9 @@
  */
 package org.restheart.db;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
+import com.mongodb.CommandResult;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -106,8 +108,15 @@ public class DbsDAO implements Database {
         }
 
         // at least the system.indexes collection exists for an existing db
-        return (((int) client.getDB(dbName)
-                .command("dbStats").get("collections")) > 0);
+        CommandResult res = client.getDB(dbName)
+                .command("listCollections");
+        
+        return (res.get("cursor") != null &&
+                res.get("cursor") instanceof BasicDBObject &&
+                ((BasicDBObject)res.get("cursor")).get("firstBatch") != null &&
+                ((BasicDBObject)res.get("cursor")).get("firstBatch") instanceof BasicDBList &&
+                ((BasicDBList)((BasicDBObject)res.get("cursor")).get("firstBatch")).size() > 0
+                );
     }
 
     /**
