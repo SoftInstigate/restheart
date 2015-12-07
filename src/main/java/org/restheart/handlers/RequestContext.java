@@ -97,6 +97,7 @@ public class RequestContext {
     public static final String FS_CHUNKS_SUFFIX = ".chunks";
     public static final String FS_FILES_SUFFIX = ".files";
     public static final String _INDEXES = "_indexes";
+    public static final String AGGREGATIONS_QPARAM_KEY = "aggrs";
     public static final String _AGGREGATIONS = "_aggrs";
     public static final String BINARY_CONTENT = "binary";
 

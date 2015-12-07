@@ -122,7 +122,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
 
     private void addAggregationsLinks(final RequestContext context, final Representation rep, final String requestPath) {
 
-        Object _aggregations = context.getCollectionProps().get(RequestContext._AGGREGATIONS);
+        Object _aggregations = context.getCollectionProps().get(RequestContext.AGGREGATIONS_QPARAM_KEY);
 
         if (_aggregations instanceof BasicDBList) {
             BasicDBList aggregations = (BasicDBList) _aggregations;
