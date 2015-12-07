@@ -226,7 +226,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
             if (!_qvars.isPresent()) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
-                        "illegal qvars paramenter (empty)");
+                        "illegal avars paramenter (empty)");
                 return;
             }
 
@@ -235,14 +235,14 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
                 if (!(qvars instanceof BasicDBObject)) {
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
-                            "illegal qvars paramenter, it is not a json object: " + qvars + " => " + qvars.getClass().getSimpleName());
+                            "illegal avars paramenter, it is not a json object: " + qvars + " => " + qvars.getClass().getSimpleName());
                     return;
                 } else {
                     rcontext.setAggregationVars((BasicDBObject) qvars);
                 }
             } catch (Throwable t) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
-                        "illegal qvars paramenter: " + _qvars.get(), t);
+                        "illegal avars paramenter: " + _qvars.get(), t);
                 return;
             }
         }

@@ -48,7 +48,7 @@ public class GetAggreationIT extends AbstactIT {
     public void testGetAggregationPipeline() throws Exception {
         String uri = "avg_ages";
 
-        String aggregationsMetadata = "{\"aggregations\": ["
+        String aggregationsMetadata = "{\"aggrs\": ["
                 + "{"
                 + "\"type\":\"aggregation\","
                 + "\"uri\":\"" + uri + "\","
@@ -69,7 +69,7 @@ public class GetAggreationIT extends AbstactIT {
     public void testGetMapReduce() throws Exception {
         String uri = "avg_ages";
 
-        String aggregationsMetadata = "{\"aggregations\": ["
+        String aggregationsMetadata = "{\"aggrs\": ["
                 + "{"
                 + "\"type\":\"mapReduce\","
                 + "\"uri\":\"" + uri + "\","
@@ -87,7 +87,7 @@ public class GetAggreationIT extends AbstactIT {
     public void testGetMapReduceWithVariable() throws Exception {
         String uri = "avg_ages";
 
-        String aggregationsMetadata = "{\"aggregations\": ["
+        String aggregationsMetadata = "{\"aggrs\": ["
                 + "{"
                 + "\"type\":\"mapReduce\"" + ","
                 + "\"uri\": \"" + uri + "\","
@@ -169,7 +169,7 @@ public class GetAggreationIT extends AbstactIT {
     public void testUnboundVariable() throws Exception {
         String uri = "avg_ages";
 
-        String aggregationsMetadata = "{\"aggregations\": ["
+        String aggregationsMetadata = "{\"aggrs\": ["
                 + "{"
                 + "\"type\":\"mapReduce\"" + ","
                 + "\"uri\": \"" + uri + "\","
