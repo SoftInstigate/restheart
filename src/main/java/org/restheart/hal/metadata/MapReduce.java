@@ -20,8 +20,6 @@ package org.restheart.hal.metadata;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.util.regex.Matcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * represents a map reduce.
@@ -60,7 +58,7 @@ public class MapReduce extends AbstractAggregationOperation {
      *   "uri":"test",
      *   "map":"function() { emit(this.name, this.age) }",
      *   "reduce":"function(key, values) { return Array.avg(values) }",
-     *   "query":{"name":{"_$exists":true}}
+     *   "query": {"name":{"_$exists":true}}
      * }]
      * </code>
      * @throws org.restheart.hal.metadata.InvalidMetadataException

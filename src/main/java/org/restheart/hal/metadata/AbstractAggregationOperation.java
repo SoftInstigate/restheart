@@ -24,6 +24,7 @@ import com.mongodb.DBObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.restheart.handlers.RequestContext;
 
 /**
  *
@@ -44,7 +45,7 @@ public abstract class AbstractAggregationOperation {
                 "aggregation pipeline", "aggregationPipeline", "pipeline",
                 "aggregation-pipeline", "aggregation", "aggregate", "ap"});
 
-    public static final String AGGREGATIONS_ELEMENT_NAME = "aggregations";
+    public static final String AGGREGATIONS_ELEMENT_NAME = RequestContext.AGGREGATIONS_QPARAM_KEY;
 
     public static final String URI_ELEMENT_NAME = "uri";
     public static final String TYPE_ELEMENT_NAME = "type";

@@ -36,8 +36,6 @@ import org.apache.http.util.EntityUtils;
 import org.junit.Test;
 import org.restheart.handlers.RequestContext;
 import static org.restheart.test.integration.AbstactIT.adminExecutor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Andrea Di Cesare <andrea@softinstigate.com>
