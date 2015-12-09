@@ -91,7 +91,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * and PipedHttpHandler objects
      */
     private void defaultInit() {
-        LOGGER.info("Initialize default HTTP handlers:");
+        LOGGER.debug("Initialize default HTTP handlers:");
         // ROOT handlers
         putPipedHttpHandler(TYPE.ROOT, METHOD.GET, new GetRootHandler());
 

@@ -31,9 +31,6 @@ import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
-import org.restheart.utils.ResponseHelper;
-
-import io.undertow.server.HttpServerExchange;
 
 import java.util.ArrayList;
 import java.util.Deque;
@@ -77,26 +74,6 @@ public class DbsDAO implements Database {
 
     /**
      *
-     * WARNING: slow method.
-     *
-     * @param exchange
-     * @param dbName
-     * @return
-     * @deprecated
-     *
-     */
-    @Override
-    public boolean checkDbExists(HttpServerExchange exchange, String dbName) {
-        if (!doesDbExist(dbName)) {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * WARNING: slow method.
-     *
      * @param dbName
      * @return
      *
@@ -108,15 +85,7 @@ public class DbsDAO implements Database {
         }
 
         // at least the system.indexes collection exists for an existing db
-        CommandResult res = client.getDB(dbName)
-                .command("listCollections");
-        
-        return (res.get("cursor") != null &&
-                res.get("cursor") instanceof BasicDBObject &&
-                ((BasicDBObject)res.get("cursor")).get("firstBatch") != null &&
-                ((BasicDBObject)res.get("cursor")).get("firstBatch") instanceof BasicDBList &&
-                ((BasicDBList)((BasicDBObject)res.get("cursor")).get("firstBatch")).size() > 0
-                );
+        return client.getDB(dbName).collectionExists("system.indexes");
     }
 
     /**
