@@ -177,18 +177,6 @@ public interface Database {
 
     /**
      *
-     * WARNING: slow method.
-     *
-     * @param exchange
-     * @param dbName
-     * @return
-     * @deprecated
-     *
-     */
-    boolean checkDbExists(HttpServerExchange exchange, String dbName);
-
-    /**
-     *
      * @param dbName
      * @param collection
      * @param indexId
