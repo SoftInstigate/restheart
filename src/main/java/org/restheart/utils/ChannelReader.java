@@ -30,7 +30,7 @@ import org.xnio.channels.StreamSourceChannel;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class ChannelReader {
-    
+
     final static Charset CHARSET = StandardCharsets.UTF_8;
 
     /**
@@ -41,24 +41,17 @@ public class ChannelReader {
      */
     public static String read(StreamSourceChannel channel) throws IOException {
         final int capacity = 1024;
-        
+
         ByteArrayOutputStream os = new ByteArrayOutputStream(capacity);
         
         ByteBuffer buf = ByteBuffer.allocate(capacity);
-
-        int read = Channels.readBlocking(channel, buf);
         
-        while (read != -1) {
+        while (Channels.readBlocking(channel, buf) != -1) {
             buf.flip();
-            os.write(buf.array(), 0, read);
+            os.write(buf.array(), 0, buf.remaining());
             buf.clear();
-            
-            read = Channels.readBlocking(channel, buf);
         }
-        
-        String ret = os.toString(CHARSET.name());
-        
-        return ret;
+        return new String(os.toByteArray(), CHARSET);
     }
 
     private ChannelReader() {
