@@ -99,7 +99,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     private void embeddedDbs(RequestContext context, List<DBObject> embeddedData, boolean trailingSlash, String requestPath, Representation rep) {
-        embeddedData.stream().forEach((d) -> {
+        embeddedData.stream().filter(d -> d != null).forEach((d) -> {
             Object _id = d.get("_id");
 
             if (_id != null && (_id instanceof String || _id instanceof ObjectId)) {

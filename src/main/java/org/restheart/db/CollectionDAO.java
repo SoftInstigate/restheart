@@ -17,9 +17,7 @@
  */
 package org.restheart.db;
 
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
-import com.mongodb.CommandResult;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -62,40 +60,6 @@ class CollectionDAO {
         FIELDS_TO_RETURN = new BasicDBObject();
         FIELDS_TO_RETURN.put("_id", 1);
         FIELDS_TO_RETURN.put("_etag", 1);
-    }
-
-    /**
-     * Checks if the collection exists.
-     *
-     * WARNING: slow method. perf tests show this can take up to 35% overall
-     * requests processing time when getting data from a collection
-     *
-     * @deprecated
-     * @param dbName the database name of the collection
-     * @param collName the collection name
-     * @return true if the specified collection exits in the db dbName
-     */
-    boolean doesCollectionExist(final String dbName, final String collName) {
-        if (dbName == null || dbName.isEmpty() || dbName.contains(" ")) {
-            return false;
-        }
-
-        BasicDBObject query = new BasicDBObject();
-        
-        query.put("listCollections", 1);
-        query.put("filter", 
-                new BasicDBObject("filter", 
-                        new BasicDBObject("name", collName)));
-        
-        CommandResult res = client.getDB(dbName)
-                .command(query);
-        
-        return (res.get("cursor") != null &&
-                res.get("cursor") instanceof BasicDBObject &&
-                ((BasicDBObject)res.get("cursor")).get("firstBatch") != null &&
-                ((BasicDBObject)res.get("cursor")).get("firstBatch") instanceof BasicDBList &&
-                ((BasicDBList)((BasicDBObject)res.get("cursor")).get("firstBatch")).isEmpty()
-                );
     }
 
     /**
