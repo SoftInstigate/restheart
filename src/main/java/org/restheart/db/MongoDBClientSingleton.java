@@ -17,6 +17,7 @@
  */
 package org.restheart.db;
 
+import com.mongodb.CommandResult;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import org.restheart.Configuration;
@@ -34,6 +35,8 @@ public class MongoDBClientSingleton {
     private static MongoClientURI mongoUri;
 
     private MongoClient mongoClient;
+
+    private static String serverVersion;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoDBClientSingleton.class);
 
@@ -63,6 +66,21 @@ public class MongoDBClientSingleton {
     private void setup() throws UnknownHostException {
         if (isInitialized()) {
             mongoClient = new MongoClient(mongoUri);
+        }
+
+        try {
+            CommandResult res = mongoClient.getDB("admin").command("buildInfo");
+            Object _version = res.get("version");
+
+            if (_version != null && _version instanceof String) {
+                serverVersion = (String) _version;
+            } else {
+                LOGGER.warn("Cannot get the MongoDb version.");
+                serverVersion = "3.x?";
+            }
+        } catch (Throwable t) {
+            LOGGER.warn("Cannot get the MongoDb version.");
+            serverVersion = "3.x?";
         }
     }
 
@@ -96,5 +114,12 @@ public class MongoDBClientSingleton {
      */
     public static boolean isInitialized() {
         return initialized;
+    }
+
+    /**
+     * @return the serverVersion
+     */
+    public static String getServerVersion() {
+        return serverVersion;
     }
 }
