@@ -318,7 +318,10 @@ public final class Bootstrapper {
 
         try {
             MongoDBClientSingleton.init(configuration);
+            //force setup
+            MongoDBClientSingleton.getInstance();
             LOGGER.info("MongoDB connection pool initialized");
+            LOGGER.info("MongoDB version {}", MongoDBClientSingleton.getServerVersion());
         } catch (Throwable t) {
             LOGGER.error("Error connecting to MongoDB. exiting..", t);
             stopServer(false, !pidFileAlreadyExists);
