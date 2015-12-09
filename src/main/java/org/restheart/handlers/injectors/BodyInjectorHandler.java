@@ -203,7 +203,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                 ? (String) target.get(FILENAME)
                 : formDataFilename;
         if (filename == null || filename.isEmpty()) {
-            LOGGER.warn("No filename in neither multipart content disposition header nor in properties! Using default value");
+            LOGGER.debug("No filename in neither multipart content disposition header nor in properties! Using default value");
             filename = defaultFilename;
         }
         target.put(FILENAME, filename);
