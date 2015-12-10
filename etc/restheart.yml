@@ -1,6 +1,6 @@
-## RESTHeart configuration file.
+## RESTHeart Configuration File.
 ---
-#### listeners
+#### Listeners
 
 # Listeners allow to specify the protocol, ip, port and to use.
 # The supported protocols are: http, https and ajp. You can setup a listener per protocol (up to 3).
@@ -21,41 +21,41 @@ ajp-listener: false
 ajp-host: 0.0.0.0
 ajp-port: 8009
 
-#### SSL configuration
+#### SSL Configuration
 
 # Configure the keystore to enable the https listener.
 
 # RESTHeart comes with a self-signed certificate that makes straightforward enabling https.
 # Specify use-embedded-keystore: true to use it (this is the default setting).
-# Using the self-signed certificate leads to issues with some clients; 
+# Using the self-signed certificate leads to issues with some clients;
 # for instance, with curl you need to specify the "--insecure" option or you'll get an error message.
 
 use-embedded-keystore: true
 
 # To use your own certificate you need to import it (and eventually the CA certificates chain) into a java keystore
-# and speficy use-embedded-keystore: false and the keystore-file,keystore-password and certpassword configuration properties. 
+# and specify use-embedded-keystore: false and the keystore-file,keystore-password and certpassword configuration properties.
 # Refer to the java keystore documentation for that.
 
 #keystore-file: /path/to/keystore/file
 #keystore-password: password
 #certpassword: password
 
-#### mongodb 
+#### MongoDB
 
-# secify the mongodb connection using a Mongo Client URI. 
-# the format of the URI is:
+# Specify the mongodb connection using a Mongo Client URI.
+# The format of the URI is:
 #    mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
 #
-# more information at http://api.mongodb.org/java/current/com/mongodb/MongoClientURI.html
+# More information at http://api.mongodb.org/java/current/com/mongodb/MongoClientURI.html
 
 mongo-uri: mongodb://127.0.0.1
 
-#### static web resources
+#### Static Web Resources
 
-# static web resources to bind to the specified URL.
-# the 'what' property is the path of the directory containing the resources. 
-# the path is either absolute (starting with /) or relative to the restheart.jar directory
-# if embedded is true, the resources are either included in the restheart.jar or in the classpath
+# Static web resources to bind to the specified URL.
+# The 'what' property is the path of the directory containing the resources.
+# The path is either absolute (starting with /) or relative to the restheart.jar directory
+# If embedded is true, the resources are either included in the restheart.jar or in the classpath
 
 static-resources-mounts:
     - what: browser
@@ -64,7 +64,7 @@ static-resources-mounts:
       secured: false
       embedded: true
 
-#### application logic
+#### Application Logic
 
 # RESTHeart has a pipeline architecture where specialized undertow handlers are chained to serve the requests.
 # In order to provide additional application logic, custom hanlders pipes can be bound under the /_logic URL.
@@ -91,15 +91,15 @@ application-logic-mounts:
       where: /ic
       secured: true
 
-### metadata named singletons
+### Metadata Named Singletons
 
-# metadata implementation can rely on singletons, this section configures the
+# Metadata implementation can rely on singletons, this section configures the
 # singleton factory #org.restheart.hal.metadata.singletons.NamedSingletonsFactory
 
 metadata-named-singletons:
-    # checkers group used by handler:
+    # Checkers group used by handler:
     # org.restheart.handlers.metadata.CheckMetadataHandler
-    # more information in checkers javadoc
+    # More information in checkers javadoc
     - group: checkers
       interface: org.restheart.hal.metadata.singletons.Checker
       singletons:
@@ -112,10 +112,10 @@ metadata-named-singletons:
         - name: oidsToStrings
           class: org.restheart.hal.metadata.singletons.OidsAsStringsTransformer
 
-    # checkers group used by handlers: 
+    # Checkers group used by handlers:
     # org.restheart.handlers.metadata.RequestTransformerMetadataHandler and
     # org.restheart.handlers.metadata.ResponseTransformerMetadataHandler
-    # more information in transformers javadoc
+    # More information in transformers javadoc
     - group: transformers
       interface: org.restheart.hal.metadata.singletons.Transformer
       singletons:
@@ -124,33 +124,33 @@ metadata-named-singletons:
         - name: filterProperties
           class: org.restheart.hal.metadata.singletons.FilterTransformer
 
-### security 
+### Security
 
 # The security is configured by setting:
 
 # idm: the Identity Manager responsible of authentication
 # access-manager: the Access Manager responsible of authorization
 # The RESTHeart security is pluggable and you can provide you own implementation of both IDM and AM.
-# the provided default implementations of IDM and AM are SimpleFileIdentityManager, DbIdentityManager and SimpleAccessManager.
+# The provided default implementations of IDM and AM are SimpleFileIdentityManager, DbIdentityManager and SimpleAccessManager.
 # conf-file paths are either absolute (starting with /) or relative to the restheart.jar file path
 
-idm:    
+idm:
     implementation-class: org.restheart.security.impl.SimpleFileIdentityManager
     conf-file: ./etc/security.yml
-access-manager:    
+access-manager:
     implementation-class: org.restheart.security.impl.SimpleAccessManager
     conf-file: ./etc/security.yml
 
-# authentication token
+# Authentication Token
 
-# note: you need to pay attention to the authentitcation token in case of multi-node deployments (horizontal scalability).
-# in this case, you need to either disable it or use a load balancer with the sticky session option 
+# Note: you need to pay attention to the authentitcation token in case of multi-node deployments (horizontal scalability).
+# In this case, you need to either disable it or use a load balancer with the sticky session option
 # or use a distributed auth token cache implementation (not provided in the current version).
 
 auth-token-enabled: true
 auth-token-ttl: 15
-    
-#### logging
+
+#### Logging
 
 # enable-log-console: true => log messages to the console (default value: true)
 # enable-log-file: true => log messages to a file (default value: true)
@@ -162,12 +162,12 @@ enable-log-file: false
 enable-log-console: true
 log-level: INFO
 
-#### performace settings
+#### Performace Settings
 
-## eager db cursor preallocation policy
-# in big collections, reading a far page involves skipping the db cursor for many documents resulting in a performance bottleneck
-# for instance, with default pagesize of 100, a GET with page=50.000 involves 500.000 skips on the db cursor.
-# the eager db cursor preallocation engine boosts up performaces (in some use cases, up to 1000%). the following options control its behavior.
+## Eager DB Cursor Preallocation Policy
+# In big collections, reading a far page involves skipping the db cursor for many documents resulting in a performance bottleneck
+# For instance, with default pagesize of 100, a GET with page=50.000 involves 500.000 skips on the db cursor.
+# The eager db cursor preallocation engine boosts up performaces (in some use cases, up to 1000%). the following options control its behavior.
 
 eager-cursor-allocation-pool-size: 100
 
@@ -180,27 +180,27 @@ eager-cursor-allocation-random-slice-min-width: 1000
 # In order to save bandwitdth RESTHeart can force requests to support the giz encoding (if not, requests will be rejected)
 force-gzip-encoding: false
 
-# local-cache allows to cache the db and collection properties to drammatically improve performaces. 
+# local-cache allows to cache the db and collection properties to drammatically improve performaces.
 # Without caching, a GET on a document would requires two additional queries to retrieve the db and the collection properties.
-# pay attention to local caching only in case of multi-node deployments (horizontal scalability). 
-# In this case a change in a db or collection properties would reflect on other nodes at worst after the TTL (cache entries time to live). 
+# Pay attention to local caching only in case of multi-node deployments (horizontal scalability).
+# In this case a change in a db or collection properties would reflect on other nodes at worst after the TTL (cache entries time to live).
 # In most of the cases Dbs and collections properties only change at development time.
 
 local-cache-enabled: true
-# TTL in milliseconds; specify a value < 0 to never expire cached entries 
+# TTL in milliseconds; specify a value < 0 to never expire cached entries
 local-cache-ttl: 1000
 
-# to set a limit for the maximum number of concurrent requests being served
+# Limit for the maximum number of concurrent requests being served
 requests-limit: 1000
 
-# the number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
-io-threads: 2 
+# Number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
+io-threads: 2
 
-# the number of threads created for blocking tasks (such as ones involving db access). suggested value: core*16
-worker-threads: 8 
+# Number of threads created for blocking tasks (such as ones involving db access). suggested value: core*16
+worker-threads: 8
 
-# use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
+# Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
 buffer-size: 16384
 buffers-per-region: 20
-# should the buffer pool use direct buffers, this instructs the JVM to use native (if possible) I/O operations on the buffers
+# Should the buffer pool use direct buffers, this instructs the JVM to use native (if possible) I/O operations on the buffers
 direct-buffers: true
