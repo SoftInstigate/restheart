@@ -1,21 +1,20 @@
 ## RESTHeart simple security configuration file.
-
 ---
-## configuration for file based Identity Manager
+## Configuration for file based Identity Manager
 users:
     - userid: user1
       password: changeit
       roles: [powerusers]
-          
+
     - userid: user2
       password: changeit
       roles: [users]
-    
+
     - userid: admin
       password: changeit
       roles: [users, admins]
 
-## configuration for db based Identity Manager
+## Configuration for db based Identity Manager
 dbim:
     - db: userbase
       coll: accounts
@@ -24,37 +23,37 @@ dbim:
       cache-ttl: 60000
       cache-expire-policy: AFTER_WRITE
 
-## configuration for file based Access Manager
+## Configuration for file based Access Manager
 
-## look at undertow documentation for information about predictates syntax 
+## Look at undertow documentation for information about predictates syntax
 ## http://undertow.io/documentation/core/predicates-attributes-handlers.html
-## the special role $unauthenticated allows to give permissions without requiring authentication
+## The special role $unauthenticated allows to give permissions without requiring authentication
 permissions:
     - role: admins
       predicate: path-prefix[path="/"]
-      
+
     - role: $unauthenticated
       predicate: path-prefix[path="/mydb/refcoll1"] and method[value="GET"]
-      
+
     - role: powerusers
       predicate: path-prefix[path="/mydb"] and method[value="GET"]
-      
+
     - role: powerusers
       predicate: path-prefix[path="/mytmpdb"]
-      
+
     - role: users
       predicate: path-prefix[path="/mydb/refcoll2"] and method[value="GET"]
-    
+
     - role: users
       predicate: path[path="/mydb/refcoll2"] and method[value="GET"]
-      
+
     - role: users
       predicate: (path[path="/tmpdb2"] or path[path="/tmpdb3"]) and method[value="PUT"]
-    
-    # this to check the path-template predicate
+
+    # This to check the path-template predicate
     - role: users
       predicate: path-template[value="/tmpdb2/{username}"] and equals[%u, "${username}"]
-    
-    # this to check the regex predicate
+
+    # This to check the regex predicate
     - role: users
       predicate: regex[pattern="/tmpdb3/(.*?)", value="%R", full-match=true] and equals[%u, "${1}"]
