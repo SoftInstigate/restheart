@@ -133,11 +133,11 @@ public final class Bootstrapper {
                 if (RESTHEART_VERSION != null) {
                     LOGGER.info("version {}", RESTHEART_VERSION);
                 }
-                
+
                 LOGGER.error("Fork is not supported on Windows");
 
                 LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart stopped").reset().toString());
-                
+
                 System.exit(-1);
             }
 
@@ -390,17 +390,18 @@ public final class Bootstrapper {
             }
         }
 
-        try {
+        if (MongoDBClientSingleton.isInitialized()) {
+            MongoClient client = MongoDBClientSingleton.getInstance().getClient();
+
             if (!silent) {
-                LOGGER.info("Flushing and closing the MongoDB client...");
+                LOGGER.info("Closing MongoDB client connections...");
             }
-            if (MongoDBClientSingleton.isInitialized()) {
-                MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-                client.fsync(false);
+
+            try {
                 client.close();
+            } catch (Throwable t) {
+                LOGGER.warn("Error closing the MongoDB client connection", t);
             }
-        } catch (Throwable t) {
-            LOGGER.error("Error flushing and closing the MongoDB client", t);
         }
 
         Path pidFilePath = FileUtils.getPidFilePath(
