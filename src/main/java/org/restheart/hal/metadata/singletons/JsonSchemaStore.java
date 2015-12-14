@@ -36,13 +36,13 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class JsonSchemaStoreChecker implements Checker {
-    static final Logger LOGGER = LoggerFactory.getLogger(JsonSchemaStoreChecker.class);
+public class JsonSchemaStore implements Checker, Transformer {
+    static final Logger LOGGER = LoggerFactory.getLogger(JsonSchemaStore.class);
 
     private static Schema schema;
 
     static {
-        try (InputStream inputStream = JsonSchemaStoreChecker.class.getClassLoader().getResourceAsStream("json-schema-draft-v4.json")) {
+        try (InputStream inputStream = JsonSchemaStore.class.getClassLoader().getResourceAsStream("json-schema-draft-v4.json")) {
             JSONObject rawSchema = new JSONObject(new JSONTokener(inputStream));
             schema = SchemaLoader.load(rawSchema);
         } catch (IOException ioe) {
@@ -53,16 +53,16 @@ public class JsonSchemaStoreChecker implements Checker {
     @Override
     public boolean check(HttpServerExchange exchange, RequestContext context, DBObject args) {
         Object schemaId;
-        
+
         if (context.getMethod() == RequestContext.METHOD.PATCH) {
             context.addWarning("patching a schema is not allowed");
             return false;
         } else if (context.getMethod() == RequestContext.METHOD.POST) {
             if (context.getContent().get("_id") == null) {
-                schemaId  = new ObjectId();
+                schemaId = new ObjectId();
                 context.getContent().put("id", schemaId);
             } else {
-                schemaId  = context.getContent().get("_id");
+                schemaId = context.getContent().get("_id");
             }
         } else {
             schemaId = context.getDocumentId();
@@ -83,5 +83,12 @@ public class JsonSchemaStoreChecker implements Checker {
         }
 
         return true;
+    }
+
+    @Override
+    public void tranform(HttpServerExchange exchange, RequestContext context, DBObject contentToTransform, DBObject args) {
+        if (context.getMethod() == RequestContext.METHOD.GET) {
+            contentToTransform.put("$schema", "http://json-schema.org/draft-04/schema#");
+        }
     }
 }
