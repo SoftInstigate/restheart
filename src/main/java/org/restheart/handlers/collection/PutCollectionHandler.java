@@ -58,7 +58,9 @@ public class PutCollectionHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.getCollectionName().isEmpty() || context.getCollectionName().startsWith(UNDERSCORE)) {
+        if (context.getCollectionName().isEmpty()
+                || (context.getCollectionName().startsWith(UNDERSCORE)
+                && (!context.getCollectionName().equals(RequestContext._SCHEMAS)))) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
                     "wrong request, collection name cannot be empty or start with '_'");
             return;
@@ -87,7 +89,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
                 return;
             }
         }
-        
+
         // check RT metadata
         if (content.containsField(RepresentationTransformer.RTS_ELEMENT_NAME)) {
             try {
@@ -98,7 +100,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
                 return;
             }
         }
-        
+
         // check SC metadata
         if (content.containsField(RequestChecker.SCS_ELEMENT_NAME)) {
             try {
@@ -114,21 +116,21 @@ public class PutCollectionHandler extends PipedHttpHandler {
         boolean updating = context.getCollectionProps() != null;
 
         OperationResult result = getDatabase().upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, updating, false);
-        
+
         // invalidate the cache collection item
         LocalCachesSingleton.getInstance().invalidateCollection(context.getDBName(), context.getCollectionName());
 
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
-        
+
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
         } else {
             exchange.setResponseCode(result.getHttpCode());
         }
-        
+
         exchange.endExchange();
     }
 

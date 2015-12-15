@@ -49,7 +49,9 @@ public class RequestContext {
         FILES_BUCKET,
         FILE,
         FILE_BINARY,
-        AGGREGATION
+        AGGREGATION,
+        SCHEMA,
+        SCHEMA_STORE
     };
 
     public enum METHOD {
@@ -98,6 +100,7 @@ public class RequestContext {
     public static final String FS_FILES_SUFFIX = ".files";
     public static final String _INDEXES = "_indexes";
     public static final String AGGREGATIONS_QPARAM_KEY = "aggrs";
+    public static final String _SCHEMAS = "_schemas";
     public static final String _AGGREGATIONS = "_aggrs";
     public static final String BINARY_CONTENT = "binary";
 
@@ -169,9 +172,9 @@ public class RequestContext {
      */
     public RequestContext(HttpServerExchange exchange, String whereUri, String whatUri) {
         this.whereUri = URLUtils.removeTrailingSlashes(whereUri == null ? null
-                        : whereUri.startsWith("/") ? whereUri
-                                : "/" + whereUri);
-        
+                : whereUri.startsWith("/") ? whereUri
+                        : "/" + whereUri);
+
         this.whatUri = URLUtils.removeTrailingSlashes(
                 whatUri == null ? null
                         : whatUri.startsWith("/") || "*".equals(whatUri) ? whatUri
@@ -229,6 +232,12 @@ public class RequestContext {
                 type = TYPE.FILE_BINARY;
             } else {
                 type = TYPE.DOCUMENT;
+            }
+        } else if (pathTokens.length >= 3 && pathTokens[2].endsWith(_SCHEMAS)) {
+            if (pathTokens.length == 3) {
+                type = TYPE.SCHEMA_STORE;
+            } else {
+                type = TYPE.SCHEMA;
             }
         } else if (pathTokens.length < 4) {
             type = TYPE.COLLECTION;
@@ -400,7 +409,9 @@ public class RequestContext {
      * @return isReservedResourceCollection
      */
     public static boolean isReservedResourceCollection(String collectionName) {
-        return collectionName != null && (collectionName.startsWith(SYSTEM)
+        return collectionName != null
+                && !collectionName.equals(_SCHEMAS)
+                && (collectionName.startsWith(SYSTEM)
                 || collectionName.startsWith(UNDERSCORE)
                 || collectionName.endsWith(FS_CHUNKS_SUFFIX));
     }
@@ -426,7 +437,9 @@ public class RequestContext {
      * @return isReservedResource
      */
     public boolean isReservedResource() {
-        if (type == TYPE.ROOT || type == TYPE.AGGREGATION) {
+        if (type == TYPE.ROOT
+                || type == TYPE.AGGREGATION
+                || type == TYPE.SCHEMA_STORE) {
             return false;
         }
 

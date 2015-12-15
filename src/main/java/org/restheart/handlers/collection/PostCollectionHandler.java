@@ -75,7 +75,8 @@ public class PostCollectionHandler extends PipedHttpHandler {
 
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
-        if (content.get("_id") != null && content.get("_id") instanceof String && RequestContext.isReservedResourceDocument((String) content.get("_id"))) {
+        if (content.get("_id") != null && content.get("_id") instanceof String 
+                && RequestContext.isReservedResourceDocument((String) content.get("_id"))) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "reserved resource");
             return;
         }

@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.hal.metadata.singletons;
+package org.restheart.handlers.schema;
 
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
@@ -27,6 +27,8 @@ import org.everit.json.schema.ValidationException;
 import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONObject;
 import org.json.JSONTokener;
+import org.restheart.hal.metadata.singletons.Checker;
+import org.restheart.hal.metadata.singletons.Transformer;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
@@ -36,13 +38,13 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class JsonSchemaStore implements Checker, Transformer {
-    static final Logger LOGGER = LoggerFactory.getLogger(JsonSchemaStore.class);
+public class JsonSchemaChecker implements Checker {
+    static final Logger LOGGER = LoggerFactory.getLogger(JsonSchemaChecker.class);
 
     private static Schema schema;
 
     static {
-        try (InputStream inputStream = JsonSchemaStore.class.getClassLoader().getResourceAsStream("json-schema-draft-v4.json")) {
+        try (InputStream inputStream = JsonSchemaChecker.class.getClassLoader().getResourceAsStream("json-schema-draft-v4.json")) {
             JSONObject rawSchema = new JSONObject(new JSONTokener(inputStream));
             schema = SchemaLoader.load(rawSchema);
         } catch (IOException ioe) {
@@ -52,25 +54,6 @@ public class JsonSchemaStore implements Checker, Transformer {
 
     @Override
     public boolean check(HttpServerExchange exchange, RequestContext context, DBObject args) {
-        Object schemaId;
-
-        if (context.getMethod() == RequestContext.METHOD.PATCH) {
-            context.addWarning("patching a schema is not allowed");
-            return false;
-        } else if (context.getMethod() == RequestContext.METHOD.POST) {
-            if (context.getContent().get("_id") == null) {
-                schemaId = new ObjectId();
-                context.getContent().put("id", schemaId);
-            } else {
-                schemaId = context.getContent().get("_id");
-            }
-        } else {
-            schemaId = context.getDocumentId();
-        }
-
-        // always overwrite the id with the URL
-        context.getContent().put("id", URLUtils.getReferenceLink(context, exchange.getRequestURL(), schemaId));
-
         try {
             schema.validate(new JSONObject(context.getContent().toString()));
         } catch (ValidationException ve) {
@@ -83,12 +66,5 @@ public class JsonSchemaStore implements Checker, Transformer {
         }
 
         return true;
-    }
-
-    @Override
-    public void tranform(HttpServerExchange exchange, RequestContext context, DBObject contentToTransform, DBObject args) {
-        if (context.getMethod() == RequestContext.METHOD.GET) {
-            contentToTransform.put("$schema", "http://json-schema.org/draft-04/schema#");
-        }
     }
 }
