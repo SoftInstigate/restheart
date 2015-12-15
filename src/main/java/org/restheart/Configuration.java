@@ -95,6 +95,9 @@ public class Configuration {
 
     private final boolean localCacheEnabled;
     private final long localCacheTtl;
+    
+    private final boolean schemaCacheEnabled;
+    private final long schemaCacheTtl;
 
     private final int requestsLimit;
 
@@ -170,6 +173,16 @@ public class Configuration {
      * the key for the local-cache-ttl property.
      */
     public static final String LOCAL_CACHE_TTL_KEY = "local-cache-ttl";
+    
+    /**
+     * the key for the schema-cache-enabled property.
+     */
+    public static final String SCHEMA_CACHE_ENABLED_KEY = "schema-cache-enabled";
+
+    /**
+     * the key for the schema-cache-ttl property.
+     */
+    public static final String SCHEMA_CACHE_TTL_KEY = "schema-cache-ttl";
 
     /**
      * the key for the force-gzip-encoding property.
@@ -501,6 +514,9 @@ public class Configuration {
 
         localCacheEnabled = true;
         localCacheTtl = 1000;
+        
+        schemaCacheEnabled = false;
+        schemaCacheTtl = 1000;
 
         requestsLimit = 100;
         ioThreads = 2;
@@ -653,6 +669,9 @@ public class Configuration {
 
         localCacheEnabled = getAsBooleanOrDefault(conf, LOCAL_CACHE_ENABLED_KEY, true);
         localCacheTtl = getAsLongOrDefault(conf, LOCAL_CACHE_TTL_KEY, (long) 1000);
+        
+        schemaCacheEnabled = getAsBooleanOrDefault(conf, SCHEMA_CACHE_ENABLED_KEY, true);
+        schemaCacheTtl = getAsLongOrDefault(conf, SCHEMA_CACHE_TTL_KEY, (long) 1000);
 
         ioThreads = getAsIntegerOrDefault(conf, IO_THREADS_KEY, 2);
         workerThreads = getAsIntegerOrDefault(conf, WORKER_THREADS_KEY, 32);
@@ -1163,5 +1182,19 @@ public class Configuration {
      */
     public MongoClientURI getMongoUri() {
         return mongoUri;
+    }
+
+    /**
+     * @return the schemaCacheEnabled
+     */
+    public boolean isSchemaCacheEnabled() {
+        return schemaCacheEnabled;
+    }
+
+    /**
+     * @return the schemaCacheTtl
+     */
+    public long getSchemaCacheTtl() {
+        return schemaCacheTtl;
     }
 }

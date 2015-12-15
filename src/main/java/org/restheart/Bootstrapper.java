@@ -562,6 +562,12 @@ public final class Bootstrapper {
         } else {
             LOGGER.info("Local cache for db and collection properties not enabled");
         }
+        
+        if (configuration.isSchemaCacheEnabled()) {
+            LOGGER.info("Local cache for schema stores enabled");
+        } else {
+            LOGGER.info("Local cache for schema stores not enabled");
+        }
 
         shutdownHandler = getHandlersPipe(identityManager, accessManager);
 
