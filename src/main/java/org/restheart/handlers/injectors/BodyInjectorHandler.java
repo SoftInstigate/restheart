@@ -241,8 +241,10 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     }
 
     /**
-     * Filter out reserved keys, removoing them from request
+     * Filter out reserved keys, removing them from request
      *
+     * The _ prefix is reserved for RESTHeart-generated properties (_id is allowed)
+     * 
      * @param content
      * @param context
      */

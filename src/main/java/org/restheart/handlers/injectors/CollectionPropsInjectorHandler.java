@@ -87,7 +87,8 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
         return !(context.getType() == RequestContext.TYPE.COLLECTION && context.getMethod() == RequestContext.METHOD.PUT)
                 && !(context.getType() == RequestContext.TYPE.FILES_BUCKET && context.getMethod() == RequestContext.METHOD.PUT)
                 && context.getType() != RequestContext.TYPE.ROOT
-                && context.getType() != RequestContext.TYPE.DB;
+                && context.getType() != RequestContext.TYPE.DB 
+                && context.getType() != RequestContext.TYPE.SCHEMA_STORE;
     }
 
     protected void collectionDoesNotExists(RequestContext context, HttpServerExchange exchange) {

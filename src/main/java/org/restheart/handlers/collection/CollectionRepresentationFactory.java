@@ -71,7 +71,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
 
             addPaginationLinks(exchange, context, size, rep);
 
-            addLinkTemplates(exchange, context, rep, requestPath);
+            addLinkTemplates(context, rep, requestPath);
 
             // curies
             rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
@@ -141,7 +141,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         }
     }
 
-    private void addLinkTemplates(final HttpServerExchange exchange, final RequestContext context, final Representation rep, final String requestPath) {
+    private void addLinkTemplates(final RequestContext context, final Representation rep, final String requestPath) {
         // link templates and curies
         if (context.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
@@ -174,12 +174,19 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
             } else {
                 Representation nrep = new DocumentRepresentationFactory().getRepresentation(requestPath + "/" + _id.toString(), exchange, context, d);
 
-                if (rep.getType() == RequestContext.TYPE.FILES_BUCKET) {
+                if (context.getType() == RequestContext.TYPE.FILES_BUCKET) {
                     if (context.isFullHalMode()) {
                         DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.FILE, d);
                     }
 
                     rep.addRepresentation("rh:file", nrep);
+                } else if (context.getType() == RequestContext.TYPE.SCHEMA_STORE) {
+                    if (context.isFullHalMode()) {
+                        DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.SCHEMA, d);
+                    }
+
+                    rep.addRepresentation("rh:schema", nrep);
+                    
                 } else {
                     if (context.isFullHalMode()) {
                         DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.DOCUMENT, d);

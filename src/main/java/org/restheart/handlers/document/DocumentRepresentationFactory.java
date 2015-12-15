@@ -33,11 +33,7 @@ import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.Relationship;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.HAL_MODE;
 import org.restheart.handlers.RequestContext.TYPE;
-import org.restheart.utils.HttpStatus;
-import org.restheart.utils.RequestHelper;
-import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,7 +89,9 @@ public class DocumentRepresentationFactory {
         String parentPath;
 
         // the document (file) representation can be asked for requests to collection (bucket)
-        boolean isEmbedded = TYPE.COLLECTION.equals(context.getType()) || TYPE.FILES_BUCKET.equals(context.getType());
+        boolean isEmbedded = TYPE.COLLECTION.equals(context.getType()) 
+                || TYPE.FILES_BUCKET.equals(context.getType())
+                || TYPE.SCHEMA_STORE.equals(context.getType());
 
         if (isEmbedded) {
             parentPath = requestPath;
@@ -103,9 +101,9 @@ public class DocumentRepresentationFactory {
 
         // link templates
         if (!isEmbedded && context.isFullHalMode()) {
-            
+
             addSpecialProperties(rep, context.getType(), data);
-            
+
             if (isBinaryFile(data)) {
                 if (_docIdType == null) {
                     rep.addLink(new Link("rh:data",
@@ -144,7 +142,7 @@ public class DocumentRepresentationFactory {
     private static boolean isBinaryFile(DBObject data) {
         return data.containsField("filename") && data.containsField("chunkSize");
     }
-    
+
     
     public static void addSpecialProperties(final Representation rep, RequestContext.TYPE type, DBObject data) {
         rep.addProperty("_type", type.name());
