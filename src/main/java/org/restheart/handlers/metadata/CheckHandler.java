@@ -18,11 +18,10 @@
 package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
+import java.util.Arrays;
 import java.util.List;
 import org.restheart.hal.metadata.InvalidMetadataException;
-import org.restheart.hal.metadata.RequestChecker;
 import org.restheart.hal.metadata.singletons.Checker;
-import org.restheart.hal.metadata.singletons.NamedSingletonsFactory;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
@@ -31,32 +30,36 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * handler that applies the checkers passed in the costructor
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class CheckMetadataHandler extends PipedHttpHandler {
-    static final Logger LOGGER = LoggerFactory.getLogger(CheckMetadataHandler.class);
+public class CheckHandler extends PipedHttpHandler {
+    static final Logger LOGGER = LoggerFactory.getLogger(CheckHandler.class);
+
+    private final List<Checker> checkers;
 
     /**
-     * Creates a new instance of CheckMetadataHandler
-     * 
-     * handler that applies the checkers defined in the collection properties
+     * Creates a new instance of CheckHandler
      *
      * @param next
+     * @param checkers
      */
-    public CheckMetadataHandler(PipedHttpHandler next) {
+    public CheckHandler(PipedHttpHandler next, Checker... checkers) {
         super(next);
+
+        this.checkers = Arrays.asList(checkers);
     }
 
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (doesCheckerAppy(context)) {
+        if (doesCheckerAppy()) {
             if (check(exchange, context)) {
                 getNext().handleRequest(exchange, context);
             } else {
                 StringBuilder sb = new StringBuilder();
                 sb.append("request data does not fulfill the collection schema check constraint");
-                
+
                 List<String> warnings = context.getWarnings();
 
                 if (warnings != null && !warnings.isEmpty()) {
@@ -72,28 +75,12 @@ public class CheckMetadataHandler extends PipedHttpHandler {
         }
     }
 
-    private boolean doesCheckerAppy(RequestContext context) {
-        return context.getCollectionProps() != null
-                && context.getCollectionProps().containsField(RequestChecker.SCS_ELEMENT_NAME);
+    private boolean doesCheckerAppy() {
+        return checkers != null
+                && !checkers.isEmpty();
     }
 
     private boolean check(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
-        List<RequestChecker> checkers = RequestChecker.getFromJson(context.getCollectionProps());
-
-        return checkers.stream().allMatch(checker -> {
-            try {
-                Checker _checker = (Checker) NamedSingletonsFactory.getInstance().get("checkers", checker.getName());
-
-                if (_checker == null) {
-                    throw new IllegalArgumentException("cannot find singleton " + checker.getName() + " in singleton group checkers");
-                }
-
-                return _checker.check(exchange, context, checker.getArgs());
-
-            } catch (IllegalArgumentException ex) {
-                context.addWarning("error applying checker: " + ex.getMessage());
-                return false;
-            }
-        });
+        return checkers.stream().allMatch(checker -> checker.check(exchange, context, null));
     }
 }

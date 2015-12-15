@@ -26,13 +26,13 @@ import org.restheart.handlers.RequestContext;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public abstract class AbstractTransformerHandler extends PipedHttpHandler {
+public abstract class AbstractTransformerMetadataHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of RequestScriptMetadataHandler
      *
      * @param next
      */
-    public AbstractTransformerHandler(PipedHttpHandler next) {
+    public AbstractTransformerMetadataHandler(PipedHttpHandler next) {
         super(next);
     }
 

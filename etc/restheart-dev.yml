@@ -110,10 +110,8 @@ metadata-named-singletons:
       singletons:
         - name: checkContent
           class: org.restheart.hal.metadata.singletons.SimpleContentChecker
-        - name: checkContentJsonSchema
-          class: org.restheart.hal.metadata.singletons.JsonSchemaContentChecker
-        - name: jsonSchemaStore
-          class: org.restheart.hal.metadata.singletons.JsonSchemaStore
+        - name: checkJsonSchema
+          class: org.restheart.hal.metadata.singletons.JsonSchemaChecker
         - name: checkContentSize
           class: org.restheart.hal.metadata.singletons.ContentSizeChecker
 
@@ -132,8 +130,7 @@ metadata-named-singletons:
           class: org.restheart.hal.metadata.singletons.ValidOidsStringsAsOidsTransformer
         - name: oidsToStrings
           class: org.restheart.hal.metadata.singletons.OidsAsStringsTransformer
-        - name: jsonSchemaStore
-          class: org.restheart.hal.metadata.singletons.JsonSchemaStore
+
 
 ### Security
 

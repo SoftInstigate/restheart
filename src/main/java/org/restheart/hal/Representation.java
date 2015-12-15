@@ -55,10 +55,10 @@ public class Representation {
         links = new BasicDBObject();
 
         properties.append("_links", links);
-        
+
         if (href != null) links.put("self", new BasicDBObject("href", href));
-    }
-    
+        }
+
     /**
      *
      */
@@ -69,7 +69,7 @@ public class Representation {
     public RequestContext.TYPE getType() {
         if (properties == null) {
             return null;
-        }
+    }
 
         Object _type = properties.get("_type");
 
@@ -86,13 +86,13 @@ public class Representation {
         } else {
             properties.append("_embedded", embedded);
         }
-        
+
         if (links == null || links.isEmpty()) {
             properties.remove("_links");
         } else {
             properties.append("_links", links);
         }
-        
+
         return properties;
     }
 
@@ -103,7 +103,7 @@ public class Representation {
     public void addLink(Link link) {
         links.putAll((BSONObject) link.getDBObject());
     }
-    
+
     /**
      *
      * @param linkArrayRef
@@ -116,7 +116,7 @@ public class Representation {
             linkArray = new BasicDBList();
             links.append(linkArrayRef, linkArray);
         }
-        
+
         return linkArray;
     }
 

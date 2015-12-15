@@ -29,10 +29,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * handler that applies the transformers defined in the collection properties to
+ * the request
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class RequestTransformerMetadataHandler extends AbstractTransformerHandler {
+public class RequestTransformerMetadataHandler extends AbstractTransformerMetadataHandler {
     static final Logger LOGGER = LoggerFactory.getLogger(RequestTransformerMetadataHandler.class);
 
     /**
@@ -46,17 +48,27 @@ public class RequestTransformerMetadataHandler extends AbstractTransformerHandle
 
     @Override
     boolean canCollRepresentationTransformersAppy(RequestContext context) {
-        return ((context.getMethod() == RequestContext.METHOD.PUT || context.getMethod() == RequestContext.METHOD.PATCH || context.getMethod() == RequestContext.METHOD.POST)
-                && (context.getType() == RequestContext.TYPE.DOCUMENT || context.getType() == RequestContext.TYPE.COLLECTION || 
-                context.getType() == RequestContext.TYPE.FILE || context.getType() == RequestContext.TYPE.FILES_BUCKET)
+        return ((context.getMethod() == RequestContext.METHOD.PUT
+                || context.getMethod() == RequestContext.METHOD.PATCH
+                || context.getMethod() == RequestContext.METHOD.POST)
+                && (context.getType() == RequestContext.TYPE.DOCUMENT
+                || context.getType() == RequestContext.TYPE.COLLECTION
+                || context.getType() == RequestContext.TYPE.FILE
+                || context.getType() == RequestContext.TYPE.FILES_BUCKET
+                || context.getType() == RequestContext.TYPE.SCHEMA_STORE
+                || context.getType() == RequestContext.TYPE.SCHEMA)
                 && context.getCollectionProps() != null
                 && context.getCollectionProps().containsField(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
     boolean canDBRepresentationTransformersAppy(RequestContext context) {
-        return ((context.getMethod() == RequestContext.METHOD.PUT || context.getMethod() == RequestContext.METHOD.PATCH)
-                && (context.getType() == RequestContext.TYPE.DB || context.getType() == RequestContext.TYPE.COLLECTION || context.getType() == RequestContext.TYPE.FILES_BUCKET)
+        return ((context.getMethod() == RequestContext.METHOD.PUT
+                || context.getMethod() == RequestContext.METHOD.PATCH)
+                && (context.getType() == RequestContext.TYPE.DB
+                || context.getType() == RequestContext.TYPE.COLLECTION
+                || context.getType() == RequestContext.TYPE.FILES_BUCKET
+                || context.getType() == RequestContext.TYPE.SCHEMA_STORE)
                 && context.getDbProps() != null
                 && context.getDbProps().containsField(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
