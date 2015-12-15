@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class JsonSchemaContentChecker implements Checker {
+public class JsonSchemaChecker implements Checker {
     private final Database dbsDAO;
 
     public static final String SCHEMA_PROPERTY_NAME = "schema";
@@ -44,9 +44,9 @@ public class JsonSchemaContentChecker implements Checker {
     public static final String SCHEMA_COLL_PROPERTY_NAME = "coll";
     public static final String SCHEMA_ID_PROPERTY_NAME = "id";
 
-    static final Logger LOGGER = LoggerFactory.getLogger(JsonSchemaContentChecker.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(JsonSchemaChecker.class);
 
-    public JsonSchemaContentChecker() {
+    public JsonSchemaChecker() {
         this.dbsDAO = new DbsDAO();
     }
 
