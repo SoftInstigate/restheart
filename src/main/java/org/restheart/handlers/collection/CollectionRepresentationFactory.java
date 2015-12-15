@@ -180,6 +180,13 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
                     }
 
                     rep.addRepresentation("rh:file", nrep);
+                } else if (context.getType() == RequestContext.TYPE.SCHEMA_STORE) {
+                    if (context.isFullHalMode()) {
+                        DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.SCHEMA, d);
+                    }
+
+                    rep.addRepresentation("rh:schema", nrep);
+                    
                 } else {
                     if (context.isFullHalMode()) {
                         DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.DOCUMENT, d);
