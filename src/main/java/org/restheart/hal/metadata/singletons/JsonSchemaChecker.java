@@ -17,18 +17,23 @@
  */
 package org.restheart.hal.metadata.singletons;
 
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.Objects;
-import org.bson.types.ObjectId;
+import java.util.Optional;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONObject;
-import org.restheart.db.Database;
+import org.restheart.Bootstrapper;
+import org.restheart.cache.Cache;
+import org.restheart.cache.CacheFactory;
+import org.restheart.cache.LoadingCache;
 import org.restheart.db.DbsDAO;
+import org.restheart.hal.UnsupportedDocumentIdException;
+import static org.restheart.hal.metadata.singletons.JsonSchemaChecker.LOGGER;
 import org.restheart.handlers.RequestContext;
+import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,18 +42,10 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class JsonSchemaChecker implements Checker {
-    private final Database dbsDAO;
-
-    public static final String SCHEMA_PROPERTY_NAME = "schema";
-    public static final String SCHEMA_DB_PROPERTY_NAME = "db";
-    public static final String SCHEMA_COLL_PROPERTY_NAME = "coll";
-    public static final String SCHEMA_ID_PROPERTY_NAME = "id";
+    public static final String SCHEMA_STORE_DB_PROPERTY = "db";
+    public static final String SCHEMA_ID_PROPERTY = "id";
 
     static final Logger LOGGER = LoggerFactory.getLogger(JsonSchemaChecker.class);
-
-    public JsonSchemaChecker() {
-        this.dbsDAO = new DbsDAO();
-    }
 
     @Override
     public boolean check(HttpServerExchange exchange, RequestContext context, DBObject args) {
@@ -60,48 +57,33 @@ public class JsonSchemaChecker implements Checker {
 
         Objects.requireNonNull(args, "missing metadata property 'args'");
 
-        Object _schema = args.get(SCHEMA_PROPERTY_NAME);
+        Object _schemaStoreDb = args.get(SCHEMA_STORE_DB_PROPERTY);
+        String schemaStore;
 
-        Objects.requireNonNull(_schema, "missing '" + SCHEMA_PROPERTY_NAME + "' in metadata property 'args'");
+        Object schemaId = args.get(SCHEMA_ID_PROPERTY);
 
-        if (!(_schema instanceof BasicDBObject)) {
-            throw new IllegalArgumentException("wrong 'schema' in metadata property 'args', it must be an object");
-        }
+        Objects.requireNonNull(schemaId, "missing property '" + SCHEMA_ID_PROPERTY + "' in metadata property 'args'");
 
-        BasicDBObject schema = (BasicDBObject) _schema;
-
-        Object _coll = schema.get(SCHEMA_COLL_PROPERTY_NAME);
-        String coll;
-        Object _db = schema.get(SCHEMA_DB_PROPERTY_NAME);
-        String db;
-
-        Object schemaId = schema.get(SCHEMA_ID_PROPERTY_NAME);
-
-        Objects.requireNonNull(_db, "missing '" + SCHEMA_DB_PROPERTY_NAME + "' in metadata property 'args'");
-        Objects.requireNonNull(_coll, "missing '" + SCHEMA_COLL_PROPERTY_NAME + "' in metadata property 'args'");
-        Objects.requireNonNull(schemaId, "missing property '" + SCHEMA_ID_PROPERTY_NAME + "' in metadata property 'args'");
-
-        if (_db instanceof String) {
-            db = (String) _db;
+        if (_schemaStoreDb == null) {
+            // if not specified assume the current db as the schema store db
+            schemaStore = context.getDBName();
+        } else if (_schemaStoreDb instanceof String) {
+            schemaStore = (String) _schemaStoreDb;
         } else {
-            throw new IllegalArgumentException("property " + SCHEMA_COLL_PROPERTY_NAME + " in metadata 'args' must be a a string");
-        }
-
-        if (_coll instanceof String) {
-            coll = (String) _coll;
-        } else {
-            throw new IllegalArgumentException("property " + SCHEMA_COLL_PROPERTY_NAME + " in metadata 'args' must be a a string");
-        }
-
-        if (!(schemaId instanceof String || schemaId instanceof ObjectId)) {
-            throw new IllegalArgumentException("wrong schema 'id': it must be either a string or an ObjectId");
+            throw new IllegalArgumentException("property " + SCHEMA_STORE_DB_PROPERTY + " in metadata 'args' must be a a string");
         }
 
         try {
-            Schema theschema = getSchema(db, coll, schemaId);
+            URLUtils.checkId(schemaId);
+        } catch (UnsupportedDocumentIdException ex) {
+            throw new IllegalArgumentException("wrong schema 'id' is not a valid id, ex");
+        }
+
+        try {
+            Schema theschema = CacheSingleton.getInstance().get(schemaStore, schemaId);
 
             if (Objects.isNull(theschema)) {
-                throw new IllegalArgumentException("cannot validate, schema "  + db + "/" + coll + "/" + schemaId.toString() + " not found");
+                throw new IllegalArgumentException("cannot validate, schema " + schemaStore + "/" + RequestContext._SCHEMAS + "/" + schemaId.toString() + " not found");
             }
 
             theschema.validate(
@@ -117,14 +99,69 @@ public class JsonSchemaChecker implements Checker {
 
         return true;
     }
+}
 
-    private Schema getSchema(String schemaDb, String schemaCollection, Object schemaId) {
-        DBObject document = dbsDAO.getCollection(schemaDb, schemaCollection).findOne(schemaId);
+class CacheSingleton {
+    private final DbsDAO dbsDAO;
+
+    private static final String SEPARATOR = "_@_@_";
+    private static final long MAX_CACHE_SIZE = 1_000;
+
+    private LoadingCache<String, Schema> schemaCache = null;
+
+    CacheSingleton() {
+        dbsDAO = new DbsDAO();
+
+        if (Bootstrapper.getConfiguration().isSchemaCacheEnabled()) {
+            this.schemaCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE,
+                    Cache.EXPIRE_POLICY.AFTER_WRITE,
+                    Bootstrapper.getConfiguration().getSchemaCacheTtl(),
+                    (String key) -> {
+                        String[] schemaStoreDbAndSchemaId = key.split(SEPARATOR);
+                        return load(schemaStoreDbAndSchemaId[0], schemaStoreDbAndSchemaId[1]);
+                    });
+        }
+    }
+
+    public Schema get(String schemaStoreDb, Object schemaId) {
+        if (Bootstrapper.getConfiguration().isSchemaCacheEnabled()) {
+
+            LOGGER.debug("looking schema in cache");
+            Optional<Schema> _schema = schemaCache.getLoading(schemaStoreDb + SEPARATOR + schemaId);
+
+            if (_schema != null && _schema.isPresent()) {
+                return _schema.get();
+            } else {
+                return null;
+            }
+        } else {
+            return load(schemaStoreDb, schemaId);
+        }
+    }
+
+    private Schema load(String schemaStoreDb, Object schemaId) {
+        LOGGER.info("loading schema from db");
+        DBObject document = dbsDAO.getCollection(schemaStoreDb, RequestContext._SCHEMAS).findOne(schemaId);
 
         if (Objects.isNull(document)) {
             return null;
         }
 
         return SchemaLoader.load(new JSONObject(document.toMap()));
+    }
+
+    /**
+     *
+     * @return
+     */
+    public static CacheSingleton getInstance() {
+        return CachesSingletonHolder.INSTANCE;
+    }
+
+    private static class CachesSingletonHolder {
+        private static final CacheSingleton INSTANCE = new CacheSingleton();
+
+        private CachesSingletonHolder() {
+        }
     }
 }

@@ -110,7 +110,7 @@ metadata-named-singletons:
       singletons:
         - name: checkContent
           class: org.restheart.hal.metadata.singletons.SimpleContentChecker
-        - name: checkJsonSchema
+        - name: jsonSchema
           class: org.restheart.hal.metadata.singletons.JsonSchemaChecker
         - name: checkContentSize
           class: org.restheart.hal.metadata.singletons.ContentSizeChecker
@@ -197,6 +197,10 @@ force-gzip-encoding: false
 local-cache-enabled: true
 # TTL in milliseconds; specify a value < 0 to never expire cached entries
 local-cache-ttl: 1000
+
+schema-cache-enabled: true
+# TTL in milliseconds; specify a value < 0 to never expire cached entries
+schema-cache-ttl: 60000
 
 # Limit for the maximum number of concurrent requests being served
 requests-limit: 1000
