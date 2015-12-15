@@ -110,10 +110,6 @@ metadata-named-singletons:
       singletons:
         - name: checkContent
           class: org.restheart.hal.metadata.singletons.SimpleContentChecker
-        - name: checkContentJsonSchema
-          class: org.restheart.hal.metadata.singletons.JsonSchemaContentChecker
-        - name: checkJsonSchemaStore
-          class: org.restheart.hal.metadata.singletons.JsonSchemaStoreChecker
         - name: checkContentSize
           class: org.restheart.hal.metadata.singletons.ContentSizeChecker
 
