@@ -33,9 +33,12 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
+ * handler that applies the transformers defined in the collection properties to
+ * the response
+ *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class ResponseTranformerMetadataHandler extends AbstractTransformerHandler {
+public class ResponseTranformerMetadataHandler extends AbstractTransformerMetadataHandler {
     static final Logger LOGGER = LoggerFactory.getLogger(ResponseTranformerMetadataHandler.class);
 
     /**
@@ -50,15 +53,22 @@ public class ResponseTranformerMetadataHandler extends AbstractTransformerHandle
     @Override
     boolean canCollRepresentationTransformersAppy(RequestContext context) {
         return (context.getMethod() == RequestContext.METHOD.GET
-                && (context.getType() == RequestContext.TYPE.DOCUMENT || context.getType() == RequestContext.TYPE.COLLECTION)
-                && context.getCollectionProps().containsField(RepresentationTransformer.RTS_ELEMENT_NAME));
+                && (context.getType() == RequestContext.TYPE.DOCUMENT
+                || context.getType() == RequestContext.TYPE.COLLECTION
+                || context.getType() == RequestContext.TYPE.SCHEMA_STORE
+                || context.getType() == RequestContext.TYPE.SCHEMA)
+                && context.getCollectionProps()
+                .containsField(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
     boolean canDBRepresentationTransformersAppy(RequestContext context) {
         return (context.getMethod() == RequestContext.METHOD.GET
-                && (context.getType() == RequestContext.TYPE.DB || context.getType() == RequestContext.TYPE.COLLECTION)
-                && context.getDbProps().containsField(RepresentationTransformer.RTS_ELEMENT_NAME));
+                && (context.getType() == RequestContext.TYPE.DB
+                || context.getType() == RequestContext.TYPE.COLLECTION
+                || context.getType() == RequestContext.TYPE.SCHEMA_STORE)
+                && context.getDbProps()
+                .containsField(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
