@@ -125,6 +125,7 @@ public final class Bootstrapper {
         }
 
         if (!hasForkOption(args)) {
+            initLogging(args, null);
             startServer(false);
         } else {
             if (OSChecker.isWindows()) {
