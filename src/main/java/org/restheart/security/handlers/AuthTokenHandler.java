@@ -55,13 +55,13 @@ public class AuthTokenHandler extends PipedHttpHandler {
                 || exchange.getSecurityContext().getAuthenticatedAccount() == null
                 || exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null
                 || !("/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName())
-                        .equals(exchange.getRequestURI())) {
+                .equals(exchange.getRequestURI())) {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_FORBIDDEN);
             return;
         }
 
         if (Methods.GET.equals(exchange.getRequestMethod())) {
-            Representation rep = new Representation("/_authtokens/" 
+            Representation rep = new Representation("/_authtokens/"
                     + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
 
             rep.addProperty("auth_token", exchange.getResponseHeaders().get(AUTH_TOKEN_HEADER).getFirst());
