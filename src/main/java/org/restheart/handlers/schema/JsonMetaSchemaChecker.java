@@ -21,30 +21,32 @@ import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.io.IOException;
 import java.io.InputStream;
-import org.bson.types.ObjectId;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.restheart.hal.metadata.singletons.Checker;
-import org.restheart.hal.metadata.singletons.Transformer;
 import org.restheart.handlers.RequestContext;
-import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  *
+ * checks the schema of the schemas using json metaschema
+ * 
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class JsonSchemaChecker implements Checker {
-    static final Logger LOGGER = LoggerFactory.getLogger(JsonSchemaChecker.class);
+public class JsonMetaSchemaChecker implements Checker {
+    static final Logger LOGGER = LoggerFactory.getLogger(JsonMetaSchemaChecker.class);
 
     private static Schema schema;
 
     static {
-        try (InputStream inputStream = JsonSchemaChecker.class.getClassLoader().getResourceAsStream("json-schema-draft-v4.json")) {
+        try (InputStream inputStream = JsonMetaSchemaChecker.class
+                .getClassLoader()
+                .getResourceAsStream("json-schema-draft-v4.json")) {
+
             JSONObject rawSchema = new JSONObject(new JSONTokener(inputStream));
             schema = SchemaLoader.load(rawSchema);
         } catch (IOException ioe) {

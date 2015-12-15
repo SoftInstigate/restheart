@@ -39,7 +39,7 @@ import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import java.util.HashMap;
 import java.util.Map;
-import org.restheart.handlers.schema.JsonSchemaChecker;
+import org.restheart.handlers.schema.JsonMetaSchemaChecker;
 import static org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.files.DeleteBucketHandler;
@@ -142,11 +142,11 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         // SCHEMA handlers
         putPipedHttpHandler(TYPE.SCHEMA_STORE, METHOD.GET, new GetCollectionHandler(new TransformerHandler(new ResponseTranformerMetadataHandler(null), new JsonSchemaTransformer())));
         putPipedHttpHandler(TYPE.SCHEMA_STORE, METHOD.PUT, new RequestTransformerMetadataHandler(new PutCollectionHandler()));
-        putPipedHttpHandler(TYPE.SCHEMA_STORE, METHOD.POST, new CheckHandler(new TransformerHandler(new PostCollectionHandler(), new JsonSchemaTransformer()), new JsonSchemaChecker()));
+        putPipedHttpHandler(TYPE.SCHEMA_STORE, METHOD.POST, new CheckHandler(new TransformerHandler(new PostCollectionHandler(), new JsonSchemaTransformer()), new JsonMetaSchemaChecker()));
         putPipedHttpHandler(TYPE.SCHEMA_STORE, METHOD.DELETE, new DeleteCollectionHandler());
 
         putPipedHttpHandler(TYPE.SCHEMA, METHOD.GET, new GetDocumentHandler(new TransformerHandler(new ResponseTranformerMetadataHandler(null), new JsonSchemaTransformer())));
-        putPipedHttpHandler(TYPE.SCHEMA, METHOD.PUT, new CheckHandler(new TransformerHandler(new RequestTransformerMetadataHandler(new PutDocumentHandler()), new JsonSchemaTransformer()), new JsonSchemaChecker()));
+        putPipedHttpHandler(TYPE.SCHEMA, METHOD.PUT, new CheckHandler(new TransformerHandler(new RequestTransformerMetadataHandler(new PutDocumentHandler()), new JsonSchemaTransformer()), new JsonMetaSchemaChecker()));
         putPipedHttpHandler(TYPE.SCHEMA, METHOD.DELETE, new DeleteDocumentHandler());
     }
 

@@ -31,7 +31,6 @@ import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.db.DbsDAO;
 import org.restheart.hal.UnsupportedDocumentIdException;
-import static org.restheart.hal.metadata.singletons.JsonSchemaChecker.LOGGER;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
@@ -125,8 +124,6 @@ class CacheSingleton {
 
     public Schema get(String schemaStoreDb, Object schemaId) {
         if (Bootstrapper.getConfiguration().isSchemaCacheEnabled()) {
-
-            LOGGER.debug("looking schema in cache");
             Optional<Schema> _schema = schemaCache.getLoading(schemaStoreDb + SEPARATOR + schemaId);
 
             if (_schema != null && _schema.isPresent()) {
@@ -140,7 +137,6 @@ class CacheSingleton {
     }
 
     private Schema load(String schemaStoreDb, Object schemaId) {
-        LOGGER.info("loading schema from db");
         DBObject document = dbsDAO.getCollection(schemaStoreDb, RequestContext._SCHEMAS).findOne(schemaId);
 
         if (Objects.isNull(document)) {

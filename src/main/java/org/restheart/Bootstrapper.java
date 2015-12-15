@@ -559,13 +559,17 @@ public final class Bootstrapper {
         LocalCachesSingleton.init(configuration);
 
         if (configuration.isLocalCacheEnabled()) {
-            LOGGER.info("Local cache for db and collection properties enabled");
+            LOGGER.info("Local cache for db and collection properties enabled with TTL {} msecs",
+                    configuration.getLocalCacheTtl() < 0 ? "∞"
+                            : configuration.getLocalCacheTtl());
         } else {
             LOGGER.info("Local cache for db and collection properties not enabled");
         }
-        
+
         if (configuration.isSchemaCacheEnabled()) {
-            LOGGER.info("Local cache for schema stores enabled");
+            LOGGER.info("Local cache for schema stores enabled  with TTL {} msecs",
+                    configuration.getSchemaCacheTtl() < 0 ? "∞"
+                            : configuration.getSchemaCacheTtl());
         } else {
             LOGGER.info("Local cache for schema stores not enabled");
         }
