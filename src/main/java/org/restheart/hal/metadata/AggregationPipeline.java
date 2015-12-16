@@ -99,7 +99,7 @@ public class AggregationPipeline extends AbstractAggregationOperation {
     public List<DBObject> getResolvedStagesAsList(BasicDBObject vars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
         Object replacedStages = bindAggregationVariables(
-                JsonUtils.replaceEscapedKeys(stages), vars);
+                JsonUtils.unescapeKeys(stages), vars);
 
         return Lists.newArrayList(
                 ((BasicDBList) replacedStages)
