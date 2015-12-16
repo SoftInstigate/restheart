@@ -20,6 +20,7 @@ package org.restheart.hal.metadata;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.util.regex.Matcher;
+import org.restheart.utils.JsonUtils;
 
 /**
  * represents a map reduce.
@@ -127,7 +128,7 @@ public class MapReduce extends AbstractAggregationOperation {
     public DBObject getResolvedQuery(BasicDBObject aVars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
         return (DBObject) bindAggregationVariables(
-                replaceEscapedOperators(query), aVars);
+                JsonUtils.replaceEscapedKeys(query), aVars);
     }
 
     /**

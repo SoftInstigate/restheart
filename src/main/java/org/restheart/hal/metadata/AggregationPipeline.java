@@ -22,6 +22,7 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.util.List;
+import org.restheart.utils.JsonUtils;
 
 /**
  * represents a map reduce.
@@ -98,7 +99,7 @@ public class AggregationPipeline extends AbstractAggregationOperation {
     public List<DBObject> getResolvedStagesAsList(BasicDBObject vars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
         Object replacedStages = bindAggregationVariables(
-                replaceEscapedOperators(stages), vars);
+                JsonUtils.replaceEscapedKeys(stages), vars);
 
         return Lists.newArrayList(
                 ((BasicDBList) replacedStages)

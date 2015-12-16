@@ -106,12 +106,12 @@ public class AggregationResultRepresentationFactory
 
     private void embeddedDocuments(List<DBObject> embeddedData,
             Representation rep) throws IllegalQueryParamenterException {
-        for (DBObject d : embeddedData) {
+        embeddedData.stream().map((d) -> {
             Representation nrep = new Representation();
-
             nrep.addProperties(d);
-
+            return nrep;
+        }).forEach((nrep) -> {
             rep.addRepresentation("rh:result", nrep);
-        }
+        });
     }
 }
