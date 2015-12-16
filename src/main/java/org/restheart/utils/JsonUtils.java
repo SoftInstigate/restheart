@@ -58,11 +58,79 @@ public class JsonUtils {
     }
 
     /**
+     * replaces the underscore prefixed keys (eg _$exists) with the
+     * corresponding key (eg $exists). This is needed because MongoDB does
+     * not allow to store keys that are valid operators.
+     *
+     * @param obj
+     * @return the json object where the underscore prefixed keys are
+     * replaced with the corresponding keys
+     */
+    public static Object replaceEscapedKeys(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+
+        if (obj instanceof BasicDBObject) {
+            BasicDBObject ret = new BasicDBObject();
+
+            ((BasicDBObject) obj).keySet().stream().forEach(k -> {
+                String newKey = k.startsWith("_$") ? k.substring(1) : k;
+                Object value = ((BasicDBObject) obj).get(k);
+
+                if (value instanceof BasicDBObject) {
+                    ret.put(newKey,
+                            replaceEscapedKeys((BasicDBObject) value));
+                } else if (value instanceof BasicDBList) {
+                    BasicDBList newList = new BasicDBList();
+
+                    ((BasicDBList) value).stream().forEach(v -> {
+                        newList.add(replaceEscapedKeys(v));
+                    });
+
+                    ret.put(newKey, newList);
+                } else {
+                    ret.put(newKey, replaceEscapedKeys(value));
+                }
+
+            });
+
+            return ret;
+        } else if (obj instanceof BasicDBList) {
+            BasicDBList ret = new BasicDBList();
+
+            ((BasicDBList) obj).stream().forEach(value -> {
+                if (value instanceof BasicDBObject) {
+                    ret.add(replaceEscapedKeys((BasicDBObject) value));
+                } else if (value instanceof BasicDBList) {
+                    BasicDBList newList = new BasicDBList();
+
+                    ((BasicDBList) value).stream().forEach(v -> {
+                        newList.add(replaceEscapedKeys(v));
+                    });
+
+                    ret.add(newList);
+                } else {
+                    ret.add(replaceEscapedKeys(value));
+                }
+
+            });
+
+            return ret;
+        } else if (obj instanceof String) {
+            return ((String) obj)
+                    .startsWith("_$") ? ((String) obj).substring(1) : obj;
+        } else {
+            return obj;
+        }
+    }
+
+    /**
      *
      * @param root the DBOject to extract properties from
      * @param path the path of the properties to extract
-     * @return the List of Optional<Object>s extracted from root ojbect and identified by the path or null if path does
-     * not exist
+     * @return the List of Optional<Object>s extracted from root ojbect and
+     * identified by the path or null if path does not exist
      *
      * @see org.restheart.test.unit.JsonUtilsTest form code examples
      *
@@ -209,11 +277,12 @@ public class JsonUtils {
      * @param left the json path expression
      * @param right the json path expression
      *
-     * @return true if the left json path is an acestor of the right path, i.e. left path selects a values set that
-     * includes the one selected by the right path
+     * @return true if the left json path is an acestor of the right path, i.e.
+     * left path selects a values set that includes the one selected by the
+     * right path
      *
-     * examples: ($, $.a) -> true, ($.a, $.b) -> false, ($.*, $.a) -> true, ($.a.[*].c, $.a.0.c) -> true, ($.a.[*],
-     * $.a.b) -> false
+     * examples: ($, $.a) -> true, ($.a, $.b) -> false, ($.*, $.a) -> true,
+     * ($.a.[*].c, $.a.0.c) -> true, ($.a.[*], $.a.b) -> false
      *
      */
     public static boolean isAncestorPath(final String left, final String right) {
@@ -269,7 +338,8 @@ public class JsonUtils {
     /**
      * @param root
      * @param path
-     * @return then number of properties identitified by the json path expression or null if path does not exist
+     * @return then number of properties identitified by the json path
+     * expression or null if path does not exist
      * @throws IllegalArgumentException
      */
     public static Integer countPropsFromPath(Object root, String path) throws IllegalArgumentException {
