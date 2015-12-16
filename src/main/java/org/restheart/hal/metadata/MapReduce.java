@@ -128,7 +128,7 @@ public class MapReduce extends AbstractAggregationOperation {
     public DBObject getResolvedQuery(BasicDBObject aVars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
         return (DBObject) bindAggregationVariables(
-                JsonUtils.replaceEscapedKeys(query), aVars);
+                JsonUtils.unescapeKeys(query), aVars);
     }
 
     /**

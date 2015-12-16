@@ -59,14 +59,14 @@ public class JsonUtils {
 
     /**
      * replaces the underscore prefixed keys (eg _$exists) with the
-     * corresponding key (eg $exists). This is needed because MongoDB does
-     * not allow to store keys that are valid operators.
+     * corresponding key (eg $exists). This is needed because MongoDB does not
+     * allow to store keys that starts with $.
      *
      * @param obj
-     * @return the json object where the underscore prefixed keys are
-     * replaced with the corresponding keys
+     * @return the json object where the underscore prefixed keys are replaced
+     * with the corresponding keys
      */
-    public static Object replaceEscapedKeys(Object obj) {
+    public static Object unescapeKeys(Object obj) {
         if (obj == null) {
             return null;
         }
@@ -80,17 +80,17 @@ public class JsonUtils {
 
                 if (value instanceof BasicDBObject) {
                     ret.put(newKey,
-                            replaceEscapedKeys((BasicDBObject) value));
+                            unescapeKeys((BasicDBObject) value));
                 } else if (value instanceof BasicDBList) {
                     BasicDBList newList = new BasicDBList();
 
                     ((BasicDBList) value).stream().forEach(v -> {
-                        newList.add(replaceEscapedKeys(v));
+                        newList.add(unescapeKeys(v));
                     });
 
                     ret.put(newKey, newList);
                 } else {
-                    ret.put(newKey, replaceEscapedKeys(value));
+                    ret.put(newKey, unescapeKeys(value));
                 }
 
             });
@@ -101,17 +101,17 @@ public class JsonUtils {
 
             ((BasicDBList) obj).stream().forEach(value -> {
                 if (value instanceof BasicDBObject) {
-                    ret.add(replaceEscapedKeys((BasicDBObject) value));
+                    ret.add(unescapeKeys((BasicDBObject) value));
                 } else if (value instanceof BasicDBList) {
                     BasicDBList newList = new BasicDBList();
 
                     ((BasicDBList) value).stream().forEach(v -> {
-                        newList.add(replaceEscapedKeys(v));
+                        newList.add(unescapeKeys(v));
                     });
 
                     ret.add(newList);
                 } else {
-                    ret.add(replaceEscapedKeys(value));
+                    ret.add(unescapeKeys(value));
                 }
 
             });
@@ -126,10 +126,78 @@ public class JsonUtils {
     }
 
     /**
+     * replaces the dollar prefixed keys (eg $exists) with the corresponding
+     * underscore prefixed key (eg _$exists). This is needed because MongoDB
+     * does not allow to store keys that starts with $.
+     *
+     * @param obj
+     * @return the json object where the underscore prefixed keys are replaced
+     * with the corresponding keys
+     */
+    public static Object escapeKeys(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+
+        if (obj instanceof BasicDBObject) {
+            BasicDBObject ret = new BasicDBObject();
+
+            ((BasicDBObject) obj).keySet().stream().forEach(k -> {
+                String newKey = k.startsWith("$") ? "_" + k : k;
+                Object value = ((BasicDBObject) obj).get(k);
+
+                if (value instanceof BasicDBObject) {
+                    ret.put(newKey,
+                            escapeKeys((BasicDBObject) value));
+                } else if (value instanceof BasicDBList) {
+                    BasicDBList newList = new BasicDBList();
+
+                    ((BasicDBList) value).stream().forEach(v -> {
+                        newList.add(escapeKeys(v));
+                    });
+
+                    ret.put(newKey, newList);
+                } else {
+                    ret.put(newKey, escapeKeys(value));
+                }
+
+            });
+
+            return ret;
+        } else if (obj instanceof BasicDBList) {
+            BasicDBList ret = new BasicDBList();
+
+            ((BasicDBList) obj).stream().forEach(value -> {
+                if (value instanceof BasicDBObject) {
+                    ret.add(escapeKeys((BasicDBObject) value));
+                } else if (value instanceof BasicDBList) {
+                    BasicDBList newList = new BasicDBList();
+
+                    ((BasicDBList) value).stream().forEach(v -> {
+                        newList.add(escapeKeys(v));
+                    });
+
+                    ret.add(newList);
+                } else {
+                    ret.add(escapeKeys(value));
+                }
+
+            });
+
+            return ret;
+        } else if (obj instanceof String) {
+            return ((String) obj)
+                    .startsWith("$") ? "_" + ((String) obj) : obj;
+        } else {
+            return obj;
+        }
+    }
+
+    /**
      *
      * @param root the DBOject to extract properties from
      * @param path the path of the properties to extract
-     * @return the List of Optional<Object>s extracted from root ojbect and
+     * @return the List of Optional&lt;Object&gt;s extracted from root ojbect and
      * identified by the path or null if path does not exist
      *
      * @see org.restheart.test.unit.JsonUtilsTest form code examples
