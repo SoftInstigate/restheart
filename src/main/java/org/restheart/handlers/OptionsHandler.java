@@ -59,49 +59,61 @@ public class OptionsHandler extends PipedHttpHandler {
             return;
         }
 
-        if (null != context.getType()) switch (context.getType()) {
-            case ROOT:
-                exchange.getResponseHeaders()
-                        .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET")
-                        .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
-                break;
-            case DB:
-                exchange.getResponseHeaders()
-                        .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, PATCH, DELETE, OPTIONS")
-                        .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
-                break;
-            case COLLECTION:
-                exchange.getResponseHeaders()
-                        .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, POST, PATCH, DELETE, OPTIONS")
-                        .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
-                break;
-            case FILES_BUCKET:
-                exchange.getResponseHeaders()
-                        .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, POST, PATCH, DELETE, OPTIONS")
-                        .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
-                break;
-            case DOCUMENT:
-                exchange.getResponseHeaders()
-                        .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, PATCH, DELETE, OPTIONS")
-                        .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, If-None-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
-                break;
-            case FILE:
-                exchange.getResponseHeaders()
-                        .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, DELETE, OPTIONS")
-                        .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, If-None-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
-                break;
-            case INDEX:
-                exchange.getResponseHeaders()
-                        .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "PUT")
-                        .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
-                break;
-            case COLLECTION_INDEXES:
-                exchange.getResponseHeaders()
-                        .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET")
-                        .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
-                break;
-            default:
-                break;
+        if (null != context.getType()) {
+            switch (context.getType()) {
+                case ROOT:
+                    exchange.getResponseHeaders()
+                            .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET")
+                            .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
+                case DB:
+                    exchange.getResponseHeaders()
+                            .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, PATCH, DELETE, OPTIONS")
+                            .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
+                case COLLECTION:
+                    exchange.getResponseHeaders()
+                            .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, POST, PATCH, DELETE, OPTIONS")
+                            .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
+                case FILES_BUCKET:
+                    exchange.getResponseHeaders()
+                            .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, POST, PATCH, DELETE, OPTIONS")
+                            .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
+                case SCHEMA_STORE:
+                    exchange.getResponseHeaders()
+                            .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, POST, PATCH, DELETE, OPTIONS")
+                            .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
+                case DOCUMENT:
+                    exchange.getResponseHeaders()
+                            .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, PATCH, DELETE, OPTIONS")
+                            .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, If-None-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
+                case FILE:
+                    exchange.getResponseHeaders()
+                            .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, DELETE, OPTIONS")
+                            .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, If-None-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
+                case SCHEMA:
+                    exchange.getResponseHeaders()
+                            .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, PATCH, DELETE, OPTIONS")
+                            .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, If-None-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
+                case INDEX:
+                    exchange.getResponseHeaders()
+                            .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "PUT")
+                            .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
+                case COLLECTION_INDEXES:
+                    exchange.getResponseHeaders()
+                            .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET")
+                            .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
+                default:
+                    break;
+            }
         }
 
         exchange.setResponseCode(HttpStatus.SC_OK);
