@@ -11,6 +11,8 @@ The leading REST API Server for MongoDB.
 
 For an example, check our **AngularJs** [Notes Example Application](https://github.com/softinstigate/restheart-notes-example).
 
+**Note**: RESTHEart has been mainly tested against MongoDB v 3.0. Version 3.2 compatibility is in our roadmap for the next 1.2 release.
+
 Built on strong foundations
 ----
 * The API strictly follows the **RESTful** paradigm.
