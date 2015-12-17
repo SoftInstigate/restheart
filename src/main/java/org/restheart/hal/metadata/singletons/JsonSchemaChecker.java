@@ -20,18 +20,13 @@ package org.restheart.hal.metadata.singletons;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.Objects;
-import java.util.Optional;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
-import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONObject;
-import org.restheart.Bootstrapper;
-import org.restheart.cache.Cache;
-import org.restheart.cache.CacheFactory;
-import org.restheart.cache.LoadingCache;
-import org.restheart.db.DbsDAO;
 import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.schema.JsonSchemaCacheSingleton;
+import org.restheart.handlers.schema.JsonSchemaNotFoundException;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +46,8 @@ public class JsonSchemaChecker implements Checker {
         boolean patching = context.getMethod() == RequestContext.METHOD.PATCH;
 
         if (patching) {
-            throw new RuntimeException("json schema checking on PATCH requests not yet implemented");
+            context.addWarning("json schema checking on PATCH requests not yet implemented");
+            return false;
         }
 
         Objects.requireNonNull(args, "missing metadata property 'args'");
@@ -75,14 +71,25 @@ public class JsonSchemaChecker implements Checker {
         try {
             URLUtils.checkId(schemaId);
         } catch (UnsupportedDocumentIdException ex) {
-            throw new IllegalArgumentException("wrong schema 'id' is not a valid id, ex");
+            throw new IllegalArgumentException("wrong schema 'id' is not a valid id", ex);
         }
 
         try {
-            Schema theschema = CacheSingleton.getInstance().get(schemaStore, schemaId);
+            Schema theschema;
+
+            try {
+                theschema = JsonSchemaCacheSingleton.getInstance().get(exchange.getRequestURL(), schemaStore, schemaId);
+            } catch (JsonSchemaNotFoundException ex) {
+                context.addWarning(ex.getMessage());
+                return false;
+            }
 
             if (Objects.isNull(theschema)) {
-                throw new IllegalArgumentException("cannot validate, schema " + schemaStore + "/" + RequestContext._SCHEMAS + "/" + schemaId.toString() + " not found");
+                throw new IllegalArgumentException("cannot validate, schema "
+                        + schemaStore
+                        + "/"
+                        + RequestContext._SCHEMAS
+                        + "/" + schemaId.toString() + " not found");
             }
 
             theschema.validate(
@@ -97,67 +104,5 @@ public class JsonSchemaChecker implements Checker {
         }
 
         return true;
-    }
-}
-
-class CacheSingleton {
-    private final DbsDAO dbsDAO;
-
-    private static final String SEPARATOR = "_@_@_";
-    private static final long MAX_CACHE_SIZE = 1_000;
-
-    private LoadingCache<String, Schema> schemaCache = null;
-
-    CacheSingleton() {
-        dbsDAO = new DbsDAO();
-
-        if (Bootstrapper.getConfiguration().isSchemaCacheEnabled()) {
-            this.schemaCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE,
-                    Cache.EXPIRE_POLICY.AFTER_WRITE,
-                    Bootstrapper.getConfiguration().getSchemaCacheTtl(),
-                    (String key) -> {
-                        String[] schemaStoreDbAndSchemaId = key.split(SEPARATOR);
-                        return load(schemaStoreDbAndSchemaId[0], schemaStoreDbAndSchemaId[1]);
-                    });
-        }
-    }
-
-    public Schema get(String schemaStoreDb, Object schemaId) {
-        if (Bootstrapper.getConfiguration().isSchemaCacheEnabled()) {
-            Optional<Schema> _schema = schemaCache.getLoading(schemaStoreDb + SEPARATOR + schemaId);
-
-            if (_schema != null && _schema.isPresent()) {
-                return _schema.get();
-            } else {
-                return null;
-            }
-        } else {
-            return load(schemaStoreDb, schemaId);
-        }
-    }
-
-    private Schema load(String schemaStoreDb, Object schemaId) {
-        DBObject document = dbsDAO.getCollection(schemaStoreDb, RequestContext._SCHEMAS).findOne(schemaId);
-
-        if (Objects.isNull(document)) {
-            return null;
-        }
-
-        return SchemaLoader.load(new JSONObject(document.toMap()));
-    }
-
-    /**
-     *
-     * @return
-     */
-    public static CacheSingleton getInstance() {
-        return CachesSingletonHolder.INSTANCE;
-    }
-
-    private static class CachesSingletonHolder {
-        private static final CacheSingleton INSTANCE = new CacheSingleton();
-
-        private CachesSingletonHolder() {
-        }
     }
 }
