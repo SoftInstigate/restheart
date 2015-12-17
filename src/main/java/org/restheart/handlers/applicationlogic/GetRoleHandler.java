@@ -83,7 +83,7 @@ public class GetRoleHandler extends ApplicationLogicHandler {
             if ((exchange.getSecurityContext() == null
                     || exchange.getSecurityContext().getAuthenticatedAccount() == null
                     || exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null)
-                    || !(context.getUnmappedRequestUri().equals(URLUtils.removeTrailingSlashes(url) + "/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName()))) {
+                    || !(context.getMappedRequestUri().equals(URLUtils.removeTrailingSlashes(url) + "/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName()))) {
 
                 {
                     exchange.setResponseCode(HttpStatus.SC_FORBIDDEN);

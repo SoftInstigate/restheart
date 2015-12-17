@@ -50,7 +50,7 @@ public class IndexesRepresentationFactory {
      */
     static public void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
-        String requestPath = URLUtils.removeTrailingSlashes(context.getMappedRequestUri());
+        String requestPath = URLUtils.removeTrailingSlashes(context.getUnmappedRequestUri());
         String queryString = exchange.getQueryString() == null || exchange.getQueryString().isEmpty()
                 ? ""
                 : "?" + URLUtils.decodeQueryString(exchange.getQueryString());

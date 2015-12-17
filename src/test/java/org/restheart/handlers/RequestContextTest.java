@@ -132,50 +132,50 @@ public class RequestContextTest {
         String whereUri = "/";
 
         RequestContext context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/mydb/mycollection", context.getMappedRequestUri());
+        assertEquals("/mydb/mycollection", context.getUnmappedRequestUri());
 
         whatUri = "*";
         whereUri = "/";
 
         context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/", context.getMappedRequestUri());
+        assertEquals("/", context.getUnmappedRequestUri());
         
         whatUri = "*";
         whereUri = "/data";
 
         context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/", context.getMappedRequestUri());
+        assertEquals("/", context.getUnmappedRequestUri());
         
         whatUri = "/data";
         whereUri = "/";
         
         context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/data", context.getMappedRequestUri());
+        assertEquals("/data", context.getUnmappedRequestUri());
         
         whatUri = "/db/coll";
         whereUri = "/";
         
         context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/coll", context.getMappedRequestUri());
+        assertEquals("/db/coll", context.getUnmappedRequestUri());
         
         whatUri = "/db/coll/doc";
         whereUri = "/";
         
         context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/coll/doc", context.getMappedRequestUri());
+        assertEquals("/db/coll/doc", context.getUnmappedRequestUri());
         
         whatUri = "/db/coll/";
         whereUri = "/";
         
         context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/coll", context.getMappedRequestUri());
+        assertEquals("/db/coll", context.getUnmappedRequestUri());
         
         
         whatUri = "/db/coll////";
         whereUri = "/";
         
         context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/coll", context.getMappedRequestUri());
+        assertEquals("/db/coll", context.getUnmappedRequestUri());
     }
     
     @Test
@@ -188,24 +188,24 @@ public class RequestContextTest {
         String whereUri = "/";
 
         RequestContext context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/mycollection/x", context.getMappedRequestUri());
+        assertEquals("/db/mycollection/x", context.getUnmappedRequestUri());
         
         whatUri = "*";
         whereUri = "/";
 
         context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/x", context.getMappedRequestUri());
+        assertEquals("/x", context.getUnmappedRequestUri());
         
         whatUri = "db";
         whereUri = "/";
         
         context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/x", context.getMappedRequestUri());
+        assertEquals("/db/x", context.getUnmappedRequestUri());
         
         whatUri = "db/coll";
         whereUri = "/";
         
         context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/coll/x", context.getMappedRequestUri());
+        assertEquals("/db/coll/x", context.getUnmappedRequestUri());
     }
 }
