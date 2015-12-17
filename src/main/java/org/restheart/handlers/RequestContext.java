@@ -138,8 +138,8 @@ public class RequestContext {
     private DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OID;
     private Object documentId;
 
-    private String unmappedRequestUri = null;
-    private String mappedRequestUri = null;
+    private String mappedUri = null;
+    private String unmappedUri = null;
 
     /**
      * the HAL mode
@@ -149,11 +149,11 @@ public class RequestContext {
     /**
      *
      * @param exchange the url rewriting feature is implemented by the whatUri
-     * and whereUri parameters
+     * and whereUri parameters.
      *
-     * the exchange request path is rewritten replacing the whereUri string with
-     * the whatUri string the special whatUri value * means any resource: the
-     * whereUri is replaced with /
+     * the exchange request path (mapped uri) is rewritten replacing the
+     * whereUri string with the whatUri string the special whatUri value * means
+     * any resource: the whereUri is replaced with /
      *
      * example 1
      *
@@ -180,11 +180,11 @@ public class RequestContext {
                         : whatUri.startsWith("/") || "*".equals(whatUri) ? whatUri
                                 : "/" + whatUri);
 
-        this.unmappedRequestUri = exchange.getRequestPath();
-        this.mappedRequestUri = unmapUri(exchange.getRequestPath());
+        this.mappedUri = exchange.getRequestPath();
+        this.unmappedUri = unmapUri(exchange.getRequestPath());
 
         // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
-        this.pathTokens = this.mappedRequestUri.split(SLASH);
+        this.pathTokens = this.unmappedUri.split(SLASH);
         this.type = selectRequestType(pathTokens);
 
         this.method = selectRequestMethod(exchange.getRequestMethod());
@@ -284,9 +284,9 @@ public class RequestContext {
     }
 
     /**
-     * given a canonical uri (/db/coll) returns the mapped uri (/db/coll)
-     * relative to this context URLs are mapped to mongodb resources by using
-     * the mongo-mounts configuration properties
+     * given a canonical uri (/db/coll) returns the mapped uri
+     * (/some/mapping/uri) relative to this context. URLs are mapped to mongodb
+     * resources via the mongo-mounts configuration properties
      *
      * @param unmappedUri
      * @return
@@ -322,8 +322,8 @@ public class RequestContext {
      */
     public final boolean isParentAccessible() {
         return type == TYPE.DB
-                ? unmappedRequestUri.split(SLASH).length > 1
-                : unmappedRequestUri.split(SLASH).length > 2;
+                ? mappedUri.split(SLASH).length > 1
+                : mappedUri.split(SLASH).length > 2;
     }
 
     /**
@@ -603,17 +603,24 @@ public class RequestContext {
     }
 
     /**
-     * @return the mappedRequestUri
+     *
+     * The unmapped uri is the cononical uri of a mongodb resource (e.g.
+     * /db/coll).
+     *
+     * @return the unmappedUri
      */
-    public String getMappedRequestUri() {
-        return mappedRequestUri;
+    public String getUnmappedRequestUri() {
+        return unmappedUri;
     }
 
     /**
-     * @return the unmappedRequestUri
+     * The mapped uri is the exchange request uri. This is "mapped" by the
+     * mongo-mounts mapping paramenters.
+     *
+     * @return the mappedUri
      */
-    public String getUnmappedRequestUri() {
-        return unmappedRequestUri;
+    public String getMappedRequestUri() {
+        return mappedUri;
     }
 
     /**
