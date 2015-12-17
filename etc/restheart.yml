@@ -46,6 +46,9 @@ use-embedded-keystore: true
 # The format of the URI is:
 #    mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
 #
+# The URI option authSource allows to specify the authetication database, example:
+# mongodb://user:secret@127.0.0.1/?authSource=authdb
+#
 # More information at http://api.mongodb.org/java/current/com/mongodb/MongoClientURI.html
 
 mongo-uri: mongodb://127.0.0.1
