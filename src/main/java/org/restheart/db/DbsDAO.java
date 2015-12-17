@@ -84,8 +84,9 @@ public class DbsDAO implements Database {
             return false;
         }
 
-        // at least the system.indexes collection exists for an existing db
-        return client.getDB(dbName).collectionExists("system.indexes");
+        // at least one collection exists for an existing db
+        return client.getDatabase(dbName)
+                .listCollectionNames().first() != null;
     }
 
     /**
