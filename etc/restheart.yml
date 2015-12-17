@@ -50,6 +50,11 @@ use-embedded-keystore: true
 
 mongo-uri: mongodb://127.0.0.1
 
+# Use mongo-mounts to bind URls to mongodb resources using the out-of-the-box URL rewrite feature.
+mongo-mounts:
+    - what: "*"
+      where: /
+
 #### Static Web Resources
 
 # Static web resources to bind to the specified URL.
