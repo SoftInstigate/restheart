@@ -17,13 +17,16 @@
  */
 package org.restheart.handlers.schema;
 
+import com.google.common.collect.Lists;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
+import java.util.List;
 import org.bson.types.ObjectId;
 import org.restheart.hal.metadata.singletons.Transformer;
 import org.restheart.handlers.RequestContext;
+import org.restheart.utils.JsonUtils;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,25 +39,34 @@ public class JsonSchemaTransformer implements Transformer {
     static final Logger LOGGER = LoggerFactory.getLogger(JsonSchemaTransformer.class);
 
     @Override
-    public void tranform(HttpServerExchange exchange, RequestContext context, DBObject contentToTransform, DBObject args) {
+    public void tranform(HttpServerExchange exchange, RequestContext context, final DBObject contentToTransform, DBObject args) {
         if (context.getType() == RequestContext.TYPE.SCHEMA) {
             if (context.getMethod() == RequestContext.METHOD.GET) {
-                context.getResponseContent()
-                        .put("$schema", "http://json-schema.org/draft-04/schema#");
+                unescapeSchema(context.getResponseContent());
             } else if (context.getMethod() == RequestContext.METHOD.PUT
                     || context.getMethod() == RequestContext.METHOD.PATCH) {
+                // generate id as specs mandates
                 Object schemaId = context.getDocumentId();
 
-                context.getContent().put("id", URLUtils.getReferenceLink(context,
+                String id = URLUtils.getReferenceLink(context,
                         URLUtils.getParentPath(exchange.getRequestURL()),
-                        schemaId));
+                        schemaId);
+                
+                if (!id.endsWith("#")) {
+                    id = id.concat("#");
+                }
+                
+                context.getContent().put("id", id);
+                
+                // escape all $ prefixed keys
+                escapeSchema(contentToTransform);
 
-                // remove the $schema field from the request
-                // in mongodb fiels cannot start with $
-                contentToTransform.removeField("$schema");
+                // add (overwrite) $schema field
+                contentToTransform.put("_$schema", "http://json-schema.org/draft-04/schema#");
             }
         } else if (context.getType() == RequestContext.TYPE.SCHEMA_STORE) {
             if (context.getMethod() == RequestContext.METHOD.POST) {
+                // generate id as specs mandates
                 Object schemaId;
 
                 if (context.getContent().get("_id") == null) {
@@ -63,14 +75,22 @@ public class JsonSchemaTransformer implements Transformer {
                 } else {
                     schemaId = context.getContent().get("_id");
                 }
-
-                context.getContent().put("id", URLUtils.getReferenceLink(context,
+                
+                String id = URLUtils.getReferenceLink(context,
                         exchange.getRequestURL(),
-                        schemaId));
+                        schemaId);
+                
+                if (!id.endsWith("#")) {
+                    id = id.concat("#");
+                }
+                
+                contentToTransform.put("id", id);
 
-                // remove the $schema field from the request
-                // in mongodb fiels cannot start with $
-                contentToTransform.removeField("$schema");
+                // escape all $ prefixed keys
+                escapeSchema(contentToTransform);
+
+                // add (overwrite) $schema field
+                contentToTransform.put("_$schema", "http://json-schema.org/draft-04/schema#");
             } else if (context.getMethod() == RequestContext.METHOD.GET) {
                 // apply transformation on embedded schemas
 
@@ -83,12 +103,31 @@ public class JsonSchemaTransformer implements Transformer {
                     if (docs != null) {
                         docs.keySet().stream().map((k) -> (DBObject) docs.get(k))
                                 .forEach((doc) -> {
-                                    doc.put("$schema",
-                                            "http://json-schema.org/draft-04/schema#");
+                                    unescapeSchema(doc);
                                 });
                     }
                 }
             }
         }
+    }
+
+    public static void escapeSchema(DBObject schema) {
+        DBObject escaped = (DBObject) JsonUtils.escapeKeys(schema);
+
+        List<String> keys = Lists.newArrayList(schema.keySet().iterator());
+
+        keys.stream().forEach(f -> schema.removeField(f));
+
+        schema.putAll(escaped);
+    }
+
+    public static void unescapeSchema(DBObject schema) {
+        DBObject unescaped = (DBObject) JsonUtils.unescapeKeys(schema);
+
+        List<String> keys = Lists.newArrayList(schema.keySet().iterator());
+
+        keys.stream().forEach(f -> schema.removeField(f));
+
+        schema.putAll(unescaped);
     }
 }
