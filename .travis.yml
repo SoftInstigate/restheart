@@ -12,8 +12,7 @@ notifications:
 env:
   global:
     secure: pX++1p1oh7VJx7TqQhqhSnpCHitJjSQymQnGt+Ve0YlafR2mjGY5D7N+fnfV/pzkdy/UVp4pF0uY5Vftg61oHJLgGnzGip8RvSeIK1CTUmBhJA8+D0WgQXYX+iBB8RG5+xZeTJfKp6FQjL3AlWeuDeGsCGPantvDHXqyu1pAZgc=
-script:
-  - mvn clean install -q
+
 after_success:
   - wget https://gist.githubusercontent.com/mkjsix/98debbbbfcf310b6a33f/raw/8554d7bad33f7b4cfd9bd2cb7bc37b5ebf8588b4/settings.xml
-  - mvn deploy -q --settings settings.xml
+  - mvn deploy --settings settings.xml
