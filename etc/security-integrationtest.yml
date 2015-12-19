@@ -26,7 +26,7 @@ dbim:
 ## Configuration for file based Access Manager
 
 ## Look at undertow documentation for information about predictates syntax
-## http://undertow.io/documentation/core/predicates-attributes-handlers.html
+## http://undertow.io/undertow-docs/undertow-docs-1.3.0/index.html#predicates-attributes-and-handlers
 ## The special role $unauthenticated allows to give permissions without requiring authentication
 permissions:
     - role: admins
