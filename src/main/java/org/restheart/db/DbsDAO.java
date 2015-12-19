@@ -86,7 +86,8 @@ public class DbsDAO implements Database {
 
         // at least one collection exists for an existing db
         return client.getDatabase(dbName)
-                .listCollectionNames().first() != null;
+                .listCollectionNames()
+                .first() != null;
     }
 
     /**
