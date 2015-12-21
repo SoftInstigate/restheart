@@ -80,7 +80,7 @@ public class MongoDBClientSingleton {
             }
         } catch (Throwable t) {
             LOGGER.warn("Cannot get the MongoDb version.");
-            serverVersion = "3.x?";
+            serverVersion = "?";
         }
     }
 
