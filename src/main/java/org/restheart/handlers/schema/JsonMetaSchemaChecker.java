@@ -19,8 +19,11 @@ package org.restheart.handlers.schema;
 
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.everit.json.schema.loader.SchemaLoader;
@@ -28,6 +31,7 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.restheart.hal.metadata.singletons.Checker;
 import org.restheart.handlers.RequestContext;
+import org.restheart.utils.ResourcesExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,14 +47,15 @@ public class JsonMetaSchemaChecker implements Checker {
     private static Schema schema;
 
     static {
-        try (InputStream inputStream = JsonMetaSchemaChecker.class
-                .getClassLoader()
-                .getResourceAsStream("json-schema-draft-v4.json")) {
+        try  {
+            File file = ResourcesExtractor.extract("json-schema-draft-v4.json");
 
+            InputStream inputStream = new FileInputStream(file);
+            
             JSONObject rawSchema = new JSONObject(new JSONTokener(inputStream));
             schema = SchemaLoader.load(rawSchema);
-        } catch (IOException ioe) {
-            LOGGER.error("error initializing {}", ioe);
+        } catch (IOException | URISyntaxException ex) {
+            LOGGER.error("error initializing {}", ex);
         }
     }
 
