@@ -86,6 +86,29 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         RequestContext rcontext = new RequestContext(exchange, whereUri, whatUri);
 
+        // check database name to be a valid mongodb name
+        if (rcontext.getDBName() != null
+                && rcontext.isDbNameInvalid()) {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                    "illegal database name, see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
+            return;
+        }
+        
+        // check collection name to be a valid mongodb name
+        if (rcontext.getCollectionName() != null
+                && rcontext.isCollectionNameInvalid()) {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                    "illegal collection name, see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
+            return;
+        }
+        
+         // check collection name to be a valid mongodb name
+        if (rcontext.isReservedResource()) {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN,
+                    "reserved resource");
+            return;
+        }
+
         Deque<String> __pagesize = exchange.getQueryParameters().get(PAGESIZE_QPARAM_KEY);
 
         int page = 1; // default page

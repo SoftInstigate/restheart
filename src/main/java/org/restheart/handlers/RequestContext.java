@@ -138,6 +138,8 @@ public class RequestContext {
     private String unmappedRequestUri = null;
     private String mappedRequestUri = null;
 
+    private static String NUL = Character.toString('\0');
+
     /**
      * the HAL mode
      */
@@ -169,9 +171,9 @@ public class RequestContext {
      */
     public RequestContext(HttpServerExchange exchange, String whereUri, String whatUri) {
         this.whereUri = URLUtils.removeTrailingSlashes(whereUri == null ? null
-                        : whereUri.startsWith("/") ? whereUri
-                                : "/" + whereUri);
-        
+                : whereUri.startsWith("/") ? whereUri
+                        : "/" + whereUri);
+
         this.whatUri = URLUtils.removeTrailingSlashes(
                 whatUri == null ? null
                         : whatUri.startsWith("/") || "*".equals(whatUri) ? whatUri
@@ -426,13 +428,17 @@ public class RequestContext {
      * @return isReservedResource
      */
     public boolean isReservedResource() {
-        if (type == TYPE.ROOT || type == TYPE.AGGREGATION) {
+        if (type == TYPE.ROOT) {
             return false;
         }
 
+        String docId = getDocumentIdRaw();
+
         return isReservedResourceDb(getDBName())
                 || isReservedResourceCollection(getCollectionName())
-                || isReservedResourceDocument(getDocumentIdRaw());
+                || (docId != null && !docId.startsWith(_AGGREGATIONS)
+                || (type != TYPE.AGGREGATION && _AGGREGATIONS.equals(docId))
+                && isReservedResourceDocument(getDocumentIdRaw()));
     }
 
     /**
@@ -713,5 +719,77 @@ public class RequestContext {
      */
     public void setHalMode(HAL_MODE halMode) {
         this.halMode = halMode;
+    }
+
+    /**
+     * @see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     * @return
+     */
+    public boolean isDbNameInvalid() {
+        return isDbNameInvalid(getDBName());
+    }
+
+    /**
+     * @param dbName
+     * @see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     * @return
+     */
+    public boolean isDbNameInvalid(String dbName) {
+        return (dbName == null
+                || dbName.contains(NUL)
+                || dbName.contains(" ")
+                || dbName.contains("/")
+                || dbName.contains("\\")
+                || dbName.contains(".")
+                || dbName.contains("\"")
+                || dbName.contains("$")
+                || dbName.length() > 64
+                || dbName.length() == 0);
+    }
+
+    /**
+     * @see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     * @return
+     */
+    public boolean isDbNameInvalidOnWindows() {
+        return isDbNameInvalidOnWindows(getDBName());
+    }
+
+    /**
+     * @param dbName
+     * @see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     * @return
+     */
+    public boolean isDbNameInvalidOnWindows(String dbName) {
+        return (isDbNameInvalid()
+                || dbName.contains("*")
+                || dbName.contains("<")
+                || dbName.contains(">")
+                || dbName.contains(":")
+                || dbName.contains(".")
+                || dbName.contains("|")
+                || dbName.contains("?"));
+    }
+
+    /**
+     * @see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     * @return
+     */
+    public boolean isCollectionNameInvalid() {
+        return isCollectionNameInvalid(getCollectionName());
+    }
+
+    /**
+     * @param collectionName
+     * @see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     * @return
+     */
+    public boolean isCollectionNameInvalid(String collectionName) {
+        // collection starting with system. will return FORBIDDEN
+
+        return (collectionName == null
+                || collectionName.contains(NUL)
+                || collectionName.contains("$")
+                || collectionName.length() == 64);
     }
 }
