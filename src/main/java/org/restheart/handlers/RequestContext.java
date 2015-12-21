@@ -436,8 +436,9 @@ public class RequestContext {
 
         return isReservedResourceDb(getDBName())
                 || isReservedResourceCollection(getCollectionName())
-                || (docId != null && !docId.startsWith(_AGGREGATIONS)
                 || (type != TYPE.AGGREGATION && _AGGREGATIONS.equals(docId))
+                || (docId != null 
+                && !docId.equals(_AGGREGATIONS)
                 && isReservedResourceDocument(getDocumentIdRaw()));
     }
 
