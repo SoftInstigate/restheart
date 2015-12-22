@@ -20,8 +20,12 @@ package org.restheart.db;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.client.ListIndexesIterable;
+import java.util.ArrayList;
 import org.restheart.utils.HttpStatus;
 import java.util.List;
+import java.util.function.Consumer;
+import org.bson.Document;
 
 /**
  *
@@ -52,16 +56,16 @@ class IndexDAO {
      * @return
      */
     List<DBObject> getCollectionIndexes(String dbName, String collName) {
-        List<DBObject> indexes = client.getDB(dbName).getCollection("system.indexes")
-                .find(new BasicDBObject("ns", dbName + "." + collName), FIELDS_TO_RETURN_INDEXES)
-                .sort(new BasicDBObject("name", 1))
-                .toArray();
-
-        indexes.forEach((i) -> {
+        List<DBObject> indexes = client
+                .getDB(dbName)
+                .getCollection(collName)
+                .getIndexInfo();
+        
+        indexes.forEach(i -> {
             i.put("_id", i.get("name"));
             i.removeField("name");
         });
-
+        
         return indexes;
     }
 
