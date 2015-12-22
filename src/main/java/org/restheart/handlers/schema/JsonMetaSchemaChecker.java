@@ -19,11 +19,7 @@ package org.restheart.handlers.schema;
 
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.everit.json.schema.loader.SchemaLoader;
@@ -31,7 +27,6 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.restheart.hal.metadata.singletons.Checker;
 import org.restheart.handlers.RequestContext;
-import org.restheart.utils.ResourcesExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,20 +37,24 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class JsonMetaSchemaChecker implements Checker {
+    static final String JSON_METASCHEMA_FILENAME = "json-schema-draft-v4.json";
+    
     static final Logger LOGGER = LoggerFactory.getLogger(JsonMetaSchemaChecker.class);
 
     private static Schema schema;
 
     static {
         try  {
-            File file = ResourcesExtractor.extract("json-schema-draft-v4.json");
+            InputStream jsonMetaschemaIS = JsonMetaSchemaChecker.class
+                    .getClassLoader()
+                    .getResourceAsStream(JSON_METASCHEMA_FILENAME);
 
-            InputStream inputStream = new FileInputStream(file);
+            JSONObject rawSchema = 
+                    new JSONObject(new JSONTokener(jsonMetaschemaIS));
             
-            JSONObject rawSchema = new JSONObject(new JSONTokener(inputStream));
             schema = SchemaLoader.load(rawSchema);
-        } catch (IOException | URISyntaxException ex) {
-            LOGGER.error("error initializing {}", ex);
+        } catch (Throwable ex) {
+            LOGGER.error("error initializing", ex);
         }
     }
 
