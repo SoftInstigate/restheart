@@ -58,13 +58,19 @@ public interface Database {
     OperationResult deleteDatabase(String dbName, ObjectId requestEtag);
 
     /**
-     * WARNING: slow method.
-     *
      * @param dbName
-     * @return true if exists a DB with this name
+     * @return true if DB dbName exists
      *
      */
     boolean doesDbExist(String dbName);
+    
+    /**
+     * @param dbName
+     * @param collName
+     * @return true if exists the collection collName exists in DB dbName
+     *
+     */
+    boolean doesCollectionExist(String dbName, String collName);
 
     /**
      *
