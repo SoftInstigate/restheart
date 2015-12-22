@@ -70,7 +70,7 @@ public class GetAggregationHandler extends PipedHttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange,
             RequestContext context) throws Exception {
-        String queryUri = context.getQuery();
+        String queryUri = context.getAggregationOperation();
 
         List<AbstractAggregationOperation> aggregations
                 = AbstractAggregationOperation

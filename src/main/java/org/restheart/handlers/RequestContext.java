@@ -372,7 +372,7 @@ public class RequestContext {
      *
      * @return collection name
      */
-    public String getQuery() {
+    public String getAggregationOperation() {
         return getPathTokenAt(4);
     }
 
@@ -396,7 +396,7 @@ public class RequestContext {
     /**
      *
      * @param dbName
-     * @return isReservedResourceDb
+     * @return true if the dbName is a reserved resource
      */
     public static boolean isReservedResourceDb(String dbName) {
         return dbName.equals(ADMIN)
@@ -408,11 +408,11 @@ public class RequestContext {
     /**
      *
      * @param collectionName
-     * @return isReservedResourceCollection
+     * @return true if the collectionName is a reserved resource
      */
     public static boolean isReservedResourceCollection(String collectionName) {
         return collectionName != null
-                && !collectionName.equals(_SCHEMAS)
+                && !collectionName.equalsIgnoreCase(_SCHEMAS)
                 && (collectionName.startsWith(SYSTEM)
                 || collectionName.startsWith(UNDERSCORE)
                 || collectionName.endsWith(FS_CHUNKS_SUFFIX));
@@ -420,10 +420,11 @@ public class RequestContext {
 
     /**
      *
+     * @param type
      * @param documentIdRaw
-     * @return isReservedResourceDocument
+     * @return true if the documentIdRaw is a reserved resource
      */
-    public static boolean isReservedResourceDocument(String documentIdRaw) {
+    public static boolean isReservedResourceDocument(TYPE type, String documentIdRaw) {
         if (documentIdRaw == null) {
             return false;
         }
@@ -431,7 +432,9 @@ public class RequestContext {
         return documentIdRaw.startsWith(UNDERSCORE)
                 && !documentIdRaw.equalsIgnoreCase(_INDEXES)
                 && !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID)
-                && !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID);
+                && !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID)
+                && (type != TYPE.AGGREGATION && _AGGREGATIONS.equalsIgnoreCase(documentIdRaw))
+                && !(type == TYPE.AGGREGATION); 
     }
 
     /**
@@ -443,14 +446,9 @@ public class RequestContext {
             return false;
         }
 
-        String docId = getDocumentIdRaw();
-
         return isReservedResourceDb(getDBName())
                 || isReservedResourceCollection(getCollectionName())
-                || (type != TYPE.AGGREGATION && _AGGREGATIONS.equals(docId))
-                || (docId != null 
-                && !docId.equals(_AGGREGATIONS) 
-                && isReservedResourceDocument(getDocumentIdRaw()));
+                || isReservedResourceDocument(type, getDocumentIdRaw());
     }
 
     /**
