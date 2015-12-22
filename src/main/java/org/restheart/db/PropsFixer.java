@@ -66,10 +66,9 @@ public class PropsFixer {
             return false;
         }
 
+        
         // check if collection has data
-        DB db = dbsDAO.getDB(dbName);
-
-        if (!db.collectionExists(collName)) {
+        if (!dbsDAO.doesCollectionExist(dbName, collName)) {
             return false;
         }
 
