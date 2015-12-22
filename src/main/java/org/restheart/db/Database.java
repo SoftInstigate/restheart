@@ -24,7 +24,6 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSONParseException;
 
-import io.undertow.server.HttpServerExchange;
 
 import java.util.ArrayList;
 import java.util.Deque;
