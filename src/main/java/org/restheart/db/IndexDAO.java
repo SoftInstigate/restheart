@@ -20,12 +20,8 @@ package org.restheart.db;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import com.mongodb.client.ListIndexesIterable;
-import java.util.ArrayList;
 import org.restheart.utils.HttpStatus;
 import java.util.List;
-import java.util.function.Consumer;
-import org.bson.Document;
 
 /**
  *
