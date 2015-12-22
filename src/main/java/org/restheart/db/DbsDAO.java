@@ -24,6 +24,7 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
+import com.mongodb.client.MongoCursor;
 
 import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.IllegalQueryParamenterException;
@@ -79,9 +80,35 @@ public class DbsDAO implements Database {
     @Override
     public boolean doesDbExist(String dbName) {
         // at least one collection exists for an existing db
-        return client.getDatabase(dbName)
+        return client
+                .getDatabase(dbName)
                 .listCollectionNames()
                 .first() != null;
+    }
+    
+    /**
+     *
+     * @param dbName
+     * @return
+     *
+     */
+    @Override
+    public boolean doesCollectionExist(String dbName, String collName) {
+        // at least one collection exists for an existing db
+        MongoCursor<String> dbCollections = client
+                .getDatabase(dbName)
+                .listCollectionNames()
+                .iterator();
+        
+        while (dbCollections.hasNext()) {
+            String dbCollection = dbCollections.next();
+            
+            if (collName.equals(dbCollection)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
