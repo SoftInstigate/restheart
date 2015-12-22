@@ -17,9 +17,7 @@
  */
 package org.restheart.db;
 
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
-import com.mongodb.CommandResult;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -80,10 +78,6 @@ public class DbsDAO implements Database {
      */
     @Override
     public boolean doesDbExist(String dbName) {
-        if (dbName == null || dbName.isEmpty() || dbName.contains(" ")) {
-            return false;
-        }
-
         // at least one collection exists for an existing db
         return client.getDatabase(dbName)
                 .listCollectionNames()
