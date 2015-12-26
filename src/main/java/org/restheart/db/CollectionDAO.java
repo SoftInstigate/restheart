@@ -250,7 +250,7 @@ class CollectionDAO {
             } catch (MongoException mce) {
                 int errCode = mce.getCode();
 
-                if (errCode == 13) {
+                if (errCode == 13 || errCode == 1000) {
                     // mongodb user is not allowed to write (no readWrite role)
                     // just return properties with _id
                     properties = new BasicDBObject("_id", collName);
