@@ -109,7 +109,13 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             final String contentString = ChannelReader.read(exchange.getRequestChannel());
 
             try {
-                properties = (DBObject) JSON.parse(contentString);
+                Object _content = JSON.parse(contentString);
+                
+                if (_content == null || _content instanceof DBObject) {
+                    properties = (DBObject) _content;
+                } else {
+                    throw new IllegalArgumentException("JSON parser returned a " + _content.getClass().getSimpleName());
+                }
             } catch (JSONParseException | IllegalArgumentException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON", ex);
                 return;
