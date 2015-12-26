@@ -56,7 +56,10 @@ public class PropsFixer {
 
         if (dbmd == null) {
             // db must exists with properties
-            return false;
+            // this happens if the db and the collection have not been created
+            // by restheart and the mongodb user has read only priviledge 
+            // on the collection
+            throw new MongoException(1000, "cannot add collection properties, the _properties collection does not exit");
         }
 
         DBObject md = dbsDAO.getCollectionProperties(dbName, collName, false);
@@ -66,7 +69,6 @@ public class PropsFixer {
             return false;
         }
 
-        
         // check if collection has data
         if (!dbsDAO.doesCollectionExist(dbName, collName)) {
             return false;
