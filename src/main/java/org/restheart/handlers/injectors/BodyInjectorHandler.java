@@ -111,10 +111,10 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             try {
                 Object _content = JSON.parse(contentString);
                 
-                if (_content == null || _content instanceof DBObject) {
+                if (_content == null || _content instanceof BasicDBObject) {
                     properties = (DBObject) _content;
                 } else {
-                    throw new IllegalArgumentException("JSON parser returned a " + _content.getClass().getSimpleName());
+                    throw new IllegalArgumentException("JSON parser returned a " + _content.getClass().getSimpleName() + ". Must be a json object.");
                 }
             } catch (JSONParseException | IllegalArgumentException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON", ex);
