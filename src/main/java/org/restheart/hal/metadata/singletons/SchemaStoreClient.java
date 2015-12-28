@@ -20,13 +20,11 @@ package org.restheart.hal.metadata.singletons;
 import com.mongodb.DBObject;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Objects;
 import org.everit.json.schema.loader.SchemaClient;
 import org.everit.json.schema.loader.internal.DefaultSchemaClient;
 import org.restheart.handlers.schema.JsonSchemaCacheSingleton;
 import org.restheart.handlers.schema.JsonSchemaNotFoundException;
+import org.restheart.handlers.schema.SchemaStoreURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,32 +37,26 @@ import org.slf4j.LoggerFactory;
 public class SchemaStoreClient implements SchemaClient {
     static final Logger LOGGER = LoggerFactory.getLogger(SchemaStoreClient.class);
 
-    private static final SchemaClient wrapped = new DefaultSchemaClient();
-    private final URL requestUrl;
+    private static final SchemaClient WRAPPED = new DefaultSchemaClient();
 
-    public SchemaStoreClient(String requestUrl) {
-        Objects.requireNonNull(requestUrl);
-
-        try {
-            this.requestUrl = new URL(requestUrl);
-        } catch (MalformedURLException ex) {
-            throw new IllegalArgumentException("invalid url argument: " + requestUrl);
-        }
+    public SchemaStoreClient() {
     }
 
     @Override
-    public InputStream get(String url) {
-        LOGGER.debug("url " + url);
-
-        if (isLocalSchemaStore(url)) {
+    public InputStream get(String uri) {
+        if (isLocalSchemaStore(uri)) {
             try {
-                DBObject s = JsonSchemaCacheSingleton.getInstance().getRaw(getSchemaStoreDB(url), getSchemaId(url));
+                SchemaStoreURI _uri = new SchemaStoreURI(uri);
+
+                DBObject s = JsonSchemaCacheSingleton.getInstance()
+                        .getRaw(_uri.getSchemaDb(), _uri.getSchemaId());
+
                 return new ByteArrayInputStream(s.toString().getBytes());
             } catch (JsonSchemaNotFoundException ex) {
                 throw new RuntimeException(ex);
             }
         } else {
-            return wrapped.get(url);
+            return WRAPPED.get(uri);
         }
     }
 
@@ -75,46 +67,10 @@ public class SchemaStoreClient implements SchemaClient {
 
     /**
      *
-     * @param url
-     * @return true if the given url is points to a schema store of this server
+     * @param id
+     * @return true if the given id is a schema store of this server
      */
-    private boolean isLocalSchemaStore(String url) {
-        LOGGER.debug("*** {} {}", requestUrl, url);
-
-        URL _url;
-
-        try {
-            _url = new URL(url);
-        } catch (MalformedURLException ex) {
-            return false;
-        }
-
-        return requestUrl.getHost().equals(_url.getHost())
-                && requestUrl.getPort() == _url.getPort();
-    }
-
-    /**
-     * warning: this is not working for urls rewritten by mongo-mounts conf
-     * option
-     *
-     * @param url
-     * @return the schema store db
-     */
-    private String getSchemaStoreDB(String url) {
-        String[] tokens = url.split("/");
-
-        return tokens.length >= 3 ? tokens[tokens.length - 3] : null;
-    }
-
-    /**
-     * warning: this is not working for urls rewritten by mongo-mounts conf
-     * option
-     *
-     * @param url
-     * @return the schema id
-     */
-    private String getSchemaId(String url) {
-        String[] tokens = url.split("/");
-        return tokens.length >= 1 ? tokens[tokens.length - 1] : null;
+    private boolean isLocalSchemaStore(String id) {
+        return SchemaStoreURI.isValid(id);
     }
 }
