@@ -46,18 +46,10 @@ public class JsonSchemaTransformer implements Transformer {
             } else if (context.getMethod() == RequestContext.METHOD.PUT
                     || context.getMethod() == RequestContext.METHOD.PATCH) {
                 // generate id as specs mandates
-                Object schemaId = context.getDocumentId();
+                SchemaStoreURI uri = new SchemaStoreURI(context.getDBName(), context.getDocumentId());
+                
+                context.getContent().put("id", uri.toString());
 
-                String id = URLUtils.getReferenceLink(context,
-                        URLUtils.getParentPath(exchange.getRequestURL()),
-                        schemaId);
-                
-                if (!id.endsWith("#")) {
-                    id = id.concat("#");
-                }
-                
-                context.getContent().put("id", id);
-                
                 // escape all $ prefixed keys
                 escapeSchema(contentToTransform);
 
@@ -75,16 +67,10 @@ public class JsonSchemaTransformer implements Transformer {
                 } else {
                     schemaId = context.getContent().get("_id");
                 }
+
+                SchemaStoreURI uri = new SchemaStoreURI(context.getDBName(), schemaId);
                 
-                String id = URLUtils.getReferenceLink(context,
-                        exchange.getRequestURL(),
-                        schemaId);
-                
-                if (!id.endsWith("#")) {
-                    id = id.concat("#");
-                }
-                
-                contentToTransform.put("id", id);
+                context.getContent().put("id", uri.toString());
 
                 // escape all $ prefixed keys
                 escapeSchema(contentToTransform);

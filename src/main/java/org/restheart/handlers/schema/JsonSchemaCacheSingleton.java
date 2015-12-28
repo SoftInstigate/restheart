@@ -65,14 +65,14 @@ public class JsonSchemaCacheSingleton {
                 return _schema.get();
             } else {
                 // load it
-                Schema s = load(requestUrl, schemaStoreDb, schemaId);
+                Schema s = load(schemaStoreDb, schemaId);
 
                 schemaCache.put(schemaStoreDb + SEPARATOR + schemaId, s);
 
                 return s;
             }
         } else {
-            return load(requestUrl, schemaStoreDb, schemaId);
+            return load(schemaStoreDb, schemaId);
         }
     }
     
@@ -95,10 +95,10 @@ public class JsonSchemaCacheSingleton {
         }
     }
 
-    private Schema load(String requestUrl, String schemaStoreDb, Object schemaId) throws JsonSchemaNotFoundException {
+    private Schema load(String schemaStoreDb, Object schemaId) throws JsonSchemaNotFoundException {
         DBObject document = loadRaw(schemaStoreDb, schemaId);
 
-        return SchemaLoader.load(new JSONObject(document.toMap()), new SchemaStoreClient(requestUrl));
+        return SchemaLoader.load(new JSONObject(document.toMap()), new SchemaStoreClient());
     }
     
     private DBObject loadRaw(String schemaStoreDb, Object schemaId) throws JsonSchemaNotFoundException {

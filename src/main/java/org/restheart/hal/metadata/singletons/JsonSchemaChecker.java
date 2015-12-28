@@ -71,7 +71,7 @@ public class JsonSchemaChecker implements Checker {
         try {
             URLUtils.checkId(schemaId);
         } catch (UnsupportedDocumentIdException ex) {
-            throw new IllegalArgumentException("wrong schema 'id' is not a valid id", ex);
+            throw new IllegalArgumentException("schema 'id' is not a valid id", ex);
         }
 
         try {
