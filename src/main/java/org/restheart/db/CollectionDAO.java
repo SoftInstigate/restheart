@@ -17,6 +17,7 @@
  */
 package org.restheart.db;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -158,24 +159,38 @@ class CollectionDAO {
         final BasicDBObject query = new BasicDBObject();
 
         if (filters != null) {
-            filters.stream().forEach((String f) -> {
-                BSONObject filterQuery = (BSONObject) JSON.parse(f);
+            if (filters.size() > 1) {
+                BasicDBList _filters = new BasicDBList();
 
-                query.putAll(filterQuery);  // this can throw JSONParseException for invalid filter parameters
-            });
+                filters.stream().forEach((String f) -> {
+                    _filters.add((BSONObject) JSON.parse(f));
+                });
+
+                query.put("$and", _filters);
+        } else {
+            BSONObject filterQuery = (BSONObject) 
+                    JSON.parse(filters.getFirst());
+
+            query.putAll(filterQuery);  // this can throw JSONParseException for invalid filter parameters
         }
+    }
 
-        final BasicDBObject fields = new BasicDBObject();
+    final BasicDBObject fields = new BasicDBObject();
 
-        if (keys != null) {
+    if (keys
+
+    
+        != null) {
             keys.stream().forEach((String f) -> {
-                BSONObject keyQuery = (BSONObject) JSON.parse(f);
+            BSONObject keyQuery = (BSONObject) JSON.parse(f);
 
-                fields.putAll(keyQuery);  // this can throw JSONParseException for invalid filter parameters
-            });
-        }
+            fields.putAll(keyQuery);  // this can throw JSONParseException for invalid filter parameters
+        });
+    }
 
-        return coll.find(query, fields).sort(sort);
+    return coll.find (query, fields)
+
+.sort(sort);
     }
 
     ArrayList<DBObject> getCollectionData(
