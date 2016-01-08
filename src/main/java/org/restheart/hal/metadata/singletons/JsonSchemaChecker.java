@@ -92,8 +92,12 @@ public class JsonSchemaChecker implements Checker {
                         + "/" + schemaId.toString() + " not found");
             }
 
+            String content = context.getContent() == null
+                    ? "{}"
+                    : context.getContent().toString();
+
             theschema.validate(
-                    new JSONObject(context.getContent().toString()));
+                    new JSONObject(content));
         } catch (ValidationException ve) {
             context.addWarning(ve.getMessage());
             ve.getCausingExceptions().stream()
