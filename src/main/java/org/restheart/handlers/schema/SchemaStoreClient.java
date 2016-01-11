@@ -15,16 +15,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.hal.metadata.singletons;
+package org.restheart.handlers.schema;
 
 import com.mongodb.DBObject;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import org.everit.json.schema.loader.SchemaClient;
 import org.everit.json.schema.loader.internal.DefaultSchemaClient;
-import org.restheart.handlers.schema.JsonSchemaCacheSingleton;
-import org.restheart.handlers.schema.JsonSchemaNotFoundException;
-import org.restheart.handlers.schema.SchemaStoreURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +41,8 @@ public class SchemaStoreClient implements SchemaClient {
 
     @Override
     public InputStream get(String uri) {
+        LOGGER.trace("@@@ loading schema {}", uri);
+        
         if (isLocalSchemaStore(uri)) {
             try {
                 SchemaStoreURI _uri = new SchemaStoreURI(uri);
