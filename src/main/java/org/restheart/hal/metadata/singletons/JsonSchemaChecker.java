@@ -17,11 +17,13 @@
  */
 package org.restheart.hal.metadata.singletons;
 
+import org.restheart.handlers.schema.SchemaStoreClient;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.Objects;
 import java.util.Set;
 import org.everit.json.schema.Schema;
+import org.everit.json.schema.SchemaException;
 import org.everit.json.schema.ValidationException;
 import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONObject;
@@ -74,20 +76,23 @@ public class JsonSchemaChecker implements Checker {
         Schema theschema;
 
         if (patching) {
-            LOGGER.debug("@@@@ PATCHING");
-
             DBObject c = context.getContent();
 
+            // TODO we have to make sure that ids only contains paths
+            // that are defined in the schema, in case of additionalProperties=true
             Set<String> ids = c.keySet();
 
-            LOGGER.debug("@@@@ ids: {}", ids);
-
-            theschema = getPatchSchema(schemaStore, schemaId, ids);
+            try {
+                theschema = getPatchSchema(schemaStore, schemaId, ids);
+            } catch (SchemaException se) {
+                context.addWarning(se.getMessage().replaceAll("\"", "'"));
+                return false;
+            }
         } else {
             try {
                 theschema = JsonSchemaCacheSingleton
                         .getInstance()
-                        .get(exchange.getRequestURL(), schemaStore, schemaId);
+                        .get(schemaStore, schemaId);
             } catch (JsonSchemaNotFoundException ex) {
                 context.addWarning(ex.getMessage());
                 return false;
@@ -140,8 +145,14 @@ public class JsonSchemaChecker implements Checker {
 
         JSONObject properties = new JSONObject();
 
+        // TODO make sure that pointer is correct. 
+        // the . can divide objects (/properties), arrays (/items)
         keys.stream().forEach(key -> {
-            properties.put(key, new JSONObject().put("$ref", schemaId + "#/properties/" + key.replaceAll("\\.", "/")));
+            properties.put(key, new JSONObject()
+                    .put("$ref",
+                            schemaId + "#/properties/"
+                            + key.replaceAll("\\.[0-9]+?", "/items/").
+                            replaceAll("\\.", "/properties/")));
         });
 
         schema.put("properties", properties);

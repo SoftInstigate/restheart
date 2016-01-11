@@ -27,8 +27,9 @@ import org.restheart.Bootstrapper;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.db.DbsDAO;
-import org.restheart.hal.metadata.singletons.SchemaStoreClient;
 import org.restheart.handlers.RequestContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -42,6 +43,8 @@ public class JsonSchemaCacheSingleton {
 
     private Cache<String, Schema> schemaCache = null;
     private Cache<String, DBObject> rawSchemaCache = null;
+    
+    static final Logger LOGGER = LoggerFactory.getLogger(JsonSchemaCacheSingleton.class);
 
     JsonSchemaCacheSingleton() {
         dbsDAO = new DbsDAO();
@@ -57,7 +60,7 @@ public class JsonSchemaCacheSingleton {
         }
     }
 
-    public Schema get(String requestUrl, String schemaStoreDb, Object schemaId) throws JsonSchemaNotFoundException {
+    public Schema get(String schemaStoreDb, Object schemaId) throws JsonSchemaNotFoundException {
         if (Bootstrapper.getConfiguration().isSchemaCacheEnabled()) {
             Optional<Schema> _schema = schemaCache.get(schemaStoreDb + SEPARATOR + schemaId);
 
