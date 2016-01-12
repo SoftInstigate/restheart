@@ -1,13 +1,8 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "parent": {
-        "n": {
-            "type": "number"
-        }
-    },
     "allOf": [
         {
-            "_$ref": "#/parent"
+            "_$ref": "parent"
         },
         {
             "type": "object",

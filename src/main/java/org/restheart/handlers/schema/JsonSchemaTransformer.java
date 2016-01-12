@@ -27,7 +27,6 @@ import org.bson.types.ObjectId;
 import org.restheart.hal.metadata.singletons.Transformer;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.JsonUtils;
-import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,25 +35,32 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class JsonSchemaTransformer implements Transformer {
-    static final Logger LOGGER = LoggerFactory.getLogger(JsonSchemaTransformer.class);
+    static final Logger LOGGER = LoggerFactory
+            .getLogger(JsonSchemaTransformer.class);
 
     @Override
-    public void tranform(HttpServerExchange exchange, RequestContext context, final DBObject contentToTransform, DBObject args) {
+    public void tranform(HttpServerExchange exchange, 
+            RequestContext context, 
+            final DBObject contentToTransform, DBObject args) {
         if (context.getType() == RequestContext.TYPE.SCHEMA) {
             if (context.getMethod() == RequestContext.METHOD.GET) {
                 unescapeSchema(context.getResponseContent());
             } else if (context.getMethod() == RequestContext.METHOD.PUT
                     || context.getMethod() == RequestContext.METHOD.PATCH) {
+
                 // generate id as specs mandates
-                SchemaStoreURI uri = new SchemaStoreURI(context.getDBName(), context.getDocumentId());
-                
+                SchemaStoreURL uri = new SchemaStoreURL(
+                        context.getDBName(),
+                        context.getDocumentId());
+
                 context.getContent().put("id", uri.toString());
 
                 // escape all $ prefixed keys
                 escapeSchema(contentToTransform);
 
                 // add (overwrite) $schema field
-                contentToTransform.put("_$schema", "http://json-schema.org/draft-04/schema#");
+                contentToTransform.put("_$schema",
+                        "http://json-schema.org/draft-04/schema#");
             }
         } else if (context.getType() == RequestContext.TYPE.SCHEMA_STORE) {
             if (context.getMethod() == RequestContext.METHOD.POST) {
@@ -68,26 +74,29 @@ public class JsonSchemaTransformer implements Transformer {
                     schemaId = context.getContent().get("_id");
                 }
 
-                SchemaStoreURI uri = new SchemaStoreURI(context.getDBName(), schemaId);
-                
+                SchemaStoreURL uri = new SchemaStoreURL(context.getDBName(), schemaId);
+
                 context.getContent().put("id", uri.toString());
 
                 // escape all $ prefixed keys
                 escapeSchema(contentToTransform);
 
                 // add (overwrite) $schema field
-                contentToTransform.put("_$schema", "http://json-schema.org/draft-04/schema#");
+                contentToTransform.put("_$schema",
+                        "http://json-schema.org/draft-04/schema#");
             } else if (context.getMethod() == RequestContext.METHOD.GET) {
                 // apply transformation on embedded schemas
 
-                BasicDBObject _embedded = (BasicDBObject) context.getResponseContent().get("_embedded");
+                BasicDBObject _embedded = (BasicDBObject) context
+                        .getResponseContent().get("_embedded");
 
                 if (_embedded != null) {
                     // execute the logic on children documents
                     BasicDBList docs = (BasicDBList) _embedded.get("rh:schema");
 
                     if (docs != null) {
-                        docs.keySet().stream().map((k) -> (DBObject) docs.get(k))
+                        docs.keySet().stream().map((k) -> (DBObject) 
+                                docs.get(k))
                                 .forEach((doc) -> {
                                     unescapeSchema(doc);
                                 });

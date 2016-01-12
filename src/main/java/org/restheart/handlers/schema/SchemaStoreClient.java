@@ -45,7 +45,7 @@ public class SchemaStoreClient implements SchemaClient {
         
         if (isLocalSchemaStore(uri)) {
             try {
-                SchemaStoreURI _uri = new SchemaStoreURI(uri);
+                SchemaStoreURL _uri = new SchemaStoreURL(uri);
 
                 DBObject s = JsonSchemaCacheSingleton.getInstance()
                         .getRaw(_uri.getSchemaDb(), _uri.getSchemaId());
@@ -70,6 +70,6 @@ public class SchemaStoreClient implements SchemaClient {
      * @return true if the given id is a schema store of this server
      */
     private boolean isLocalSchemaStore(String id) {
-        return SchemaStoreURI.isValid(id);
+        return SchemaStoreURL.isValid(id);
     }
 }
