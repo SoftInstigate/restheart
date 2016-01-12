@@ -22,13 +22,26 @@ import org.bson.types.ObjectId;
 
 /**
  *
+ * if the id of the schema is a valid SchemaStoreURLm the schema can be loaded
+ * from the restheart schema store (querying mongodb with caching and avoiding
+ * the http overhead)
+ *
+ * the format is:
+ *
+ * http://schema-store/schemaStoreDb/schemaId
+ *
+ * schemaId refers to the mongodb _id and not to the id property
+ *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class SchemaStoreURI {
+public class SchemaStoreURL {
     private final String schemaDb;
     private final Object schemaId;
 
-    public SchemaStoreURI(String schemaDb, Object schemaId) {
+    public static final String SCHEMA_STORE_URL_PREFIX
+            = "http://schema-store/";
+
+    public SchemaStoreURL(String schemaDb, Object schemaId) {
         Objects.requireNonNull(schemaDb);
         Objects.requireNonNull(schemaId);
 
@@ -37,18 +50,19 @@ public class SchemaStoreURI {
             this.schemaDb = schemaDb;
             this.schemaId = schemaId;
         } else {
-            throw new IllegalArgumentException("schemaId must be a String or an ObjectId");
+            throw new IllegalArgumentException(
+                    "schemaId must be a String or an ObjectId");
         }
     }
 
-    public SchemaStoreURI(String uri) {
-        Objects.requireNonNull(uri);
+    public SchemaStoreURL(String url) {
+        Objects.requireNonNull(url);
 
-        if (!isValid(uri)) {
-            throw new IllegalArgumentException("invalid uri " + uri);
+        if (!isValid(url)) {
+            throw new IllegalArgumentException("invalid url " + url);
         }
 
-        String[] tokens = uri.substring(9).split("/");
+        String[] tokens = url.substring(20).split("/");
 
         this.schemaDb = tokens[0];
         this.schemaId = tokens[1].endsWith("#")
@@ -66,18 +80,17 @@ public class SchemaStoreURI {
 
     @Override
     public String toString() {
-
-        return "schema://"
+        return SCHEMA_STORE_URL_PREFIX
                 .concat(schemaDb)
                 .concat("/")
                 .concat(schemaId.toString())
                 .concat("#");
     }
 
-    public static boolean isValid(String uri) {
-        return uri != null
-                && uri.startsWith("schema://")
-                && count(uri, "/") == 3;
+    public static boolean isValid(String url) {
+        return url != null
+                && url.startsWith(SCHEMA_STORE_URL_PREFIX)
+                && count(url, "/") == 4;
     }
 
     private static int count(String s, String c) {
