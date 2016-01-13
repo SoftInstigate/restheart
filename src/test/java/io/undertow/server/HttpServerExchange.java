@@ -18,6 +18,7 @@
 package io.undertow.server;
 
 import io.undertow.util.AbstractAttachable;
+import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -135,5 +136,8 @@ public class HttpServerExchange extends AbstractAttachable {
     public InputStream getInputStream() {
         return new ByteArrayInputStream("FAKE_STREAM".getBytes());
     }
-
+    
+    public HeaderMap getRequestHeaders() {
+        return null;
+    }
 }

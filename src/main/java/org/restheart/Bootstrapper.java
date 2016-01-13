@@ -85,6 +85,8 @@ import org.restheart.security.FullAccessManager;
 import org.restheart.security.handlers.AuthTokenHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static io.undertow.Handlers.path;
+import static org.fusesource.jansi.Ansi.ansi;
 
 /**
  *

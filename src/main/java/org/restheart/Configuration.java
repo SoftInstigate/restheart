@@ -33,6 +33,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
+import org.restheart.handlers.RequestContext.ETAG_CHECK_POLICY;
 
 /**
  * Utility class to help dealing with the restheart configuration file.
@@ -95,7 +96,7 @@ public class Configuration {
 
     private final boolean localCacheEnabled;
     private final long localCacheTtl;
-    
+
     private final boolean schemaCacheEnabled;
     private final long schemaCacheTtl;
 
@@ -118,6 +119,10 @@ public class Configuration {
 
     private final boolean authTokenEnabled;
     private final int authTokenTtl;
+
+    private final ETAG_CHECK_POLICY dbEtagCheckPolicy;
+    private final ETAG_CHECK_POLICY collEtagCheckPolicy;
+    private final ETAG_CHECK_POLICY docEtagCheckPolicy;
 
     /**
      * default mongo uri mongodb://127.0.0.1
@@ -165,6 +170,24 @@ public class Configuration {
     public static final String DEFAULT_IDM_IMPLEMENTATION_CLASS = null;
 
     /**
+     * default db etag check policy
+     */
+    public static final ETAG_CHECK_POLICY DEFAULT_DB_ETAG_CHECK_POLICY
+            = ETAG_CHECK_POLICY.REQUIRED_FOR_DELETE;
+
+    /**
+     * default coll etag check policy
+     */
+    public static final ETAG_CHECK_POLICY DEFAULT_COLL_ETAG_CHECK_POLICY
+            = ETAG_CHECK_POLICY.REQUIRED_FOR_DELETE;
+
+    /**
+     * default doc etag check policy
+     */
+    public static final ETAG_CHECK_POLICY DEFAULT_DOC_ETAG_CHECK_POLICY
+            = ETAG_CHECK_POLICY.OPTIONAL;
+
+    /**
      * the key for the local-cache-enabled property.
      */
     public static final String LOCAL_CACHE_ENABLED_KEY = "local-cache-enabled";
@@ -173,7 +196,7 @@ public class Configuration {
      * the key for the local-cache-ttl property.
      */
     public static final String LOCAL_CACHE_TTL_KEY = "local-cache-ttl";
-    
+
     /**
      * the key for the schema-cache-enabled property.
      */
@@ -456,6 +479,26 @@ public class Configuration {
     public static final String AUTH_TOKEN_TTL = "auth-token-ttl";
 
     /**
+     * the key for the etag-check-policy property.
+     */
+    public static final String ETAG_CHECK_POLICY_KEY = "etag-check-policy";
+
+    /**
+     * the key for the etag-check-policy.db property.
+     */
+    public static final String ETAG_CHECK_POLICY_DB_KEY = "db";
+
+    /**
+     * the key for the etag-check-policy.coll property.
+     */
+    public static final String ETAG_CHECK_POLICY_COLL_KEY = "coll";
+
+    /**
+     * the key for the etag-check-policy.doc property.
+     */
+    public static final String ETAG_CHECK_POLICY_DOC_KEY = "doc";
+
+    /**
      * Creates a new instance of Configuration with defaults values.
      */
     public Configuration() {
@@ -514,7 +557,7 @@ public class Configuration {
 
         localCacheEnabled = true;
         localCacheTtl = 1000;
-        
+
         schemaCacheEnabled = false;
         schemaCacheTtl = 1000;
 
@@ -536,6 +579,10 @@ public class Configuration {
 
         authTokenEnabled = true;
         authTokenTtl = 15; // minutes
+
+        dbEtagCheckPolicy = DEFAULT_DB_ETAG_CHECK_POLICY;
+        collEtagCheckPolicy = DEFAULT_COLL_ETAG_CHECK_POLICY;
+        docEtagCheckPolicy = DEFAULT_DOC_ETAG_CHECK_POLICY;
     }
 
     /**
@@ -669,7 +716,7 @@ public class Configuration {
 
         localCacheEnabled = getAsBooleanOrDefault(conf, LOCAL_CACHE_ENABLED_KEY, true);
         localCacheTtl = getAsLongOrDefault(conf, LOCAL_CACHE_TTL_KEY, (long) 1000);
-        
+
         schemaCacheEnabled = getAsBooleanOrDefault(conf, SCHEMA_CACHE_ENABLED_KEY, true);
         schemaCacheTtl = getAsLongOrDefault(conf, SCHEMA_CACHE_TTL_KEY, (long) 1000);
 
@@ -690,6 +737,64 @@ public class Configuration {
 
         authTokenEnabled = getAsBooleanOrDefault(conf, AUTH_TOKEN_ENABLED, true);
         authTokenTtl = getAsIntegerOrDefault(conf, AUTH_TOKEN_TTL, 15);
+
+        Map<String, Object> etagCheckPolicies = getAsMap(conf, ETAG_CHECK_POLICY_KEY);
+
+        if (etagCheckPolicies != null) {
+            String _dbEtagCheckPolicy
+                    = getAsStringOrDefault(etagCheckPolicies,
+                            ETAG_CHECK_POLICY_DB_KEY,
+                            DEFAULT_DB_ETAG_CHECK_POLICY.name());
+
+            String _collEtagCheckPolicy
+                    = getAsStringOrDefault(etagCheckPolicies,
+                            ETAG_CHECK_POLICY_COLL_KEY,
+                            DEFAULT_COLL_ETAG_CHECK_POLICY.name());
+
+            String _docEtagCheckPolicy
+                    = getAsStringOrDefault(etagCheckPolicies,
+                            ETAG_CHECK_POLICY_DOC_KEY,
+                            DEFAULT_DOC_ETAG_CHECK_POLICY.name());
+            
+            ETAG_CHECK_POLICY validDbValue = null;
+            ETAG_CHECK_POLICY validCollValue = null;
+            ETAG_CHECK_POLICY validDocValue = null;
+            
+            try {
+                validDbValue = ETAG_CHECK_POLICY.valueOf(_dbEtagCheckPolicy);
+            } catch (IllegalArgumentException iae) {
+                LOGGER.warn("wrong value for parameter {} setting it to default value {}",
+                        ETAG_CHECK_POLICY_DB_KEY, DEFAULT_DB_ETAG_CHECK_POLICY);
+                validDbValue = DEFAULT_DB_ETAG_CHECK_POLICY;
+            }
+            
+            dbEtagCheckPolicy = validDbValue;
+
+            try {
+
+                validCollValue = ETAG_CHECK_POLICY.valueOf(_collEtagCheckPolicy);
+            } catch (IllegalArgumentException iae) {
+                LOGGER.warn("wrong value for parameter {} setting it to default value {}",
+                        ETAG_CHECK_POLICY_COLL_KEY, DEFAULT_COLL_ETAG_CHECK_POLICY);
+                validCollValue = DEFAULT_COLL_ETAG_CHECK_POLICY;
+            }
+            
+            collEtagCheckPolicy = validCollValue;
+
+            try {
+                validDocValue = ETAG_CHECK_POLICY.valueOf(_docEtagCheckPolicy);
+            } catch (IllegalArgumentException iae) {
+                LOGGER.warn("wrong value for parameter {} setting it to default value {}",
+                        ETAG_CHECK_POLICY_COLL_KEY, DEFAULT_COLL_ETAG_CHECK_POLICY);
+                validDocValue = DEFAULT_DOC_ETAG_CHECK_POLICY;
+            }
+            
+            docEtagCheckPolicy = validDocValue;
+        } else {
+            dbEtagCheckPolicy = DEFAULT_DB_ETAG_CHECK_POLICY;
+            collEtagCheckPolicy = DEFAULT_COLL_ETAG_CHECK_POLICY;
+            docEtagCheckPolicy = DEFAULT_DOC_ETAG_CHECK_POLICY;
+        }
     }
 
     private List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key, final List<Map<String, Object>> defaultValue) {
@@ -1196,5 +1301,26 @@ public class Configuration {
      */
     public long getSchemaCacheTtl() {
         return schemaCacheTtl;
+    }
+
+    /**
+     * @return the dbEtagCheckPolicy
+     */
+    public ETAG_CHECK_POLICY getDbEtagCheckPolicy() {
+        return dbEtagCheckPolicy;
+    }
+
+    /**
+     * @return the collEtagCheckPolicy
+     */
+    public ETAG_CHECK_POLICY getCollEtagCheckPolicy() {
+        return collEtagCheckPolicy;
+    }
+
+    /**
+     * @return the docEtagCheckPolicy
+     */
+    public ETAG_CHECK_POLICY getDocEtagCheckPolicy() {
+        return docEtagCheckPolicy;
     }
 }
