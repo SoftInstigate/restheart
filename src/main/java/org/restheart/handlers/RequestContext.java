@@ -22,6 +22,8 @@ import com.mongodb.DBObject;
 import org.restheart.db.DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HeaderValues;
+import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 import java.io.File;
@@ -31,12 +33,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
+import org.restheart.Bootstrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class RequestContext {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequestContext.class);
 
     public enum TYPE {
         ERROR,
@@ -81,6 +87,12 @@ public class RequestContext {
         C // alias for compact
     }
 
+    public enum ETAG_CHECK_POLICY {
+        REQUIRED, // always requires the etag, return PRECONDITION FAILED if missing
+        REQUIRED_FOR_DELETE, // only requires the etag for DELETE, return PRECONDITION FAILED if missing
+        OPTIONAL // checks the etag only if provided by client via If-Match header
+    }
+
     public static final String PAGE_QPARAM_KEY = "page";
     public static final String PAGESIZE_QPARAM_KEY = "pagesize";
     public static final String COUNT_QPARAM_KEY = "count";
@@ -108,6 +120,8 @@ public class RequestContext {
 
     public static final String MAX_KEY_ID = "_MaxKey";
     public static final String MIN_KEY_ID = "_MinKey";
+
+    public static final String ETAG_DOC_POLICY_QPARAM_KEY = "etagPolicy";
 
     private final String whereUri;
     private final String whatUri;
@@ -141,7 +155,9 @@ public class RequestContext {
     private String mappedUri = null;
     private String unmappedUri = null;
 
-    private static String NUL = Character.toString('\0');
+    private static final String NUL = Character.toString('\0');
+
+    private final String etag;
 
     /**
      * the HAL mode
@@ -175,12 +191,12 @@ public class RequestContext {
     public RequestContext(HttpServerExchange exchange, String whereUri, String whatUri) {
         this.whereUri = URLUtils.removeTrailingSlashes(whereUri == null ? null
                 : whereUri.startsWith("/") ? whereUri
-                        : "/" + whereUri);
+                : "/" + whereUri);
 
         this.whatUri = URLUtils.removeTrailingSlashes(
                 whatUri == null ? null
                         : whatUri.startsWith("/") || "*".equals(whatUri) ? whatUri
-                                : "/" + whatUri);
+                        : "/" + whatUri);
 
         this.mappedUri = exchange.getRequestPath();
         this.unmappedUri = unmapUri(exchange.getRequestPath());
@@ -190,6 +206,12 @@ public class RequestContext {
         this.type = selectRequestType(pathTokens);
 
         this.method = selectRequestMethod(exchange.getRequestMethod());
+
+        // etag
+        HeaderValues etagHvs = exchange.getRequestHeaders() == null ?
+                null : exchange.getRequestHeaders().get(Headers.IF_MATCH);
+
+        this.etag = etagHvs == null || etagHvs.getFirst() == null ? null : etagHvs.getFirst();
     }
 
     protected static METHOD selectRequestMethod(HttpString _method) {
@@ -270,12 +292,10 @@ public class RequestContext {
             if (!this.whereUri.equals(SLASH)) {
                 ret = ret.replaceFirst("^" + this.whereUri, "");
             }
+        } else if (!this.whereUri.equals(SLASH)) {
+            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + this.whereUri, this.whatUri));
         } else {
-            if (!this.whereUri.equals(SLASH)) {
-                ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + this.whereUri, this.whatUri));
-            } else {
-                ret = URLUtils.removeTrailingSlashes(URLUtils.removeTrailingSlashes(this.whatUri) + ret);
-            }
+            ret = URLUtils.removeTrailingSlashes(URLUtils.removeTrailingSlashes(this.whatUri) + ret);
         }
 
         if (ret.isEmpty()) {
@@ -434,7 +454,7 @@ public class RequestContext {
                 && !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID)
                 && !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID)
                 && (type != TYPE.AGGREGATION && _AGGREGATIONS.equalsIgnoreCase(documentIdRaw))
-                && !(type == TYPE.AGGREGATION); 
+                && !(type == TYPE.AGGREGATION);
     }
 
     /**
@@ -808,5 +828,84 @@ public class RequestContext {
                 || collectionName.contains(NUL)
                 || collectionName.contains("$")
                 || collectionName.length() == 64);
+    }
+
+    public String getETag() {
+        return etag;
+    }
+
+    public boolean isETagRequired() {
+        // if client specifies the If-Match header, than check it
+        if (getETag() != null) {
+            return true;
+        }
+
+        // for documents consider etagPolicy metadata
+        if (type == TYPE.DOCUMENT || type == TYPE.FILE) {
+            // check the coll  metadata
+            Object _policy = collectionProps.get(ETAG_DOC_POLICY_QPARAM_KEY);
+
+            LOGGER.debug("collection etag policy (from coll properties) {}", _policy);
+
+            if (_policy == null) {
+                // check the db metadata
+                _policy = dbProps.get(ETAG_DOC_POLICY_QPARAM_KEY);
+                LOGGER.debug("collection etag policy (from db properties) {}", _policy);
+            }
+
+            ETAG_CHECK_POLICY policy = null;
+
+            if (_policy != null && _policy instanceof String) {
+                try {
+                    policy = ETAG_CHECK_POLICY.valueOf((String) _policy);
+                } catch (IllegalArgumentException iae) {
+                    policy = null;
+                }
+            }
+
+            if (null != policy) {
+                if (method == METHOD.DELETE) {
+                    return policy != ETAG_CHECK_POLICY.OPTIONAL;
+                } else {
+                    return policy == ETAG_CHECK_POLICY.REQUIRED;
+                }
+            }
+        }
+
+        // apply the default policy from configuration
+        ETAG_CHECK_POLICY dbP = Bootstrapper.getConfiguration().getDbEtagCheckPolicy();
+        ETAG_CHECK_POLICY collP = Bootstrapper.getConfiguration().getCollEtagCheckPolicy();
+        ETAG_CHECK_POLICY docP = Bootstrapper.getConfiguration().getDocEtagCheckPolicy();
+
+        LOGGER.debug("default etag db check (from conf) {}", dbP);
+        LOGGER.debug("default etag coll check (from conf) {}", collP);
+        LOGGER.debug("default etag doc check (from conf) {}", docP);
+
+        ETAG_CHECK_POLICY policy = null;
+
+        if (null != type) {
+            switch (type) {
+                case DB:
+                    policy = dbP;
+                    break;
+                case COLLECTION:
+                case FILES_BUCKET:
+                case SCHEMA_STORE:
+                    policy = collP;
+                    break;
+                default:
+                    policy = docP;
+            }
+        }
+
+        if (null != policy) {
+            if (method == METHOD.DELETE) {
+                return policy != ETAG_CHECK_POLICY.OPTIONAL;
+            } else {
+                return policy == ETAG_CHECK_POLICY.REQUIRED;
+            }
+        }
+
+        return false;
     }
 }

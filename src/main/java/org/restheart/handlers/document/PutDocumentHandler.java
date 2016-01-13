@@ -30,12 +30,15 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class PutDocumentHandler extends PipedHttpHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PutDocumentHandler.class);
 
     private final DocumentDAO documentDAO;
 
@@ -86,6 +89,9 @@ public class PutDocumentHandler extends PipedHttpHandler {
         }
         
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
+        
+        LOGGER.debug("checking etag check policy {}", context.isETagRequired());
+        LOGGER.debug("etag {}", context.getETag());
 
         OperationResult result = this.documentDAO.upsertDocument(
                 context.getDBName(),
