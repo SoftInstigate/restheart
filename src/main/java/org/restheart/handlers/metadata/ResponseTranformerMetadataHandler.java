@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class ResponseTranformerMetadataHandler extends AbstractTransformerMetadataHandler {
+
     static final Logger LOGGER = LoggerFactory.getLogger(ResponseTranformerMetadataHandler.class);
 
     /**
@@ -94,11 +95,9 @@ public class ResponseTranformerMetadataHandler extends AbstractTransformerMetada
                     BasicDBList colls = (BasicDBList) _embedded.get("rh:coll");
 
                     if (colls != null) {
-                        for (String k : colls.keySet()) {
-                            DBObject coll = (DBObject) colls.get(k);
-
+                        colls.keySet().stream().map((k) -> (DBObject) colls.get(k)).forEach((coll) -> {
                             t.tranform(exchange, context, coll, rt.getArgs());
-                        }
+                        });
                     }
                 }
             }
@@ -137,24 +136,20 @@ public class ResponseTranformerMetadataHandler extends AbstractTransformerMetada
                         BasicDBList docs = (BasicDBList) _embedded.get("rh:doc");
 
                         if (docs != null) {
-                            for (String k : docs.keySet()) {
-                                DBObject doc = (DBObject) docs.get(k);
-
+                            docs.keySet().stream().map((k) -> (DBObject) docs.get(k)).forEach((doc) -> {
                                 t.tranform(exchange, context, doc, rt.getArgs());
-                            }
+                            });
+                        }
+                        // execute the logic on children files
+                        BasicDBList files = (BasicDBList) _embedded.get("rh:file");
+
+                        if (files != null) {
+                            files.keySet().stream().map((k) -> (DBObject) files.get(k)).forEach((file) -> {
+                                t.tranform(exchange, context, file, rt.getArgs());
+                            });
                         }
                     }
-
-                    // execute the logic on children files
-                    BasicDBList files = (BasicDBList) _embedded.get("rh:file");
-
-                    if (files != null) {
-                        for (String k : files.keySet()) {
-                            DBObject file = (DBObject) files.get(k);
-
-                            t.tranform(exchange, context, file, rt.getArgs());
-                        }
-                    }
+                    
                 } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.DOCUMENT) {
                     t.tranform(exchange, context, context.getResponseContent(), rt.getArgs());
                 }
