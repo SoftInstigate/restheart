@@ -19,13 +19,11 @@ package org.restheart.handlers.collection;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import org.bson.types.ObjectId;
 import org.restheart.db.OperationResult;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 
 /**
@@ -49,21 +47,19 @@ public class DeleteCollectionHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        ObjectId etag = RequestHelper.getWriteEtag(exchange);
-
-        if (etag == null) {
-            ResponseHelper.injectEtagHeader(exchange, context.getCollectionProps());
-            
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
-                    "The collection's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
-
-            return;
-        }
-
-        OperationResult result = getDatabase().deleteCollection(context.getDBName(), context.getCollectionName(), etag);
+        OperationResult result = getDatabase().deleteCollection(context.getDBName(), context.getCollectionName(), 
+                context.getETag(), context.isETagCheckRequired());
 
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+        }
+        
+        if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
+            ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
+            
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
+                    "The collection's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
+            return;
         }
 
         // send the warnings if any (and in case no_content change the return code to ok
