@@ -106,6 +106,14 @@ public class PutDocumentHandler extends PipedHttpHandler {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
         
+        if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
+            ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
+            
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
+                    "The document's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
+            return;
+        }
+        
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
