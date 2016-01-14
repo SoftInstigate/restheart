@@ -82,7 +82,7 @@ public class PutIndexHandler extends PipedHttpHandler {
             return;
         }
 
-        exchange.setResponseCode(HttpStatus.SC_CREATED);
+        exchange.setStatusCode(HttpStatus.SC_CREATED);
 
         // send the warnings if any
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {

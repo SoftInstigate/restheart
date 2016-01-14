@@ -88,9 +88,9 @@ public abstract class PipedHttpHandler implements HttpHandler {
 
     protected static void sendWarnings(int SC, HttpServerExchange exchange, RequestContext context) throws IllegalQueryParamenterException, URISyntaxException {
         if (SC == HttpStatus.SC_NO_CONTENT) {
-            exchange.setResponseCode(HttpStatus.SC_OK);
+            exchange.setStatusCode(HttpStatus.SC_OK);
         } else {
-            exchange.setResponseCode(SC);
+            exchange.setStatusCode(SC);
         }
 
         DocumentRepresentationFactory rf = new DocumentRepresentationFactory();

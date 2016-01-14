@@ -55,7 +55,7 @@ public class PingHandler extends ApplicationLogicHandler {
         if (context.getMethod() == METHOD.GET) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_OK, msg);
         } else {
-            exchange.setResponseCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            exchange.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             exchange.endExchange();
         }
     }

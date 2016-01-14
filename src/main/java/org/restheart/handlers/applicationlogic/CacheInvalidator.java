@@ -73,11 +73,11 @@ public class CacheInvalidator extends ApplicationLogicHandler {
                     LocalCachesSingleton.getInstance().invalidateCollection(db, coll);
                 }
 
-                exchange.setResponseCode(HttpStatus.SC_OK);
+                exchange.setStatusCode(HttpStatus.SC_OK);
                 exchange.endExchange();
             }
         } else {
-            exchange.setResponseCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            exchange.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             exchange.endExchange();
         }
     }

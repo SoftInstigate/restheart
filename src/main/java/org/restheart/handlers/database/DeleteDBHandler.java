@@ -61,7 +61,7 @@ public class DeleteDBHandler extends PipedHttpHandler {
 
         OperationResult result = getDatabase().deleteDatabase(context.getDBName(), etag);
 
-        exchange.setResponseCode(result.getHttpCode());
+        exchange.setStatusCode(result.getHttpCode());
 
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
@@ -71,7 +71,7 @@ public class DeleteDBHandler extends PipedHttpHandler {
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
         } else {
-            exchange.setResponseCode(result.getHttpCode());
+            exchange.setStatusCode(result.getHttpCode());
         }
         
         exchange.endExchange();

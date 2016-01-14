@@ -70,7 +70,7 @@ public class GetDBHandler extends PipedHttpHandler {
 
         ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
         
-        exchange.setResponseCode(HttpStatus.SC_OK);
+        exchange.setStatusCode(HttpStatus.SC_OK);
 
         // call the next handler if existing
         if (getNext() != null) {

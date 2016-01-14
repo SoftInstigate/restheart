@@ -128,7 +128,7 @@ public class PatchCollectionHandler extends PipedHttpHandler {
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
         } else {
-            exchange.setResponseCode(result.getHttpCode());
+            exchange.setStatusCode(result.getHttpCode());
         }
         
         exchange.endExchange();

@@ -60,7 +60,7 @@ public class DeleteIndexHandler extends PipedHttpHandler {
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             sendWarnings(httpCode, exchange, context);
         } else {
-            exchange.setResponseCode(httpCode);
+            exchange.setStatusCode(httpCode);
         }
 
         exchange.endExchange();

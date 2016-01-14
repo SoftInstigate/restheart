@@ -107,7 +107,7 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
         exchange.getResponseHeaders().put(Headers.CONTENT_TRANSFER_ENCODING, CONTENT_TRANSFER_ENCODING_BINARY);
         ResponseHelper.injectEtagHeader(exchange, dbsfile);
         
-        exchange.setResponseCode(HttpStatus.SC_OK);
+        exchange.setStatusCode(HttpStatus.SC_OK);
 
         dbsfile.writeTo(exchange.getOutputStream());
         exchange.endExchange();
