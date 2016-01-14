@@ -18,7 +18,7 @@
 package org.restheart.db;
 
 import com.mongodb.DBObject;
-import org.bson.types.ObjectId;
+import org.bson.Document;
 
 /**
  *
@@ -26,19 +26,18 @@ import org.bson.types.ObjectId;
  */
 public interface Repository {
     
-    OperationResult upsertDocument(String dbName, String collName, Object documentId, DBObject content, ObjectId requestEtag, boolean patching);
+    OperationResult upsertDocument(String dbName, String collName, Object documentId, DBObject content, String requestEtag, boolean patching, final boolean checkEtag);
     
-    OperationResult upsertDocumentPost(String dbName, String collName, Object documentId, DBObject content, ObjectId requestEtag);
+    OperationResult upsertDocumentPost(String dbName, String collName, Object documentId, DBObject content, String requestEtag, final boolean checkEtag);
     
-    OperationResult deleteDocument(String dbName, String collName, Object documentId, ObjectId requestEtag);
+    OperationResult deleteDocument(String dbName, String collName, Object documentId, String requestEtag, final boolean checkEtag);
     
     /**
      * returns the ETag of the document
      * @param dbName
      * @param collName
      * @param documentId
-     * @return DBObject containing _etag property
+     * @return Document containing _etag property
      */
-    DBObject getDocumentEtag(String dbName, String collName, Object documentId);
-    
+    Document getDocumentEtag(String dbName, String collName, Object documentId);
 }

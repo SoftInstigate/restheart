@@ -88,9 +88,9 @@ public class PutDocumentHandler extends PipedHttpHandler {
             return;
         }
         
-        ObjectId etag = RequestHelper.getWriteEtag(exchange);
+        String etag = context.getETag();
         
-        LOGGER.debug("checking etag check policy {}", context.isETagRequired());
+        LOGGER.debug("checking etag check policy {}", context.isETagCheckRequired());
         LOGGER.debug("etag {}", context.getETag());
 
         OperationResult result = this.documentDAO.upsertDocument(
@@ -99,7 +99,8 @@ public class PutDocumentHandler extends PipedHttpHandler {
                 context.getDocumentId(),
                 content,
                 etag,
-                false);
+                false,
+                context.isETagCheckRequired());
 
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
@@ -114,5 +115,4 @@ public class PutDocumentHandler extends PipedHttpHandler {
         
         exchange.endExchange();
     }
-
 }

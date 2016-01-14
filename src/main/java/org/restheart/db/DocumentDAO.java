@@ -17,11 +17,16 @@
  */
 package org.restheart.db;
 
+import com.google.common.base.Objects;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import static com.mongodb.client.model.Filters.eq;
+import com.mongodb.client.model.FindOneAndReplaceOptions;
+import org.bson.Document;
 import org.restheart.utils.HttpStatus;
 import org.bson.types.ObjectId;
 
@@ -32,6 +37,9 @@ import org.bson.types.ObjectId;
 public class DocumentDAO implements Repository {
 
     private final MongoClient client;
+
+    private final static FindOneAndReplaceOptions UPSERT_OPS
+            = new FindOneAndReplaceOptions().upsert(true);
 
     public DocumentDAO() {
         client = MongoDBClientSingleton.getInstance().getClient();
@@ -44,6 +52,7 @@ public class DocumentDAO implements Repository {
      * @param newContent
      * @param requestEtag
      * @param patching
+     * @param checkEtag
      * @return the HttpStatus code
      */
     @Override
@@ -52,66 +61,74 @@ public class DocumentDAO implements Repository {
             final String collName,
             final Object documentId,
             final DBObject newContent,
-            final ObjectId requestEtag,
-            final boolean patching) {
+            final String requestEtag,
+            final boolean patching,
+            final boolean checkEtag) {
+        MongoDatabase mdb = client.getDatabase(dbName);
+        MongoCollection<Document> mcoll = mdb.getCollection(collName);
 
-        DB db = client.getDB(dbName);
-
-        DBCollection coll = db.getCollection(collName);
-
+        // genereate new etag
         ObjectId newEtag = new ObjectId();
 
-        
         final DBObject content = DAOUtils.validContent(newContent);
 
         content.put("_etag", newEtag);
 
-        BasicDBObject idQuery = new BasicDBObject("_id", documentId);
+        //TODO remove this after migration to mongodb driver 3.2 completes
+        Document dcontent = new Document(content.toMap());
 
         if (patching) {
-            DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, new BasicDBObject("$set", content), false, false);
+            Document oldDocument = mcoll.findOneAndUpdate(
+                    eq("_id", documentId),
+                    new Document("$set", dcontent));
 
             if (oldDocument == null) {
                 return new OperationResult(HttpStatus.SC_NOT_FOUND);
-            } else {
+            } else if (checkEtag) {
                 // check the old etag (in case restore the old document version)
-                return optimisticCheckEtag(coll, oldDocument, newEtag, requestEtag, HttpStatus.SC_OK);
+                return optimisticCheckEtag(mcoll, oldDocument, newEtag,
+                        requestEtag, HttpStatus.SC_OK);
+            } else {
+                return new OperationResult(HttpStatus.SC_OK, newEtag);
             }
         } else {
-            // we use findAndModify to get the @created_on field value from the existing document
-            // in case this is an update well need to upsertDocument it back using a second update 
-            // it is not possible to do it with a single update
-            // (even using $setOnInsert update because we'll need to use the $set operator for other data and this would make it a partial update (patch semantic) 
-            DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, content, false, true);
+            Document oldDocument = mcoll.findOneAndReplace(
+                    eq("_id", documentId),
+                    dcontent,
+                    UPSERT_OPS);
 
-            if (oldDocument != null) { // upsertDocument
+            if (oldDocument != null && checkEtag) { // upsertDocument
                 // check the old etag (in case restore the old document)
-                return optimisticCheckEtag(coll, oldDocument, newEtag, requestEtag, HttpStatus.SC_OK);
-            } else {  // insert
+                return optimisticCheckEtag(mcoll, oldDocument, newEtag,
+                        requestEtag, HttpStatus.SC_OK);
+            } else if (oldDocument != null) {  // insert
+                return new OperationResult(HttpStatus.SC_OK, newEtag);
+            } else {
                 return new OperationResult(HttpStatus.SC_CREATED, newEtag);
             }
         }
     }
 
     @Override
-    public DBObject getDocumentEtag(final String dbName, final String collName, final Object documentId) {
-        
-        DBObject document = client.getDB(dbName).getCollection(collName).findOne(new BasicDBObject("_id", documentId), new BasicDBObject("_etag", 1));
+    public Document getDocumentEtag(final String dbName, final String collName, final Object documentId) {
+        MongoDatabase mdb = client.getDatabase(dbName);
+        MongoCollection<Document> mcoll = mdb.getCollection(collName);
 
-        if (document != null && document.get("_etag") != null) {
-            return document;
-        }
+        FindIterable<Document> documents = mcoll
+                .find(eq("_id", documentId))
+                .projection(new Document("_etag", 1));
         
-        return null;
+        return documents == null ? null :
+                documents.iterator().tryNext();
     }
-        
-    
+
     /**
      * @param dbName
      * @param collName
      * @param documentId
      * @param newContent
      * @param requestEtag
+     * @param checkEtag
      * @return
      */
     @Override
@@ -120,11 +137,10 @@ public class DocumentDAO implements Repository {
             final String collName,
             final Object documentId,
             final DBObject newContent,
-            final ObjectId requestEtag) {
-
-        DB db = client.getDB(dbName);
-
-        DBCollection coll = db.getCollection(collName);
+            final String requestEtag,
+            final boolean checkEtag) {
+        MongoDatabase mdb = client.getDatabase(dbName);
+        MongoCollection<Document> mcoll = mdb.getCollection(collName);
 
         ObjectId newEtag = new ObjectId();
 
@@ -136,24 +152,28 @@ public class DocumentDAO implements Repository {
 
         content.removeField("_id");
 
+        //TODO remove this after migration to mongodb driver 3.2 completes
+        Document dcontent = new Document(content.toMap());
+
         if (_idInContent == null) {
             // new document since the id was just auto-generated
             content.put("_id", documentId);
 
-            coll.insert(content);
+            mcoll.insertOne(dcontent);
 
             return new OperationResult(HttpStatus.SC_CREATED, newEtag);
-        }
+        } else {
+            Document oldDocument = mcoll.findOneAndReplace(eq("_id", documentId), dcontent, UPSERT_OPS);
 
-        BasicDBObject idQuery = new BasicDBObject("_id", documentId);
+            if (oldDocument == null) {
+                return new OperationResult(HttpStatus.SC_CREATED, newEtag);
+            } else if (checkEtag) {  // upsertDocument
+                // check the old etag (in case restore the old document version)
+                return optimisticCheckEtag(mcoll, oldDocument, newEtag, requestEtag, HttpStatus.SC_OK);
+            } else {
+                return new OperationResult(HttpStatus.SC_OK, newEtag);
 
-        DBObject oldDocument = coll.findAndModify(idQuery, null, null, false, content, false, true);
-
-        if (oldDocument != null) {  // upsertDocument
-            // check the old etag (in case restore the old document version)
-            return optimisticCheckEtag(coll, oldDocument, newEtag, requestEtag, HttpStatus.SC_OK);
-        } else { // insert
-            return new OperationResult(HttpStatus.SC_CREATED, newEtag);
+            }
         }
     }
 
@@ -162,6 +182,7 @@ public class DocumentDAO implements Repository {
      * @param collName
      * @param documentId
      * @param requestEtag
+     * @param checkEtag
      * @return
      */
     @Override
@@ -169,52 +190,52 @@ public class DocumentDAO implements Repository {
             final String dbName,
             final String collName,
             final Object documentId,
-            final ObjectId requestEtag) {
+            final String requestEtag,
+            final boolean checkEtag
+    ) {
+        MongoDatabase mdb = client.getDatabase(dbName);
+        MongoCollection<Document> mcoll = mdb.getCollection(collName);
 
-        DB db = client.getDB(dbName);
-
-        DBCollection coll = db.getCollection(collName);
-
-        BasicDBObject idQuery = new BasicDBObject("_id", documentId);
-
-        DBObject oldDocument = coll.findAndModify(idQuery, null, null, true, null, false, false);
+        Document oldDocument = mcoll.findOneAndDelete(eq("_id", documentId));
 
         if (oldDocument == null) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
-        } else {
+        } else if (checkEtag) {
             // check the old etag (in case restore the old document version)
-            return optimisticCheckEtag(coll, oldDocument, null, requestEtag, HttpStatus.SC_NO_CONTENT);
+            return optimisticCheckEtag(mcoll, oldDocument, null, requestEtag, HttpStatus.SC_NO_CONTENT);
+        } else {
+            return new OperationResult(HttpStatus.SC_NO_CONTENT);
         }
     }
 
     private OperationResult optimisticCheckEtag(
-            final DBCollection coll,
-            final DBObject oldDocument,
-            final ObjectId newEtag,
-            final ObjectId requestEtag,
+            final MongoCollection<Document> coll,
+            final Document oldDocument,
+            final Object newEtag,
+            final String requestEtag,
             final int httpStatusIfOk) {
 
         Object oldEtag = oldDocument.get("_etag");
 
-        if (oldEtag == null) {  // well we don't had an etag there so fine
-            return new OperationResult(httpStatusIfOk);
-        }
-
-        if (!(oldEtag instanceof ObjectId)) { // well the _etag is not an ObjectId. no check is possible
-            return new OperationResult(httpStatusIfOk);
-        }
-
-        if (requestEtag == null) {
-            coll.save(oldDocument);
+        if (oldEtag != null && requestEtag == null) {
+            coll.replaceOne(eq("_id", oldDocument.get("_id")), oldDocument);
             return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
         }
 
-        if (oldEtag.equals(requestEtag)) {
+        String _oldEtag;
+
+        if (oldEtag != null) {
+            _oldEtag = oldEtag.toString();
+        } else {
+            _oldEtag = null;
+        }
+
+        if (Objects.equal(requestEtag, _oldEtag)) {
             return new OperationResult(httpStatusIfOk, newEtag);
         } else {
             // oopps, we need to restore old document
             // they call it optimistic lock strategy
-            coll.save(oldDocument);
+            coll.replaceOne(eq("_id", oldDocument.get("_id")), oldDocument);
             return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
         }
     }

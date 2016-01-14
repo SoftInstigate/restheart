@@ -84,21 +84,20 @@ public class PatchDocumentHandler extends PipedHttpHandler {
             return;
         }
 
-        ObjectId requestEtag = RequestHelper.getWriteEtag(exchange);
-
         OperationResult result = documentDAO.upsertDocument(
                 context.getDBName(),
                 context.getCollectionName(),
                 context.getDocumentId(),
                 content,
-                requestEtag,
-                true);
+                context.getETag(),
+                true,
+                context.isETagCheckRequired());
 
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         } else {
             ResponseHelper.injectEtagHeader(exchange, this.documentDAO.getDocumentEtag(context.getDBName(), context.getCollectionName(), context.getDocumentId()));
-            
+
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
                     "The document's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
             return;
