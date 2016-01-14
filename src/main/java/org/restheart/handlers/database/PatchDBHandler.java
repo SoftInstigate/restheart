@@ -83,18 +83,16 @@ public class PatchDBHandler extends PipedHttpHandler {
             }
         }
 
-        ObjectId etag = RequestHelper.getWriteEtag(exchange);
+        OperationResult result = getDatabase().upsertDB(context.getDBName(), content, context.getETag(), true, true, context.isETagCheckRequired());
 
-        if (etag == null) {
+        if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
             ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
             
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
-                    "The database's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
+                    "The database's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
             return;
         }
-
-        OperationResult result = getDatabase().upsertDB(context.getDBName(), content, etag, true, true);
-
+        
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }

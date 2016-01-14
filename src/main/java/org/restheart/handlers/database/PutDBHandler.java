@@ -82,10 +82,17 @@ public class PutDBHandler extends PipedHttpHandler {
             }
         }
 
-        ObjectId etag = RequestHelper.getWriteEtag(exchange);
         boolean updating = context.getDbProps() != null;
 
-        OperationResult result = getDatabase().upsertDB(context.getDBName(), content, etag, updating, false);
+        OperationResult result = getDatabase().upsertDB(context.getDBName(), content, context.getETag(), updating, false, context.isETagCheckRequired());
+        
+        if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
+            ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
+            
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
+                    "The database's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
+            return;
+        }
         
         // invalidate the cache db item
         LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());

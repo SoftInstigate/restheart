@@ -49,18 +49,18 @@ public class DeleteDBHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        ObjectId etag = RequestHelper.getWriteEtag(exchange);
+        String etag = context.getETag();
 
-        if (etag == null) {
+        OperationResult result = getDatabase().deleteDatabase(context.getDBName(), etag, context.isETagCheckRequired());
+
+        if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
             ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
             
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
                     "The database's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
             return;
         }
-
-        OperationResult result = getDatabase().deleteDatabase(context.getDBName(), etag);
-
+        
         exchange.setStatusCode(result.getHttpCode());
 
         if (result.getEtag() != null) {
