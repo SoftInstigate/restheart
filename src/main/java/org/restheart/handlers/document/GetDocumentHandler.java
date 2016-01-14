@@ -95,12 +95,12 @@ public class GetDocumentHandler extends PipedHttpHandler {
         String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
 
         ResponseHelper.injectEtagHeader(exchange, document);
-        exchange.setResponseCode(HttpStatus.SC_OK);
+        exchange.setStatusCode(HttpStatus.SC_OK);
 
         DocumentRepresentationFactory drp = new DocumentRepresentationFactory();
         Representation rep = drp.getRepresentation(requestPath, exchange, context, document);
 
-        exchange.setResponseCode(HttpStatus.SC_OK);
+        exchange.setStatusCode(HttpStatus.SC_OK);
 
         // call the ResponseTranformerMetadataHandler if piped in
         if (getNext() != null) {

@@ -181,7 +181,7 @@ public class GetAggregationHandler extends PipedHttpHandler {
             Representation rep = crp.getRepresentation(exchange,
                     context, applyPagination(data, context), size);
 
-            exchange.setResponseCode(HttpStatus.SC_OK);
+            exchange.setStatusCode(HttpStatus.SC_OK);
 
             // call the ResponseTranformerMetadataHandler if piped in
             if (getNext() != null) {

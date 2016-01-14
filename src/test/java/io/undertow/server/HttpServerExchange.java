@@ -36,7 +36,7 @@ import java.util.TreeMap;
  */
 public class HttpServerExchange extends AbstractAttachable {
 
-    private int responseCode = 0;
+    private int statusCode = 0;
     private String queryString;
     private String requestPath;
     private HttpString requestMethod;
@@ -56,36 +56,36 @@ public class HttpServerExchange extends AbstractAttachable {
      */
     public Map<String, Deque<String>> getQueryParameters() {
         if (queryParameters == null) {
-            queryParameters = new TreeMap<String, Deque<String>>();
+            queryParameters = new TreeMap<>();
         }
         return queryParameters;
     }
 
     public HttpServerExchange addQueryParam(final String name, final String param) {
         if (queryParameters == null) {
-            queryParameters = new TreeMap<String, Deque<String>>();
+            queryParameters = new TreeMap<>();
         }
         Deque<String> list = queryParameters.get(name);
         if (list == null) {
-            queryParameters.put(name, list = new ArrayDeque<String>(2));
+            queryParameters.put(name, list = new ArrayDeque<>(2));
         }
         list.add(param);
         return this;
     }
 
     /**
-     * @return the responseCode
+     * @return the statusCode
      */
     public int getResponseCode() {
-        return responseCode;
+        return statusCode;
     }
 
     /**
-     * @param responseCode the responseCode to set
+     * @param statusCode the statusCode to set
      * @return
      */
-    public HttpServerExchange setResponseCode(final int responseCode) {
-        this.responseCode = responseCode;
+    public HttpServerExchange setStatusCode(final int statusCode) {
+        this.statusCode = statusCode;
         return this;
     }
 

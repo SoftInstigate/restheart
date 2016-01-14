@@ -67,7 +67,7 @@ public class AuthTokenHandler extends PipedHttpHandler {
             rep.addProperty("auth_token", exchange.getResponseHeaders().get(AUTH_TOKEN_HEADER).getFirst());
             rep.addProperty("auth_token_valid_until", exchange.getResponseHeaders().get(AUTH_TOKEN_VALID_HEADER).getFirst());
 
-            exchange.setResponseCode(HttpStatus.SC_OK);
+            exchange.setStatusCode(HttpStatus.SC_OK);
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
             exchange.getResponseSender().send(rep.toString());
             exchange.endExchange();

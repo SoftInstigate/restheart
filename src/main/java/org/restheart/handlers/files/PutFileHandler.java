@@ -79,7 +79,7 @@ public class PutFileHandler extends PipedHttpHandler {
             throw t;
         }
 
-        exchange.setResponseCode(code);
+        exchange.setStatusCode(code);
         exchange.endExchange();
     }
 }

@@ -77,7 +77,7 @@ public class GetRoleHandler extends ApplicationLogicHandler {
         if (context.getMethod() == METHOD.OPTIONS) {
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET");
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge, " + AUTH_TOKEN_HEADER + ", " + AUTH_TOKEN_VALID_HEADER + ", " + AUTH_TOKEN_LOCATION_HEADER);
-            exchange.setResponseCode(HttpStatus.SC_OK);
+            exchange.setStatusCode(HttpStatus.SC_OK);
             exchange.endExchange();
         } else if (context.getMethod() == METHOD.GET) {
             if ((exchange.getSecurityContext() == null
@@ -86,7 +86,7 @@ public class GetRoleHandler extends ApplicationLogicHandler {
                     || !(context.getMappedRequestUri().equals(URLUtils.removeTrailingSlashes(url) + "/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName()))) {
 
                 {
-                    exchange.setResponseCode(HttpStatus.SC_FORBIDDEN);
+                    exchange.setStatusCode(HttpStatus.SC_FORBIDDEN);
 
                     // REMOVE THE AUTH TOKEN HEADERS!!!!!!!!!!!
                     exchange.getResponseHeaders().remove(AUTH_TOKEN_HEADER);
@@ -113,7 +113,7 @@ public class GetRoleHandler extends ApplicationLogicHandler {
             exchange.getResponseSender().send(rep.toString());
             exchange.endExchange();
         } else {
-            exchange.setResponseCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            exchange.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             exchange.endExchange();
         }
     }

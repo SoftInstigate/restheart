@@ -116,7 +116,7 @@ public class OptionsHandler extends PipedHttpHandler {
             }
         }
 
-        exchange.setResponseCode(HttpStatus.SC_OK);
+        exchange.setStatusCode(HttpStatus.SC_OK);
         exchange.endExchange();
     }
 }

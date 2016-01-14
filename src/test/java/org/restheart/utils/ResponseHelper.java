@@ -27,7 +27,7 @@ import io.undertow.server.HttpServerExchange;
 public class ResponseHelper {
 
     public static void endExchangeWithMessage(HttpServerExchange exchange, int code, String message) {
-        exchange.setResponseCode(code);
+        exchange.setStatusCode(code);
     }
 
 }

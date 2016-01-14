@@ -40,7 +40,7 @@ public class ResponseHelper {
      * @param code
      */
     public static void endExchange(HttpServerExchange exchange, int code) {
-        exchange.setResponseCode(code);
+        exchange.setStatusCode(code);
         exchange.endExchange();
     }
 
@@ -62,7 +62,7 @@ public class ResponseHelper {
      * @param t
      */
     public static void endExchangeWithMessage(HttpServerExchange exchange, int code, String message, Throwable t) {
-        exchange.setResponseCode(code);
+        exchange.setStatusCode(code);
 
         String httpStatuText = HttpStatus.getStatusText(code);
 
