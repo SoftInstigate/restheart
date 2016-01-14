@@ -121,7 +121,9 @@ public class RequestContext {
     public static final String MAX_KEY_ID = "_MaxKey";
     public static final String MIN_KEY_ID = "_MinKey";
 
-    public static final String ETAG_DOC_POLICY_QPARAM_KEY = "etagPolicy";
+    public static final String ETAG_DOC_POLICY_METADATA_KEY = "etagDocPolicy";
+    public static final String ETAG_POLICY_METADATA_KEY = "etagPolicy";
+    public static final String ETAG_CHECK_QPARAM_KEY = "etag";
 
     private final String whereUri;
     private final String whatUri;
@@ -158,6 +160,8 @@ public class RequestContext {
     private static final String NUL = Character.toString('\0');
 
     private final String etag;
+    
+    private boolean forceEtagCheck = false;
 
     /**
      * the HAL mode
@@ -212,6 +216,8 @@ public class RequestContext {
                 null : exchange.getRequestHeaders().get(Headers.IF_MATCH);
 
         this.etag = etagHvs == null || etagHvs.getFirst() == null ? null : etagHvs.getFirst();
+        
+        this.forceEtagCheck = exchange.getQueryParameters().get(ETAG_CHECK_QPARAM_KEY) != null;
     }
 
     protected static METHOD selectRequestMethod(HttpString _method) {
@@ -839,19 +845,76 @@ public class RequestContext {
         if (getETag() != null) {
             return true;
         }
-
-        // for documents consider etagPolicy metadata
+        
+        // if client requires the check via qparam return true
+        if (forceEtagCheck) {
+            return true;
+        }
+        
+        // for documents consider db and coll etagDocPolicy metadata
         if (type == TYPE.DOCUMENT || type == TYPE.FILE) {
             // check the coll  metadata
-            Object _policy = collectionProps.get(ETAG_DOC_POLICY_QPARAM_KEY);
+            Object _policy = collectionProps.get(ETAG_DOC_POLICY_METADATA_KEY);
 
             LOGGER.debug("collection etag policy (from coll properties) {}", _policy);
 
             if (_policy == null) {
                 // check the db metadata
-                _policy = dbProps.get(ETAG_DOC_POLICY_QPARAM_KEY);
+                _policy = dbProps.get(ETAG_DOC_POLICY_METADATA_KEY);
                 LOGGER.debug("collection etag policy (from db properties) {}", _policy);
             }
+
+            ETAG_CHECK_POLICY policy = null;
+
+            if (_policy != null && _policy instanceof String) {
+                try {
+                    policy = ETAG_CHECK_POLICY.valueOf((String) _policy);
+                } catch (IllegalArgumentException iae) {
+                    policy = null;
+                }
+            }
+
+            if (null != policy) {
+                if (method == METHOD.DELETE) {
+                    return policy != ETAG_CHECK_POLICY.OPTIONAL;
+                } else {
+                    return policy == ETAG_CHECK_POLICY.REQUIRED;
+                }
+            }
+        }
+        
+        // for db consider db etagPolicy metadata
+        if (type == TYPE.DB) {
+            // check the coll  metadata
+            Object _policy = dbProps.get(ETAG_POLICY_METADATA_KEY);
+
+            LOGGER.debug("db etag policy (from db properties) {}", _policy);
+
+            ETAG_CHECK_POLICY policy = null;
+
+            if (_policy != null && _policy instanceof String) {
+                try {
+                    policy = ETAG_CHECK_POLICY.valueOf((String) _policy);
+                } catch (IllegalArgumentException iae) {
+                    policy = null;
+                }
+            }
+
+            if (null != policy) {
+                if (method == METHOD.DELETE) {
+                    return policy != ETAG_CHECK_POLICY.OPTIONAL;
+                } else {
+                    return policy == ETAG_CHECK_POLICY.REQUIRED;
+                }
+            }
+        }
+        
+        // for collection consider coll etagPolicy metadata
+        if (type == TYPE.DB) {
+            // check the coll  metadata
+            Object _policy = collectionProps.get(ETAG_POLICY_METADATA_KEY);
+
+            LOGGER.debug("coll etag policy (from coll properties) {}", _policy);
 
             ETAG_CHECK_POLICY policy = null;
 
