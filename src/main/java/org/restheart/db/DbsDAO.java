@@ -317,17 +317,17 @@ public class DbsDAO implements Database {
             }
 
             if (Objects.equals(requestEtag, _oldEtag)) {
-                return doCollPropsUpdate(patching, updating, mcoll, dcontent, newEtag);
+                return doDbPropsUpdate(patching, updating, mcoll, dcontent, newEtag);
             } else {
                 return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
             }
 
         } else {
-            return doCollPropsUpdate(patching, updating, mcoll, dcontent, newEtag);
+            return doDbPropsUpdate(patching, updating, mcoll, dcontent, newEtag);
         }
     }
 
-    private OperationResult doCollPropsUpdate(boolean patching, boolean updating, MongoCollection<Document> mcoll, Document dcontent, ObjectId newEtag) {
+    private OperationResult doDbPropsUpdate(boolean patching, boolean updating, MongoCollection<Document> mcoll, Document dcontent, ObjectId newEtag) {
         if (patching) {
             mcoll.updateOne(PROPS_QUERY, new Document("$set", dcontent));
             return new OperationResult(HttpStatus.SC_OK, newEtag);
