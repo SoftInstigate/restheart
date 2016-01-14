@@ -72,7 +72,11 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
         }
 
         OperationResult result = this.documentDAO
-                .deleteDocument(context.getDBName(), context.getCollectionName(), context.getDocumentId(), etag);
+                .deleteDocument(context.getDBName(), 
+                        context.getCollectionName(), 
+                        context.getDocumentId(), 
+                        context.getETag(),
+                        context.isETagCheckRequired());
 
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());

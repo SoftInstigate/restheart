@@ -96,7 +96,12 @@ public class PostCollectionHandler extends PipedHttpHandler {
         }
 
         OperationResult result = this.documentDAO
-                .upsertDocumentPost(context.getDBName(), context.getCollectionName(), docId, content, etag);
+                .upsertDocumentPost(context.getDBName(), 
+                        context.getCollectionName(), 
+                        docId, 
+                        content, 
+                        context.getETag(),
+                        context.isETagCheckRequired());
 
         // insert the Location handler
         exchange.getResponseHeaders()

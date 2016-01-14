@@ -834,7 +834,7 @@ public class RequestContext {
         return etag;
     }
 
-    public boolean isETagRequired() {
+    public boolean isETagCheckRequired() {
         // if client specifies the If-Match header, than check it
         if (getETag() != null) {
             return true;
