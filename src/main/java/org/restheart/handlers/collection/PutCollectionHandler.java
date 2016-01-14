@@ -22,7 +22,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import org.bson.types.ObjectId;
 import org.restheart.db.Database;
 import org.restheart.db.OperationResult;
 import org.restheart.hal.metadata.InvalidMetadataException;
@@ -33,7 +32,6 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 
 /**
@@ -112,16 +110,24 @@ public class PutCollectionHandler extends PipedHttpHandler {
             }
         }
 
-        ObjectId etag = RequestHelper.getWriteEtag(exchange);
         boolean updating = context.getCollectionProps() != null;
 
-        OperationResult result = getDatabase().upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, updating, false);
+        OperationResult result = getDatabase().upsertCollection(context.getDBName(), context.getCollectionName(), 
+                content, context.getETag(), updating, false, context.isETagCheckRequired());
 
         // invalidate the cache collection item
         LocalCachesSingleton.getInstance().invalidateCollection(context.getDBName(), context.getCollectionName());
 
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+        }
+        
+        if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
+            ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
+            
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
+                    "The collection's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
+            return;
         }
 
         // send the warnings if any (and in case no_content change the return code to ok

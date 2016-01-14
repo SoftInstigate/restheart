@@ -108,20 +108,19 @@ public class PatchCollectionHandler extends PipedHttpHandler {
             }
         }
 
-        ObjectId etag = RequestHelper.getWriteEtag(exchange);
-
-        if (etag == null) {
-            ResponseHelper.injectEtagHeader(exchange, context.getCollectionProps());
-            
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
-                    "The collection's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
-            return;
-        }
-
-        OperationResult result = getDatabase().upsertCollection(context.getDBName(), context.getCollectionName(), content, etag, true, true);
+        OperationResult result = getDatabase().upsertCollection(context.getDBName(), context.getCollectionName(), 
+                content, context.getETag(), true, true, context.isETagCheckRequired());
 
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+        }
+        
+        if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
+            ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
+            
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
+                    "The collection's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
+            return;
         }
         
         // send the warnings if any (and in case no_content change the return code to ok

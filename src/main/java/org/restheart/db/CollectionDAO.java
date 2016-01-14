@@ -19,12 +19,16 @@ package org.restheart.db;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import static com.mongodb.client.model.Filters.eq;
+import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 
@@ -32,8 +36,10 @@ import org.restheart.utils.HttpStatus;
 
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.Objects;
 
 import org.bson.BSONObject;
+import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +63,9 @@ class CollectionDAO {
         this.client = client;
     }
 
+    private final static UpdateOptions UPSERT_OPS
+            = new UpdateOptions().upsert(true);
+    
     static {
         FIELDS_TO_RETURN = new BasicDBObject();
         FIELDS_TO_RETURN.put("_id", 1);
@@ -167,30 +176,26 @@ class CollectionDAO {
                 });
 
                 query.put("$and", _filters);
-        } else {
-            BSONObject filterQuery = (BSONObject) 
-                    JSON.parse(filters.getFirst());
+            } else {
+                BSONObject filterQuery = (BSONObject) JSON.parse(filters.getFirst());
 
-            query.putAll(filterQuery);  // this can throw JSONParseException for invalid filter parameters
+                query.putAll(filterQuery);  // this can throw JSONParseException for invalid filter parameters
+            }
         }
-    }
 
-    final BasicDBObject fields = new BasicDBObject();
+        final BasicDBObject fields = new BasicDBObject();
 
-    if (keys
-
-    
-        != null) {
+        if (keys
+                != null) {
             keys.stream().forEach((String f) -> {
-            BSONObject keyQuery = (BSONObject) JSON.parse(f);
+                BSONObject keyQuery = (BSONObject) JSON.parse(f);
 
-            fields.putAll(keyQuery);  // this can throw JSONParseException for invalid filter parameters
-        });
-    }
+                fields.putAll(keyQuery);  // this can throw JSONParseException for invalid filter parameters
+            });
+        }
 
-    return coll.find (query, fields)
-
-.sort(sort);
+        return coll.find(query, fields)
+                .sort(sort);
     }
 
     ArrayList<DBObject> getCollectionData(
@@ -274,86 +279,88 @@ class CollectionDAO {
                 }
             }
         }
-        
+
         return properties;
     }
-
+    
     /**
      * Upsert the collection properties.
      *
      * @param dbName the database name of the collection
      * @param collName the collection name
      * @param properties the new collection properties
-     * @param requestEtag the entity tag. must match to allow actual write
-     * (otherwise http error code is returned)
+     * @param requestEtag the entity tag. must match to allow actual write if
+     * checkEtag is true (otherwise http error code is returned)
      * @param updating true if updating existing document
      * @param patching true if use patch semantic (update only specified fields)
+     * @param checkEtag true if etag must be checked
      * @return the HttpStatus code to set in the http response
      */
     OperationResult upsertCollection(
             final String dbName,
             final String collName,
             final DBObject properties,
-            final ObjectId requestEtag,
+            final String requestEtag,
             final boolean updating,
-            final boolean patching
-    ) {
+            final boolean patching,
+            final boolean checkEtag) {
+
         if (patching && !updating) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
-        }
-
-        DB db = client.getDB(dbName);
-
-        final DBCollection propsColl = db.getCollection("_properties");
-
-        final DBObject exists = propsColl.findOne(new BasicDBObject("_id", "_properties.".concat(collName)), FIELDS_TO_RETURN);
-
-        if (exists == null && updating) {
-            LOGGER.error("updating but cannot find collection _properties.{} for {}/{}", collName, dbName, collName);
-            return new OperationResult(HttpStatus.SC_NOT_FOUND);
-        } else if (exists != null) {
-            Object oldEtag = exists.get("_etag");
-
-            if (oldEtag != null) {
-                if (requestEtag == null) {
-                    return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
-                }
-
-                if (!oldEtag.equals(requestEtag)) {
-                    return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
-                }
-            }
         }
 
         ObjectId newEtag = new ObjectId();
 
         final DBObject content = DAOUtils.validContent(properties);
 
+        content.put("_etag", newEtag);
         content.removeField("_id"); // make sure we don't change this field
 
-        if (updating) {
-            content.removeField("_crated_on"); // don't allow to update this field
-            content.put("_etag", newEtag);
+        //TODO remove this after migration to mongodb driver 3.2 completes
+        Document dcontent = new Document(content.toMap());
+
+        MongoDatabase mdb = client.getDatabase(dbName);
+        MongoCollection<Document> mcoll = mdb.getCollection("_properties");
+
+        if (checkEtag) {
+            Document oldProperties = mcoll.find(eq("_id", "_properties.".concat(collName)))
+                    .projection(FIELDS_TO_RETURN).first();
+
+            Object oldEtag = oldProperties.get("_etag");
+
+            if (oldEtag != null && requestEtag == null) {
+                return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
+            }
+
+            String _oldEtag;
+
+            if (oldEtag != null) {
+                _oldEtag = oldEtag.toString();
+            } else {
+                _oldEtag = null;
+            }
+
+            if (Objects.equals(requestEtag, _oldEtag)) {
+                return doCollPropsUpdate(collName, patching, updating, mcoll, dcontent, newEtag);
+            } else {
+                return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+            }
+
         } else {
-            content.put("_id", "_properties.".concat(collName));
-            content.put("_etag", newEtag);
+            return doCollPropsUpdate(collName, patching, updating, mcoll, dcontent, newEtag);
         }
+    }
 
+    private OperationResult doCollPropsUpdate(String collName, boolean patching, boolean updating, MongoCollection<Document> mcoll, Document dcontent, ObjectId newEtag) {
         if (patching) {
-            propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)),
-                    new BasicDBObject("$set", content), true, false);
-
+            mcoll.updateOne(eq("_id", "_properties.".concat(collName)), new Document("$set", dcontent));
             return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else {
-            propsColl.update(new BasicDBObject("_id", "_properties.".concat(collName)),
-                    content, true, false);
-
-            // create the default indexes
-            createDefaultIndexes(db.getCollection(collName));
-
+            mcoll.replaceOne(eq("_id", "_properties.".concat(collName)), dcontent, UPSERT_OPS);
             if (updating) {
                 return new OperationResult(HttpStatus.SC_OK, newEtag);
             } else {
+                createDefaultIndexes(mcoll);
                 return new OperationResult(HttpStatus.SC_CREATED, newEtag);
             }
         }
@@ -370,37 +377,44 @@ class CollectionDAO {
      */
     OperationResult deleteCollection(final String dbName,
             final String collName,
-            final ObjectId requestEtag
-    ) {
-        DBCollection coll = getCollection(dbName, collName);
-        DBCollection propsColl = getCollection(dbName, "_properties");
+            final String requestEtag,
+            final boolean checkEtag) {
+        MongoDatabase mdb = client.getDatabase(dbName);
+        MongoCollection<Document> mcoll = mdb.getCollection("_properties");
 
-        final BasicDBObject checkEtag = new BasicDBObject("_id", "_properties.".concat(collName));
+        if (checkEtag) {
+            Document properties = mcoll.find(eq("_id", "_properties.".concat(collName)))
+                    .projection(FIELDS_TO_RETURN).first();
 
-        final DBObject exists = propsColl.findOne(checkEtag, FIELDS_TO_RETURN);
+            if (properties != null) {
+                Object oldEtag = properties.get("_etag");
 
-        if (exists != null) {
-            Object oldEtag = exists.get("_etag");
-
-            if (oldEtag != null && requestEtag == null) {
-                return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
-            }
-
-            if (requestEtag.equals(oldEtag)) {
-                propsColl.remove(new BasicDBObject("_id", "_properties.".concat(collName)));
-                coll.drop();
-                return new OperationResult(HttpStatus.SC_NO_CONTENT);
+                if (oldEtag != null) {
+                    if (requestEtag == null) {
+                        return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
+                    } else if (Objects.equals(oldEtag.toString(), requestEtag)) {
+                        mcoll.drop();
+                        return new OperationResult(HttpStatus.SC_NO_CONTENT);
+                    } else {
+                        return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+                    }
+                } else {
+                    mcoll.drop();
+                    return new OperationResult(HttpStatus.SC_NO_CONTENT);
+                }
             } else {
-                return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+                mcoll.drop();
+                return new OperationResult(HttpStatus.SC_NO_CONTENT);
             }
         } else {
-            LOGGER.error("cannot find collection _properties.{} for {}/{}", collName, dbName, collName);
-            return new OperationResult(HttpStatus.SC_NOT_FOUND);
+            mcoll.drop();
+            return new OperationResult(HttpStatus.SC_NO_CONTENT);
         }
     }
 
-    private void createDefaultIndexes(final DBCollection coll) {
-        coll.createIndex(new BasicDBObject("_id", 1).append("_etag", 1), new BasicDBObject("name", "_id_etag_idx"));
-        coll.createIndex(new BasicDBObject("_etag", 1), new BasicDBObject("name", "_etag_idx"));
+    
+    private void createDefaultIndexes(final MongoCollection<Document> coll) {
+        coll.createIndex(new Document("_id", 1).append("_etag", 1),new IndexOptions().name("_id_etag_idx"));
+        coll.createIndex(new Document("_etag", 1), new IndexOptions().name("_etag_idx"));
     }
 }
