@@ -24,7 +24,11 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.MongoDatabase;
+import static com.mongodb.client.model.Filters.eq;
+import com.mongodb.client.model.UpdateOptions;
 
 import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.IllegalQueryParamenterException;
@@ -34,11 +38,11 @@ import org.restheart.handlers.injectors.LocalCachesSingleton;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
+import org.bson.Document;
 
 import org.bson.types.ObjectId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -46,13 +50,16 @@ import org.slf4j.LoggerFactory;
  */
 public class DbsDAO implements Database {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DbsDAO.class);
-    public static final BasicDBObject PROPS_QUERY = new BasicDBObject("_id", "_properties");
+    public static final BasicDBObject PROPS_QUERY_LEGACY = new BasicDBObject("_id", "_properties");
+    public static final Document PROPS_QUERY = new Document("_id", "_properties");
 
-    private static final BasicDBObject FIELDS_TO_RETURN;
+    private final static UpdateOptions UPSERT_OPS
+            = new UpdateOptions().upsert(true);
+
+    private static final Document FIELDS_TO_RETURN;
 
     static {
-        FIELDS_TO_RETURN = new BasicDBObject();
+        FIELDS_TO_RETURN = new Document();
         FIELDS_TO_RETURN.put("_id", 1);
         FIELDS_TO_RETURN.put("_etag", 1);
     }
@@ -85,7 +92,7 @@ public class DbsDAO implements Database {
                 .listCollectionNames()
                 .first() != null;
     }
-    
+
     /**
      *
      * @param dbName
@@ -99,10 +106,10 @@ public class DbsDAO implements Database {
                 .getDatabase(dbName)
                 .listCollectionNames()
                 .iterator();
-        
+
         while (dbCollections.hasNext()) {
             String dbCollection = dbCollections.next();
-            
+
             if (collName.equals(dbCollection)) {
                 return true;
             }
@@ -164,7 +171,7 @@ public class DbsDAO implements Database {
 
         DBCollection propsColl = collectionDAO.getCollection(dbName, "_properties");
 
-        DBObject properties = propsColl.findOne(PROPS_QUERY);
+        DBObject properties = propsColl.findOne(PROPS_QUERY_LEGACY);
 
         if (properties != null) {
             properties.put("_id", dbName);
@@ -269,39 +276,13 @@ public class DbsDAO implements Database {
     public OperationResult upsertDB(
             final String dbName,
             final DBObject newContent,
-            final ObjectId requestEtag,
+            final String requestEtag,
             final boolean updating,
-            final boolean patching) {
+            final boolean patching,
+            final boolean checkEtag) {
 
         if (patching && !updating) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
-        }
-
-        DB db = client.getDB(dbName);
-
-        boolean existing = db.getCollectionNames().size() > 0;
-
-        if (patching && !existing) {
-            return new OperationResult(HttpStatus.SC_NOT_FOUND);
-        }
-
-        // check the etag
-        DBCollection coll = db.getCollection("_properties");
-
-        DBObject exists = coll.findOne(new BasicDBObject("_id", "_properties"), FIELDS_TO_RETURN);
-
-        if (exists != null) {
-            Object oldEtag = exists.get("_etag");
-
-            if (oldEtag != null) {
-                if (requestEtag == null) {
-                    return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
-                }
-
-                if (!oldEtag.equals(requestEtag)) {
-                    return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
-                }
-            }
         }
 
         ObjectId newEtag = new ObjectId();
@@ -311,16 +292,51 @@ public class DbsDAO implements Database {
         content.put("_etag", newEtag);
         content.removeField("_id"); // make sure we don't change this field
 
-        if (patching) {
-            coll.update(PROPS_QUERY, new BasicDBObject("$set", content), true, false);
+        //TODO remove this after migration to mongodb driver 3.2 completes
+        Document dcontent = new Document(content.toMap());
 
+        MongoDatabase mdb = client.getDatabase(dbName);
+        MongoCollection<Document> mcoll = mdb.getCollection("_properties");
+
+        if (checkEtag) {
+            Document oldProperties = mcoll.find(eq("_id", "_properties"))
+                    .projection(FIELDS_TO_RETURN).first();
+
+            Object oldEtag = oldProperties.get("_etag");
+
+            if (oldEtag != null && requestEtag == null) {
+                return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
+            }
+
+            String _oldEtag;
+
+            if (oldEtag != null) {
+                _oldEtag = oldEtag.toString();
+            } else {
+                _oldEtag = null;
+            }
+
+            if (Objects.equals(requestEtag, _oldEtag)) {
+                return doCollPropsUpdate(patching, updating, mcoll, dcontent, newEtag);
+            } else {
+                return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+            }
+
+        } else {
+            return doCollPropsUpdate(patching, updating, mcoll, dcontent, newEtag);
+        }
+    }
+
+    private OperationResult doCollPropsUpdate(boolean patching, boolean updating, MongoCollection<Document> mcoll, Document dcontent, ObjectId newEtag) {
+        if (patching) {
+            mcoll.updateOne(PROPS_QUERY, new Document("$set", dcontent));
             return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else {
-            coll.update(PROPS_QUERY, content, true, false);
-
             if (updating) {
+                mcoll.replaceOne(PROPS_QUERY, dcontent, UPSERT_OPS);
                 return new OperationResult(HttpStatus.SC_OK, newEtag);
             } else {
+                mcoll.replaceOne(PROPS_QUERY, dcontent, UPSERT_OPS);
                 return new OperationResult(HttpStatus.SC_CREATED, newEtag);
             }
         }
@@ -333,31 +349,37 @@ public class DbsDAO implements Database {
      * @return
      */
     @Override
-    public OperationResult deleteDatabase(final String dbName, final ObjectId requestEtag) {
-        DB db = getDB(dbName);
+    public OperationResult deleteDatabase(final String dbName, final String requestEtag, final boolean checkEtag) {
+        MongoDatabase mdb = client.getDatabase(dbName);
+        MongoCollection<Document> mcoll = mdb.getCollection("_properties");
 
-        DBCollection coll = db.getCollection("_properties");
+        if (checkEtag) {
+            Document properties = mcoll.find(eq("_id", "_properties"))
+                    .projection(FIELDS_TO_RETURN).first();
 
-        BasicDBObject checkEtag = new BasicDBObject("_id", "_properties");
+            if (properties != null) {
+                Object oldEtag = properties.get("_etag");
 
-        DBObject exists = coll.findOne(checkEtag, FIELDS_TO_RETURN);
-
-        if (exists != null) {
-            Object oldEtag = exists.get("_etag");
-
-            if (oldEtag != null && requestEtag == null) {
-                return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
-            }
-
-            if (requestEtag.equals(oldEtag)) {
-                db.dropDatabase();
-                return new OperationResult(HttpStatus.SC_NO_CONTENT);
+                if (oldEtag != null) {
+                    if (requestEtag == null) {
+                        return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
+                    } else if (Objects.equals(oldEtag.toString(), requestEtag)) {
+                        mdb.drop();
+                        return new OperationResult(HttpStatus.SC_NO_CONTENT);
+                    } else {
+                        return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+                    }
+                } else {
+                    mdb.drop();
+                    return new OperationResult(HttpStatus.SC_NO_CONTENT);
+                }
             } else {
-                return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+                mdb.drop();
+                return new OperationResult(HttpStatus.SC_NO_CONTENT);
             }
         } else {
-            LOGGER.error("cannot find _properties for db " + dbName);
-            return new OperationResult(HttpStatus.SC_NOT_FOUND);
+            mdb.drop();
+            return new OperationResult(HttpStatus.SC_NO_CONTENT);
         }
     }
 
@@ -372,13 +394,13 @@ public class DbsDAO implements Database {
     }
 
     @Override
-    public OperationResult upsertCollection(String dbName, String collName, DBObject content, ObjectId etag, boolean updating, boolean patching) {
-        return collectionDAO.upsertCollection(dbName, collName, content, etag, updating, patching);
+    public OperationResult upsertCollection(String dbName, String collName, DBObject content, String requestEtag, boolean updating, boolean patching, final boolean checkEtag) {
+        return collectionDAO.upsertCollection(dbName, collName, content, requestEtag, updating, patching, checkEtag);
     }
 
     @Override
-    public OperationResult deleteCollection(String dbName, String collectionName, ObjectId etag) {
-        return collectionDAO.deleteCollection(dbName, collectionName, etag);
+    public OperationResult deleteCollection(String dbName, String collectionName, String requestEtag, final boolean checkEtag) {
+        return collectionDAO.deleteCollection(dbName, collectionName, requestEtag, checkEtag);
     }
 
     @Override

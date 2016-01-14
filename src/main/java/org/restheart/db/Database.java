@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 
-import org.bson.types.ObjectId;
 import org.restheart.handlers.IllegalQueryParamenterException;
 
 /**
@@ -44,18 +43,20 @@ public interface Database {
      *
      * @param dbName
      * @param collectionName
-     * @param etag
+     * @param requestEtag
+     * @param checkEtag
      * @return HTTP status code
      */
-    OperationResult deleteCollection(String dbName, String collectionName, ObjectId etag);
+    OperationResult deleteCollection(String dbName, String collectionName, String requestEtag, boolean checkEtag);
 
     /**
      *
      * @param dbName
      * @param requestEtag
+     * @param checkEtag
      * @return HTTP status code
      */
-    OperationResult deleteDatabase(String dbName, ObjectId requestEtag);
+    OperationResult deleteDatabase(String dbName, String requestEtag, boolean checkEtag);
 
     /**
      * @param dbName
@@ -162,23 +163,25 @@ public interface Database {
      * @param dbName
      * @param collectionName
      * @param content
-     * @param etag
+     * @param requestEtag
      * @param updating
      * @param patching
+     * @param checkEtag
      * @return
      */
-    OperationResult upsertCollection(String dbName, String collectionName, DBObject content, ObjectId etag, boolean updating, boolean patching);
+    OperationResult upsertCollection(String dbName, String collectionName, DBObject content, String requestEtag, boolean updating, boolean patching, boolean checkEtag);
 
     /**
      *
      * @param dbName
      * @param content
-     * @param etag
+     * @param requestEtag
      * @param updating
      * @param patching
+     * @param checkEtag
      * @return
      */
-    OperationResult upsertDB(String dbName, DBObject content, ObjectId etag, boolean updating, boolean patching);
+    OperationResult upsertDB(String dbName, DBObject content, String requestEtag, boolean updating, boolean patching, boolean checkEtag);
 
     /**
      *
