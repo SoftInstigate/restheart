@@ -63,14 +63,6 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         ObjectId etag = RequestHelper.getWriteEtag(exchange);
 
-        if (etag == null) {
-            ResponseHelper.injectEtagHeader(exchange, this.documentDAO.getDocumentEtag(context.getDBName(), context.getCollectionName(), context.getDocumentId()));
-            
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
-                    "The document's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
-            return;
-        }
-
         OperationResult result = this.documentDAO
                 .deleteDocument(context.getDBName(), 
                         context.getCollectionName(), 
@@ -80,6 +72,14 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
 
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+        }
+        
+        if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
+            ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
+            
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
+                    "The document's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
+            return;
         }
 
         // send the warnings if any (and in case no_content change the return code to ok
