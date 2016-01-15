@@ -54,7 +54,11 @@ public class PutDocumentIT extends AbstactIT {
 
         // try to put without etag
         resp = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        check("check put tmp doc without etag", resp, HttpStatus.SC_CONFLICT);
+        check("check put tmp doc without etag", resp, HttpStatus.SC_OK);
+        
+        // try to put without etag forcing checkEtag
+        resp = adminExecutor.execute(Request.Put(addCheckEtag(documentTmpUri)).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check put tmp doc without etag forcing checkEtag", resp, HttpStatus.SC_CONFLICT);
 
         // try to put with wrong etag
         resp = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));

@@ -44,10 +44,14 @@ public class PatchDBIT extends AbstactIT {
         resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check put db", resp, HttpStatus.SC_CREATED);
 
+        // try to patch without etag forcing checkEtag
+        resp = adminExecutor.execute(Request.Patch(addCheckEtag(dbTmpUri)).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check patch tmp db without etag forcing checkEtag", resp, HttpStatus.SC_CONFLICT);
+
         // try to patch without etag
         resp = adminExecutor.execute(Request.Patch(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        check("check patch tmp db without etag", resp, HttpStatus.SC_CONFLICT);
-
+        check("check patch tmp db without etag", resp, HttpStatus.SC_OK);
+        
         // try to patch with wrong etag
         resp = adminExecutor.execute(Request.Patch(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
         check("check patch tmp db with wrong etag", resp, HttpStatus.SC_PRECONDITION_FAILED);
