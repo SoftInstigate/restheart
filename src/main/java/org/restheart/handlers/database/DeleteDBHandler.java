@@ -51,20 +51,23 @@ public class DeleteDBHandler extends PipedHttpHandler {
 
         OperationResult result = getDatabase().deleteDatabase(context.getDBName(), etag, context.isETagCheckRequired());
 
+        // inject the etag
+        if (result.getEtag() != null) {
+            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+        }
+
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
-            
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
                     "The database's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
             return;
         }
-        
+
         exchange.setStatusCode(result.getHttpCode());
 
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
-        
+
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
@@ -73,7 +76,7 @@ public class DeleteDBHandler extends PipedHttpHandler {
         }
 
         LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());
-        
+
         exchange.endExchange();
     }
 }

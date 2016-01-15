@@ -18,13 +18,13 @@
 package org.restheart.handlers.files;
 
 import io.undertow.server.HttpServerExchange;
-import org.bson.types.ObjectId;
+import io.undertow.util.Headers;
 import org.restheart.db.GridFsDAO;
 import org.restheart.db.GridFsRepository;
+import org.restheart.db.OperationResult;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 
 /**
@@ -60,20 +60,27 @@ public class DeleteFileHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        ObjectId etag = RequestHelper.getWriteEtag(exchange);
-
-        int httpCode = this.gridFsDAO
-                .deleteFile(getDatabase(), context.getDBName(), context.getCollectionName(), context.getDocumentId(), etag);
+        OperationResult result = this.gridFsDAO
+                .deleteFile(getDatabase(), context.getDBName(),
+                        context.getCollectionName(), context.getDocumentId(),
+                        context.getETag(),
+                        context.isETagCheckRequired());
 
         // send the warnings if any (and in case no_content change the return code to ok)
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(httpCode, exchange, context);
+            sendWarnings(result.getHttpCode(), exchange, context);
+        }
+
+        // inject the etag
+        if (result.getEtag() != null) {
+            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+        }
+
+        if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
+                    "The file's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
         } else {
-            if (httpCode == HttpStatus.SC_CONFLICT) {
-                ResponseHelper.endExchangeWithMessage(exchange, httpCode, "the ETag header must be provided");
-            } else {
-                ResponseHelper.endExchange(exchange, httpCode);
-            }
+            ResponseHelper.endExchange(exchange, result.getHttpCode());
         }
     }
 }

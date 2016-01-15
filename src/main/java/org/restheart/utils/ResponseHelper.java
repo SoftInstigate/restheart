@@ -154,6 +154,19 @@ public class ResponseHelper {
 
         exchange.getResponseHeaders().put(Headers.ETAG, _etag.toString());
     }
+    
+    /**
+     *
+     * @param exchange
+     * @param etag
+     */
+    public static void injectEtagHeader(HttpServerExchange exchange, Object etag) {
+        if (etag == null || ! (etag instanceof ObjectId)) {
+            return;
+        }
+
+        exchange.getResponseHeaders().put(Headers.ETAG, etag.toString());
+    }
 
     private ResponseHelper() {
     }

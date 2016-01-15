@@ -66,13 +66,12 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
                         context.getETag(),
                         context.isETagCheckRequired());
 
+        // inject the etag
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
         
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
-            
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
                     "The document's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
             return;

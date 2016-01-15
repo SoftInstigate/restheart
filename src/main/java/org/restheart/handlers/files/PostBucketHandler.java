@@ -26,6 +26,7 @@ import org.bson.types.ObjectId;
 import org.restheart.db.Database;
 import org.restheart.db.GridFsDAO;
 import org.restheart.db.GridFsRepository;
+import org.restheart.db.OperationResult;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
@@ -60,11 +61,11 @@ public class PostBucketHandler extends PipedHttpHandler {
             _id = new ObjectId();
         }
 
-        int code;
+        OperationResult result;
 
         try {
             if (context.getFile() != null) {
-                code = gridFsDAO.createFile(getDatabase(), context.getDBName(), context.getCollectionName(), _id, props, context.getFile());
+                result = gridFsDAO.createFile(getDatabase(), context.getDBName(), context.getCollectionName(), _id, props, context.getFile());
             } else {
                 throw new RuntimeException("error. file data is null");
             }
@@ -84,8 +85,8 @@ public class PostBucketHandler extends PipedHttpHandler {
                 .add(HttpString.tryFromString("Location"),
                         getReferenceLink(context, exchange.getRequestURL(), _id));
 
-        exchange.setStatusCode(code);
-        
+        exchange.setStatusCode(result.getHttpCode());
+
         exchange.endExchange();
     }
 }

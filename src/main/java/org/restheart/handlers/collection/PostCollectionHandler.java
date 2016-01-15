@@ -101,6 +101,11 @@ public class PostCollectionHandler extends PipedHttpHandler {
                         context.getETag(),
                         context.isETagCheckRequired());
 
+        // inject the etag
+        if (result.getEtag() != null) {
+            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+        }
+        
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
                     "The document's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
@@ -112,10 +117,6 @@ public class PostCollectionHandler extends PipedHttpHandler {
                 .add(HttpString.tryFromString("Location"),
                         getReferenceLink(context, exchange.getRequestURL(), docId));
 
-        if (result.getEtag() != null) {
-            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
-        }
-        
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
