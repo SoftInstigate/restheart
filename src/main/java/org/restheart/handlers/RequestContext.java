@@ -123,7 +123,7 @@ public class RequestContext {
 
     public static final String ETAG_DOC_POLICY_METADATA_KEY = "etagDocPolicy";
     public static final String ETAG_POLICY_METADATA_KEY = "etagPolicy";
-    public static final String ETAG_CHECK_QPARAM_KEY = "etag";
+    public static final String ETAG_CHECK_QPARAM_KEY = "checkEtag";
 
     private final String whereUri;
     private final String whatUri;
