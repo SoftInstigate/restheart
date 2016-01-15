@@ -26,6 +26,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.FindOneAndReplaceOptions;
+import com.mongodb.client.model.UpdateOptions;
 import org.bson.Document;
 import org.restheart.utils.HttpStatus;
 import org.bson.types.ObjectId;
@@ -38,9 +39,12 @@ public class DocumentDAO implements Repository {
 
     private final MongoClient client;
 
-    private final static FindOneAndReplaceOptions UPSERT_OPS
+    private final static FindOneAndReplaceOptions FAR_UPSERT_OPS
             = new FindOneAndReplaceOptions().upsert(true);
-
+    
+    private final static UpdateOptions UPDATE_UPSERT_OPS
+            = new UpdateOptions().upsert(true);
+    
     public DocumentDAO() {
         client = MongoDBClientSingleton.getInstance().getClient();
     }
@@ -95,7 +99,7 @@ public class DocumentDAO implements Repository {
             Document oldDocument = mcoll.findOneAndReplace(
                     eq("_id", documentId),
                     dcontent,
-                    UPSERT_OPS);
+                    FAR_UPSERT_OPS);
 
             if (oldDocument != null && checkEtag) { // upsertDocument
                 // check the old etag (in case restore the old document)
@@ -157,13 +161,13 @@ public class DocumentDAO implements Repository {
 
         if (_idInContent == null) {
             // new document since the id was just auto-generated
-            content.put("_id", documentId);
+            dcontent.put("_id", documentId);
 
             mcoll.insertOne(dcontent);
 
             return new OperationResult(HttpStatus.SC_CREATED, newEtag);
         } else {
-            Document oldDocument = mcoll.findOneAndReplace(eq("_id", documentId), dcontent, UPSERT_OPS);
+            Document oldDocument = mcoll.findOneAndReplace(eq("_id", documentId), dcontent, FAR_UPSERT_OPS);
 
             if (oldDocument == null) {
                 return new OperationResult(HttpStatus.SC_CREATED, newEtag);
@@ -218,7 +222,9 @@ public class DocumentDAO implements Repository {
         Object oldEtag = oldDocument.get("_etag");
 
         if (oldEtag != null && requestEtag == null) {
-            coll.replaceOne(eq("_id", oldDocument.get("_id")), oldDocument);
+            coll.updateOne(eq("_id", oldDocument.get("_id")), 
+                    new Document("$set", oldDocument),
+                    UPDATE_UPSERT_OPS);
             return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
         }
 
@@ -235,7 +241,9 @@ public class DocumentDAO implements Repository {
         } else {
             // oopps, we need to restore old document
             // they call it optimistic lock strategy
-            coll.replaceOne(eq("_id", oldDocument.get("_id")), oldDocument);
+            coll.updateOne(eq("_id", oldDocument.get("_id")), 
+                    new Document("$set", oldDocument),
+                    UPDATE_UPSERT_OPS);
             return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
         }
     }

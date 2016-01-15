@@ -100,13 +100,6 @@ public class GetCollectionHandler extends PipedHttpHandler {
             return;
         }
 
-        // ***** return NOT_FOUND from here if collection is not existing 
-        // (this is to avoid to check existance via the slow CollectionDAO.checkCollectionExists)
-        if ((context.getPagesize() > 0 && (data == null || data.isEmpty())) && (context.getCollectionProps() == null || context.getCollectionProps().keySet().isEmpty())) {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_FOUND);
-            return;
-        }
-
         try {
             CollectionRepresentationFactory crp = new CollectionRepresentationFactory();
             Representation rep = crp.getRepresentation(exchange, context, data, size);

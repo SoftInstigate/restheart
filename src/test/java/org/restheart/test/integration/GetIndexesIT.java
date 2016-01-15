@@ -84,8 +84,8 @@ public class GetIndexesIT extends AbstactIT {
         assertNotNull("check json not null", json);
         assertNotNull("check not null _returned property", json.get("_returned"));
         assertNotNull("check not null _size property", json.get("_size"));
-        assertEquals("check _size value to be 7", 7, json.get("_size").asInt());
-        assertEquals("check _returned value to be 7", 7, json.get("_returned").asInt());
+        assertEquals("check _size value to be 5", 5, json.get("_size").asInt());
+        assertEquals("check _returned value to be 5", 5, json.get("_returned").asInt());
 
         assertNotNull("check not null _link", json.get("_links"));
         assertTrue("check _link to be a json object", (json.get("_links") instanceof JsonObject));

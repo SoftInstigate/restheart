@@ -73,8 +73,6 @@ public class PostCollectionHandler extends PipedHttpHandler {
             return;
         }
 
-        ObjectId etag = RequestHelper.getWriteEtag(exchange);
-
         if (content.get("_id") != null && content.get("_id") instanceof String 
                 && RequestContext.isReservedResourceDocument(context.getType(), (String) content.get("_id"))) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "reserved resource");
@@ -103,6 +101,12 @@ public class PostCollectionHandler extends PipedHttpHandler {
                         context.getETag(),
                         context.isETagCheckRequired());
 
+        if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
+                    "The document's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
+            return;
+        }
+        
         // insert the Location handler
         exchange.getResponseHeaders()
                 .add(HttpString.tryFromString("Location"),
