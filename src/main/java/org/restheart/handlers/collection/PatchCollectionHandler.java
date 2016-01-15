@@ -109,13 +109,12 @@ public class PatchCollectionHandler extends PipedHttpHandler {
         OperationResult result = getDatabase().upsertCollection(context.getDBName(), context.getCollectionName(), 
                 content, context.getETag(), true, true, context.isETagCheckRequired());
 
+        // inject the etag
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
         
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.injectEtagHeader(exchange, context.getCollectionProps());
-            
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
                     "The collection's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
             return;

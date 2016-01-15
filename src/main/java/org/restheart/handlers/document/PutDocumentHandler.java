@@ -22,13 +22,11 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import org.bson.types.ObjectId;
 import org.restheart.db.DocumentDAO;
 import org.restheart.db.OperationResult;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,13 +100,12 @@ public class PutDocumentHandler extends PipedHttpHandler {
                 false,
                 context.isETagCheckRequired());
 
+        // inject the etag
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
         
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
-            
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
                     "The document's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
             return;

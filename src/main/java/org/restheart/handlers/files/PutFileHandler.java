@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.restheart.db.Database;
 import org.restheart.db.GridFsDAO;
 import org.restheart.db.GridFsRepository;
+import org.restheart.db.OperationResult;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
@@ -60,11 +61,11 @@ public class PutFileHandler extends PipedHttpHandler {
             return;
         }
 
-        int code;
+        OperationResult result;
         
         try {
             if (context.getFile() != null) {
-                code = gridFsDAO.createFile(getDatabase(), context.getDBName(), context.getCollectionName(), id, content, context.getFile());
+                result = gridFsDAO.createFile(getDatabase(), context.getDBName(), context.getCollectionName(), id, content, context.getFile());
             } else {
                 throw new RuntimeException("error. file data is null");
             }
@@ -79,7 +80,7 @@ public class PutFileHandler extends PipedHttpHandler {
             throw t;
         }
 
-        exchange.setStatusCode(code);
+        exchange.setStatusCode(result.getHttpCode());
         exchange.endExchange();
     }
 }
