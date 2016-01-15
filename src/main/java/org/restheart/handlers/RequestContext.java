@@ -858,13 +858,13 @@ public class RequestContext {
                     ? collectionProps.get(ETAG_DOC_POLICY_METADATA_KEY)
                     : null;
 
-            LOGGER.debug("collection etag policy (from coll properties) {}", _policy);
+            LOGGER.trace("collection etag policy (from coll properties) {}", _policy);
 
             if (_policy == null) {
                 // check the db metadata
                 _policy = dbProps != null ? dbProps.get(ETAG_DOC_POLICY_METADATA_KEY)
                         : null;
-                LOGGER.debug("collection etag policy (from db properties) {}", _policy);
+                LOGGER.trace("collection etag policy (from db properties) {}", _policy);
             }
 
             ETAG_CHECK_POLICY policy = null;
@@ -891,7 +891,7 @@ public class RequestContext {
             // check the coll  metadata
             Object _policy = dbProps.get(ETAG_POLICY_METADATA_KEY);
 
-            LOGGER.debug("db etag policy (from db properties) {}", _policy);
+            LOGGER.trace("db etag policy (from db properties) {}", _policy);
 
             ETAG_CHECK_POLICY policy = null;
 
@@ -917,7 +917,7 @@ public class RequestContext {
             // check the coll  metadata
             Object _policy = collectionProps.get(ETAG_POLICY_METADATA_KEY);
 
-            LOGGER.debug("coll etag policy (from coll properties) {}", _policy);
+            LOGGER.trace("coll etag policy (from coll properties) {}", _policy);
 
             ETAG_CHECK_POLICY policy = null;
 
@@ -943,9 +943,9 @@ public class RequestContext {
         ETAG_CHECK_POLICY collP = Bootstrapper.getConfiguration().getCollEtagCheckPolicy();
         ETAG_CHECK_POLICY docP = Bootstrapper.getConfiguration().getDocEtagCheckPolicy();
 
-        LOGGER.debug("default etag db check (from conf) {}", dbP);
-        LOGGER.debug("default etag coll check (from conf) {}", collP);
-        LOGGER.debug("default etag doc check (from conf) {}", docP);
+        LOGGER.trace("default etag db check (from conf) {}", dbP);
+        LOGGER.trace("default etag coll check (from conf) {}", collP);
+        LOGGER.trace("default etag doc check (from conf) {}", docP);
 
         ETAG_CHECK_POLICY policy = null;
 
