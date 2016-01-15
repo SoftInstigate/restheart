@@ -26,6 +26,7 @@ import com.mongodb.gridfs.GridFSDBFile;
 import com.mongodb.gridfs.GridFSInputFile;
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
 
@@ -45,7 +46,7 @@ public class GridFsDAO implements GridFsRepository {
     }
 
     @Override
-    public int createFile(
+    public OperationResult createFile(
             final Database db,
             final String dbName,
             final String bucketName,
@@ -61,7 +62,8 @@ public class GridFsDAO implements GridFsRepository {
         gfsFile.setFilename(filename);
 
         // add etag
-        properties.put("_etag", new ObjectId());
+        ObjectId etag = new ObjectId();
+        properties.put("_etag", etag);
 
         gfsFile.setId(fileId);
 
@@ -69,7 +71,7 @@ public class GridFsDAO implements GridFsRepository {
 
         gfsFile.save();
 
-        return HttpStatus.SC_CREATED;
+        return new OperationResult(HttpStatus.SC_CREATED, etag);
     }
 
     private String extractFilenameFromProperties(final DBObject properties) {
@@ -82,61 +84,42 @@ public class GridFsDAO implements GridFsRepository {
     }
 
     @Override
-    public int deleteFile(
+    public OperationResult deleteFile(
             final Database db,
             final String dbName,
             final String bucketName,
             final Object fileId,
-            final ObjectId requestEtag) {
+            final String requestEtag,
+            final boolean checkEtag) {
 
         GridFS gridfs = new GridFS(db.getDB(dbName), extractBucketName(bucketName));
         GridFSDBFile dbsfile = gridfs.findOne(new BasicDBObject(_ID, fileId));
 
         if (dbsfile == null) {
-            return HttpStatus.SC_NOT_FOUND;
-        } else {
-            int code = checkEtag(requestEtag, dbsfile);
-            if (code == HttpStatus.SC_NO_CONTENT) {
-                // delete file
-                gridfs.remove(new BasicDBObject(_ID, fileId));
-            }
+            return new OperationResult(HttpStatus.SC_NOT_FOUND);
+        } else if (checkEtag) {
+            Object oldEtag = dbsfile.get("_etag");
 
-            return code;
+            if (oldEtag != null) {
+                if (requestEtag == null) {
+                    return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
+                } else if (!Objects.equals(oldEtag.toString(), requestEtag)) {
+                    return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+                }
+            }
         }
+
+        gridfs.remove(new BasicDBObject(_ID, fileId));
+        return new OperationResult(HttpStatus.SC_NO_CONTENT);
     }
 
     @Override
-    public void deleteChunksCollection(final Database db, final String dbName, final String bucketName) {
+    public void deleteChunksCollection(final Database db,
+            final String dbName,
+            final String bucketName
+    ) {
         String chunksCollName = extractBucketName(bucketName).concat(".chunks");
         client.getDB(dbName).getCollection(chunksCollName).drop();
-    }
-
-    /**
-     *
-     * @param requestEtag
-     * @param dbsfile
-     * @return HttpStatus.SC_NO_CONTENT if check is ok
-     */
-    private int checkEtag(final ObjectId requestEtag, final GridFSDBFile dbsfile) {
-        if (dbsfile != null) {
-            Object etag = dbsfile.get("_etag");
-
-            if (etag == null) {
-                return HttpStatus.SC_NO_CONTENT;
-            }
-
-            if (requestEtag == null) {
-                return HttpStatus.SC_CONFLICT;
-            }
-
-            if (etag.equals(requestEtag)) {
-                return HttpStatus.SC_NO_CONTENT;
-            } else {
-                return HttpStatus.SC_PRECONDITION_FAILED;
-            }
-        }
-
-        return HttpStatus.SC_NO_CONTENT;
     }
 
     private static String extractBucketName(final String collectionName) {
