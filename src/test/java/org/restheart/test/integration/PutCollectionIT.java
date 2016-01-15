@@ -48,10 +48,14 @@ public class PutCollectionIT extends AbstactIT {
         resp = adminExecutor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check put coll1", resp, HttpStatus.SC_CREATED);
 
+        // try to put without etag forcing checkEtag
+        resp = adminExecutor.execute(Request.Put(addCheckEtag(collectionTmpUri)).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check put tmp coll1 without etag forcing checkEtag", resp, HttpStatus.SC_CONFLICT);
+
         // try to put without etag
         resp = adminExecutor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        check("check put tmp coll1 without etag", resp, HttpStatus.SC_CONFLICT);
-
+        check("check put tmp coll1 without etag", resp, HttpStatus.SC_OK);
+        
         // try to put with wrong etag
         resp = adminExecutor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
         check("check put tmp coll1 with wrong etag", resp, HttpStatus.SC_PRECONDITION_FAILED);

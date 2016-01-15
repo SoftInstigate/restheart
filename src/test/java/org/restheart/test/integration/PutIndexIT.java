@@ -57,7 +57,7 @@ public class PutIndexIT extends AbstactIT {
             // *** PUT wrong index
         //resp = adminExecutor.execute(Request.Put(indexTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         //check("check put wrong index", resp, HttpStatus.SC_NOT_ACCEPTABLE);
-        // try to put without etag
+
         resp = adminExecutor.execute(Request.Put(indexTmpUri).bodyString("{ keys: {a:1,b:2}, ops: { name: \"ciao\"} }", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check put correct index", resp, HttpStatus.SC_CREATED);
 

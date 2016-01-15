@@ -51,9 +51,17 @@ public class DeleteDocumentIT extends AbstactIT {
         resp = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check put tmp doc", resp, HttpStatus.SC_CREATED);
 
+        // try to delete without etag forcing checkEtag
+        resp = adminExecutor.execute(Request.Delete(addCheckEtag(documentTmpUri)));
+        check("check delete tmp doc without etag forcing checkEtag", resp, HttpStatus.SC_CONFLICT);
+        
         // try to delete without etag
         resp = adminExecutor.execute(Request.Delete(documentTmpUri));
-        check("check delete tmp doc without etag", resp, HttpStatus.SC_CONFLICT);
+        check("check delete tmp doc without etag", resp, HttpStatus.SC_NO_CONTENT);
+        
+        // *** PUT tmpdoc (recreating delete document)
+        resp = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check put tmp doc", resp, HttpStatus.SC_CREATED);
 
         // try to delete with wrong etag
         resp = adminExecutor.execute(Request.Delete(documentTmpUri).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));

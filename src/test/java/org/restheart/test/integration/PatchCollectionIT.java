@@ -50,11 +50,15 @@ public class PatchCollectionIT extends AbstactIT {
 
         // try to patch without body
         resp = adminExecutor.execute(Request.Patch(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        check("check patch tmp doc without etag", resp, HttpStatus.SC_NOT_ACCEPTABLE);
+        check("check patch tmp doc without data", resp, HttpStatus.SC_NOT_ACCEPTABLE);
 
-        // try to patch without etag
+        // try to patch without etag forcing etag check
+        resp = adminExecutor.execute(Request.Patch(addCheckEtag(collectionTmpUri)).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check patch tmp doc without etag forcing checkEtag", resp, HttpStatus.SC_CONFLICT);
+        
+        // try to patch without etag without etag check
         resp = adminExecutor.execute(Request.Patch(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        check("check patch tmp doc without etag", resp, HttpStatus.SC_CONFLICT);
+        check("check patch tmp doc without etag", resp, HttpStatus.SC_OK);
 
         // try to patch with wrong etag
         resp = adminExecutor.execute(Request.Patch(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));

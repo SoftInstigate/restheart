@@ -44,14 +44,18 @@ public class PutDBIT extends AbstactIT {
         resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check put db", resp, HttpStatus.SC_CREATED);
 
+        // try to put without etag forcing checkEtag
+        resp = adminExecutor.execute(Request.Put(addCheckEtag(dbTmpUri)).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        check("check put tmp db without etag forcing checkEtag", resp, HttpStatus.SC_CONFLICT);
+        
         // try to put without etag
         resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        check("check put tmp db without etag", resp, HttpStatus.SC_CONFLICT);
+        check("check put tmp db without etag", resp, HttpStatus.SC_OK);
 
         // try to put with wrong etag
         resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
-        check("check put tmp db with wrong etag", resp, HttpStatus.SC_PRECONDITION_FAILED);
-
+        check("check put tmp db with wrong etag forcing checkEtag", resp, HttpStatus.SC_PRECONDITION_FAILED);
+        
         resp = adminExecutor.execute(Request.Get(dbTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
         JsonObject content = JsonObject.readFrom(resp.returnContent().asString());

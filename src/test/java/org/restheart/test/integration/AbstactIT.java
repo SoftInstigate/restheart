@@ -361,7 +361,7 @@ public abstract class AbstactIT {
         collectionTmpUri = buildURI("/" + dbTmpName + "/" + collectionTmpName, new NameValuePair[]{
             new BasicNameValuePair("hal", "f")
         });
-
+        
         collectionTmpUserUri2 = buildURI("/" + dbTmpName2 + "/" + collectionTmpUserName2, new NameValuePair[]{
             new BasicNameValuePair("hal", "f")
         });
@@ -483,6 +483,13 @@ public abstract class AbstactIT {
                 .setHost(MONGO_HOST)
                 .setPort(conf.getHttpPort())
                 .setPath(path);
+    }
+    
+    protected static URI addCheckEtag(URI uri) throws URISyntaxException {
+        return createURIBuilder(uri.getPath())
+                .addParameter("checkEtag", null)
+                .addParameter("hal", "f")
+                .build();
     }
 
     private static final String _INDEXES = "/_indexes";
