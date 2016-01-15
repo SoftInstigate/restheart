@@ -27,6 +27,7 @@ import com.mongodb.MongoException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
+import com.mongodb.client.model.IndexModel;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.util.JSON;
@@ -65,7 +66,7 @@ class CollectionDAO {
 
     private final static UpdateOptions UPSERT_OPS
             = new UpdateOptions().upsert(true);
-    
+
     static {
         FIELDS_TO_RETURN = new BasicDBObject();
         FIELDS_TO_RETURN.put("_id", 1);
@@ -282,7 +283,7 @@ class CollectionDAO {
 
         return properties;
     }
-    
+
     /**
      * Upsert the collection properties.
      *
@@ -322,30 +323,35 @@ class CollectionDAO {
         MongoDatabase mdb = client.getDatabase(dbName);
         MongoCollection<Document> mcoll = mdb.getCollection("_properties");
 
-        if (checkEtag) {
+        if (checkEtag && updating) {
             Document oldProperties = mcoll.find(eq("_id", "_properties.".concat(collName)))
                     .projection(FIELDS_TO_RETURN).first();
 
-            Object oldEtag = oldProperties.get("_etag");
+            if (oldProperties != null) {
+                Object oldEtag = oldProperties.get("_etag");
 
-            if (oldEtag != null && requestEtag == null) {
-                return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
-            }
+                if (oldEtag != null && requestEtag == null) {
+                    return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
+                }
 
-            String _oldEtag;
+                String _oldEtag;
 
-            if (oldEtag != null) {
-                _oldEtag = oldEtag.toString();
+                if (oldEtag != null) {
+                    _oldEtag = oldEtag.toString();
+                } else {
+                    _oldEtag = null;
+                }
+
+                if (Objects.equals(requestEtag, _oldEtag)) {
+                    return doCollPropsUpdate(collName, patching, updating, mcoll, dcontent, newEtag);
+                } else {
+                    return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+                }
             } else {
-                _oldEtag = null;
-            }
-
-            if (Objects.equals(requestEtag, _oldEtag)) {
+                // this is the case when the coll does not have properties
+                // e.g. it has not been created by restheart
                 return doCollPropsUpdate(collName, patching, updating, mcoll, dcontent, newEtag);
-            } else {
-                return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
             }
-
         } else {
             return doCollPropsUpdate(collName, patching, updating, mcoll, dcontent, newEtag);
         }
@@ -360,7 +366,6 @@ class CollectionDAO {
             if (updating) {
                 return new OperationResult(HttpStatus.SC_OK, newEtag);
             } else {
-                createDefaultIndexes(mcoll);
                 return new OperationResult(HttpStatus.SC_CREATED, newEtag);
             }
         }
@@ -392,29 +397,17 @@ class CollectionDAO {
                 if (oldEtag != null) {
                     if (requestEtag == null) {
                         return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
-                    } else if (Objects.equals(oldEtag.toString(), requestEtag)) {
-                        mcoll.drop();
-                        return new OperationResult(HttpStatus.SC_NO_CONTENT);
-                    } else {
+                    } else if (!Objects.equals(oldEtag.toString(), requestEtag)) {
                         return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
                     }
-                } else {
-                    mcoll.drop();
-                    return new OperationResult(HttpStatus.SC_NO_CONTENT);
                 }
-            } else {
-                mcoll.drop();
-                return new OperationResult(HttpStatus.SC_NO_CONTENT);
             }
-        } else {
-            mcoll.drop();
-            return new OperationResult(HttpStatus.SC_NO_CONTENT);
         }
-    }
 
-    
-    private void createDefaultIndexes(final MongoCollection<Document> coll) {
-        coll.createIndex(new Document("_id", 1).append("_etag", 1),new IndexOptions().name("_id_etag_idx"));
-        coll.createIndex(new Document("_etag", 1), new IndexOptions().name("_etag_idx"));
+        
+        MongoCollection<Document> collToDelete = mdb.getCollection(collName);
+        collToDelete.drop();
+        mcoll.deleteOne(eq("_id", "_properties.".concat(collName)));
+        return new OperationResult(HttpStatus.SC_NO_CONTENT);
     }
 }

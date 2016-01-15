@@ -21,7 +21,6 @@ import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import org.bson.types.ObjectId;
 import org.restheart.db.OperationResult;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.Relationship;
@@ -31,7 +30,6 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 
 /**
@@ -116,7 +114,7 @@ public class PatchCollectionHandler extends PipedHttpHandler {
         }
         
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
+            ResponseHelper.injectEtagHeader(exchange, context.getCollectionProps());
             
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
                     "The collection's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");

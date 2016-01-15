@@ -55,7 +55,7 @@ public class DeleteCollectionHandler extends PipedHttpHandler {
         }
         
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
+            ResponseHelper.injectEtagHeader(exchange, context.getCollectionProps());
             
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
                     "The collection's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
@@ -69,9 +69,9 @@ public class DeleteCollectionHandler extends PipedHttpHandler {
             exchange.setStatusCode(result.getHttpCode());
         }
 
-        exchange.endExchange();
-
         LocalCachesSingleton.getInstance()
                 .invalidateCollection(context.getDBName(), context.getCollectionName());
+        
+        exchange.endExchange();
     }
 }

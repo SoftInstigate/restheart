@@ -26,6 +26,8 @@ import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *

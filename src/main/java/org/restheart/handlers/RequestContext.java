@@ -160,7 +160,7 @@ public class RequestContext {
     private static final String NUL = Character.toString('\0');
 
     private final String etag;
-    
+
     private boolean forceEtagCheck = false;
 
     /**
@@ -212,11 +212,11 @@ public class RequestContext {
         this.method = selectRequestMethod(exchange.getRequestMethod());
 
         // etag
-        HeaderValues etagHvs = exchange.getRequestHeaders() == null ?
-                null : exchange.getRequestHeaders().get(Headers.IF_MATCH);
+        HeaderValues etagHvs = exchange.getRequestHeaders() == null
+                ? null : exchange.getRequestHeaders().get(Headers.IF_MATCH);
 
         this.etag = etagHvs == null || etagHvs.getFirst() == null ? null : etagHvs.getFirst();
-        
+
         this.forceEtagCheck = exchange.getQueryParameters().get(ETAG_CHECK_QPARAM_KEY) != null;
     }
 
@@ -845,22 +845,25 @@ public class RequestContext {
         if (getETag() != null) {
             return true;
         }
-        
+
         // if client requires the check via qparam return true
         if (forceEtagCheck) {
             return true;
         }
-        
+
         // for documents consider db and coll etagDocPolicy metadata
         if (type == TYPE.DOCUMENT || type == TYPE.FILE) {
             // check the coll  metadata
-            Object _policy = collectionProps.get(ETAG_DOC_POLICY_METADATA_KEY);
+            Object _policy = collectionProps != null
+                    ? collectionProps.get(ETAG_DOC_POLICY_METADATA_KEY)
+                    : null;
 
             LOGGER.debug("collection etag policy (from coll properties) {}", _policy);
 
             if (_policy == null) {
                 // check the db metadata
-                _policy = dbProps.get(ETAG_DOC_POLICY_METADATA_KEY);
+                _policy = dbProps != null ? dbProps.get(ETAG_DOC_POLICY_METADATA_KEY)
+                        : null;
                 LOGGER.debug("collection etag policy (from db properties) {}", _policy);
             }
 
@@ -882,9 +885,9 @@ public class RequestContext {
                 }
             }
         }
-        
+
         // for db consider db etagPolicy metadata
-        if (type == TYPE.DB) {
+        if (type == TYPE.DB && dbProps != null) {
             // check the coll  metadata
             Object _policy = dbProps.get(ETAG_POLICY_METADATA_KEY);
 
@@ -908,9 +911,9 @@ public class RequestContext {
                 }
             }
         }
-        
+
         // for collection consider coll etagPolicy metadata
-        if (type == TYPE.DB) {
+        if (type == TYPE.DB && collectionProps != null) {
             // check the coll  metadata
             Object _policy = collectionProps.get(ETAG_POLICY_METADATA_KEY);
 

@@ -19,13 +19,11 @@ package org.restheart.handlers.document;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import org.bson.types.ObjectId;
 import org.restheart.db.DocumentDAO;
 import org.restheart.db.OperationResult;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 
 /**
@@ -61,8 +59,6 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        ObjectId etag = RequestHelper.getWriteEtag(exchange);
-
         OperationResult result = this.documentDAO
                 .deleteDocument(context.getDBName(), 
                         context.getCollectionName(), 

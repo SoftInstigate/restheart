@@ -298,30 +298,35 @@ public class DbsDAO implements Database {
         MongoDatabase mdb = client.getDatabase(dbName);
         MongoCollection<Document> mcoll = mdb.getCollection("_properties");
 
-        if (checkEtag) {
+        if (checkEtag && updating) {
             Document oldProperties = mcoll.find(eq("_id", "_properties"))
                     .projection(FIELDS_TO_RETURN).first();
 
-            Object oldEtag = oldProperties.get("_etag");
+            if (oldProperties != null) {
+                Object oldEtag = oldProperties.get("_etag");
 
-            if (oldEtag != null && requestEtag == null) {
-                return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
-            }
+                if (oldEtag != null && requestEtag == null) {
+                    return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
+                }
 
-            String _oldEtag;
+                String _oldEtag;
 
-            if (oldEtag != null) {
-                _oldEtag = oldEtag.toString();
+                if (oldEtag != null) {
+                    _oldEtag = oldEtag.toString();
+                } else {
+                    _oldEtag = null;
+                }
+
+                if (Objects.equals(requestEtag, _oldEtag)) {
+                    return doDbPropsUpdate(patching, updating, mcoll, dcontent, newEtag);
+                } else {
+                    return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+                }
             } else {
-                _oldEtag = null;
-            }
-
-            if (Objects.equals(requestEtag, _oldEtag)) {
+                // this is the case when the db does not have properties
+                // e.g. it has not been created by restheart
                 return doDbPropsUpdate(patching, updating, mcoll, dcontent, newEtag);
-            } else {
-                return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
             }
-
         } else {
             return doDbPropsUpdate(patching, updating, mcoll, dcontent, newEtag);
         }
@@ -331,14 +336,12 @@ public class DbsDAO implements Database {
         if (patching) {
             mcoll.updateOne(PROPS_QUERY, new Document("$set", dcontent));
             return new OperationResult(HttpStatus.SC_OK, newEtag);
+        } else if (updating) {
+            mcoll.replaceOne(PROPS_QUERY, dcontent, UPSERT_OPS);
+            return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else {
-            if (updating) {
-                mcoll.replaceOne(PROPS_QUERY, dcontent, UPSERT_OPS);
-                return new OperationResult(HttpStatus.SC_OK, newEtag);
-            } else {
-                mcoll.replaceOne(PROPS_QUERY, dcontent, UPSERT_OPS);
-                return new OperationResult(HttpStatus.SC_CREATED, newEtag);
-            }
+            mcoll.replaceOne(PROPS_QUERY, dcontent, UPSERT_OPS);
+            return new OperationResult(HttpStatus.SC_CREATED, newEtag);
         }
     }
 
@@ -363,24 +366,15 @@ public class DbsDAO implements Database {
                 if (oldEtag != null) {
                     if (requestEtag == null) {
                         return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
-                    } else if (Objects.equals(oldEtag.toString(), requestEtag)) {
-                        mdb.drop();
-                        return new OperationResult(HttpStatus.SC_NO_CONTENT);
-                    } else {
+                    } else if (!Objects.equals(oldEtag.toString(), requestEtag)) {
                         return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
                     }
-                } else {
-                    mdb.drop();
-                    return new OperationResult(HttpStatus.SC_NO_CONTENT);
                 }
-            } else {
-                mdb.drop();
-                return new OperationResult(HttpStatus.SC_NO_CONTENT);
             }
-        } else {
-            mdb.drop();
-            return new OperationResult(HttpStatus.SC_NO_CONTENT);
         }
+
+        mdb.drop();
+        return new OperationResult(HttpStatus.SC_NO_CONTENT);
     }
 
     @Override

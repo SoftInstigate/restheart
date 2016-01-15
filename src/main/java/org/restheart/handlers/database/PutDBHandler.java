@@ -22,7 +22,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import org.bson.types.ObjectId;
 import org.restheart.db.OperationResult;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.RepresentationTransformer;
@@ -30,7 +29,6 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 
 /**
