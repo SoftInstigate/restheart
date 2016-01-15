@@ -79,7 +79,30 @@ public class GetDocumentHandler extends PipedHttpHandler {
         DBObject document = getDatabase().getCollection(context.getDBName(), context.getCollectionName()).findOne(query, fieldsToReturn);
 
         if (document == null) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "document does not exist");
+            String errMsg = context.getDocumentId() == null
+                    ? " does not exist"
+                    : " '".concat(
+                            context.getDocumentId().toString()
+                            .concat("' does not exist"));
+
+            if (null != context.getType()) {
+                switch (context.getType()) {
+                    case DOCUMENT:
+                        errMsg = "document".concat(errMsg);
+                        break;
+                    case FILE:
+                        errMsg = "file".concat(errMsg);
+                        break;
+                    case SCHEMA:
+                        errMsg = "schema".concat(errMsg);
+                        break;
+                    default:
+                        errMsg = "resource".concat(errMsg);
+                        break;
+                }
+            }
+
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, errMsg);
             return;
         }
 
