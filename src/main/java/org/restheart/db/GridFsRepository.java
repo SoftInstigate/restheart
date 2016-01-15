@@ -21,7 +21,6 @@ import com.mongodb.DBObject;
 import com.mongodb.DuplicateKeyException;
 import java.io.File;
 import java.io.IOException;
-import org.bson.types.ObjectId;
 
 /**
  *
@@ -29,9 +28,9 @@ import org.bson.types.ObjectId;
  */
 public interface GridFsRepository {
     
-    int createFile(Database db, String dbName, String bucketName, Object fileId, DBObject properties, File data) throws IOException, DuplicateKeyException;
+    OperationResult createFile(Database db, String dbName, String bucketName, Object fileId, DBObject properties, File data) throws IOException, DuplicateKeyException;
     
-    int deleteFile(Database db, String dbName, String bucketName, Object fileId, ObjectId requestEtag);
+    OperationResult deleteFile(Database db, String dbName, String bucketName, Object fileId, String requestEtag, final boolean checkEtag );
     
     void deleteChunksCollection(Database db, String dbName, String bucketName);
 }
