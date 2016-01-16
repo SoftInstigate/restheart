@@ -69,7 +69,6 @@ import io.undertow.server.handlers.RequestLimit;
 import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.util.HttpString;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystems;
@@ -119,9 +118,7 @@ public final class Bootstrapper {
                 LOGGER.info("version {}", RESTHEART_VERSION);
             }
 
-            LOGGER.error(ex.getMessage() + ", exiting...", ex);
-            stopServer(false);
-            System.exit(-1);
+            logErrorAndExit(ex.getMessage() + ", exiting...", ex, false, -1);
         }
 
         if (!hasForkOption(args)) {
@@ -147,11 +144,7 @@ public final class Bootstrapper {
                     .supportedFileAttributeViews().contains("posix");
 
             if (!isPosix) {
-                LOGGER.info("Unable to fork process, "
-                        + "this is only supported on POSIX compliant OSes");
-
-                stopServer(false);
-                System.exit(-1);
+                logErrorAndExit("Unable to fork process, this is only supported on POSIX compliant OSes", null, false, -1);
             }
 
             RHDaemon d = new RHDaemon();
@@ -162,9 +155,7 @@ public final class Bootstrapper {
                     LOGGER.info("Forked process: {}", LIBC.getpid());
                     initLogging(args, d);
                 } catch (Throwable t) {
-                    LOGGER.error("Error staring forked process", t);
-                    stopServer(false, false);
-                    System.exit(-1);
+                    logErrorAndExit("Error staring forked process", t, false, false, -1);
                 }
 
                 startServer(true);
@@ -182,9 +173,7 @@ public final class Bootstrapper {
 
                     d.daemonize();
                 } catch (Throwable t) {
-                    LOGGER.error("Error forking", t);
-                    stopServer(false, false);
-                    System.exit(-1);
+                    logErrorAndExit("Error forking", t, false, false, -1);
                 }
             }
         }
@@ -238,9 +227,7 @@ public final class Bootstrapper {
                 LOGGER.info(ansi().fg(RED).bold().a("RESTHeart").reset().toString() + " version {}", RESTHEART_VERSION);
             }
 
-            LOGGER.error(ex.getMessage() + ", exiting...", ex);
-            stopServer(false);
-            System.exit(-1);
+            logErrorAndExit(ex.getMessage() + ", exiting...", ex, false, -1);
         }
 
         startServer(false);
@@ -324,17 +311,13 @@ public final class Bootstrapper {
             LOGGER.info("MongoDB connection pool initialized");
             LOGGER.info("MongoDB version {}", MongoDBClientSingleton.getServerVersion());
         } catch (Throwable t) {
-            LOGGER.error("Error connecting to MongoDB. exiting..", t);
-            stopServer(false, !pidFileAlreadyExists);
-            System.exit(-1);
+            logErrorAndExit("Error connecting to MongoDB. exiting..", t, false, !pidFileAlreadyExists, -1);
         }
 
         try {
             startCoreSystem();
         } catch (Throwable t) {
-            LOGGER.error("Error starting RESTHeart. Exiting...", t);
-            stopServer(false, !pidFileAlreadyExists);
-            System.exit(-2);
+            logErrorAndExit("Error starting RESTHeart. Exiting...", t, false, !pidFileAlreadyExists, -2);
         }
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -345,14 +328,12 @@ public final class Bootstrapper {
         });
 
         // create pid file on supported OSes
-        if (!OSChecker.isWindows()
-                && pidFilePath != null) {
+        if (!OSChecker.isWindows() && pidFilePath != null) {
             FileUtils.createPidFile(pidFilePath);
         }
 
         // log pid file path on supported OSes
-        if (!OSChecker.isWindows()
-                && pidFilePath != null) {
+        if (!OSChecker.isWindows() && pidFilePath != null) {
             LOGGER.info("Pid file {}", pidFilePath);
         }
 
@@ -437,57 +418,16 @@ public final class Bootstrapper {
 
     private static void startCoreSystem() {
         if (configuration == null) {
-            LOGGER.error("No configuration found. exiting..");
-            stopServer(false);
-            System.exit(-1);
+            logErrorAndExit("No configuration found. exiting..", null, false, -1);
         }
 
         if (!configuration.isHttpsListener() && !configuration.isHttpListener() && !configuration.isAjpListener()) {
-            LOGGER.error("No listener specified. exiting..");
-            stopServer(false);
-            System.exit(-1);
+            logErrorAndExit("No listener specified. exiting..", null, false, -1);
         }
 
-        IdentityManager identityManager = null;
+        final IdentityManager identityManager = loadIdentityManager();
 
-        if (configuration.getIdmImpl() == null) {
-            LOGGER.warn("***** No identity manager specified. authentication disabled.");
-            identityManager = null;
-
-        } else {
-            try {
-                Object idm = Class.forName(configuration.getIdmImpl())
-                        .getConstructor(Map.class)
-                        .newInstance(configuration.getIdmArgs());
-                identityManager = (IdentityManager) idm;
-            } catch (ClassCastException | NoSuchMethodException | SecurityException | ClassNotFoundException | IllegalArgumentException | InstantiationException | IllegalAccessException | InvocationTargetException ex) {
-                LOGGER.error("Error configuring idm implementation {}", configuration.getIdmImpl(), ex);
-                stopServer(false);
-                System.exit(-3);
-            }
-        }
-
-        AccessManager accessManager = null;
-
-        if (configuration.getAmImpl() == null && configuration.getIdmImpl() != null) {
-            LOGGER.warn("***** no access manager specified. authenticated users can do anything.");
-            accessManager = new FullAccessManager();
-        } else if (configuration.getAmImpl() == null && configuration.getIdmImpl() == null) {
-            LOGGER.warn("***** No access manager specified. users can do anything.");
-            accessManager = new FullAccessManager();
-
-        } else {
-            try {
-                Object am = Class.forName(configuration.getAmImpl())
-                        .getConstructor(Map.class)
-                        .newInstance(configuration.getAmArgs());
-                accessManager = (AccessManager) am;
-            } catch (ClassCastException | NoSuchMethodException | SecurityException | ClassNotFoundException | IllegalArgumentException | InstantiationException | IllegalAccessException | InvocationTargetException ex) {
-                LOGGER.error("Error configuring acess manager implementation {}", configuration.getAmImpl(), ex);
-                stopServer(false);
-                System.exit(-3);
-            }
-        }
+        final AccessManager accessManager = loadAccessManager();
 
         if (configuration.isAuthTokenEnabled()) {
             LOGGER.info("Token based authentication enabled with token TTL {} minutes", configuration.getAuthTokenTtl());
@@ -526,17 +466,11 @@ public final class Bootstrapper {
                 }
             }
         } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException ex) {
-            LOGGER.error("Couldn't start RESTHeart, error with specified keystore. exiting..", ex);
-            stopServer(false);
-            System.exit(-1);
+            logErrorAndExit("Couldn't start RESTHeart, error with specified keystore. exiting..", ex, false, -1);
         } catch (FileNotFoundException ex) {
-            LOGGER.error("Couldn't start RESTHeart, keystore file not found. exiting..", ex);
-            stopServer(false);
-            System.exit(-1);
+            logErrorAndExit("Couldn't start RESTHeart, keystore file not found. exiting..", ex, false, -1);
         } catch (IOException ex) {
-            LOGGER.error("Couldn't start RESTHeart, error reading the keystore file. exiting..", ex);
-            stopServer(false);
-            System.exit(-1);
+            logErrorAndExit("Couldn't start RESTHeart, error reading the keystore file. exiting..", ex, false, -1);
         }
 
         Builder builder = Undertow.builder();
@@ -585,6 +519,56 @@ public final class Bootstrapper {
                 .setHandler(shutdownHandler);
 
         builder.build().start();
+    }
+
+    private static IdentityManager loadIdentityManager() {
+        IdentityManager identityManager = null;
+        if (configuration.getIdmImpl() == null) {
+            LOGGER.warn("***** No Identity Manager specified. Authentication disabled.");
+        } else {
+            try {
+                Object idm = Class.forName(configuration.getIdmImpl())
+                        .getConstructor(Map.class)
+                        .newInstance(configuration.getIdmArgs());
+                identityManager = (IdentityManager) idm;
+            } catch (Exception ex) {
+                logErrorAndExit("Error configuring Identity Manager implementation " + configuration.getIdmImpl(), ex, false, -3);
+            }
+        }
+        return identityManager;
+    }
+
+    private static AccessManager loadAccessManager() {
+        AccessManager accessManager = new FullAccessManager();
+        if (configuration.getAmImpl() == null && configuration.getIdmImpl() != null) {
+            LOGGER.warn("***** no access manager specified. authenticated users can do anything.");
+        } else if (configuration.getAmImpl() == null && configuration.getIdmImpl() == null) {
+            LOGGER.warn("***** No access manager specified. users can do anything.");
+        } else {
+            try {
+                Object am = Class.forName(configuration.getAmImpl())
+                        .getConstructor(Map.class)
+                        .newInstance(configuration.getAmArgs());
+                accessManager = (AccessManager) am;
+            } catch (Exception ex) {
+                logErrorAndExit("Error configuring acess manager implementation " + configuration.getAmImpl(), ex, false, -3);
+            }
+        }
+        return accessManager;
+    }
+
+    private static void logErrorAndExit(String message, Throwable t, boolean silent, int status) {
+        logErrorAndExit(message, t, silent, true, status);
+    }
+
+    private static void logErrorAndExit(String message,  Throwable t, boolean silent, boolean removePid, int status) {
+        if (t == null) {
+            LOGGER.error(message);
+        } else {
+            LOGGER.error(message, t);
+        }
+        stopServer(silent, removePid);
+        System.exit(status);
     }
 
     private static GracefulShutdownHandler getHandlersPipe(final IdentityManager identityManager, final AccessManager accessManager) {
@@ -686,22 +670,20 @@ public final class Bootstrapper {
                             LOGGER.error("Error extracting embedded static resource {}", path, ex);
 
                             if ("browser".equals(path)) {
-                                LOGGER.error("**** Did you downloaded the browser submodule before building?");
-                                LOGGER.error("**** to fix, run this command: $ git submodule update --init --recursive");
+                                LOGGER.error("**** Have you downloaded the HAL Browser submodule before building?");
+                                LOGGER.error("**** To fix this, run: $ git submodule update --init --recursive");
                             }
                             return;
 
                         }
+                    } else if (!path.startsWith("/")) {
+                        // this is to allow specifying the configuration file path relative to the jar (also working when running from classes)
+                        URL location = Bootstrapper.class
+                                .getProtectionDomain().getCodeSource().getLocation();
+                        File locationFile = new File(location.getPath());
+                        file = new File(locationFile.getParent() + File.separator + path);
                     } else {
-                        if (!path.startsWith("/")) {
-                            // this is to allow specifying the configuration file path relative to the jar (also working when running from classes)
-                            URL location = Bootstrapper.class
-                                    .getProtectionDomain().getCodeSource().getLocation();
-                            File locationFile = new File(location.getPath());
-                            file = new File(locationFile.getParent() + File.separator + path);
-                        } else {
-                            file = new File(path);
-                        }
+                        file = new File(path);
                     }
 
                     ResourceHandler handler = resource(new FileResourceManager(file, 3))
@@ -716,7 +698,7 @@ public final class Bootstrapper {
                         paths.addPrefixPath(where, handler);
                     }
 
-                    LOGGER.info("URL {} bound to static resources {}. access manager: {}", where, path, secured);
+                    LOGGER.info("URL {} bound to static resources {}. Access Manager: {}", where, path, secured);
 
                 } catch (Throwable t) {
                     LOGGER.error("Cannot bind static resources to {}", sr.get(Configuration.STATIC_RESOURCES_MOUNT_WHERE_KEY), t);
@@ -739,13 +721,13 @@ public final class Bootstrapper {
                     Object alArgs = al.get(Configuration.APPLICATION_LOGIC_MOUNT_ARGS_KEY);
 
                     if (alWhere == null || !alWhere.startsWith("/")) {
-                        LOGGER.error("Cannot pipe application logic handler {}. parameter 'where' must start with /", alWhere);
+                        LOGGER.error("Cannot pipe application logic handler {}. Parameter 'where' must start with /", alWhere);
                         return;
                     }
 
                     if (alArgs != null && !(alArgs instanceof Map)) {
                         LOGGER.error("Cannot pipe application logic handler {}."
-                                + "args are not defined as a map. it is a ", alWhere, alWhere.getClass());
+                                + "Args are not defined as a map. It is a ", alWhere, alWhere.getClass());
                         return;
 
                     }
@@ -766,10 +748,10 @@ public final class Bootstrapper {
                         }
 
                         LOGGER.info("URL {} bound to application logic handler {}."
-                                + " access manager: {}", "/_logic" + alWhere, alClazz, alSecured);
+                                + " Access manager: {}", "/_logic" + alWhere, alClazz, alSecured);
                     } else {
                         LOGGER.error("Cannot pipe application logic handler {}."
-                                + " class {} does not extend ApplicationLogicHandler", alWhere, alClazz);
+                                + " Class {} does not extend ApplicationLogicHandler", alWhere, alClazz);
                     }
 
                 } catch (Throwable t) {
