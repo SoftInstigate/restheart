@@ -357,13 +357,14 @@ class CollectionDAO {
 
     private OperationResult doCollPropsUpdate(String collName, boolean patching, boolean updating, MongoCollection<Document> mcoll, Document dcontent, ObjectId newEtag) {
         if (patching) {
-            mcoll.updateOne(eq("_id", "_properties.".concat(collName)), new Document("$set", dcontent));
+            DAOUtils.updateDocument(mcoll, "_properties.".concat(collName), dcontent, false);
             return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else {
-            mcoll.replaceOne(eq("_id", "_properties.".concat(collName)), dcontent, UPSERT_OPS);
             if (updating) {
+                DAOUtils.updateDocument(mcoll, "_properties.".concat(collName), dcontent, true);
                 return new OperationResult(HttpStatus.SC_OK, newEtag);
             } else {
+                DAOUtils.updateDocument(mcoll, "_properties.".concat(collName), dcontent, false);
                 return new OperationResult(HttpStatus.SC_CREATED, newEtag);
             }
         }

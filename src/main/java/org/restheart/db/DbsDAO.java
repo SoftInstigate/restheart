@@ -334,12 +334,13 @@ public class DbsDAO implements Database {
 
     private OperationResult doDbPropsUpdate(boolean patching, boolean updating, MongoCollection<Document> mcoll, Document dcontent, ObjectId newEtag) {
         if (patching) {
-            mcoll.updateOne(PROPS_QUERY, new Document("$set", dcontent));
+            DAOUtils.updateDocument(mcoll, "_properties", dcontent, false);
             return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else if (updating) {
-            mcoll.replaceOne(PROPS_QUERY, dcontent, UPSERT_OPS);
+            DAOUtils.updateDocument(mcoll, "_properties", dcontent, true);
             return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else {
+            DAOUtils.updateDocument(mcoll, "_properties", dcontent, false);
             mcoll.replaceOne(PROPS_QUERY, dcontent, UPSERT_OPS);
             return new OperationResult(HttpStatus.SC_CREATED, newEtag);
         }
