@@ -27,24 +27,30 @@ import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.FindOneAndReplaceOptions;
 import com.mongodb.client.model.UpdateOptions;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.bson.Document;
 import org.restheart.utils.HttpStatus;
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class DocumentDAO implements Repository {
-
+    
+    private final Logger LOGGER = LoggerFactory.getLogger(DocumentDAO.class);
+    
     private final MongoClient client;
 
     private final static FindOneAndReplaceOptions FAR_UPSERT_OPS
             = new FindOneAndReplaceOptions().upsert(true);
-    
+
     private final static UpdateOptions UPDATE_UPSERT_OPS
             = new UpdateOptions().upsert(true);
-    
+
     public DocumentDAO() {
         client = MongoDBClientSingleton.getInstance().getClient();
     }
@@ -82,9 +88,46 @@ public class DocumentDAO implements Repository {
         Document dcontent = new Document(content.toMap());
 
         if (patching) {
+            List<String> keys;
+            keys = dcontent.keySet().stream().filter((String key)
+                    -> !"$inc".equals(key)
+                    && !"$mul".equals(key)
+                    && !"$rename".equals(key)
+                    && !"$setOnInsert".equals(key)
+                    && !"$set".equals(key)
+                    && !"$unset".equals(key)
+                    && !"$min".equals(key)
+                    && !"$max".equals(key)
+                    && !"$currentDate".equals(key))
+                    .collect(Collectors.toList());
+
+            if (keys != null && !keys.isEmpty()) {
+
+                Document set = new Document();
+
+                keys.stream().forEach((String key)
+                        -> {
+                    Object o = dcontent.remove(key);
+
+                    set.append(key, o);
+                });
+
+                if (dcontent.get("$set") == null) {
+                    dcontent.put("$set", set);
+                } else if (dcontent.get("$set") instanceof Document) {
+                    ((Document) dcontent.get("$set"))
+                            .putAll(set);
+                } else if (dcontent.get("$set") instanceof DBObject) { //TODO remove this after migration to mongodb driver 3.2 completes
+                    ((DBObject) dcontent.get("$set"))
+                            .putAll(set);
+                } else {
+                    LOGGER.warn("count not add properties to $set since request data contains $set property which is not an object: {}", dcontent.get("$set"));
+                }
+            }
+
             Document oldDocument = mcoll.findOneAndUpdate(
                     eq("_id", documentId),
-                    new Document("$set", dcontent));
+                    dcontent);
 
             if (oldDocument == null) {
                 return new OperationResult(HttpStatus.SC_NOT_FOUND);
@@ -121,9 +164,9 @@ public class DocumentDAO implements Repository {
         FindIterable<Document> documents = mcoll
                 .find(eq("_id", documentId))
                 .projection(new Document("_etag", 1));
-        
-        return documents == null ? null :
-                documents.iterator().tryNext();
+
+        return documents == null ? null
+                : documents.iterator().tryNext();
     }
 
     /**
@@ -222,7 +265,7 @@ public class DocumentDAO implements Repository {
         Object oldEtag = oldDocument.get("_etag");
 
         if (oldEtag != null && requestEtag == null) {
-            coll.updateOne(eq("_id", oldDocument.get("_id")), 
+            coll.updateOne(eq("_id", oldDocument.get("_id")),
                     new Document("$set", oldDocument),
                     UPDATE_UPSERT_OPS);
             return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
@@ -241,7 +284,7 @@ public class DocumentDAO implements Repository {
         } else {
             // oopps, we need to restore old document
             // they call it optimistic lock strategy
-            coll.updateOne(eq("_id", oldDocument.get("_id")), 
+            coll.updateOne(eq("_id", oldDocument.get("_id")),
                     new Document("$set", oldDocument),
                     UPDATE_UPSERT_OPS);
             return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
