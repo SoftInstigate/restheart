@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class RequestContext {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestContext.class);
 
     public enum TYPE {
@@ -71,26 +72,26 @@ public class RequestContext {
     };
 
     public enum DOC_ID_TYPE {
-        OID, // ObjectId
+        OID,        // ObjectId
         STRING_OID, // String eventually converted to ObjectId in case ObjectId.isValid() is true
-        STRING, // String
-        NUMBER, // any Number (including mongodb NumberLong)
-        DATE, // Date
-        MINKEY, //org.bson.types.MinKey;
-        MAXKEY // org.bson.types.MaxKey
+        STRING,     // String
+        NUMBER,     // any Number (including mongodb NumberLong)
+        DATE,       // Date
+        MINKEY,     //org.bson.types.MinKey;
+        MAXKEY      // org.bson.types.MaxKey
     }
 
     public enum HAL_MODE {
-        FULL, // default value
-        F, // alias for full
-        COMPACT,
-        C // alias for compact
+        FULL,       // full mode
+        F,          // alias for full
+        COMPACT,    // new compact mode
+        C           // alias for compact
     }
 
     public enum ETAG_CHECK_POLICY {
-        REQUIRED, // always requires the etag, return PRECONDITION FAILED if missing
-        REQUIRED_FOR_DELETE, // only requires the etag for DELETE, return PRECONDITION FAILED if missing
-        OPTIONAL // checks the etag only if provided by client via If-Match header
+        REQUIRED,               // always requires the etag, return PRECONDITION FAILED if missing
+        REQUIRED_FOR_DELETE,    // only requires the etag for DELETE, return PRECONDITION FAILED if missing
+        OPTIONAL                // checks the etag only if provided by client via If-Match header
     }
 
     public static final String PAGE_QPARAM_KEY = "page";
@@ -943,9 +944,11 @@ public class RequestContext {
         ETAG_CHECK_POLICY collP = Bootstrapper.getConfiguration().getCollEtagCheckPolicy();
         ETAG_CHECK_POLICY docP = Bootstrapper.getConfiguration().getDocEtagCheckPolicy();
 
-        LOGGER.trace("default etag db check (from conf) {}", dbP);
-        LOGGER.trace("default etag coll check (from conf) {}", collP);
-        LOGGER.trace("default etag doc check (from conf) {}", docP);
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("default etag db check (from conf) {}", dbP);
+            LOGGER.trace("default etag coll check (from conf) {}", collP);
+            LOGGER.trace("default etag doc check (from conf) {}", docP);
+        }
 
         ETAG_CHECK_POLICY policy = null;
 
