@@ -53,16 +53,15 @@ public class ErrorHandler implements HttpHandler {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Timeout connecting to MongoDB, is it running?", nte);
 
         } catch (MongoException mce) {
+            LOGGER.error("MongoDB error", mce);
             switch (mce.getCode()) {
                 case 13:
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "The MongoDB user does not have enough permissions to execute this operation.");
                     break;
                 case 18:
-                    LOGGER.error("Mongodb error", mce);
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "Wrong MongoDB user credentials (wrong password or need to specify the authentication dababase with 'authSource=<db>' option in mongo-uri).");
                     break;
                 default:
-                    LOGGER.error("Mongodb error", mce);
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request", mce);
                     break;
             }
