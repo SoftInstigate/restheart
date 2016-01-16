@@ -20,17 +20,36 @@ package org.restheart.db;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.client.MongoCollection;
+import static com.mongodb.client.model.Filters.eq;
+import com.mongodb.client.model.FindOneAndUpdateOptions;
+import com.mongodb.client.model.UpdateOptions;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
+import org.bson.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class DAOUtils {
+
+    private final static Logger LOGGER = LoggerFactory.getLogger(DAOUtils.class);
+
+    private final static FindOneAndUpdateOptions FAU_UPSERT_OPS
+            = new FindOneAndUpdateOptions()
+            .upsert(true);
+
+    private final static UpdateOptions U_UPSERT_OPS
+            = new UpdateOptions()
+            .upsert(true);
 
     /**
      * @param rows list of DBObject rows as returned by getDataFromCursor()
@@ -123,5 +142,64 @@ public class DAOUtils {
      */
     protected static DBObject validContent(final DBObject newContent) {
         return (newContent == null) ? new BasicDBObject() : newContent;
+    }
+
+    private static final String _UPDATE_OPERATORS[] = {
+        "$inc", "$mul", "$rename", "$setOnInsert", "$set", "$unset", // Field Update Operators
+        "$min", "$max", "$currentDate",
+        "$", "$addToSet", "$pop", "$pullAll", "$pull", "$pushAll", "$push", // Array Update Operators
+        "$bit", // Bitwise Update Operator
+        "$isolated" // Isolation Update Operator
+    };
+
+    private static final List<String> UPDATE_OPERATORS
+            = Arrays.asList(_UPDATE_OPERATORS);
+
+    public static Document updateDocument(MongoCollection<Document> coll, Object documentId, Document data, boolean replace) {
+        Objects.requireNonNull(coll);
+        Objects.requireNonNull(data);
+
+        List<String> keys;
+
+        keys = data.keySet().stream().filter((String key)
+                -> !UPDATE_OPERATORS.contains(key))
+                .collect(Collectors.toList());
+
+        if (keys != null && !keys.isEmpty()) {
+
+            Document set = new Document();
+
+            keys.stream().forEach((String key)
+                    -> {
+                Object o = data.remove(key);
+
+                set.append(key, o);
+            });
+
+            if (data.get("$set") == null) {
+                data.put("$set", set);
+            } else if (data.get("$set") instanceof Document) {
+                ((Document) data.get("$set"))
+                        .putAll(set);
+            } else if (data.get("$set") instanceof DBObject) { //TODO remove this after migration to mongodb driver 3.2 completes
+                ((DBObject) data.get("$set"))
+                        .putAll(set);
+            } else {
+                LOGGER.warn("count not add properties to $set since request data contains $set property which is not an object: {}", data.get("$set"));
+            }
+        }
+
+        if (replace) {
+            // here we cannot use the atomic findOneAndReplace because it does
+            // not support update operators.
+            
+            Document oldDocument = coll.findOneAndDelete(eq("_id", documentId));
+
+            coll.updateOne(eq("_id", documentId), data, U_UPSERT_OPS);
+
+            return oldDocument;
+        } else {
+            return coll.findOneAndUpdate(eq("_id", documentId), data, FAU_UPSERT_OPS);
+        }
     }
 }
