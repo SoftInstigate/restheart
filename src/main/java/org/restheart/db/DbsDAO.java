@@ -341,7 +341,6 @@ public class DbsDAO implements Database {
             return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else {
             DAOUtils.updateDocument(mcoll, "_properties", dcontent, false);
-            mcoll.replaceOne(PROPS_QUERY, dcontent, UPSERT_OPS);
             return new OperationResult(HttpStatus.SC_CREATED, newEtag);
         }
     }
