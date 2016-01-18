@@ -17,6 +17,7 @@
  */
 package org.restheart.utils;
 
+import ch.qos.logback.classic.AsyncAppender;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
@@ -33,6 +34,9 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class LoggingInitializer {
+
+    private static final int ASYNC_MAX_FLUSH_TIME = 5000;
+    private static final int ASYNC_QUEUE_SIZE = 1024;
 
     /**
      *
@@ -53,7 +57,7 @@ public class LoggingInitializer {
         Logger rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
 
         Appender<ILoggingEvent> appender = rootLogger.getAppender("STDOUT");
-        
+
         appender.stop();
     }
 
@@ -62,9 +66,9 @@ public class LoggingInitializer {
      * @param logFilePath
      */
     public static void startFileLogging(String logFilePath) {
-        Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
-        LoggerContext loggerContext = logger.getLoggerContext();
+        LoggerContext loggerContext = root.getLoggerContext();
 
         RollingFileAppender<ILoggingEvent> rfAppender = new RollingFileAppender<>();
         rfAppender.setContext(loggerContext);
@@ -86,11 +90,24 @@ public class LoggingInitializer {
         encoder.start();
 
         rfAppender.setEncoder(encoder);
+        rfAppender.setName("ROLLINGFILE");
         rfAppender.setRollingPolicy(fwRollingPolicy);
         rfAppender.setTriggeringPolicy(triggeringPolicy);
         rfAppender.start();
 
-        logger.addAppender(rfAppender);
+        AsyncAppender asyncAppender = new AsyncAppender();
+        asyncAppender.setName("ASYNC");
+        asyncAppender.setQueueSize(ASYNC_QUEUE_SIZE);
+        asyncAppender.setMaxFlushTime(ASYNC_MAX_FLUSH_TIME);
+        asyncAppender.addAppender(rfAppender);
+        asyncAppender.start();
+
+        root.addAppender(asyncAppender);
+    }
+
+    public static void stopLogging() {
+        Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        root.getLoggerContext().stop();
     }
 
     private LoggingInitializer() {
