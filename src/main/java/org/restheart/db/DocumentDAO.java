@@ -87,7 +87,9 @@ public class DocumentDAO implements Repository {
                 return optimisticCheckEtag(mcoll, oldDocument, newEtag,
                         requestEtag, HttpStatus.SC_OK);
             } else {
-                return new OperationResult(HttpStatus.SC_OK, newEtag);
+                Document newDocument = mcoll.find(eq("_id", documentId)).first();
+                
+                return new OperationResult(HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
             }
         } else {
             if (oldDocument != null && checkEtag) { // upsertDocument
@@ -95,9 +97,13 @@ public class DocumentDAO implements Repository {
                 return optimisticCheckEtag(mcoll, oldDocument, newEtag,
                         requestEtag, HttpStatus.SC_OK);
             } else if (oldDocument != null) {  // insert
-                return new OperationResult(HttpStatus.SC_OK, newEtag);
+                Document newDocument = mcoll.find(eq("_id", documentId)).first();
+                
+                return new OperationResult(HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
             } else {
-                return new OperationResult(HttpStatus.SC_CREATED, newEtag);
+                Document newDocument = mcoll.find(eq("_id", documentId)).first();
+                
+                return new OperationResult(HttpStatus.SC_CREATED, newEtag, null, newDocument);
             }
         }
     }
@@ -211,9 +217,9 @@ public class DocumentDAO implements Repository {
         Object oldEtag = oldDocument.get("_etag");
 
         if (oldEtag != null && requestEtag == null) {
-            DAOUtils.updateDocument(coll, oldDocument.get("_id"), oldDocument, false);
+            DAOUtils.updateDocument(coll, oldDocument.get("_id"), oldDocument, true);
             
-            return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
+            return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag, oldDocument, null);
         }
 
         String _oldEtag;
@@ -225,13 +231,15 @@ public class DocumentDAO implements Repository {
         }
 
         if (Objects.equal(requestEtag, _oldEtag)) {
-            return new OperationResult(httpStatusIfOk, newEtag);
+            Document newDocument = coll.find(eq("_id", oldDocument.get("_id"))).first();
+            
+            return new OperationResult(httpStatusIfOk, newEtag, oldDocument, newDocument);
         } else {
             // oopps, we need to restore old document
             // they call it optimistic lock strategy
-            DAOUtils.updateDocument(coll, oldDocument.get("_id"), oldDocument, false);
+            DAOUtils.updateDocument(coll, oldDocument.get("_id"), oldDocument, true);
             
-            return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+            return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag, oldDocument, null);
         }
     }
 }

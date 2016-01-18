@@ -16,6 +16,9 @@
         },
         "n": {
             "type": "number"
+        },
+        "s": {
+            "type": "string"
         }
     },
     "required": [

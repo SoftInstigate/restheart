@@ -23,6 +23,7 @@ import com.mongodb.DBObject;
 import com.mongodb.client.MongoCollection;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
+import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.model.UpdateOptions;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,10 +47,15 @@ public class DAOUtils {
     private final static FindOneAndUpdateOptions FAU_UPSERT_OPS
             = new FindOneAndUpdateOptions()
             .upsert(true);
+    
+    private final static FindOneAndUpdateOptions FAU_AFTER_UPSERT_OPS
+            = new FindOneAndUpdateOptions()
+            .upsert(true).returnDocument(ReturnDocument.AFTER);
 
     private final static UpdateOptions U_UPSERT_OPS
             = new UpdateOptions()
             .upsert(true);
+    
 
     /**
      * @param rows list of DBObject rows as returned by getDataFromCursor()
@@ -156,6 +162,10 @@ public class DAOUtils {
             = Arrays.asList(_UPDATE_OPERATORS);
 
     public static Document updateDocument(MongoCollection<Document> coll, Object documentId, Document data, boolean replace) {
+        return updateDocument(coll, documentId, data, replace, false);
+    }
+    
+    public static Document updateDocument(MongoCollection<Document> coll, Object documentId, Document data, boolean replace, boolean returnNew) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(data);
 
@@ -195,11 +205,19 @@ public class DAOUtils {
             
             Document oldDocument = coll.findOneAndDelete(eq("_id", documentId));
 
-            coll.updateOne(eq("_id", documentId), data, U_UPSERT_OPS);
-
-            return oldDocument;
+            Document newDocument = coll.findOneAndUpdate(eq("_id", documentId), data, FAU_AFTER_UPSERT_OPS);
+            
+            if (returnNew) {
+                return newDocument;
+            } else {
+                return oldDocument;
+            }
         } else {
-            return coll.findOneAndUpdate(eq("_id", documentId), data, FAU_UPSERT_OPS);
+            if (returnNew) {
+                return coll.findOneAndUpdate(eq("_id", documentId), data, FAU_AFTER_UPSERT_OPS);
+            } else {
+                return coll.findOneAndUpdate(eq("_id", documentId), data, FAU_UPSERT_OPS);
+            }
         }
     }
 }

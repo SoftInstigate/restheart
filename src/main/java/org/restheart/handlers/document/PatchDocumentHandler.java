@@ -40,11 +40,21 @@ public class PatchDocumentHandler extends PipedHttpHandler {
      * Creates a new instance of PatchDocumentHandler
      */
     public PatchDocumentHandler() {
-        this(new DocumentDAO());
+        this(null, new DocumentDAO());
     }
 
     public PatchDocumentHandler(DocumentDAO documentDAO) {
         super(null);
+        this.documentDAO = documentDAO;
+    }
+    
+    public PatchDocumentHandler(PipedHttpHandler next) {
+        super(next);
+        this.documentDAO = new DocumentDAO();
+    }
+    
+    public PatchDocumentHandler(PipedHttpHandler next, DocumentDAO documentDAO) {
+        super(next);
         this.documentDAO = documentDAO;
     }
 
@@ -90,6 +100,8 @@ public class PatchDocumentHandler extends PipedHttpHandler {
                 context.getETag(),
                 true,
                 context.isETagCheckRequired());
+        
+        context.setDbOperationResult(result);
 
         // inject the etag
         if (result.getEtag() != null) {
@@ -108,7 +120,11 @@ public class PatchDocumentHandler extends PipedHttpHandler {
         } else {
             exchange.setStatusCode(result.getHttpCode());
         }
-
+        
+        if (getNext() != null) {
+            getNext().handleRequest(exchange, context);
+        }
+        
         exchange.endExchange();
     }
 }

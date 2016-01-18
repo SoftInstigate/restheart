@@ -27,9 +27,9 @@ import java.util.List;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class RequestChecker {
-    public static final String SCS_ELEMENT_NAME = "checkers";
-    public static final String SC_CHECKER_ELEMENT_NAME = "name";
-    public static final String SC_ARGS_ELEMENT_NAME = "args";
+    public final static String ROOT_KEY = "checkers";
+    public final static String NAME_KEY = "name";
+    public final static String ARGS_KEY = "args";
 
     private final String name;
     private final DBObject args;
@@ -58,11 +58,15 @@ public class RequestChecker {
         return args;
     }
 
+    public static Object getProps(DBObject props) {
+        return props.get(ROOT_KEY);
+    }
+
     public static List<RequestChecker> getFromJson(DBObject props) throws InvalidMetadataException {
-        Object _scs = props.get(SCS_ELEMENT_NAME);
+        Object _scs = getProps(props);
 
         if (_scs == null || !(_scs instanceof BasicDBList)) {
-            throw new InvalidMetadataException((_scs == null ? "missing '" : "invalid '") + SCS_ELEMENT_NAME + "' element. it must be a json array");
+            throw new InvalidMetadataException((_scs == null ? "missing '" : "invalid '") + ROOT_KEY + "' element. it must be a json array");
         }
 
         BasicDBList scs = (BasicDBList) _scs;
@@ -73,7 +77,7 @@ public class RequestChecker {
             if (o instanceof DBObject) {
                 ret.add(getSingleFromJson((DBObject) o));
             } else {
-                throw new InvalidMetadataException("invalid '" + SCS_ELEMENT_NAME + "'. Array elements must be json objects");
+                throw new InvalidMetadataException("invalid '" + ROOT_KEY + "'. Array elements must be json objects");
             }
         }
 
@@ -81,19 +85,19 @@ public class RequestChecker {
     }
 
     private static RequestChecker getSingleFromJson(DBObject props) throws InvalidMetadataException {
-        Object _name = props.get(SC_CHECKER_ELEMENT_NAME);
+        Object _name = props.get(NAME_KEY);
 
         if (_name == null || !(_name instanceof String)) {
-            throw new InvalidMetadataException((_name == null ? "missing '" : "invalid '") + SC_CHECKER_ELEMENT_NAME + "' element. it must be of type String");
+            throw new InvalidMetadataException((_name == null ? "missing '" : "invalid '") + NAME_KEY + "' element. it must be of type String");
         }
 
         String name = (String) _name;
 
-        Object _args = props.get(SC_ARGS_ELEMENT_NAME);
+        Object _args = props.get(ARGS_KEY);
 
         // args is optional
         if (_args != null && !(_args instanceof DBObject)) {
-            throw new InvalidMetadataException("invalid '" + SC_ARGS_ELEMENT_NAME + "' element. it must be a json object");
+            throw new InvalidMetadataException("invalid '" + ARGS_KEY + "' element. it must be a json object");
         }
 
         DBObject args = (DBObject) _args;

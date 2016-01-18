@@ -37,9 +37,13 @@ import org.slf4j.LoggerFactory;
 public class CheckMetadataHandler extends PipedHttpHandler {
     static final Logger LOGGER = LoggerFactory.getLogger(CheckMetadataHandler.class);
 
+    public static final String SINGLETON_GROUP_NAME = "checkers";
+
+    public static final String ROOT_KEY = "checkers";
+
     /**
      * Creates a new instance of CheckMetadataHandler
-     * 
+     *
      * handler that applies the checkers defined in the collection properties
      *
      * @param next
@@ -52,11 +56,13 @@ public class CheckMetadataHandler extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (doesCheckerAppy(context)) {
             if (check(exchange, context)) {
-                getNext().handleRequest(exchange, context);
+                if (getNext() != null) {
+                    getNext().handleRequest(exchange, context);
+                }
             } else {
                 StringBuilder sb = new StringBuilder();
-                sb.append("request data does not fulfill the collection schema check constraint");
-                
+                sb.append("schema check failed");
+
                 List<String> warnings = context.getWarnings();
 
                 if (warnings != null && !warnings.isEmpty()) {
@@ -67,33 +73,42 @@ public class CheckMetadataHandler extends PipedHttpHandler {
 
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, sb.toString());
             }
-        } else {
+        } else if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }
     }
 
     private boolean doesCheckerAppy(RequestContext context) {
         return context.getCollectionProps() != null
-                && context.getCollectionProps().containsField(RequestChecker.SCS_ELEMENT_NAME);
+                && context.getCollectionProps().containsField(ROOT_KEY);
     }
 
-    private boolean check(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
+    protected boolean check(HttpServerExchange exchange, RequestContext context)
+            throws InvalidMetadataException {
         List<RequestChecker> checkers = RequestChecker.getFromJson(context.getCollectionProps());
 
         return checkers.stream().allMatch(checker -> {
             try {
-                Checker _checker = (Checker) NamedSingletonsFactory.getInstance().get("checkers", checker.getName());
+                Checker _checker = (Checker) NamedSingletonsFactory.getInstance().get(ROOT_KEY, checker.getName());
 
                 if (_checker == null) {
                     throw new IllegalArgumentException("cannot find singleton " + checker.getName() + " in singleton group checkers");
                 }
 
-                return _checker.check(exchange, context, checker.getArgs());
+                if (doesCheckerApply(_checker)) {
+                    return _checker.check(exchange, context, checker.getArgs());
+                } else {
+                    return true;
+                }
 
             } catch (IllegalArgumentException ex) {
                 context.addWarning("error applying checker: " + ex.getMessage());
                 return false;
             }
         });
+    }
+    
+    protected boolean doesCheckerApply(Checker checker) {
+        return checker.getType() == Checker.TYPE.BEFORE_WRITE;
     }
 }

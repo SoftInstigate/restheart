@@ -44,16 +44,25 @@ public class PutDocumentHandler extends PipedHttpHandler {
      * Default ctor
      */
     public PutDocumentHandler() {
-        this(new DocumentDAO());
+        this(null, new DocumentDAO());
+    }
+    
+    /**
+     * Default ctor
+     * @param next
+     */
+    public PutDocumentHandler(PipedHttpHandler next) {
+        this(next, new DocumentDAO());
     }
 
     /**
      * Creates a new instance of PutDocumentHandler
      *
+     * @param next
      * @param documentDAO
      */
-    public PutDocumentHandler(DocumentDAO documentDAO) {
-        super(null);
+    public PutDocumentHandler(PipedHttpHandler next, DocumentDAO documentDAO) {
+        super(next);
         this.documentDAO = documentDAO;
     }
 
@@ -99,6 +108,8 @@ public class PutDocumentHandler extends PipedHttpHandler {
                 etag,
                 false,
                 context.isETagCheckRequired());
+        
+        context.setDbOperationResult(result);
 
         // inject the etag
         if (result.getEtag() != null) {
@@ -116,6 +127,10 @@ public class PutDocumentHandler extends PipedHttpHandler {
             sendWarnings(result.getHttpCode(), exchange, context);
         } else {
             exchange.setStatusCode(result.getHttpCode());
+        }
+        
+        if (getNext() != null) {
+            getNext().handleRequest(exchange, context);
         }
         
         exchange.endExchange();

@@ -33,7 +33,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
+import org.bson.Document;
 import org.restheart.Bootstrapper;
+import org.restheart.db.OperationResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -163,7 +165,9 @@ public class RequestContext {
     private final String etag;
 
     private boolean forceEtagCheck = false;
-
+    
+    private OperationResult dbOperationResult;
+    
     /**
      * the HAL mode
      */
@@ -976,5 +980,19 @@ public class RequestContext {
         }
 
         return false;
+    }
+
+    /**
+     * @return the dbOperationResult
+     */
+    public OperationResult getDbOperationResult() {
+        return dbOperationResult;
+    }
+
+    /**
+     * @param dbOperationResult the dbOperationResult to set
+     */
+    public void setDbOperationResult(OperationResult dbOperationResult) {
+        this.dbOperationResult = dbOperationResult;
     }
 }

@@ -113,6 +113,11 @@ public class SimpleContentChecker implements Checker {
             return true;
         }
     }
+    
+    @Override
+    public TYPE getType() {
+        return TYPE.BEFORE_WRITE;
+    }
 
     private boolean applyConditions(BasicDBList conditions, DBObject json, final RequestContext context) {
         return conditions.stream().allMatch(_condition -> {

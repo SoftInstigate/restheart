@@ -53,6 +53,7 @@ import org.restheart.handlers.metadata.ResponseTranformerMetadataHandler;
 import org.restheart.handlers.metadata.CheckMetadataHandler;
 import org.restheart.handlers.metadata.RequestTransformerMetadataHandler;
 import org.restheart.handlers.aggregation.GetAggregationHandler;
+import org.restheart.handlers.metadata.OptimisticCheckMetadataHandler;
 import org.restheart.handlers.schema.JsonSchemaTransformer;
 import org.restheart.handlers.metadata.TransformerHandler;
 import org.restheart.utils.ResponseHelper;
@@ -107,16 +108,16 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         // COLLECTION handlres
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.GET, new GetCollectionHandler(new ResponseTranformerMetadataHandler(null)));
-        putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PostCollectionHandler())));
+        putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PostCollectionHandler(new OptimisticCheckMetadataHandler()))));
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.PUT, new RequestTransformerMetadataHandler(new PutCollectionHandler()));
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.DELETE, new DeleteCollectionHandler());
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.PATCH, new RequestTransformerMetadataHandler(new PatchCollectionHandler()));
 
         // DOCUMENT handlers
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.GET, new GetDocumentHandler(new ResponseTranformerMetadataHandler(null)));
-        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PUT, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PutDocumentHandler())));
+        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PUT, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PutDocumentHandler(new OptimisticCheckMetadataHandler()))));
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.DELETE, new DeleteDocumentHandler());
-        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PATCH, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PatchDocumentHandler())));
+        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PATCH, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PatchDocumentHandler(new OptimisticCheckMetadataHandler()))));
 
         // COLLECTION_INDEXES handlers
         putPipedHttpHandler(TYPE.COLLECTION_INDEXES, METHOD.GET, new GetIndexesHandler());

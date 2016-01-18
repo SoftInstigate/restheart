@@ -28,6 +28,8 @@ import org.restheart.handlers.RequestContext;
  * some useful info that can be retrived from arguments
  * request content      context.getContent()
  * response content     context.getgetResponseContent()
+ * old data             contenx.getDbOperationResult.getOldData()
+ * written data         contenx.getDbOperationResult.getNewData()
  * remote user          ExchangeAttributes.remoteUser().readAttribute(exchange)
  * user roles           exchange.getSecurityContext().getAuthenticatedAccount().getRoles()
  * resource type        context.getType()
@@ -45,6 +47,11 @@ import org.restheart.handlers.RequestContext;
  * response code        ExchangeAttributes.responseCode()
  * Location header      ExchangeAttributes.responseHeader(HttpString.tryFromString(HttpHeaders.LOCATION)).readAttribute(exchange)
 */
+
 public interface Checker {
+    enum TYPE  { BEFORE_WRITE, AFTER_WRITE };
+    
     boolean check(HttpServerExchange exchange, RequestContext context, DBObject args);
+    
+    TYPE getType();
 }
