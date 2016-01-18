@@ -17,15 +17,13 @@
  */
 package org.restheart.hal.metadata.singletons;
 
-import org.restheart.handlers.schema.SchemaStoreClient;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.Objects;
-import java.util.Set;
+import org.bson.Document;
 import org.everit.json.schema.Schema;
-import org.everit.json.schema.SchemaException;
 import org.everit.json.schema.ValidationException;
-import org.everit.json.schema.loader.SchemaLoader;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.handlers.RequestContext;
@@ -47,8 +45,6 @@ public class JsonSchemaChecker implements Checker {
 
     @Override
     public boolean check(HttpServerExchange exchange, RequestContext context, DBObject args) {
-        boolean patching = context.getMethod() == RequestContext.METHOD.PATCH;
-
         Objects.requireNonNull(args, "missing metadata property 'args'");
 
         Object _schemaStoreDb = args.get(SCHEMA_STORE_DB_PROPERTY);
@@ -74,46 +70,41 @@ public class JsonSchemaChecker implements Checker {
         }
 
         Schema theschema;
-
-        if (patching) {
-            DBObject c = context.getContent();
-
-            // TODO we have to make sure that ids only contains paths
-            // that are defined in the schema, in case of additionalProperties=true
-            Set<String> ids = c.keySet();
-
-            try {
-                theschema = getPatchSchema(schemaStore, schemaId, ids);
-            } catch (SchemaException se) {
-                context.addWarning(se.getMessage().replaceAll("\"", "'"));
-                return false;
-            }
-        } else {
-            try {
-                theschema = JsonSchemaCacheSingleton
-                        .getInstance()
-                        .get(schemaStore, schemaId);
-            } catch (JsonSchemaNotFoundException ex) {
-                context.addWarning(ex.getMessage());
-                return false;
-            }
-
-            if (Objects.isNull(theschema)) {
-                throw new IllegalArgumentException("cannot validate, schema "
-                        + schemaStore
-                        + "/"
-                        + RequestContext._SCHEMAS
-                        + "/" + schemaId.toString() + " not found");
-            }
+        
+        try {
+            theschema = JsonSchemaCacheSingleton
+                    .getInstance()
+                    .get(schemaStore, schemaId);
+        } catch (JsonSchemaNotFoundException ex) {
+            context.addWarning(ex.getMessage());
+            return false;
         }
 
-        String content = context.getContent() == null
+        if (Objects.isNull(theschema)) {
+            throw new IllegalArgumentException("cannot validate, schema "
+                    + schemaStore
+                    + "/"
+                    + RequestContext._SCHEMAS
+                    + "/" + schemaId.toString() + " not found");
+        }
+        
+        Objects.requireNonNull(context.getDbOperationResult());
+        
+        Document data = context.getDbOperationResult().getNewData();
+
+        String _data = data == null
                 ? "{}"
-                : context.getContent().toString();
+                : data.toJson();
+        
+        LOGGER.debug(_data);
 
         try {
             theschema.validate(
-                    new JSONObject(content));
+                    new JSONObject(_data));
+        } catch(JSONException je) {
+            context.addWarning(je.getMessage());
+            
+            return false;
         } catch (ValidationException ve) {
             context.addWarning(ve.getMessage());
             ve.getCausingExceptions().stream()
@@ -125,40 +116,9 @@ public class JsonSchemaChecker implements Checker {
 
         return true;
     }
-
-    /**
-     *
-     * given keys as ["a", "b.c", "array.3.id"] returns a schema as follows
-     *
-     * { "$schema": "http://json-schema.org/draft-04/schema#", "id":
-     * "schema://schema_store/temp#", "properties": { "a": { "$ref":
-     * "schemaid#/a" }, "b.c": { "$ref": "schemaid#/b/c" }, "array.3.id": {
-     * "$ref": "schemaid#/array/3/id" } }
-     *
-     * @return the schema for patch requests
-     */
-    private Schema getPatchSchema(String schemaStore, Object schemaId, Set<String> keys) {
-        JSONObject schema = new JSONObject();
-
-        schema.put("$schema", "http://json-schema.org/draft-04/schema#");
-        schema.put("id", "schema://" + schemaStore + "/" + schemaId + "#");
-
-        JSONObject properties = new JSONObject();
-
-        // TODO make sure that pointer is correct. 
-        // the . can divide objects (/properties), arrays (/items)
-        keys.stream().forEach(key -> {
-            properties.put(key, new JSONObject()
-                    .put("$ref",
-                            schemaId + "#/properties/"
-                            + key.replaceAll("\\.[0-9]+?", "/items/").
-                            replaceAll("\\.", "/properties/")));
-        });
-
-        schema.put("properties", properties);
-
-        LOGGER.debug("patch schema {}", schema);
-
-        return SchemaLoader.load(schema, new SchemaStoreClient());
+    
+    @Override
+    public TYPE getType() {
+        return TYPE.AFTER_WRITE;
     }
 }

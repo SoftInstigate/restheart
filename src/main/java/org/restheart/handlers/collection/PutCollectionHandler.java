@@ -100,7 +100,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
         }
 
         // check SC metadata
-        if (content.containsField(RequestChecker.SCS_ELEMENT_NAME)) {
+        if (content.containsField(RequestChecker.ROOT_KEY)) {
             try {
                 RequestChecker.getFromJson(content);
             } catch (InvalidMetadataException ex) {

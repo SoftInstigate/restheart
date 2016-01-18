@@ -78,4 +78,9 @@ public class ContentSizeChecker implements Checker {
 
         return ret;
     }
+
+    @Override
+    public TYPE getType() {
+        return TYPE.BEFORE_WRITE;
+    }
 }

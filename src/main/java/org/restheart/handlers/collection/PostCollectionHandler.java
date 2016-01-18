@@ -45,10 +45,19 @@ public class PostCollectionHandler extends PipedHttpHandler {
      * Creates a new instance of PostCollectionHandler
      */
     public PostCollectionHandler() {
-        this(new DocumentDAO());
+        this(null, new DocumentDAO());
     }
 
     public PostCollectionHandler(DocumentDAO documentDAO) {
+        this(null, new DocumentDAO());
+    }
+    
+    public PostCollectionHandler(PipedHttpHandler next) {
+        this(next, new DocumentDAO());
+    }
+    
+    public PostCollectionHandler(PipedHttpHandler next, DocumentDAO documentDAO) {
+        super(next);
         this.documentDAO = documentDAO;
     }
 
@@ -99,6 +108,8 @@ public class PostCollectionHandler extends PipedHttpHandler {
                         content, 
                         context.getETag(),
                         context.isETagCheckRequired());
+        
+        context.setDbOperationResult(result);
 
         // inject the etag
         if (result.getEtag() != null) {
@@ -121,6 +132,10 @@ public class PostCollectionHandler extends PipedHttpHandler {
             sendWarnings(result.getHttpCode(), exchange, context);
         } else {
             exchange.setStatusCode(result.getHttpCode());
+        }
+        
+        if (getNext() != null) {
+            getNext().handleRequest(exchange, context);
         }
         
         exchange.endExchange();

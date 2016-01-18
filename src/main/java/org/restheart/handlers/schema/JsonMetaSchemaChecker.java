@@ -73,4 +73,9 @@ public class JsonMetaSchemaChecker implements Checker {
 
         return true;
     }
+
+    @Override
+    public TYPE getType() {
+        return TYPE.AFTER_WRITE;
+    }
 }

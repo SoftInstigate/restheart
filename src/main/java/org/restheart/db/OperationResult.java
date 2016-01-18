@@ -17,6 +17,8 @@
  */
 package org.restheart.db;
 
+import org.bson.Document;
+
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
@@ -24,15 +26,35 @@ package org.restheart.db;
 public class OperationResult {
     private final int httpCode;
     private final Object etag;
+    private final Document newData;
+    private final Document oldData;
     
     public OperationResult(int httpCode) {
         this.httpCode = httpCode;
         this.etag = null;
+        this.newData = null;
+        this.oldData = null;
+    }
+    
+    public OperationResult(int httpCode, Document oldData, Document newData) {
+        this.httpCode = httpCode;
+        this.etag = null;
+        this.newData = null;
+        this.oldData = null;
     }
     
     public OperationResult(int httpCode, Object etag) {
         this.httpCode = httpCode;
         this.etag = etag;
+        this.newData = null;
+        this.oldData = null;
+    }
+    
+    public OperationResult(int httpCode, Object etag, Document oldData, Document newData) {
+        this.httpCode = httpCode;
+        this.etag = etag;
+        this.newData = newData;
+        this.oldData = oldData;
     }
 
     /**
@@ -47,5 +69,19 @@ public class OperationResult {
      */
     public Object getEtag() {
         return etag;
+    }
+
+    /**
+     * @return the newData
+     */
+    public Document getNewData() {
+        return newData;
+    }
+    
+    /**
+     * @return the oldData
+     */
+    public Document getOldData() {
+        return oldData;
     }
 }
