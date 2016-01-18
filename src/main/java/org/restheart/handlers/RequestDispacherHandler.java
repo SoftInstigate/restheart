@@ -189,7 +189,31 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
     }
 
     /**
-     * Handle the request
+     * Code to execute before each handleRequest
+     * 
+     * @param exchange the HttpServerExchange
+     * @param context the RequestContext
+     */
+    protected void before(HttpServerExchange exchange, RequestContext context) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("before handleRequest: Type {}, Request: {}", context.getType(), exchange.getRequestURL() + exchange.getQueryString());
+        }
+    }
+
+    /**
+     * code to execute after each handleRequest
+     * 
+     * @param exchange the HttpServerExchange
+     * @param context the RequestContext
+     */
+    protected void after(HttpServerExchange exchange, RequestContext context) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("after handleRequest: Response status {}", exchange.getStatusCode());
+        }
+    }
+
+    /**
+     * Handle the request, delegating to the proper PipedHttpHandler
      *
      * @param exchange the HttpServerExchange
      * @param context the RequestContext
@@ -218,9 +242,11 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         final PipedHttpHandler httpHandler = getPipedHttpHandler(context.getType(), context.getMethod());
 
         if (httpHandler != null) {
+            before(exchange, context);
             httpHandler.handleRequest(exchange, context);
+            after(exchange, context);
         } else {
-            LOGGER.debug("Call to getPipedHttpHandler({}, {}) can't find any PipedHttpHandler", context.getType(), context.getMethod());
+            LOGGER.error("Can't find PipedHttpHandler({}, {})", context.getType(), context.getMethod());
             ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
     }
