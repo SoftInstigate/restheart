@@ -258,7 +258,7 @@ public final class Bootstrapper {
 
     private static void logLoggingConfiguration(boolean fork) {
         if (configuration.isLogToFile()) {
-            LOGGER.info("Logging to {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
+            LOGGER.info("Logging to file {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
         }
 
         if (!fork) {
@@ -414,6 +414,8 @@ public final class Bootstrapper {
         if (!silent) {
             LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart stopped").reset().toString());
         }
+        
+        LoggingInitializer.stopLogging();
     }
 
     private static void startCoreSystem() {
