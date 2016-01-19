@@ -34,7 +34,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * 
+ * checks documents according to the specified json-schema
+ * 
+ * this is an AFTER_WRITE checker thus it does not support FILE resources
+ * 
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class JsonSchemaChecker implements Checker {
