@@ -37,12 +37,12 @@ import org.restheart.utils.ResponseHelper;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class OptimisticCheckMetadataHandler extends CheckMetadataHandler {
-    public OptimisticCheckMetadataHandler() {
+public class AfterWriteCheckMetadataHandler extends CheckMetadataHandler {
+    public AfterWriteCheckMetadataHandler() {
         super(null);
     }
 
-    public OptimisticCheckMetadataHandler(PipedHttpHandler next) {
+    public AfterWriteCheckMetadataHandler(PipedHttpHandler next) {
         super(next);
     }
 
