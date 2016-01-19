@@ -208,7 +208,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * @param context the RequestContext
      */
     protected void before(HttpServerExchange exchange, RequestContext context) {
-        if (LOGGER.isDebugEnabled() || configuration.isForceRequestLogging()) {
+        if (configuration.isForceRequestLogging()) {
             dumpExchange(exchange);
         }
     }
@@ -352,7 +352,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
             sb.append("            status=").append(exchange1.getStatusCode()).append("\n");
             sb.append("==============================================================");
             nextListener.proceed();
-            LOGGER.debug(sb.toString());
+            LOGGER.info(sb.toString());
         });
     }
 
