@@ -17,6 +17,8 @@
  */
 package org.restheart.handlers;
 
+import io.undertow.security.api.SecurityContext;
+import io.undertow.server.ExchangeCompletionListener.NextListener;
 import org.restheart.handlers.metadata.CheckHandler;
 import org.restheart.handlers.root.GetRootHandler;
 import org.restheart.handlers.collection.DeleteCollectionHandler;
@@ -37,7 +39,13 @@ import org.restheart.handlers.indexes.GetIndexesHandler;
 import org.restheart.handlers.indexes.PutIndexHandler;
 import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.Cookie;
+import io.undertow.util.HeaderValues;
+import io.undertow.util.Headers;
+import io.undertow.util.LocaleUtils;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
@@ -99,7 +107,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * Put into handlersMultimap all the default combinations of types, methods
      * and PipedHttpHandler objects
      */
-    private void defaultInit() {
+    protected void defaultInit() {
         LOGGER.debug("Initialize default HTTP handlers:");
         // ROOT handlers
         putPipedHttpHandler(TYPE.ROOT, METHOD.GET, new GetRootHandler());
@@ -201,7 +209,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      */
     protected void before(HttpServerExchange exchange, RequestContext context) {
         if (LOGGER.isDebugEnabled() || configuration.isForceRequestLogging()) {
-            LOGGER.debug("before handleRequest: Type {}, Request: {}", context.getType(), exchange.getRequestURL() + exchange.getQueryString());
+            dumpExchange(exchange);
         }
     }
 
@@ -212,9 +220,6 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * @param context the RequestContext
      */
     protected void after(HttpServerExchange exchange, RequestContext context) {
-        if (LOGGER.isDebugEnabled() || configuration.isForceRequestLogging()) {
-            LOGGER.debug("after handleRequest: Response status {}", exchange.getStatusCode());
-        }
     }
 
     /**
@@ -254,6 +259,101 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
             LOGGER.error("Can't find PipedHttpHandler({}, {})", context.getType(), context.getMethod());
             ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
+    }
+
+    /**
+     * dumpExchange
+     * 
+     * Log a complete dump of the HttpServerExchange (both Request and Response)
+     * 
+     * @param exchange 
+     */
+    protected void dumpExchange(HttpServerExchange exchange) {
+        final StringBuilder sb = new StringBuilder();
+        final SecurityContext sc = exchange.getSecurityContext();
+        
+        sb.append("\n----------------------------REQUEST---------------------------\n");
+        sb.append("               URI=").append(exchange.getRequestURI()).append("\n");
+        sb.append(" characterEncoding=").append(exchange.getRequestHeaders().get(Headers.CONTENT_ENCODING)).append("\n");
+        sb.append("     contentLength=").append(exchange.getRequestContentLength()).append("\n");
+        sb.append("       contentType=").append(exchange.getRequestHeaders().get(Headers.CONTENT_TYPE)).append("\n");
+
+        if (sc != null) {
+            if (sc.isAuthenticated()) {
+                sb.append("          authType=").append(sc.getMechanismName()).append("\n");
+                sb.append("         principle=").append(sc.getAuthenticatedAccount().getPrincipal()).append("\n");
+            } else {
+                sb.append("          authType=none" + "\n");
+            }
+        }
+
+        Map<String, Cookie> cookies = exchange.getRequestCookies();
+        if (cookies != null) {
+            cookies.entrySet().stream().map((entry) -> entry.getValue()).forEach((cookie) -> {
+                sb.append("            cookie=").append(cookie.getName()).append("=").append(cookie.getValue()).append("\n");
+            });
+        }
+        for (HeaderValues header : exchange.getRequestHeaders()) {
+            header.stream().forEach((value) -> {
+                sb.append("            header=").append(header.getHeaderName()).append("=").append(value).append("\n");
+            });
+        }
+        sb.append("            locale=").append(LocaleUtils.getLocalesFromHeader(exchange.getRequestHeaders().get(Headers.ACCEPT_LANGUAGE))).append("\n");
+        sb.append("            method=").append(exchange.getRequestMethod()).append("\n");
+        Map<String, Deque<String>> pnames = exchange.getQueryParameters();
+        pnames.entrySet().stream().map((entry) -> {
+            String pname = entry.getKey();
+            Iterator<String> pvalues = entry.getValue().iterator();
+            sb.append("         parameter=");
+            sb.append(pname);
+            sb.append('=');
+            while (pvalues.hasNext()) {
+                sb.append(pvalues.next());
+                if (pvalues.hasNext()) {
+                    sb.append(", ");
+                }
+            }
+            return entry;
+        }).forEach((_item) -> {
+            sb.append("\n");
+        });
+
+        sb.append("          protocol=").append(exchange.getProtocol()).append("\n");
+        sb.append("       queryString=").append(exchange.getQueryString()).append("\n");
+        sb.append("        remoteAddr=").append(exchange.getSourceAddress()).append("\n");
+        sb.append("        remoteHost=").append(exchange.getSourceAddress().getHostName()).append("\n");
+        sb.append("            scheme=").append(exchange.getRequestScheme()).append("\n");
+        sb.append("              host=").append(exchange.getRequestHeaders().getFirst(Headers.HOST)).append("\n");
+        sb.append("        serverPort=").append(exchange.getDestinationAddress().getPort()).append("\n");
+
+        exchange.addExchangeCompleteListener((final HttpServerExchange exchange1, final NextListener nextListener) -> {
+            sb.append("--------------------------RESPONSE--------------------------\n");
+            if (sc != null) {
+                if (sc.isAuthenticated()) {
+                    sb.append("          authType=").append(sc.getMechanismName()).append("\n");
+                    sb.append("         principle=").append(sc.getAuthenticatedAccount().getPrincipal()).append("\n");
+                } else {
+                    sb.append("          authType=none" + "\n");
+                }
+            }
+            sb.append("     contentLength=").append(exchange1.getResponseContentLength()).append("\n");
+            sb.append("       contentType=").append(exchange1.getResponseHeaders().getFirst(Headers.CONTENT_TYPE)).append("\n");
+            Map<String, Cookie> cookies1 = exchange1.getResponseCookies();
+            if (cookies1 != null) {
+                cookies1.values().stream().forEach((cookie) -> {
+                    sb.append("            cookie=").append(cookie.getName()).append("=").append(cookie.getValue()).append("; domain=").append(cookie.getDomain()).append("; path=").append(cookie.getPath()).append("\n");
+                });
+            }
+            for (HeaderValues header : exchange1.getResponseHeaders()) {
+                header.stream().forEach((value) -> {
+                    sb.append("            header=").append(header.getHeaderName()).append("=").append(value).append("\n");
+                });
+            }
+            sb.append("            status=").append(exchange1.getStatusCode()).append("\n");
+            sb.append("==============================================================");
+            nextListener.proceed();
+            LOGGER.debug(sb.toString());
+        });
     }
 
 }
