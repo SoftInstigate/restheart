@@ -37,7 +37,7 @@ import org.restheart.utils.ResponseHelper;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class AfterWriteCheckMetadataHandler extends CheckMetadataHandler {
+public class AfterWriteCheckMetadataHandler extends BeforeWriteCheckMetadataHandler {
     public AfterWriteCheckMetadataHandler() {
         super(null);
     }

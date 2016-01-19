@@ -50,7 +50,7 @@ import org.restheart.handlers.files.PostBucketHandler;
 import org.restheart.handlers.files.PutBucketHandler;
 import org.restheart.handlers.files.PutFileHandler;
 import org.restheart.handlers.metadata.ResponseTranformerMetadataHandler;
-import org.restheart.handlers.metadata.CheckMetadataHandler;
+import org.restheart.handlers.metadata.BeforeWriteCheckMetadataHandler;
 import org.restheart.handlers.metadata.RequestTransformerMetadataHandler;
 import org.restheart.handlers.aggregation.GetAggregationHandler;
 import org.restheart.handlers.metadata.AfterWriteCheckMetadataHandler;
@@ -108,16 +108,16 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         // COLLECTION handlres
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.GET, new GetCollectionHandler(new ResponseTranformerMetadataHandler(null)));
-        putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PostCollectionHandler(new AfterWriteCheckMetadataHandler()))));
+        putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST, new BeforeWriteCheckMetadataHandler(new RequestTransformerMetadataHandler(new PostCollectionHandler(new AfterWriteCheckMetadataHandler()))));
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.PUT, new RequestTransformerMetadataHandler(new PutCollectionHandler()));
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.DELETE, new DeleteCollectionHandler());
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.PATCH, new RequestTransformerMetadataHandler(new PatchCollectionHandler()));
 
         // DOCUMENT handlers
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.GET, new GetDocumentHandler(new ResponseTranformerMetadataHandler(null)));
-        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PUT, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PutDocumentHandler(new AfterWriteCheckMetadataHandler()))));
+        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PUT, new BeforeWriteCheckMetadataHandler(new RequestTransformerMetadataHandler(new PutDocumentHandler(new AfterWriteCheckMetadataHandler()))));
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.DELETE, new DeleteDocumentHandler());
-        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PATCH, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PatchDocumentHandler(new AfterWriteCheckMetadataHandler()))));
+        putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PATCH, new BeforeWriteCheckMetadataHandler(new RequestTransformerMetadataHandler(new PatchDocumentHandler(new AfterWriteCheckMetadataHandler()))));
 
         // COLLECTION_INDEXES handlers
         putPipedHttpHandler(TYPE.COLLECTION_INDEXES, METHOD.GET, new GetIndexesHandler());
@@ -128,13 +128,13 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         // FILES_BUCKET and FILE handlers
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.GET, new GetCollectionHandler(new ResponseTranformerMetadataHandler(null)));
-        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.POST, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PostBucketHandler())));
+        putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.POST, new BeforeWriteCheckMetadataHandler(new RequestTransformerMetadataHandler(new PostBucketHandler())));
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.PUT, new RequestTransformerMetadataHandler(new PutBucketHandler()));
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.DELETE, new DeleteBucketHandler());
 
         putPipedHttpHandler(TYPE.FILE, METHOD.GET, new GetFileHandler(new ResponseTranformerMetadataHandler(null)));
         putPipedHttpHandler(TYPE.FILE_BINARY, METHOD.GET, new GetFileBinaryHandler());
-        putPipedHttpHandler(TYPE.FILE, METHOD.PUT, new CheckMetadataHandler(new RequestTransformerMetadataHandler(new PutFileHandler())));
+        putPipedHttpHandler(TYPE.FILE, METHOD.PUT, new BeforeWriteCheckMetadataHandler(new RequestTransformerMetadataHandler(new PutFileHandler())));
         putPipedHttpHandler(TYPE.FILE, METHOD.DELETE, new DeleteFileHandler());
 
         // AGGREGATION handler
@@ -182,7 +182,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
     }
 
     private PipedHttpHandler getHandlerToLog(PipedHttpHandler handler) {
-        if (handler instanceof CheckMetadataHandler || handler instanceof RequestTransformerMetadataHandler) {
+        if (handler instanceof BeforeWriteCheckMetadataHandler || handler instanceof RequestTransformerMetadataHandler) {
             return getHandlerToLog(handler.getNext());
         } else {
             return handler;

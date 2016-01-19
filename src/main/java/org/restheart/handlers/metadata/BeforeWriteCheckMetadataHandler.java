@@ -34,8 +34,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class CheckMetadataHandler extends PipedHttpHandler {
-    static final Logger LOGGER = LoggerFactory.getLogger(CheckMetadataHandler.class);
+public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
+    static final Logger LOGGER = LoggerFactory.getLogger(BeforeWriteCheckMetadataHandler.class);
 
     public static final String SINGLETON_GROUP_NAME = "checkers";
 
@@ -48,7 +48,7 @@ public class CheckMetadataHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public CheckMetadataHandler(PipedHttpHandler next) {
+    public BeforeWriteCheckMetadataHandler(PipedHttpHandler next) {
         super(next);
     }
 
