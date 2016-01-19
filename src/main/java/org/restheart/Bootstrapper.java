@@ -569,7 +569,7 @@ public final class Bootstrapper {
                         ));
 
         PathHandler paths = path();
-
+        
         configuration.getMongoMounts().stream().forEach(m -> {
             String url = (String) m.get(Configuration.MONGO_MOUNT_WHERE_KEY);
             String db = (String) m.get(Configuration.MONGO_MOUNT_WHAT_KEY);
@@ -592,6 +592,10 @@ public final class Bootstrapper {
         // pipe the auth tokens invalidation handler
         paths.addPrefixPath("/_authtokens", new CORSHandler(new SecurityHandlerDispacher(new AuthTokenHandler(), identityManager, new FullAccessManager())));
 
+        return buildGracefulShutdownHandler(paths);
+    }
+
+    private static GracefulShutdownHandler buildGracefulShutdownHandler(PathHandler paths) {
         return new GracefulShutdownHandler(
                 new RequestLimitingHandler(new RequestLimit(configuration.getRequestLimit()),
                         new AllowedMethodsHandler(
