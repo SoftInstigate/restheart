@@ -124,7 +124,7 @@ public class Configuration {
     private final ETAG_CHECK_POLICY collEtagCheckPolicy;
     private final ETAG_CHECK_POLICY docEtagCheckPolicy;
     
-    private final Boolean forceRequestLogging;
+    private final Boolean logExchangeDump;
 
     /**
      * default mongo uri mongodb://127.0.0.1
@@ -503,7 +503,7 @@ public class Configuration {
     /**
      * Force http requests logging even if DEBUG is not set
      */
-    public static final String FORCE_REQUEST_LOGGING = "force-request-logging";
+    public static final String FORCE_REQUEST_LOGGING = "log-exchange-dump";
 
     /**
      * Creates a new instance of Configuration with defaults values.
@@ -591,7 +591,7 @@ public class Configuration {
         collEtagCheckPolicy = DEFAULT_COLL_ETAG_CHECK_POLICY;
         docEtagCheckPolicy = DEFAULT_DOC_ETAG_CHECK_POLICY;
         
-        forceRequestLogging = false;
+        logExchangeDump = false;
     }
 
     /**
@@ -805,7 +805,7 @@ public class Configuration {
             docEtagCheckPolicy = DEFAULT_DOC_ETAG_CHECK_POLICY;
         }
         
-        forceRequestLogging = getAsBooleanOrDefault(conf, FORCE_REQUEST_LOGGING, false);
+        logExchangeDump = getAsBooleanOrDefault(conf, FORCE_REQUEST_LOGGING, false);
     }
 
     /**
@@ -1390,9 +1390,9 @@ public class Configuration {
     
     /**
      * 
-     * @return the forceRequestLogging Boolean
+     * @return the logExchangeDump Boolean
      */
-    public Boolean isForceRequestLogging() {
-        return forceRequestLogging;
+    public Boolean isLogExchangeDump() {
+        return logExchangeDump;
     }
 }

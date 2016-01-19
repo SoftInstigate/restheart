@@ -208,7 +208,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * @param context the RequestContext
      */
     protected void before(HttpServerExchange exchange, RequestContext context) {
-        if (configuration.isForceRequestLogging()) {
+        if (configuration.isLogExchangeDump()) {
             dumpExchange(exchange);
         }
     }
