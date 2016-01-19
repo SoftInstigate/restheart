@@ -96,7 +96,6 @@ public final class Bootstrapper {
 
     private static Path CONF_FILE_PATH;
 
-    private static Undertow server;
     private static GracefulShutdownHandler shutdownHandler = null;
     private static Configuration configuration;
 
@@ -361,17 +360,6 @@ public final class Bootstrapper {
             }
         }
 
-        if (server != null) {
-            if (!silent) {
-                LOGGER.info("Stopping the Undertow server...");
-            }
-            try {
-                server.stop();
-            } catch (Throwable t) {
-                LOGGER.error("Error stopping the Undertow server", t);
-            }
-        }
-
         if (MongoDBClientSingleton.isInitialized()) {
             MongoClient client = MongoDBClientSingleton.getInstance().getClient();
 
@@ -414,7 +402,7 @@ public final class Bootstrapper {
         if (!silent) {
             LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart stopped").reset().toString());
         }
-        
+
         LoggingInitializer.stopLogging();
     }
 
@@ -563,7 +551,7 @@ public final class Bootstrapper {
         logErrorAndExit(message, t, silent, true, status);
     }
 
-    private static void logErrorAndExit(String message,  Throwable t, boolean silent, boolean removePid, int status) {
+    private static void logErrorAndExit(String message, Throwable t, boolean silent, boolean removePid, int status) {
         if (t == null) {
             LOGGER.error(message);
         } else {
