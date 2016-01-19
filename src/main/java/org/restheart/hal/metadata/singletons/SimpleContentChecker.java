@@ -35,17 +35,19 @@ import org.slf4j.LoggerFactory;
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
- *
- * SimpleContentChecker allows to check request content by using json path
- * expression
- *
- * the args arguments is an array of condition. a condition is json object as
- * follows: { "path": "PATHEXPR", [ "type": "TYPE]"] ["count": COUNT ] ["regex":
- * "REGEX"] ["nullable": BOOLEAN]}
- *
- * where
- *
- * <br>PATHEXPR the path expression. use the . notation to identify the property
+
+ SimpleContentChecker allows to check request content by using json path
+ expression
+
+ This checker does not support update operators. For instance PATCH /db/coll/doc { $currentDate: { "a.b": true }}
+
+ the args arguments is an array of condition. a condition is json object as
+ follows: { "path": "PATHEXPR", [ "type": "TYPE]"] ["count": COUNT ] ["regex":
+ "REGEX"] ["nullable": BOOLEAN]}
+
+ where
+
+ <br>PATHEXPR the path expression. use the . notation to identify the property
  * <br>COUNT is the number of expected values
  * <br>TYPE can be any BSON type: null, object, array, string, number, boolean *
  * objectid, date,timestamp, maxkey, minkey, symbol, code, objectid
