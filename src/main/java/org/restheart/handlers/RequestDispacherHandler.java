@@ -39,6 +39,8 @@ import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import java.util.HashMap;
 import java.util.Map;
+import org.restheart.Bootstrapper;
+import org.restheart.Configuration;
 import org.restheart.handlers.schema.JsonMetaSchemaChecker;
 import static org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.TYPE;
@@ -69,6 +71,8 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestDispacherHandler.class);
 
     private final Map<TYPE, Map<METHOD, PipedHttpHandler>> handlersMultimap;
+
+    private final Configuration configuration = Bootstrapper.getConfiguration();
 
     /**
      * Creates a new instance of RequestDispacherHandler
@@ -191,24 +195,24 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
     /**
      * Code to execute before each handleRequest
-     * 
+     *
      * @param exchange the HttpServerExchange
      * @param context the RequestContext
      */
     protected void before(HttpServerExchange exchange, RequestContext context) {
-        if (LOGGER.isDebugEnabled()) {
+        if (LOGGER.isDebugEnabled() || configuration.isForceRequestLogging()) {
             LOGGER.debug("before handleRequest: Type {}, Request: {}", context.getType(), exchange.getRequestURL() + exchange.getQueryString());
         }
     }
 
     /**
      * code to execute after each handleRequest
-     * 
+     *
      * @param exchange the HttpServerExchange
      * @param context the RequestContext
      */
     protected void after(HttpServerExchange exchange, RequestContext context) {
-        if (LOGGER.isDebugEnabled()) {
+        if (LOGGER.isDebugEnabled() || configuration.isForceRequestLogging()) {
             LOGGER.debug("after handleRequest: Response status {}", exchange.getStatusCode());
         }
     }

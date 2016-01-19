@@ -123,6 +123,8 @@ public class Configuration {
     private final ETAG_CHECK_POLICY dbEtagCheckPolicy;
     private final ETAG_CHECK_POLICY collEtagCheckPolicy;
     private final ETAG_CHECK_POLICY docEtagCheckPolicy;
+    
+    private final Boolean forceRequestLogging;
 
     /**
      * default mongo uri mongodb://127.0.0.1
@@ -497,6 +499,11 @@ public class Configuration {
      * the key for the etag-check-policy.doc property.
      */
     public static final String ETAG_CHECK_POLICY_DOC_KEY = "doc";
+    
+    /**
+     * Force http requests logging even if DEBUG is not set
+     */
+    public static final String FORCE_REQUEST_LOGGING = "force-request-logging";
 
     /**
      * Creates a new instance of Configuration with defaults values.
@@ -583,6 +590,8 @@ public class Configuration {
         dbEtagCheckPolicy = DEFAULT_DB_ETAG_CHECK_POLICY;
         collEtagCheckPolicy = DEFAULT_COLL_ETAG_CHECK_POLICY;
         docEtagCheckPolicy = DEFAULT_DOC_ETAG_CHECK_POLICY;
+        
+        forceRequestLogging = false;
     }
 
     /**
@@ -756,9 +765,9 @@ public class Configuration {
                             ETAG_CHECK_POLICY_DOC_KEY,
                             DEFAULT_DOC_ETAG_CHECK_POLICY.name());
             
-            ETAG_CHECK_POLICY validDbValue = null;
-            ETAG_CHECK_POLICY validCollValue = null;
-            ETAG_CHECK_POLICY validDocValue = null;
+            ETAG_CHECK_POLICY validDbValue;
+            ETAG_CHECK_POLICY validCollValue;
+            ETAG_CHECK_POLICY validDocValue;
             
             try {
                 validDbValue = ETAG_CHECK_POLICY.valueOf(_dbEtagCheckPolicy);
@@ -795,8 +804,17 @@ public class Configuration {
             collEtagCheckPolicy = DEFAULT_COLL_ETAG_CHECK_POLICY;
             docEtagCheckPolicy = DEFAULT_DOC_ETAG_CHECK_POLICY;
         }
+        
+        forceRequestLogging = getAsBooleanOrDefault(conf, FORCE_REQUEST_LOGGING, false);
     }
 
+    /**
+     * 
+     * @param conf
+     * @param key
+     * @param defaultValue
+     * @return 
+     */
     private List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key, final List<Map<String, Object>> defaultValue) {
         if (conf == null) {
             if (!silent) {
@@ -818,6 +836,12 @@ public class Configuration {
         }
     }
 
+    /**
+     * 
+     * @param conf
+     * @param key
+     * @return 
+     */
     private Map<String, Object> getAsMap(final Map<String, Object> conf, final String key) {
         if (conf == null) {
             if (!silent) {
@@ -838,6 +862,13 @@ public class Configuration {
         }
     }
 
+    /**
+     * 
+     * @param conf
+     * @param key
+     * @param defaultValue
+     * @return 
+     */
     private Boolean getAsBooleanOrDefault(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
         if (conf == null) {
             if (!silent) {
@@ -867,6 +898,13 @@ public class Configuration {
         }
     }
 
+    /**
+     * 
+     * @param conf
+     * @param key
+     * @param defaultValue
+     * @return 
+     */
     private String getAsStringOrDefault(final Map<String, Object> conf, final String key, final String defaultValue) {
 
         if (conf == null || conf.get(key) == null) {
@@ -888,6 +926,13 @@ public class Configuration {
         }
     }
 
+    /**
+     * 
+     * @param conf
+     * @param key
+     * @param defaultValue
+     * @return 
+     */
     private Integer getAsIntegerOrDefault(final Map<String, Object> conf, final String key, final Integer defaultValue) {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
@@ -908,6 +953,13 @@ public class Configuration {
         }
     }
 
+    /**
+     * 
+     * @param conf
+     * @param key
+     * @param defaultValue
+     * @return 
+     */
     private Long getAsLongOrDefault(final Map<String, Object> conf, final String key, final Long defaultValue) {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
@@ -935,6 +987,13 @@ public class Configuration {
         }
     }
 
+    /**
+     * 
+     * @param conf
+     * @param key
+     * @param defaultValue
+     * @return 
+     */
     private int[] getAsArrayOfInts(final Map<String, Object> conf, final String key, final int[] defaultValue) {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
@@ -965,6 +1024,11 @@ public class Configuration {
         }
     }
 
+    /**
+     * 
+     * @param integers
+     * @return 
+     */
     public static int[] convertListToIntArray(List integers) {
         int[] ret = new int[integers.size()];
         Iterator iterator = integers.iterator();
@@ -1322,5 +1386,13 @@ public class Configuration {
      */
     public ETAG_CHECK_POLICY getDocEtagCheckPolicy() {
         return docEtagCheckPolicy;
+    }
+    
+    /**
+     * 
+     * @return the forceRequestLogging Boolean
+     */
+    public Boolean isForceRequestLogging() {
+        return forceRequestLogging;
     }
 }
