@@ -205,7 +205,7 @@ public final class Bootstrapper {
     }
 
     /**
-     * Startups the RESTHeart server
+     * Startup the RESTHeart server
      *
      * @param confFilePath the path of the configuration file
      */
@@ -214,7 +214,7 @@ public final class Bootstrapper {
     }
 
     /**
-     * Startups the RESTHeart server
+     * Startup the RESTHeart server
      *
      * @param confFilePath the path of the configuration file
      */
@@ -239,6 +239,12 @@ public final class Bootstrapper {
         stopServer(false);
     }
 
+    /**
+     * initLogging
+     * 
+     * @param args
+     * @param d 
+     */
     private static void initLogging(final String[] args, final RHDaemon d) {
         LoggingInitializer.setLogLevel(configuration.getLogLevel());
 
@@ -255,6 +261,11 @@ public final class Bootstrapper {
         }
     }
 
+    /**
+     * logLoggingConfiguration
+     * 
+     * @param fork 
+     */
     private static void logLoggingConfiguration(boolean fork) {
         if (configuration.isLogToFile()) {
             LOGGER.info("Logging to file {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
@@ -269,6 +280,12 @@ public final class Bootstrapper {
         }
     }
 
+    /**
+     * hasForkOption
+     * 
+     * @param args
+     * @return true if has fork option
+     */
     private static boolean hasForkOption(final String[] args) {
         if (args == null || args.length < 1) {
             return false;
@@ -283,6 +300,11 @@ public final class Bootstrapper {
         return false;
     }
 
+    /**
+     * startServer
+     * 
+     * @param fork 
+     */
     private static void startServer(boolean fork) {
         LOGGER.info("Starting " + ansi().fg(RED).bold().a("RESTHeart").reset().toString());
 
@@ -339,10 +361,21 @@ public final class Bootstrapper {
         LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart started").reset().toString());
     }
 
+    /**
+     * stopServer
+     * 
+     * @param silent 
+     */
     private static void stopServer(boolean silent) {
         stopServer(silent, true);
     }
 
+    /**
+     * stopServer
+     * 
+     * @param silent
+     * @param removePid 
+     */
     private static void stopServer(boolean silent, boolean removePid) {
         if (!silent) {
             LOGGER.info("Stopping RESTHeart...");
@@ -406,6 +439,9 @@ public final class Bootstrapper {
         LoggingInitializer.stopLogging();
     }
 
+    /**
+     * startCoreSystem
+     */
     private static void startCoreSystem() {
         if (configuration == null) {
             logErrorAndExit("No configuration found. exiting..", null, false, -1);
@@ -511,6 +547,11 @@ public final class Bootstrapper {
         builder.build().start();
     }
 
+    /**
+     * loadIdentityManager
+     * 
+     * @return the IdentityManager
+     */
     private static IdentityManager loadIdentityManager() {
         IdentityManager identityManager = null;
         if (configuration.getIdmImpl() == null) {
@@ -528,6 +569,11 @@ public final class Bootstrapper {
         return identityManager;
     }
 
+    /**
+     * loadAccessManager
+     * 
+     * @return the AccessManager
+     */
     private static AccessManager loadAccessManager() {
         AccessManager accessManager = new FullAccessManager();
         if (configuration.getAmImpl() == null && configuration.getIdmImpl() != null) {
@@ -547,10 +593,27 @@ public final class Bootstrapper {
         return accessManager;
     }
 
+    /**
+     * logErrorAndExit
+     * 
+     * @param message
+     * @param t
+     * @param silent
+     * @param status 
+     */
     private static void logErrorAndExit(String message, Throwable t, boolean silent, int status) {
         logErrorAndExit(message, t, silent, true, status);
     }
 
+    /**
+     * logErrorAndExit
+     * 
+     * @param message
+     * @param t
+     * @param silent
+     * @param removePid
+     * @param status 
+     */
     private static void logErrorAndExit(String message, Throwable t, boolean silent, boolean removePid, int status) {
         if (t == null) {
             LOGGER.error(message);
@@ -561,6 +624,13 @@ public final class Bootstrapper {
         System.exit(status);
     }
 
+    /**
+     * getHandlersPipe
+     * 
+     * @param identityManager
+     * @param accessManager
+     * @return a GracefulShutdownHandler
+     */
     private static GracefulShutdownHandler getHandlersPipe(final IdentityManager identityManager, final AccessManager accessManager) {
         PipedHttpHandler coreHandlerChain
                 = new DbPropsInjectorHandler(
@@ -595,6 +665,12 @@ public final class Bootstrapper {
         return buildGracefulShutdownHandler(paths);
     }
 
+    /**
+     * buildGracefulShutdownHandler
+     * 
+     * @param paths
+     * @return 
+     */
     private static GracefulShutdownHandler buildGracefulShutdownHandler(PathHandler paths) {
         return new GracefulShutdownHandler(
                 new RequestLimitingHandler(new RequestLimit(configuration.getRequestLimit()),
@@ -617,12 +693,21 @@ public final class Bootstrapper {
         );
     }
 
+    /**
+     * pipeStaticResourcesHandlers
+     * 
+     * pipe the static resources specified in the configuration file
+     * 
+     * @param conf
+     * @param paths
+     * @param identityManager
+     * @param accessManager 
+     */
     private static void pipeStaticResourcesHandlers(
             final Configuration conf,
             final PathHandler paths,
             final IdentityManager identityManager,
             final AccessManager accessManager) {
-        // pipe the static resources specified in the configuration file
         if (conf.getStaticResourcesMounts() != null) {
             conf.getStaticResourcesMounts().stream().forEach(sr -> {
                 try {
@@ -671,7 +756,8 @@ public final class Bootstrapper {
 
                         }
                     } else if (!path.startsWith("/")) {
-                        // this is to allow specifying the configuration file path relative to the jar (also working when running from classes)
+                        // this is to allow specifying the configuration file path relative
+                        // to the jar (also working when running from classes)
                         URL location = Bootstrapper.class
                                 .getProtectionDomain().getCodeSource().getLocation();
                         File locationFile = new File(location.getPath());
@@ -701,6 +787,14 @@ public final class Bootstrapper {
         }
     }
 
+    /**
+     * pipeApplicationLogicHandlers
+     * 
+     * @param conf
+     * @param paths
+     * @param identityManager
+     * @param accessManager 
+     */
     private static void pipeApplicationLogicHandlers(
             final Configuration conf,
             final PathHandler paths,
@@ -758,7 +852,9 @@ public final class Bootstrapper {
     }
 
     /**
-     * @return the conf
+     * getConfiguration
+     * 
+     * @return the global configuration
      */
     public static Configuration getConfiguration() {
         return configuration;
