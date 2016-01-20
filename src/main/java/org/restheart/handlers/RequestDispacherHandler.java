@@ -47,6 +47,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.UUID;
 import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
 import org.restheart.handlers.schema.JsonMetaSchemaChecker;
@@ -208,8 +209,8 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * @param context the RequestContext
      */
     protected void before(HttpServerExchange exchange, RequestContext context) {
-        if (configuration.isLogExchangeDump()) {
-            dumpExchange(exchange);
+        if (configuration.logExchangeDump() > 0) {
+            dumpExchange(exchange, configuration.logExchangeDump());
         }
     }
 
@@ -263,94 +264,127 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
     /**
      * dumpExchange
-     * 
+     *
      * Log a complete dump of the HttpServerExchange (both Request and Response)
-     * 
-     * @param exchange 
+     *
+     * @param exchange the HttpServerExchange
+     * @param logLevel it can be 0, 1 or 2
      */
-    protected void dumpExchange(HttpServerExchange exchange) {
+    protected void dumpExchange(HttpServerExchange exchange, Integer logLevel) {
+        if (logLevel < 1) {
+            return;
+        }
+
         final StringBuilder sb = new StringBuilder();
         final SecurityContext sc = exchange.getSecurityContext();
-        
-        sb.append("\n----------------------------REQUEST---------------------------\n");
-        sb.append("               URI=").append(exchange.getRequestURI()).append("\n");
-        sb.append(" characterEncoding=").append(exchange.getRequestHeaders().get(Headers.CONTENT_ENCODING)).append("\n");
-        sb.append("     contentLength=").append(exchange.getRequestContentLength()).append("\n");
-        sb.append("       contentType=").append(exchange.getRequestHeaders().get(Headers.CONTENT_TYPE)).append("\n");
+        final long start = System.currentTimeMillis();
 
-        if (sc != null) {
-            if (sc.isAuthenticated()) {
-                sb.append("          authType=").append(sc.getMechanismName()).append("\n");
-                sb.append("         principle=").append(sc.getAuthenticatedAccount().getPrincipal()).append("\n");
-            } else {
-                sb.append("          authType=none" + "\n");
-            }
-        }
+        if (logLevel == 1) {
+            sb.append("\nREQUEST  - ").append(exchange.getRequestMethod()).append(" ")
+                    .append(exchange.getRequestURL()).append(exchange.getQueryString())
+                    .append(" username=").append(sc.getAuthenticatedAccount().getPrincipal().getName())
+                    .append(" roles=").append(sc.getAuthenticatedAccount().getRoles()).append("\n");
+        } else if (logLevel >= 2) {
+            sb.append("\n----------------------------REQUEST---------------------------\n");
+            sb.append("               URI=").append(exchange.getRequestURI()).append("\n");
+            sb.append(" characterEncoding=").append(exchange.getRequestHeaders().get(Headers.CONTENT_ENCODING)).append("\n");
+            sb.append("     contentLength=").append(exchange.getRequestContentLength()).append("\n");
+            sb.append("       contentType=").append(exchange.getRequestHeaders().get(Headers.CONTENT_TYPE)).append("\n");
 
-        Map<String, Cookie> cookies = exchange.getRequestCookies();
-        if (cookies != null) {
-            cookies.entrySet().stream().map((entry) -> entry.getValue()).forEach((cookie) -> {
-                sb.append("            cookie=").append(cookie.getName()).append("=").append(cookie.getValue()).append("\n");
-            });
-        }
-        for (HeaderValues header : exchange.getRequestHeaders()) {
-            header.stream().forEach((value) -> {
-                sb.append("            header=").append(header.getHeaderName()).append("=").append(value).append("\n");
-            });
-        }
-        sb.append("            locale=").append(LocaleUtils.getLocalesFromHeader(exchange.getRequestHeaders().get(Headers.ACCEPT_LANGUAGE))).append("\n");
-        sb.append("            method=").append(exchange.getRequestMethod()).append("\n");
-        Map<String, Deque<String>> pnames = exchange.getQueryParameters();
-        pnames.entrySet().stream().map((entry) -> {
-            String pname = entry.getKey();
-            Iterator<String> pvalues = entry.getValue().iterator();
-            sb.append("         parameter=");
-            sb.append(pname);
-            sb.append('=');
-            while (pvalues.hasNext()) {
-                sb.append(pvalues.next());
-                if (pvalues.hasNext()) {
-                    sb.append(", ");
-                }
-            }
-            return entry;
-        }).forEach((_item) -> {
-            sb.append("\n");
-        });
-
-        sb.append("          protocol=").append(exchange.getProtocol()).append("\n");
-        sb.append("       queryString=").append(exchange.getQueryString()).append("\n");
-        sb.append("        remoteAddr=").append(exchange.getSourceAddress()).append("\n");
-        sb.append("        remoteHost=").append(exchange.getSourceAddress().getHostName()).append("\n");
-        sb.append("            scheme=").append(exchange.getRequestScheme()).append("\n");
-        sb.append("              host=").append(exchange.getRequestHeaders().getFirst(Headers.HOST)).append("\n");
-        sb.append("        serverPort=").append(exchange.getDestinationAddress().getPort()).append("\n");
-
-        exchange.addExchangeCompleteListener((final HttpServerExchange exchange1, final NextListener nextListener) -> {
-            sb.append("--------------------------RESPONSE--------------------------\n");
             if (sc != null) {
                 if (sc.isAuthenticated()) {
                     sb.append("          authType=").append(sc.getMechanismName()).append("\n");
-                    sb.append("         principle=").append(sc.getAuthenticatedAccount().getPrincipal()).append("\n");
+                    sb.append("          username=").append(sc.getAuthenticatedAccount().getPrincipal().getName()).append("\n");
+                    sb.append("             roles=").append(sc.getAuthenticatedAccount().getRoles()).append("\n");
                 } else {
                     sb.append("          authType=none" + "\n");
                 }
             }
-            sb.append("     contentLength=").append(exchange1.getResponseContentLength()).append("\n");
-            sb.append("       contentType=").append(exchange1.getResponseHeaders().getFirst(Headers.CONTENT_TYPE)).append("\n");
-            Map<String, Cookie> cookies1 = exchange1.getResponseCookies();
-            if (cookies1 != null) {
-                cookies1.values().stream().forEach((cookie) -> {
-                    sb.append("            cookie=").append(cookie.getName()).append("=").append(cookie.getValue()).append("; domain=").append(cookie.getDomain()).append("; path=").append(cookie.getPath()).append("\n");
+
+            Map<String, Cookie> cookies = exchange.getRequestCookies();
+            if (cookies != null) {
+                cookies.entrySet().stream().map((entry) -> entry.getValue()).forEach((cookie) -> {
+                    sb.append("            cookie=").append(cookie.getName()).append("=").append(cookie.getValue()).append("\n");
                 });
             }
-            for (HeaderValues header : exchange1.getResponseHeaders()) {
+            for (HeaderValues header : exchange.getRequestHeaders()) {
                 header.stream().forEach((value) -> {
                     sb.append("            header=").append(header.getHeaderName()).append("=").append(value).append("\n");
                 });
             }
-            sb.append("            status=").append(exchange1.getStatusCode()).append("\n");
-            sb.append("==============================================================");
+            sb.append("            locale=").append(LocaleUtils.getLocalesFromHeader(exchange.getRequestHeaders().get(Headers.ACCEPT_LANGUAGE))).append("\n");
+            sb.append("            method=").append(exchange.getRequestMethod()).append("\n");
+            Map<String, Deque<String>> pnames = exchange.getQueryParameters();
+            pnames.entrySet().stream().map((entry) -> {
+                String pname = entry.getKey();
+                Iterator<String> pvalues = entry.getValue().iterator();
+                sb.append("         parameter=");
+                sb.append(pname);
+                sb.append('=');
+                while (pvalues.hasNext()) {
+                    sb.append(pvalues.next());
+                    if (pvalues.hasNext()) {
+                        sb.append(", ");
+                    }
+                }
+                return entry;
+            }).forEach((_item) -> {
+                sb.append("\n");
+            });
+
+            sb.append("          protocol=").append(exchange.getProtocol()).append("\n");
+            sb.append("       queryString=").append(exchange.getQueryString()).append("\n");
+            sb.append("        remoteAddr=").append(exchange.getSourceAddress()).append("\n");
+            sb.append("        remoteHost=").append(exchange.getSourceAddress().getHostName()).append("\n");
+            sb.append("            scheme=").append(exchange.getRequestScheme()).append("\n");
+            sb.append("              host=").append(exchange.getRequestHeaders().getFirst(Headers.HOST)).append("\n");
+            sb.append("        serverPort=").append(exchange.getDestinationAddress().getPort()).append("\n");
+        }
+
+        addExchangeCompleteListener(exchange, logLevel, sb, start, sc);
+
+    }
+
+    private void addExchangeCompleteListener(HttpServerExchange exchange, Integer logLevel, final StringBuilder sb, final long start, final SecurityContext sc) {
+        exchange.addExchangeCompleteListener((final HttpServerExchange exchange1, final NextListener nextListener) -> {
+            if (logLevel < 1) {
+                return;
+            }
+
+            if (logLevel == 1) {
+                sb.append("RESPONSE -")
+                        .append(" status=").append(exchange.getStatusCode())
+                        .append(" contentLength=").append(exchange1.getResponseContentLength())
+                        .append(" elapsed=").append(System.currentTimeMillis() - start).append("ms");
+            } else if (logLevel >= 2) {
+                sb.append("--------------------------RESPONSE--------------------------\n");
+                if (sc != null) {
+                    if (sc.isAuthenticated()) {
+                        sb.append("          authType=").append(sc.getMechanismName()).append("\n");
+                        sb.append("          username=").append(sc.getAuthenticatedAccount().getPrincipal().getName()).append("\n");
+                        sb.append("             roles=").append(sc.getAuthenticatedAccount().getRoles()).append("\n");
+                    } else {
+                        sb.append("          authType=none" + "\n");
+                    }
+                }
+                sb.append("     contentLength=").append(exchange1.getResponseContentLength()).append("\n");
+                sb.append("       contentType=").append(exchange1.getResponseHeaders().getFirst(Headers.CONTENT_TYPE)).append("\n");
+                Map<String, Cookie> cookies1 = exchange1.getResponseCookies();
+                if (cookies1 != null) {
+                    cookies1.values().stream().forEach((cookie) -> {
+                        sb.append("            cookie=").append(cookie.getName()).append("=").append(cookie.getValue()).append("; domain=").append(cookie.getDomain()).append("; path=").append(cookie.getPath()).append("\n");
+                    });
+                }
+                for (HeaderValues header : exchange1.getResponseHeaders()) {
+                    header.stream().forEach((value) -> {
+                        sb.append("            header=").append(header.getHeaderName()).append("=").append(value).append("\n");
+                    });
+                }
+                sb.append("            status=").append(exchange1.getStatusCode()).append("\n");
+                sb.append("           elapsed=").append(System.currentTimeMillis() - start).append("ms\n");
+                sb.append("==============================================================");
+            }
+
             nextListener.proceed();
             LOGGER.info(sb.toString());
         });
