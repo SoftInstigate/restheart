@@ -172,7 +172,7 @@ enable-log-file: true
 log-file-path: /tmp/restheart.log
 enable-log-console: true
 log-level: DEBUG
-log-exchange-dump: true
+log-exchange-dump: 2
 
 #### ETag policy
 

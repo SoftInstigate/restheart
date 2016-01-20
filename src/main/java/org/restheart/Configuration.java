@@ -124,7 +124,7 @@ public class Configuration {
     private final ETAG_CHECK_POLICY collEtagCheckPolicy;
     private final ETAG_CHECK_POLICY docEtagCheckPolicy;
     
-    private final Boolean logExchangeDump;
+    private final Integer logExchangeDump;
 
     /**
      * default mongo uri mongodb://127.0.0.1
@@ -591,7 +591,7 @@ public class Configuration {
         collEtagCheckPolicy = DEFAULT_COLL_ETAG_CHECK_POLICY;
         docEtagCheckPolicy = DEFAULT_DOC_ETAG_CHECK_POLICY;
         
-        logExchangeDump = false;
+        logExchangeDump = 0;
     }
 
     /**
@@ -805,7 +805,7 @@ public class Configuration {
             docEtagCheckPolicy = DEFAULT_DOC_ETAG_CHECK_POLICY;
         }
         
-        logExchangeDump = getAsBooleanOrDefault(conf, FORCE_REQUEST_LOGGING, false);
+        logExchangeDump = getAsIntegerOrDefault(conf, FORCE_REQUEST_LOGGING, 0);
     }
 
     /**
@@ -1392,7 +1392,7 @@ public class Configuration {
      * 
      * @return the logExchangeDump Boolean
      */
-    public Boolean isLogExchangeDump() {
+    public Integer logExchangeDump() {
         return logExchangeDump;
     }
 }
