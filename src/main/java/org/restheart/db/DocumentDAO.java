@@ -36,13 +36,26 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class DocumentDAO implements Repository {
-    
+
     private final Logger LOGGER = LoggerFactory.getLogger(DocumentDAO.class);
-    
+
     private final MongoClient client;
 
     public DocumentDAO() {
         client = MongoDBClientSingleton.getInstance().getClient();
+    }
+
+    @Override
+    public Document getDocumentEtag(final String dbName, final String collName, final Object documentId) {
+        MongoDatabase mdb = client.getDatabase(dbName);
+        MongoCollection<Document> mcoll = mdb.getCollection(collName);
+
+        FindIterable<Document> documents = mcoll
+                .find(eq("_id", documentId))
+                .projection(new Document("_etag", 1));
+
+        return documents == null ? null
+                : documents.iterator().tryNext();
     }
 
     /**
@@ -78,7 +91,7 @@ public class DocumentDAO implements Repository {
         Document dcontent = new Document(content.toMap());
 
         Document oldDocument = DAOUtils.updateDocument(mcoll, documentId, dcontent, !patching);
-        
+
         if (patching) {
             if (oldDocument == null) {
                 return new OperationResult(HttpStatus.SC_NOT_FOUND);
@@ -88,37 +101,22 @@ public class DocumentDAO implements Repository {
                         requestEtag, HttpStatus.SC_OK);
             } else {
                 Document newDocument = mcoll.find(eq("_id", documentId)).first();
-                
+
                 return new OperationResult(HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
             }
+        } else if (oldDocument != null && checkEtag) { // upsertDocument
+            // check the old etag (in case restore the old document)
+            return optimisticCheckEtag(mcoll, oldDocument, newEtag,
+                    requestEtag, HttpStatus.SC_OK);
+        } else if (oldDocument != null) {  // insert
+            Document newDocument = mcoll.find(eq("_id", documentId)).first();
+
+            return new OperationResult(HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
         } else {
-            if (oldDocument != null && checkEtag) { // upsertDocument
-                // check the old etag (in case restore the old document)
-                return optimisticCheckEtag(mcoll, oldDocument, newEtag,
-                        requestEtag, HttpStatus.SC_OK);
-            } else if (oldDocument != null) {  // insert
-                Document newDocument = mcoll.find(eq("_id", documentId)).first();
-                
-                return new OperationResult(HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
-            } else {
-                Document newDocument = mcoll.find(eq("_id", documentId)).first();
-                
-                return new OperationResult(HttpStatus.SC_CREATED, newEtag, null, newDocument);
-            }
+            Document newDocument = mcoll.find(eq("_id", documentId)).first();
+
+            return new OperationResult(HttpStatus.SC_CREATED, newEtag, null, newDocument);
         }
-    }
-
-    @Override
-    public Document getDocumentEtag(final String dbName, final String collName, final Object documentId) {
-        MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<Document> mcoll = mdb.getCollection(collName);
-
-        FindIterable<Document> documents = mcoll
-                .find(eq("_id", documentId))
-                .projection(new Document("_etag", 1));
-
-        return documents == null ? null
-                : documents.iterator().tryNext();
     }
 
     /**
@@ -158,20 +156,23 @@ public class DocumentDAO implements Repository {
             // new document since the id was just auto-generated
             dcontent.put("_id", documentId);
 
-            DAOUtils.updateDocument(mcoll, documentId, dcontent, false);
+            Document newDocument = DAOUtils.updateDocument(mcoll, documentId, dcontent, false, true);
 
-            return new OperationResult(HttpStatus.SC_CREATED, newEtag);
+            return new OperationResult(HttpStatus.SC_CREATED, newEtag, null, newDocument);
         } else {
             Document oldDocument = DAOUtils.updateDocument(mcoll, documentId, dcontent, true);
 
             if (oldDocument == null) {
-                return new OperationResult(HttpStatus.SC_CREATED, newEtag);
+                Document newDocument = mcoll.find(eq("_id", documentId)).first();
+
+                return new OperationResult(HttpStatus.SC_CREATED, newEtag, null, newDocument);
             } else if (checkEtag) {  // upsertDocument
                 // check the old etag (in case restore the old document version)
                 return optimisticCheckEtag(mcoll, oldDocument, newEtag, requestEtag, HttpStatus.SC_OK);
             } else {
-                return new OperationResult(HttpStatus.SC_OK, newEtag);
-
+                Document newDocument = mcoll.find(eq("_id", documentId)).first();
+                
+                return new OperationResult(HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
             }
         }
     }
@@ -218,7 +219,7 @@ public class DocumentDAO implements Repository {
 
         if (oldEtag != null && requestEtag == null) {
             DAOUtils.updateDocument(coll, oldDocument.get("_id"), oldDocument, true);
-            
+
             return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag, oldDocument, null);
         }
 
@@ -232,13 +233,13 @@ public class DocumentDAO implements Repository {
 
         if (Objects.equal(requestEtag, _oldEtag)) {
             Document newDocument = coll.find(eq("_id", oldDocument.get("_id"))).first();
-            
+
             return new OperationResult(httpStatusIfOk, newEtag, oldDocument, newDocument);
         } else {
             // oopps, we need to restore old document
             // they call it optimistic lock strategy
             DAOUtils.updateDocument(coll, oldDocument.get("_id"), oldDocument, true);
-            
+
             return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag, oldDocument, null);
         }
     }
