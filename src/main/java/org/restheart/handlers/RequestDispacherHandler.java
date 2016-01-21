@@ -280,10 +280,19 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         final long start = System.currentTimeMillis();
 
         if (logLevel == 1) {
-            sb.append("\nREQUEST  - ").append(exchange.getRequestMethod()).append(" ")
-                    .append(exchange.getRequestURL()).append(exchange.getQueryString())
-                    .append(" username=").append(sc.getAuthenticatedAccount().getPrincipal().getName())
-                    .append(" roles=").append(sc.getAuthenticatedAccount().getRoles()).append("\n");
+            sb.append("REQUEST: ").append(exchange.getRequestMethod()).append(" ")
+                    .append(exchange.getRequestURL());
+
+            if (exchange.getQueryString() != null) {
+                sb.append("?").append(exchange.getQueryString());
+            }
+
+            sb.append(" from ").append(exchange.getSourceAddress());
+            
+            if (sc.getAuthenticatedAccount() != null) {
+                sb.append(" username=").append(sc.getAuthenticatedAccount().getPrincipal().getName())
+                        .append(" roles=").append(sc.getAuthenticatedAccount().getRoles());
+            }
         } else if (logLevel >= 2) {
             sb.append("\n----------------------------REQUEST---------------------------\n");
             sb.append("               URI=").append(exchange.getRequestURI()).append("\n");
@@ -294,8 +303,11 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
             if (sc != null) {
                 if (sc.isAuthenticated()) {
                     sb.append("          authType=").append(sc.getMechanismName()).append("\n");
-                    sb.append("          username=").append(sc.getAuthenticatedAccount().getPrincipal().getName()).append("\n");
-                    sb.append("             roles=").append(sc.getAuthenticatedAccount().getRoles()).append("\n");
+
+                    if (sc.getAuthenticatedAccount() != null) {
+                        sb.append("          username=").append(sc.getAuthenticatedAccount().getPrincipal().getName()).append("\n");
+                        sb.append("             roles=").append(sc.getAuthenticatedAccount().getRoles()).append("\n");
+                    }
                 } else {
                     sb.append("          authType=none" + "\n");
                 }
@@ -352,7 +364,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
             }
 
             if (logLevel == 1) {
-                sb.append("RESPONSE -")
+                sb.append(" =>")
                         .append(" status=").append(exchange.getStatusCode())
                         .append(" contentLength=").append(exchange1.getResponseContentLength())
                         .append(" elapsed=").append(System.currentTimeMillis() - start).append("ms");
