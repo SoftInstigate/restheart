@@ -47,7 +47,6 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.UUID;
 import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
 import org.restheart.handlers.schema.JsonMetaSchemaChecker;
