@@ -22,7 +22,6 @@ import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import java.util.List;
-import java.util.TreeMap;
 import org.bson.types.ObjectId;
 import org.restheart.Configuration;
 import org.restheart.hal.AbstractRepresentationFactory;
