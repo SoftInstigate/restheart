@@ -42,8 +42,8 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class JsonSchemaChecker implements Checker {
-    public static final String SCHEMA_STORE_DB_PROPERTY = "db";
-    public static final String SCHEMA_ID_PROPERTY = "id";
+    public static final String SCHEMA_STORE_DB_PROPERTY = "schemaStoreDb";
+    public static final String SCHEMA_ID_PROPERTY = "schemaId";
 
     static final Logger LOGGER = LoggerFactory.getLogger(JsonSchemaChecker.class);
 

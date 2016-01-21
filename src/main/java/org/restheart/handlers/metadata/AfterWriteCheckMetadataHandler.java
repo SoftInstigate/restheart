@@ -20,6 +20,7 @@ package org.restheart.handlers.metadata;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import static com.mongodb.client.model.Filters.eq;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.util.List;
@@ -30,6 +31,7 @@ import org.restheart.hal.metadata.RequestChecker;
 import org.restheart.hal.metadata.singletons.Checker;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -61,21 +63,6 @@ public class AfterWriteCheckMetadataHandler extends BeforeWriteCheckMetadataHand
                 MongoDatabase mdb = client.getDatabase(context.getDBName());
                 MongoCollection coll = mdb.getCollection(context.getCollectionName());
 
-                Document data = context.getDbOperationResult().getOldData();
-
-                DAOUtils.updateDocument(coll, data.get("_id"), data, true);
-
-                // add to response old etag
-                if (data.get("$set") != null
-                        && data.get("$set") instanceof Document
-                        && ((Document) data.get("$set")).get("_etag") != null) {
-                    exchange.getResponseHeaders().put(Headers.ETAG,
-                            ((Document) data.get("$set")).get("_etag")
-                            .toString());
-                } else {
-                    exchange.getResponseHeaders().remove(Headers.ETAG);
-                }
-
                 // send error response
                 StringBuilder sb = new StringBuilder();
                 sb.append("schema check failed");
@@ -88,20 +75,52 @@ public class AfterWriteCheckMetadataHandler extends BeforeWriteCheckMetadataHand
                     });
                 }
 
+                Document oldData = context.getDbOperationResult().getOldData();
+
+                if (oldData != null) {
+                    // document was updated, restore old one
+                    DAOUtils.updateDocument(coll, oldData.get("_id"), oldData, true);
+
+                    // add to response old etag
+                    if (oldData.get("$set") != null
+                            && oldData.get("$set") instanceof Document
+                            && ((Document) oldData.get("$set")).get("_etag") != null) {
+                        exchange.getResponseHeaders().put(Headers.ETAG,
+                                ((Document) oldData.get("$set")).get("_etag")
+                                .toString());
+                    } else {
+                        exchange.getResponseHeaders().remove(Headers.ETAG);
+                    }
+
+                } else {
+                    // document was created, delete it
+                    Object newId = context.getDbOperationResult()
+                            .getNewData().get("_id");
+
+                    coll.deleteOne(eq("_id", newId));
+                }
+
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, sb.toString());
             }
         }
 
-        if (getNext() != null) {
+        if (getNext()
+                != null) {
             getNext().handleRequest(exchange, context);
         }
     }
 
     private boolean doesCheckerAppy(RequestContext context) {
         return context.getCollectionProps() != null
-                && (context.getType() == RequestContext.TYPE.FILE
+                && (((context.getMethod() == METHOD.PUT
+                || context.getMethod() == METHOD.PATCH)
+                && context.getType() == RequestContext.TYPE.FILE
                 || context.getType() == RequestContext.TYPE.DOCUMENT
                 || context.getType() == RequestContext.TYPE.SCHEMA)
+                || context.getMethod() == METHOD.POST
+                && (context.getType() == RequestContext.TYPE.COLLECTION
+                || context.getType() == RequestContext.TYPE.FILES_BUCKET
+                || context.getType() == RequestContext.TYPE.SCHEMA_STORE))
                 && context.getCollectionProps().containsField(RequestChecker.ROOT_KEY)
                 && context.getDbOperationResult().getHttpCode() < 300;
     }
