@@ -31,6 +31,8 @@ import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.Relationship;
+import org.restheart.hal.metadata.RequestChecker;
+import org.restheart.hal.metadata.singletons.JsonSchemaChecker;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.TYPE;
@@ -72,16 +74,7 @@ public class DocumentRepresentationFactory {
         data.keySet()
                 .stream().forEach((key) -> rep.addProperty(key, data.get(key)));
 
-        TreeMap<String, String> links;
-
-        links = getRelationshipsLinks(rep, context, data);
-
-        if (links
-                != null) {
-            links.keySet().stream().forEach((k) -> {
-                rep.addLink(new Link(k, links.get(k)));
-            });
-        }
+        addRelationshipsLinks(rep, context, data);
 
         // link templates and curies
         String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
@@ -89,7 +82,7 @@ public class DocumentRepresentationFactory {
         String parentPath;
 
         // the document (file) representation can be asked for requests to collection (bucket)
-        boolean isEmbedded = TYPE.COLLECTION.equals(context.getType()) 
+        boolean isEmbedded = TYPE.COLLECTION.equals(context.getType())
                 || TYPE.FILES_BUCKET.equals(context.getType())
                 || TYPE.SCHEMA_STORE.equals(context.getType());
 
@@ -143,10 +136,9 @@ public class DocumentRepresentationFactory {
         return data.containsField("filename") && data.containsField("chunkSize");
     }
 
-    
     public static void addSpecialProperties(final Representation rep, RequestContext.TYPE type, DBObject data) {
         rep.addProperty("_type", type.name());
-        
+
         Object etag = data.get("_etag");
 
         if (etag != null && etag instanceof ObjectId) {
@@ -179,9 +171,7 @@ public class DocumentRepresentationFactory {
         exchange.getResponseSender().send(rep.toString());
     }
 
-    private static TreeMap<String, String> getRelationshipsLinks(Representation rep, RequestContext context, DBObject data) {
-        TreeMap<String, String> links = new TreeMap<>();
-
+    private static void addRelationshipsLinks(Representation rep, RequestContext context, DBObject data) {
         List<Relationship> rels = null;
 
         try {
@@ -192,23 +182,19 @@ public class DocumentRepresentationFactory {
                     + " has invalid relationships definition");
         }
 
-        if (rels == null) {
-            return links;
-        }
+        if (rels != null) {
+            for (Relationship rel : rels) {
+                try {
+                    String link = rel.getRelationshipLink(context, context.getDBName(), context.getCollectionName(), data);
 
-        for (Relationship rel : rels) {
-            try {
-                String link = rel.getRelationshipLink(context, context.getDBName(), context.getCollectionName(), data);
-
-                if (link != null) {
-                    links.put(rel.getRel(), link);
+                    if (link != null) {
+                        rep.addLink(new Link(rel.getRel(), link));
+                    }
+                } catch (IllegalArgumentException | UnsupportedDocumentIdException ex) {
+                    rep.addWarning(ex.getMessage());
+                    LOGGER.debug(ex.getMessage());
                 }
-            } catch (IllegalArgumentException | UnsupportedDocumentIdException ex) {
-                rep.addWarning(ex.getMessage());
-                LOGGER.debug(ex.getMessage());
             }
         }
-
-        return links;
     }
 }

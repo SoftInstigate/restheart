@@ -22,11 +22,16 @@ import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import java.util.List;
+import java.util.TreeMap;
 import org.bson.types.ObjectId;
 import org.restheart.Configuration;
 import org.restheart.hal.AbstractRepresentationFactory;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
+import org.restheart.hal.UnsupportedDocumentIdException;
+import org.restheart.hal.metadata.InvalidMetadataException;
+import org.restheart.hal.metadata.RequestChecker;
+import org.restheart.hal.metadata.singletons.JsonSchemaChecker;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.TYPE;
@@ -62,7 +67,9 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         addSizeAndTotalPagesProperties(size, context, rep);
 
         addAggregationsLinks(context, rep, requestPath);
-
+        
+        addSchemaLinks(rep, context);
+        
         addEmbeddedData(embeddedData, rep, requestPath, exchange, context);
 
         if (context.isFullHalMode()) {
@@ -195,6 +202,48 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
                     rep.addRepresentation("rh:doc", nrep);
                 }
             }
+        }
+    }
+    
+    // TODO this is hardcoded, if name of checker is changed in conf file
+    // method won't work. need to get the name from the configuration
+    private static final String JSON_SCHEMA_NAME = "jsonSchema";
+    
+    private static void addSchemaLinks(Representation rep, RequestContext context) {
+        try {
+            List<RequestChecker> checkers = RequestChecker.getFromJson(context.getCollectionProps());
+
+            if (checkers != null) {
+                checkers
+                        .stream().filter((RequestChecker c) -> {
+                            return JSON_SCHEMA_NAME.equals(c.getName());
+                        }).forEach((RequestChecker c) -> {
+                    Object schemaId = c.getArgs().get(JsonSchemaChecker.SCHEMA_ID_PROPERTY);
+                    Object _schemaStoreDb = c.getArgs().get(JsonSchemaChecker.SCHEMA_STORE_DB_PROPERTY);
+
+                    // just in case the checker is missing the mandatory schemaId property
+                    if (schemaId == null) {
+                        return;
+                    }
+                    
+                    String schemaStoreDb;
+
+                    if (_schemaStoreDb == null) {
+                        schemaStoreDb = context.getDBName();
+                    } else {
+                        schemaStoreDb = _schemaStoreDb.toString();
+                    }
+
+                    try {
+                        rep.addLink(new Link("schema", URLUtils
+                                .getUriWithDocId(context, 
+                                        schemaStoreDb, "_schemas", schemaId)));
+                    } catch (UnsupportedDocumentIdException ex) {
+                    }
+                });
+
+            }
+        } catch (InvalidMetadataException ime) {
         }
     }
 }
