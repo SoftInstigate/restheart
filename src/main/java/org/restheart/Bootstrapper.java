@@ -84,6 +84,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static io.undertow.Handlers.path;
 import static org.fusesource.jansi.Ansi.ansi;
+import org.restheart.handlers.RequestLoggerHandler;
 
 /**
  *
@@ -241,9 +242,9 @@ public final class Bootstrapper {
 
     /**
      * initLogging
-     * 
+     *
      * @param args
-     * @param d 
+     * @param d
      */
     private static void initLogging(final String[] args, final RHDaemon d) {
         LoggingInitializer.setLogLevel(configuration.getLogLevel());
@@ -263,8 +264,8 @@ public final class Bootstrapper {
 
     /**
      * logLoggingConfiguration
-     * 
-     * @param fork 
+     *
+     * @param fork
      */
     private static void logLoggingConfiguration(boolean fork) {
         if (configuration.isLogToFile()) {
@@ -282,7 +283,7 @@ public final class Bootstrapper {
 
     /**
      * hasForkOption
-     * 
+     *
      * @param args
      * @return true if has fork option
      */
@@ -302,8 +303,8 @@ public final class Bootstrapper {
 
     /**
      * startServer
-     * 
-     * @param fork 
+     *
+     * @param fork
      */
     private static void startServer(boolean fork) {
         LOGGER.info("Starting " + ansi().fg(RED).bold().a("RESTHeart").reset().toString());
@@ -363,8 +364,8 @@ public final class Bootstrapper {
 
     /**
      * stopServer
-     * 
-     * @param silent 
+     *
+     * @param silent
      */
     private static void stopServer(boolean silent) {
         stopServer(silent, true);
@@ -372,9 +373,9 @@ public final class Bootstrapper {
 
     /**
      * stopServer
-     * 
+     *
      * @param silent
-     * @param removePid 
+     * @param removePid
      */
     private static void stopServer(boolean silent, boolean removePid) {
         if (!silent) {
@@ -549,7 +550,7 @@ public final class Bootstrapper {
 
     /**
      * loadIdentityManager
-     * 
+     *
      * @return the IdentityManager
      */
     private static IdentityManager loadIdentityManager() {
@@ -571,7 +572,7 @@ public final class Bootstrapper {
 
     /**
      * loadAccessManager
-     * 
+     *
      * @return the AccessManager
      */
     private static AccessManager loadAccessManager() {
@@ -595,11 +596,11 @@ public final class Bootstrapper {
 
     /**
      * logErrorAndExit
-     * 
+     *
      * @param message
      * @param t
      * @param silent
-     * @param status 
+     * @param status
      */
     private static void logErrorAndExit(String message, Throwable t, boolean silent, int status) {
         logErrorAndExit(message, t, silent, true, status);
@@ -607,12 +608,12 @@ public final class Bootstrapper {
 
     /**
      * logErrorAndExit
-     * 
+     *
      * @param message
      * @param t
      * @param silent
      * @param removePid
-     * @param status 
+     * @param status
      */
     private static void logErrorAndExit(String message, Throwable t, boolean silent, boolean removePid, int status) {
         if (t == null) {
@@ -626,7 +627,7 @@ public final class Bootstrapper {
 
     /**
      * getHandlersPipe
-     * 
+     *
      * @param identityManager
      * @param accessManager
      * @return a GracefulShutdownHandler
@@ -639,18 +640,22 @@ public final class Bootstrapper {
                         ));
 
         PathHandler paths = path();
-        
+
         configuration.getMongoMounts().stream().forEach(m -> {
             String url = (String) m.get(Configuration.MONGO_MOUNT_WHERE_KEY);
             String db = (String) m.get(Configuration.MONGO_MOUNT_WHAT_KEY);
 
             paths.addPrefixPath(url,
-                    new CORSHandler(
-                            new RequestContextInjectorHandler(url, db,
-                                    new OptionsHandler(
-                                            new BodyInjectorHandler(
-                                                    new SecurityHandlerDispacher(coreHandlerChain, identityManager, accessManager))))
-                    ));
+                    new RequestLoggerHandler(
+                            new CORSHandler(
+                                    new RequestContextInjectorHandler(url, db,
+                                            new OptionsHandler(
+                                                    new BodyInjectorHandler(
+                                                            new SecurityHandlerDispacher(
+                                                                    coreHandlerChain,
+                                                                    identityManager,
+                                                                    accessManager))))
+                            )));
 
             LOGGER.info("URL {} bound to MongoDB resource {}", url, db);
         });
@@ -660,16 +665,22 @@ public final class Bootstrapper {
         pipeApplicationLogicHandlers(configuration, paths, identityManager, accessManager);
 
         // pipe the auth tokens invalidation handler
-        paths.addPrefixPath("/_authtokens", new CORSHandler(new SecurityHandlerDispacher(new AuthTokenHandler(), identityManager, new FullAccessManager())));
+        paths.addPrefixPath("/_authtokens",
+                new RequestLoggerHandler(
+                        new CORSHandler(
+                                new SecurityHandlerDispacher(
+                                        new AuthTokenHandler(),
+                                        identityManager,
+                                        new FullAccessManager()))));
 
         return buildGracefulShutdownHandler(paths);
     }
 
     /**
      * buildGracefulShutdownHandler
-     * 
+     *
      * @param paths
-     * @return 
+     * @return
      */
     private static GracefulShutdownHandler buildGracefulShutdownHandler(PathHandler paths) {
         return new GracefulShutdownHandler(
@@ -695,13 +706,13 @@ public final class Bootstrapper {
 
     /**
      * pipeStaticResourcesHandlers
-     * 
+     *
      * pipe the static resources specified in the configuration file
-     * 
+     *
      * @param conf
      * @param paths
      * @param identityManager
-     * @param accessManager 
+     * @param accessManager
      */
     private static void pipeStaticResourcesHandlers(
             final Configuration conf,
@@ -772,10 +783,13 @@ public final class Bootstrapper {
 
                     if (secured) {
                         paths.addPrefixPath(where,
-                                new SecurityHandlerDispacher(
-                                        new PipedWrappingHandler(null, handler), identityManager, accessManager));
+                                new RequestLoggerHandler(
+                                        new SecurityHandlerDispacher(
+                                                new PipedWrappingHandler(null, handler),
+                                                identityManager,
+                                                accessManager)));
                     } else {
-                        paths.addPrefixPath(where, handler);
+                        paths.addPrefixPath(where, new RequestLoggerHandler(handler));
                     }
 
                     LOGGER.info("URL {} bound to static resources {}. Access Manager: {}", where, path, secured);
@@ -789,11 +803,11 @@ public final class Bootstrapper {
 
     /**
      * pipeApplicationLogicHandlers
-     * 
+     *
      * @param conf
      * @param paths
      * @param identityManager
-     * @param accessManager 
+     * @param accessManager
      */
     private static void pipeApplicationLogicHandlers(
             final Configuration conf,
@@ -830,9 +844,20 @@ public final class Bootstrapper {
                         PipedHttpHandler handler = new RequestContextInjectorHandler("/_logic", "*", alHandler);
 
                         if (alSecured) {
-                            paths.addPrefixPath("/_logic" + alWhere, new CORSHandler(new SecurityHandlerDispacher(handler, identityManager, accessManager)));
+                            paths.addPrefixPath("/_logic" + alWhere, new RequestLoggerHandler(
+                                    new CORSHandler(
+                                            new SecurityHandlerDispacher(
+                                                    handler,
+                                                    identityManager,
+                                                    accessManager))));
                         } else {
-                            paths.addPrefixPath("/_logic" + alWhere, new CORSHandler(new SecurityHandlerDispacher(handler, identityManager, new FullAccessManager())));
+                            paths.addPrefixPath("/_logic" + alWhere,
+                                    new RequestLoggerHandler(
+                                            new CORSHandler(
+                                                    new SecurityHandlerDispacher(
+                                                            handler,
+                                                            identityManager,
+                                                            new FullAccessManager()))));
                         }
 
                         LOGGER.info("URL {} bound to application logic handler {}."
@@ -853,7 +878,7 @@ public final class Bootstrapper {
 
     /**
      * getConfiguration
-     * 
+     *
      * @return the global configuration
      */
     public static Configuration getConfiguration() {
