@@ -178,11 +178,14 @@ auth-token-ttl: 15
 # enable-log-file: true => log messages to a file (default value: true)
 # log-file-path: to specify the log file path (default value: restheart.log in system temporary directory)
 # log-level: to set the log level. Value can be OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. (default value is INFO)
+# log-exchange-dump: log the request-response. 0 => no dump, 1 => light dump, 2 => full dump
+# WARNING: use log-exchange-dump level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
 
 enable-log-file: true
 log-file-path: /tmp/restheart.log
 enable-log-console: false
 log-level: DEBUG
+log-exchange-dump: 1
 
 #### ETag policy
 
