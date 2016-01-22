@@ -31,11 +31,11 @@ import org.apache.http.client.fluent.Response;
 import org.apache.http.message.BasicNameValuePair;
 import org.junit.Test;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
-import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_KEY;
 import static org.restheart.test.integration.AbstactIT.adminExecutor;
 import static org.restheart.test.integration.AbstactIT.collectionTmpUri;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
 
 /**
  * @author Andrea Di Cesare <andrea@softinstigate.com>
@@ -64,7 +64,7 @@ public class DocIdTypeIT extends AbstactIT {
 
         URI collectionTmpUriInt = buildURI("/" + dbTmpName + "/" + collectionTmpName,
                 new NameValuePair[]{
-                    new BasicNameValuePair(DOC_ID_TYPE_KEY, DOC_ID_TYPE.NUMBER.name())
+                    new BasicNameValuePair(DOC_ID_TYPE_QPARAM_KEY, DOC_ID_TYPE.NUMBER.name())
                 });
 
         // *** POST tmpcoll
@@ -110,7 +110,7 @@ public class DocIdTypeIT extends AbstactIT {
 
         URI collectionTmpUriInt = buildURI("/" + dbTmpName + "/" + collectionTmpName,
                 new NameValuePair[]{
-                    new BasicNameValuePair(DOC_ID_TYPE_KEY, DOC_ID_TYPE.STRING.name())
+                    new BasicNameValuePair(DOC_ID_TYPE_QPARAM_KEY, DOC_ID_TYPE.STRING.name())
                 });
 
         // *** POST tmpcoll

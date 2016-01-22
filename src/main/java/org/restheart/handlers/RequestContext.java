@@ -474,8 +474,8 @@ public class RequestContext {
         }
 
         return (documentIdRaw.startsWith(UNDERSCORE)
-                || documentIdRaw.equalsIgnoreCase(_INDEXES)
                 || (type != TYPE.AGGREGATION && _AGGREGATIONS.equalsIgnoreCase(documentIdRaw)))
+                && !documentIdRaw.equalsIgnoreCase(_INDEXES)
                 && !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID)
                 && !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID)
                 && !(type == TYPE.AGGREGATION)
