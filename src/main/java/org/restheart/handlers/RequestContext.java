@@ -60,7 +60,8 @@ public class RequestContext {
         FILE_BINARY,
         AGGREGATION,
         SCHEMA,
-        SCHEMA_STORE
+        SCHEMA_STORE,
+        DOCUMENTS
     };
 
     public enum METHOD {
@@ -74,28 +75,29 @@ public class RequestContext {
     };
 
     public enum DOC_ID_TYPE {
-        OID,        // ObjectId
+        OID, // ObjectId
         STRING_OID, // String eventually converted to ObjectId in case ObjectId.isValid() is true
-        STRING,     // String
-        NUMBER,     // any Number (including mongodb NumberLong)
-        DATE,       // Date
-        MINKEY,     //org.bson.types.MinKey;
+        STRING, // String
+        NUMBER, // any Number (including mongodb NumberLong)
+        DATE, // Date
+        MINKEY, //org.bson.types.MinKey;
         MAXKEY      // org.bson.types.MaxKey
     }
 
     public enum HAL_MODE {
-        FULL,       // full mode
-        F,          // alias for full
-        COMPACT,    // new compact mode
+        FULL, // full mode
+        F, // alias for full
+        COMPACT, // new compact mode
         C           // alias for compact
     }
 
     public enum ETAG_CHECK_POLICY {
-        REQUIRED,               // always requires the etag, return PRECONDITION FAILED if missing
-        REQUIRED_FOR_DELETE,    // only requires the etag for DELETE, return PRECONDITION FAILED if missing
+        REQUIRED, // always requires the etag, return PRECONDITION FAILED if missing
+        REQUIRED_FOR_DELETE, // only requires the etag for DELETE, return PRECONDITION FAILED if missing
         OPTIONAL                // checks the etag only if provided by client via If-Match header
     }
 
+    // query parameters
     public static final String PAGE_QPARAM_KEY = "page";
     public static final String PAGESIZE_QPARAM_KEY = "pagesize";
     public static final String COUNT_QPARAM_KEY = "count";
@@ -104,29 +106,36 @@ public class RequestContext {
     public static final String AGGREGATION_VARIABLES_QPARAM_KEY = "avars";
     public static final String KEYS_QPARAM_KEY = "keys";
     public static final String EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY = "eager";
-    public static final String DOC_ID_TYPE_KEY = "id_type";
-    public static final String SLASH = "/";
-    public static final String PATCH = "PATCH";
-    public static final String UNDERSCORE = "_";
+    public static final String AGGREGATIONS_QPARAM_KEY = "aggrs";
+    public static final String HAL_QPARAM_KEY = "hal";
+    public static final String DOC_ID_TYPE_QPARAM_KEY = "id_type";
+    public static final String ETAG_CHECK_QPARAM_KEY = "checkEtag";
+
+    // matadata
+    public static final String ETAG_DOC_POLICY_METADATA_KEY = "etagDocPolicy";
+    public static final String ETAG_POLICY_METADATA_KEY = "etagPolicy";
+
+    // special resource names
     public static final String SYSTEM = "system.";
     public static final String LOCAL = "local";
     public static final String ADMIN = "admin";
+
     public static final String FS_CHUNKS_SUFFIX = ".chunks";
     public static final String FS_FILES_SUFFIX = ".files";
+
     public static final String _INDEXES = "_indexes";
-    public static final String AGGREGATIONS_QPARAM_KEY = "aggrs";
     public static final String _SCHEMAS = "_schemas";
     public static final String _AGGREGATIONS = "_aggrs";
-    public static final String BINARY_CONTENT = "binary";
 
-    public static final String HAL_QPARAM_KEY = "hal";
+    public static final String BINARY_CONTENT = "binary";
 
     public static final String MAX_KEY_ID = "_MaxKey";
     public static final String MIN_KEY_ID = "_MinKey";
 
-    public static final String ETAG_DOC_POLICY_METADATA_KEY = "etagDocPolicy";
-    public static final String ETAG_POLICY_METADATA_KEY = "etagPolicy";
-    public static final String ETAG_CHECK_QPARAM_KEY = "checkEtag";
+    // other constants
+    public static final String SLASH = "/";
+    public static final String PATCH = "PATCH";
+    public static final String UNDERSCORE = "_";
 
     private final String whereUri;
     private final String whatUri;
@@ -165,9 +174,9 @@ public class RequestContext {
     private final String etag;
 
     private boolean forceEtagCheck = false;
-    
+
     private OperationResult dbOperationResult;
-    
+
     /**
      * the HAL mode
      */
