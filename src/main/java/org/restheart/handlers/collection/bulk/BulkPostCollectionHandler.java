@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.documents;
+package org.restheart.handlers.collection.bulk;
 
 import org.restheart.handlers.collection.*;
 import com.mongodb.BasicDBList;
@@ -72,20 +72,18 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         DBObject content = context.getContent();
 
-        if (content == null) {
-            content = new BasicDBObject();
-        }
-
-        // cannot POST an array
-        if (!(content instanceof BasicDBList)) {
+        // expects an an array
+        if (content == null || !(content instanceof BasicDBList)) {
             throw new RuntimeException("error, this handler expects an array of objects");
         }
 
+        
+        
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             //sendWarnings(result.getHttpCode(), exchange, context);
         } else {
             exchange.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
-        }
+        }    
         
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);

@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 public class DocumentDAO implements Repository {
 
     private final Logger LOGGER = LoggerFactory.getLogger(DocumentDAO.class);
-
+    
     private final MongoClient client;
 
     public DocumentDAO() {
@@ -171,7 +171,7 @@ public class DocumentDAO implements Repository {
                 return optimisticCheckEtag(mcoll, oldDocument, newEtag, requestEtag, HttpStatus.SC_OK);
             } else {
                 Document newDocument = mcoll.find(eq("_id", documentId)).first();
-                
+
                 return new OperationResult(HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
             }
         }
