@@ -29,7 +29,6 @@ import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
-import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_KEY;
 import static org.restheart.handlers.RequestContext.EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.FILTER_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.KEYS_QPARAM_KEY;
@@ -41,6 +40,7 @@ import static org.restheart.handlers.RequestContext.HAL_MODE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
+import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
 
 /**
  *
@@ -293,7 +293,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         rcontext.setCursorAllocationPolicy(eager);
 
         // get and check the doc id type parameter
-        Deque<String> __docIdType = exchange.getQueryParameters().get(DOC_ID_TYPE_KEY);
+        Deque<String> __docIdType = exchange.getQueryParameters().get(DOC_ID_TYPE_QPARAM_KEY);
 
         // default value
         DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OID;
@@ -305,7 +305,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 try {
                     docIdType = DOC_ID_TYPE.valueOf(_docIdType.trim().toUpperCase());
                 } catch (IllegalArgumentException iae) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal " + DOC_ID_TYPE_KEY + " paramenter; must be " + Arrays.toString(DOC_ID_TYPE.values()));
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal " + DOC_ID_TYPE_QPARAM_KEY + " paramenter; must be " + Arrays.toString(DOC_ID_TYPE.values()));
                     return;
                 }
             }
