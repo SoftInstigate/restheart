@@ -17,6 +17,7 @@
  */
 package org.restheart.handlers.injectors;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
@@ -103,16 +104,18 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             return;
         }
 
-        DBObject properties;
+        DBObject content;
 
         if (isNotFormData(contentTypes)) { // json or hal+json
             final String contentString = ChannelReader.read(exchange.getRequestChannel());
 
             try {
                 Object _content = JSON.parse(contentString);
-                
-                if (_content == null || _content instanceof BasicDBObject) {
-                    properties = (DBObject) _content;
+
+                if (_content == null
+                        || _content instanceof BasicDBObject
+                        || _content instanceof BasicDBList) {
+                    content = (DBObject) _content;
                 } else {
                     throw new IllegalArgumentException("JSON parser returned a " + _content.getClass().getSimpleName() + ". Must be a json object.");
                 }
@@ -140,7 +143,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             }
 
             try {
-                properties = extractProperties(formData);
+                content = extractProperties(formData);
             } catch (JSONParseException | IllegalArgumentException ex) {
                 String errMsg = "Invalid data: 'properties' field is not a valid JSON";
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, ex);
@@ -157,39 +160,67 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
             final File file = formData.getFirst(fileField).getFile();
 
-            putFilename(formData.getFirst(fileField).getFileName(), file.getName(), properties);
+            putFilename(formData.getFirst(fileField).getFileName(), file.getName(), content);
 
-            LOGGER.debug("@@@ content = " + properties.toString());
+            LOGGER.debug("@@@ content = " + content.toString());
 
             context.setFile(file);
 
-            injectContentTypeFromFile(properties, file);
+            injectContentTypeFromFile(content, file);
         }
 
-        if (properties == null) {
+        if (content == null) {
             context.setContent(null);
         } else {
-            filterJsonContent(properties, context);
+            if (content instanceof BasicDBList) {
+                ((BasicDBList) content).stream().forEach(_doc -> {
+                    if (_doc instanceof BasicDBObject) {
+                        Object _id = ((BasicDBObject)_doc).get(_ID);
 
-            Object _id = properties.get(_ID);
+                        try {
+                            checkId((BasicDBObject) _doc);
+                        } catch (UnsupportedDocumentIdException udie) {
+                            String errMsg = "the type of _id in content body is not supported: " + (_id == null ? "" : _id.getClass().getSimpleName());
+                            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
+                        }
+                    } else {
+                        String errMsg = "the content must be either an object or an array of objects";
+                        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
+                    }
+                });
+            } else if (content instanceof BasicDBObject) {
+                Object _id = content.get(_ID);
 
-            if (_id != null) {
                 try {
-                    URLUtils.checkId(_id);
+                    checkId((BasicDBObject) content);
                 } catch (UnsupportedDocumentIdException udie) {
-                    String errMsg = "the type of _id in content body is not supported: " + _id.getClass().getSimpleName();
+                    String errMsg = "the type of _id in content body is not supported: " + (_id == null ? "" : _id.getClass().getSimpleName());
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
                     return;
                 }
+
+                filterJsonContent(content, context);
             }
+
+            context.setContent(content);
         }
 
         getNext().handleRequest(exchange, context);
     }
 
+    private Object checkId(BasicDBObject doc) throws UnsupportedDocumentIdException {
+        Object _id = doc.get(_ID);
+
+        if (_id != null) {
+            URLUtils.checkId(_id);
+        }
+
+        return _id;
+    }
+
     /**
      * put the filename into target DBObject
-     * 
+     *
      * If filename is not null and properties don't have a filename then put the
      * filename.
      *
@@ -235,22 +266,21 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     }
 
     /**
-     * Clean-up the JSON content, filtering out reserved keys and injecting the
-     * request content in the ctx
+     * Clean-up the JSON content, filtering out reserved keys
      *
      * @param content
      * @param ctx
      */
     private static void filterJsonContent(final DBObject content, final RequestContext ctx) {
         filterOutReservedKeys(content, ctx);
-        ctx.setContent(content);
     }
 
     /**
      * Filter out reserved keys, removing them from request
      *
-     * The _ prefix is reserved for RESTHeart-generated properties (_id is allowed)
-     * 
+     * The _ prefix is reserved for RESTHeart-generated properties (_id is
+     * allowed)
+     *
      * @param content
      * @param context
      */

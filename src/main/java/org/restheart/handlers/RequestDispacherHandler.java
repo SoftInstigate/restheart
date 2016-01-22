@@ -53,6 +53,10 @@ import org.restheart.handlers.metadata.ResponseTranformerMetadataHandler;
 import org.restheart.handlers.metadata.BeforeWriteCheckMetadataHandler;
 import org.restheart.handlers.metadata.RequestTransformerMetadataHandler;
 import org.restheart.handlers.aggregation.GetAggregationHandler;
+import org.restheart.handlers.documents.BulkDeleteDocumentsHandler;
+import org.restheart.handlers.documents.BulkPatchDocumentsHandler;
+import org.restheart.handlers.documents.BulkPostCollectionHandler;
+import org.restheart.handlers.documents.GetDocumentsHandler;
 import org.restheart.handlers.metadata.AfterWriteCheckMetadataHandler;
 import org.restheart.handlers.schema.JsonSchemaTransformer;
 import org.restheart.handlers.metadata.TransformerHandler;
@@ -118,6 +122,12 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PUT, new BeforeWriteCheckMetadataHandler(new RequestTransformerMetadataHandler(new PutDocumentHandler(new AfterWriteCheckMetadataHandler()))));
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.DELETE, new DeleteDocumentHandler());
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PATCH, new BeforeWriteCheckMetadataHandler(new RequestTransformerMetadataHandler(new PatchDocumentHandler(new AfterWriteCheckMetadataHandler()))));
+        
+        // DOCUMENTS handlers, i.e. bulk operations
+        putPipedHttpHandler(TYPE.DOCUMENTS, METHOD.POST, new BeforeWriteCheckMetadataHandler(new RequestTransformerMetadataHandler(new BulkPostCollectionHandler(new AfterWriteCheckMetadataHandler()))));
+        putPipedHttpHandler(TYPE.DOCUMENTS, METHOD.GET, new GetDocumentsHandler(new ResponseTranformerMetadataHandler(null)));
+        putPipedHttpHandler(TYPE.DOCUMENTS, METHOD.DELETE, new BulkDeleteDocumentsHandler());
+        putPipedHttpHandler(TYPE.DOCUMENTS, METHOD.PATCH, new BeforeWriteCheckMetadataHandler(new RequestTransformerMetadataHandler(new BulkPatchDocumentsHandler(new AfterWriteCheckMetadataHandler()))));
 
         // COLLECTION_INDEXES handlers
         putPipedHttpHandler(TYPE.COLLECTION_INDEXES, METHOD.GET, new GetIndexesHandler());

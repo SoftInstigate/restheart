@@ -17,6 +17,7 @@
  */
 package org.restheart.handlers;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.restheart.db.DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
@@ -33,7 +34,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
-import org.bson.Document;
 import org.restheart.Bootstrapper;
 import org.restheart.db.OperationResult;
 import org.slf4j.Logger;
@@ -123,6 +123,8 @@ public class RequestContext {
     public static final String FS_CHUNKS_SUFFIX = ".chunks";
     public static final String FS_FILES_SUFFIX = ".files";
 
+    public static final String DOCUMENTS_WILDCARD_KEY = "*";
+
     public static final String _INDEXES = "_indexes";
     public static final String _SCHEMAS = "_schemas";
     public static final String _AGGREGATIONS = "_aggrs";
@@ -140,7 +142,7 @@ public class RequestContext {
     private final String whereUri;
     private final String whatUri;
 
-    private final TYPE type;
+    private TYPE type;
     private final METHOD method;
     private final String[] pathTokens;
 
@@ -287,6 +289,8 @@ public class RequestContext {
             type = TYPE.COLLECTION;
         } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.COLLECTION_INDEXES;
+        } else if (pathTokens.length == 4 && pathTokens[3].equals(DOCUMENTS_WILDCARD_KEY)) {
+            type = TYPE.DOCUMENTS;
         } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.INDEX;
         } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
@@ -469,12 +473,13 @@ public class RequestContext {
             return false;
         }
 
-        return documentIdRaw.startsWith(UNDERSCORE)
-                && !documentIdRaw.equalsIgnoreCase(_INDEXES)
+        return (documentIdRaw.startsWith(UNDERSCORE)
+                || documentIdRaw.equalsIgnoreCase(_INDEXES)
+                || (type != TYPE.AGGREGATION && _AGGREGATIONS.equalsIgnoreCase(documentIdRaw)))
                 && !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID)
                 && !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID)
-                && (type != TYPE.AGGREGATION && _AGGREGATIONS.equalsIgnoreCase(documentIdRaw))
-                && !(type == TYPE.AGGREGATION);
+                && !(type == TYPE.AGGREGATION)
+                && !(type == TYPE.DOCUMENTS);
     }
 
     /**
@@ -629,6 +634,10 @@ public class RequestContext {
      */
     public void setContent(DBObject content) {
         this.content = content;
+        
+        if (type == TYPE.COLLECTION && content instanceof BasicDBList) {
+            type = TYPE.DOCUMENTS;
+        }
     }
 
     /**

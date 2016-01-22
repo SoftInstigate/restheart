@@ -32,9 +32,9 @@ import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.STRING;
-import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_KEY;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
 
 /**
  *
@@ -54,23 +54,23 @@ public class URLUtils {
         String uri = "#";
 
         if (docId instanceof String && ObjectId.isValid((String) docId)) {
-            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_KEY).concat("=").concat(DOC_ID_TYPE.STRING.name());
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_QPARAM_KEY).concat("=").concat(DOC_ID_TYPE.STRING.name());
         } else if (docId instanceof String || docId instanceof ObjectId) {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString());
         } else if (docId instanceof Integer) {
-            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_KEY).concat("=").concat(DOC_ID_TYPE.NUMBER.name());
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_QPARAM_KEY).concat("=").concat(DOC_ID_TYPE.NUMBER.name());
         } else if (docId instanceof Long) {
-            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_KEY).concat("=").concat(DOC_ID_TYPE.NUMBER.name());
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_QPARAM_KEY).concat("=").concat(DOC_ID_TYPE.NUMBER.name());
         } else if (docId instanceof Float) {
-            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_KEY).concat("=").concat(DOC_ID_TYPE.NUMBER.name());
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_QPARAM_KEY).concat("=").concat(DOC_ID_TYPE.NUMBER.name());
         } else if (docId instanceof Double) {
-            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_KEY).concat("=").concat(DOC_ID_TYPE.NUMBER.name());
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_QPARAM_KEY).concat("=").concat(DOC_ID_TYPE.NUMBER.name());
         } else if (docId instanceof MinKey) {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat("_MinKey");
         } else if (docId instanceof MaxKey) {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat("_MaxKey");
         } else if (docId instanceof Date) {
-            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(((Date) docId).getTime() + "").concat("?").concat(DOC_ID_TYPE_KEY).concat("=").concat(DOC_ID_TYPE.DATE.name());
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(((Date) docId).getTime() + "").concat("?").concat(DOC_ID_TYPE_QPARAM_KEY).concat("=").concat(DOC_ID_TYPE.DATE.name());
         } else {
             context.addWarning("this resource does not have an URI since the _id is of type " + docId.getClass().getSimpleName());
         }
