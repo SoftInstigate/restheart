@@ -15,9 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.documents;
+package org.restheart.handlers.document.bulk;
 
 import io.undertow.server.HttpServerExchange;
+import org.restheart.db.DocumentDAO;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
@@ -26,22 +27,30 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class GetDocumentsHandler extends PipedHttpHandler {
+public class BulkPatchDocumentsHandler extends PipedHttpHandler {
+
+    private final DocumentDAO documentDAO;
 
     /**
-     * Default ctor
+     * Creates a new instance of PatchDocumentHandler
      */
-    public GetDocumentsHandler() {
-        super();
+    public BulkPatchDocumentsHandler() {
+        this(null, new DocumentDAO());
     }
 
-    /**
-     * Default ctor
-     *
-     * @param next
-     */
-    public GetDocumentsHandler(PipedHttpHandler next) {
+    public BulkPatchDocumentsHandler(DocumentDAO documentDAO) {
+        super(null);
+        this.documentDAO = documentDAO;
+    }
+    
+    public BulkPatchDocumentsHandler(PipedHttpHandler next) {
         super(next);
+        this.documentDAO = new DocumentDAO();
+    }
+    
+    public BulkPatchDocumentsHandler(PipedHttpHandler next, DocumentDAO documentDAO) {
+        super(next);
+        this.documentDAO = documentDAO;
     }
 
     /**

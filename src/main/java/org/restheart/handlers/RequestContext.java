@@ -17,7 +17,6 @@
  */
 package org.restheart.handlers;
 
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.restheart.db.DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
@@ -61,7 +60,7 @@ public class RequestContext {
         AGGREGATION,
         SCHEMA,
         SCHEMA_STORE,
-        DOCUMENTS
+        BULK_DOCUMENTS
     };
 
     public enum METHOD {
@@ -123,7 +122,7 @@ public class RequestContext {
     public static final String FS_CHUNKS_SUFFIX = ".chunks";
     public static final String FS_FILES_SUFFIX = ".files";
 
-    public static final String DOCUMENTS_WILDCARD_KEY = "*";
+    public static final String RESOURCES_WILDCARD_KEY = "*";
 
     public static final String _INDEXES = "_indexes";
     public static final String _SCHEMAS = "_schemas";
@@ -267,7 +266,7 @@ public class RequestContext {
                 type = TYPE.FILES_BUCKET;
             } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
                 type = TYPE.COLLECTION_INDEXES;
-            } else if (pathTokens.length == 4 && !pathTokens[3].equalsIgnoreCase(_INDEXES)) {
+            } else if (pathTokens.length == 4 && !pathTokens[3].equalsIgnoreCase(_INDEXES) && !pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
                 type = TYPE.FILE;
             } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
                 type = TYPE.INDEX;
@@ -289,8 +288,8 @@ public class RequestContext {
             type = TYPE.COLLECTION;
         } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.COLLECTION_INDEXES;
-        } else if (pathTokens.length == 4 && pathTokens[3].equals(DOCUMENTS_WILDCARD_KEY)) {
-            type = TYPE.DOCUMENTS;
+        } else if (pathTokens.length == 4 && pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
+            type = TYPE.BULK_DOCUMENTS;
         } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.INDEX;
         } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
@@ -446,7 +445,8 @@ public class RequestContext {
         return dbName.equals(ADMIN)
                 || dbName.equals(LOCAL)
                 || dbName.startsWith(SYSTEM)
-                || dbName.startsWith(UNDERSCORE);
+                || dbName.startsWith(UNDERSCORE)
+                || dbName.equals(RESOURCES_WILDCARD_KEY);
     }
 
     /**
@@ -459,7 +459,8 @@ public class RequestContext {
                 && !collectionName.equalsIgnoreCase(_SCHEMAS)
                 && (collectionName.startsWith(SYSTEM)
                 || collectionName.startsWith(UNDERSCORE)
-                || collectionName.endsWith(FS_CHUNKS_SUFFIX));
+                || collectionName.endsWith(FS_CHUNKS_SUFFIX)
+                || collectionName.equals(RESOURCES_WILDCARD_KEY));
     }
 
     /**
@@ -479,7 +480,8 @@ public class RequestContext {
                 && !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID)
                 && !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID)
                 && !(type == TYPE.AGGREGATION)
-                && !(type == TYPE.DOCUMENTS);
+                || (documentIdRaw.equals(RESOURCES_WILDCARD_KEY)
+                && !(type == TYPE.BULK_DOCUMENTS));
     }
 
     /**
@@ -634,10 +636,6 @@ public class RequestContext {
      */
     public void setContent(DBObject content) {
         this.content = content;
-        
-        if (type == TYPE.COLLECTION && content instanceof BasicDBList) {
-            type = TYPE.DOCUMENTS;
-        }
     }
 
     /**

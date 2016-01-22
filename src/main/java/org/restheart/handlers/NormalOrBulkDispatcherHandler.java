@@ -15,37 +15,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.documents;
+package org.restheart.handlers;
 
+import com.mongodb.BasicDBList;
+import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.db.DocumentDAO;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
-import org.restheart.utils.HttpStatus;
 
 /**
- *
+ * this handler dispatches request to normal or bulk post collection handlers
+ * depending on the content to be an object or an array
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class BulkDeleteDocumentsHandler extends PipedHttpHandler {
-
-    private final DocumentDAO documentDAO;
-
-    /**
-     * Default ctor
-     */
-    public BulkDeleteDocumentsHandler() {
-        this(new DocumentDAO());
-    }
+public class NormalOrBulkDispatcherHandler extends PipedHttpHandler {
+    private final PipedHttpHandler nextNormal;
+    private final PipedHttpHandler nextBulk;
 
     /**
-     * Creates a new instance of DeleteDocumentHandler
-     *
-     * @param documentDAO
+     * Creates a new instance of PostCollectionHandler
+     * @param nextNormal next handler for normal requests
+     * @param nextBulk next handler for bulk requests
      */
-    public BulkDeleteDocumentsHandler(DocumentDAO documentDAO) {
+    public NormalOrBulkDispatcherHandler(PipedHttpHandler nextNormal, PipedHttpHandler nextBulk) {
         super(null);
-        this.documentDAO = documentDAO;
+        
+        this.nextNormal = nextNormal;
+        this.nextBulk = nextBulk;
     }
 
     /**
@@ -56,17 +50,12 @@ public class BulkDeleteDocumentsHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            //sendWarnings(result.getHttpCode(), exchange, context);
-        } else {
-            exchange.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
-        }
-        
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
+        DBObject content = context.getContent();
 
-        exchange.endExchange();
+        if (content instanceof BasicDBList) {
+            nextBulk.handleRequest(exchange, context);
+        } else {
+            nextNormal.handleRequest(exchange, context);
+        }
     }
 }

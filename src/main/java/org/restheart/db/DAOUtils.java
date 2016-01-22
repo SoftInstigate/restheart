@@ -56,7 +56,6 @@ public class DAOUtils {
             = new UpdateOptions()
             .upsert(true);
     
-
     /**
      * @param rows list of DBObject rows as returned by getDataFromCursor()
      * @return
