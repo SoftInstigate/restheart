@@ -66,9 +66,9 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         addSizeAndTotalPagesProperties(size, context, rep);
 
         addAggregationsLinks(context, rep, requestPath);
-        
+
         addSchemaLinks(rep, context);
-        
+
         addEmbeddedData(embeddedData, rep, requestPath, exchange, context);
 
         if (context.isFullHalMode()) {
@@ -175,38 +175,44 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         for (DBObject d : embeddedData) {
             Object _id = d.get("_id");
 
-            if (RequestContext.isReservedResourceCollection(_id.toString())) {
+            if (_id != null && RequestContext.isReservedResourceCollection(_id.toString())) {
                 rep.addWarning("filtered out reserved resource " + requestPath + "/" + _id.toString());
             } else {
-                Representation nrep = new DocumentRepresentationFactory().getRepresentation(requestPath + "/" + _id.toString(), exchange, context, d);
-
-                if (context.getType() == RequestContext.TYPE.FILES_BUCKET) {
-                    if (context.isFullHalMode()) {
-                        DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.FILE, d);
-                    }
-
-                    rep.addRepresentation("rh:file", nrep);
-                } else if (context.getType() == RequestContext.TYPE.SCHEMA_STORE) {
-                    if (context.isFullHalMode()) {
-                        DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.SCHEMA, d);
-                    }
-
-                    rep.addRepresentation("rh:schema", nrep);
-                    
+                Representation nrep;
+                
+                if (_id == null) {
+                    nrep = new DocumentRepresentationFactory().getRepresentation(requestPath + "/_null", exchange, context, d);
                 } else {
-                    if (context.isFullHalMode()) {
-                        DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.DOCUMENT, d);
-                    }
-
-                    rep.addRepresentation("rh:doc", nrep);
+                    nrep = new DocumentRepresentationFactory().getRepresentation(requestPath + "/" + _id.toString(), exchange, context, d);
                 }
+            
+            if (context.getType() == RequestContext.TYPE.FILES_BUCKET) {
+                if (context.isFullHalMode()) {
+                    DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.FILE, d);
+                }
+
+                rep.addRepresentation("rh:file", nrep);
+            } else if (context.getType() == RequestContext.TYPE.SCHEMA_STORE) {
+                if (context.isFullHalMode()) {
+                    DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.SCHEMA, d);
+                }
+
+                rep.addRepresentation("rh:schema", nrep);
+
+            } else {
+                if (context.isFullHalMode()) {
+                    DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.DOCUMENT, d);
+                }
+
+                rep.addRepresentation("rh:doc", nrep);
             }
         }
     }
-    
-    // TODO this is hardcoded, if name of checker is changed in conf file
-    // method won't work. need to get the name from the configuration
-    private static final String JSON_SCHEMA_NAME = "jsonSchema";
+}
+
+// TODO this is hardcoded, if name of checker is changed in conf file
+// method won't work. need to get the name from the configuration
+private static final String JSON_SCHEMA_NAME = "jsonSchema";
     
     private static void addSchemaLinks(Representation rep, RequestContext context) {
         try {

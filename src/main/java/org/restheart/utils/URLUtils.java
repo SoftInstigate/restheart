@@ -127,6 +127,11 @@ public class URLUtils {
         if (RequestContext.MIN_KEY_ID.equalsIgnoreCase(id)) {
             return new MinKey();
         }
+        
+        // MaxKey can be also determined from the _id
+        if (RequestContext.NULL_KEY_ID.equalsIgnoreCase(id)) {
+            return null;
+        }
 
         try {
             switch (type) {
