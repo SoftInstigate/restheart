@@ -25,6 +25,7 @@ import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Deque;
+import org.bson.BsonObjectId;
 import org.bson.types.MaxKey;
 import org.bson.types.MinKey;
 import org.bson.types.ObjectId;
@@ -59,6 +60,8 @@ public class URLUtils {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_QPARAM_KEY).concat("=").concat(DOC_ID_TYPE.STRING.name());
         } else if (docId instanceof String || docId instanceof ObjectId) {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString());
+        } else if (docId instanceof BsonObjectId) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(((BsonObjectId)docId).getValue().toString());
         } else if (docId instanceof Integer) {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_QPARAM_KEY).concat("=").concat(DOC_ID_TYPE.NUMBER.name());
         } else if (docId instanceof Long) {
