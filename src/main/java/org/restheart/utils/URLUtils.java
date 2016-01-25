@@ -46,14 +46,16 @@ public class URLUtils {
     private static final ObjectSerializer serializer = JSONSerializers.getStrict();
 
     public static String getReferenceLink(RequestContext context, String parentUrl, Object docId) {
-        if (context == null || parentUrl == null || docId == null) {
+        if (context == null || parentUrl == null) {
             LOGGER.error("error creating URI, null arguments: context = {}, parentUrl = {}, docId = {}", context, parentUrl, docId);
             return "";
         }
 
         String uri = "#";
 
-        if (docId instanceof String && ObjectId.isValid((String) docId)) {
+        if  (docId == null) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat("_null");
+        } else if (docId instanceof String && ObjectId.isValid((String) docId)) {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_QPARAM_KEY).concat("=").concat(DOC_ID_TYPE.STRING.name());
         } else if (docId instanceof String || docId instanceof ObjectId) {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString());
