@@ -17,14 +17,18 @@
  */
 package org.restheart.db;
 
+import com.google.common.collect.Lists;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.MongoCollection;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
+import com.mongodb.client.model.UpdateOneModel;
 import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.WriteModel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,6 +37,8 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.bson.Document;
+import org.bson.types.ObjectId;
+import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -168,35 +174,7 @@ public class DAOUtils {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(data);
 
-        List<String> keys;
-
-        keys = data.keySet().stream().filter((String key)
-                -> !UPDATE_OPERATORS.contains(key))
-                .collect(Collectors.toList());
-
-        if (keys != null && !keys.isEmpty()) {
-
-            Document set = new Document();
-
-            keys.stream().forEach((String key)
-                    -> {
-                Object o = data.remove(key);
-
-                set.append(key, o);
-            });
-
-            if (data.get("$set") == null) {
-                data.put("$set", set);
-            } else if (data.get("$set") instanceof Document) {
-                ((Document) data.get("$set"))
-                        .putAll(set);
-            } else if (data.get("$set") instanceof DBObject) { //TODO remove this after migration to mongodb driver 3.2 completes
-                ((DBObject) data.get("$set"))
-                        .putAll(set);
-            } else {
-                LOGGER.warn("count not add properties to $set since request data contains $set property which is not an object: {}", data.get("$set"));
-            }
-        }
+        Document document = getUpdateDocument(data);
 
         if (replace) {
             // here we cannot use the atomic findOneAndReplace because it does
@@ -204,7 +182,7 @@ public class DAOUtils {
             
             Document oldDocument = coll.findOneAndDelete(eq("_id", documentId));
 
-            Document newDocument = coll.findOneAndUpdate(eq("_id", documentId), data, FAU_AFTER_UPSERT_OPS);
+            Document newDocument = coll.findOneAndUpdate(eq("_id", documentId), document, FAU_AFTER_UPSERT_OPS);
             
             if (returnNew) {
                 return newDocument;
@@ -213,10 +191,93 @@ public class DAOUtils {
             }
         } else {
             if (returnNew) {
-                return coll.findOneAndUpdate(eq("_id", documentId), data, FAU_AFTER_UPSERT_OPS);
+                return coll.findOneAndUpdate(eq("_id", documentId), document, FAU_AFTER_UPSERT_OPS);
             } else {
-                return coll.findOneAndUpdate(eq("_id", documentId), data, FAU_UPSERT_OPS);
+                return coll.findOneAndUpdate(eq("_id", documentId), document, FAU_UPSERT_OPS);
             }
         }
+    }
+    
+    public static BulkOperationResult bulkUpsertDocuments(
+            MongoCollection<Document> coll,
+            final List<Document> documents) {
+        Objects.requireNonNull(coll);
+        Objects.requireNonNull(documents);
+        
+        ObjectId newEtag = new ObjectId();
+        
+        List<WriteModel<Document>> wm = getBulkWriteModel(coll, documents, newEtag);
+        
+        BulkWriteResult result = coll.bulkWrite(wm);
+        
+        return new BulkOperationResult(HttpStatus.SC_OK, newEtag, result);
+    }
+    
+    private static List<WriteModel<Document>> getBulkWriteModel(
+            final MongoCollection<Document> mcoll,
+            final List<Document> documents,
+            final ObjectId etag) {
+        Objects.requireNonNull(mcoll);
+        Objects.requireNonNull(documents);
+        
+        List<WriteModel<Document>> updates = new ArrayList<>();
+        
+        documents.stream().forEach((document) -> {
+            // generate new id if missing, will be an insert
+            if (document.get("_id") == null) {
+                document.put("_id", new ObjectId());
+            }
+            
+            // add the _etag
+            document.put("_etag", etag);
+            
+            updates.add(new UpdateOneModel<>(
+                            new Document("_id", document.get("_id")),
+                            getUpdateDocument(document),
+                            new UpdateOptions().upsert(true)
+                    ));
+        });
+        
+        return updates;
+    }
+    
+    private static Document getUpdateDocument(Document document) {
+        Document ret = new Document();
+        
+        // add properties to $set update operator
+        List<String> setKeys;
+
+        setKeys = document.keySet().stream().filter((String key)
+                -> !UPDATE_OPERATORS.contains(key))
+                .collect(Collectors.toList());
+
+        if (setKeys != null && !setKeys.isEmpty()) {
+
+            Document set = new Document();
+
+            setKeys.stream().forEach((String key)
+                    -> {
+                set.append(key, document.get(key));
+            });
+
+            if (document.get("$set") == null) {
+                ret.put("$set", set);
+            } else if (document.get("$set") instanceof Document) {
+                ((Document) ret.get("$set"))
+                        .putAll(set);
+            } else if (document.get("$set") instanceof DBObject) { //TODO remove this after migration to mongodb driver 3.2 completes
+                ((DBObject) ret.get("$set"))
+                        .putAll(set);
+            } else {
+                LOGGER.warn("count not add properties to $set since request data contains $set property which is not an object: {}", document.get("$set"));
+            }
+        }
+        
+        // add other update operators
+        document.keySet().stream().filter((String key)
+                -> UPDATE_OPERATORS.contains(key))
+                .forEach(key -> { ret.put(key, document.get(key)); });
+        
+        return ret;
     }
 }
