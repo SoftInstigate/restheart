@@ -132,6 +132,7 @@ public class RequestContext {
 
     public static final String MAX_KEY_ID = "_MaxKey";
     public static final String MIN_KEY_ID = "_MinKey";
+    public static final String NULL_KEY_ID = "_null";
 
     // other constants
     public static final String SLASH = "/";
@@ -479,6 +480,7 @@ public class RequestContext {
                 && !documentIdRaw.equalsIgnoreCase(_INDEXES)
                 && !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID)
                 && !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID)
+                && !documentIdRaw.equalsIgnoreCase(NULL_KEY_ID)
                 && !(type == TYPE.AGGREGATION)
                 || (documentIdRaw.equals(RESOURCES_WILDCARD_KEY)
                 && !(type == TYPE.BULK_DOCUMENTS));
