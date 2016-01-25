@@ -17,22 +17,18 @@
  */
 package org.restheart.handlers.collection.bulk;
 
-import org.restheart.handlers.collection.*;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import io.undertow.util.HttpString;
-import org.bson.types.ObjectId;
+import org.restheart.db.BulkOperationResult;
 import org.restheart.db.DocumentDAO;
-import org.restheart.db.OperationResult;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
-import static org.restheart.utils.URLUtils.getReferenceLink;
 
 /**
  *
@@ -76,13 +72,31 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
         if (content == null || !(content instanceof BasicDBList)) {
             throw new RuntimeException("error, this handler expects an array of objects");
         }
+        
+        BasicDBList documents = (BasicDBList) content;
 
+        if (!checkIds(exchange, context, documents)) {
+            // if check fails, exchange has been closed
+            return;
+        }
+        
+        BulkOperationResult result = this.documentDAO
+                .bulkUpsertDocumentsPost(context.getDBName(),
+                        context.getCollectionName(),
+                        documents);
+        
+        context.setDbOperationResult(result);
+
+        // inject the etag
+        if (result.getEtag() != null) {
+            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+        }
         
         
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             //sendWarnings(result.getHttpCode(), exchange, context);
         } else {
-            exchange.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
+            exchange.setStatusCode(result.getHttpCode());
         }    
         
         if (getNext() != null) {
@@ -90,5 +104,40 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
         }
         
         exchange.endExchange();
+    }
+    
+    private boolean checkIds(HttpServerExchange exchange, RequestContext context, BasicDBList documents) {
+        boolean ret = true;
+        
+        for (Object document: documents) {
+            if (!checkId(exchange, context, (BasicDBObject) document)) {
+                ret = false;
+                break;
+            }
+        }
+
+        return ret;
+    }
+    
+    private boolean checkId(HttpServerExchange exchange, RequestContext context, BasicDBObject document) {
+        if (document.get("_id") != null && document.get("_id") instanceof String 
+                && RequestContext.isReservedResourceDocument(context.getType(), (String) document.get("_id"))) {
+            ResponseHelper.endExchangeWithMessage(exchange, 
+                    HttpStatus.SC_FORBIDDEN, 
+                    "id is reserved: " + document.get("_id"));
+            return false;
+        }
+
+        if (document.get("_id") == null) {
+            if (!(context.getDocIdType() == DOC_ID_TYPE.OID
+                    || context.getDocIdType() == DOC_ID_TYPE.STRING_OID)) {
+                ResponseHelper.endExchangeWithMessage(exchange, 
+                        HttpStatus.SC_NOT_ACCEPTABLE, 
+                        "_id in content body is mandatory for documents with id type " + context.getDocIdType().name());
+                return false;
+            }
+        }
+        
+        return true;
     }
 }

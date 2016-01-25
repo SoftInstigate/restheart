@@ -17,6 +17,7 @@
  */
 package org.restheart.db;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 import org.bson.Document;
 
@@ -31,6 +32,8 @@ public interface Repository {
     OperationResult upsertDocumentPost(String dbName, String collName, Object documentId, DBObject content, String requestEtag, final boolean checkEtag);
     
     OperationResult deleteDocument(String dbName, String collName, Object documentId, String requestEtag, final boolean checkEtag);
+    
+    OperationResult bulkUpsertDocumentsPost(String dbName, String collName, BasicDBList documents);
     
     /**
      * returns the ETag of the document
