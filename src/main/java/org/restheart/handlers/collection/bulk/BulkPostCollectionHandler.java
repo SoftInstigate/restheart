@@ -24,6 +24,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.restheart.db.BulkOperationResult;
 import org.restheart.db.DocumentDAO;
+import org.restheart.hal.Representation;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
@@ -48,11 +49,11 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
     public BulkPostCollectionHandler(DocumentDAO documentDAO) {
         this(null, new DocumentDAO());
     }
-    
+
     public BulkPostCollectionHandler(PipedHttpHandler next) {
         this(next, new DocumentDAO());
     }
-    
+
     public BulkPostCollectionHandler(PipedHttpHandler next, DocumentDAO documentDAO) {
         super(next);
         this.documentDAO = documentDAO;
@@ -72,44 +73,48 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
         if (content == null || !(content instanceof BasicDBList)) {
             throw new RuntimeException("error, this handler expects an array of objects");
         }
-        
+
         BasicDBList documents = (BasicDBList) content;
 
         if (!checkIds(exchange, context, documents)) {
             // if check fails, exchange has been closed
             return;
         }
-        
+
         BulkOperationResult result = this.documentDAO
                 .bulkUpsertDocumentsPost(context.getDBName(),
                         context.getCollectionName(),
                         documents);
-        
+
         context.setDbOperationResult(result);
 
         // inject the etag
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
-        
-        
+
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             //sendWarnings(result.getHttpCode(), exchange, context);
         } else {
             exchange.setStatusCode(result.getHttpCode());
-        }    
+        }
+
+        BulkPostRepresentationFactory bprf = new BulkPostRepresentationFactory();
+        
+        bprf.sendRepresentation(exchange, context, 
+                bprf.getRepresentation(exchange, context, result));
         
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }
-        
+
         exchange.endExchange();
     }
-    
+
     private boolean checkIds(HttpServerExchange exchange, RequestContext context, BasicDBList documents) {
         boolean ret = true;
-        
-        for (Object document: documents) {
+
+        for (Object document : documents) {
             if (!checkId(exchange, context, (BasicDBObject) document)) {
                 ret = false;
                 break;
@@ -118,12 +123,12 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
 
         return ret;
     }
-    
+
     private boolean checkId(HttpServerExchange exchange, RequestContext context, BasicDBObject document) {
-        if (document.get("_id") != null && document.get("_id") instanceof String 
+        if (document.get("_id") != null && document.get("_id") instanceof String
                 && RequestContext.isReservedResourceDocument(context.getType(), (String) document.get("_id"))) {
-            ResponseHelper.endExchangeWithMessage(exchange, 
-                    HttpStatus.SC_FORBIDDEN, 
+            ResponseHelper.endExchangeWithMessage(exchange,
+                    HttpStatus.SC_FORBIDDEN,
                     "id is reserved: " + document.get("_id"));
             return false;
         }
@@ -131,13 +136,13 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
         if (document.get("_id") == null) {
             if (!(context.getDocIdType() == DOC_ID_TYPE.OID
                     || context.getDocIdType() == DOC_ID_TYPE.STRING_OID)) {
-                ResponseHelper.endExchangeWithMessage(exchange, 
-                        HttpStatus.SC_NOT_ACCEPTABLE, 
+                ResponseHelper.endExchangeWithMessage(exchange,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
                         "_id in content body is mandatory for documents with id type " + context.getDocIdType().name());
                 return false;
             }
         }
-        
+
         return true;
     }
 }
