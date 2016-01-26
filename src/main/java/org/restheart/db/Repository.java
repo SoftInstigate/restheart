@@ -35,6 +35,8 @@ public interface Repository {
     
     BulkOperationResult bulkUpsertDocumentsPost(String dbName, String collName, BasicDBList documents);
     
+    BulkOperationResult bulkPatchDocuments(String dbName, String collName, Document filter, Document data);
+    
     BulkOperationResult bulkDeleteDocuments(String dbName, String collName, Document filter);
     
     /**
