@@ -17,7 +17,6 @@
  */
 package org.restheart.db;
 
-import com.google.common.collect.Lists;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;

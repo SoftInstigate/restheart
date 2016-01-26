@@ -15,41 +15,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.document.bulk;
+package org.restheart.handlers.bulk;
 
 import io.undertow.server.HttpServerExchange;
+import org.restheart.db.BulkOperationResult;
 import org.restheart.db.DocumentDAO;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.utils.HttpStatus;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class BulkPatchDocumentsHandler extends PipedHttpHandler {
+public class BulkDeleteDocumentsHandler extends PipedHttpHandler {
 
     private final DocumentDAO documentDAO;
 
     /**
-     * Creates a new instance of PatchDocumentHandler
+     * Default ctor
      */
-    public BulkPatchDocumentsHandler() {
-        this(null, new DocumentDAO());
+    public BulkDeleteDocumentsHandler() {
+        this(new DocumentDAO());
     }
 
-    public BulkPatchDocumentsHandler(DocumentDAO documentDAO) {
+    /**
+     * Creates a new instance of DeleteDocumentHandler
+     *
+     * @param documentDAO
+     */
+    public BulkDeleteDocumentsHandler(DocumentDAO documentDAO) {
         super(null);
-        this.documentDAO = documentDAO;
-    }
-    
-    public BulkPatchDocumentsHandler(PipedHttpHandler next) {
-        super(next);
-        this.documentDAO = new DocumentDAO();
-    }
-    
-    public BulkPatchDocumentsHandler(PipedHttpHandler next, DocumentDAO documentDAO) {
-        super(next);
         this.documentDAO = documentDAO;
     }
 
@@ -61,12 +56,24 @@ public class BulkPatchDocumentsHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        // send the warnings if any (and in case no_content change the return code to ok
+        BulkOperationResult result = this.documentDAO
+                .bulkDeleteDocuments(
+                        context.getDBName(), 
+                        context.getCollectionName(), 
+                        context.getComposedFilters());
+
+        context.setDbOperationResult(result);
+
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             //sendWarnings(result.getHttpCode(), exchange, context);
         } else {
-            exchange.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
+            exchange.setStatusCode(result.getHttpCode());
         }
+
+        BulkResultRepresentationFactory bprf = new BulkResultRepresentationFactory();
+        
+        bprf.sendRepresentation(exchange, context, 
+                bprf.getRepresentation(exchange, context, result));
         
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);

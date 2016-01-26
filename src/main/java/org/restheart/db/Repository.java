@@ -33,7 +33,9 @@ public interface Repository {
     
     OperationResult deleteDocument(String dbName, String collName, Object documentId, String requestEtag, final boolean checkEtag);
     
-    OperationResult bulkUpsertDocumentsPost(String dbName, String collName, BasicDBList documents);
+    BulkOperationResult bulkUpsertDocumentsPost(String dbName, String collName, BasicDBList documents);
+    
+    BulkOperationResult bulkDeleteDocuments(String dbName, String collName, Document filter);
     
     /**
      * returns the ETag of the document

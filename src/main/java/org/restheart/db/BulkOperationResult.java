@@ -24,18 +24,18 @@ import com.mongodb.bulk.BulkWriteResult;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class BulkOperationResult extends OperationResult {
-    private final BulkWriteResult writeResult;
+    private final BulkWriteResult bulkResult;
     
-    public BulkOperationResult(int httpCode, Object etag, BulkWriteResult writeResult) {
+    public BulkOperationResult(int httpCode, Object etag, BulkWriteResult bulkResult) {
         super(httpCode, etag);
         
-        this.writeResult = writeResult;
+        this.bulkResult = bulkResult;
     }
 
     /**
      * @return the writeResult
      */
-    public BulkWriteResult getWriteResult() {
-        return writeResult;
+    public BulkWriteResult getBulkResult() {
+        return bulkResult;
     }
 }

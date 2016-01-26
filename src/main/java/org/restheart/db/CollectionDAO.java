@@ -164,6 +164,7 @@ class CollectionDAO {
         }
 
         // apply filter
+        // TODO refactoring mongodb 3.2 driver. use RequestContext.getComposedFilters()
         final BasicDBObject query = new BasicDBObject();
 
         if (filters != null) {

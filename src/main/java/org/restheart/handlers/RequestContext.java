@@ -17,8 +17,10 @@
  */
 package org.restheart.handlers;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.util.JSON;
 import org.restheart.db.DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
@@ -33,6 +35,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
+import org.bson.BsonArray;
+import org.bson.Document;
 import org.restheart.Bootstrapper;
 import org.restheart.db.OperationResult;
 import org.slf4j.Logger;
@@ -561,6 +565,33 @@ public class RequestContext {
      */
     public Deque<String> getFilter() {
         return filter;
+    }
+    
+    /**
+     * 
+     * @return the $and composed filter qparam values
+     */
+    public Document getComposedFilters() {
+        // apply filter
+        final Document query = new Document();
+
+        if (filter != null) {
+            if (filter.size() > 1) {
+                List<Document> _filters = new ArrayList();
+                
+                filter.stream().forEach((String f) -> {
+                    _filters.add(Document.parse(f));
+                });
+
+                query.put("$and", _filters);
+            } else if (filter.size() == 1) {
+                query.putAll(Document.parse(filter.getFirst()));  // this can throw JSONParseException for invalid filter parameters
+            } else {
+                return null;
+            }
+        }
+        
+        return query;
     }
 
     /**
