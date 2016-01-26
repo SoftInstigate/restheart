@@ -41,6 +41,8 @@ import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
+import org.restheart.handlers.RequestContext.METHOD;
+import org.restheart.handlers.RequestContext.TYPE;
 
 /**
  *
@@ -93,7 +95,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                     "illegal database name, see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
             return;
         }
-        
+
         // check collection name to be a valid mongodb name
         if (rcontext.getCollectionName() != null
                 && rcontext.isCollectionNameInvalid()) {
@@ -101,8 +103,8 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                     "illegal collection name, see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
             return;
         }
-        
-         // check collection name to be a valid mongodb name
+
+        // check collection name to be a valid mongodb name
         if (rcontext.isReservedResource()) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN,
                     "reserved resource");
@@ -226,7 +228,12 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                         ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
                                 "illegal filter paramenter, it is not a json object: " + f + " => " + f.getClass().getSimpleName());
                         return true;
+                    } else if (((BSONObject) _filter).keySet().isEmpty()) {
+                        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                                "illegal filter paramenter (empty json object)");
+                        return true;
                     }
+
                 } catch (Throwable t) {
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
                             "illegal filter paramenter: " + f, t);
@@ -239,6 +246,16 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             }
 
             rcontext.setFilter(exchange.getQueryParameters().get(FILTER_QPARAM_KEY));
+        }
+
+        // filter qparam is mandatory for bulk DELETE and PATCH 
+        if (rcontext.getType() == TYPE.BULK_DOCUMENTS
+                && (rcontext.getMethod() == METHOD.DELETE
+                || rcontext.getMethod() == METHOD.PATCH)
+                && (filters == null || filters.isEmpty())) {
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                    "filter paramenter is mandatory for bulk write requests");
+            return;
         }
 
         // get and check qarvs parameter
