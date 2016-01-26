@@ -47,7 +47,13 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
     public Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
-        final Representation rep = createRepresentation(exchange, context, requestPath);
+        final Representation rep;
+
+        if (context.isFullHalMode()) {
+            rep = createRepresentation(exchange, context, requestPath);
+        } else {
+            rep = createRepresentation(exchange, context, null);
+        }
 
         addSizeAndTotalPagesProperties(size, context, rep);
 
@@ -63,11 +69,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
             //curies
             rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
                     + "/{rel}.html", true), true);
-        } else {
-            // empty curies section. this is needed due to HAL browser issue
-            // https://github.com/mikekelly/hal-browser/issues/71
-            rep.addLinkArray("curies");
-        }
+        } 
 
         return rep;
     }
@@ -103,16 +105,18 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
             Object _id = d.get("_id");
 
             if (_id != null && (_id instanceof String || _id instanceof ObjectId)) {
-                Representation nrep;
-
-                if (trailingSlash) {
-                    nrep = new Representation(requestPath + _id.toString());
-                } else {
-                    nrep = new Representation(requestPath + "/" + _id.toString());
-                }
+                final Representation nrep;
 
                 if (context.isFullHalMode()) {
+                    if (trailingSlash) {
+                        nrep = new Representation(requestPath + _id.toString());
+                    } else {
+                        nrep = new Representation(requestPath + "/" + _id.toString());
+                    }
+
                     DBRepresentationFactory.addSpecialProperties(nrep, RequestContext.TYPE.DB, d);
+                } else {
+                    nrep = new Representation();
                 }
 
                 nrep.addProperties(d);
