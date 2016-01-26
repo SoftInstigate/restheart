@@ -88,10 +88,10 @@ public class HALUtils {
                 // i.e. the url contains the count paramenter
                 if (totalPages > 0) {
                     if (page < totalPages) {
-                        links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
+                        links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "") + (totalPages == 1 ? "?pagesize=" : "&pagesize=") + pagesize + "&" + queryStringNoPagingProps);
                         links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
                     } else {
-                        links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
+                        links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "") + (totalPages == 1 ? "?pagesize=" : "&pagesize=") + pagesize + "&" + queryStringNoPagingProps);
                     }
                 }
 
