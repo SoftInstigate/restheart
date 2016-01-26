@@ -28,12 +28,12 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.DeleteManyModel;
+import com.mongodb.client.model.UpdateManyModel;
 import com.mongodb.client.model.WriteModel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.bson.Document;
-import org.bson.conversions.Bson;
 import org.restheart.utils.HttpStatus;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -260,6 +260,23 @@ public class DocumentDAO implements Repository {
         deletes.add(new DeleteManyModel(filter));
         
         BulkWriteResult result = mcoll.bulkWrite(deletes);
+        
+        return new BulkOperationResult(HttpStatus.SC_OK, null, result);
+    }
+    
+    @Override
+    public BulkOperationResult bulkPatchDocuments(String dbName, String collName, Document filter, Document data) {
+        MongoDatabase mdb = client.getDatabase(dbName);
+        MongoCollection<Document> mcoll = mdb.getCollection(collName);
+        
+        List<WriteModel<Document>> patches = new ArrayList<>();
+        
+        patches.add(new UpdateManyModel(
+                filter, 
+                DAOUtils.getUpdateDocument(data),
+                DAOUtils.U_NOT_UPSERT_OPS));
+        
+        BulkWriteResult result = mcoll.bulkWrite(patches);
         
         return new BulkOperationResult(HttpStatus.SC_OK, null, result);
     }

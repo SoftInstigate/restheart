@@ -50,21 +50,21 @@ import org.slf4j.LoggerFactory;
  */
 public class DAOUtils {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(DAOUtils.class);
+    public final static Logger LOGGER = LoggerFactory.getLogger(DAOUtils.class);
 
-    private final static FindOneAndUpdateOptions FAU_UPSERT_OPS
+    public final static FindOneAndUpdateOptions FAU_UPSERT_OPS
             = new FindOneAndUpdateOptions()
             .upsert(true);
     
-    private final static FindOneAndUpdateOptions FAU_AFTER_UPSERT_OPS
+    public final static FindOneAndUpdateOptions FAU_AFTER_UPSERT_OPS
             = new FindOneAndUpdateOptions()
             .upsert(true).returnDocument(ReturnDocument.AFTER);
 
-    private final static UpdateOptions U_UPSERT_OPS
+    public final static UpdateOptions U_UPSERT_OPS
             = new UpdateOptions()
             .upsert(true);
     
-    private final static UpdateOptions U_NOT_UPSERT_OPS
+    public final static UpdateOptions U_NOT_UPSERT_OPS
             = new UpdateOptions()
             .upsert(true);
 
@@ -275,7 +275,12 @@ public class DAOUtils {
         return updates;
     }
 
-    private static Document getUpdateDocument(Document document) {
+    /**
+     * 
+     * @param document
+     * @return the document for update operation, with proper update operators
+     */
+    public static Document getUpdateDocument(Document document) {
         Document ret = new Document();
 
         // add properties to $set update operator

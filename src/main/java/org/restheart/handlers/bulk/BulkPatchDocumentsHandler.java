@@ -18,6 +18,8 @@
 package org.restheart.handlers.bulk;
 
 import io.undertow.server.HttpServerExchange;
+import org.bson.Document;
+import org.restheart.db.BulkOperationResult;
 import org.restheart.db.DocumentDAO;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -61,12 +63,33 @@ public class BulkPatchDocumentsHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        // send the warnings if any (and in case no_content change the return code to ok
+        //TODO remove this after migration to mongodb driver 3.2 completes
+        Document dcontent;
+        if (context.getContent() != null) {
+            dcontent = new Document(context.getContent().toMap());
+        } else {
+            dcontent = new Document();
+        }
+            
+        BulkOperationResult result = this.documentDAO
+                .bulkPatchDocuments(
+                        context.getDBName(), 
+                        context.getCollectionName(), 
+                        context.getComposedFilters(),
+                        dcontent);
+
+        context.setDbOperationResult(result);
+
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             //sendWarnings(result.getHttpCode(), exchange, context);
         } else {
-            exchange.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
+            exchange.setStatusCode(result.getHttpCode());
         }
+
+        BulkResultRepresentationFactory bprf = new BulkResultRepresentationFactory();
+        
+        bprf.sendRepresentation(exchange, context, 
+                bprf.getRepresentation(exchange, context, result));
         
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
