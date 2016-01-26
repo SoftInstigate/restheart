@@ -781,17 +781,20 @@ public final class Bootstrapper {
                             .addWelcomeFiles(welcomeFile)
                             .setDirectoryListingEnabled(false);
 
+                    PipedHttpHandler ph;
+                    
                     if (secured) {
-                        paths.addPrefixPath(where,
-                                new RequestLoggerHandler(
+                        ph = new RequestLoggerHandler(
                                         new SecurityHandlerDispacher(
                                                 new PipedWrappingHandler(null, handler),
                                                 identityManager,
-                                                accessManager)));
+                                                accessManager));
                     } else {
-                        paths.addPrefixPath(where, new RequestLoggerHandler(handler));
+                        ph = new RequestLoggerHandler(handler);
                     }
-
+                    
+                    paths.addPrefixPath(where, ph);
+                    
                     LOGGER.info("URL {} bound to static resources {}. Access Manager: {}", where, path, secured);
 
                 } catch (Throwable t) {
