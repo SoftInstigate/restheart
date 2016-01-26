@@ -58,13 +58,18 @@ public class BulkPostRepresentationFactory extends AbstractRepresentationFactory
             final String requestPath) {
 
         BulkWriteResult wr = result.getWriteResult();
-        
-        rep.addProperty("_inserted", wr.getUpserts().size());
 
+        if (wr.getUpserts() != null) {
+            rep.addProperty("_inserted", wr.getUpserts().size());
+        } else {
+            rep.addProperty("_inserted", 0);
+        }
+        
         if (wr.isModifiedCountAvailable()) {
             rep.addProperty("_modified", wr.getModifiedCount());
         }
 
+        // add links to new, upserted documents
         result.getWriteResult().getUpserts().stream().
                 forEach(update -> {
                     rep.addLink(
