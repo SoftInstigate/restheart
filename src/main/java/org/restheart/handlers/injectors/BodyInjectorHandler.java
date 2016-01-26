@@ -123,6 +123,14 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON", ex);
                 return;
             }
+
+            // check id
+            if (content != null) {
+                if (!checkSpecialStringId(content.get("_id"))) {
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Reserved string id " + content.get("_id"));
+                    return;
+                }
+            }
         } else { // multipart form -> file
             FormDataParser parser = this.formParserFactory.createParser(exchange);
 
@@ -162,9 +170,13 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
             putFilename(formData.getFirst(fileField).getFileName(), file.getName(), content);
 
-            LOGGER.debug("@@@ content = " + content.toString());
-
             context.setFile(file);
+
+            // check id
+            if (!checkSpecialStringId(content.get("_id"))) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Reserved string id " + content.get("_id"));
+                return;
+            }
 
             injectContentTypeFromFile(content, file);
         }
@@ -175,7 +187,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             if (content instanceof BasicDBList) {
                 ((BasicDBList) content).stream().forEach(_doc -> {
                     if (_doc instanceof BasicDBObject) {
-                        Object _id = ((BasicDBObject)_doc).get(_ID);
+                        Object _id = ((BasicDBObject) _doc).get(_ID);
 
                         try {
                             checkId((BasicDBObject) _doc);
@@ -263,6 +275,28 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         return contentTypes.stream()
                 .noneMatch(ct -> ct.startsWith(Representation.APP_FORM_URLENCODED_TYPE)
                         || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE));
+    }
+
+    /**
+     * Checks the _id in POST requests; it cannot be a string having a special
+     * meaning e.g _null, since the URI /db/coll/_null refers to the document
+     * with _id: null
+     *
+     * @param id
+     * @return false if the id is not valid
+     */
+    public static boolean checkSpecialStringId(Object id) {
+        if (id == null || !(id instanceof String)) {
+            return true;
+        }
+
+        String _id = (String) id;
+
+        return !(RequestContext.MAX_KEY_ID.equalsIgnoreCase(_id)
+                || RequestContext.MIN_KEY_ID.equalsIgnoreCase(_id)
+                || RequestContext.NULL_KEY_ID.equalsIgnoreCase(_id)
+                || RequestContext.TRUE_KEY_ID.equalsIgnoreCase(_id)
+                || RequestContext.FALSE_KEY_ID.equalsIgnoreCase(_id));
     }
 
     /**

@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Deque;
 import org.bson.BsonObjectId;
+import org.bson.BsonString;
 import org.bson.types.MaxKey;
 import org.bson.types.MinKey;
 import org.bson.types.ObjectId;
@@ -43,8 +44,8 @@ import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
  */
 public class URLUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(URLUtils.class);
-    
-    private static final ObjectSerializer serializer = JSONSerializers.getStrict();
+
+    private static final ObjectSerializer SERIALIZER = JSONSerializers.getStrict();
 
     public static String getReferenceLink(RequestContext context, String parentUrl, Object docId) {
         if (context == null || parentUrl == null) {
@@ -54,14 +55,16 @@ public class URLUtils {
 
         String uri = "#";
 
-        if  (docId == null) {
+        if (docId == null) {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat("_null");
         } else if (docId instanceof String && ObjectId.isValid((String) docId)) {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_QPARAM_KEY).concat("=").concat(DOC_ID_TYPE.STRING.name());
         } else if (docId instanceof String || docId instanceof ObjectId) {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString());
         } else if (docId instanceof BsonObjectId) {
-            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(((BsonObjectId)docId).getValue().toString());
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(((BsonObjectId) docId).getValue().toString());
+        } else if (docId instanceof BsonString) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(((BsonString) docId).getValue());
         } else if (docId instanceof Integer) {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_QPARAM_KEY).concat("=").concat(DOC_ID_TYPE.NUMBER.name());
         } else if (docId instanceof Long) {
@@ -76,6 +79,8 @@ public class URLUtils {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat("_MaxKey");
         } else if (docId instanceof Date) {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(((Date) docId).getTime() + "").concat("?").concat(DOC_ID_TYPE_QPARAM_KEY).concat("=").concat(DOC_ID_TYPE.DATE.name());
+        } else if (docId instanceof Boolean) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat("_" + (boolean) docId);
         } else {
             context.addWarning("this resource does not have an URI since the _id is of type " + docId.getClass().getSimpleName());
         }
@@ -85,7 +90,7 @@ public class URLUtils {
 
     public static DOC_ID_TYPE checkId(Object id) throws UnsupportedDocumentIdException {
         if (id == null) {
-            return null;
+            return DOC_ID_TYPE.NULL;
         }
 
         String clazz = id.getClass().getName();
@@ -93,6 +98,8 @@ public class URLUtils {
         switch (clazz) {
             case "java.lang.String":
                 return DOC_ID_TYPE.STRING_OID;
+            case "java.lang.Boolean":
+                return DOC_ID_TYPE.BOOLEAN;
             case "org.bson.types.ObjectId":
                 return DOC_ID_TYPE.OID;
             case "java.lang.Integer":
@@ -114,7 +121,18 @@ public class URLUtils {
         }
     }
 
-    public static Object getId(String id, DOC_ID_TYPE type) throws UnsupportedDocumentIdException {
+    /**
+     * Gets the id as object from its string representation in the document URI
+     * NOTE: for POST the special string id are checked by
+     * BodyInjectorHandler.checkSpecialStringId()
+     *
+     * @param id
+     * @param type
+     * @return
+     * @throws UnsupportedDocumentIdException
+     */
+    public static Object getDocumentIdFromURI(String id, DOC_ID_TYPE type)
+            throws UnsupportedDocumentIdException {
         if (id == null) {
             return null;
         }
@@ -132,10 +150,20 @@ public class URLUtils {
         if (RequestContext.MIN_KEY_ID.equalsIgnoreCase(id)) {
             return new MinKey();
         }
-        
-        // MaxKey can be also determined from the _id
+
+        // null can be also determined from the _id
         if (RequestContext.NULL_KEY_ID.equalsIgnoreCase(id)) {
             return null;
+        }
+
+        // true can be also determined from the _id
+        if (RequestContext.TRUE_KEY_ID.equalsIgnoreCase(id)) {
+            return true;
+        }
+
+        // false can be also determined from the _id
+        if (RequestContext.FALSE_KEY_ID.equalsIgnoreCase(id)) {
+            return false;
         }
 
         try {
@@ -154,6 +182,8 @@ public class URLUtils {
                     return new MaxKey();
                 case DATE:
                     return getIdAsDate(id);
+                case BOOLEAN:
+                    return getIdAsBoolean(id);
             }
         } catch (IllegalArgumentException iar) {
             throw new UnsupportedDocumentIdException(iar);
@@ -238,15 +268,15 @@ public class URLUtils {
         DOC_ID_TYPE docIdType = URLUtils.checkId(id);
 
         StringBuilder sb = new StringBuilder();
-        
+
         sb.append("/").append(dbName).append("/").append(collName).append("/").append(id);
 
-        if (docIdType == DOC_ID_TYPE.STRING_OID && ObjectId.isValid((String)id)) {
+        if (docIdType == DOC_ID_TYPE.STRING_OID && ObjectId.isValid((String) id)) {
             sb.append("?id_type=STRING");
         } else if (docIdType != DOC_ID_TYPE.STRING_OID) {
             sb.append("?id_type=").append(docIdType.name());
         }
-        
+
         return context.mapUri(sb.toString());
     }
 
@@ -373,8 +403,20 @@ public class URLUtils {
         } catch (NumberFormatException nfe) {
             throw new IllegalArgumentException("The id is not a valid date (number of milliseconds since the epoch) " + id, nfe);
         }
-        
+
         return ret;
+    }
+
+    private static Boolean getIdAsBoolean(String id) throws IllegalArgumentException {
+        if (id.equals(RequestContext.TRUE_KEY_ID)) {
+            return true;
+        }
+
+        if (id.equals(RequestContext.FALSE_KEY_ID)) {
+            return false;
+        }
+
+        return null;
     }
 
     private static ObjectId getIdAsObjectId(String id) throws IllegalArgumentException {
@@ -397,7 +439,7 @@ public class URLUtils {
         if (id == null) {
             return null;
         } else {
-            return JsonUtils.minify(serializer.serialize(id).replace("\"", "'"));
+            return JsonUtils.minify(SERIALIZER.serialize(id).replace("\"", "'"));
         }
     }
 

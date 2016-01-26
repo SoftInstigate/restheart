@@ -34,6 +34,8 @@ import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 import org.bson.Document;
+import org.bson.types.MaxKey;
+import org.bson.types.MinKey;
 import org.restheart.Bootstrapper;
 import org.restheart.db.OperationResult;
 import org.slf4j.Logger;
@@ -75,13 +77,15 @@ public class RequestContext {
     };
 
     public enum DOC_ID_TYPE {
-        OID, // ObjectId
+        OID,        // ObjectId
         STRING_OID, // String eventually converted to ObjectId in case ObjectId.isValid() is true
-        STRING, // String
-        NUMBER, // any Number (including mongodb NumberLong)
-        DATE, // Date
-        MINKEY, //org.bson.types.MinKey;
-        MAXKEY      // org.bson.types.MaxKey
+        STRING,     // String
+        NUMBER,     // any Number (including mongodb NumberLong)
+        DATE,       // Date
+        MINKEY,     // org.bson.types.MinKey;
+        MAXKEY,     // org.bson.types.MaxKey
+        NULL,       // null
+        BOOLEAN     // boolean
     }
 
     public enum HAL_MODE {
@@ -134,6 +138,8 @@ public class RequestContext {
     public static final String MAX_KEY_ID = "_MaxKey";
     public static final String MIN_KEY_ID = "_MinKey";
     public static final String NULL_KEY_ID = "_null";
+    public static final String TRUE_KEY_ID = "_true";
+    public static final String FALSE_KEY_ID = "_false";
 
     // other constants
     public static final String SLASH = "/";
@@ -482,6 +488,8 @@ public class RequestContext {
                 && !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID)
                 && !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID)
                 && !documentIdRaw.equalsIgnoreCase(NULL_KEY_ID)
+                && !documentIdRaw.equalsIgnoreCase(TRUE_KEY_ID)
+                && !documentIdRaw.equalsIgnoreCase(FALSE_KEY_ID)
                 && !(type == TYPE.AGGREGATION)
                 || (documentIdRaw.equals(RESOURCES_WILDCARD_KEY)
                 && !(type == TYPE.BULK_DOCUMENTS));
