@@ -20,6 +20,7 @@ package org.restheart.handlers.metadata;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -76,11 +77,13 @@ public class AfterWriteCheckMetadataHandler extends BeforeWriteCheckMetadataHand
                 }
 
                 Document oldData = context.getDbOperationResult().getOldData();
+                
+                Object newEtag = context.getDbOperationResult().getEtag();
 
                 if (oldData != null) {
                     // document was updated, restore old one
-                    DAOUtils.updateDocument(coll, oldData.get("_id"), oldData, true);
-
+                    DAOUtils.restoreDocument(coll, oldData.get("_id"), oldData, newEtag);
+                    
                     // add to response old etag
                     if (oldData.get("$set") != null
                             && oldData.get("$set") instanceof Document
@@ -97,7 +100,7 @@ public class AfterWriteCheckMetadataHandler extends BeforeWriteCheckMetadataHand
                     Object newId = context.getDbOperationResult()
                             .getNewData().get("_id");
 
-                    coll.deleteOne(eq("_id", newId));
+                    coll.deleteOne(and(eq("_id", newId), eq("_etag", newEtag)));
                 }
 
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, sb.toString());

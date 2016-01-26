@@ -22,12 +22,14 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.MongoCollection;
+import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.model.UpdateOneModel;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
+import com.mongodb.client.result.UpdateResult;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,6 +38,7 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -61,6 +64,10 @@ public class DAOUtils {
             = new UpdateOptions()
             .upsert(true);
     
+    private final static UpdateOptions U_NOT_UPSERT_OPS
+            = new UpdateOptions()
+            .upsert(true);
+
     /**
      * @param rows list of DBObject rows as returned by getDataFromCursor()
      * @return
@@ -165,10 +172,14 @@ public class DAOUtils {
     private static final List<String> UPDATE_OPERATORS
             = Arrays.asList(_UPDATE_OPERATORS);
 
-    public static Document updateDocument(MongoCollection<Document> coll, Object documentId, Document data, boolean replace) {
+    public static Document updateDocument(
+            MongoCollection<Document> coll,
+            Object documentId,
+            Document data,
+            boolean replace) {
         return updateDocument(coll, documentId, data, replace, false);
     }
-    
+
     public static Document updateDocument(MongoCollection<Document> coll, Object documentId, Document data, boolean replace, boolean returnNew) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(data);
@@ -178,71 +189,95 @@ public class DAOUtils {
         if (replace) {
             // here we cannot use the atomic findOneAndReplace because it does
             // not support update operators.
-            
+
             Document oldDocument = coll.findOneAndDelete(eq("_id", documentId));
 
             Document newDocument = coll.findOneAndUpdate(eq("_id", documentId), document, FAU_AFTER_UPSERT_OPS);
-            
+
             if (returnNew) {
                 return newDocument;
             } else {
                 return oldDocument;
             }
+        } else if (returnNew) {
+            return coll.findOneAndUpdate(eq("_id", documentId), document, FAU_AFTER_UPSERT_OPS);
         } else {
-            if (returnNew) {
-                return coll.findOneAndUpdate(eq("_id", documentId), document, FAU_AFTER_UPSERT_OPS);
-            } else {
-                return coll.findOneAndUpdate(eq("_id", documentId), document, FAU_UPSERT_OPS);
-            }
+            return coll.findOneAndUpdate(eq("_id", documentId), document, FAU_UPSERT_OPS);
         }
     }
-    
+
+    public static boolean restoreDocument(
+            MongoCollection<Document> coll,
+            Object documentId,
+            Document data,
+            Object etag) {
+        Objects.requireNonNull(coll);
+        Objects.requireNonNull(documentId);
+        Objects.requireNonNull(data);
+
+        Bson filter;
+
+        if (etag == null) {
+            filter = eq("_id", documentId);
+        } else {
+            filter = and(eq("_id", documentId), eq("_etag", etag));
+        }
+
+        UpdateResult result = coll.replaceOne(filter, data, U_NOT_UPSERT_OPS);
+        
+        if (result.isModifiedCountAvailable()) {
+            return result.getModifiedCount() == 1;
+        } else {
+            return true;
+        }
+    }
+
     public static BulkOperationResult bulkUpsertDocuments(
             MongoCollection<Document> coll,
             final List<Document> documents) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(documents);
-        
+
         ObjectId newEtag = new ObjectId();
-        
+
         List<WriteModel<Document>> wm = getBulkWriteModel(coll, documents, newEtag);
-        
+
         BulkWriteResult result = coll.bulkWrite(wm);
-        
+
         return new BulkOperationResult(HttpStatus.SC_OK, newEtag, result);
     }
-    
+
     private static List<WriteModel<Document>> getBulkWriteModel(
             final MongoCollection<Document> mcoll,
             final List<Document> documents,
             final ObjectId etag) {
         Objects.requireNonNull(mcoll);
         Objects.requireNonNull(documents);
-        
+
         List<WriteModel<Document>> updates = new ArrayList<>();
-        
+
         documents.stream().forEach((document) -> {
             // generate new id if missing, will be an insert
             if (document.get("_id") == null) {
                 document.put("_id", new ObjectId());
             }
-            
+
             // add the _etag
             document.put("_etag", etag);
-            
+
             updates.add(new UpdateOneModel<>(
-                            new Document("_id", document.get("_id")),
-                            getUpdateDocument(document),
-                            new UpdateOptions().upsert(true)
-                    ));
+                    new Document("_id", document.get("_id")),
+                    getUpdateDocument(document),
+                    new UpdateOptions().upsert(true)
+            ));
         });
-        
+
         return updates;
     }
-    
+
     private static Document getUpdateDocument(Document document) {
         Document ret = new Document();
-        
+
         // add properties to $set update operator
         List<String> setKeys;
 
@@ -271,12 +306,14 @@ public class DAOUtils {
                 LOGGER.warn("count not add properties to $set since request data contains $set property which is not an object: {}", document.get("$set"));
             }
         }
-        
+
         // add other update operators
         document.keySet().stream().filter((String key)
                 -> UPDATE_OPERATORS.contains(key))
-                .forEach(key -> { ret.put(key, document.get(key)); });
-        
+                .forEach(key -> {
+                    ret.put(key, document.get(key));
+                });
+
         return ret;
     }
 }
