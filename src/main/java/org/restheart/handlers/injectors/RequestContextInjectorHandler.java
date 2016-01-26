@@ -18,12 +18,14 @@
 package org.restheart.handlers.injectors;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Optional;
 import org.bson.BSONObject;
+import org.bson.types.ObjectId;
 import org.restheart.db.DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.handlers.PipedHttpHandler;
@@ -330,14 +332,17 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
         rcontext.setDocIdType(docIdType);
 
-        // get and check the document id
-        String _docId = rcontext.getDocumentIdRaw();
+        // for POST the doc _id is set by BodyjectorHandler
+        if (rcontext.getMethod() != METHOD.POST) {
+            // get and check the document id
+            String _docId = rcontext.getDocumentIdRaw();
 
-        try {
-            rcontext.setDocumentId(URLUtils.getId(_docId, docIdType));
-        } catch (UnsupportedDocumentIdException idide) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong document id format: not a valid " + docIdType.name(), idide);
-            return;
+            try {
+                rcontext.setDocumentId(URLUtils.getDocumentIdFromURI(_docId, docIdType));
+            } catch (UnsupportedDocumentIdException idide) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong document id format: not a valid " + docIdType.name(), idide);
+                return;
+            }
         }
 
         // get the HAL query parameter

@@ -89,7 +89,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
 
         Object docId;
 
-        if (content.get("_id") == null) {
+        if (!content.containsField("_id")) {
             if (context.getDocIdType() == DOC_ID_TYPE.OID || context.getDocIdType() == DOC_ID_TYPE.STRING_OID) {
                 docId = new ObjectId();
             } else {
