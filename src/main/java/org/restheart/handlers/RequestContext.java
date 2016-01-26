@@ -17,10 +17,8 @@
  */
 package org.restheart.handlers;
 
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import com.mongodb.util.JSON;
 import org.restheart.db.DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
@@ -35,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
-import org.bson.BsonArray;
 import org.bson.Document;
 import org.restheart.Bootstrapper;
 import org.restheart.db.OperationResult;
@@ -566,9 +563,9 @@ public class RequestContext {
     public Deque<String> getFilter() {
         return filter;
     }
-    
+
     /**
-     * 
+     *
      * @return the $and composed filter qparam values
      */
     public Document getComposedFilters() {
@@ -578,7 +575,7 @@ public class RequestContext {
         if (filter != null) {
             if (filter.size() > 1) {
                 List<Document> _filters = new ArrayList();
-                
+
                 filter.stream().forEach((String f) -> {
                     _filters.add(Document.parse(f));
                 });
@@ -590,7 +587,7 @@ public class RequestContext {
                 return null;
             }
         }
-        
+
         return query;
     }
 
