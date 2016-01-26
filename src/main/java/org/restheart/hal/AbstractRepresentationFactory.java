@@ -94,8 +94,14 @@ public abstract class AbstractRepresentationFactory {
                 ? ""
                 : "?" + URLUtils.decodeQueryString(exchange.getQueryString());
 
-        Representation rep = new Representation(requestPath + queryString);
-
+        Representation rep;
+        
+        if (requestPath == null) {
+            rep = new Representation();
+        } else {
+            rep = new Representation(requestPath + queryString);
+        }
+        
         return rep;
     }
 

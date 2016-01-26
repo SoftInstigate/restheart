@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.collection.bulk;
+package org.restheart.handlers.bulk;
 
 import com.mongodb.DBObject;
 import com.mongodb.bulk.BulkWriteResult;
@@ -33,14 +33,14 @@ import org.restheart.utils.URLUtils;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class BulkPostRepresentationFactory extends AbstractRepresentationFactory {
-    public BulkPostRepresentationFactory() {
+public class BulkResultRepresentationFactory extends AbstractRepresentationFactory {
+    public BulkResultRepresentationFactory() {
     }
 
     public Representation getRepresentation(HttpServerExchange exchange, RequestContext context, BulkOperationResult result)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
-        final Representation rep = createRepresentation(exchange, context, requestPath);
+        final Representation rep = createRepresentation(exchange, context, null);
 
         addBulkResult(result, context, rep, requestPath);
 
@@ -57,26 +57,34 @@ public class BulkPostRepresentationFactory extends AbstractRepresentationFactory
             final Representation rep,
             final String requestPath) {
 
-        BulkWriteResult wr = result.getWriteResult();
+        BulkWriteResult wr = result.getBulkResult();
 
-        if (wr.getUpserts() != null) {
-            rep.addProperty("_inserted", wr.getUpserts().size());
-        } else {
-            rep.addProperty("_inserted", 0);
-        }
-        
-        if (wr.isModifiedCountAvailable()) {
-            rep.addProperty("_modified", wr.getModifiedCount());
-        }
+        Representation nrep = new Representation();
 
-        // add links to new, upserted documents
-        result.getWriteResult().getUpserts().stream().
-                forEach(update -> {
-                    rep.addLink(
-                            new Link("rh:newdoc",
-                                    URLUtils.getReferenceLink(context, requestPath, update.getId())),
-                            true);
-                });
+        if (wr.wasAcknowledged()) {
+            if (wr.getUpserts() != null) {
+                nrep.addProperty("inserted", wr.getUpserts().size());
+                
+                // add links to new, upserted documents
+                wr.getUpserts().stream().
+                    forEach(update -> {
+                        nrep.addLink(
+                                new Link("rh:newdoc",
+                                        URLUtils.getReferenceLink(context, requestPath, update.getId())),
+                                true);
+                    });
+            }
+
+            nrep.addProperty("deleted", wr.getDeletedCount());
+            
+            if (wr.isModifiedCountAvailable()) {
+                nrep.addProperty("modified", wr.getModifiedCount());
+            }
+            
+            nrep.addProperty("matched", wr.getMatchedCount());
+
+            rep.addRepresentation("rh:result", nrep);
+        }
     }
 
     @Override

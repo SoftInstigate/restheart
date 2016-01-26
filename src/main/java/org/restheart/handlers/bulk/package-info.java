@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
- * Handlers for HTTP requests related to bulk operations on document resources
+ * Handlers for HTTP requests related to bulk operations
  * 
 * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-package org.restheart.handlers.document.bulk;
+package org.restheart.handlers.bulk;

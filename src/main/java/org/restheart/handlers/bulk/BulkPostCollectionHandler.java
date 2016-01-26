@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.collection.bulk;
+package org.restheart.handlers.bulk;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
@@ -24,7 +24,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.restheart.db.BulkOperationResult;
 import org.restheart.db.DocumentDAO;
-import org.restheart.hal.Representation;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
@@ -99,7 +98,7 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
             exchange.setStatusCode(result.getHttpCode());
         }
 
-        BulkPostRepresentationFactory bprf = new BulkPostRepresentationFactory();
+        BulkResultRepresentationFactory bprf = new BulkResultRepresentationFactory();
         
         bprf.sendRepresentation(exchange, context, 
                 bprf.getRepresentation(exchange, context, result));

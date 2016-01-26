@@ -22,13 +22,18 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
+import com.mongodb.client.model.DeleteManyModel;
+import com.mongodb.client.model.WriteModel;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.restheart.utils.HttpStatus;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -243,6 +248,20 @@ public class DocumentDAO implements Repository {
         } else {
             return new OperationResult(HttpStatus.SC_NO_CONTENT);
         }
+    }
+    
+    @Override
+    public BulkOperationResult bulkDeleteDocuments(String dbName, String collName, Document filter) {
+        MongoDatabase mdb = client.getDatabase(dbName);
+        MongoCollection<Document> mcoll = mdb.getCollection(collName);
+        
+        List<WriteModel<Document>> deletes = new ArrayList<>();
+        
+        deletes.add(new DeleteManyModel(filter));
+        
+        BulkWriteResult result = mcoll.bulkWrite(deletes);
+        
+        return new BulkOperationResult(HttpStatus.SC_OK, null, result);
     }
     
     private OperationResult optimisticCheckEtag(
