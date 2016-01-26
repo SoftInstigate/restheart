@@ -19,6 +19,7 @@ package org.restheart.utils;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
+import com.mongodb.util.JSONParseException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.io.PrintWriter;
@@ -86,7 +87,12 @@ public class ResponseHelper {
             nrep.addProperty("exception", t.getClass().getName());
 
             if (t.getMessage() != null) {
-                nrep.addProperty("exception message", t.getMessage());
+                if (t instanceof JSONParseException) {
+                    nrep.addProperty("exception message", "invalid json");
+                } else {
+                    nrep.addProperty("exception message", t.getMessage());
+                }
+
             }
 
             BasicDBList stackTrace = getStackTraceJson(t);
@@ -109,12 +115,19 @@ public class ResponseHelper {
         PrintWriter pw = new PrintWriter(sw);
         t.printStackTrace(pw);
         String st = sw.toString();
-        st = st.replaceAll("\t", "  ");
+        st = avoidEscapedChars(st);
         String[] lines = st.split("\n");
+
         BasicDBList list = new BasicDBList();
 
         list.addAll(Arrays.asList(lines));
         return list;
+    }
+
+    private static String avoidEscapedChars(String s) {
+        return s
+                .replaceAll("\"", "'")
+                .replaceAll("\t", "  ");
     }
 
     /**
@@ -147,21 +160,21 @@ public class ResponseHelper {
         }
 
         Object _etag = properties.get("_etag");
-        
-        if (_etag == null || ! (_etag instanceof ObjectId)) {
+
+        if (_etag == null || !(_etag instanceof ObjectId)) {
             return;
         }
 
         exchange.getResponseHeaders().put(Headers.ETAG, _etag.toString());
     }
-    
+
     /**
      *
      * @param exchange
      * @param etag
      */
     public static void injectEtagHeader(HttpServerExchange exchange, Object etag) {
-        if (etag == null || ! (etag instanceof ObjectId)) {
+        if (etag == null || !(etag instanceof ObjectId)) {
             return;
         }
 
