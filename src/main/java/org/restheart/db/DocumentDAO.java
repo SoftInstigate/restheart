@@ -274,7 +274,9 @@ public class DocumentDAO implements Repository {
         Object oldEtag = oldDocument.get("_etag");
         
         if (oldEtag != null && requestEtag == null) {
-            DAOUtils.updateDocument(coll, oldDocument.get("_id"), oldDocument, true);
+            // oopps, we need to restore old document
+            // they call it optimistic lock strategy
+            DAOUtils.restoreDocument(coll, oldDocument.get("_id"), oldDocument, newEtag);
             
             return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag, oldDocument, null);
         }
@@ -294,7 +296,7 @@ public class DocumentDAO implements Repository {
         } else {
             // oopps, we need to restore old document
             // they call it optimistic lock strategy
-            DAOUtils.updateDocument(coll, oldDocument.get("_id"), oldDocument, true);
+            DAOUtils.restoreDocument(coll, oldDocument.get("_id"), oldDocument, newEtag);
             
             return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag, oldDocument, null);
         }
