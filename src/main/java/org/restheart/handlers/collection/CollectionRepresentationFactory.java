@@ -59,7 +59,13 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
     public Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
-        final Representation rep = createRepresentation(exchange, context, requestPath);
+        final Representation rep;
+        
+        if (context.isFullHalMode()) {
+            rep = createRepresentation(exchange, context, requestPath);
+        } else {
+            rep = createRepresentation(exchange, context, null);
+        }
 
         addProperties(rep, context);
 
@@ -82,11 +88,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
             // curies
             rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
                     + "/{rel}.html", true), true);
-        } else {
-            // empty curies section. this is needed due to HAL browser issue
-            // https://github.com/mikekelly/hal-browser/issues/71
-            rep.addLinkArray("curies");
-        }
+        } 
 
         return rep;
     }

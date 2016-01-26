@@ -66,8 +66,12 @@ public class DocumentRepresentationFactory {
 
         String _docIdType = null;
 
-        rep = new Representation(URLUtils.getReferenceLink(context, URLUtils.getParentPath(href), id));
-
+        if (context.isFullHalMode()) {
+            rep = new Representation(URLUtils.getReferenceLink(context, URLUtils.getParentPath(href), id));
+        } else {
+            rep = new Representation();
+        }
+        
         data.keySet()
                 .stream().forEach((key) -> rep.addProperty(key, data.get(key)));
 
@@ -120,11 +124,7 @@ public class DocumentRepresentationFactory {
                 rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
                         + "/{rel}.html", true), true);
             }
-        } else if (!isEmbedded) {
-            // empty curies section. this is needed due to HAL browser issue
-            // https://github.com/mikekelly/hal-browser/issues/71
-            rep.addLinkArray("curies");
-        }
+        } 
 
         return rep;
     }

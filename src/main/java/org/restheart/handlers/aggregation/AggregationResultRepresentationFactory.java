@@ -55,8 +55,13 @@ public class AggregationResultRepresentationFactory
             long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
-        final Representation rep
-                = createRepresentation(exchange, context, requestPath);
+        final Representation rep;
+
+        if (context.isFullHalMode()) {
+            rep = createRepresentation(exchange, context, requestPath);
+        } else {
+            rep = createRepresentation(exchange, context, null);
+        }
 
         addSizeAndTotalPagesProperties(size, context, rep);
 
@@ -73,10 +78,6 @@ public class AggregationResultRepresentationFactory
             rep.addLink(new Link("rh", "curies",
                     Configuration.RESTHEART_ONLINE_DOC_URL
                     + "/{rel}.html", true), true);
-        } else {
-            // empty curies section. this is needed due to HAL browser issue
-            // https://github.com/mikekelly/hal-browser/issues/71
-            rep.addLinkArray("curies");
         }
 
         return rep;
