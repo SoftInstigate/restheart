@@ -132,7 +132,7 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
             return false;
         }
 
-        if (document.get("_id") == null) {
+        if (document.containsField("_id")) {
             if (!(context.getDocIdType() == DOC_ID_TYPE.OID
                     || context.getDocIdType() == DOC_ID_TYPE.STRING_OID)) {
                 ResponseHelper.endExchangeWithMessage(exchange,
