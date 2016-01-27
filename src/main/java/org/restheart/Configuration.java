@@ -18,6 +18,7 @@
 package org.restheart;
 
 import ch.qos.logback.classic.Level;
+import com.google.common.collect.Maps;
 import com.mongodb.MongoClientURI;
 import org.restheart.utils.URLUtils;
 import java.io.File;
@@ -123,7 +124,9 @@ public class Configuration {
     private final ETAG_CHECK_POLICY dbEtagCheckPolicy;
     private final ETAG_CHECK_POLICY collEtagCheckPolicy;
     private final ETAG_CHECK_POLICY docEtagCheckPolicy;
-    
+
+    private final Map<String, Object> connectionOptions;
+
     private final Integer logExchangeDump;
 
     /**
@@ -499,11 +502,16 @@ public class Configuration {
      * the key for the etag-check-policy.doc property.
      */
     public static final String ETAG_CHECK_POLICY_DOC_KEY = "doc";
+
+    /**
+     * Force http requests logging even if DEBUG is not set
+     */
+    public static final String LOG_REQUESTS_LEVEL_KEY = "requests-log-level";
     
     /**
      * Force http requests logging even if DEBUG is not set
      */
-    public static final String FORCE_REQUEST_LOGGING = "log-exchange-dump";
+    public static final String CONNECTION_OPTIONS_KEY = "connection-options";
 
     /**
      * Creates a new instance of Configuration with defaults values.
@@ -590,8 +598,10 @@ public class Configuration {
         dbEtagCheckPolicy = DEFAULT_DB_ETAG_CHECK_POLICY;
         collEtagCheckPolicy = DEFAULT_COLL_ETAG_CHECK_POLICY;
         docEtagCheckPolicy = DEFAULT_DOC_ETAG_CHECK_POLICY;
-        
+
         logExchangeDump = 0;
+        
+        connectionOptions = Maps.newHashMap();
     }
 
     /**
@@ -764,11 +774,11 @@ public class Configuration {
                     = getAsStringOrDefault(etagCheckPolicies,
                             ETAG_CHECK_POLICY_DOC_KEY,
                             DEFAULT_DOC_ETAG_CHECK_POLICY.name());
-            
+
             ETAG_CHECK_POLICY validDbValue;
             ETAG_CHECK_POLICY validCollValue;
             ETAG_CHECK_POLICY validDocValue;
-            
+
             try {
                 validDbValue = ETAG_CHECK_POLICY.valueOf(_dbEtagCheckPolicy);
             } catch (IllegalArgumentException iae) {
@@ -776,7 +786,7 @@ public class Configuration {
                         ETAG_CHECK_POLICY_DB_KEY, DEFAULT_DB_ETAG_CHECK_POLICY);
                 validDbValue = DEFAULT_DB_ETAG_CHECK_POLICY;
             }
-            
+
             dbEtagCheckPolicy = validDbValue;
 
             try {
@@ -787,7 +797,7 @@ public class Configuration {
                         ETAG_CHECK_POLICY_COLL_KEY, DEFAULT_COLL_ETAG_CHECK_POLICY);
                 validCollValue = DEFAULT_COLL_ETAG_CHECK_POLICY;
             }
-            
+
             collEtagCheckPolicy = validCollValue;
 
             try {
@@ -797,23 +807,25 @@ public class Configuration {
                         ETAG_CHECK_POLICY_COLL_KEY, DEFAULT_COLL_ETAG_CHECK_POLICY);
                 validDocValue = DEFAULT_DOC_ETAG_CHECK_POLICY;
             }
-            
+
             docEtagCheckPolicy = validDocValue;
         } else {
             dbEtagCheckPolicy = DEFAULT_DB_ETAG_CHECK_POLICY;
             collEtagCheckPolicy = DEFAULT_COLL_ETAG_CHECK_POLICY;
             docEtagCheckPolicy = DEFAULT_DOC_ETAG_CHECK_POLICY;
         }
+
+        logExchangeDump = getAsIntegerOrDefault(conf, LOG_REQUESTS_LEVEL_KEY, 0);
         
-        logExchangeDump = getAsIntegerOrDefault(conf, FORCE_REQUEST_LOGGING, 0);
+        connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY);
     }
 
     /**
-     * 
+     *
      * @param conf
      * @param key
      * @param defaultValue
-     * @return 
+     * @return
      */
     private List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key, final List<Map<String, Object>> defaultValue) {
         if (conf == null) {
@@ -837,10 +849,10 @@ public class Configuration {
     }
 
     /**
-     * 
+     *
      * @param conf
      * @param key
-     * @return 
+     * @return
      */
     private Map<String, Object> getAsMap(final Map<String, Object> conf, final String key) {
         if (conf == null) {
@@ -863,11 +875,11 @@ public class Configuration {
     }
 
     /**
-     * 
+     *
      * @param conf
      * @param key
      * @param defaultValue
-     * @return 
+     * @return
      */
     private Boolean getAsBooleanOrDefault(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
         if (conf == null) {
@@ -899,11 +911,11 @@ public class Configuration {
     }
 
     /**
-     * 
+     *
      * @param conf
      * @param key
      * @param defaultValue
-     * @return 
+     * @return
      */
     private String getAsStringOrDefault(final Map<String, Object> conf, final String key, final String defaultValue) {
 
@@ -927,11 +939,11 @@ public class Configuration {
     }
 
     /**
-     * 
+     *
      * @param conf
      * @param key
      * @param defaultValue
-     * @return 
+     * @return
      */
     private Integer getAsIntegerOrDefault(final Map<String, Object> conf, final String key, final Integer defaultValue) {
         if (conf == null || conf.get(key) == null) {
@@ -954,11 +966,11 @@ public class Configuration {
     }
 
     /**
-     * 
+     *
      * @param conf
      * @param key
      * @param defaultValue
-     * @return 
+     * @return
      */
     private Long getAsLongOrDefault(final Map<String, Object> conf, final String key, final Long defaultValue) {
         if (conf == null || conf.get(key) == null) {
@@ -988,11 +1000,11 @@ public class Configuration {
     }
 
     /**
-     * 
+     *
      * @param conf
      * @param key
      * @param defaultValue
-     * @return 
+     * @return
      */
     private int[] getAsArrayOfInts(final Map<String, Object> conf, final String key, final int[] defaultValue) {
         if (conf == null || conf.get(key) == null) {
@@ -1025,9 +1037,9 @@ public class Configuration {
     }
 
     /**
-     * 
+     *
      * @param integers
-     * @return 
+     * @return
      */
     public static int[] convertListToIntArray(List integers) {
         int[] ret = new int[integers.size()];
@@ -1387,12 +1399,19 @@ public class Configuration {
     public ETAG_CHECK_POLICY getDocEtagCheckPolicy() {
         return docEtagCheckPolicy;
     }
-    
+
     /**
-     * 
+     *
      * @return the logExchangeDump Boolean
      */
     public Integer logExchangeDump() {
         return logExchangeDump;
+    }
+
+    /**
+     * @return the connectionOptions
+     */
+    public Map<String, Object> getConnectionOptions() {
+        return connectionOptions;
     }
 }

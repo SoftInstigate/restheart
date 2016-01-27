@@ -82,9 +82,9 @@ import org.restheart.security.FullAccessManager;
 import org.restheart.security.handlers.AuthTokenHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.restheart.handlers.RequestLoggerHandler;
 import static io.undertow.Handlers.path;
 import static org.fusesource.jansi.Ansi.ansi;
-import org.restheart.handlers.RequestLoggerHandler;
 
 /**
  *
@@ -501,7 +501,7 @@ public final class Bootstrapper {
         }
 
         Builder builder = Undertow.builder();
-
+        
         if (configuration.isHttpsListener()) {
             builder.addHttpsListener(configuration.getHttpsPort(), configuration.getHttpHost(), sslContext);
             LOGGER.info("HTTPS listener bound at {}:{}", configuration.getHttpsHost(), configuration.getHttpsPort());
@@ -537,14 +537,16 @@ public final class Bootstrapper {
 
         shutdownHandler = getHandlersPipe(identityManager, accessManager);
 
-        builder
+        builder = builder
                 .setIoThreads(configuration.getIoThreads())
                 .setWorkerThreads(configuration.getWorkerThreads())
                 .setDirectBuffers(configuration.isDirectBuffers())
                 .setBufferSize(configuration.getBufferSize())
                 .setBuffersPerRegion(configuration.getBuffersPerRegion())
                 .setHandler(shutdownHandler);
-
+        
+        BootstrapperHelper.setConnectionOptions(builder, configuration);
+        
         builder.build().start();
     }
 
