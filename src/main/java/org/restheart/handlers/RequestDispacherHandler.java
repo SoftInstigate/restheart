@@ -100,11 +100,12 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      */
     protected void defaultInit() {
         LOGGER.debug("Initialize default HTTP handlers:");
-        // ROOT handlers
+        
+        // *** ROOT handlers
         putPipedHttpHandler(TYPE.ROOT, METHOD.GET,
                 new GetRootHandler());
 
-        // DB handlres
+        // *** DB handlres
         putPipedHttpHandler(TYPE.DB, METHOD.GET,
                 new GetDBHandler(
                         new ResponseTranformerMetadataHandler()));
@@ -120,7 +121,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                 new RequestTransformerMetadataHandler(
                         new PatchDBHandler()));
 
-        // COLLECTION handlres
+        // *** COLLECTION handlres
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.GET,
                 new GetCollectionHandler(
                         new ResponseTranformerMetadataHandler()));
@@ -135,7 +136,8 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                                 new RequestTransformerMetadataHandler(
                                         new BulkPostCollectionHandler()))));
 
-        putPipedHttpHandler(TYPE.COLLECTION, METHOD.PUT, new RequestTransformerMetadataHandler(
+        putPipedHttpHandler(TYPE.COLLECTION, METHOD.PUT, 
+                new RequestTransformerMetadataHandler(
                 new PutCollectionHandler()));
 
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.DELETE,
@@ -145,7 +147,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                 new RequestTransformerMetadataHandler(
                         new PatchCollectionHandler()));
 
-        // DOCUMENT handlers
+        // *** DOCUMENT handlers
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.GET,
                 new GetDocumentHandler(
                         new ResponseTranformerMetadataHandler()));
@@ -165,7 +167,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                                 new PatchDocumentHandler(
                                         new AfterWriteCheckMetadataHandler()))));
 
-        // BULK_DOCUMENTS handlers, i.e. bulk operations
+        // *** BULK_DOCUMENTS handlers, i.e. bulk operations
         putPipedHttpHandler(TYPE.BULK_DOCUMENTS, METHOD.DELETE,
                 new BulkDeleteDocumentsHandler());
 
@@ -174,18 +176,18 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                         new RequestTransformerMetadataHandler(
                                 new BulkPatchDocumentsHandler())));
 
-        // COLLECTION_INDEXES handlers
+        // *** COLLECTION_INDEXES handlers
         putPipedHttpHandler(TYPE.COLLECTION_INDEXES, METHOD.GET,
                 new GetIndexesHandler());
 
-        // INDEX handlers
+        // *** INDEX handlers
         putPipedHttpHandler(TYPE.INDEX, METHOD.PUT,
                 new PutIndexHandler());
 
         putPipedHttpHandler(TYPE.INDEX, METHOD.DELETE,
                 new DeleteIndexHandler());
 
-        // FILES_BUCKET and FILE handlers
+        // *** FILES_BUCKET and FILE handlers
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.GET,
                 new GetCollectionHandler(
                         new ResponseTranformerMetadataHandler()));
@@ -217,12 +219,12 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         putPipedHttpHandler(TYPE.FILE, METHOD.DELETE,
                 new DeleteFileHandler());
 
-        // AGGREGATION handler
+        // *** AGGREGATION handler
         putPipedHttpHandler(TYPE.AGGREGATION, METHOD.GET,
                 new GetAggregationHandler(
                         new ResponseTranformerMetadataHandler()));
 
-        // SCHEMA handlers
+        // *** SCHEMA handlers
         putPipedHttpHandler(TYPE.SCHEMA_STORE, METHOD.GET,
                 new GetCollectionHandler(
                         new TransformerHandler(
