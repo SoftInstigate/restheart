@@ -20,6 +20,7 @@ package org.restheart.hal.metadata.singletons;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
+import java.util.Set;
 import org.restheart.handlers.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +41,11 @@ public class ContentSizeChecker implements Checker {
     static final Logger LOGGER = LoggerFactory.getLogger(ContentSizeChecker.class);
 
     @Override
-    public boolean check(HttpServerExchange exchange, RequestContext context, BasicDBObject contentToCheck, DBObject args) {
+    public boolean check(
+            HttpServerExchange exchange, 
+            RequestContext context, 
+            BasicDBObject contentToCheck, 
+            DBObject args) {
         if (args instanceof BasicDBObject) {
             BasicDBObject condition = (BasicDBObject) args;
 
@@ -69,7 +74,10 @@ public class ContentSizeChecker implements Checker {
         }
     }
 
-    private boolean checkSize(HttpServerExchange exchange, int minSize, int maxSize) {
+    private boolean checkSize(
+            HttpServerExchange exchange, 
+            int minSize, 
+            int maxSize) {
         long requestLenght = exchange.getRequestContentLength();
 
         boolean ret = (minSize < 0 ? requestLenght <= maxSize : requestLenght >= minSize && requestLenght <= maxSize);
@@ -80,7 +88,17 @@ public class ContentSizeChecker implements Checker {
     }
 
     @Override
-    public TYPE getType() {
-        return TYPE.BEFORE_WRITE;
+    public PHASE getPhase() {
+        return PHASE.BEFORE_WRITE;
+    }
+
+    @Override
+    public boolean doesSupportRequests(RequestContext context) {
+        return true;
+    }
+
+    @Override
+    public boolean shouldCheckFailIfNotSupported(DBObject args) {
+        return false;
     }
 }

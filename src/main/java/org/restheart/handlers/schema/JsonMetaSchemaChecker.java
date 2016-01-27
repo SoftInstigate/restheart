@@ -27,6 +27,7 @@ import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.restheart.hal.metadata.singletons.Checker;
+import org.restheart.hal.metadata.singletons.CheckersUtils;
 import org.restheart.handlers.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +61,11 @@ public class JsonMetaSchemaChecker implements Checker {
     }
 
     @Override
-    public boolean check(HttpServerExchange exchange, RequestContext context, BasicDBObject contentToCheck, DBObject args) {
+    public boolean check(
+            HttpServerExchange exchange, 
+            RequestContext context, 
+            BasicDBObject contentToCheck, 
+            DBObject args) {
         try {
             schema.validate(new JSONObject(contentToCheck.toString()));
         } catch (ValidationException ve) {
@@ -76,7 +81,18 @@ public class JsonMetaSchemaChecker implements Checker {
     }
 
     @Override
-    public TYPE getType() {
-        return TYPE.AFTER_WRITE;
+    public PHASE getPhase() {
+        return PHASE.BEFORE_WRITE;
     }
+
+    @Override
+    public boolean shouldCheckFailIfNotSupported(DBObject args) {
+        return true;
+    }
+
+    @Override
+    public boolean doesSupportRequests(RequestContext context) {
+        return !CheckersUtils.isBulkRequest(context);
+    }
+
 }

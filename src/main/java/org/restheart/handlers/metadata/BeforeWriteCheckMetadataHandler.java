@@ -56,7 +56,10 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(
+            HttpServerExchange exchange,
+            RequestContext context)
+            throws Exception {
         if (doesCheckerAppy(context)) {
             if (check(exchange, context)) {
                 if (getNext() != null) {
@@ -74,7 +77,9 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                     });
                 }
 
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, sb.toString());
+                ResponseHelper.endExchangeWithMessage(exchange,
+                        HttpStatus.SC_BAD_REQUEST,
+                        sb.toString());
             }
         } else if (getNext() != null) {
             getNext().handleRequest(exchange, context);
@@ -86,23 +91,49 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                 && context.getCollectionProps().containsField(ROOT_KEY);
     }
 
-    protected boolean check(HttpServerExchange exchange, RequestContext context)
+    protected boolean check(
+            HttpServerExchange exchange,
+            RequestContext context)
             throws InvalidMetadataException {
-        List<RequestChecker> checkers = RequestChecker.getFromJson(context.getCollectionProps());
+        List<RequestChecker> checkers = RequestChecker
+                .getFromJson(context.getCollectionProps());
 
         return checkers.stream().allMatch(checker -> {
             try {
-                Checker _checker = (Checker) NamedSingletonsFactory.getInstance().get(ROOT_KEY, checker.getName());
+                Checker _checker = (Checker) NamedSingletonsFactory
+                        .getInstance()
+                        .get(ROOT_KEY, checker.getName());
 
                 if (_checker == null) {
-                    throw new IllegalArgumentException("cannot find singleton " + checker.getName() + " in singleton group checkers");
+                    throw new IllegalArgumentException("cannot find singleton "
+                            + checker.getName()
+                            + " in singleton group checkers");
                 }
 
-                if (doesCheckerApply(_checker)) {
+                // all checkers (both BEFORE_WRITE and AFTER_WRITE) are checked
+                // to support the request; if any checker does not support the
+                // request and has shouldCheckFailIfNotSupported flag to true, 
+                // the request fails
+                if (!_checker.doesSupportRequests(context) && _checker.shouldCheckFailIfNotSupported(checker.getArgs())) {
+                    LOGGER.debug("checker "
+                            + _checker.getClass().getSimpleName()
+                            + " does not support this request. check will "
+                            + (_checker.shouldCheckFailIfNotSupported(checker.getArgs()) ? "fail" : "not fail"));
+
+                    context.addWarning("the checker " + _checker.getClass().getSimpleName() + " does not support this request and is configured to fail in this case");
+                    return false;
+                }
+
+                if (doesCheckerApply(_checker) && _checker.doesSupportRequests(context)) {
+
                     DBObject content = context.getContent();
 
                     if (content instanceof BasicDBObject) {
-                        return _checker.check(exchange, context, (BasicDBObject) content, checker.getArgs());
+                        return _checker.check(
+                                exchange,
+                                context,
+                                (BasicDBObject) content,
+                                checker.getArgs());
                     } else if (content instanceof BasicDBList) {
                         // content can be an array of bulk POST
 
@@ -110,7 +141,12 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
 
                         return arrayContent.stream().allMatch(obj -> {
                             if (obj instanceof BasicDBObject) {
-                                return _checker.check(exchange, context, (BasicDBObject) obj, checker.getArgs());
+                                return _checker
+                                        .check(
+                                                exchange,
+                                                context,
+                                                (BasicDBObject) obj,
+                                                checker.getArgs());
                             } else {
                                 LOGGER.warn("element of content array is not an object");
                                 return true;
@@ -133,6 +169,6 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
     }
 
     protected boolean doesCheckerApply(Checker checker) {
-        return checker.getType() == Checker.TYPE.BEFORE_WRITE;
+        return checker.getPhase() == Checker.PHASE.BEFORE_WRITE;
     }
 }
