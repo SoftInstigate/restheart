@@ -19,6 +19,7 @@ package org.restheart.hal.metadata.singletons;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import java.util.Arrays;
 import java.util.List;
 import org.restheart.handlers.RequestContext;
@@ -39,22 +40,52 @@ public class CheckersUtils {
     private static final List<String> UPDATE_OPERATORS
             = Arrays.asList(_UPDATE_OPERATORS);
 
-
     public static boolean isBulkRequest(RequestContext context) {
         return context.getType() == RequestContext.TYPE.BULK_DOCUMENTS
                 || context.getContent() instanceof BasicDBList;
     }
 
-    public static boolean doesRequestContainUpdateOperators(BasicDBObject obj) {
-        return obj.keySet().stream().allMatch(key -> {
-            return !UPDATE_OPERATORS.contains(key);
-        });
+    public static boolean doesRequestUsesUpdateOperators(DBObject content) {
+        if (content instanceof BasicDBObject) {
+            BasicDBObject obj = (BasicDBObject) content;
+            
+            return !obj.keySet().stream().anyMatch(key -> {
+                return UPDATE_OPERATORS.contains(key);
+            });
+        } else if (content instanceof BasicDBList) {
+            BasicDBList objs = (BasicDBList) content;
+            
+            return objs.stream().allMatch(obj -> {
+                if (obj instanceof BasicDBObject) {
+                    return doesRequestUsesUpdateOperators((BasicDBObject)obj);
+                } else {
+                    return true;
+                }
+            });
+        } else {
+            return true;
+        }
     }
 
-    public static boolean doesRequestUsesDotNotation(BasicDBObject obj) {
-        return obj.keySet().stream().anyMatch(key -> {
-            return key.contains(".");
-        });
+    public static boolean doesRequestUsesDotNotation(DBObject content) {
+        if (content instanceof BasicDBObject) {
+            BasicDBObject obj = (BasicDBObject) content;
+            
+            return obj.keySet().stream().anyMatch(key -> {
+                return key.contains(".");
+            });
+        } else if (content instanceof BasicDBList) {
+            BasicDBList objs = (BasicDBList) content;
+            
+            return objs.stream().anyMatch(obj -> {
+                if (obj instanceof BasicDBObject) {
+                    return doesRequestUsesDotNotation((BasicDBObject)obj);
+                } else {
+                    return true;
+                }
+            });
+        } else {
+            return true;
+        }
     }
-
 }

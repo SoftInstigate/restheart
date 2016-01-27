@@ -27,6 +27,6 @@ import org.restheart.handlers.RequestContext;
 public class JsonPathConditionsChecker extends AbstractJsonPathConditionsChecker {
     @Override
     public boolean doesSupportRequests(RequestContext context) {
-        return true;
+        return CheckersUtils.doesRequestUsesUpdateOperators(context.getContent());
     }
 }

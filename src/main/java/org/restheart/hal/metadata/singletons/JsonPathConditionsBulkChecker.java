@@ -26,6 +26,7 @@ import org.restheart.handlers.RequestContext;
 public class JsonPathConditionsBulkChecker extends AbstractJsonPathConditionsChecker {
     @Override
     public boolean doesSupportRequests(RequestContext context) {
-        return CheckersUtils.isBulkRequest(context);
+        return CheckersUtils.doesRequestUsesUpdateOperators(context.getContent())
+                && CheckersUtils.isBulkRequest(context);
     }
 }
