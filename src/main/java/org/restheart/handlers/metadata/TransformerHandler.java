@@ -17,8 +17,12 @@
  */
 package org.restheart.handlers.metadata;
 
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.singletons.Transformer;
@@ -65,6 +69,11 @@ public class TransformerHandler extends PipedHttpHandler {
     }
 
     private void transform(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
+        if (!(context.getContent() instanceof BasicDBObject)) {
+            throw new RuntimeException("this hanlder only supports content of type json object; content " +
+                    context.getContent());
+        }
+
         transformers.stream().forEachOrdered(t -> t.tranform(exchange, context, context.getContent(), null));
     }
 }

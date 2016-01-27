@@ -114,7 +114,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST,
                 new NormalOrBulkDispatcherHandler(
                         new BeforeWriteCheckMetadataHandler(new RequestTransformerMetadataHandler(new PostCollectionHandler(new AfterWriteCheckMetadataHandler()))),
-                        new BulkPostCollectionHandler()));
+                        new BeforeWriteCheckMetadataHandler(new RequestTransformerMetadataHandler(new BulkPostCollectionHandler()))));
         
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.PUT, new RequestTransformerMetadataHandler(new PutCollectionHandler()));
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.DELETE, new DeleteCollectionHandler());
@@ -128,7 +128,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         // BULK_DOCUMENTS handlers, i.e. bulk operations
         putPipedHttpHandler(TYPE.BULK_DOCUMENTS, METHOD.DELETE, new BulkDeleteDocumentsHandler());
-        putPipedHttpHandler(TYPE.BULK_DOCUMENTS, METHOD.PATCH, new BulkPatchDocumentsHandler());
+        putPipedHttpHandler(TYPE.BULK_DOCUMENTS, METHOD.PATCH, new BeforeWriteCheckMetadataHandler(new RequestTransformerMetadataHandler(new BulkPatchDocumentsHandler())));
 
         // COLLECTION_INDEXES handlers
         putPipedHttpHandler(TYPE.COLLECTION_INDEXES, METHOD.GET, new GetIndexesHandler());

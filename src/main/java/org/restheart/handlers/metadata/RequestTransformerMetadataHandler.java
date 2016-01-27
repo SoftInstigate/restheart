@@ -17,6 +17,9 @@
  */
 package org.restheart.handlers.metadata;
 
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.restheart.hal.metadata.InvalidMetadataException;
@@ -118,16 +121,45 @@ public class RequestTransformerMetadataHandler extends AbstractTransformerMetada
                     throw new IllegalArgumentException("cannot find singleton " + rt.getName() + " in singleton group transformers");
                 }
 
-                if ((requestMethod == RequestContext.METHOD.PUT || requestMethod == RequestContext.METHOD.PATCH) && rt.getScope() == RepresentationTransformer.SCOPE.THIS && requestType == RequestContext.TYPE.COLLECTION) {
-                    t.tranform(exchange, context, context.getContent(), rt.getArgs());
-                } else if ((requestMethod == RequestContext.METHOD.PUT || requestMethod == RequestContext.METHOD.PATCH) && rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && (requestType == RequestContext.TYPE.DOCUMENT || requestType == RequestContext.TYPE.FILE)) {
-                    t.tranform(exchange, context, context.getContent(), rt.getArgs());
-                } else if (requestMethod == RequestContext.METHOD.POST && rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.COLLECTION) {
-                    t.tranform(exchange, context, context.getContent(), rt.getArgs());
-                } else if (requestMethod == RequestContext.METHOD.POST && rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.FILES_BUCKET) {
-                    t.tranform(exchange, context, context.getContent(), rt.getArgs());
+                DBObject content = context.getContent();
+
+                // content can be an array for bulk POST
+                if (content instanceof BasicDBObject) {
+                    appyTransformationOnObject(t, exchange, context, requestMethod, requestType, rt.getScope(), (BasicDBObject) content, rt.getArgs());
+                } else {
+                    BasicDBList arrayContent = (BasicDBList) content;
+
+                    arrayContent.stream().forEach(obj -> {
+                        if (obj instanceof BasicDBObject) {
+                            appyTransformationOnObject(t, exchange, context, requestMethod, requestType, rt.getScope(), (BasicDBObject) obj, rt.getArgs());
+                        } else {
+                            LOGGER.warn("an element of array content is not an object");
+                        }
+                    });
                 }
             }
+        }
+    }
+
+    private void appyTransformationOnObject(Transformer t,
+            HttpServerExchange exchange,
+            RequestContext context,
+            RequestContext.METHOD requestMethod,
+            RequestContext.TYPE requestType,
+            RepresentationTransformer.SCOPE scope,
+            BasicDBObject data,
+            DBObject args) {
+        if ((requestMethod == RequestContext.METHOD.PUT
+                || requestMethod == RequestContext.METHOD.PATCH)
+                && scope == RepresentationTransformer.SCOPE.THIS
+                && requestType == RequestContext.TYPE.COLLECTION) {
+            t.tranform(exchange, context, data, args);
+        } else if ((requestMethod == RequestContext.METHOD.PUT || requestMethod == RequestContext.METHOD.PATCH) && scope == RepresentationTransformer.SCOPE.CHILDREN && (requestType == RequestContext.TYPE.DOCUMENT || requestType == RequestContext.TYPE.FILE)) {
+            t.tranform(exchange, context, data, args);
+        } else if (requestMethod == RequestContext.METHOD.POST && scope == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.COLLECTION) {
+            t.tranform(exchange, context, data, args);
+        } else if (requestMethod == RequestContext.METHOD.POST && scope == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.FILES_BUCKET) {
+            t.tranform(exchange, context, data, args);
         }
     }
 }
