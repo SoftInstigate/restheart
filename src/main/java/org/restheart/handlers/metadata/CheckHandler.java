@@ -17,6 +17,7 @@
  */
 package org.restheart.handlers.metadata;
 
+import com.mongodb.BasicDBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import java.util.List;
@@ -81,6 +82,11 @@ public class CheckHandler extends PipedHttpHandler {
     }
 
     private boolean check(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
-        return checkers.stream().allMatch(checker -> checker.check(exchange, context, null));
+        if (!(context.getContent() instanceof BasicDBObject)) {
+            throw new RuntimeException("this hanlder only supports content of type json object; content " +
+                    context.getContent());
+        }
+        
+        return checkers.stream().allMatch(checker -> checker.check(exchange, context, (BasicDBObject) context.getContent(), null));
     }
 }

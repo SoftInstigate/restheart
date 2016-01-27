@@ -17,6 +17,9 @@
  */
 package org.restheart.handlers.metadata;
 
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.restheart.hal.metadata.InvalidMetadataException;
@@ -96,7 +99,28 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                 }
 
                 if (doesCheckerApply(_checker)) {
-                    return _checker.check(exchange, context, checker.getArgs());
+                    DBObject content = context.getContent();
+
+                    if (content instanceof BasicDBObject) {
+                        return _checker.check(exchange, context, (BasicDBObject) content, checker.getArgs());
+                    } else if (content instanceof BasicDBList) {
+                        // content can be an array of bulk POST
+
+                        BasicDBList arrayContent = (BasicDBList) content;
+
+                        return arrayContent.stream().allMatch(obj -> {
+                            if (obj instanceof BasicDBObject) {
+                                return _checker.check(exchange, context, (BasicDBObject) obj, checker.getArgs());
+                            } else {
+                                LOGGER.warn("element of content array is not an object");
+                                return true;
+                            }
+                        });
+
+                    } else {
+                        LOGGER.warn("content is not an object or an array");
+                        return true;
+                    }
                 } else {
                     return true;
                 }
@@ -107,7 +131,7 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
             }
         });
     }
-    
+
     protected boolean doesCheckerApply(Checker checker) {
         return checker.getType() == Checker.TYPE.BEFORE_WRITE;
     }
