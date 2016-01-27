@@ -153,14 +153,14 @@ public class DocumentDAO implements Repository {
         
         content.put("_etag", newEtag);
         
-        Object _idInContent = content.get("_id");
+        boolean isidInContent = content.containsField("_id");
         
         content.removeField("_id");
 
         //TODO remove this after migration to mongodb driver 3.2 completes
         Document dcontent = new Document(content.toMap());
         
-        if (_idInContent == null) {
+        if (!isidInContent) {
             // new document since the id was just auto-generated
             dcontent.put("_id", documentId);
             
