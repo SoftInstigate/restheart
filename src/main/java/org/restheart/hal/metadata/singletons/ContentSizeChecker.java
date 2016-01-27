@@ -40,7 +40,7 @@ public class ContentSizeChecker implements Checker {
     static final Logger LOGGER = LoggerFactory.getLogger(ContentSizeChecker.class);
 
     @Override
-    public boolean check(HttpServerExchange exchange, RequestContext context, DBObject args) {
+    public boolean check(HttpServerExchange exchange, RequestContext context, BasicDBObject contentToCheck, DBObject args) {
         if (args instanceof BasicDBObject) {
             BasicDBObject condition = (BasicDBObject) args;
 

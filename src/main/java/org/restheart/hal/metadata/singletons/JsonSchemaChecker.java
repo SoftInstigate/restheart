@@ -17,6 +17,7 @@
  */
 package org.restheart.hal.metadata.singletons;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.Objects;
@@ -48,7 +49,7 @@ public class JsonSchemaChecker implements Checker {
     static final Logger LOGGER = LoggerFactory.getLogger(JsonSchemaChecker.class);
 
     @Override
-    public boolean check(HttpServerExchange exchange, RequestContext context, DBObject args) {
+    public boolean check(HttpServerExchange exchange, RequestContext context, BasicDBObject contentToCheck, DBObject args) {
         Objects.requireNonNull(args, "missing metadata property 'args'");
 
         Object _schemaStoreDb = args.get(SCHEMA_STORE_DB_PROPERTY);

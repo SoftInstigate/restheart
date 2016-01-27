@@ -17,6 +17,7 @@
  */
 package org.restheart.handlers.schema;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.io.InputStream;
@@ -59,9 +60,9 @@ public class JsonMetaSchemaChecker implements Checker {
     }
 
     @Override
-    public boolean check(HttpServerExchange exchange, RequestContext context, DBObject args) {
+    public boolean check(HttpServerExchange exchange, RequestContext context, BasicDBObject contentToCheck, DBObject args) {
         try {
-            schema.validate(new JSONObject(context.getContent().toString()));
+            schema.validate(new JSONObject(contentToCheck.toString()));
         } catch (ValidationException ve) {
             context.addWarning(ve.getMessage());
             ve.getCausingExceptions().stream()

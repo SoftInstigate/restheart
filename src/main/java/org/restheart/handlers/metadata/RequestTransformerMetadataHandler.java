@@ -133,7 +133,7 @@ public class RequestTransformerMetadataHandler extends AbstractTransformerMetada
                         if (obj instanceof BasicDBObject) {
                             appyTransformationOnObject(t, exchange, context, requestMethod, requestType, rt.getScope(), (BasicDBObject) obj, rt.getArgs());
                         } else {
-                            LOGGER.warn("an element of array content is not an object");
+                            LOGGER.warn("an element of content array is not an object");
                         }
                     });
                 }

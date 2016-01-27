@@ -17,12 +17,9 @@
  */
 package org.restheart.handlers.metadata;
 
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.singletons.Transformer;
