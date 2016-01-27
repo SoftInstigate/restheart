@@ -23,7 +23,10 @@ import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.RequestContext;
 
 /**
- * note: data to be checked is contentToCheck. this can differ from
+ * A Checker performs validation on write requests. If the check fails, request
+ * fails with status code BAD_REQUEST
+ *
+ * note: data to be checked is the argument contentToCheck. this can differ from
  * context.getContent() on bulk requests where it is an array of objects
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
@@ -34,7 +37,7 @@ import org.restheart.handlers.RequestContext;
  * contenx.getDbOperationResult.getNewData() remote user
  * ExchangeAttributes.remoteUser().readAttribute(exchange) user roles
  * exchange.getSecurityContext().getAuthenticatedAccount().getRoles() resource
- * type context.getType() dateTime
+ * type context.getPhase() dateTime
  * ExchangeAttributes.dateTime().readAttribute(exchange) local ip
  * ExchangeAttributes.localIp().readAttribute(exchange) local port
  * ExchangeAttributes.localPort().readAttribute(exchange) local server name
@@ -50,11 +53,40 @@ import org.restheart.handlers.RequestContext;
  * ExchangeAttributes.responseHeader(HttpString.tryFromString(HttpHeaders.LOCATION)).readAttribute(exchange)
  */
 public interface Checker {
-    enum TYPE {
-        BEFORE_WRITE, AFTER_WRITE
+    enum PHASE {
+        BEFORE_WRITE,
+        AFTER_WRITE // for optimistic checks, i.e. document is inserted and in case rolled back
     };
+    
+    boolean check(
+            HttpServerExchange exchange,
+            RequestContext context,
+            BasicDBObject contentToCheck,
+            DBObject args);
 
-    boolean check(HttpServerExchange exchange, RequestContext context, BasicDBObject contentToCheck, DBObject args);
+    /**
+     * Specify when the checker should be performed: with BEFORE_WRITE the check
+     * will get the request content; with AFTER_WRITE it gets the data actually
+     * optimistally written to the db (and rolled back eventually)
+     *
+     * @return BEFORE_WRITE or AFTER_WRITE
+     */
+    PHASE getPhase();
 
-    TYPE getType();
+    /**
+     *
+     * @param context
+     * @return true if the checker supports the requests
+     */
+    boolean doesSupportRequests(RequestContext context);
+
+    /**
+     *
+     * Specify if the check should fail if this checker does not support the
+     * request
+     *
+     * @param args
+     * @return true if the check should fail if this checker does not support it
+     */
+    boolean shouldCheckFailIfNotSupported(DBObject args);
 }

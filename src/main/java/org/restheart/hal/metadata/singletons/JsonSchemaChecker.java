@@ -45,29 +45,34 @@ import org.slf4j.LoggerFactory;
 public class JsonSchemaChecker implements Checker {
     public static final String SCHEMA_STORE_DB_PROPERTY = "schemaStoreDb";
     public static final String SCHEMA_ID_PROPERTY = "schemaId";
+    public static final String FAIL_IF_NOT_SUPPORTED_PROPERTY = "failIfNotSupported";
 
     static final Logger LOGGER = LoggerFactory.getLogger(JsonSchemaChecker.class);
 
     @Override
-    public boolean check(HttpServerExchange exchange, RequestContext context, BasicDBObject contentToCheck, DBObject args) {
+    public boolean check(
+            HttpServerExchange exchange, 
+            RequestContext context, 
+            BasicDBObject contentToCheck, 
+            DBObject args) {
         Objects.requireNonNull(args, "missing metadata property 'args'");
 
         Object _schemaStoreDb = args.get(SCHEMA_STORE_DB_PROPERTY);
-        String schemaStore;
-
+        String schemaStoreDb;
+        
         Object schemaId = args.get(SCHEMA_ID_PROPERTY);
 
         Objects.requireNonNull(schemaId, "missing property '" + SCHEMA_ID_PROPERTY + "' in metadata property 'args'");
 
         if (_schemaStoreDb == null) {
             // if not specified assume the current db as the schema store db
-            schemaStore = context.getDBName();
+            schemaStoreDb = context.getDBName();
         } else if (_schemaStoreDb instanceof String) {
-            schemaStore = (String) _schemaStoreDb;
+            schemaStoreDb = (String) _schemaStoreDb;
         } else {
-            throw new IllegalArgumentException("property " + SCHEMA_STORE_DB_PROPERTY + " in metadata 'args' must be a a string");
+            throw new IllegalArgumentException("property " + SCHEMA_STORE_DB_PROPERTY + " in metadata 'args' must be a string");
         }
-
+        
         try {
             URLUtils.checkId(schemaId);
         } catch (UnsupportedDocumentIdException ex) {
@@ -79,7 +84,7 @@ public class JsonSchemaChecker implements Checker {
         try {
             theschema = JsonSchemaCacheSingleton
                     .getInstance()
-                    .get(schemaStore, schemaId);
+                    .get(schemaStoreDb, schemaId);
         } catch (JsonSchemaNotFoundException ex) {
             context.addWarning(ex.getMessage());
             return false;
@@ -87,7 +92,7 @@ public class JsonSchemaChecker implements Checker {
 
         if (Objects.isNull(theschema)) {
             throw new IllegalArgumentException("cannot validate, schema "
-                    + schemaStore
+                    + schemaStoreDb
                     + "/"
                     + RequestContext._SCHEMAS
                     + "/" + schemaId.toString() + " not found");
@@ -123,7 +128,25 @@ public class JsonSchemaChecker implements Checker {
     }
     
     @Override
-    public TYPE getType() {
-        return TYPE.AFTER_WRITE;
+    public PHASE getPhase() {
+        return PHASE.AFTER_WRITE;
+    }
+    
+    @Override
+    public boolean shouldCheckFailIfNotSupported(DBObject args) {
+        Object _failIfNotSupported = args.get(FAIL_IF_NOT_SUPPORTED_PROPERTY);
+        
+        if (_failIfNotSupported == null) {
+            return true;
+        } else if (_failIfNotSupported instanceof Boolean) {
+            return (Boolean) _failIfNotSupported;
+        } else {
+            throw new IllegalArgumentException("property " + FAIL_IF_NOT_SUPPORTED_PROPERTY + " in metadata 'args' must be boolean");
+        }
+    }
+
+    @Override
+    public boolean doesSupportRequests(RequestContext context) {
+        return !CheckersUtils.isBulkRequest(context);
     }
 }

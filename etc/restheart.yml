@@ -111,14 +111,14 @@ metadata-named-singletons:
     - group: checkers
       interface: org.restheart.hal.metadata.singletons.Checker
       singletons:
+        - name: jsonSchema
+          class: org.restheart.hal.metadata.singletons.JsonSchemaChecker
         - name: checkContent
-          class: org.restheart.hal.metadata.singletons.SimpleContentChecker
+          class: org.restheart.hal.metadata.singletons.JsonPathConditionsChecker
+        - name: checkBulkContent
+          class: org.restheart.hal.metadata.singletons.JsonPathConditionsBulkChecker
         - name: checkContentSize
           class: org.restheart.hal.metadata.singletons.ContentSizeChecker
-        - name: stringsToOids
-          class: org.restheart.hal.metadata.singletons.ValidOidsStringsAsOidsTransformer
-        - name: oidsToStrings
-          class: org.restheart.hal.metadata.singletons.OidsAsStringsTransformer
 
     # Checkers group used by handlers:
     # org.restheart.handlers.metadata.RequestTransformerMetadataHandler and
@@ -131,6 +131,10 @@ metadata-named-singletons:
           class: org.restheart.hal.metadata.singletons.RequestPropsInjecterTransformer
         - name: filterProperties
           class: org.restheart.hal.metadata.singletons.FilterTransformer
+        - name: stringsToOids
+          class: org.restheart.hal.metadata.singletons.ValidOidsStringsAsOidsTransformer
+        - name: oidsToStrings
+          class: org.restheart.hal.metadata.singletons.OidsAsStringsTransformer
 
 ### Security
 

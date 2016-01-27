@@ -20,7 +20,6 @@ package org.restheart.handlers.metadata;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -35,6 +34,7 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
+import static com.mongodb.client.model.Filters.and;
 
 /**
  *
@@ -51,7 +51,7 @@ public class AfterWriteCheckMetadataHandler extends BeforeWriteCheckMetadataHand
 
     @Override
     protected boolean doesCheckerApply(Checker checker) {
-        return checker.getType() == Checker.TYPE.AFTER_WRITE;
+        return checker.getPhase() == Checker.PHASE.AFTER_WRITE;
     }
 
     @Override

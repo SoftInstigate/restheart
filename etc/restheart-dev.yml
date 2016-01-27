@@ -111,10 +111,12 @@ metadata-named-singletons:
     - group: checkers
       interface: org.restheart.hal.metadata.singletons.Checker
       singletons:
-        - name: checkContent
-          class: org.restheart.hal.metadata.singletons.SimpleContentChecker
         - name: jsonSchema
           class: org.restheart.hal.metadata.singletons.JsonSchemaChecker
+        - name: checkContent
+          class: org.restheart.hal.metadata.singletons.JsonPathConditionsChecker
+        - name: checkBulkContent
+          class: org.restheart.hal.metadata.singletons.JsonPathConditionsBulkChecker
         - name: checkContentSize
           class: org.restheart.hal.metadata.singletons.ContentSizeChecker
 

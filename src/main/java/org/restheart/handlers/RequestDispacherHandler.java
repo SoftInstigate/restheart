@@ -100,7 +100,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      */
     protected void defaultInit() {
         LOGGER.debug("Initialize default HTTP handlers:");
-        
+
         // *** ROOT handlers
         putPipedHttpHandler(TYPE.ROOT, METHOD.GET,
                 new GetRootHandler());
@@ -136,9 +136,9 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                                 new RequestTransformerMetadataHandler(
                                         new BulkPostCollectionHandler()))));
 
-        putPipedHttpHandler(TYPE.COLLECTION, METHOD.PUT, 
+        putPipedHttpHandler(TYPE.COLLECTION, METHOD.PUT,
                 new RequestTransformerMetadataHandler(
-                new PutCollectionHandler()));
+                        new PutCollectionHandler()));
 
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.DELETE,
                 new DeleteCollectionHandler());
