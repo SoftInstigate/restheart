@@ -31,6 +31,7 @@ import io.undertow.util.Headers;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Iterator;
 import org.apache.tika.Tika;
 import org.restheart.hal.Representation;
 import org.restheart.hal.UnsupportedDocumentIdException;
@@ -125,11 +126,10 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             }
 
             // check id
-            if (content != null) {
-                if (!checkSpecialStringId(content.get("_id"))) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Reserved string id " + content.get("_id"));
-                    return;
-                }
+            String invalidId = checkSpecialStringId(content);
+            if (invalidId != null) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Reserved string id " + invalidId);
+                return;
             }
         } else { // multipart form -> file
             FormDataParser parser = this.formParserFactory.createParser(exchange);
@@ -173,8 +173,9 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             context.setFile(file);
 
             // check id
-            if (!checkSpecialStringId(content.get("_id"))) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Reserved string id " + content.get("_id"));
+            String invalidId = checkSpecialStringId(content);
+            if (invalidId != null) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Reserved string id " + invalidId);
                 return;
             }
 
@@ -282,21 +283,53 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      * meaning e.g _null, since the URI /db/coll/_null refers to the document
      * with _id: null
      *
-     * @param id
-     * @return false if the id is not valid
+     * @param content
+     * @return null if ok, or the first not valid id
      */
-    public static boolean checkSpecialStringId(Object id) {
-        if (id == null || !(id instanceof String)) {
-            return true;
+    public static String checkSpecialStringId(DBObject content) {
+        if (content == null) {
+            return null;
+        } else if (content instanceof BasicDBObject) {
+            Object id = content.get("_id");
+
+            if (id == null || !(id instanceof String)) {
+                return null;
+            }
+
+            String _id = (String) id;
+
+            if (RequestContext.MAX_KEY_ID.equalsIgnoreCase(_id)
+                    || RequestContext.MIN_KEY_ID.equalsIgnoreCase(_id)
+                    || RequestContext.NULL_KEY_ID.equalsIgnoreCase(_id)
+                    || RequestContext.TRUE_KEY_ID.equalsIgnoreCase(_id)
+                    || RequestContext.FALSE_KEY_ID.equalsIgnoreCase(_id)) {
+                return _id;
+            }
+        } else if (content instanceof BasicDBList) {
+            BasicDBList arrayContent = (BasicDBList) content;
+
+            Iterator<Object> objs = arrayContent.iterator();
+
+            String ret = null;
+
+            while (objs.hasNext()) {
+                Object obj = objs.next();
+
+                if (obj instanceof BasicDBObject) {
+                    ret = checkSpecialStringId((BasicDBObject) obj);
+                    if (ret != null) {
+                        break;
+                    }
+                } else {
+                    LOGGER.warn("element of content array is not an object");
+                }
+            }
+
+            return ret;
         }
 
-        String _id = (String) id;
-
-        return !(RequestContext.MAX_KEY_ID.equalsIgnoreCase(_id)
-                || RequestContext.MIN_KEY_ID.equalsIgnoreCase(_id)
-                || RequestContext.NULL_KEY_ID.equalsIgnoreCase(_id)
-                || RequestContext.TRUE_KEY_ID.equalsIgnoreCase(_id)
-                || RequestContext.FALSE_KEY_ID.equalsIgnoreCase(_id));
+        LOGGER.warn("content is not an object nor an array");
+        return null;
     }
 
     /**
