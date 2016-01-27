@@ -87,7 +87,7 @@ public class SimpleContentChecker implements Checker {
     static final Logger LOGGER = LoggerFactory.getLogger(SimpleContentChecker.class);
 
     @Override
-    public boolean check(HttpServerExchange exchange, RequestContext context, DBObject args) {
+    public boolean check(HttpServerExchange exchange, RequestContext context, BasicDBObject contentToCheck, DBObject args) {
         if (args instanceof BasicDBList) {
             boolean patching = context.getMethod() == RequestContext.METHOD.PATCH;
 
@@ -96,10 +96,8 @@ public class SimpleContentChecker implements Checker {
                 // example {"a.b": 1, "a.c": 2}
                 // so we need to check conditions on {"a": {"b" : 1}} and {"a":{"c":2}}
 
-                DBObject content = context.getContent();
-
-                return !content.keySet().stream().anyMatch(key -> {
-                    DBObject remappedContent = remapJson(key, content.get(key));
+                return !contentToCheck.keySet().stream().anyMatch(key -> {
+                    DBObject remappedContent = remapJson(key, contentToCheck.get(key));
 
                     BasicDBList conditions = filterMissingOptionalAndNullNullableConditions((BasicDBList) args, remappedContent, true);
 
@@ -108,7 +106,7 @@ public class SimpleContentChecker implements Checker {
             } else {
                 BasicDBList conditions = filterMissingOptionalAndNullNullableConditions((BasicDBList) args, context.getContent(), false);
 
-                return applyConditions(conditions, context.getContent(), context);
+                return applyConditions(conditions, contentToCheck, context);
             }
         } else {
             context.addWarning("checker wrong definition: args property must be an arrary of string property names.");
@@ -462,9 +460,9 @@ public class SimpleContentChecker implements Checker {
 
         if (ret == false) {
             if (!failedFieldsCheck) {
-                context.addWarning("checkType condition failed: path: " + path + ", expected type: " + type + ", got: " + props);
+                context.addWarning("checkType condition failed: path: " + path + ", expected type: " + type + ", got: " + (props == null ? "null" : avoidEscapedChars(props.toString())));
             } else {
-                context.addWarning("checkType condition failed: path: " + path + ", mandatory fields: " + mandatoryFields + ", optional fields: " + optionalFields + ", got: " + props);
+                context.addWarning("checkType condition failed: path: " + path + ", mandatory fields: " + mandatoryFields + ", optional fields: " + optionalFields + ", got: " + (props == null ? "null" : avoidEscapedChars(props.toString())));
             }
         }
 
@@ -507,7 +505,7 @@ public class SimpleContentChecker implements Checker {
         LOGGER.debug("checkRegex({}, {}) -> {} -> {}", path, regex, props, ret);
 
         if (ret == false) {
-            context.addWarning("checkRegex condition failed: path: " + path + ", regex: " + regex + ", got: " + props);
+            context.addWarning("checkRegex condition failed: path: " + path + ", regex: " + regex + ", got: " + (props == null ? "null" : avoidEscapedChars(props.toString())));
         }
 
         return ret;
@@ -530,5 +528,11 @@ public class SimpleContentChecker implements Checker {
         } else {
             return new BasicDBObject(tokens[0], _remapJson(Arrays.copyOfRange(tokens, 1, tokens.length), value));
         }
+    }
+    
+    private static String avoidEscapedChars(String s) {
+        return s
+                .replaceAll("\"", "'")
+                .replaceAll("\t", "  ");
     }
 }
