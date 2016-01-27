@@ -47,6 +47,15 @@ public class ResponseTranformerMetadataHandler extends AbstractTransformerMetada
      *
      * @param next
      */
+    public ResponseTranformerMetadataHandler() {
+        super(null);
+    }
+    
+    /**
+     * Creates a new instance of ResponseTranformerMetadataHandler
+     *
+     * @param next
+     */
     public ResponseTranformerMetadataHandler(PipedHttpHandler next) {
         super(next);
     }
