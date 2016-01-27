@@ -26,6 +26,10 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Deque;
 import org.bson.BsonBoolean;
+import org.bson.BsonDateTime;
+import org.bson.BsonDouble;
+import org.bson.BsonInt32;
+import org.bson.BsonInt64;
 import org.bson.BsonMaxKey;
 import org.bson.BsonMinKey;
 import org.bson.BsonNull;
@@ -73,8 +77,12 @@ public class URLUtils {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(((BsonString) docId).getValue());
         } else if (docId instanceof BsonBoolean) {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat("_" + ((BsonBoolean) docId).getValue());
-        } else if (docId instanceof BsonNumber) {
-            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(((BsonNumber) docId).toString());
+        } else if (docId instanceof BsonInt32) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat("" + ((BsonNumber) docId).asInt32().getValue());
+        } else if (docId instanceof BsonInt64) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat("" + ((BsonNumber) docId).asInt64().getValue());
+        } else if (docId instanceof BsonDouble) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat("" + ((BsonDouble) docId).asDouble().getValue());
         } else if (docId instanceof BsonNull) {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/_null");
         } else if (docId instanceof BsonMaxKey) {
@@ -83,6 +91,8 @@ public class URLUtils {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/_MinKey");
         } else if (docId instanceof BsonTimestamp) {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat("" + ((BsonTimestamp) docId).getTime());
+        } else if (docId instanceof BsonDateTime) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat("" + ((BsonDateTime) docId).getValue());
         } else if (docId instanceof Integer) {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_QPARAM_KEY).concat("=").concat(DOC_ID_TYPE.NUMBER.name());
         } else if (docId instanceof Long) {
