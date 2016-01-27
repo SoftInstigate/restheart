@@ -1,6 +1,6 @@
 /*
  * RESTHeart - the Web API for MongoDB
- * Copyright (C) 2014 - 2016 SoftInstigate Srl
+ * Copyright (C) SoftInstigate Srl
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
