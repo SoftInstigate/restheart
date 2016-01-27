@@ -258,7 +258,7 @@ public class DAOUtils {
 
         documents.stream().forEach((document) -> {
             // generate new id if missing, will be an insert
-            if (document.get("_id") == null) {
+            if (!document.containsKey("_id")) {
                 document.put("_id", new ObjectId());
             }
 
