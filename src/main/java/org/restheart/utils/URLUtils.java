@@ -25,8 +25,14 @@ import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Deque;
+import org.bson.BsonBoolean;
+import org.bson.BsonMaxKey;
+import org.bson.BsonMinKey;
+import org.bson.BsonNull;
+import org.bson.BsonNumber;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
+import org.bson.BsonTimestamp;
 import org.bson.types.MaxKey;
 import org.bson.types.MinKey;
 import org.bson.types.ObjectId;
@@ -65,6 +71,18 @@ public class URLUtils {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(((BsonObjectId) docId).getValue().toString());
         } else if (docId instanceof BsonString) {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(((BsonString) docId).getValue());
+        } else if (docId instanceof BsonBoolean) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat("_" + ((BsonBoolean) docId).getValue());
+        } else if (docId instanceof BsonNumber) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(((BsonNumber) docId).toString());
+        } else if (docId instanceof BsonNull) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/_null");
+        } else if (docId instanceof BsonMaxKey) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/_MaxKey");
+        } else if (docId instanceof BsonMinKey) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/_MinKey");
+        } else if (docId instanceof BsonTimestamp) {
+            uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat("" + ((BsonTimestamp) docId).getTime());
         } else if (docId instanceof Integer) {
             uri = URLUtils.removeTrailingSlashes(parentUrl).concat("/").concat(docId.toString()).concat("?").concat(DOC_ID_TYPE_QPARAM_KEY).concat("=").concat(DOC_ID_TYPE.NUMBER.name());
         } else if (docId instanceof Long) {
