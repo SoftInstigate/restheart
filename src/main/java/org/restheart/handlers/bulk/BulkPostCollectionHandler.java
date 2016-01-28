@@ -39,20 +39,33 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
     private final DocumentDAO documentDAO;
 
     /**
-     * Creates a new instance of PostCollectionHandler
+     * Creates a new instance of BulkPostCollectionHandler
      */
     public BulkPostCollectionHandler() {
         this(null, new DocumentDAO());
     }
 
+    /**
+     * Creates a new instance of BulkPostCollectionHandler
+     * @param documentDAO
+     */
     public BulkPostCollectionHandler(DocumentDAO documentDAO) {
         this(null, new DocumentDAO());
     }
 
+    /**
+     * Creates a new instance of BulkPostCollectionHandler
+     * @param next
+     */
     public BulkPostCollectionHandler(PipedHttpHandler next) {
         this(next, new DocumentDAO());
     }
 
+    /**
+     * Creates a new instance of BulkPostCollectionHandler
+     * @param next
+     * @param documentDAO
+     */
     public BulkPostCollectionHandler(PipedHttpHandler next, DocumentDAO documentDAO) {
         super(next);
         this.documentDAO = documentDAO;

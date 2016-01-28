@@ -43,6 +43,14 @@ public class PutDBHandler extends PipedHttpHandler {
     public PutDBHandler() {
         super();
     }
+    
+    /**
+     * Creates a new instance of PutDBHandler
+     * @param next
+     */
+    public PutDBHandler(PipedHttpHandler next) {
+        super(next);
+    }
 
     /**
      *
@@ -84,6 +92,8 @@ public class PutDBHandler extends PipedHttpHandler {
 
         OperationResult result = getDatabase().upsertDB(context.getDBName(), content, context.getETag(), updating, false, context.isETagCheckRequired());
 
+        context.setDbOperationResult(result);
+        
         // inject the etag
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
@@ -103,6 +113,10 @@ public class PutDBHandler extends PipedHttpHandler {
             sendWarnings(result.getHttpCode(), exchange, context);
         } else {
             exchange.setStatusCode(result.getHttpCode());
+        }
+        
+        if (getNext() != null) {
+            getNext().handleRequest(exchange, context);
         }
 
         exchange.endExchange();

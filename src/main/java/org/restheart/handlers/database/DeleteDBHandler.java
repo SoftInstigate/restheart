@@ -38,6 +38,14 @@ public class DeleteDBHandler extends PipedHttpHandler {
     public DeleteDBHandler() {
         super();
     }
+    
+    /**
+     * Creates a new instance of DeleteDBHandler
+     * @param next
+     */
+    public DeleteDBHandler(PipedHttpHandler next) {
+        super(next);
+    }
 
     /**
      *
@@ -51,6 +59,8 @@ public class DeleteDBHandler extends PipedHttpHandler {
 
         OperationResult result = getDatabase().deleteDatabase(context.getDBName(), etag, context.isETagCheckRequired());
 
+        context.setDbOperationResult(result);
+        
         // inject the etag
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
@@ -77,6 +87,10 @@ public class DeleteDBHandler extends PipedHttpHandler {
 
         LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());
 
+        if (getNext() != null) {
+            getNext().handleRequest(exchange, context);
+        }
+        
         exchange.endExchange();
     }
 }

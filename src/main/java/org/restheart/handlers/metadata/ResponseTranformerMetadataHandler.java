@@ -45,7 +45,6 @@ public class ResponseTranformerMetadataHandler extends AbstractTransformerMetada
     /**
      * Creates a new instance of ResponseTranformerMetadataHandler
      *
-     * @param next
      */
     public ResponseTranformerMetadataHandler() {
         super(null);

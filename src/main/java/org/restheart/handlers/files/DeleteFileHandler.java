@@ -36,10 +36,21 @@ public class DeleteFileHandler extends PipedHttpHandler {
     private final GridFsRepository gridFsDAO;
 
     /**
-     * Default constructor
+     * Creates a new instance of DeleteFileHandler
+     *
      */
     public DeleteFileHandler() {
         this(new GridFsDAO());
+    }
+
+    /**
+     * Creates a new instance of DeleteFileHandler
+     *
+     * @param next
+     */
+    public DeleteFileHandler(PipedHttpHandler next) {
+        super(next);
+        this.gridFsDAO = new GridFsDAO();
     }
 
     /**
@@ -65,6 +76,8 @@ public class DeleteFileHandler extends PipedHttpHandler {
                         context.getCollectionName(), context.getDocumentId(),
                         context.getETag(),
                         context.isETagCheckRequired());
+        
+        context.setDbOperationResult(result);
 
         // send the warnings if any (and in case no_content change the return code to ok)
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
@@ -74,6 +87,10 @@ public class DeleteFileHandler extends PipedHttpHandler {
         // inject the etag
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+        }
+        
+        if (getNext() != null) {
+            getNext().handleRequest(exchange, context);
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {

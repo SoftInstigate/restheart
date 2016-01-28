@@ -148,6 +148,15 @@ metadata-named-singletons:
         - name: oidsToStrings
           class: org.restheart.hal.metadata.singletons.OidsAsStringsTransformer
 
+    # WebHook group used by handler:
+    # org.restheart.handlers.metadata.WebHookHandler
+    # More information in webhook javadoc
+    - group: webhooks
+      interface: org.restheart.hal.metadata.singletons.WebHook
+      singletons:
+        - name: snooper
+          class: org.restheart.hal.metadata.singletons.SnooperWebHook
+
 ### Security
 
 # The security is configured by setting:

@@ -39,6 +39,10 @@ public class GetRootHandler extends PipedHttpHandler {
         super();
     }
 
+    public GetRootHandler(PipedHttpHandler next) {
+        super(next);
+    }
+
     public GetRootHandler(PipedHttpHandler next, Database dbsDAO) {
         super(next, dbsDAO);
     }
@@ -91,6 +95,11 @@ public class GetRootHandler extends PipedHttpHandler {
         RootRepresentationFactory rf = new RootRepresentationFactory();
 
         rf.sendRepresentation(exchange, context, rf.getRepresentation(exchange, context, data, size));
+
+        if (getNext() != null) {
+            getNext().handleRequest(exchange, context);
+        }
+
         exchange.endExchange();
     }
 }

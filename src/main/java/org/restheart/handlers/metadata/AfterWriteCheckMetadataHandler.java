@@ -77,13 +77,13 @@ public class AfterWriteCheckMetadataHandler extends BeforeWriteCheckMetadataHand
                 }
 
                 Document oldData = context.getDbOperationResult().getOldData();
-                
+
                 Object newEtag = context.getDbOperationResult().getEtag();
 
                 if (oldData != null) {
                     // document was updated, restore old one
                     DAOUtils.restoreDocument(coll, oldData.get("_id"), oldData, newEtag);
-                    
+
                     // add to response old etag
                     if (oldData.get("$set") != null
                             && oldData.get("$set") instanceof Document
@@ -107,8 +107,7 @@ public class AfterWriteCheckMetadataHandler extends BeforeWriteCheckMetadataHand
             }
         }
 
-        if (getNext()
-                != null) {
+        if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }
     }

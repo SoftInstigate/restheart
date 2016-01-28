@@ -35,12 +35,14 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
     private final DocumentDAO documentDAO;
 
     /**
-     * Default ctor
+     * Creates a new instance of DeleteDocumentHandler
+     *
      */
     public DeleteDocumentHandler() {
-        this(new DocumentDAO());
+        super(null);
+        this.documentDAO = new DocumentDAO();
     }
-
+    
     /**
      * Creates a new instance of DeleteDocumentHandler
      *
@@ -49,6 +51,24 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
     public DeleteDocumentHandler(DocumentDAO documentDAO) {
         super(null);
         this.documentDAO = documentDAO;
+    }
+    
+    /**
+     * Creates a new instance of DeleteDocumentHandler
+     *
+     * @param documentDAO
+     */
+    public DeleteDocumentHandler(PipedHttpHandler next, DocumentDAO documentDAO) {
+        super(next);
+        this.documentDAO = documentDAO;
+    }
+    
+    /**
+     * Default ctor
+     */
+    public DeleteDocumentHandler(PipedHttpHandler next) {
+        super(next);
+        this.documentDAO = new DocumentDAO();
     }
 
     /**
@@ -65,6 +85,8 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
                         context.getDocumentId(), 
                         context.getETag(),
                         context.isETagCheckRequired());
+        
+        context.setDbOperationResult(result);
 
         // inject the etag
         if (result.getEtag() != null) {
@@ -82,6 +104,10 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
             sendWarnings(result.getHttpCode(), exchange, context);
         } else {
             exchange.setStatusCode(result.getHttpCode());
+        }
+        
+        if (getNext() != null) {
+            getNext().handleRequest(exchange, context);
         }
 
         exchange.endExchange();

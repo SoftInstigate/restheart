@@ -304,6 +304,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                     || RequestContext.TRUE_KEY_ID.equalsIgnoreCase(_id)
                     || RequestContext.FALSE_KEY_ID.equalsIgnoreCase(_id)) {
                 return _id;
+            } else {
+                return null;
             }
         } else if (content instanceof BasicDBList) {
             BasicDBList arrayContent = (BasicDBList) content;

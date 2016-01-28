@@ -21,7 +21,6 @@ import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import org.bson.types.ObjectId;
 import org.restheart.db.OperationResult;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.RepresentationTransformer;
@@ -29,7 +28,6 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 
 /**
@@ -43,6 +41,14 @@ public class PatchDBHandler extends PipedHttpHandler {
      */
     public PatchDBHandler() {
         super();
+    }
+
+    /**
+     * Creates a new instance of PatchDBHandler
+     * @param next
+     */
+    public PatchDBHandler(PipedHttpHandler next) {
+        super(next);
     }
 
     /**
@@ -85,6 +91,8 @@ public class PatchDBHandler extends PipedHttpHandler {
 
         OperationResult result = getDatabase().upsertDB(context.getDBName(), content, context.getETag(), true, true, context.isETagCheckRequired());
 
+        context.setDbOperationResult(result);
+        
         // inject the etag
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
@@ -102,9 +110,13 @@ public class PatchDBHandler extends PipedHttpHandler {
         } else {
             exchange.setStatusCode(result.getHttpCode());
         }
+        
+        LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());
+        
+        if (getNext() != null) {
+            getNext().handleRequest(exchange, context);
+        }
 
         exchange.endExchange();
-
-        LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());
     }
 }
