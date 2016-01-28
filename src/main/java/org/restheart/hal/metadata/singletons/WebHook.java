@@ -22,7 +22,7 @@ import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.RequestContext;
 
 /**
- * A WebHook is executed after requests completes.
+ * A WebHook is custom logic executed after requests completes.
  * <p>
  * Some useful info that can be retrived from arguments request content:
  * <ul>
@@ -58,23 +58,17 @@ import org.restheart.handlers.RequestContext;
  *
  */
 public interface WebHook {
-    public enum HOW {
-        SYNCRONOUS, ASYNCROUNOUS
-    }
-
+    /**
+     * 
+     * @param exchange
+     * @param context
+     * @param args
+     * @return true if completed successfully
+     */
     boolean hook(
             HttpServerExchange exchange,
             RequestContext context,
             DBObject args);
-
-    /**
-     * Specify when the checker should be performed: with BEFORE_WRITE the check
-     * will get the request content; with AFTER_WRITE it gets the data actually
-     * optimistally written to the db (and rolled back eventually)
-     *
-     * @return BEFORE_WRITE or AFTER_WRITE
-     */
-    HOW getPhase();
 
     /**
      *

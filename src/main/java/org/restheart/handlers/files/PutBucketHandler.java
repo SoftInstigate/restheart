@@ -17,6 +17,7 @@
  */
 package org.restheart.handlers.files;
 
+import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.collection.PutCollectionHandler;
 
 /**
@@ -24,5 +25,21 @@ import org.restheart.handlers.collection.PutCollectionHandler;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class PutBucketHandler extends PutCollectionHandler {
-    
+    /**
+     * Creates a new instance of PutBucketHandler
+     *
+     */
+    public PutBucketHandler() {
+        super();
+    }
+
+    /**
+     * Creates a new instance of PutBucketHandler
+     *
+     * @param next
+     */
+    public PutBucketHandler(PipedHttpHandler next) {
+        super(next);
+    }
+
 }

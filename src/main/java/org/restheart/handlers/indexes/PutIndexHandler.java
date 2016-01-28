@@ -38,6 +38,14 @@ public class PutIndexHandler extends PipedHttpHandler {
     public PutIndexHandler() {
         super();
     }
+    
+    /**
+     * Creates a new instance of PutIndexHandler
+     * @param next
+     */
+    public PutIndexHandler(PipedHttpHandler next) {
+        super(next);
+    }
 
     /**
      *
@@ -89,6 +97,10 @@ public class PutIndexHandler extends PipedHttpHandler {
             DocumentRepresentationFactory rf = new DocumentRepresentationFactory();
             rf.sendRepresentation(exchange, context, rf.getRepresentation(exchange.getRequestPath(),
                     exchange, context, new BasicDBObject()));
+        }
+        
+        if (getNext() != null) {
+            getNext().handleRequest(exchange, context);
         }
 
         exchange.endExchange();

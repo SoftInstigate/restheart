@@ -44,8 +44,21 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(GetFileBinaryHandler.class);
 
+    /**
+     * Creates a new instance of GetFileBinaryHandler
+     *
+     */
     public GetFileBinaryHandler() {
         super();
+    }
+    
+    /**
+     * Creates a new instance of GetFileBinaryHandler
+     *
+     * @param next
+     */
+    public GetFileBinaryHandler(PipedHttpHandler next) {
+        super(next);
     }
 
     @Override
@@ -62,6 +75,10 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
             if (!checkEtag(exchange, dbsfile)) {
                 sendBinaryContent(dbsfile, exchange);
             }
+        }
+        
+        if (getNext() != null) {
+            getNext().handleRequest(exchange, context);
         }
     }
 
@@ -110,6 +127,7 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
         exchange.setStatusCode(HttpStatus.SC_OK);
 
         dbsfile.writeTo(exchange.getOutputStream());
+        
         exchange.endExchange();
     }
 

@@ -40,10 +40,26 @@ import org.restheart.utils.ResponseHelper;
  */
 public class PutCollectionHandler extends PipedHttpHandler {
 
+    /**
+     * Creates a new instance of PutCollectionHandler
+     */
     public PutCollectionHandler() {
         super();
     }
+    
+    /**
+     * Creates a new instance of PutCollectionHandler
+     * @param next
+     */
+    public PutCollectionHandler(PipedHttpHandler next) {
+        super(next);
+    }
 
+    /**
+     * Creates a new instance of PutCollectionHandler
+     * @param next
+     * @param dbsDAO
+     */
     public PutCollectionHandler(PipedHttpHandler next, Database dbsDAO) {
         super(next, dbsDAO);
     }
@@ -115,6 +131,8 @@ public class PutCollectionHandler extends PipedHttpHandler {
         OperationResult result = getDatabase().upsertCollection(context.getDBName(), context.getCollectionName(), 
                 content, context.getETag(), updating, false, context.isETagCheckRequired());
 
+        context.setDbOperationResult(result);
+        
         // invalidate the cache collection item
         LocalCachesSingleton.getInstance().invalidateCollection(context.getDBName(), context.getCollectionName());
 
@@ -128,12 +146,16 @@ public class PutCollectionHandler extends PipedHttpHandler {
                     "The collection's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
             return;
         }
-
+        
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
         } else {
             exchange.setStatusCode(result.getHttpCode());
+        }
+        
+        if (getNext() != null) {
+            getNext().handleRequest(exchange, context);
         }
 
         exchange.endExchange();

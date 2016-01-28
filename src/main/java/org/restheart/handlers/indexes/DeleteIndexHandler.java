@@ -37,6 +37,15 @@ public class DeleteIndexHandler extends PipedHttpHandler {
     }
 
     /**
+     * Creates a new instance of DeleteIndexHandler
+     *
+     * @param next
+     */
+    public DeleteIndexHandler(PipedHttpHandler next) {
+        super(next);
+    }
+
+    /**
      *
      * @param exchange
      * @param context
@@ -61,6 +70,10 @@ public class DeleteIndexHandler extends PipedHttpHandler {
             sendWarnings(httpCode, exchange, context);
         } else {
             exchange.setStatusCode(httpCode);
+        }
+        
+        if (getNext() != null) {
+            getNext().handleRequest(exchange, context);
         }
 
         exchange.endExchange();

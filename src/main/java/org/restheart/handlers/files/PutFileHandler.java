@@ -37,14 +37,34 @@ import org.restheart.utils.ResponseHelper;
 public class PutFileHandler extends PipedHttpHandler {
     private final GridFsRepository gridFsDAO;
 
+    /**
+     * Creates a new instance of PutFileHandler
+     *
+     */
     public PutFileHandler() {
         super();
         this.gridFsDAO = new GridFsDAO();
     }
-
-    public PutFileHandler(PipedHttpHandler next, Database dbsDAO) {
-        super(next, dbsDAO);
+    
+    /**
+     * Creates a new instance of PutFileHandler
+     *
+     * @param next
+     */
+    public PutFileHandler(PipedHttpHandler next) {
+        super(next);
         this.gridFsDAO = new GridFsDAO();
+    }
+
+    /**
+     * Creates a new instance of PutFileHandler
+     *
+     * @param next
+     * @param gridFsDAO
+     */
+    public PutFileHandler(PipedHttpHandler next, GridFsDAO gridFsDAO) {
+        super(next);
+        this.gridFsDAO = gridFsDAO;
     }
 
     @Override
@@ -62,7 +82,7 @@ public class PutFileHandler extends PipedHttpHandler {
         }
 
         OperationResult result;
-        
+
         try {
             if (context.getFile() != null) {
                 result = gridFsDAO.createFile(getDatabase(), context.getDBName(), context.getCollectionName(), id, content, context.getFile());
@@ -79,8 +99,15 @@ public class PutFileHandler extends PipedHttpHandler {
 
             throw t;
         }
+        
+        context.setDbOperationResult(result);
 
         exchange.setStatusCode(result.getHttpCode());
+        
+        if (getNext() != null) {
+            getNext().handleRequest(exchange, context);
+        }
+        
         exchange.endExchange();
     }
 }

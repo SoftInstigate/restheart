@@ -36,6 +36,14 @@ public class GetIndexesHandler extends PipedHttpHandler {
     public GetIndexesHandler() {
         super();
     }
+    
+    /**
+     * Creates a new instance of GetIndexesHandler
+     * @param next
+     */
+    public GetIndexesHandler(PipedHttpHandler next) {
+        super(next);
+    }
 
     /**
      *
@@ -48,6 +56,11 @@ public class GetIndexesHandler extends PipedHttpHandler {
         List<DBObject> indexes = getDatabase().getCollectionIndexes(context.getDBName(), context.getCollectionName());
         exchange.setStatusCode(HttpStatus.SC_OK);
         IndexesRepresentationFactory.sendHal(exchange, context, indexes, indexes.size());
+        
+        if (getNext() != null) {
+            getNext().handleRequest(exchange, context);
+        }
+        
         exchange.endExchange();
     }
 }

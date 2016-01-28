@@ -20,6 +20,7 @@ package org.restheart.handlers.files;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.db.GridFsDAO;
 import org.restheart.db.GridFsRepository;
+import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.collection.DeleteCollectionHandler;
 
@@ -28,11 +29,25 @@ import org.restheart.handlers.collection.DeleteCollectionHandler;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class DeleteBucketHandler extends DeleteCollectionHandler {
-    
+
     private final GridFsRepository gridFsDAO;
-    
+
+    /**
+     * Creates a new instance of DeleteBucketHandler
+     *
+     */
     public DeleteBucketHandler() {
         super();
+        this.gridFsDAO = new GridFsDAO();
+    }
+
+    /**
+     * Creates a new instance of DeleteBucketHandler
+     *
+     * @param next
+     */
+    public DeleteBucketHandler(PipedHttpHandler next) {
+        super(next);
         this.gridFsDAO = new GridFsDAO();
     }
 
@@ -40,10 +55,10 @@ public class DeleteBucketHandler extends DeleteCollectionHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         try {
             gridFsDAO.deleteChunksCollection(getDatabase(), context.getDBName(), context.getCollectionName());
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             context.addWarning("error removing the bucket file chunks: " + t.getMessage());
         }
-        
+
         // delete the bucket collection
         super.handleRequest(exchange, context);
     }

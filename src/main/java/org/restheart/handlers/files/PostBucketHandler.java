@@ -23,7 +23,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.io.IOException;
 import org.bson.types.ObjectId;
-import org.restheart.db.Database;
 import org.restheart.db.GridFsDAO;
 import org.restheart.db.GridFsRepository;
 import org.restheart.db.OperationResult;
@@ -44,10 +43,15 @@ public class PostBucketHandler extends PipedHttpHandler {
         super();
         this.gridFsDAO = new GridFsDAO();
     }
-
-    public PostBucketHandler(PipedHttpHandler next, Database dbsDAO) {
-        super(next, dbsDAO);
+    
+    public PostBucketHandler(PipedHttpHandler next) {
+        super(next);
         this.gridFsDAO = new GridFsDAO();
+    }
+
+    public PostBucketHandler(PipedHttpHandler next, GridFsDAO gridFsDAO) {
+        super(next);
+        this.gridFsDAO = gridFsDAO;
     }
 
     @Override
@@ -79,6 +83,8 @@ public class PostBucketHandler extends PipedHttpHandler {
 
             throw t;
         }
+        
+        context.setDbOperationResult(result);
 
         // insert the Location handler
         exchange.getResponseHeaders()
@@ -86,6 +92,10 @@ public class PostBucketHandler extends PipedHttpHandler {
                         getReferenceLink(context, exchange.getRequestURL(), _id));
 
         exchange.setStatusCode(result.getHttpCode());
+        
+        if (getNext() != null) {
+            getNext().handleRequest(exchange, context);
+        }
 
         exchange.endExchange();
     }

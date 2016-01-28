@@ -39,6 +39,22 @@ import org.restheart.utils.ResponseHelper;
 public class PatchCollectionHandler extends PipedHttpHandler {
 
     /**
+     * Creates a new instance of PatchCollectionHandler
+     */
+    public PatchCollectionHandler() {
+        super();
+    }
+
+    /**
+     * Creates a new instance of PatchCollectionHandler
+     *
+     * @param next
+     */
+    public PatchCollectionHandler(PipedHttpHandler next) {
+        super(next);
+    }
+
+    /**
      *
      * @param exchange
      * @param context
@@ -83,7 +99,7 @@ public class PatchCollectionHandler extends PipedHttpHandler {
                 return;
             }
         }
-        
+
         // check RT metadata
         if (content.containsField(RepresentationTransformer.RTS_ELEMENT_NAME)) {
             try {
@@ -94,7 +110,7 @@ public class PatchCollectionHandler extends PipedHttpHandler {
                 return;
             }
         }
-        
+
         // check SC metadata
         if (content.containsField(RequestChecker.ROOT_KEY)) {
             try {
@@ -106,30 +122,35 @@ public class PatchCollectionHandler extends PipedHttpHandler {
             }
         }
 
-        OperationResult result = getDatabase().upsertCollection(context.getDBName(), context.getCollectionName(), 
+        OperationResult result = getDatabase().upsertCollection(context.getDBName(), context.getCollectionName(),
                 content, context.getETag(), true, true, context.isETagCheckRequired());
 
+        context.setDbOperationResult(result);
+        
         // inject the etag
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
-        
+
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
                     "The collection's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
             return;
         }
-        
+
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
         } else {
             exchange.setStatusCode(result.getHttpCode());
         }
-        
-        exchange.endExchange();
 
         LocalCachesSingleton.getInstance().invalidateCollection(context.getDBName(), context.getCollectionName());
-    }
 
+        if (getNext() != null) {
+            getNext().handleRequest(exchange, context);
+        }
+
+        exchange.endExchange();
+    }
 }

@@ -32,20 +32,31 @@ public class BulkDeleteDocumentsHandler extends PipedHttpHandler {
     private final DocumentDAO documentDAO;
 
     /**
-     * Default ctor
+     * Creates a new instance of BulkDeleteDocumentsHandler
+     *
      */
     public BulkDeleteDocumentsHandler() {
         this(new DocumentDAO());
     }
 
     /**
-     * Creates a new instance of DeleteDocumentHandler
+     * Creates a new instance of BulkDeleteDocumentsHandler
      *
      * @param documentDAO
      */
     public BulkDeleteDocumentsHandler(DocumentDAO documentDAO) {
         super(null);
         this.documentDAO = documentDAO;
+    }
+
+    /**
+     * Creates a new instance of BulkDeleteDocumentsHandler
+     *
+     * @param next
+     */
+    public BulkDeleteDocumentsHandler(PipedHttpHandler next) {
+        super(next);
+        this.documentDAO = new DocumentDAO();
     }
 
     /**
@@ -58,8 +69,8 @@ public class BulkDeleteDocumentsHandler extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         BulkOperationResult result = this.documentDAO
                 .bulkDeleteDocuments(
-                        context.getDBName(), 
-                        context.getCollectionName(), 
+                        context.getDBName(),
+                        context.getCollectionName(),
                         context.getComposedFilters());
 
         context.setDbOperationResult(result);
@@ -71,10 +82,10 @@ public class BulkDeleteDocumentsHandler extends PipedHttpHandler {
         }
 
         BulkResultRepresentationFactory bprf = new BulkResultRepresentationFactory();
-        
-        bprf.sendRepresentation(exchange, context, 
+
+        bprf.sendRepresentation(exchange, context,
                 bprf.getRepresentation(exchange, context, result));
-        
+
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }
