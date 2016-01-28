@@ -17,17 +17,12 @@
  */
 package org.restheart.hal.metadata.singletons;
 
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.RequestContext;
 
 /**
- * A Checker performs validation on write requests. If the check fails, request
- * fails with status code BAD_REQUEST
- * <p>
- * Note: data to be checked is the argument contentToCheck. this can differ from
- * context.getContent() on bulk requests where it is an array of objects
+ * A WebHook is executed after requests completes.
  * <p>
  * Some useful info that can be retrived from arguments request content:
  * <ul>
@@ -60,17 +55,16 @@ import org.restheart.handlers.RequestContext;
  * </ul>
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
+ *
  */
-public interface Checker {
-    enum PHASE {
-        BEFORE_WRITE,
-        AFTER_WRITE // for optimistic checks, i.e. document is inserted and in case rolled back
-    };
+public interface WebHook {
+    public enum HOW {
+        SYNCRONOUS, ASYNCROUNOUS
+    }
 
-    boolean check(
+    boolean hook(
             HttpServerExchange exchange,
             RequestContext context,
-            BasicDBObject contentToCheck,
             DBObject args);
 
     /**
@@ -80,22 +74,12 @@ public interface Checker {
      *
      * @return BEFORE_WRITE or AFTER_WRITE
      */
-    PHASE getPhase();
+    HOW getPhase();
 
     /**
      *
      * @param context
-     * @return true if the checker supports the requests
+     * @return true if the webhook supports the requests
      */
     boolean doesSupportRequests(RequestContext context);
-
-    /**
-     *
-     * Specify if the check should fail if this checker does not support the
-     * request
-     *
-     * @param args
-     * @return true if the check should fail if this checker does not support it
-     */
-    boolean shouldCheckFailIfNotSupported(DBObject args);
 }
