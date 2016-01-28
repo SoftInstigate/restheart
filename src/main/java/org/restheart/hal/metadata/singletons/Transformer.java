@@ -22,29 +22,22 @@ import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.RequestContext;
 
 /**
+ * A Transformer applies a transformation on request content. This can appen
+ * both to incoming data (write requests) and to response data (read requests),
+ * depending on the RepresentationTransformer phase attribute.
+ *
+ * @see org.restheart.hal.metadata.RepresentationTransformer
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
- * 
- * some useful info that can be retrived from arguments
- * request content      context.getContent()
- * response content     context.getgetResponseContent()
- * remote user          ExchangeAttributes.remoteUser().readAttribute(exchange)
- * user roles           exchange.getSecurityContext().getAuthenticatedAccount().getRoles()
- * resource type        context.getType()
- * dateTime             ExchangeAttributes.dateTime().readAttribute(exchange)
- * local ip             ExchangeAttributes.localIp().readAttribute(exchange)
- * local port           ExchangeAttributes.localPort().readAttribute(exchange)
- * local server name    ExchangeAttributes.localServerName().readAttribute(exchange)
- * query string         ExchangeAttributes.queryString().readAttribute(exchange)
- * relative path        ExchangeAttributes.relativePath().readAttribute(exchange)
- * remote ip            ExchangeAttributes.remoteIp().readAttribute(exchange)
- * ETag in request      ExchangeAttributes.requestHeader(HttpString.tryFromString(HttpHeaders.ETAG)).readAttribute(exchange)
- * request list         ExchangeAttributes.requestList().readAttribute(exchange)
- * request method       ExchangeAttributes.requestMethod().readAttribute(exchange)
- * request protocol     ExchangeAttributes.requestProtocol().readAttribute(exchange)
- * response code        ExchangeAttributes.responseCode()
- * Location header      ExchangeAttributes.responseHeader(HttpString.tryFromString(HttpHeaders.LOCATION)).readAttribute(exchange)
-*/
+ */
 public interface Transformer {
+    /**
+     *
+     * @param exchange the server exchange
+     * @param context the request context
+     * @param contentToTransform the content data to transform
+     * @param args the args sepcified in the collection metadata via args
+     * property
+     */
     void tranform(final HttpServerExchange exchange, final RequestContext context, DBObject contentToTransform, final DBObject args);
 }
