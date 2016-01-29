@@ -30,7 +30,7 @@ import org.restheart.security.SilentBasicAuthenticationMechanism;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SecurityHandler extends PipedHttpHandler {
     /**

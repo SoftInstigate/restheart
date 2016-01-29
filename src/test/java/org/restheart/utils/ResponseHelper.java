@@ -22,7 +22,7 @@ import io.undertow.server.HttpServerExchange;
 /**
  * ResponseHelper mock implementation for testing only
  *
- * @author Maurizio Turatti <maurizio@softinstigate.com>
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class ResponseHelper {
 

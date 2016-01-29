@@ -21,7 +21,7 @@ package org.restheart.utils;
  * utility class to help daemonizing process
  *
  * @see <a href="http://akuma.kohsuke.org">Akuma</a>
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 import com.sun.akuma.Daemon;
 import static com.sun.akuma.Daemon.getCurrentExecutable;

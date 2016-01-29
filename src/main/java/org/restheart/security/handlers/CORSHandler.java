@@ -36,7 +36,7 @@ import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_VALID_HEADER
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
  * The Access-Control-Expose-Headers header indicates which headers are safe to
  * expose to the API of a CORS API specification.

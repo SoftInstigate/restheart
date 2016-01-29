@@ -28,7 +28,7 @@ import org.restheart.handlers.RequestContext;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
  * On REQUEST phase This transformer replaces strings that are valid ObjectIds
  * with ObjectIds.

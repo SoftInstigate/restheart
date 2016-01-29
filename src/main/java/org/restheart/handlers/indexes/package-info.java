@@ -18,6 +18,6 @@
 /**
  * Handlers for HTTP requests related to indexes resources
  * 
-* @author Andrea Di Cesare <andrea@softinstigate.com>
+* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 package org.restheart.handlers.indexes;

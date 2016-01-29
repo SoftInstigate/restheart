@@ -24,7 +24,7 @@ import java.util.List;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestChecker {
     public static final String SCS_ELEMENT_NAME = "checkers";

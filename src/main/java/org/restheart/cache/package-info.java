@@ -18,6 +18,6 @@
 /**
  * Cache abstraction layer classes that makes possible injecting the actual cache implementation via configuration.
  * 
-* @author Andrea Di Cesare <andrea@softinstigate.com>
+* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 package org.restheart.cache;

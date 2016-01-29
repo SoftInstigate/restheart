@@ -34,7 +34,7 @@ import org.restheart.handlers.IllegalQueryParamenterException;
 
 /**
  *
- * @author Maurizio Turatti <maurizio@softinstigate.com>
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public interface Database {
 

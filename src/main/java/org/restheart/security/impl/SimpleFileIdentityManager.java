@@ -33,7 +33,7 @@ import java.util.function.Consumer;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public final class SimpleFileIdentityManager extends AbstractSimpleSecurityManager implements IdentityManager {
 

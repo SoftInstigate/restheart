@@ -25,7 +25,7 @@ import org.restheart.handlers.collection.DeleteCollectionHandler;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class DeleteBucketHandler extends DeleteCollectionHandler {
     

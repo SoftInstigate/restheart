@@ -28,7 +28,7 @@ import org.restheart.handlers.RequestContext;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class Representation {
     private final static ObjectSerializer serializer = JSONSerializers.getStrict();

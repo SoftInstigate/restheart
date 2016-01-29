@@ -31,7 +31,7 @@ import org.restheart.utils.ResponseHelper;
 
 /**
  *
- * @author Maurizio Turatti <maurizio@softinstigate.com>
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class PutFileHandler extends PipedHttpHandler {
     private final GridFsRepository gridFsDAO;

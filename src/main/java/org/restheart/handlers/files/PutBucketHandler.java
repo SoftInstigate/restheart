@@ -21,7 +21,7 @@ import org.restheart.handlers.collection.PutCollectionHandler;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PutBucketHandler extends PutCollectionHandler {
     

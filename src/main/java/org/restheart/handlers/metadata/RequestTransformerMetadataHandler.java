@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestTransformerMetadataHandler extends AbstractTransformerHandler {
     static final Logger LOGGER = LoggerFactory.getLogger(RequestTransformerMetadataHandler.class);

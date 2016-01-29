@@ -29,7 +29,7 @@ import org.restheart.cache.CacheFactory;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public final class AuthTokenIdentityManager implements IdentityManager {
     private final Cache<String, SimpleAccount> cachedAccounts;
