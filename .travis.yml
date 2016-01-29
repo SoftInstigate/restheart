@@ -13,6 +13,7 @@ env:
     secure: pX++1p1oh7VJx7TqQhqhSnpCHitJjSQymQnGt+Ve0YlafR2mjGY5D7N+fnfV/pzkdy/UVp4pF0uY5Vftg61oHJLgGnzGip8RvSeIK1CTUmBhJA8+D0WgQXYX+iBB8RG5+xZeTJfKp6FQjL3AlWeuDeGsCGPantvDHXqyu1pAZgc=
 
 before_install:
+  - git submodule sync
   - git submodule update --init --recursive 
 
 after_success:
