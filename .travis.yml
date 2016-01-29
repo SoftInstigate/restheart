@@ -10,11 +10,11 @@ notifications:
     secure: IeoyrbTPjPtopkmTFbcCzgy+9q8MMzhla9lXhZYdqsbn19KKe4UKNp0Cu0SY601ss586Lw4jsegvba6LFF3bi3j4aK0ZITtGJ4PYGvYByh3O7zi4Y0K2RUeYU1CfTIl18QBHcAIjQSmKLJPnyN9Y5Y4/4KhfWTqXy7tvkB36Oys=
 env:
   global:
-    secure: pX++1p1oh7VJx7TqQhqhSnpCHitJjSQymQnGt+Ve0YlafR2mjGY5D7N+fnfV/pzkdy/UVp4pF0uY5Vftg61oHJLgGnzGip8RvSeIK1CTUmBhJA8+D0WgQXYX+iBB8RG5+xZeTJfKp6FQjL3AlWeuDeGsCGPantvDHXqyu1pAZgc=
-
+  - secure: pX++1p1oh7VJx7TqQhqhSnpCHitJjSQymQnGt+Ve0YlafR2mjGY5D7N+fnfV/pzkdy/UVp4pF0uY5Vftg61oHJLgGnzGip8RvSeIK1CTUmBhJA8+D0WgQXYX+iBB8RG5+xZeTJfKp6FQjL3AlWeuDeGsCGPantvDHXqyu1pAZgc=
+  - secure: SVtyoyWKqZMLk/z+LcAOYSreIgB3LYf3BhdUa0AYbLTq9ESNrcW+EuNBg1kAsZ2Beu6ajladz5zJK0uQ/QuvEHTp0JY4o+EMIQuvsW8KmL2tC2UkuV+Fk3LRgQTt7UrcYzBlhIBQiXKmOiniD3nt98CMZXVTO6JKHB92rJV4b10=
+  - secure: Nr/w/a5R3gUARcNw3M7SEFT2Hsd2WtV1UAsJM8R4uFF6QIyKPhpvEVaA7QQYO8HGzyWT1j/XFaNjAescSMb9o7wzcuZU8VtXwG2xly7eHGQlnCph4o/5d0LJjNLBGa9vXHZCOkobWaM3AuG7nYiNVklMwat7K3/VH7BZOtfwT+0=
 before_install:
-  - git submodule update --init --recursive 
-
+- git submodule update --init --recursive
 after_success:
-  - wget https://gist.githubusercontent.com/mkjsix/98debbbbfcf310b6a33f/raw/8554d7bad33f7b4cfd9bd2cb7bc37b5ebf8588b4/settings.xml
-  - mvn deploy --settings settings.xml
+- wget https://gist.githubusercontent.com/mkjsix/98debbbbfcf310b6a33f/raw/476cdbc77f726fce10f3f85b2bed12990793196f/settings.xml
+- mvn deploy -P release --settings settings.xml
