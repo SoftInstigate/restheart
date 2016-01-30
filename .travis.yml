@@ -8,12 +8,11 @@ notifications:
     on_success: always
   slack:
     secure: IeoyrbTPjPtopkmTFbcCzgy+9q8MMzhla9lXhZYdqsbn19KKe4UKNp0Cu0SY601ss586Lw4jsegvba6LFF3bi3j4aK0ZITtGJ4PYGvYByh3O7zi4Y0K2RUeYU1CfTIl18QBHcAIjQSmKLJPnyN9Y5Y4/4KhfWTqXy7tvkB36Oys=
-env:
-  global:
-  - secure: pX++1p1oh7VJx7TqQhqhSnpCHitJjSQymQnGt+Ve0YlafR2mjGY5D7N+fnfV/pzkdy/UVp4pF0uY5Vftg61oHJLgGnzGip8RvSeIK1CTUmBhJA8+D0WgQXYX+iBB8RG5+xZeTJfKp6FQjL3AlWeuDeGsCGPantvDHXqyu1pAZgc=
-  - secure: SVtyoyWKqZMLk/z+LcAOYSreIgB3LYf3BhdUa0AYbLTq9ESNrcW+EuNBg1kAsZ2Beu6ajladz5zJK0uQ/QuvEHTp0JY4o+EMIQuvsW8KmL2tC2UkuV+Fk3LRgQTt7UrcYzBlhIBQiXKmOiniD3nt98CMZXVTO6JKHB92rJV4b10=
 before_install:
 - git submodule update --init --recursive
 after_success:
 - wget https://gist.githubusercontent.com/mkjsix/98debbbbfcf310b6a33f/raw/4be0460cec34e09d106e13b3f773937cb2a4ff36/settings.xml
 - mvn deploy --settings settings.xml
+env:
+  global:
+    secure: rlLQCDykTqV7/EC+kTCw5JpYbuZwk0Neq5q1kRQ6hjcUYRdgjPJretVg+1e5+GcGOH4/Z/aOGdQrk1HtPW6tE+ePIUDAUwuLX2+6AUt2FqIqumYoJxYR7rsw+THkjiPaopB7qmWOUJ1vec7QCEiaGexYcjs3j6mv//SbnUksY2w=
