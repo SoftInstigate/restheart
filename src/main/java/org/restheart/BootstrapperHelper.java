@@ -28,7 +28,7 @@ import org.xnio.Option;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BootstrapperHelper {
     private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);

@@ -19,7 +19,7 @@ package org.restheart.handlers.schema;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class JsonSchemaNotFoundException extends Exception {
     public JsonSchemaNotFoundException() {

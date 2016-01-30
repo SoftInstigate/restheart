@@ -23,7 +23,7 @@ import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
  * this extends the undertow BasicAuthenticationMechanism setting it to silent
  * and avoiding to send the Authorization header when authentication fails this

@@ -33,7 +33,7 @@ import org.restheart.security.impl.AuthTokenIdentityManager;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
 
  this extends the undertow BasicAuthenticationMechanism and authenticate the
  request using the AuthTokenIdentityManager.

@@ -38,7 +38,7 @@ import org.restheart.handlers.RequestContext;
 import static org.restheart.test.integration.AbstactIT.adminExecutor;
 
 /**
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GetAggreationIT extends AbstactIT {
     public GetAggreationIT() {

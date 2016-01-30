@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  *
  * checks the schema of the schemas using json metaschema
  * 
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class JsonMetaSchemaChecker implements Checker {
     static final String JSON_METASCHEMA_FILENAME = "json-schema-draft-v4.json";

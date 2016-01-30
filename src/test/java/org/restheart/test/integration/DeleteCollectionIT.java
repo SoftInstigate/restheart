@@ -28,7 +28,7 @@ import org.junit.Test;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class DeleteCollectionIT extends AbstactIT {
 

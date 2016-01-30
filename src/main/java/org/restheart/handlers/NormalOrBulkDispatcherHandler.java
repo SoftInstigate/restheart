@@ -24,7 +24,7 @@ import io.undertow.server.HttpServerExchange;
 /**
  * this handler dispatches request to normal or bulk post collection handlers
  * depending on the content to be an object or an array
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class NormalOrBulkDispatcherHandler extends PipedHttpHandler {
     private final PipedHttpHandler nextNormal;

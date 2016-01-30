@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
     static final Logger LOGGER = LoggerFactory.getLogger(BeforeWriteCheckMetadataHandler.class);

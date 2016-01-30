@@ -24,7 +24,7 @@ import org.restheart.handlers.RequestContext;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
  * This transformer filters out the properties from the resource representation.
  * the properties to filter out are passed in the args argumenet as an array of

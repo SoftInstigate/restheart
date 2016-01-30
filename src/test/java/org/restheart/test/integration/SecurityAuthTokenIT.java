@@ -41,7 +41,7 @@ import static org.restheart.test.integration.AbstactIT.HTTP;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SecurityAuthTokenIT extends AbstactIT {
 

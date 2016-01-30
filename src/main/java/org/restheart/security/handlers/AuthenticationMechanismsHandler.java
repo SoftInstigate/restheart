@@ -19,7 +19,7 @@ package org.restheart.security.handlers;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 
 import io.undertow.security.api.AuthenticationMechanism;
@@ -34,7 +34,7 @@ import org.restheart.handlers.RequestContext;
  * that adds one or more authentication
  * mechanisms to the security context
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class AuthenticationMechanismsHandler extends PipedHttpHandler {
     private final List<AuthenticationMechanism> authenticationMechanisms;

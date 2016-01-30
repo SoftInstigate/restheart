@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * handler that applies the transformers defined in the collection properties to
  * the response
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ResponseTranformerMetadataHandler extends AbstractTransformerMetadataHandler {
 

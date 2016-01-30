@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 /**
  * handler that applies the checkers passed in the costructor
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class CheckHandler extends PipedHttpHandler {
     static final Logger LOGGER = LoggerFactory.getLogger(CheckHandler.class);

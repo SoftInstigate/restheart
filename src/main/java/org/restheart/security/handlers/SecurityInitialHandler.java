@@ -37,7 +37,7 @@ import org.restheart.handlers.RequestContext;
  * be added to the context, a decision will then be made if authentication is required or optional and the associated mechanisms
  * will be called.
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SecurityInitialHandler extends PipedHttpHandler {
 

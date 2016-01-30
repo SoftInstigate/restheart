@@ -18,6 +18,6 @@
 /**
  * Data Access Object Classes to decouple the handling logic from the db
  * 
-* @author Andrea Di Cesare <andrea@softinstigate.com>
+* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 package org.restheart.db;

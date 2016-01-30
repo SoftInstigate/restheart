@@ -21,7 +21,7 @@ import io.undertow.util.HttpString;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface IAuthToken {
     static final HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
