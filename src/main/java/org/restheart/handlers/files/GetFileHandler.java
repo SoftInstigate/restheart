@@ -22,7 +22,7 @@ import org.restheart.handlers.document.GetDocumentHandler;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GetFileHandler extends GetDocumentHandler {
     /**

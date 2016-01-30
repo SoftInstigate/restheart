@@ -24,7 +24,7 @@ package org.restheart.test.performance;
  * org.restheart.test.performance.LoadPutPT#put -c 20 -n 500 -w 5 -p
  * "url=http://127.0.0.1:8080/testdb/testcoll,id=a,pwd=a"
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 import com.mongodb.BasicDBObject;
 import io.undertow.util.Headers;
@@ -43,7 +43,7 @@ import org.restheart.utils.HttpStatus;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class LoadPutPT extends AbstractPT {
     private static final ContentType halCT = ContentType.create(Representation.HAL_JSON_MEDIA_TYPE);

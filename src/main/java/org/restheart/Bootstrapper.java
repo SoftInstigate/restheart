@@ -88,7 +88,7 @@ import static org.fusesource.jansi.Ansi.ansi;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public final class Bootstrapper {
 

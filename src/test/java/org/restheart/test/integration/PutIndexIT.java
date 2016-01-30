@@ -35,7 +35,7 @@ import static org.junit.Assert.fail;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PutIndexIT extends AbstactIT {
 

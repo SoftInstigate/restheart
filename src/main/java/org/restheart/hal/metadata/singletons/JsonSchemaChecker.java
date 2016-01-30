@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * 
  * this is an AFTER_WRITE checker thus it does not support FILE resources
  * 
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class JsonSchemaChecker implements Checker {
     public static final String SCHEMA_STORE_DB_PROPERTY = "schemaStoreDb";

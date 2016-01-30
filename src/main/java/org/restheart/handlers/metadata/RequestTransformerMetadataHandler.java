@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * handler that applies the transformers defined in the collection properties to
  * the request
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestTransformerMetadataHandler extends AbstractTransformerMetadataHandler {
     static final Logger LOGGER = LoggerFactory.getLogger(RequestTransformerMetadataHandler.class);

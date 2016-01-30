@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * also responsible of sending NOT_FOUND in case of requests involving not
  * existing collections (that are not PUT)
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class CollectionPropsInjectorHandler extends PipedHttpHandler {
 

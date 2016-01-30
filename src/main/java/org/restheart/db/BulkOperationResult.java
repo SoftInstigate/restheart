@@ -21,7 +21,7 @@ import com.mongodb.bulk.BulkWriteResult;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BulkOperationResult extends OperationResult {
     private final BulkWriteResult bulkResult;

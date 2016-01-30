@@ -34,7 +34,7 @@ import org.restheart.security.impl.SimpleAccount;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class AuthTokenInjecterHandler extends PipedHttpHandler {
     private static final boolean enabled = Bootstrapper.getConfiguration().isAuthTokenEnabled();

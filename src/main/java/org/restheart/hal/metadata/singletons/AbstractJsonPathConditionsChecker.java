@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
  * JsonPathConditionsChecker allows to check request content by using conditions
  * based on json path expression

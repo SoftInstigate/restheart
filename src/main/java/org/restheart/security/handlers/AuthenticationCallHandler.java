@@ -28,7 +28,7 @@ import org.restheart.handlers.RequestContext;
  * that is the final {@link HttpHandler} in the security chain, it's purpose is to act as a barrier at the end of the chain to
  * ensure authenticate is called after the mechanisms have been associated with the context and the constraint checked.
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class AuthenticationCallHandler extends PipedHttpHandler {
 

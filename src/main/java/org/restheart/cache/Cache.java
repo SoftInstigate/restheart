@@ -22,7 +22,7 @@ import java.util.Optional;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @param <K> the class of the keys
  * @param <V> the class of the values
  */

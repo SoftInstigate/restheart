@@ -24,7 +24,7 @@ package org.restheart.test.performance;
  * org.restheart.test.performance.LoadGetPT#get -c 20 -n 500 -w 5 -p
  * "url=http://127.0.0.1:8080/testdb/testcoll?page=10&pagesize=5,id=a,pwd=a"
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
@@ -57,7 +57,7 @@ import org.restheart.db.DbsDAO;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class LoadGetPT extends AbstractPT {
 

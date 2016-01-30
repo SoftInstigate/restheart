@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class LocalCachesSingleton {
     private static final String SEPARATOR = "_@_@_";

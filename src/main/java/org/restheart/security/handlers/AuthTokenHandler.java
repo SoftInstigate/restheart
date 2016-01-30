@@ -33,7 +33,7 @@ import org.restheart.utils.ResponseHelper;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class AuthTokenHandler extends PipedHttpHandler {
 

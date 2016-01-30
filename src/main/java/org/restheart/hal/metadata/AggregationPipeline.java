@@ -27,7 +27,7 @@ import org.restheart.utils.JsonUtils;
 /**
  * represents a map reduce.
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class AggregationPipeline extends AbstractAggregationOperation {
     private final BasicDBList stages;

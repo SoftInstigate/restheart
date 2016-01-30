@@ -26,7 +26,7 @@ import org.restheart.handlers.RequestContext;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class CheckersUtils {
     private static final String _UPDATE_OPERATORS[] = {

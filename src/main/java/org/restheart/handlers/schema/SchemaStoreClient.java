@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
  * A json-schema client that loads the schema from the db if the url refer to a
  * schema store. If not it delegates to the DefaultSchemaClient.
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SchemaStoreClient implements SchemaClient {
     static final Logger LOGGER = LoggerFactory.getLogger(SchemaStoreClient.class);

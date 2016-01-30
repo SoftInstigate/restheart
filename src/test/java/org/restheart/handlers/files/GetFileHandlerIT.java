@@ -44,7 +44,7 @@ import org.restheart.utils.HttpStatus;
 
 /**
  *
- * @author Maurizio Turatti <maurizio@softinstigate.com>
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class GetFileHandlerIT extends AbstactIT {
 

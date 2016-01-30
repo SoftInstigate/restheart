@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
 
 /**
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class DocIdTypeIT extends AbstactIT {
 

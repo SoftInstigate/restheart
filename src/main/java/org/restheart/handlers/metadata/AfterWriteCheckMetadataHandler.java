@@ -38,7 +38,7 @@ import static com.mongodb.client.model.Filters.and;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class AfterWriteCheckMetadataHandler extends BeforeWriteCheckMetadataHandler {
     public AfterWriteCheckMetadataHandler() {

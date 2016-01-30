@@ -32,7 +32,7 @@ import org.bson.types.ObjectId;
  *
  * schemaId refers to the mongodb _id and not to the id property
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SchemaStoreURL {
     private final String schemaDb;
