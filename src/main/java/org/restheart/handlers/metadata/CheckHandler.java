@@ -82,11 +82,12 @@ public class CheckHandler extends PipedHttpHandler {
     }
 
     private boolean check(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
-        if (!(context.getContent() instanceof BasicDBObject)) {
-            throw new RuntimeException("this hanlder only supports content of type json object; content " +
-                    context.getContent());
+        if (context.getContent() != null
+                && !(context.getContent() instanceof BasicDBObject)) {
+            throw new RuntimeException("this hanlder only supports content of type json object; content "
+                    + context.getContent());
         }
-        
+
         return checkers.stream().allMatch(checker -> checker.check(exchange, context, (BasicDBObject) context.getContent(), null));
     }
 }

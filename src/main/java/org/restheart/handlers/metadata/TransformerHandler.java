@@ -66,9 +66,10 @@ public class TransformerHandler extends PipedHttpHandler {
     }
 
     private void transform(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
-        if (!(context.getContent() instanceof BasicDBObject)) {
-            throw new RuntimeException("this hanlder only supports content of type json object; content " +
-                    context.getContent());
+        if (context.getContent() != null
+                && !(context.getContent() instanceof BasicDBObject)) {
+            throw new RuntimeException("this hanlder only supports content of type json object; content "
+                    + context.getContent());
         }
 
         transformers.stream().forEachOrdered(t -> t.tranform(exchange, context, context.getContent(), null));
