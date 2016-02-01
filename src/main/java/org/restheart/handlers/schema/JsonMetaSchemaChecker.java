@@ -85,18 +85,23 @@ public class JsonMetaSchemaChecker implements Checker {
     }
 
     @Override
-    public PHASE getPhase() {
-        return PHASE.BEFORE_WRITE;
-    }
-
-    @Override
     public boolean shouldCheckFailIfNotSupported(DBObject args) {
         return true;
+    }
+    
+    @Override
+    public PHASE getPhase(RequestContext context) {
+        if (CheckersUtils.doesRequestUsesDotNotation(context.getContent())
+                || CheckersUtils.doesRequestUsesUpdateOperators(context.getContent())) {
+            return PHASE.AFTER_WRITE;
+        } else {
+            return PHASE.BEFORE_WRITE;
+        }
     }
 
     @Override
     public boolean doesSupportRequests(RequestContext context) {
-        return !CheckersUtils.isBulkRequest(context);
+        return !(CheckersUtils.isBulkRequest(context)
+                && getPhase(context) == PHASE.AFTER_WRITE);
     }
-
 }

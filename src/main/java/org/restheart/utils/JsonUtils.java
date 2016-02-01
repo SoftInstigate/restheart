@@ -45,7 +45,7 @@ public class JsonUtils {
 
     static final Logger LOGGER = LoggerFactory.getLogger(JsonUtils.class);
 
-    private static final ObjectSerializer serializer = JSONSerializers.getStrict();
+    private static final ObjectSerializer SERIALIZER = JSONSerializers.getStrict();
 
     /**
      *
@@ -54,7 +54,7 @@ public class JsonUtils {
      *
      */
     public static String serialize(Object bson) {
-        return serializer.serialize(bson);
+        return SERIALIZER.serialize(bson);
     }
 
     /**
@@ -244,7 +244,7 @@ public class JsonUtils {
         switch (pathToken) {
             case "$":
                 if (!(json instanceof BasicDBObject)) {
-                    throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; it should be an object but found " + serializer.serialize(json));
+                    throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; it should be an object but found " + SERIALIZER.serialize(json));
                 }
 
                 if (pathTokens.length != totalTokensLength) {

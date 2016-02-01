@@ -50,8 +50,8 @@ public class AfterWriteCheckMetadataHandler extends BeforeWriteCheckMetadataHand
     }
 
     @Override
-    protected boolean doesCheckerApply(Checker checker) {
-        return checker.getPhase() == Checker.PHASE.AFTER_WRITE;
+    protected boolean doesCheckerApply(RequestContext context, Checker checker) {
+        return checker.getPhase(context) == Checker.PHASE.AFTER_WRITE;
     }
 
     @Override

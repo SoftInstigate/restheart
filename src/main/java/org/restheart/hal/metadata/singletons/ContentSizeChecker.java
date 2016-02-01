@@ -20,7 +20,7 @@ package org.restheart.hal.metadata.singletons;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
-import java.util.Set;
+import org.restheart.hal.metadata.singletons.Checker.PHASE;
 import org.restheart.handlers.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * sizes are in bytes
  *
  */
-public class ContentSizeChecker implements Checker {
+public class ContentSizeChecker extends AbstractChecker {
     static final Logger LOGGER = LoggerFactory.getLogger(ContentSizeChecker.class);
 
     @Override
@@ -88,17 +88,12 @@ public class ContentSizeChecker implements Checker {
     }
 
     @Override
-    public PHASE getPhase() {
+    public PHASE getPhase(RequestContext context) {
         return PHASE.BEFORE_WRITE;
     }
 
     @Override
     public boolean doesSupportRequests(RequestContext context) {
         return true;
-    }
-
-    @Override
-    public boolean shouldCheckFailIfNotSupported(DBObject args) {
-        return false;
     }
 }
