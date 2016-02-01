@@ -239,6 +239,7 @@ buffers-per-region: 20
 direct-buffers: true
 
 #### Connetction Options
+## see http://undertow.io/undertow-docs/undertow-docs-1.3.0/index.html#common-listener-options
 
 connection-options:
     # The maximum size of a HTTP header block, in bytes. 
@@ -254,9 +255,6 @@ connection-options:
      # Generall this will be larger than MAX_ENTITY_SIZE
      # If this is not specified it will be the same as MAX_ENTITY_SIZE
     MULTIPART_MAX_ENTITY_SIZE: -1
-    
-    # If we should buffer pipelined requests. Defaults to false.
-    BUFFER_PIPELINED_DATA: false
     
     # The idle timeout in milliseconds after which the channel will be closed.
     # If the underlying channel already has a read or write timeout set 
@@ -291,17 +289,6 @@ connection-options:
     # Defaults to 200.
     MAX_COOKIES: 200
 
-    # If a request comes in with encoded / characters (i.e. %2F), will these be decoded. 
-    # This can cause security problems (link:http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2007-0450) if a front end proxy does not perform the same decoding, and as a result this is disabled by default.
-    ALLOW_ENCODED_SLASH: false
-    
-    # If this is true then the parser will decode the URL and query parameters
-    # using the selected character encoding (UTF-8 by default). 
-    # If this is false they will not be decoded. 
-    # This will allow a later handler to decode them into whatever charset is desired.
-    # Defaults to true.
-    DECODE_URL: true
-    
     # The charset to use to decode the URL and query parameters. 
     # Defaults to UTF-8.
     URL_CHARSET: UTF-8
@@ -316,57 +303,3 @@ connection-options:
     # unless the server does not have an accurate clock.
     # Defaults to true
     ALWAYS_SET_DATE: true
-    
-    #  Maximum size of a buffered request, in bytes 
-    # Requests are not usually buffered, the most common case is when performing SSL 
-    # renegotiation for a POST request, and the post data must be fully buffered 
-    # in order to perform the renegotiation.
-    # Defaults to 16384
-    MAX_BUFFERED_REQUEST_SIZE: 16384
-    
-    # If this is true then Undertow will record the request start time, 
-    # to allow for request time to be logged.
-    # This has a small but measurable performance impact
-    # Defaults to false
-    RECORD_REQUEST_START_TIME: false
-    
-    # If this is true then Undertow will allow non-escaped equals characters in unquoted cookie values. 
-    # Unquoted cookie values may not contain equals characters. 
-    # If present the value ends before the equals sign. 
-    # The remainder of the cookie value will be dropped. 
-    # Defaults to false.
-    ALLOW_EQUALS_IN_COOKIE_VALUE: false
-    
-    # If we should attempt to use SPDY for HTTPS connections.
-    ENABLE_SPDY: false
-
-    # If we should attempt to use HTTP2 for HTTPS connections.
-    ENABLE_HTTP2: false
-
-    # If connector level statistics should be enabled. 
-    # This has a slight performance impact, but allows statistics such as bytes 
-    # sent/recevied to be monitored.
-    # If this is passed to the client then client statistics will be enabled.
-    ENABLE_STATISTICS: false
-    
-    # If unknown protocols should be allowed. The known protocols are:
-    # HTTP/0.9, HTTP/1.0, HTTP/1.1 and HTTP/2.0
-    # If this is false then requests that specify any other protocol will be rejected with a 400
-    # Defaults to false
-    ALLOW_UNKNOWN_PROTOCOLS: false
-
-    # The maximum number of concurrent requests that will be processed at a time. 
-    # This differs from max concurrent streams in that it is not sent to the remote client.
-    # If the number of pending requests exceeds this number then requests will be queued, 
-    # the difference between this and max concurrent streams determins the maximum 
-    # number of requests that will be queued.
-    # Queued requests are processed by a priority queue, 
-    # rather than a FIFO based queue, using HTTP2 stream priority.
-    # If this number is smaller than or equal to zero then max concurrent 
-    # streams determins the maximum number of streams that can be run.
-    MAX_CONCURRENT_REQUESTS_PER_CONNECTION: 0
-    
-    # The maximum number of buffers that will be used 
-    # before reads are paused in framed protocols. 
-    # Defaults to 10
-    MAX_QUEUED_READ_BUFFERS: 10
