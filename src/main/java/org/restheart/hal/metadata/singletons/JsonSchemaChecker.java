@@ -35,11 +35,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 
+ *
  * checks documents according to the specified json-schema
- * 
- * this is an AFTER_WRITE checker thus it does not support FILE resources
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class JsonSchemaChecker implements Checker {
@@ -51,15 +49,15 @@ public class JsonSchemaChecker implements Checker {
 
     @Override
     public boolean check(
-            HttpServerExchange exchange, 
-            RequestContext context, 
-            BasicDBObject contentToCheck, 
+            HttpServerExchange exchange,
+            RequestContext context,
+            BasicDBObject contentToCheck,
             DBObject args) {
         Objects.requireNonNull(args, "missing metadata property 'args'");
 
         Object _schemaStoreDb = args.get(SCHEMA_STORE_DB_PROPERTY);
         String schemaStoreDb;
-        
+
         Object schemaId = args.get(SCHEMA_ID_PROPERTY);
 
         Objects.requireNonNull(schemaId, "missing property '" + SCHEMA_ID_PROPERTY + "' in metadata property 'args'");
@@ -72,7 +70,7 @@ public class JsonSchemaChecker implements Checker {
         } else {
             throw new IllegalArgumentException("property " + SCHEMA_STORE_DB_PROPERTY + " in metadata 'args' must be a string");
         }
-        
+
         try {
             URLUtils.checkId(schemaId);
         } catch (UnsupportedDocumentIdException ex) {
@@ -80,7 +78,7 @@ public class JsonSchemaChecker implements Checker {
         }
 
         Schema theschema;
-        
+
         try {
             theschema = JsonSchemaCacheSingleton
                     .getInstance()
@@ -97,23 +95,23 @@ public class JsonSchemaChecker implements Checker {
                     + RequestContext._SCHEMAS
                     + "/" + schemaId.toString() + " not found");
         }
-        
+
         Objects.requireNonNull(context.getDbOperationResult());
-        
+
         Document data = context.getDbOperationResult().getNewData();
 
         String _data = data == null
                 ? "{}"
                 : data.toJson();
-        
+
         LOGGER.debug(_data);
 
         try {
             theschema.validate(
                     new JSONObject(_data));
-        } catch(JSONException je) {
+        } catch (JSONException je) {
             context.addWarning(je.getMessage());
-            
+
             return false;
         } catch (ValidationException ve) {
             context.addWarning(ve.getMessage());
@@ -126,16 +124,16 @@ public class JsonSchemaChecker implements Checker {
 
         return true;
     }
-    
+
     @Override
     public PHASE getPhase() {
         return PHASE.AFTER_WRITE;
     }
-    
+
     @Override
     public boolean shouldCheckFailIfNotSupported(DBObject args) {
         Object _failIfNotSupported = args.get(FAIL_IF_NOT_SUPPORTED_PROPERTY);
-        
+
         if (_failIfNotSupported == null) {
             return true;
         } else if (_failIfNotSupported instanceof Boolean) {

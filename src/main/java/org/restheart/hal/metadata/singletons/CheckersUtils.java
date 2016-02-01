@@ -49,7 +49,7 @@ public class CheckersUtils {
         if (content instanceof BasicDBObject) {
             BasicDBObject obj = (BasicDBObject) content;
             
-            return !obj.keySet().stream().anyMatch(key -> {
+            return obj.keySet().stream().anyMatch(key -> {
                 return UPDATE_OPERATORS.contains(key);
             });
         } else if (content instanceof BasicDBList) {
