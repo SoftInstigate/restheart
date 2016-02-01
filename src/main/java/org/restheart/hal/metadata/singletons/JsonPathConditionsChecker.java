@@ -129,11 +129,6 @@ public class JsonPathConditionsChecker extends AbstractChecker {
         }
     }
 
-    @Override
-    public boolean shouldCheckFailIfNotSupported(DBObject args) {
-        return false;
-    }
-
     protected boolean applyConditions(BasicDBList conditions, DBObject json, final RequestContext context) {
         return conditions.stream().allMatch((Object _condition) -> {
             if (_condition instanceof BasicDBObject) {

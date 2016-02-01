@@ -20,11 +20,15 @@ package org.restheart.handlers.metadata;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.util.JSON;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
+import java.util.Objects;
+import org.bson.Document;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.RequestChecker;
 import org.restheart.hal.metadata.singletons.Checker;
+import org.restheart.hal.metadata.singletons.Checker.PHASE;
 import org.restheart.hal.metadata.singletons.CheckersUtils;
 import org.restheart.hal.metadata.singletons.NamedSingletonsFactory;
 import org.restheart.handlers.PipedHttpHandler;
@@ -115,25 +119,25 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
 
                     return !_checker.doesSupportRequests(context);
                 })) {
-            
+
             String error = "";
-            
+
             if (CheckersUtils.doesRequestUsesDotNotation(context.getContent())) {
                 error = error.concat("uses the dot notation");
             }
-            
+
             if (CheckersUtils.doesRequestUsesUpdateOperators(context.getContent())) {
-                error = error.isEmpty() 
-                        ? "uses update operators" : 
-                        error.concat(" and update operators");
+                error = error.isEmpty()
+                        ? "uses update operators"
+                        : error.concat(" and update operators");
             }
-            
+
             if (CheckersUtils.isBulkRequest(context)) {
-                error = error.isEmpty() 
-                        ? "is bulk operation" : 
-                        error.concat(" and it is a bulk operation");
+                error = error.isEmpty()
+                        ? "is a bulk operation"
+                        : error.concat(" and it is a bulk operation");
             }
-            
+
             context.addWarning("the checkers defined for this collection don't support this request; note that it " + error);
             return false;
         }
@@ -166,21 +170,35 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                             return false;
                         }
 
-                        if (doesCheckerApply(context, _checker) 
+                        if (doesCheckerApply(context, _checker)
                                 && _checker.doesSupportRequests(context)) {
 
                             DBObject content = context.getContent();
 
-                            if (content instanceof BasicDBObject) {
+                            DBObject _data;
+
+                            if (_checker.getPhase(context) == PHASE.BEFORE_WRITE) {
+                                _data = context.getContent();
+                            } else {
+                                Objects.requireNonNull(context.getDbOperationResult());
+
+                                Document data = context
+                                        .getDbOperationResult()
+                                        .getNewData();
+
+                                _data =  (DBObject) JSON.parse(data.toJson());
+                            }
+
+                            if (_data instanceof BasicDBObject) {
                                 return _checker.check(
                                         exchange,
                                         context,
-                                        (BasicDBObject) content,
+                                        (BasicDBObject) _data,
                                         checker.getArgs());
                             } else if (content instanceof BasicDBList) {
                                 // content can be an array of bulk POST
 
-                                BasicDBList arrayContent = (BasicDBList) content;
+                                BasicDBList arrayContent = (BasicDBList) _data;
 
                                 return arrayContent.stream().allMatch(obj -> {
                                     if (obj instanceof BasicDBObject) {
