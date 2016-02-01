@@ -51,11 +51,11 @@ public class PostCollectionHandler extends PipedHttpHandler {
     public PostCollectionHandler(DocumentDAO documentDAO) {
         this(null, new DocumentDAO());
     }
-    
+
     public PostCollectionHandler(PipedHttpHandler next) {
         this(next, new DocumentDAO());
     }
-    
+
     public PostCollectionHandler(PipedHttpHandler next, DocumentDAO documentDAO) {
         super(next);
         this.documentDAO = documentDAO;
@@ -81,7 +81,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
             return;
         }
 
-        if (content.get("_id") != null && content.get("_id") instanceof String 
+        if (content.get("_id") != null && content.get("_id") instanceof String
                 && RequestContext.isReservedResourceDocument(context.getType(), (String) content.get("_id"))) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "reserved resource");
             return;
@@ -102,30 +102,25 @@ public class PostCollectionHandler extends PipedHttpHandler {
         }
 
         OperationResult result = this.documentDAO
-                .upsertDocumentPost(context.getDBName(), 
-                        context.getCollectionName(), 
-                        docId, 
-                        content, 
+                .upsertDocumentPost(context.getDBName(),
+                        context.getCollectionName(),
+                        docId,
+                        content,
                         context.getETag(),
                         context.isETagCheckRequired());
-        
+
         context.setDbOperationResult(result);
 
         // inject the etag
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
-        
+
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
                     "The document's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
             return;
         }
-        
-        // insert the Location handler
-        exchange.getResponseHeaders()
-                .add(HttpString.tryFromString("Location"),
-                        getReferenceLink(context, exchange.getRequestURL(), docId));
 
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
@@ -133,11 +128,19 @@ public class PostCollectionHandler extends PipedHttpHandler {
         } else {
             exchange.setStatusCode(result.getHttpCode());
         }
-        
+
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }
         
+        // insert the Location handler for new documents
+        // note, next handlers might change the status code
+        if (result.getHttpCode() == HttpStatus.SC_CREATED) {
+            exchange.getResponseHeaders()
+                    .add(HttpString.tryFromString("Location"),
+                            getReferenceLink(context, exchange.getRequestURL(), docId));
+        }
+
         exchange.endExchange();
     }
 }
