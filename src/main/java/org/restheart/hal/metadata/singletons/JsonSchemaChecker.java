@@ -21,16 +21,15 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.Objects;
-import org.bson.Document;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.handlers.schema.JsonSchemaCacheSingleton;
 import org.restheart.handlers.schema.JsonSchemaNotFoundException;
-import org.restheart.utils.JsonUtils;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,24 +95,9 @@ public class JsonSchemaChecker extends AbstractChecker {
                     + "/" + schemaId.toString() + " not found");
         }
 
-        String _data;
-
-        if (getPhase(context) == PHASE.BEFORE_WRITE) {
-            DBObject data = context.getContent();
-
-            _data = data == null
+        String _data = contentToCheck == null
                     ? "{}"
-                    : JsonUtils.serialize(data);
-
-        } else {
-            Objects.requireNonNull(context.getDbOperationResult());
-
-            Document data = context.getDbOperationResult().getNewData();
-
-            _data = data == null
-                    ? "{}"
-                    : data.toJson();
-        }
+                    : contentToCheck.toJson();
 
         try {
             theschema.validate(
@@ -136,7 +120,8 @@ public class JsonSchemaChecker extends AbstractChecker {
 
     @Override
     public PHASE getPhase(RequestContext context) {
-        if (CheckersUtils.doesRequestUsesDotNotation(context.getContent())
+        if (context.getMethod() == METHOD.PATCH
+                || CheckersUtils.doesRequestUsesDotNotation(context.getContent())
                 || CheckersUtils.doesRequestUsesUpdateOperators(context.getContent())) {
             return PHASE.AFTER_WRITE;
         } else {
