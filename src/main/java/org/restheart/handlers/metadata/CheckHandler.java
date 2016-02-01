@@ -59,7 +59,7 @@ public class CheckHandler extends PipedHttpHandler {
                 getNext().handleRequest(exchange, context);
             } else {
                 StringBuilder sb = new StringBuilder();
-                sb.append("request data does not fulfill the collection schema check constraint");
+                sb.append("schema check failed");
 
                 List<String> warnings = context.getWarnings();
 
@@ -88,6 +88,8 @@ public class CheckHandler extends PipedHttpHandler {
                     + context.getContent());
         }
 
-        return checkers.stream().allMatch(checker -> checker.check(exchange, context, (BasicDBObject) context.getContent(), null));
+        return checkers.stream().allMatch(checker -> 
+                checker.check(exchange, context, 
+                        (BasicDBObject) context.getContent(), null));
     }
 }

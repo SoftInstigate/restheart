@@ -25,6 +25,7 @@ import java.util.List;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.RequestChecker;
 import org.restheart.hal.metadata.singletons.Checker;
+import org.restheart.hal.metadata.singletons.CheckersUtils;
 import org.restheart.hal.metadata.singletons.NamedSingletonsFactory;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -98,74 +99,115 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
         List<RequestChecker> checkers = RequestChecker
                 .getFromJson(context.getCollectionProps());
 
-        return checkers.stream().allMatch(checker -> {
-            try {
-                Checker _checker = (Checker) NamedSingletonsFactory
-                        .getInstance()
-                        .get(ROOT_KEY, checker.getName());
+        // if no checker supports the request, it fails anyway
+        if (checkers != null
+                && checkers.size() > 0
+                && checkers.stream().allMatch(checker -> {
+                    Checker _checker = (Checker) NamedSingletonsFactory
+                            .getInstance()
+                            .get(ROOT_KEY, checker.getName());
 
-                if (_checker == null) {
-                    throw new IllegalArgumentException("cannot find singleton "
-                            + checker.getName()
-                            + " in singleton group checkers");
-                }
+                    if (_checker == null) {
+                        throw new IllegalArgumentException("cannot find singleton "
+                                + checker.getName()
+                                + " in singleton group checkers");
+                    }
 
-                // all checkers (both BEFORE_WRITE and AFTER_WRITE) are checked
-                // to support the request; if any checker does not support the
-                // request and has shouldCheckFailIfNotSupported flag to true, 
-                // the request fails
-                if (!_checker.doesSupportRequests(context) && _checker.shouldCheckFailIfNotSupported(checker.getArgs())) {
-                    LOGGER.debug("checker "
-                            + _checker.getClass().getSimpleName()
-                            + " does not support this request. check will "
-                            + (_checker.shouldCheckFailIfNotSupported(checker.getArgs()) ? "fail" : "not fail"));
+                    return !_checker.doesSupportRequests(context);
+                })) {
+            
+            String error = "";
+            
+            if (CheckersUtils.doesRequestUsesDotNotation(context.getContent())) {
+                error = error.concat("uses the dot notation");
+            }
+            
+            if (CheckersUtils.doesRequestUsesUpdateOperators(context.getContent())) {
+                error = error.isEmpty() 
+                        ? "uses update operators" : 
+                        error.concat(" and update operators");
+            }
+            
+            if (CheckersUtils.isBulkRequest(context)) {
+                error = error.isEmpty() 
+                        ? "is bulk operation" : 
+                        error.concat(" and it is a bulk operation");
+            }
+            
+            context.addWarning("the checkers defined for this collection don't support this request; note that it " + error);
+            return false;
+        }
 
-                    context.addWarning("the checker " + _checker.getClass().getSimpleName() + " does not support this request and is configured to fail in this case");
-                    return false;
-                }
+        return checkers != null
+                && checkers.stream().allMatch(checker -> {
+                    try {
+                        Checker _checker = (Checker) NamedSingletonsFactory
+                                .getInstance()
+                                .get(ROOT_KEY, checker.getName());
 
-                if (doesCheckerApply(_checker) && _checker.doesSupportRequests(context)) {
+                        if (_checker == null) {
+                            throw new IllegalArgumentException("cannot find singleton "
+                                    + checker.getName()
+                                    + " in singleton group checkers");
+                        }
 
-                    DBObject content = context.getContent();
+                        // all checkers (both BEFORE_WRITE and AFTER_WRITE) are checked
+                        // to support the request; if any checker does not support the
+                        // request and has shouldCheckFailIfNotSupported flag to true, 
+                        // the request fails.
+                        if (!_checker.doesSupportRequests(context)
+                                && _checker.shouldCheckFailIfNotSupported(checker.getArgs())) {
+                            LOGGER.debug("checker "
+                                    + _checker.getClass().getSimpleName()
+                                    + " does not support this request. check will "
+                                    + (_checker.shouldCheckFailIfNotSupported(checker.getArgs()) ? "fail" : "not fail"));
 
-                    if (content instanceof BasicDBObject) {
-                        return _checker.check(
-                                exchange,
-                                context,
-                                (BasicDBObject) content,
-                                checker.getArgs());
-                    } else if (content instanceof BasicDBList) {
-                        // content can be an array of bulk POST
+                            context.addWarning("the checker " + _checker.getClass().getSimpleName() + " does not support this request and is configured to fail in this case");
+                            return false;
+                        }
 
-                        BasicDBList arrayContent = (BasicDBList) content;
+                        if (doesCheckerApply(_checker) && _checker.doesSupportRequests(context)) {
 
-                        return arrayContent.stream().allMatch(obj -> {
-                            if (obj instanceof BasicDBObject) {
-                                return _checker
-                                        .check(
-                                                exchange,
-                                                context,
-                                                (BasicDBObject) obj,
-                                                checker.getArgs());
+                            DBObject content = context.getContent();
+
+                            if (content instanceof BasicDBObject) {
+                                return _checker.check(
+                                        exchange,
+                                        context,
+                                        (BasicDBObject) content,
+                                        checker.getArgs());
+                            } else if (content instanceof BasicDBList) {
+                                // content can be an array of bulk POST
+
+                                BasicDBList arrayContent = (BasicDBList) content;
+
+                                return arrayContent.stream().allMatch(obj -> {
+                                    if (obj instanceof BasicDBObject) {
+                                        return _checker
+                                                .check(
+                                                        exchange,
+                                                        context,
+                                                        (BasicDBObject) obj,
+                                                        checker.getArgs());
+                                    } else {
+                                        LOGGER.warn("element of content array is not an object");
+                                        return true;
+                                    }
+                                });
+
                             } else {
-                                LOGGER.warn("element of content array is not an object");
+                                LOGGER.warn("content is not an object or an array");
                                 return true;
                             }
-                        });
+                        } else {
+                            return true;
+                        }
 
-                    } else {
-                        LOGGER.warn("content is not an object or an array");
-                        return true;
+                    } catch (IllegalArgumentException ex) {
+                        context.addWarning("error applying checker: " + ex.getMessage());
+                        return false;
                     }
-                } else {
-                    return true;
-                }
-
-            } catch (IllegalArgumentException ex) {
-                context.addWarning("error applying checker: " + ex.getMessage());
-                return false;
-            }
-        });
+                });
     }
 
     protected boolean doesCheckerApply(Checker checker) {
