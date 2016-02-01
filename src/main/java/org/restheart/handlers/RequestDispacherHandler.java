@@ -315,7 +315,10 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
     }
 
     private PipedHttpHandler getHandlerToLog(PipedHttpHandler handler) {
-        if (handler instanceof BeforeWriteCheckMetadataHandler || handler instanceof RequestTransformerMetadataHandler) {
+        if (handler instanceof BeforeWriteCheckMetadataHandler 
+                || handler instanceof RequestTransformerMetadataHandler
+                || handler instanceof CheckHandler
+                || handler instanceof TransformerHandler) {
             return getHandlerToLog(handler.getNext());
         } else {
             return handler;

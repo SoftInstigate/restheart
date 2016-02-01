@@ -85,6 +85,8 @@ import org.slf4j.LoggerFactory;
 import org.restheart.handlers.RequestLoggerHandler;
 import static io.undertow.Handlers.path;
 import static org.fusesource.jansi.Ansi.ansi;
+import static io.undertow.Handlers.path;
+import static org.fusesource.jansi.Ansi.ansi;
 
 /**
  *
@@ -545,7 +547,7 @@ public final class Bootstrapper {
                 .setBuffersPerRegion(configuration.getBuffersPerRegion())
                 .setHandler(shutdownHandler);
         
-        BootstrapperHelper.setConnectionOptions(builder, configuration);
+        ConfigurationHelper.setConnectionOptions(builder, configuration);
         
         builder.build().start();
     }

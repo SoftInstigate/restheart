@@ -30,7 +30,7 @@ import org.xnio.Option;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class BootstrapperHelper {
+public class ConfigurationHelper {
     private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
 
     private static final Set<Option> UNDERTOW_OPTIONS;
@@ -86,7 +86,7 @@ public class BootstrapperHelper {
 
                 if (value != null) {
                     builder.setServerOption(option, value);
-                    LOGGER.debug("Connection option {}={}", option.getName(), value);
+                    LOGGER.trace("Connection option {}={}", option.getName(), value);
                 }
             }
         });
@@ -98,7 +98,7 @@ public class BootstrapperHelper {
                 if (value != null) {
                     Long lvalue = 0l + (Integer) value;
                     builder.setServerOption(option, lvalue);
-                    LOGGER.debug("Connection option {}={}", option.getName(), lvalue);
+                    LOGGER.trace("Connection option {}={}", option.getName(), lvalue);
                 }
             }
         });
