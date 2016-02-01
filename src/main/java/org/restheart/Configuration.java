@@ -52,7 +52,7 @@ public class Configuration {
     /**
      * URL pointing to the online documentation specific for this version.
      */
-    public static final String RESTHEART_ONLINE_DOC_URL = "http://restheart.org/curies/1.0";
+    public static final String RESTHEART_ONLINE_DOC_URL = "http://restheart.org/curies/1.2";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
 
