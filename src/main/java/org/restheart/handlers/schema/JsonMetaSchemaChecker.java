@@ -66,6 +66,10 @@ public class JsonMetaSchemaChecker implements Checker {
             RequestContext context, 
             BasicDBObject contentToCheck, 
             DBObject args) {
+        if (contentToCheck == null) {
+            return false;
+        }
+        
         try {
             schema.validate(new JSONObject(contentToCheck.toString()));
         } catch (ValidationException ve) {
