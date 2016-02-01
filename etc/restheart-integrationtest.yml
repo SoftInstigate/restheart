@@ -127,8 +127,6 @@ metadata-named-singletons:
           class: org.restheart.hal.metadata.singletons.JsonSchemaChecker
         - name: checkContent
           class: org.restheart.hal.metadata.singletons.JsonPathConditionsChecker
-        - name: checkBulkContent
-          class: org.restheart.hal.metadata.singletons.JsonPathConditionsBulkChecker
         - name: checkContentSize
           class: org.restheart.hal.metadata.singletons.ContentSizeChecker
 

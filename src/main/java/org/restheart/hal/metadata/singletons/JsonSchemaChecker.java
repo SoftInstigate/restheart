@@ -30,6 +30,7 @@ import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.schema.JsonSchemaCacheSingleton;
 import org.restheart.handlers.schema.JsonSchemaNotFoundException;
+import org.restheart.utils.JsonUtils;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,10 +41,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class JsonSchemaChecker implements Checker {
+public class JsonSchemaChecker extends AbstractChecker {
     public static final String SCHEMA_STORE_DB_PROPERTY = "schemaStoreDb";
     public static final String SCHEMA_ID_PROPERTY = "schemaId";
-    public static final String FAIL_IF_NOT_SUPPORTED_PROPERTY = "failIfNotSupported";
 
     static final Logger LOGGER = LoggerFactory.getLogger(JsonSchemaChecker.class);
 
@@ -96,15 +96,24 @@ public class JsonSchemaChecker implements Checker {
                     + "/" + schemaId.toString() + " not found");
         }
 
-        Objects.requireNonNull(context.getDbOperationResult());
+        String _data;
 
-        Document data = context.getDbOperationResult().getNewData();
+        if (getPhase(context) == PHASE.BEFORE_WRITE) {
+            DBObject data = context.getContent();
 
-        String _data = data == null
-                ? "{}"
-                : data.toJson();
+            _data = data == null
+                    ? "{}"
+                    : JsonUtils.serialize(data);
 
-        LOGGER.debug(_data);
+        } else {
+            Objects.requireNonNull(context.getDbOperationResult());
+
+            Document data = context.getDbOperationResult().getNewData();
+
+            _data = data == null
+                    ? "{}"
+                    : data.toJson();
+        }
 
         try {
             theschema.validate(
@@ -126,25 +135,18 @@ public class JsonSchemaChecker implements Checker {
     }
 
     @Override
-    public PHASE getPhase() {
-        return PHASE.AFTER_WRITE;
-    }
-
-    @Override
-    public boolean shouldCheckFailIfNotSupported(DBObject args) {
-        Object _failIfNotSupported = args.get(FAIL_IF_NOT_SUPPORTED_PROPERTY);
-
-        if (_failIfNotSupported == null) {
-            return true;
-        } else if (_failIfNotSupported instanceof Boolean) {
-            return (Boolean) _failIfNotSupported;
+    public PHASE getPhase(RequestContext context) {
+        if (CheckersUtils.doesRequestUsesDotNotation(context.getContent())
+                || CheckersUtils.doesRequestUsesUpdateOperators(context.getContent())) {
+            return PHASE.AFTER_WRITE;
         } else {
-            throw new IllegalArgumentException("property " + FAIL_IF_NOT_SUPPORTED_PROPERTY + " in metadata 'args' must be boolean");
+            return PHASE.BEFORE_WRITE;
         }
     }
 
     @Override
     public boolean doesSupportRequests(RequestContext context) {
-        return !CheckersUtils.isBulkRequest(context);
+        return !(CheckersUtils.isBulkRequest(context)
+                && getPhase(context) == PHASE.AFTER_WRITE);
     }
 }

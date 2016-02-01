@@ -166,7 +166,8 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                             return false;
                         }
 
-                        if (doesCheckerApply(_checker) && _checker.doesSupportRequests(context)) {
+                        if (doesCheckerApply(context, _checker) 
+                                && _checker.doesSupportRequests(context)) {
 
                             DBObject content = context.getContent();
 
@@ -210,7 +211,7 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                 });
     }
 
-    protected boolean doesCheckerApply(Checker checker) {
-        return checker.getPhase() == Checker.PHASE.BEFORE_WRITE;
+    protected boolean doesCheckerApply(RequestContext context, Checker checker) {
+        return checker.getPhase(context) == Checker.PHASE.BEFORE_WRITE;
     }
 }
