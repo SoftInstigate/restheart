@@ -59,6 +59,27 @@ public class GetAggreationIT extends AbstactIT {
                 + "{\"_id\": \"$name\", \"value\": {\"_$avg\": \"$age\"} }}"
                 + "]"
                 + "}]}";
+        
+        createTmpCollection();
+        createMetadataAndTestData(aggregationsMetadata);
+        _testGetAggregation(uri);
+    }
+    
+    @Test
+    public void testGetAggregationPipelineDotNotation() throws Exception {
+        String uri = "avg_ages";
+
+        String aggregationsMetadata = "{\"aggrs\": ["
+                + "{"
+                + "\"type\":\"aggregation\","
+                + "\"uri\":\"" + uri + "\","
+                + "\"stages\":"
+                + "["
+                + "{\"_$match\": { \"obj::name\": { \"_$exists\": true}}},"
+                + "{\"_$group\":"
+                + "{\"_id\": \"$obj.name\", \"value\": {\"_$avg\": \"$obj.age\"} }}"
+                + "]"
+                + "}]}";
 
         createTmpCollection();
         createMetadataAndTestData(aggregationsMetadata);
@@ -73,10 +94,12 @@ public class GetAggreationIT extends AbstactIT {
                 + "{"
                 + "\"type\":\"mapReduce\","
                 + "\"uri\":\"" + uri + "\","
-                + "\"map\": \"function() { emit(this.name, this.age) }\"" + ","
-                + "\"reduce\":\"function(key, values) { return Array.avg(values) }\"" + ","
+                + "\"map\": \"function() { emit(this.name, this.age); }\"" + ","
+                + "\"reduce\":\"function(key, values) { return Array.avg(values); }\"" + ","
                 + "\"query\":{\"name\":{\"_$exists\":true}}"
                 + "}]}";
+        
+        System.out.println(aggregationsMetadata);
 
         createTmpCollection();
         createMetadataAndTestData(aggregationsMetadata);
@@ -92,7 +115,7 @@ public class GetAggreationIT extends AbstactIT {
                 + "\"type\":\"mapReduce\"" + ","
                 + "\"uri\": \"" + uri + "\","
                 + "\"map\": \"function() { var minage = JSON.parse($vars).minage; if (this.age > minage ) { emit(this.name, this.age); }; }\","
-                + "\"reduce\":\"function(key, values) { return Array.avg(values) }\"" + ","
+                + "\"reduce\":\"function(key, values) { return Array.avg(values); }\"" + ","
                 + "\"query\":{\"name\":{\"_$var\":\"name\"}}"
                 + "}]}";
 
@@ -222,7 +245,11 @@ public class GetAggreationIT extends AbstactIT {
             "{\"name\":\"a\",\"age\":30}",
             "{\"name\":\"b\",\"age\":40}",
             "{\"name\":\"b\",\"age\":50}",
-            "{\"name\":\"b\",\"age\":60}"
+            "{\"name\":\"b\",\"age\":60}",
+            "{\"obj\":{\"name\":\"x\",\"age\":10}}",
+            "{\"obj\":{\"name\":\"x\",\"age\":20}}",
+            "{\"obj\":{\"name\":\"y\",\"age\":10}}",
+            "{\"obj\":{\"name\":\"y\",\"age\":20}}"
         };
 
         for (String datum : data) {
@@ -275,6 +302,8 @@ public class GetAggreationIT extends AbstactIT {
         } catch (Throwable t) {
             fail("parsing received json");
         }
+        
+        System.out.print(json.toString());
 
         assertNotNull("check not null json response", json);
         assertNotNull("check not null _embedded", json.get("_embedded"));
@@ -302,10 +331,9 @@ public class GetAggreationIT extends AbstactIT {
             assertNotNull("check not null value property",
                     v.asObject().get("value"));
             return v;
-        }).map((v) -> {
+        }).forEach((v) -> {
             assertTrue("check results value property is number",
                     v.asObject().get("value").isNumber());
-            return v;
         });
     }
 
