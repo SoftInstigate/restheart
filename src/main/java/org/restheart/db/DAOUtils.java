@@ -66,7 +66,7 @@ public class DAOUtils {
     
     public final static UpdateOptions U_NOT_UPSERT_OPS
             = new UpdateOptions()
-            .upsert(true);
+            .upsert(false);
 
     /**
      * @param rows list of DBObject rows as returned by getDataFromCursor()
