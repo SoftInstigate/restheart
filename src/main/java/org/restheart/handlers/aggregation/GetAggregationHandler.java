@@ -113,7 +113,8 @@ public class GetAggregationHandler extends PipedHttpHandler {
             } catch (QueryVariableNotBoundException qvnbe) {
                 ResponseHelper.endExchangeWithMessage(exchange,
                         HttpStatus.SC_BAD_REQUEST,
-                        "error executing mapReduce", qvnbe);
+                        "error executing mapReduce: "
+                        + qvnbe.getMessage());
                 return;
             }
 
@@ -146,7 +147,8 @@ public class GetAggregationHandler extends PipedHttpHandler {
             } catch (QueryVariableNotBoundException qvnbe) {
                 ResponseHelper.endExchangeWithMessage(exchange,
                         HttpStatus.SC_BAD_REQUEST,
-                        "error executing aggreation pipeline", qvnbe);
+                        "error executing aggreation pipeline: "
+                        + qvnbe.getMessage());
                 return;
             }
 
