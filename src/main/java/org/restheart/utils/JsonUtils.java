@@ -47,6 +47,9 @@ public class JsonUtils {
 
     private static final ObjectSerializer serializer = JSONSerializers.getStrict();
 
+    private static final String ESCAPED_$ = "_$";
+    private static final String ESCAPED_DOT = "::";
+
     /**
      *
      * @param bson the BSON object to serialize
@@ -58,11 +61,155 @@ public class JsonUtils {
     }
 
     /**
+     * replaces the underscore prefixed keys (eg _$exists) with the
+     * corresponding key (eg $exists) and the dot (.) in property names. This is
+     * needed because MongoDB does not allow to store keys that starts with $
+     * and with dots in it
+     *
+     * @see
+     * https://docs.mongodb.org/manual/reference/limits/#Restrictions-on-Field-Names
+     *
+     * @param obj
+     * @return the json object where the underscore prefixed keys are replaced
+     * with the corresponding keys
+     */
+    public static Object unescapeKeys(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+
+        if (obj instanceof BasicDBObject) {
+            BasicDBObject ret = new BasicDBObject();
+
+            ((BasicDBObject) obj).keySet().stream().forEach(k -> {
+                String newKey = k.startsWith(ESCAPED_$) ? k.substring(1) : k;
+                newKey = newKey.replaceAll(ESCAPED_DOT, ".");
+
+                Object value = ((BasicDBObject) obj).get(k);
+
+                if (value instanceof BasicDBObject) {
+                    ret.put(newKey,
+                            unescapeKeys((BasicDBObject) value));
+                } else if (value instanceof BasicDBList) {
+                    BasicDBList newList = new BasicDBList();
+
+                    ((BasicDBList) value).stream().forEach(v -> {
+                        newList.add(unescapeKeys(v));
+                    });
+
+                    ret.put(newKey, newList);
+                } else {
+                    ret.put(newKey, unescapeKeys(value));
+                }
+
+            });
+
+            return ret;
+        } else if (obj instanceof BasicDBList) {
+            BasicDBList ret = new BasicDBList();
+
+            ((BasicDBList) obj).stream().forEach(value -> {
+                if (value instanceof BasicDBObject) {
+                    ret.add(unescapeKeys((BasicDBObject) value));
+                } else if (value instanceof BasicDBList) {
+                    BasicDBList newList = new BasicDBList();
+
+                    ((BasicDBList) value).stream().forEach(v -> {
+                        newList.add(unescapeKeys(v));
+                    });
+
+                    ret.add(newList);
+                } else {
+                    ret.add(unescapeKeys(value));
+                }
+
+            });
+
+            return ret;
+        } else if (obj instanceof String) {
+            return ((String) obj)
+                    .startsWith(ESCAPED_$) ? ((String) obj).substring(1) : obj;
+        } else {
+            return obj;
+        }
+    }
+
+    /**
+     * replaces the dollar prefixed keys (eg $exists) with the corresponding
+     * underscore prefixed key (eg _$exists). This is needed because MongoDB
+     * does not allow to store keys that starts with $.
+     *
+     * @param obj
+     * @return the json object where the underscore prefixed keys are replaced
+     * with the corresponding keys
+     */
+    public static Object escapeKeys(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+
+        if (obj instanceof BasicDBObject) {
+            BasicDBObject ret = new BasicDBObject();
+
+            ((BasicDBObject) obj).keySet().stream().forEach(k -> {
+                String newKey = k.startsWith("$") ? "_" + k : k;
+                newKey = newKey.replaceAll(".", ESCAPED_DOT);
+
+                Object value = ((BasicDBObject) obj).get(k);
+
+                if (value instanceof BasicDBObject) {
+                    ret.put(newKey,
+                            escapeKeys((BasicDBObject) value));
+                } else if (value instanceof BasicDBList) {
+                    BasicDBList newList = new BasicDBList();
+
+                    ((BasicDBList) value).stream().forEach(v -> {
+                        newList.add(escapeKeys(v));
+                    });
+
+                    ret.put(newKey, newList);
+                } else {
+                    ret.put(newKey, escapeKeys(value));
+                }
+
+            });
+
+            return ret;
+        } else if (obj instanceof BasicDBList) {
+            BasicDBList ret = new BasicDBList();
+
+            ((BasicDBList) obj).stream().forEach(value -> {
+                if (value instanceof BasicDBObject) {
+                    ret.add(escapeKeys((BasicDBObject) value));
+                } else if (value instanceof BasicDBList) {
+                    BasicDBList newList = new BasicDBList();
+
+                    ((BasicDBList) value).stream().forEach(v -> {
+                        newList.add(escapeKeys(v));
+                    });
+
+                    ret.add(newList);
+                } else {
+                    ret.add(escapeKeys(value));
+                }
+
+            });
+
+            return ret;
+        } else if (obj instanceof String) {
+            return ((String) obj)
+                    .startsWith("$") ? "_" + ((String) obj) : obj;
+        } else {
+            return obj;
+        }
+    }
+
+    /**
      *
      * @param root the DBOject to extract properties from
      * @param path the path of the properties to extract
-     * @return the List of Optional<Object>s extracted from root ojbect and identified by the path or null if path does
-     * not exist
+     * @return the List of Optional&lt;Object&gt;s extracted from root ojbect
+     * and identified by the path or null if path does not exist
      *
      * @see org.restheart.test.unit.JsonUtilsTest form code examples
      *
@@ -209,11 +356,12 @@ public class JsonUtils {
      * @param left the json path expression
      * @param right the json path expression
      *
-     * @return true if the left json path is an acestor of the right path, i.e. left path selects a values set that
-     * includes the one selected by the right path
+     * @return true if the left json path is an acestor of the right path, i.e.
+     * left path selects a values set that includes the one selected by the
+     * right path
      *
-     * examples: ($, $.a) -> true, ($.a, $.b) -> false, ($.*, $.a) -> true, ($.a.[*].c, $.a.0.c) -> true, ($.a.[*],
-     * $.a.b) -> false
+     * examples: ($, $.a) -> true, ($.a, $.b) -> false, ($.*, $.a) -> true,
+     * ($.a.[*].c, $.a.0.c) -> true, ($.a.[*], $.a.b) -> false
      *
      */
     public static boolean isAncestorPath(final String left, final String right) {
@@ -269,7 +417,8 @@ public class JsonUtils {
     /**
      * @param root
      * @param path
-     * @return then number of properties identitified by the json path expression or null if path does not exist
+     * @return then number of properties identitified by the json path
+     * expression or null if path does not exist
      * @throws IllegalArgumentException
      */
     public static Integer countPropsFromPath(Object root, String path) throws IllegalArgumentException {
@@ -391,18 +540,20 @@ public class JsonUtils {
                     ++i;
                 }
             } else // we're outside of the special modes, so look for mode openers (comment start, string start)
-            if (cc.equals("/*")) {
-                in_multiline_comment = true;
-                ++i;
-            } else if (cc.equals("//")) {
-                in_singleline_comment = true;
-                ++i;
-            } else if (c == '"' || c == '\'') {
-                in_string = true;
-                string_opener = c;
-                out.append(c);
-            } else if (!Character.isWhitespace(c)) {
-                out.append(c);
+            {
+                if (cc.equals("/*")) {
+                    in_multiline_comment = true;
+                    ++i;
+                } else if (cc.equals("//")) {
+                    in_singleline_comment = true;
+                    ++i;
+                } else if (c == '"' || c == '\'') {
+                    in_string = true;
+                    string_opener = c;
+                    out.append(c);
+                } else if (!Character.isWhitespace(c)) {
+                    out.append(c);
+                }
             }
         }
         return out.toString();
