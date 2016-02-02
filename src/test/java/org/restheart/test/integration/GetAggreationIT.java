@@ -99,8 +99,6 @@ public class GetAggreationIT extends AbstactIT {
                 + "\"query\":{\"name\":{\"_$exists\":true}}"
                 + "}]}";
         
-        System.out.println(aggregationsMetadata);
-
         createTmpCollection();
         createMetadataAndTestData(aggregationsMetadata);
         _testGetAggregation(uri);
@@ -303,8 +301,6 @@ public class GetAggreationIT extends AbstactIT {
             fail("parsing received json");
         }
         
-        System.out.print(json.toString());
-
         assertNotNull("check not null json response", json);
         assertNotNull("check not null _embedded", json.get("_embedded"));
         assertTrue("check _embedded", json.get("_embedded").isObject());
