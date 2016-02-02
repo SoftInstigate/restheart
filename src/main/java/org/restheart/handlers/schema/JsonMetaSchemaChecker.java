@@ -85,11 +85,6 @@ public class JsonMetaSchemaChecker implements Checker {
     }
 
     @Override
-    public boolean shouldCheckFailIfNotSupported(DBObject args) {
-        return true;
-    }
-    
-    @Override
     public PHASE getPhase(RequestContext context) {
         if (context.getMethod() == RequestContext.METHOD.PATCH
                 || CheckersUtils.doesRequestUsesDotNotation(context.getContent())

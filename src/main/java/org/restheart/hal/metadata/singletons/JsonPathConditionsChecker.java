@@ -84,7 +84,7 @@ import org.slf4j.LoggerFactory;
  * "^\\u0022[A-Z0-9._%+-]+@[A-Z0-9.-]+\\u005C\\u005C.[A-Z]{2,6}\\u0022$"}
  *
  */
-public class JsonPathConditionsChecker extends AbstractChecker {
+public class JsonPathConditionsChecker implements Checker {
     static final Logger LOGGER = LoggerFactory.getLogger(JsonPathConditionsChecker.class);
 
     protected static String avoidEscapedChars(String s) {

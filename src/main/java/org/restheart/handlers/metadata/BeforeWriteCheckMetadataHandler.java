@@ -103,45 +103,6 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
         List<RequestChecker> checkers = RequestChecker
                 .getFromJson(context.getCollectionProps());
 
-        // if no checker supports the request, it fails anyway
-        if (checkers != null
-                && checkers.size() > 0
-                && checkers.stream().allMatch(checker -> {
-                    Checker _checker = (Checker) NamedSingletonsFactory
-                            .getInstance()
-                            .get(ROOT_KEY, checker.getName());
-
-                    if (_checker == null) {
-                        throw new IllegalArgumentException("cannot find singleton "
-                                + checker.getName()
-                                + " in singleton group checkers");
-                    }
-
-                    return !_checker.doesSupportRequests(context);
-                })) {
-
-            String error = "";
-
-            if (CheckersUtils.doesRequestUsesDotNotation(context.getContent())) {
-                error = error.concat("uses the dot notation");
-            }
-
-            if (CheckersUtils.doesRequestUsesUpdateOperators(context.getContent())) {
-                error = error.isEmpty()
-                        ? "uses update operators"
-                        : error.concat(" and update operators");
-            }
-
-            if (CheckersUtils.isBulkRequest(context)) {
-                error = error.isEmpty()
-                        ? "is a bulk operation"
-                        : error.concat(" and it is a bulk operation");
-            }
-
-            context.addWarning("the checkers defined for this collection don't support this request; note that it " + error);
-            return false;
-        }
-
         return checkers != null
                 && checkers.stream().allMatch(checker -> {
                     try {
@@ -157,16 +118,37 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
 
                         // all checkers (both BEFORE_WRITE and AFTER_WRITE) are checked
                         // to support the request; if any checker does not support the
-                        // request and has shouldCheckFailIfNotSupported flag to true, 
-                        // the request fails.
+                        // request and it is configured to fail in this case,
+                        // then the request fails.
                         if (!_checker.doesSupportRequests(context)
-                                && _checker.shouldCheckFailIfNotSupported(checker.getArgs())) {
+                                && !checker.skipNotSupported()) {
                             LOGGER.debug("checker "
                                     + _checker.getClass().getSimpleName()
                                     + " does not support this request. check will "
-                                    + (_checker.shouldCheckFailIfNotSupported(checker.getArgs()) ? "fail" : "not fail"));
+                                    + (checker.skipNotSupported() ? "not fail" : "fail"));
 
-                            context.addWarning("the checker " + _checker.getClass().getSimpleName() + " does not support this request and is configured to fail in this case");
+                            String noteMsg = "";
+
+                            if (CheckersUtils.doesRequestUsesDotNotation(context.getContent())) {
+                                noteMsg = noteMsg.concat("uses the dot notation");
+                            }
+
+                            if (CheckersUtils.doesRequestUsesUpdateOperators(context.getContent())) {
+                                noteMsg = noteMsg.isEmpty()
+                                        ? "uses update operators"
+                                        : noteMsg.concat(" and update operators");
+                            }
+
+                            if (CheckersUtils.isBulkRequest(context)) {
+                                noteMsg = noteMsg.isEmpty()
+                                        ? "is a bulk operation"
+                                        : noteMsg.concat(" and it is a bulk operation");
+                            }
+
+                            context.addWarning("the checker "
+                                    + _checker.getClass().getSimpleName()
+                                    + " does not support this request and is configured to fail in this case. "
+                                    + "Note that the request " + noteMsg);
                             return false;
                         }
 
@@ -186,7 +168,7 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                                         .getDbOperationResult()
                                         .getNewData();
 
-                                _data =  (DBObject) JSON.parse(data.toJson());
+                                _data = (DBObject) JSON.parse(data.toJson());
                             }
 
                             if (_data instanceof BasicDBObject) {

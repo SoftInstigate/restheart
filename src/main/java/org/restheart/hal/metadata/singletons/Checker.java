@@ -94,14 +94,4 @@ public interface Checker {
      * @return true if the checker supports the requests
      */
     boolean doesSupportRequests(RequestContext context);
-
-    /**
-     *
-     * Specify if the check should fail if this checker does not support the
-     * request
-     *
-     * @param args
-     * @return true if the check should fail if this checker does not support it
-     */
-    boolean shouldCheckFailIfNotSupported(DBObject args);
 }

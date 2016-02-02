@@ -30,9 +30,11 @@ public class RequestChecker {
     public final static String ROOT_KEY = "checkers";
     public final static String NAME_KEY = "name";
     public final static String ARGS_KEY = "args";
+    public final static String SKIP_NOT_SUPPORTED = "skipNotSupported";
 
     private final String name;
     private final DBObject args;
+    private final boolean skipNotSupported;
 
     /**
      *
@@ -42,6 +44,18 @@ public class RequestChecker {
     public RequestChecker(String checker, DBObject args) {
         this.name = checker;
         this.args = args;
+        this.skipNotSupported = true;
+    }
+
+    /**
+     *
+     * @param checker
+     * @param args
+     */
+    public RequestChecker(String checker, DBObject args, boolean failNotSupported) {
+        this.name = checker;
+        this.args = args;
+        this.skipNotSupported = failNotSupported;
     }
 
     /**
@@ -102,6 +116,27 @@ public class RequestChecker {
 
         DBObject args = (DBObject) _args;
 
-        return new RequestChecker(name, args);
+        Object _failNotSupported = props.get(SKIP_NOT_SUPPORTED);
+
+        Boolean failNotSupported;
+
+        // failNotSupported is optional
+        if (_failNotSupported == null) {
+            failNotSupported = true;
+        } else if (!(_failNotSupported instanceof Boolean)) {
+            throw new InvalidMetadataException("invalid '" + ARGS_KEY + "' element. it must be boolean");
+        } else {
+            failNotSupported = (Boolean) _failNotSupported;
+        }
+
+        return new RequestChecker(name, args, failNotSupported);
+    }
+
+    /**
+     * @return true if the checker must skip the requests that it does not
+     * support
+     */
+    public boolean skipNotSupported() {
+        return skipNotSupported;
     }
 }
