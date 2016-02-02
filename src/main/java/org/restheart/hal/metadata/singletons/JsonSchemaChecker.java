@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class JsonSchemaChecker extends AbstractChecker {
+public class JsonSchemaChecker implements Checker {
     public static final String SCHEMA_STORE_DB_PROPERTY = "schemaStoreDb";
     public static final String SCHEMA_ID_PROPERTY = "schemaId";
 
@@ -96,8 +96,8 @@ public class JsonSchemaChecker extends AbstractChecker {
         }
 
         String _data = contentToCheck == null
-                    ? "{}"
-                    : contentToCheck.toJson();
+                ? "{}"
+                : contentToCheck.toJson();
 
         try {
             theschema.validate(

@@ -33,18 +33,18 @@ import org.slf4j.LoggerFactory;
  *
  * the args arguments is the size condition: a is json object as follows: {
  * "max": MAX_SIZE, "min": MIN_SIZE }
- * 
+ *
  * sizes are in bytes
  *
  */
-public class ContentSizeChecker extends AbstractChecker {
+public class ContentSizeChecker implements Checker {
     static final Logger LOGGER = LoggerFactory.getLogger(ContentSizeChecker.class);
 
     @Override
     public boolean check(
-            HttpServerExchange exchange, 
-            RequestContext context, 
-            BasicDBObject contentToCheck, 
+            HttpServerExchange exchange,
+            RequestContext context,
+            BasicDBObject contentToCheck,
             DBObject args) {
         if (args instanceof BasicDBObject) {
             BasicDBObject condition = (BasicDBObject) args;
@@ -65,7 +65,7 @@ public class ContentSizeChecker extends AbstractChecker {
             if (_minSize != null && _minSize instanceof Integer) {
                 minSize = (Integer) _minSize;
             }
-            
+
             return (minSize == null ? checkSize(exchange, -1, maxSize) : checkSize(exchange, minSize, maxSize));
 
         } else {
@@ -75,13 +75,13 @@ public class ContentSizeChecker extends AbstractChecker {
     }
 
     private boolean checkSize(
-            HttpServerExchange exchange, 
-            int minSize, 
+            HttpServerExchange exchange,
+            int minSize,
             int maxSize) {
         long requestLenght = exchange.getRequestContentLength();
 
         boolean ret = (minSize < 0 ? requestLenght <= maxSize : requestLenght >= minSize && requestLenght <= maxSize);
-        
+
         LOGGER.debug("checkSize({}, {}, {}) -> {}", requestLenght, minSize, maxSize, ret);
 
         return ret;
