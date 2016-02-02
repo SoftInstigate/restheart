@@ -157,7 +157,7 @@ public class MapReduce extends AbstractAggregationOperation {
      */
     public String getResolvedReduce(BasicDBObject aVars) {
         if (aVars == null || aVars.isEmpty()) {
-            return map;
+            return reduce;
         } else {
             String escapedAVars = "\""
                     + aVars.toString().replaceAll("\"", "\\\\\\\\\"")
