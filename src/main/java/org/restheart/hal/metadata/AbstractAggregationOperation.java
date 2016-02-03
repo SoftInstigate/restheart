@@ -38,12 +38,12 @@ public abstract class AbstractAggregationOperation {
 
     private static final Set<String> MAP_REDUCE_ALIASES
             = Sets.newHashSet(new String[]{TYPE.MAP_REDUCE.name(),
-                "map reduce", "mapReduce", "map-reduce", "mr"});
+        "map reduce", "mapReduce", "map-reduce", "mr"});
 
     private static final Set<String> AGGREGATION_PIPELINE_ALIASES
             = Sets.newHashSet(new String[]{TYPE.AGGREGATION_PIPELINE.name(),
-                "aggregation pipeline", "aggregationPipeline", "pipeline",
-                "aggregation-pipeline", "aggregation", "aggregate", "ap"});
+        "aggregation pipeline", "aggregationPipeline", "pipeline",
+        "aggregation-pipeline", "aggregation", "aggregate", "ap"});
 
     public static final String AGGREGATIONS_ELEMENT_NAME = RequestContext.AGGREGATIONS_QPARAM_KEY;
 
@@ -206,7 +206,11 @@ public abstract class AbstractAggregationOperation {
             BasicDBList ret = new BasicDBList();
 
             for (Object el : ((BasicDBList) obj).toArray()) {
-                ret.add(bindAggregationVariables((BasicDBObject) el, aVars));
+                if (el instanceof BasicDBObject) {
+                    ret.add(bindAggregationVariables((BasicDBObject) el, aVars));
+                } else {
+                    ret.add(el);
+                }
             }
 
             return ret;
