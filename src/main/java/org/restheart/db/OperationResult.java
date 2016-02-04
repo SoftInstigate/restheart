@@ -39,8 +39,8 @@ public class OperationResult {
     public OperationResult(int httpCode, Document oldData, Document newData) {
         this.httpCode = httpCode;
         this.etag = null;
-        this.newData = null;
-        this.oldData = null;
+        this.newData = newData;
+        this.oldData = oldData;
     }
     
     public OperationResult(int httpCode, Object etag) {

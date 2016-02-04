@@ -22,7 +22,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.MongoCollection;
-import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
@@ -44,6 +43,8 @@ import org.restheart.utils.HttpStatus;
 import static org.restheart.utils.RequestHelper.UPDATE_OPERATORS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static com.mongodb.client.model.Filters.and;
+import java.util.Optional;
 
 /**
  *
@@ -56,7 +57,7 @@ public class DAOUtils {
     public final static FindOneAndUpdateOptions FAU_UPSERT_OPS
             = new FindOneAndUpdateOptions()
             .upsert(true);
-    
+
     public final static FindOneAndUpdateOptions FAU_AFTER_UPSERT_OPS
             = new FindOneAndUpdateOptions()
             .upsert(true).returnDocument(ReturnDocument.AFTER);
@@ -64,7 +65,7 @@ public class DAOUtils {
     public final static UpdateOptions U_UPSERT_OPS
             = new UpdateOptions()
             .upsert(true);
-    
+
     public final static UpdateOptions U_NOT_UPSERT_OPS
             = new UpdateOptions()
             .upsert(false);
@@ -162,7 +163,7 @@ public class DAOUtils {
         return (newContent == null) ? new BasicDBObject() : newContent;
     }
 
-    public static Document updateDocument(
+    public static OperationResult updateDocument(
             MongoCollection<Document> coll,
             Object documentId,
             Document data,
@@ -170,29 +171,63 @@ public class DAOUtils {
         return updateDocument(coll, documentId, data, replace, false);
     }
 
-    public static Document updateDocument(MongoCollection<Document> coll, Object documentId, Document data, boolean replace, boolean returnNew) {
+    private static final Bson IMPOSSIBLE_CONDITION =  eq("_etag", new ObjectId());
+
+    /**
+     *
+     * @param coll
+     * @param documentId use Optional.empty() to specify no documentId (null is
+     * _id: null)
+     * @param data
+     * @param replace
+     * @param returnNew
+     * @return
+     */
+    public static OperationResult updateDocument(
+            MongoCollection<Document> coll,
+            Object documentId,
+            Document data,
+            boolean replace,
+            boolean returnNew) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(data);
 
         Document document = getUpdateDocument(data);
 
+        Bson query;
+        boolean idPresent = true;
+
+        if (documentId instanceof Optional
+                && !((Optional) documentId).isPresent()) {
+            query = IMPOSSIBLE_CONDITION;
+            idPresent = false;
+        } else {
+            query = eq("_id", documentId);
+        }
+
         if (replace) {
             // here we cannot use the atomic findOneAndReplace because it does
             // not support update operators.
 
-            Document oldDocument = coll.findOneAndDelete(eq("_id", documentId));
+            Document oldDocument;
 
-            Document newDocument = coll.findOneAndUpdate(eq("_id", documentId), document, FAU_AFTER_UPSERT_OPS);
-
-            if (returnNew) {
-                return newDocument;
+            if (idPresent) {
+                oldDocument = coll.findOneAndDelete(query);
             } else {
-                return oldDocument;
+                oldDocument = null;
             }
+
+            Document newDocument = coll.findOneAndUpdate(query, document, FAU_AFTER_UPSERT_OPS);
+
+            return new OperationResult(-1, oldDocument, newDocument);
         } else if (returnNew) {
-            return coll.findOneAndUpdate(eq("_id", documentId), document, FAU_AFTER_UPSERT_OPS);
+            Document newDocument = coll.findOneAndUpdate(query, document, FAU_AFTER_UPSERT_OPS);
+
+            return new OperationResult(-1, null, newDocument);
         } else {
-            return coll.findOneAndUpdate(eq("_id", documentId), document, FAU_UPSERT_OPS);
+            Document oldDocument = coll.findOneAndUpdate(query, document, FAU_UPSERT_OPS);
+
+            return new OperationResult(-1, oldDocument, null);
         }
     }
 
@@ -214,7 +249,7 @@ public class DAOUtils {
         }
 
         UpdateResult result = coll.replaceOne(filter, data, U_NOT_UPSERT_OPS);
-        
+
         if (result.isModifiedCountAvailable()) {
             return result.getModifiedCount() == 1;
         } else {
@@ -266,7 +301,7 @@ public class DAOUtils {
     }
 
     /**
-     * 
+     *
      * @param document
      * @return the document for update operation, with proper update operators
      */

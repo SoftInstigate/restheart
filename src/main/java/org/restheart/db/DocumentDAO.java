@@ -33,6 +33,7 @@ import com.mongodb.client.model.WriteModel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import org.bson.Document;
 import org.restheart.utils.HttpStatus;
 import org.bson.types.ObjectId;
@@ -98,7 +99,9 @@ public class DocumentDAO implements Repository {
         //TODO remove this after migration to mongodb driver 3.2 completes
         Document dcontent = new Document(content.toMap());
 
-        Document oldDocument = DAOUtils.updateDocument(mcoll, documentId, dcontent, !patching);
+        OperationResult updateResult = DAOUtils.updateDocument(mcoll, documentId, dcontent, !patching);
+
+        Document oldDocument = updateResult.getOldData();
 
         if (patching) {
             if (oldDocument == null) {
@@ -130,7 +133,6 @@ public class DocumentDAO implements Repository {
     /**
      * @param dbName
      * @param collName
-     * @param documentId
      * @param newContent
      * @param requestEtag
      * @param checkEtag
@@ -140,7 +142,6 @@ public class DocumentDAO implements Repository {
     public OperationResult upsertDocumentPost(
             final String dbName,
             final String collName,
-            final Object documentId,
             final DBObject newContent,
             final String requestEtag,
             final boolean checkEtag) {
@@ -153,36 +154,34 @@ public class DocumentDAO implements Repository {
 
         content.put("_etag", newEtag);
 
-        boolean isidInContent = content.containsField("_id");
-
-        content.removeField("_id");
-
         //TODO remove this after migration to mongodb driver 3.2 completes
         Document dcontent = new Document(content.toMap());
 
-        if (!isidInContent) {
-            // new document since the id was just auto-generated
-            dcontent.put("_id", documentId);
+        Object documentId;
 
-            Document newDocument = DAOUtils.updateDocument(mcoll, documentId, dcontent, false, true);
-
-            return new OperationResult(HttpStatus.SC_CREATED, newEtag, null, newDocument);
+        if (dcontent.containsKey("_id")) {
+            documentId = dcontent.get("_id");
         } else {
-            Document oldDocument = DAOUtils.updateDocument(mcoll, documentId, dcontent, true);
+            documentId = Optional.empty(); // key _id is not present
+        }
+        // new document since the id is missing ()
+        OperationResult updateResult = DAOUtils.updateDocument(
+                mcoll,
+                documentId,
+                dcontent,
+                true);
 
-            if (oldDocument == null) {
-                Document newDocument = mcoll.find(eq("_id", documentId)).first();
+        Document oldDocument = updateResult.getOldData();
+        Document newDocument = updateResult.getNewData();
 
-                return new OperationResult(HttpStatus.SC_CREATED, newEtag, null, newDocument);
-            } else if (checkEtag) {  // upsertDocument
-                // check the old etag (in case restore the old document version)
-                return optimisticCheckEtag(mcoll, oldDocument, newEtag, 
-                        requestEtag, HttpStatus.SC_OK, false);
-            } else {
-                Document newDocument = mcoll.find(eq("_id", documentId)).first();
-
-                return new OperationResult(HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
-            }
+        if (oldDocument == null) {
+            return new OperationResult(HttpStatus.SC_CREATED, newEtag, null, newDocument);
+        } else if (checkEtag) {  // upsertDocument
+            // check the old etag (in case restore the old document version)
+            return optimisticCheckEtag(mcoll, oldDocument, newEtag,
+                    requestEtag, HttpStatus.SC_OK, false);
+        } else {
+            return new OperationResult(HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
         }
     }
 
@@ -245,7 +244,7 @@ public class DocumentDAO implements Repository {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
         } else if (checkEtag) {
             // check the old etag (in case restore the old document version)
-            return optimisticCheckEtag(mcoll, oldDocument, null, 
+            return optimisticCheckEtag(mcoll, oldDocument, null,
                     requestEtag, HttpStatus.SC_NO_CONTENT, true);
         } else {
             return new OperationResult(HttpStatus.SC_NO_CONTENT);
@@ -302,7 +301,7 @@ public class DocumentDAO implements Repository {
             } else {
                 DAOUtils.restoreDocument(coll, oldDocument.get("_id"), oldDocument, newEtag);
             }
-            
+
             return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag, oldDocument, null);
         }
 

@@ -29,7 +29,7 @@ public interface Repository {
     
     OperationResult upsertDocument(String dbName, String collName, Object documentId, DBObject content, String requestEtag, boolean patching, final boolean checkEtag);
     
-    OperationResult upsertDocumentPost(String dbName, String collName, Object documentId, DBObject content, String requestEtag, final boolean checkEtag);
+    OperationResult upsertDocumentPost(String dbName, String collName, DBObject content, String requestEtag, final boolean checkEtag);
     
     OperationResult deleteDocument(String dbName, String collName, Object documentId, String requestEtag, final boolean checkEtag);
     
