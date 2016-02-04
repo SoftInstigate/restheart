@@ -62,9 +62,9 @@ public class ResponseHelper {
      * @param message
      * @param t
      */
-    public static void endExchangeWithMessage(HttpServerExchange exchange, 
-            int code, 
-            String message, 
+    public static void endExchangeWithMessage(HttpServerExchange exchange,
+            int code,
+            String message,
             Throwable t) {
         exchange.setStatusCode(code);
 
@@ -73,19 +73,19 @@ public class ResponseHelper {
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
 
         exchange.getResponseSender().send(
-                getErrorJsonDocument(exchange.getRequestPath(), 
-                        code, 
-                        httpStatuText, 
-                        message, 
+                getErrorJsonDocument(exchange.getRequestPath(),
+                        code,
+                        httpStatuText,
+                        message,
                         t, false));
         exchange.endExchange();
     }
 
-    private static String getErrorJsonDocument(String href, 
-            int code, 
-            String httpStatusText, 
-            String message, 
-            Throwable t, 
+    private static String getErrorJsonDocument(String href,
+            int code,
+            String httpStatusText,
+            String message,
+            Throwable t,
             boolean includeStackTrace) {
         Representation rep = new Representation(href);
 
@@ -141,7 +141,9 @@ public class ResponseHelper {
     }
 
     private static String avoidEscapedChars(String s) {
-        return s
+        return s == null 
+                ? null
+                : s
                 .replaceAll("\"", "'")
                 .replaceAll("\t", "  ");
     }
