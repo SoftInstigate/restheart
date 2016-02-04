@@ -17,9 +17,12 @@
  */
 package org.restheart.utils;
 
+import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
+import java.util.Arrays;
+import java.util.List;
 import org.bson.types.ObjectId;
 
 /**
@@ -27,6 +30,16 @@ import org.bson.types.ObjectId;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestHelper {
+    private static final String _UPDATE_OPERATORS[] = {
+        "$inc", "$mul", "$rename", "$setOnInsert", "$set", "$unset", // Field Update Operators
+        "$min", "$max", "$currentDate",
+        "$", "$addToSet", "$pop", "$pullAll", "$pull", "$pushAll", "$push", // Array Update Operators
+        "$bit", // Bitwise Update Operator
+        "$isolated" // Isolation Update Operator
+    };
+    
+    public static final List<String> UPDATE_OPERATORS
+            = Arrays.asList(_UPDATE_OPERATORS);
 
     /**
      *
@@ -70,6 +83,19 @@ public class RequestHelper {
         } else {
             return new ObjectId();
         }
+    }
+    
+    public static boolean contentContainsId(DBObject content) {
+        throw new RuntimeException("not yet implemented");
+    }
+    
+    /**
+     *
+     * @param content
+     * @return
+     */
+    public static ObjectId getIdInRequestContent(DBObject content) {
+        throw new RuntimeException("not yet implemented");
     }
 
     private RequestHelper() {
