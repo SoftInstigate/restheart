@@ -51,7 +51,6 @@ public class ErrorHandler implements HttpHandler {
             next.handleRequest(exchange);
         } catch (MongoTimeoutException nte) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Timeout connecting to MongoDB, is it running?", nte);
-
         } catch (MongoException mce) {
             LOGGER.error("MongoDB error", mce);
             switch (mce.getCode()) {
@@ -62,13 +61,13 @@ public class ErrorHandler implements HttpHandler {
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "Wrong MongoDB user credentials (wrong password or need to specify the authentication dababase with 'authSource=<db>' option in mongo-uri).");
                     break;
                 default:
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request", mce);
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see log for more information", mce);
                     break;
             }
         } catch (Throwable t) {
             LOGGER.error("Error handling the request", t);
 
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request", t);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see log for more information", t);
         }
     }
 }
