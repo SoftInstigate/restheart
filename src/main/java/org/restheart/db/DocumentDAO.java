@@ -44,24 +44,24 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class DocumentDAO implements Repository {
-    
+
     private final Logger LOGGER = LoggerFactory.getLogger(DocumentDAO.class);
-    
+
     private final MongoClient client;
-    
+
     public DocumentDAO() {
         client = MongoDBClientSingleton.getInstance().getClient();
     }
-    
+
     @Override
     public Document getDocumentEtag(final String dbName, final String collName, final Object documentId) {
         MongoDatabase mdb = client.getDatabase(dbName);
         MongoCollection<Document> mcoll = mdb.getCollection(collName);
-        
+
         FindIterable<Document> documents = mcoll
                 .find(eq("_id", documentId))
                 .projection(new Document("_etag", 1));
-        
+
         return documents == null ? null
                 : documents.iterator().tryNext();
     }
@@ -90,39 +90,39 @@ public class DocumentDAO implements Repository {
 
         // genereate new etag
         ObjectId newEtag = new ObjectId();
-        
+
         final DBObject content = DAOUtils.validContent(newContent);
-        
+
         content.put("_etag", newEtag);
 
         //TODO remove this after migration to mongodb driver 3.2 completes
         Document dcontent = new Document(content.toMap());
-        
+
         Document oldDocument = DAOUtils.updateDocument(mcoll, documentId, dcontent, !patching);
-        
+
         if (patching) {
             if (oldDocument == null) {
                 return new OperationResult(HttpStatus.SC_NOT_FOUND);
             } else if (checkEtag) {
                 // check the old etag (in case restore the old document version)
                 return optimisticCheckEtag(mcoll, oldDocument, newEtag,
-                        requestEtag, HttpStatus.SC_OK);
+                        requestEtag, HttpStatus.SC_OK, false);
             } else {
                 Document newDocument = mcoll.find(eq("_id", documentId)).first();
-                
+
                 return new OperationResult(HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
             }
         } else if (oldDocument != null && checkEtag) { // upsertDocument
             // check the old etag (in case restore the old document)
             return optimisticCheckEtag(mcoll, oldDocument, newEtag,
-                    requestEtag, HttpStatus.SC_OK);
+                    requestEtag, HttpStatus.SC_OK, false);
         } else if (oldDocument != null) {  // insert
             Document newDocument = mcoll.find(eq("_id", documentId)).first();
-            
+
             return new OperationResult(HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
         } else {
             Document newDocument = mcoll.find(eq("_id", documentId)).first();
-            
+
             return new OperationResult(HttpStatus.SC_CREATED, newEtag, null, newDocument);
         }
     }
@@ -146,40 +146,41 @@ public class DocumentDAO implements Repository {
             final boolean checkEtag) {
         MongoDatabase mdb = client.getDatabase(dbName);
         MongoCollection<Document> mcoll = mdb.getCollection(collName);
-        
+
         ObjectId newEtag = new ObjectId();
-        
+
         final DBObject content = (newContent == null) ? new BasicDBObject() : newContent;
-        
+
         content.put("_etag", newEtag);
-        
+
         boolean isidInContent = content.containsField("_id");
-        
+
         content.removeField("_id");
 
         //TODO remove this after migration to mongodb driver 3.2 completes
         Document dcontent = new Document(content.toMap());
-        
+
         if (!isidInContent) {
             // new document since the id was just auto-generated
             dcontent.put("_id", documentId);
-            
+
             Document newDocument = DAOUtils.updateDocument(mcoll, documentId, dcontent, false, true);
-            
+
             return new OperationResult(HttpStatus.SC_CREATED, newEtag, null, newDocument);
         } else {
             Document oldDocument = DAOUtils.updateDocument(mcoll, documentId, dcontent, true);
-            
+
             if (oldDocument == null) {
                 Document newDocument = mcoll.find(eq("_id", documentId)).first();
-                
+
                 return new OperationResult(HttpStatus.SC_CREATED, newEtag, null, newDocument);
             } else if (checkEtag) {  // upsertDocument
                 // check the old etag (in case restore the old document version)
-                return optimisticCheckEtag(mcoll, oldDocument, newEtag, requestEtag, HttpStatus.SC_OK);
+                return optimisticCheckEtag(mcoll, oldDocument, newEtag, 
+                        requestEtag, HttpStatus.SC_OK, false);
             } else {
                 Document newDocument = mcoll.find(eq("_id", documentId)).first();
-                
+
                 return new OperationResult(HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
             }
         }
@@ -197,25 +198,25 @@ public class DocumentDAO implements Repository {
             final String collName,
             final BasicDBList documents) {
         Objects.requireNonNull(documents);
-        
+
         MongoDatabase mdb = client.getDatabase(dbName);
         MongoCollection<Document> mcoll = mdb.getCollection(collName);
-        
+
         ObjectId newEtag = new ObjectId();
-        
+
         //TODO remove this after migration to mongodb driver 3.2 completes
         List<Document> _documents = Lists.newArrayList();
-        
+
         documents
                 .stream()
                 .forEachOrdered(document -> {
-                    Document _document = new Document(((BasicDBObject)document).toMap());
-                    
+                    Document _document = new Document(((BasicDBObject) document).toMap());
+
                     _document.put("_etag", newEtag);
-                    
+
                     _documents.add(_document);
-        });
-        
+                });
+
         return DAOUtils.bulkUpsertDocuments(mcoll, _documents);
     }
 
@@ -237,84 +238,95 @@ public class DocumentDAO implements Repository {
     ) {
         MongoDatabase mdb = client.getDatabase(dbName);
         MongoCollection<Document> mcoll = mdb.getCollection(collName);
-        
+
         Document oldDocument = mcoll.findOneAndDelete(eq("_id", documentId));
-        
+
         if (oldDocument == null) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
         } else if (checkEtag) {
             // check the old etag (in case restore the old document version)
-            return optimisticCheckEtag(mcoll, oldDocument, null, requestEtag, HttpStatus.SC_NO_CONTENT);
+            return optimisticCheckEtag(mcoll, oldDocument, null, 
+                    requestEtag, HttpStatus.SC_NO_CONTENT, true);
         } else {
             return new OperationResult(HttpStatus.SC_NO_CONTENT);
         }
     }
-    
+
     @Override
     public BulkOperationResult bulkDeleteDocuments(String dbName, String collName, Document filter) {
         MongoDatabase mdb = client.getDatabase(dbName);
         MongoCollection<Document> mcoll = mdb.getCollection(collName);
-        
+
         List<WriteModel<Document>> deletes = new ArrayList<>();
-        
+
         deletes.add(new DeleteManyModel(filter));
-        
+
         BulkWriteResult result = mcoll.bulkWrite(deletes);
-        
+
         return new BulkOperationResult(HttpStatus.SC_OK, null, result);
     }
-    
+
     @Override
     public BulkOperationResult bulkPatchDocuments(String dbName, String collName, Document filter, Document data) {
         MongoDatabase mdb = client.getDatabase(dbName);
         MongoCollection<Document> mcoll = mdb.getCollection(collName);
-        
+
         List<WriteModel<Document>> patches = new ArrayList<>();
-        
+
         patches.add(new UpdateManyModel(
-                filter, 
+                filter,
                 DAOUtils.getUpdateDocument(data),
                 DAOUtils.U_NOT_UPSERT_OPS));
-        
+
         BulkWriteResult result = mcoll.bulkWrite(patches);
-        
+
         return new BulkOperationResult(HttpStatus.SC_OK, null, result);
     }
-    
+
     private OperationResult optimisticCheckEtag(
             final MongoCollection<Document> coll,
             final Document oldDocument,
             final Object newEtag,
             final String requestEtag,
-            final int httpStatusIfOk) {
-        
+            final int httpStatusIfOk,
+            final boolean deleting
+    ) {
+
         Object oldEtag = oldDocument.get("_etag");
-        
+
         if (oldEtag != null && requestEtag == null) {
             // oopps, we need to restore old document
             // they call it optimistic lock strategy
-            DAOUtils.restoreDocument(coll, oldDocument.get("_id"), oldDocument, newEtag);
+            if (deleting) {
+                DAOUtils.updateDocument(coll, oldDocument.get("_id"), oldDocument, true);
+            } else {
+                DAOUtils.restoreDocument(coll, oldDocument.get("_id"), oldDocument, newEtag);
+            }
             
             return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag, oldDocument, null);
         }
-        
+
         String _oldEtag;
-        
+
         if (oldEtag != null) {
             _oldEtag = oldEtag.toString();
         } else {
             _oldEtag = null;
         }
-        
+
         if (Objects.equals(requestEtag, _oldEtag)) {
             Document newDocument = coll.find(eq("_id", oldDocument.get("_id"))).first();
-            
+
             return new OperationResult(httpStatusIfOk, newEtag, oldDocument, newDocument);
         } else {
             // oopps, we need to restore old document
             // they call it optimistic lock strategy
-            DAOUtils.restoreDocument(coll, oldDocument.get("_id"), oldDocument, newEtag);
-            
+            if (deleting) {
+                DAOUtils.updateDocument(coll, oldDocument.get("_id"), oldDocument, true);
+            } else {
+                DAOUtils.restoreDocument(coll, oldDocument.get("_id"), oldDocument, newEtag);
+            }
+
             return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag, oldDocument, null);
         }
     }

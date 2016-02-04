@@ -73,7 +73,6 @@ public class JsonUtilsTest {
     }
     
     @Test
-    @Ignore
     public void testMinify() {
         String json = "{ '_id'  :   {   '$in' : [1, 20.0, 'id']}}";
         String minified = "{'_id':{'$in':[1,20.0,'id']}}";
@@ -82,7 +81,6 @@ public class JsonUtilsTest {
     }
 
     @Test
-    @Ignore
     public void testGetPropFromPath() throws Exception {
         String _json1 = "{a: {b:1, c: {d:{\"$oid\": \"550c6e62c2e62b5640673e93\"}, e:3}}, f: null}";
         String _json2 = "{a: [{b:1}, {b:2,c:3}, {d:4, c:null}, true]}";
@@ -167,7 +165,6 @@ public class JsonUtilsTest {
     }
 
     @Test
-    @Ignore
     public void testJsonArray() throws Exception {
         String _json1 = "{a: []}}";
         String _json2 = "{a: [{}]}}";
@@ -207,7 +204,6 @@ public class JsonUtilsTest {
     }
     
     @Test
-    @Ignore
     public void testJsonObject() throws Exception {
         String _json1 = "{o: {}}";
         String _json2 = "{o: {o: {}}}";
@@ -236,7 +232,6 @@ public class JsonUtilsTest {
     }
     
     @Test
-    @Ignore
     public void checkCountOnComplexJson() {
         String _json = "{\n"
                 + "    \"_id\": \"project-processes\",\n"
