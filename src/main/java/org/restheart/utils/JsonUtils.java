@@ -20,6 +20,8 @@ package org.restheart.utils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.util.JSON;
+import com.mongodb.util.JSONCallback;
 import com.mongodb.util.JSONSerializers;
 import com.mongodb.util.ObjectSerializer;
 import java.util.ArrayList;
@@ -28,6 +30,18 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import org.bson.BasicBSONDecoder;
+import org.bson.BasicBSONEncoder;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
+import org.bson.codecs.BsonArrayCodec;
+import org.bson.codecs.BsonValueCodecProvider;
+import org.bson.codecs.DecoderContext;
+import org.bson.codecs.configuration.CodecRegistries;
+import org.bson.conversions.Bson;
+import org.bson.json.JsonParseException;
+import org.bson.json.JsonReader;
 import org.bson.types.BSONTimestamp;
 import org.bson.types.Code;
 import org.bson.types.MaxKey;
@@ -47,9 +61,16 @@ public class JsonUtils {
 
     private static final ObjectSerializer SERIALIZER = JSONSerializers.getStrict();
 
+    private static final BasicBSONEncoder BSON_ENCODER = new BasicBSONEncoder();
+    private static final BasicBSONDecoder BSON_DECODER = new BasicBSONDecoder();
+
+    private static final BsonArrayCodec BSON_ARRAY_CODEC = new BsonArrayCodec(
+            CodecRegistries.fromProviders(
+                    new BsonValueCodecProvider()));
+
     private static final String ESCAPED_$ = "_$";
     private static final String ESCAPED_DOT = "::";
-    
+
     /**
      *
      * @param bson the BSON object to serialize
@@ -84,7 +105,7 @@ public class JsonUtils {
             ((BasicDBObject) obj).keySet().stream().forEach(k -> {
                 String newKey = k.startsWith(ESCAPED_$) ? k.substring(1) : k;
                 newKey = newKey.replaceAll(ESCAPED_DOT, ".");
-                
+
                 Object value = ((BasicDBObject) obj).get(k);
 
                 if (value instanceof BasicDBObject) {
@@ -153,8 +174,8 @@ public class JsonUtils {
 
             ((BasicDBObject) obj).keySet().stream().forEach(k -> {
                 String newKey = k.startsWith("$") ? "_" + k : k;
-                newKey= newKey.replaceAll(".", ESCAPED_DOT);
-                
+                newKey = newKey.replaceAll(".", ESCAPED_DOT);
+
                 Object value = ((BasicDBObject) obj).get(k);
 
                 if (value instanceof BasicDBObject) {
@@ -214,7 +235,8 @@ public class JsonUtils {
      * @see org.restheart.test.unit.JsonUtilsTest form code examples
      *
      */
-    public static List<Optional<Object>> getPropsFromPath(Object root, String path) throws IllegalArgumentException {
+    public static List<Optional<Object>> getPropsFromPath(Object root, String path) 
+            throws IllegalArgumentException {
         String pathTokens[] = path.split(Pattern.quote("."));
 
         if (pathTokens == null || pathTokens.length == 0 || !pathTokens[0].equals("$")) {
@@ -226,7 +248,8 @@ public class JsonUtils {
         }
     }
 
-    private static List<Optional<Object>> _getPropsFromPath(Object json, String[] pathTokens, int totalTokensLength) throws IllegalArgumentException {
+    private static List<Optional<Object>> _getPropsFromPath(Object json, String[] pathTokens, int totalTokensLength) 
+            throws IllegalArgumentException {
         if (pathTokens == null) {
             throw new IllegalArgumentException("pathTokens argument cannot be null");
         }
@@ -421,7 +444,8 @@ public class JsonUtils {
      * expression or null if path does not exist
      * @throws IllegalArgumentException
      */
-    public static Integer countPropsFromPath(Object root, String path) throws IllegalArgumentException {
+    public static Integer countPropsFromPath(Object root, String path) 
+            throws IllegalArgumentException {
         List<Optional<Object>> items = getPropsFromPath(root, path);
 
         if (items == null) {
@@ -540,7 +564,8 @@ public class JsonUtils {
                     ++i;
                 }
             } else // we're outside of the special modes, so look for mode openers (comment start, string start)
-             if (cc.equals("/*")) {
+            {
+                if (cc.equals("/*")) {
                     in_multiline_comment = true;
                     ++i;
                 } else if (cc.equals("//")) {
@@ -553,11 +578,126 @@ public class JsonUtils {
                 } else if (!Character.isWhitespace(c)) {
                     out.append(c);
                 }
+            }
         }
         return out.toString();
+    }
+
+    /**
+     * @param json
+     * @return either a BsonDocument or a BsonArray from the json string
+     * @throws JsonParseException
+     */
+    public static BsonValue parseToBson(String json)
+            throws JsonParseException {
+        if (json == null) {
+            return null;
+        }
+
+        String trimmed = json.trim();
+
+        if (trimmed.startsWith("{")) {
+            return BsonDocument.parse(json);
+        } else if (trimmed.startsWith("[")) {
+            return BSON_ARRAY_CODEC.decode(
+                    new JsonReader(json),
+                    DecoderContext.builder().build());
+        } else {
+            throw new JsonParseException("expected json object or array");
+        }
+    }
+
+    /**
+     * @param bson either a BsonDocument or a BsonArray
+     * @return the minified string representation of the bson value
+     * @throws IllegalArgumentException if bson is not a BsonDocument or a
+     * BsonArray
+     */
+    public static String toJson(BsonValue bson) {
+        if (bson == null) {
+            return null;
+        }
+
+        /**
+         * Gets a JSON representation of this document using the given
+         * {@code JsonWriterSettings}.
+         *
+         * @param settings the JSON writer settings
+         * @return a JSON representation of this document
+         */
+        if (bson.isDocument()) {
+            return minify(bson.asDocument().toJson());
+        } else if (bson.isArray()) {
+            BsonArray _array = bson.asArray();
+
+            BsonDocument wrappedArray = new BsonDocument("wrapped", _array);
+
+            String json = wrappedArray.toJson();
+
+            json = minify(json);
+            json = json.substring(0, json.length() - 1); // removes closing }
+            json = json.replaceFirst("\\{", "");
+            json = json.replaceFirst("\"wrapped\"", "");
+            json = json.replaceFirst(":", "");
+
+            return json;
+        } else {
+            throw new IllegalArgumentException("expected json object or array");
+        }
+    }
+
+    /**
+     * utility method to support transitioning to new mongodb java driver 3.x
+     * API
+     *
+     * @param dBObject
+     * @return
+     */
+    public static BsonValue convertDBObjectToBsonValue(DBObject dBObject) {
+        if (dBObject == null) {
+            return null;
+        }
+
+        return parseToBson(serialize(dBObject));
+    }
+
+    /**
+     * utility method to support transitioning to new mongodb java driver 3.x
+     * API
+     *
+     * @param bson
+     * @return
+     * @throws IllegalArgumentException is bson is not a document or an array
+     */
+    public static DBObject convertBsonValueToDBObject(BsonValue bson) {
+        if (bson == null) {
+            return null;
+        }
+
+        if (bson.isArray() || bson.isDocument()) {
+            return (DBObject) JSON.parse(toJson(bson));
+        } else {
+            throw new IllegalArgumentException("expected json object or array");
+        }
+    }
+
+    public static Object find(DBObject obj, String key) {
+        throw new RuntimeException("not yet implemented");
     }
 
     private JsonUtils() {
     }
 
+    public static byte[] dBObjectToBson(DBObject dbObject) {
+        byte bson[] = BSON_ENCODER.encode(dbObject);
+        return bson;
+    }
+
+    public static DBObject bsonToDBObject(byte[] bson) {
+        JSONCallback callback = new JSONCallback();
+        BSON_DECODER.decode(bson, callback);
+        Object obj = callback.get();
+        DBObject dbObject = (DBObject) obj;
+        return dbObject;
+    }
 }

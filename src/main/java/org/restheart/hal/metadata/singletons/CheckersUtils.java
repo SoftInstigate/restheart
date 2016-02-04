@@ -20,26 +20,14 @@ package org.restheart.hal.metadata.singletons;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import java.util.Arrays;
-import java.util.List;
 import org.restheart.handlers.RequestContext;
+import static org.restheart.utils.RequestHelper.UPDATE_OPERATORS;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class CheckersUtils {
-    private static final String _UPDATE_OPERATORS[] = {
-        "$inc", "$mul", "$rename", "$setOnInsert", "$set", "$unset", // Field Update Operators
-        "$min", "$max", "$currentDate",
-        "$", "$addToSet", "$pop", "$pullAll", "$pull", "$pushAll", "$push", // Array Update Operators
-        "$bit", // Bitwise Update Operator
-        "$isolated" // Isolation Update Operator
-    };
-
-    private static final List<String> UPDATE_OPERATORS
-            = Arrays.asList(_UPDATE_OPERATORS);
-
     public static boolean isBulkRequest(RequestContext context) {
         return context.getType() == RequestContext.TYPE.BULK_DOCUMENTS
                 || context.getContent() instanceof BasicDBList;
