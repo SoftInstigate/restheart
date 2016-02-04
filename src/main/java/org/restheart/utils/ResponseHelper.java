@@ -62,17 +62,31 @@ public class ResponseHelper {
      * @param message
      * @param t
      */
-    public static void endExchangeWithMessage(HttpServerExchange exchange, int code, String message, Throwable t) {
+    public static void endExchangeWithMessage(HttpServerExchange exchange, 
+            int code, 
+            String message, 
+            Throwable t) {
         exchange.setStatusCode(code);
 
         String httpStatuText = HttpStatus.getStatusText(code);
 
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
-        exchange.getResponseSender().send(getErrorJsonDocument(exchange.getRequestPath(), code, httpStatuText, message, t));
+
+        exchange.getResponseSender().send(
+                getErrorJsonDocument(exchange.getRequestPath(), 
+                        code, 
+                        httpStatuText, 
+                        message, 
+                        t, false));
         exchange.endExchange();
     }
 
-    private static String getErrorJsonDocument(String href, int code, String httpStatusText, String message, Throwable t) {
+    private static String getErrorJsonDocument(String href, 
+            int code, 
+            String httpStatusText, 
+            String message, 
+            Throwable t, 
+            boolean includeStackTrace) {
         Representation rep = new Representation(href);
 
         rep.addProperty("http status code", code);
@@ -90,15 +104,17 @@ public class ResponseHelper {
                 if (t instanceof JSONParseException) {
                     nrep.addProperty("exception message", "invalid json");
                 } else {
-                    nrep.addProperty("exception message", t.getMessage());
+                    nrep.addProperty("exception message", avoidEscapedChars(t.getMessage()));
                 }
 
             }
 
-            BasicDBList stackTrace = getStackTraceJson(t);
+            if (includeStackTrace) {
+                BasicDBList stackTrace = getStackTraceJson(t);
 
-            if (stackTrace != null) {
-                nrep.addProperty("stack trace", stackTrace);
+                if (stackTrace != null) {
+                    nrep.addProperty("stack trace", stackTrace);
+                }
             }
 
             rep.addRepresentation("rh:exception", nrep);
