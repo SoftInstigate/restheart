@@ -23,6 +23,9 @@ import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import java.util.Arrays;
 import java.util.List;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 
 /**
@@ -37,7 +40,7 @@ public class RequestHelper {
         "$bit", // Bitwise Update Operator
         "$isolated" // Isolation Update Operator
     };
-    
+
     public static final List<String> UPDATE_OPERATORS
             = Arrays.asList(_UPDATE_OPERATORS);
 
@@ -60,7 +63,9 @@ public class RequestHelper {
     /**
      *
      * @param exchange
-     * @return the etag ObjectId value or null in case the IF_MATCH header is not present. If the header contains an invalid ObjectId string value returns a new ObjectId (the check will fail for sure)
+     * @return the etag ObjectId value or null in case the IF_MATCH header is
+     * not present. If the header contains an invalid ObjectId string value
+     * returns a new ObjectId (the check will fail for sure)
      */
     public static ObjectId getWriteEtag(HttpServerExchange exchange) {
         HeaderValues vs = exchange.getRequestHeaders().get(Headers.IF_MATCH);
@@ -83,19 +88,6 @@ public class RequestHelper {
         } else {
             return new ObjectId();
         }
-    }
-    
-    public static boolean contentContainsId(DBObject content) {
-        throw new RuntimeException("not yet implemented");
-    }
-    
-    /**
-     *
-     * @param content
-     * @return
-     */
-    public static ObjectId getIdInRequestContent(DBObject content) {
-        throw new RuntimeException("not yet implemented");
     }
 
     private RequestHelper() {
