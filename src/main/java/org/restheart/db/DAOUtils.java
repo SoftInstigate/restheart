@@ -41,6 +41,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
+import static org.restheart.utils.RequestHelper.UPDATE_OPERATORS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -160,17 +161,6 @@ public class DAOUtils {
     protected static DBObject validContent(final DBObject newContent) {
         return (newContent == null) ? new BasicDBObject() : newContent;
     }
-
-    private static final String _UPDATE_OPERATORS[] = {
-        "$inc", "$mul", "$rename", "$setOnInsert", "$set", "$unset", // Field Update Operators
-        "$min", "$max", "$currentDate",
-        "$", "$addToSet", "$pop", "$pullAll", "$pull", "$pushAll", "$push", // Array Update Operators
-        "$bit", // Bitwise Update Operator
-        "$isolated" // Isolation Update Operator
-    };
-
-    private static final List<String> UPDATE_OPERATORS
-            = Arrays.asList(_UPDATE_OPERATORS);
 
     public static Document updateDocument(
             MongoCollection<Document> coll,
