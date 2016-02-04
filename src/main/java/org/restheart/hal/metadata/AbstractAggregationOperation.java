@@ -208,6 +208,8 @@ public abstract class AbstractAggregationOperation {
             for (Object el : ((BasicDBList) obj).toArray()) {
                 if (el instanceof BasicDBObject) {
                     ret.add(bindAggregationVariables((BasicDBObject) el, aVars));
+                } else if (el instanceof BasicDBList) {
+                    ret.add(bindAggregationVariables((BasicDBList) el, aVars));
                 } else {
                     ret.add(el);
                 }
