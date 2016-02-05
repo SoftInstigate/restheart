@@ -60,6 +60,10 @@ public class ErrorHandler implements HttpHandler {
                 case 18:
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "Wrong MongoDB user credentials (wrong password or need to specify the authentication dababase with 'authSource=<db>' option in mongo-uri).");
                     break;
+                case 121:
+                    //Document failed validation
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "Document failed collection validation.");
+                    break;
                 default:
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see log for more information", mce);
                     break;
