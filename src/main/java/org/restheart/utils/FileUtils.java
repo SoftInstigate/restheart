@@ -24,6 +24,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -48,7 +49,14 @@ public class FileUtils {
             return null;
         }
 
-        return FileSystems.getDefault().getPath(path).toAbsolutePath();
+        FileSystem fileSystem = FileSystems.getDefault();
+        Path absolutePath = fileSystem.getPath(path).toAbsolutePath();
+        try {
+            fileSystem.close();
+        } catch (IOException e) {
+            LOGGER.error(e.getMessage(), e);
+        }
+        return absolutePath;
     }
 
     public static int getFileAbsoultePathHash(Path path) {
