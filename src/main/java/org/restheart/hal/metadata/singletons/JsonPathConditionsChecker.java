@@ -94,7 +94,9 @@ public class JsonPathConditionsChecker implements Checker {
     @Override
     public boolean doesSupportRequests(RequestContext context) {
         return !(CheckersUtils.doesRequestUsesUpdateOperators(context.getContent())
-                && CheckersUtils.isBulkRequest(context));
+                && CheckersUtils.isBulkRequest(context))
+                && !(context.getMethod() != RequestContext.METHOD.PATCH
+                && CheckersUtils.doesRequestUsesDotNotation(context.getContent()));
     }
 
     @Override
