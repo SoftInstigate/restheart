@@ -30,7 +30,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -499,4 +501,24 @@ public abstract class AbstactIT {
     private static final String REMAPPEDREFCOLL2 = "/remappedrefcoll2";
     private static final String REMAPPEDDOC2 = "/remappeddoc2";
     private static final String REMAPPEDREFCOLL1 = "/remappedrefcoll1";
+    
+    protected static String getResourceFile(String resourcePath) throws IOException, URISyntaxException {
+        StringBuilder result = new StringBuilder();
+
+        //Get file from resources folder
+        ClassLoader classLoader = JsonPathCheckerIT.class.getClassLoader();
+
+        URI uri = classLoader.getResource(resourcePath).toURI();
+
+        Path path = Paths.get(uri);
+
+        List<String> lines = Files.readAllLines(path);
+
+        lines.stream().forEach(line -> {
+            result.append(line);
+            result.append("\n");
+        });
+
+        return result.toString();
+    }
 }
