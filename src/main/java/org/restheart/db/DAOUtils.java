@@ -70,6 +70,9 @@ public class DAOUtils {
             = new UpdateOptions()
             .upsert(false);
 
+    private DAOUtils() {
+    }
+
     /**
      * @param rows list of DBObject rows as returned by getDataFromCursor()
      * @return

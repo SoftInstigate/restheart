@@ -37,6 +37,9 @@ public class ConfigurationHelper {
 
     private static final Set<Option> LONG_UNDERTOW_OPTIONS;
 
+    private ConfigurationHelper() {
+    }
+
     static {
         UNDERTOW_OPTIONS = Sets.newHashSet();
         UNDERTOW_OPTIONS.add(UndertowOptions.ALLOW_ENCODED_SLASH);

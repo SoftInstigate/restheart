@@ -102,6 +102,9 @@ public final class Bootstrapper {
     private static GracefulShutdownHandler shutdownHandler = null;
     private static Configuration configuration;
 
+    private Bootstrapper() {
+    }
+
     /**
      * main method
      *
