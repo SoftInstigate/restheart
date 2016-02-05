@@ -17,12 +17,15 @@
  */
 package org.restheart.handlers;
 
+import com.mongodb.MongoBulkWriteException;
 import com.mongodb.MongoException;
 import com.mongodb.MongoTimeoutException;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.hal.Representation;
+import org.restheart.handlers.bulk.BulkResultRepresentationFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,8 +54,19 @@ public class ErrorHandler implements HttpHandler {
             next.handleRequest(exchange);
         } catch (MongoTimeoutException nte) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Timeout connecting to MongoDB, is it running?", nte);
+        } catch(MongoBulkWriteException mce) {
+            MongoBulkWriteException bmce = (MongoBulkWriteException) mce;
+
+            BulkResultRepresentationFactory rf = new BulkResultRepresentationFactory();
+            
+            Representation rep = rf.getRepresentation(exchange, bmce);
+            
+            exchange.setStatusCode(HttpStatus.SC_MULTI_STATUS);
+            
+            rf.sendRepresentation(exchange, null, rep);
+            
+            exchange.endExchange();
         } catch (MongoException mce) {
-            LOGGER.error("MongoDB error", mce);
             switch (mce.getCode()) {
                 case 13:
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "The MongoDB user does not have enough permissions to execute this operation.");
