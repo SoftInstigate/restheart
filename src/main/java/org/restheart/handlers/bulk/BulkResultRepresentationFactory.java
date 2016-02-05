@@ -18,15 +18,20 @@
 package org.restheart.handlers.bulk;
 
 import com.mongodb.DBObject;
+import com.mongodb.MongoBulkWriteException;
+import com.mongodb.bulk.BulkWriteError;
 import com.mongodb.bulk.BulkWriteResult;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import java.util.List;
 import org.restheart.db.BulkOperationResult;
 import org.restheart.hal.AbstractRepresentationFactory;
 import org.restheart.hal.Link;
+import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
+import org.restheart.utils.HttpStatus;
 import org.restheart.utils.URLUtils;
 
 /**
@@ -51,40 +56,131 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
         return rep;
     }
 
+    public Representation getRepresentation(HttpServerExchange exchange, MongoBulkWriteException mbwe)
+            throws IllegalQueryParamenterException {
+        final String requestPath = buildRequestPath(exchange);
+        final Representation rep = createRepresentation(exchange, null, exchange.getRequestPath());
+
+        addWriteResult(mbwe.getWriteResult(), rep, requestPath);
+
+        addWriteErrors(mbwe.getWriteErrors(), rep);
+
+        // empty curies section. this is needed due to HAL browser issue
+        // https://github.com/mikekelly/hal-browser/issues/71
+        rep.addLinkArray("curies");
+
+        return rep;
+    }
+
     private void addBulkResult(
             final BulkOperationResult result,
             final RequestContext context,
             final Representation rep,
             final String requestPath) {
+        Representation nrep = new Representation();
 
         BulkWriteResult wr = result.getBulkResult();
 
+        if (wr.wasAcknowledged()) {
+            if (wr.getUpserts() != null) {
+                nrep.addProperty("inserted", wr.getUpserts().size());
+
+                // add links to new, upserted documents
+                wr.getUpserts().stream().
+                        forEach(update -> {
+                            nrep.addLink(
+                                    new Link("rh:newdoc",
+                                            URLUtils
+                                                    .getReferenceLink(
+                                                            context, 
+                                                            requestPath, 
+                                                            update.getId())),
+                                    true);
+                        });
+            }
+
+            nrep.addProperty("deleted", wr.getDeletedCount());
+
+            if (wr.isModifiedCountAvailable()) {
+                nrep.addProperty("modified", wr.getModifiedCount());
+            }
+
+            nrep.addProperty("matched", wr.getMatchedCount());
+
+            rep.addRepresentation("rh:result", nrep);
+        }
+    }
+
+    private void addWriteResult(
+            final BulkWriteResult wr,
+            final Representation rep,
+            final String requestPath) {
         Representation nrep = new Representation();
 
         if (wr.wasAcknowledged()) {
             if (wr.getUpserts() != null) {
                 nrep.addProperty("inserted", wr.getUpserts().size());
-                
+
                 // add links to new, upserted documents
                 wr.getUpserts().stream().
-                    forEach(update -> {
-                        nrep.addLink(
-                                new Link("rh:newdoc",
-                                        URLUtils.getReferenceLink(context, requestPath, update.getId())),
-                                true);
-                    });
+                        forEach(update -> {
+                            nrep.addLink(
+                                    new Link("rh:newdoc",
+                                            URLUtils
+                                                    .getReferenceLink(
+                                                            requestPath, 
+                                                            update.getId())),
+                                    true);
+                        });
             }
 
             nrep.addProperty("deleted", wr.getDeletedCount());
-            
+
             if (wr.isModifiedCountAvailable()) {
                 nrep.addProperty("modified", wr.getModifiedCount());
             }
-            
+
             nrep.addProperty("matched", wr.getMatchedCount());
 
             rep.addRepresentation("rh:result", nrep);
         }
+    }
+
+    private void addWriteErrors(
+            final List<BulkWriteError> wes,
+            final Representation rep) {
+        wes.stream().forEach(error -> {
+            Representation nrep = new Representation();
+            
+            int httpStatus;
+            String httpMessage;
+            
+            switch (error.getCode()) {
+                case 13:
+                    httpStatus = HttpStatus.SC_FORBIDDEN;
+                    httpMessage = "The MongoDB user does not have enough permissions to execute this operation.";
+                    break;
+                case 18:
+                    httpStatus = HttpStatus.SC_FORBIDDEN;
+                    httpMessage = "Wrong MongoDB user credentials (wrong password or need to specify the authentication dababase with 'authSource=<db>' option in mongo-uri).";
+                    break;
+                case 121:
+                    httpStatus = HttpStatus.SC_BAD_REQUEST;
+                    httpMessage = "Document failed collection validation.";
+                    break;
+                default:
+                    httpStatus = HttpStatus.SC_INTERNAL_SERVER_ERROR;
+                    httpMessage = error.getMessage();
+                    break;
+            }
+            
+            nrep.addProperty("index", error.getIndex());
+            nrep.addProperty("mongodbErrorCode", error.getCode());
+            nrep.addProperty("httpCode", httpStatus);
+            nrep.addProperty("message", httpMessage);
+            
+            rep.addRepresentation("rh:error", nrep);
+        });
     }
 
     @Override
@@ -92,4 +188,20 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
         throw new UnsupportedOperationException("Not supported."); //To change body of generated methods, choose Tools | Templates.
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param rep
+     */
+    @Override
+    public void sendRepresentation(HttpServerExchange exchange, RequestContext context, Representation rep) {
+        if (context != null
+                && context.getWarnings() != null) {
+            context.getWarnings().forEach(w -> rep.addWarning(w));
+        }
+
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
+        exchange.getResponseSender().send(rep.toString());
+    }
 }
