@@ -28,6 +28,10 @@ import static org.restheart.utils.RequestHelper.UPDATE_OPERATORS;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class CheckersUtils {
+
+    private CheckersUtils() {
+    }
+
     public static boolean isBulkRequest(RequestContext context) {
         return context.getType() == RequestContext.TYPE.BULK_DOCUMENTS
                 || context.getContent() instanceof BasicDBList;
