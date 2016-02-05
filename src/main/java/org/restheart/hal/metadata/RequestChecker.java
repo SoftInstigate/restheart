@@ -44,18 +44,20 @@ public class RequestChecker {
     public RequestChecker(String checker, DBObject args) {
         this.name = checker;
         this.args = args;
-        this.skipNotSupported = true;
+        this.skipNotSupported = false;
     }
 
     /**
      *
      * @param checker
      * @param args
+     * @param skipNotSupported false if the checker should fail if it does not
+     * support the request
      */
-    public RequestChecker(String checker, DBObject args, boolean failNotSupported) {
+    public RequestChecker(String checker, DBObject args, boolean skipNotSupported) {
         this.name = checker;
         this.args = args;
-        this.skipNotSupported = failNotSupported;
+        this.skipNotSupported = skipNotSupported;
     }
 
     /**
@@ -116,20 +118,20 @@ public class RequestChecker {
 
         DBObject args = (DBObject) _args;
 
-        Object _failNotSupported = props.get(SKIP_NOT_SUPPORTED);
+        Object _skipNotSupported = props.get(SKIP_NOT_SUPPORTED);
 
-        Boolean failNotSupported;
+        Boolean skipNotSupported;
 
         // failNotSupported is optional
-        if (_failNotSupported == null) {
-            failNotSupported = true;
-        } else if (!(_failNotSupported instanceof Boolean)) {
+        if (_skipNotSupported == null) {
+            skipNotSupported = false;
+        } else if (!(_skipNotSupported instanceof Boolean)) {
             throw new InvalidMetadataException("invalid '" + ARGS_KEY + "' element. it must be boolean");
         } else {
-            failNotSupported = (Boolean) _failNotSupported;
+            skipNotSupported = (Boolean) _skipNotSupported;
         }
 
-        return new RequestChecker(name, args, failNotSupported);
+        return new RequestChecker(name, args, skipNotSupported);
     }
 
     /**
