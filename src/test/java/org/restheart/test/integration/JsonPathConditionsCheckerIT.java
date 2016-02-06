@@ -34,17 +34,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static org.restheart.test.integration.AbstactIT.dbTmpUri;
 import static org.restheart.test.integration.AbstactIT.halCT;
+import static org.restheart.test.integration.AbstactIT.buildURI;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class JsonPathCheckerIT extends AbstactIT {
+public class JsonPathConditionsCheckerIT extends AbstactIT {
 
-    private static final Logger LOG = LoggerFactory.getLogger(JsonPathCheckerIT.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JsonPathConditionsCheckerIT.class);
 
     private static URI userURI;
     
-    public JsonPathCheckerIT() throws URISyntaxException {
+    public JsonPathConditionsCheckerIT() throws URISyntaxException {
         super();
         userURI = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/a@si.com");
     }
@@ -69,6 +70,7 @@ public class JsonPathCheckerIT extends AbstactIT {
     }
 
     @Test
+    @Ignore
     public void testPostData() throws Exception {
         Response resp;
 
@@ -97,29 +99,50 @@ public class JsonPathCheckerIT extends AbstactIT {
         check("check update post invalid data", resp, HttpStatus.SC_BAD_REQUEST);
     }
 
-    /**
-     * the checker does not supports dot notation, only on PATCH
-     * 
-     * this won't be fixed since the checker is deprecated
-     * 
-     * @throws Exception 
-     */
     @Test
-    @Ignore
     public void testPostDataDotNotation() throws Exception {
         Response resp;
 
         // *** test post valid data with dot notation
         final String VALID_USER_DN = getResourceFile("data/jsonpath-testuser-dotnot.json");
 
-        resp = adminExecutor.execute(Request.Post(userURI)
+        resp = adminExecutor.execute(Request.Post(collectionTmpUri)
                 .bodyString(VALID_USER_DN, halCT)
                 .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
-        check("check post valid data with dot notation", resp, HttpStatus.SC_OK);
+        check("check post valid data with dot notation", resp, HttpStatus.SC_CREATED);
+    }
+    
+    @Test
+    public void testPostIncompleteDataDotNotation() throws Exception {
+        Response resp;
+
+        // *** test post valid data with dot notation
+        final String VALID_USER_DN = getResourceFile("data/jsonpath-testuser-dotnot.json");
+
+        resp = adminExecutor.execute(Request.Post(collectionTmpUri)
+                .bodyString(VALID_USER_DN, halCT)
+                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+
+        check("check post valid data with dot notation", resp, HttpStatus.SC_BAD_REQUEST);
+    }
+    
+    @Test
+    public void testPutDataDotNotation() throws Exception {
+        Response resp;
+
+        // *** test post valid data with dot notation
+        final String VALID_USER_DN = getResourceFile("data/jsonpath-testuser-dotnot.json");
+
+        resp = adminExecutor.execute(Request.Put(userURI)
+                .bodyString(VALID_USER_DN, halCT)
+                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+
+        check("check post valid data with dot notation", resp, HttpStatus.SC_CREATED);
     }
 
     @Test
+    @Ignore
     public void testPatchData() throws Exception {
         Response resp;
 

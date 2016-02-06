@@ -506,7 +506,7 @@ public abstract class AbstactIT {
         StringBuilder result = new StringBuilder();
 
         //Get file from resources folder
-        ClassLoader classLoader = JsonPathCheckerIT.class.getClassLoader();
+        ClassLoader classLoader = JsonPathConditionsCheckerIT.class.getClassLoader();
 
         URI uri = classLoader.getResource(resourcePath).toURI();
 
