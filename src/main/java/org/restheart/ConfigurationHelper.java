@@ -80,6 +80,10 @@ public class ConfigurationHelper {
 
         Map<String, Object> options = configuration.getConnectionOptions();
 
+        if (options == null) {
+            return;
+        }
+        
         UNDERTOW_OPTIONS.stream().forEach(option -> {
             if (options.containsKey(option.getName())) {
                 Object value = options.get(option.getName());
