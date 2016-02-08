@@ -69,7 +69,6 @@ public class JsonPathConditionsCheckerIT extends AbstactIT {
     }
 
     @Test
-    @Ignore
     public void testPostData() throws Exception {
         Response resp;
 
