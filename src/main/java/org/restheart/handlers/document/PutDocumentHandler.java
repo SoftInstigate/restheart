@@ -97,13 +97,11 @@ public class PutDocumentHandler extends PipedHttpHandler {
         
         String etag = context.getETag();
         
-        LOGGER.debug("checking etag check policy {}", context.isETagCheckRequired());
-        LOGGER.debug("etag {}", context.getETag());
-
         OperationResult result = this.documentDAO.upsertDocument(
                 context.getDBName(),
                 context.getCollectionName(),
                 context.getDocumentId(),
+                context.getShardKey(),
                 content,
                 etag,
                 false,
