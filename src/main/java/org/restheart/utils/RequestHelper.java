@@ -24,6 +24,7 @@ import io.undertow.util.Headers;
 import java.util.Arrays;
 import java.util.List;
 import org.bson.BsonDocument;
+import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
@@ -50,14 +51,16 @@ public class RequestHelper {
      * @param etag
      * @return
      */
-    public static boolean checkReadEtag(HttpServerExchange exchange, ObjectId etag) {
+    public static boolean checkReadEtag(HttpServerExchange exchange, BsonObjectId etag) {
         if (etag == null) {
             return false;
         }
 
         HeaderValues vs = exchange.getRequestHeaders().get(Headers.IF_NONE_MATCH);
 
-        return vs == null || vs.getFirst() == null ? false : vs.getFirst().equals(etag.toString());
+        return vs == null || vs.getFirst() == null
+                ? false
+                : vs.getFirst().equals(etag.getValue().toString());
     }
 
     /**

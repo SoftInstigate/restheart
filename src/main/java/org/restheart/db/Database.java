@@ -22,12 +22,14 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.util.JSONParseException;
 
 
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import org.bson.BsonDocument;
 
 import org.restheart.handlers.IllegalQueryParamenterException;
 
@@ -81,6 +83,14 @@ public interface Database {
      */
     DBCollection getCollection(String dbName, String collectionName);
 
+    /**
+     *
+     * @param dbName
+     * @param collectionName
+     * @return A Collection
+     */
+    MongoCollection<BsonDocument> getMongoCollection(String dbName, String collectionName);
+    
     /**
      *
      * @param collection

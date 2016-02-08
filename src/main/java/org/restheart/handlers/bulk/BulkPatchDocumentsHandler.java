@@ -75,6 +75,7 @@ public class BulkPatchDocumentsHandler extends PipedHttpHandler {
                         context.getDBName(), 
                         context.getCollectionName(), 
                         context.getComposedFilters(),
+                        context.getShardKey(),
                         dcontent);
 
         context.setDbOperationResult(result);

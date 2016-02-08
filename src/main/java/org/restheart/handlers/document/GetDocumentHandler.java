@@ -17,17 +17,22 @@
  */
 package org.restheart.handlers.document;
 
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.util.JSON;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 import org.bson.BSONObject;
+import org.bson.BsonDocument;
+import org.bson.BsonObjectId;
+import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.JsonUtils;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
@@ -62,21 +67,30 @@ public class GetDocumentHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        BasicDBObject query = new BasicDBObject("_id", context.getDocumentId());
+        Bson query = eq("_id", context.getDocumentId());
 
-        final BasicDBObject fieldsToReturn = new BasicDBObject();
+        if (context.getShardKey() != null) {
+            query = and(query, context.getShardKey());
+        }
+        
+        final BsonDocument fieldsToReturn = new BsonDocument();
 
         Deque<String> keys = context.getKeys();
 
         if (keys != null) {
             keys.stream().forEach((String f) -> {
-                BSONObject keyQuery = (BSONObject) JSON.parse(f);
+                BsonDocument keyQuery = BsonDocument.parse(f);
 
                 fieldsToReturn.putAll(keyQuery);  // this can throw JSONParseException for invalid filter parameters
             });
         }
 
-        DBObject document = getDatabase().getCollection(context.getDBName(), context.getCollectionName()).findOne(query, fieldsToReturn);
+        BsonDocument document = getDatabase().getMongoCollection(
+                context.getDBName(),
+                context.getCollectionName())
+                .find(query)
+                .projection(fieldsToReturn)
+                .first();
 
         if (document == null) {
             String errMsg = context.getDocumentId() == null
@@ -110,7 +124,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
 
         // in case the request contains the IF_NONE_MATCH header with the current etag value,
         // just return 304 NOT_MODIFIED code
-        if (RequestHelper.checkReadEtag(exchange, (ObjectId) etag)) {
+        if (RequestHelper.checkReadEtag(exchange, (BsonObjectId) etag)) {
             ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_MODIFIED);
             return;
         }
@@ -121,7 +135,12 @@ public class GetDocumentHandler extends PipedHttpHandler {
         exchange.setStatusCode(HttpStatus.SC_OK);
 
         DocumentRepresentationFactory drp = new DocumentRepresentationFactory();
-        Representation rep = drp.getRepresentation(requestPath, exchange, context, document);
+        
+        // 
+        DBObject data = JsonUtils.convertBsonValueToDBObject(document);
+        
+        Representation rep = drp.getRepresentation(requestPath, exchange, context,
+                data);
 
         exchange.setStatusCode(HttpStatus.SC_OK);
 

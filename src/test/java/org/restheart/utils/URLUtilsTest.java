@@ -40,8 +40,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class URLUtilisTest {
-    private static final Logger LOG = LoggerFactory.getLogger(URLUtilisTest.class);
+public class URLUtilsTest {
+    private static final Logger LOG = LoggerFactory.getLogger(URLUtilsTest.class);
     
     @Rule
     public TestRule watcher = new TestWatcher() {
@@ -51,7 +51,7 @@ public class URLUtilisTest {
         }
     };
 
-    public URLUtilisTest() {
+    public URLUtilsTest() {
     }
 
     @BeforeClass

@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.mongodb.client.model.Filters.and;
 import java.util.Optional;
+import org.bson.BsonDocument;
 
 /**
  *
@@ -163,29 +164,42 @@ public class DAOUtils {
         return (newContent == null) ? new BasicDBObject() : newContent;
     }
 
+    /**
+     *
+     * @param coll
+     * @param documentId use Optional.empty() to specify no documentId (null is
+     * _id: null)
+     * @param shardKeys
+     * @param data
+     * @param replace
+     * @return the old document
+     */
     public static OperationResult updateDocument(
             MongoCollection<Document> coll,
             Object documentId,
+            BsonDocument shardKeys,
             Document data,
             boolean replace) {
-        return updateDocument(coll, documentId, data, replace, false);
+        return updateDocument(coll, documentId, shardKeys, data, replace, false);
     }
 
-    private static final Bson IMPOSSIBLE_CONDITION =  eq("_etag", new ObjectId());
+    private static final Bson IMPOSSIBLE_CONDITION = eq("_etag", new ObjectId());
 
     /**
      *
      * @param coll
      * @param documentId use Optional.empty() to specify no documentId (null is
      * _id: null)
+     * @param shardKeys
      * @param data
      * @param replace
      * @param returnNew
-     * @return
+     * @return the new or old document depending on returnNew
      */
     public static OperationResult updateDocument(
             MongoCollection<Document> coll,
             Object documentId,
+            BsonDocument shardKeys,
             Document data,
             boolean replace,
             boolean returnNew) {
@@ -203,6 +217,10 @@ public class DAOUtils {
             idPresent = false;
         } else {
             query = eq("_id", documentId);
+        }
+
+        if (shardKeys != null) {
+            query = and(query, shardKeys);
         }
 
         if (replace) {
@@ -234,21 +252,26 @@ public class DAOUtils {
     public static boolean restoreDocument(
             MongoCollection<Document> coll,
             Object documentId,
+            BsonDocument shardKeys,
             Document data,
             Object etag) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(documentId);
         Objects.requireNonNull(data);
 
-        Bson filter;
+        Bson query;
 
         if (etag == null) {
-            filter = eq("_id", documentId);
+            query = eq("_id", documentId);
         } else {
-            filter = and(eq("_id", documentId), eq("_etag", etag));
+            query = and(eq("_id", documentId), eq("_etag", etag));
         }
 
-        UpdateResult result = coll.replaceOne(filter, data, U_NOT_UPSERT_OPS);
+        if (shardKeys != null) {
+            query = and(query, shardKeys);
+        }
+
+        UpdateResult result = coll.replaceOne(query, data, U_NOT_UPSERT_OPS);
 
         if (result.isModifiedCountAvailable()) {
             return result.getModifiedCount() == 1;
@@ -259,13 +282,18 @@ public class DAOUtils {
 
     public static BulkOperationResult bulkUpsertDocuments(
             MongoCollection<Document> coll,
-            final List<Document> documents) {
+            final List<Document> documents,
+            BsonDocument shardKeys) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(documents);
 
         ObjectId newEtag = new ObjectId();
 
-        List<WriteModel<Document>> wm = getBulkWriteModel(coll, documents, newEtag);
+        List<WriteModel<Document>> wm = getBulkWriteModel(
+                coll,
+                documents,
+                shardKeys,
+                newEtag);
 
         BulkWriteResult result = coll.bulkWrite(wm);
 
@@ -275,6 +303,7 @@ public class DAOUtils {
     private static List<WriteModel<Document>> getBulkWriteModel(
             final MongoCollection<Document> mcoll,
             final List<Document> documents,
+            BsonDocument shardKeys,
             final ObjectId etag) {
         Objects.requireNonNull(mcoll);
         Objects.requireNonNull(documents);
@@ -290,8 +319,14 @@ public class DAOUtils {
             // add the _etag
             document.put("_etag", etag);
 
+            Bson filter = eq("_id", document.get("_id"));
+            
+            if (shardKeys != null) {
+                filter = and(filter, shardKeys);
+            }
+            
             updates.add(new UpdateOneModel<>(
-                    new Document("_id", document.get("_id")),
+                    filter,
                     getUpdateDocument(document),
                     new UpdateOptions().upsert(true)
             ));

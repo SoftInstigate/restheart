@@ -18,14 +18,13 @@
 package org.restheart.handlers.injectors;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Optional;
 import org.bson.BSONObject;
-import org.bson.types.ObjectId;
+import org.bson.BsonDocument;
 import org.restheart.db.DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.handlers.PipedHttpHandler;
@@ -45,6 +44,7 @@ import org.restheart.utils.URLUtils;
 import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
 import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.handlers.RequestContext.TYPE;
+import static org.restheart.handlers.RequestContext.SHARDKEY_QPARAM_KEY;
 
 /**
  *
@@ -359,6 +359,44 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             } catch (IllegalArgumentException iae) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal " + HAL_QPARAM_KEY + " paramenter; valid values are " + Arrays.toString(HAL_MODE.values()));
             }
+        }
+        
+        // get the shardkey query parameter
+        
+        // get and check shardKeys parameter
+        Deque<String> shardKeys = exchange.getQueryParameters().get(SHARDKEY_QPARAM_KEY);
+
+        if (shardKeys != null) {
+            if (shardKeys.stream().anyMatch(f -> {
+                if (f == null || f.isEmpty()) {
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                            "illegal shardkey paramenter (empty)");
+                    return true;
+                }
+
+                try {
+                    BsonDocument _shardKeys = BsonDocument.parse(f);
+
+                    if (_shardKeys.keySet().isEmpty()) {
+                        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                                "illegal shardkey paramenter (empty json object)");
+                        return true;
+                    }
+                    
+                    rcontext.setShardKey(_shardKeys);
+
+                } catch (Throwable t) {
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                            "illegal shardkey paramenter: " + f, t);
+                    return true;
+                }
+
+                return false;
+            })) {
+                return; // an error occurred
+            }
+
+            rcontext.setFilter(exchange.getQueryParameters().get(FILTER_QPARAM_KEY));
         }
 
         getNext().handleRequest(exchange, rcontext);

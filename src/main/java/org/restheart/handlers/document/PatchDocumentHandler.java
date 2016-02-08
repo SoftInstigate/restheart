@@ -96,6 +96,7 @@ public class PatchDocumentHandler extends PipedHttpHandler {
                 context.getDBName(),
                 context.getCollectionName(),
                 context.getDocumentId(),
+                context.getShardKey(),
                 content,
                 context.getETag(),
                 true,

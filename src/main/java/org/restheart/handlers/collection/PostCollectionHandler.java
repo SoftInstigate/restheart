@@ -34,6 +34,8 @@ import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import static org.restheart.utils.URLUtils.getReferenceLink;
 import static org.restheart.utils.URLUtils.getReferenceLink;
+import static org.restheart.utils.URLUtils.getReferenceLink;
+import static org.restheart.utils.URLUtils.getReferenceLink;
 
 /**
  *
@@ -102,6 +104,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
         OperationResult result = this.documentDAO
                 .upsertDocumentPost(context.getDBName(),
                         context.getCollectionName(),
+                        context.getShardKey(),
                         content,
                         context.getETag(),
                         context.isETagCheckRequired());
