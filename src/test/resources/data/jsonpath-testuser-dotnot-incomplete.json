@@ -1,6 +1,7 @@
 {
-    "_id": "a@si.com",
+    "_id": "b@si.com",
     "name": "Andrea", 
     "password": "changeit",
-    "roles.2": "ROLE3"
+    "roles.2": "ROLE3",
+    "details.city": "Milan"
 }

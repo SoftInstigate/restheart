@@ -11,7 +11,8 @@
                         "roles"
                     ],
                     "optionalFields": [
-                        "details"
+                        "details",
+                        "_etag"
                     ],
                     "path": "$",
                     "type": "object"

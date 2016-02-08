@@ -11,11 +11,11 @@
 
 https-listener: true
 https-host: 0.0.0.0
-https-port: 14443
+https-port: 4443
 
 http-listener: true
 http-host: 0.0.0.0
-http-port: 18080
+http-port: 8080
 
 ajp-listener: false
 ajp-host: 0.0.0.0
@@ -44,7 +44,7 @@ use-embedded-keystore: true
 
 # Specify the mongodb connection using a Mongo Client URI.
 # The format of the URI is:
-#   mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
+#    mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
 #
 # The URI option authSource allows to specify the authetication database, example:
 # mongodb://user:secret@127.0.0.1/?authSource=authdb
@@ -55,20 +55,8 @@ mongo-uri: mongodb://127.0.0.1
 
 # Use mongo-mounts to bind URls to mongodb resources using the out-of-the-box URL rewrite feature.
 mongo-mounts:
-    - what: "*"
-      where: /
-    - what: "*"
-      where: /remappedall
-    - what: /mydb
-      where: /remappeddb
-    - what: /mydb/refcoll1
-      where: /remappedrefcoll1
-    - what: /mydb/refcoll2
-      where: /remappedrefcoll2
-    - what: /mydb/refcoll1/doc1
-      where: /remappeddoc1
-    - what: /mydb/refcoll2/doc2
-      where: /remappeddoc2
+    - what: /GFDB/tracks
+      where: /t
 
 #### Static Web Resources
 
@@ -78,7 +66,7 @@ mongo-mounts:
 # If embedded is true, the resources are either included in the restheart.jar or in the classpath
 
 static-resources-mounts:
-    - what: browser
+    - what: /Volumes/A/myProjects/MyPojects/restheart-hal-browser-master
       where: /browser
       welcome-file: browser.html
       secured: false
@@ -123,12 +111,14 @@ metadata-named-singletons:
     - group: checkers
       interface: org.restheart.hal.metadata.singletons.Checker
       singletons:
-        - name: jsonSchema
-          class: org.restheart.hal.metadata.singletons.JsonSchemaChecker
         - name: checkContent
-          class: org.restheart.hal.metadata.singletons.JsonPathConditionsChecker
+          class: org.restheart.hal.metadata.singletons.SimpleContentChecker
         - name: checkContentSize
           class: org.restheart.hal.metadata.singletons.ContentSizeChecker
+        - name: stringsToOids
+          class: org.restheart.hal.metadata.singletons.ValidOidsStringsAsOidsTransformer
+        - name: oidsToStrings
+          class: org.restheart.hal.metadata.singletons.OidsAsStringsTransformer
 
     # Checkers group used by handlers:
     # org.restheart.handlers.metadata.RequestTransformerMetadataHandler and
@@ -141,19 +131,6 @@ metadata-named-singletons:
           class: org.restheart.hal.metadata.singletons.RequestPropsInjecterTransformer
         - name: filterProperties
           class: org.restheart.hal.metadata.singletons.FilterTransformer
-        - name: stringsToOids
-          class: org.restheart.hal.metadata.singletons.ValidOidsStringsAsOidsTransformer
-        - name: oidsToStrings
-          class: org.restheart.hal.metadata.singletons.OidsAsStringsTransformer
-
-    # WebHook group used by handler:
-    # org.restheart.handlers.metadata.WebHookHandler
-    # More information in webhook javadoc
-    - group: webhooks
-      interface: org.restheart.hal.metadata.singletons.WebHook
-      singletons:
-        - name: snooper
-          class: org.restheart.hal.metadata.singletons.SnooperWebHook
 
 ### Security
 
@@ -162,17 +139,15 @@ metadata-named-singletons:
 # idm: the Identity Manager responsible of authentication
 # access-manager: the Access Manager responsible of authorization
 # The RESTHeart security is pluggable and you can provide you own implementation of both IDM and AM.
-# the provided default implementations of IDM and AM are SimpleFileIdentityManager, DbIdentityManager and SimpleAccessManager.
-# conf-file paths are either absolute (starting with /) or relative to the restheart.jar directory
-
-# can also use org.restheart.security.impl.DbIdentityManager for testing
+# The provided default implementations of IDM and AM are SimpleFileIdentityManager, DbIdentityManager and SimpleAccessManager.
+# conf-file paths are either absolute (starting with /) or relative to the restheart.jar file path
 
 idm:
-    implementation-class: org.restheart.security.impl.SimpleFileIdentityManager
-    conf-file: ../etc/security-integrationtest.yml
+    implementation-class: org.restheart.security.impl.DbIdentityManager
+    conf-file: ../etc/gf-security.yml
 access-manager:
     implementation-class: org.restheart.security.impl.SimpleAccessManager
-    conf-file: ../etc/security-integrationtest.yml
+    conf-file: ../etc/gf-security.yml
 
 # Authentication Token
 
@@ -180,7 +155,7 @@ access-manager:
 # In this case, you need to either disable it or use a load balancer with the sticky session option
 # or use a distributed auth token cache implementation (not provided in the current version).
 
-auth-token-enabled: true
+auth-token-enabled: false
 auth-token-ttl: 15
 
 #### Logging
@@ -189,25 +164,11 @@ auth-token-ttl: 15
 # enable-log-file: true => log messages to a file (default value: true)
 # log-file-path: to specify the log file path (default value: restheart.log in system temporary directory)
 # log-level: to set the log level. Value can be OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. (default value is INFO)
-# requests-log-level: log the request-response. 0 => no log, 1 => light log, 2 => detailed dump
-# WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
 
-enable-log-file: true
+enable-log-file: false
 log-file-path: /tmp/restheart.log
 enable-log-console: true
-log-level: DEBUG
-requests-log-level: 1
-
-#### ETag policy
-
-# the following configuration defines the default etag check policy
-# the policy applies for dbs, collections (also applies to file buckets) and documents
-# valid values are REQUIRED, REQUIRED_FOR_DELETE, OPTIONAL
-
-etag-check-policy:
-    db: REQUIRED_FOR_DELETE
-    coll: REQUIRED_FOR_DELETE
-    doc: OPTIONAL
+log-level: INFO
 
 #### Performace Settings
 
@@ -235,7 +196,7 @@ force-gzip-encoding: false
 
 local-cache-enabled: true
 # TTL in milliseconds; specify a value < 0 to never expire cached entries
-local-cache-ttl: 2000
+local-cache-ttl: 1000
 
 # Limit for the maximum number of concurrent requests being served
 requests-limit: 1000
@@ -252,70 +213,4 @@ buffers-per-region: 20
 # Should the buffer pool use direct buffers, this instructs the JVM to use native (if possible) I/O operations on the buffers
 direct-buffers: true
 
-#### Connetction Options
-
-#### Connetction Options
-## see http://undertow.io/undertow-docs/undertow-docs-1.3.0/index.html#common-listener-options
-
-connection-options:
-    # The maximum size of a HTTP header block, in bytes. 
-    # If a client sends more data that this as part of the request header then the connection will be closed. 
-    # Defaults to 1Mbyte.
-    MAX_HEADER_SIZE: 1048576
-
-    # The default maximum size of a request entity. 
-    # Defaults to unlimited.
-    MAX_ENTITY_SIZE: -1
-    
-     #The default maximum size of the HTTP entity body when using the mutiltipart parser.
-     # Generall this will be larger than MAX_ENTITY_SIZE
-     # If this is not specified it will be the same as MAX_ENTITY_SIZE
-    MULTIPART_MAX_ENTITY_SIZE: -1
-    
-    # The idle timeout in milliseconds after which the channel will be closed.
-    # If the underlying channel already has a read or write timeout set 
-    # the smaller of the two values will be used for read/write timeouts.
-    # Defaults to unlimited (-1).
-    IDLE_TIMEOUT: -1
-    
-    # The maximum allowed time of reading HTTP request in milliseconds.
-    # -1 or missing value disables this functionality.
-    REQUEST_PARSE_TIMEOUT: -1
-    
-    # The amount of time the connection can be idle with no current requests 
-    # before it is closed;
-    # Defaults to unlimited (-1).
-    NO_REQUEST_TIMEOUT: -1
-
-    # The maximum number of query parameters that are permitted in a request. 
-    # If a client sends more than this number the connection will be closed. 
-    # This limit is necessary to protect against hash based denial of service attacks. 
-    # Defaults to 1000.
-    MAX_PARAMETERS: 1000
-
-    # The maximum number of headers that are permitted in a request. 
-    # If a client sends more than this number the connection will be closed. 
-    # This limit is necessary to protect against hash based denial of service attacks. 
-    # Defaults to 200.
-    MAX_HEADERS: 200
-
-    # The maximum number of cookies that are permitted in a request. 
-    # If a client sends more than this number the connection will be closed. 
-    # This limit is necessary to protect against hash based denial of service attacks. 
-    # Defaults to 200.
-    MAX_COOKIES: 200
-
-    # The charset to use to decode the URL and query parameters. 
-    # Defaults to UTF-8.
-    URL_CHARSET: UTF-8
-    
-    # If this is true then a Connection: keep-alive header will be added to responses, 
-    # even when it is not strictly required by the specification.
-    # Defaults to true
-    ALWAYS_SET_KEEP_ALIVE: true
-    
-    # If this is true then a Date header will be added to all responses. 
-    # The HTTP spec says this header should be added to all responses, 
-    # unless the server does not have an accurate clock.
-    # Defaults to true
-    ALWAYS_SET_DATE: true
+...
