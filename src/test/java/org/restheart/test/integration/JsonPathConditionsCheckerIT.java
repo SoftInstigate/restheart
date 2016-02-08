@@ -28,7 +28,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import static org.restheart.test.integration.AbstactIT.adminExecutor;
-import static org.restheart.test.integration.AbstactIT.buildURI;
 import static org.restheart.test.integration.AbstactIT.collectionTmpUri;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,7 +117,7 @@ public class JsonPathConditionsCheckerIT extends AbstactIT {
         Response resp;
 
         // *** test post valid data with dot notation
-        final String VALID_USER_DN = getResourceFile("data/jsonpath-testuser-dotnot.json");
+        final String VALID_USER_DN = getResourceFile("data/jsonpath-testuser-dotnot-incomplete.json");
 
         resp = adminExecutor.execute(Request.Post(collectionTmpUri)
                 .bodyString(VALID_USER_DN, halCT)
@@ -142,7 +141,6 @@ public class JsonPathConditionsCheckerIT extends AbstactIT {
     }
 
     @Test
-    @Ignore
     public void testPatchData() throws Exception {
         Response resp;
 
@@ -209,7 +207,6 @@ public class JsonPathConditionsCheckerIT extends AbstactIT {
      * @throws Exception 
      */
     @Test
-    @Ignore
     public void testPatchIncompleteObject() throws Exception {
         Response resp;
 

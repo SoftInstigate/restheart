@@ -21,7 +21,6 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -39,8 +38,9 @@ import org.slf4j.LoggerFactory;
  * JsonPathConditionsChecker allows to check request content by using conditions
  * based on json path expression
  *
- * JsonPathConditionsChecker does not support update operators on bulk requests.
- * For instance PATCH /db/coll/* { $currentDate: { "a.b": true }}
+ * JsonPathConditionsChecker does not support dot notation and update operators
+ * on bulk requests. For instance PATCH /db/coll/* { $currentDate: { "a.b": true
+ * }}
  *
  * the args arguments is an array of condition. a condition is json object as
  * follows: { "path": "PATHEXPR", [ "type": "APPLY]"] ["count": COUNT ]
@@ -92,28 +92,10 @@ public class JsonPathConditionsChecker implements Checker {
     }
 
     @Override
-    public boolean doesSupportRequests(RequestContext context) {
-        return !(CheckersUtils.doesRequestUsesUpdateOperators(context.getContent())
-                && CheckersUtils.isBulkRequest(context));
-    }
-
-    @Override
     public boolean check(HttpServerExchange exchange, RequestContext context, BasicDBObject contentToCheck, DBObject args) {
         if (args instanceof BasicDBList) {
-            boolean dotNotation = CheckersUtils.doesRequestUsesDotNotation(context.getContent());
-            if (dotNotation) {
-                // if patching the keys can use the dot notation
-                // example {"a.b": 1, "a.c": 2}
-                // so we need to check conditions on {"a": {"b" : 1}} and {"a":{"c":2}}
-                return !contentToCheck.keySet().stream().anyMatch((String key) -> {
-                    DBObject remappedContent = remapJson(key, contentToCheck.get(key));
-                    BasicDBList conditions = filterMissingOptionalAndNullNullableConditions((BasicDBList) args, remappedContent, true);
-                    return !applyConditions(conditions, remappedContent, context);
-                });
-            } else {
-                BasicDBList conditions = filterMissingOptionalAndNullNullableConditions((BasicDBList) args, context.getContent(), false);
-                return applyConditions(conditions, contentToCheck, context);
-            }
+            BasicDBList conditions = filterMissingOptionalAndNullNullableConditions((BasicDBList) args, context.getContent());
+            return applyConditions(conditions, contentToCheck, context);
         } else {
             context.addWarning("checker wrong definition: args property must be an arrary of string property names.");
             return true;
@@ -122,16 +104,22 @@ public class JsonPathConditionsChecker implements Checker {
 
     @Override
     public PHASE getPhase(RequestContext context) {
-        if (CheckersUtils.doesRequestUsesUpdateOperators(context.getContent())) {
+        if (context.getMethod() == RequestContext.METHOD.PATCH
+                || CheckersUtils.doesRequestUsesDotNotation(context.getContent())
+                || CheckersUtils.doesRequestUsesUpdateOperators(context.getContent())) {
             return PHASE.AFTER_WRITE;
         } else {
             return PHASE.BEFORE_WRITE;
         }
     }
 
+    @Override
+    public boolean doesSupportRequests(RequestContext context) {
+        return !(CheckersUtils.isBulkRequest(context)
+                && getPhase(context) == PHASE.AFTER_WRITE);
+    }
+
     protected boolean applyConditions(BasicDBList conditions, DBObject json, final RequestContext context) {
-        boolean partial = json.isPartialObject();
-        
         return conditions.stream().allMatch((Object _condition) -> {
             if (_condition instanceof BasicDBObject) {
                 BasicDBObject condition = (BasicDBObject) _condition;
@@ -190,7 +178,7 @@ public class JsonPathConditionsChecker implements Checker {
                     optionalFields = null;
                 }
                 String regex = null;
-                
+
                 Object _regex = condition.get("regex");
                 if (_regex != null && _regex instanceof String) {
                     regex = (String) _regex;
@@ -214,15 +202,15 @@ public class JsonPathConditionsChecker implements Checker {
                     return true;
                 }
                 if (type != null && !counts.isEmpty() && regex != null) {
-                    return checkCount(json, path, counts, context) && checkType(json, path, type, mandatoryFields, optionalFields, optional, nullable, partial, context) && checkRegex(json, path, regex, optional, nullable, context);
+                    return checkCount(json, path, counts, context) && checkType(json, path, type, mandatoryFields, optionalFields, optional, nullable, context) && checkRegex(json, path, regex, optional, nullable, context);
                 } else if (type != null && !counts.isEmpty()) {
-                    return checkCount(json, path, counts, context) && checkType(json, path, type, mandatoryFields, optionalFields, optional, nullable, partial, context);
+                    return checkCount(json, path, counts, context) && checkType(json, path, type, mandatoryFields, optionalFields, optional, nullable, context);
                 } else if (type != null && regex != null) {
-                    return checkType(json, path, type, mandatoryFields, optionalFields, optional, nullable, partial, context) && checkRegex(json, path, regex, optional, nullable, context);
+                    return checkType(json, path, type, mandatoryFields, optionalFields, optional, nullable, context) && checkRegex(json, path, regex, optional, nullable, context);
                 } else if (!counts.isEmpty() && regex != null) {
                     return checkCount(json, path, counts, context) && checkRegex(json, path, regex, optional, nullable, context);
                 } else if (type != null) {
-                    return checkType(json, path, type, mandatoryFields, optionalFields, optional, nullable, partial, context);
+                    return checkType(json, path, type, mandatoryFields, optionalFields, optional, nullable, context);
                 } else if (!counts.isEmpty()) {
                     return checkCount(json, path, counts, context);
                 } else if (regex != null) {
@@ -236,8 +224,15 @@ public class JsonPathConditionsChecker implements Checker {
         });
     }
 
-    protected BasicDBList filterMissingOptionalAndNullNullableConditions(BasicDBList conditions, DBObject content, boolean patching) {
-        // nullPaths contains all paths that result to null and condition is nullable or optional
+    /**
+     * this filters out the nullable and optional conditions where the path
+     * resolves to null
+     *
+     * @param conditions
+     * @param content
+     * @return
+     */
+    protected BasicDBList filterMissingOptionalAndNullNullableConditions(BasicDBList conditions, DBObject content) {
         Set<String> nullPaths = new HashSet<>();
         BasicDBList ret = new BasicDBList();
         conditions.stream().forEach((Object condition) -> {
@@ -252,7 +247,7 @@ public class JsonPathConditionsChecker implements Checker {
                 if (_optional != null && _optional instanceof Boolean) {
                     optional = (Boolean) _optional;
                 }
-                if (nullable) {
+                if (nullable || optional) {
                     Object _path = ((BasicDBObject) condition).get("path");
                     if (_path != null && _path instanceof String) {
                         String path = (String) _path;
@@ -262,23 +257,7 @@ public class JsonPathConditionsChecker implements Checker {
                             if (props != null && props.stream().allMatch((Optional<Object> prop) -> {
                                 return prop != null && !prop.isPresent();
                             })) {
-                                nullPaths.add(path);
-                            }
-                        } catch (IllegalArgumentException ex) {
-                            nullPaths.add(path);
-                        }
-                    }
-                }
-                if (optional || patching) {
-                    Object _path = ((BasicDBObject) condition).get("path");
-                    if (_path != null && _path instanceof String) {
-                        String path = (String) _path;
-                        List<Optional<Object>> props;
-                        try {
-                            props = JsonUtils.getPropsFromPath(content, path);
-                            if (props == null || props.stream().allMatch((Optional<Object> prop) -> {
-                                return prop == null;
-                            })) {
+                                LOGGER.debug("ignoring null path {}", path);
                                 nullPaths.add(path);
                             }
                         } catch (IllegalArgumentException ex) {
@@ -306,7 +285,7 @@ public class JsonPathConditionsChecker implements Checker {
     }
 
     protected boolean checkCount(DBObject json,
-            String path, Set<Integer> expectedCounts, 
+            String path, Set<Integer> expectedCounts,
             RequestContext context) {
         Integer count;
         try {
@@ -326,13 +305,12 @@ public class JsonPathConditionsChecker implements Checker {
         return ret;
     }
 
-    protected boolean checkType(DBObject json, 
-            String path, String type, 
-            Set<String> mandatoryFields, 
-            Set<String> optionalFields, 
-            boolean optional, 
-            boolean nullable, 
-            boolean partial, 
+    protected boolean checkType(DBObject json,
+            String path, String type,
+            Set<String> mandatoryFields,
+            Set<String> optionalFields,
+            boolean optional,
+            boolean nullable,
             RequestContext context) {
         BasicDBObject _json = (BasicDBObject) json;
         List<Optional<Object>> props;
@@ -347,14 +325,14 @@ public class JsonPathConditionsChecker implements Checker {
         }
         // props is null when path does not exist.
         if (props == null) {
-            ret = partial || optional;
+            ret = optional;
         } else {
             ret = props.stream().allMatch((Optional<Object> prop) -> {
                 if (prop == null) {
-                    return partial || optional;
+                    return optional;
                 }
                 if (prop.isPresent()) {
-                    if (partial && "array".equals(type) && prop.get() instanceof DBObject) {
+                    if ("array".equals(type) && prop.get() instanceof DBObject) {
                         // this might be the case of PATCHING an element array using the dot notation
                         // e.g. object.array.2
                         // if so, the array comes as an BasicDBObject with all numberic keys
@@ -389,13 +367,7 @@ public class JsonPathConditionsChecker implements Checker {
                     }
                     if (prop.isPresent()) {
                         BasicDBObject obj = (BasicDBObject) prop.get();
-                        if (partial) {
-                            // if patching just check if the passed properties are allowed
-                            return obj.keySet().stream().allMatch((String p) -> {
-                                LOGGER.debug("does " + allFields.toString() + " contains " + p);
-                                return allFields.contains(p);
-                            });
-                        } else if (mandatoryFields != null) {
+                        if (mandatoryFields != null) {
                             return obj.keySet().containsAll(mandatoryFields) && allFields.containsAll(obj.keySet());
                         } else {
                             return allFields.containsAll(obj.keySet());
@@ -420,10 +392,10 @@ public class JsonPathConditionsChecker implements Checker {
         return ret;
     }
 
-    protected boolean checkRegex(DBObject json, 
-            String path, String regex, 
-            boolean optional, 
-            boolean nullable, 
+    protected boolean checkRegex(DBObject json,
+            String path, String regex,
+            boolean optional,
+            boolean nullable,
             RequestContext context) {
         BasicDBObject _json = (BasicDBObject) json;
         List<Optional<Object>> props;
@@ -457,28 +429,4 @@ public class JsonPathConditionsChecker implements Checker {
         }
         return ret;
     }
-
-    /**
-     *
-     * @param propertyName the name of the property, can use the dot notation
-     * (e.g. a.b)
-     * @param value
-     * @return
-     */
-    protected DBObject remapJson(String propertyName, Object value) {
-        DBObject ret = _remapJson(propertyName.split(Pattern.quote(".")), value);
-        
-        ret.markAsPartialObject();
-        
-        return ret;
-    }
-
-    protected DBObject _remapJson(String[] tokens, Object value) throws IllegalArgumentException {
-        if (tokens.length == 1) {
-            return new BasicDBObject(tokens[0], value);
-        } else {
-            return new BasicDBObject(tokens[0], _remapJson(Arrays.copyOfRange(tokens, 1, tokens.length), value));
-        }
-    }
-
 }
