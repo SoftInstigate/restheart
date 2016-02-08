@@ -32,6 +32,7 @@ import org.restheart.hal.AbstractRepresentationFactory;
 import org.restheart.hal.Link;
 import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 
 /**
@@ -152,32 +153,12 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
         wes.stream().forEach(error -> {
             Representation nrep = new Representation();
             
-            int httpStatus;
-            String httpMessage;
-            
-            switch (error.getCode()) {
-                case 13:
-                    httpStatus = HttpStatus.SC_FORBIDDEN;
-                    httpMessage = "The MongoDB user does not have enough permissions to execute this operation.";
-                    break;
-                case 18:
-                    httpStatus = HttpStatus.SC_FORBIDDEN;
-                    httpMessage = "Wrong MongoDB user credentials (wrong password or need to specify the authentication dababase with 'authSource=<db>' option in mongo-uri).";
-                    break;
-                case 121:
-                    httpStatus = HttpStatus.SC_BAD_REQUEST;
-                    httpMessage = "Document failed collection validation.";
-                    break;
-                default:
-                    httpStatus = HttpStatus.SC_INTERNAL_SERVER_ERROR;
-                    httpMessage = error.getMessage();
-                    break;
-            }
-            
             nrep.addProperty("index", error.getIndex());
             nrep.addProperty("mongodbErrorCode", error.getCode());
-            nrep.addProperty("httpCode", httpStatus);
-            nrep.addProperty("message", httpMessage);
+            nrep.addProperty("httpStatus", 
+                    ResponseHelper.getHttpStatusFromErrorCode(error.getCode()));
+            nrep.addProperty("message", 
+                    ResponseHelper.getMessageFromErrorCode(error.getCode()));
             
             rep.addRepresentation("rh:error", nrep);
         });

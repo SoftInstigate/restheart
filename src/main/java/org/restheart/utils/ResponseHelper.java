@@ -19,6 +19,7 @@ package org.restheart.utils;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
+import com.mongodb.MongoException;
 import com.mongodb.util.JSONParseException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -92,7 +93,7 @@ public class ResponseHelper {
         rep.addProperty("http status code", code);
         rep.addProperty("http status description", httpStatusText);
         if (message != null) {
-            rep.addProperty("message", message);
+            rep.addProperty("message", avoidEscapedChars(message));
         }
 
         Representation nrep = new Representation();
@@ -197,6 +198,57 @@ public class ResponseHelper {
         }
 
         exchange.getResponseHeaders().put(Headers.ETAG, etag.toString());
+    }
+    
+    /**
+     * 
+     * @param code mongodb error code from MongoException.getCode()
+     * @return 
+     */
+    public static int getHttpStatusFromErrorCode(int code) {
+        switch (code) {
+            case 13:
+                // The MongoDB user does not have enough permissions to execute this operation.
+                return HttpStatus.SC_FORBIDDEN;
+            case 18:
+                // Wrong MongoDB user credentials
+                return HttpStatus.SC_FORBIDDEN;
+            case 61:
+                // Write request for sharded collection must specify the shardkey.
+                return HttpStatus.SC_BAD_REQUEST;
+            case 66:
+                // Update results in changing the immutable shardkey
+                return HttpStatus.SC_FORBIDDEN;
+            case 121:
+                //Document failed validation
+                return HttpStatus.SC_BAD_REQUEST;
+            default:
+                // Other
+                return HttpStatus.SC_INTERNAL_SERVER_ERROR;
+        }
+    }
+
+    /**
+     * 
+     * @param code mongodb error code from MongoException.getCode()
+     * @return 
+     */
+    public static String getMessageFromErrorCode(int code) {
+        switch (code) {
+            case 13:
+                return "The MongoDB user does not have enough permissions to execute this operation.";
+            case 18:
+                return "Wrong MongoDB user credentials (wrong password or need to specify the authentication dababase with 'authSource=<db>' option in mongo-uri).";
+            case 61:
+                return "Write request for sharded collection must specify the shardkey.";
+            case 66:
+                return "Update results in changing the immutable shardkey.";
+            case 121:
+                //Document failed validation
+                return "Document failed collection validation.";
+            default:
+                return "Error handling the request, see log for more information";
+        }
     }
 
     private ResponseHelper() {
