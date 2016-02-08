@@ -53,7 +53,9 @@ public class ErrorHandler implements HttpHandler {
         try {
             next.handleRequest(exchange);
         } catch (MongoTimeoutException nte) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Timeout connecting to MongoDB, is it running?", nte);
+            ResponseHelper.endExchangeWithMessage(exchange,
+                    HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                    "Timeout connecting to MongoDB, is it running?", nte);
         } catch (MongoBulkWriteException mce) {
             MongoBulkWriteException bmce = (MongoBulkWriteException) mce;
 
@@ -67,13 +69,29 @@ public class ErrorHandler implements HttpHandler {
 
             exchange.endExchange();
         } catch (MongoException mce) {
-            ResponseHelper.endExchangeWithMessage(exchange, 
-                    ResponseHelper.getHttpStatusFromErrorCode(mce.getCode()), 
-                    ResponseHelper.getMessageFromErrorCode(mce.getCode()));
+            int httpCode = ResponseHelper.getHttpStatusFromErrorCode(mce.getCode());
+
+            LOGGER.error("Error handling the request", mce);
+
+            if (httpCode >= 500
+                    && mce.getMessage() != null
+                    && !mce.getMessage().trim().isEmpty()) {
+
+                ResponseHelper.endExchangeWithMessage(exchange,
+                        httpCode,
+                        mce.getMessage());
+            } else {
+                ResponseHelper.endExchangeWithMessage(exchange,
+                        httpCode,
+                        ResponseHelper.getMessageFromErrorCode(mce.getCode()));
+            }
+
         } catch (Throwable t) {
             LOGGER.error("Error handling the request", t);
 
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see log for more information", t);
+            ResponseHelper.endExchangeWithMessage(exchange,
+                    HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                    "Error handling the request, see log for more information", t);
         }
     }
 }

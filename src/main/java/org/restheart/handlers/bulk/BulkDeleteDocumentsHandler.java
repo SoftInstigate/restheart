@@ -71,7 +71,8 @@ public class BulkDeleteDocumentsHandler extends PipedHttpHandler {
                 .bulkDeleteDocuments(
                         context.getDBName(),
                         context.getCollectionName(),
-                        context.getComposedFilters());
+                        context.getComposedFilters(),
+                        context.getShardKey());
 
         context.setDbOperationResult(result);
 

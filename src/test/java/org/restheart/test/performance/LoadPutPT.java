@@ -74,6 +74,6 @@ public class LoadPutPT extends AbstractPT {
     public void dbdirect() throws IOException {
         BasicDBObject content = new BasicDBObject("random", Math.random());
 
-        new DocumentDAO().upsertDocument(db, coll, null, content, null, false, false);
+        new DocumentDAO().upsertDocument(db, coll, null, null, content, null, false, false);
     }
 }

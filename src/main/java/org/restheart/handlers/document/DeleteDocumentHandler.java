@@ -82,7 +82,8 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
         OperationResult result = this.documentDAO
                 .deleteDocument(context.getDBName(), 
                         context.getCollectionName(), 
-                        context.getDocumentId(), 
+                        context.getDocumentId(),
+                        context.getShardKey(),
                         context.getETag(),
                         context.isETagCheckRequired());
         

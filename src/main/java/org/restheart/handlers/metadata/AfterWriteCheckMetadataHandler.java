@@ -83,7 +83,11 @@ public class AfterWriteCheckMetadataHandler extends BeforeWriteCheckMetadataHand
 
                 if (oldData != null) {
                     // document was updated, restore old one
-                    DAOUtils.restoreDocument(coll, oldData.get("_id"), oldData, newEtag);
+                    DAOUtils.restoreDocument(coll, 
+                            oldData.get("_id"), 
+                            context.getShardKey(), 
+                            oldData, 
+                            newEtag);
 
                     // add to response old etag
                     if (oldData.get("$set") != null

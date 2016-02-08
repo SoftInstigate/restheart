@@ -24,6 +24,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.io.IOException;
 import java.time.Instant;
+import org.bson.BsonObjectId;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -85,14 +86,19 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
     private boolean checkEtag(HttpServerExchange exchange, GridFSDBFile dbsfile) {
         if (dbsfile != null) {
             Object etag = dbsfile.get("_etag");
-
+            
             if (etag != null && etag instanceof ObjectId) {
+                ObjectId _etag = (ObjectId) etag;
+                
+                // TODO refactoring mongodb 3.2 driver. use RequestContext.getComposedFilters()
+                BsonObjectId __etag = new BsonObjectId(_etag);
+                
                 // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
                 dbsfile.put("_lastupdated_on", Instant.ofEpochSecond(((ObjectId)etag).getTimestamp()).toString());
 
                 // in case the request contains the IF_NONE_MATCH header with the current etag value,
                 // just return 304 NOT_MODIFIED code
-                if (RequestHelper.checkReadEtag(exchange, (ObjectId)etag)) {
+                if (RequestHelper.checkReadEtag(exchange, __etag)) {
                     ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_MODIFIED);
                     return true;
                 }

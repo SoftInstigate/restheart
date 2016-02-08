@@ -33,9 +33,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
+import org.bson.BsonDocument;
 import org.bson.Document;
-import org.bson.types.MaxKey;
-import org.bson.types.MinKey;
 import org.restheart.Bootstrapper;
 import org.restheart.db.OperationResult;
 import org.slf4j.Logger;
@@ -114,6 +113,7 @@ public class RequestContext {
     public static final String HAL_QPARAM_KEY = "hal";
     public static final String DOC_ID_TYPE_QPARAM_KEY = "id_type";
     public static final String ETAG_CHECK_QPARAM_KEY = "checkEtag";
+    public static final String SHARDKEY_QPARAM_KEY = "shardkey";
 
     // matadata
     public static final String ETAG_DOC_POLICY_METADATA_KEY = "etagDocPolicy";
@@ -149,7 +149,7 @@ public class RequestContext {
     private final String whereUri;
     private final String whatUri;
 
-    private TYPE type;
+    private final TYPE type;
     private final METHOD method;
     private final String[] pathTokens;
 
@@ -185,6 +185,8 @@ public class RequestContext {
     private boolean forceEtagCheck = false;
 
     private OperationResult dbOperationResult;
+    
+    private BsonDocument shardKey = null;
 
     /**
      * the HAL mode
@@ -1048,5 +1050,19 @@ public class RequestContext {
      */
     public void setDbOperationResult(OperationResult dbOperationResult) {
         this.dbOperationResult = dbOperationResult;
+    }
+
+    /**
+     * @return the shardKey
+     */
+    public BsonDocument getShardKey() {
+        return shardKey;
+    }
+
+    /**
+     * @param shardKey the shardKey to set
+     */
+    public void setShardKey(BsonDocument shardKey) {
+        this.shardKey = shardKey;
     }
 }

@@ -40,6 +40,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.bson.BsonDocument;
 import org.bson.Document;
 
 import org.bson.types.ObjectId;
@@ -334,13 +335,13 @@ public class DbsDAO implements Database {
 
     private OperationResult doDbPropsUpdate(boolean patching, boolean updating, MongoCollection<Document> mcoll, Document dcontent, ObjectId newEtag) {
         if (patching) {
-            DAOUtils.updateDocument(mcoll, "_properties", dcontent, false);
+            DAOUtils.updateDocument(mcoll, "_properties", null, dcontent, false);
             return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else if (updating) {
-            DAOUtils.updateDocument(mcoll, "_properties", dcontent, true);
+            DAOUtils.updateDocument(mcoll, "_properties", null, dcontent, true);
             return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else {
-            DAOUtils.updateDocument(mcoll, "_properties", dcontent, false);
+            DAOUtils.updateDocument(mcoll, "_properties", null, dcontent, false);
             return new OperationResult(HttpStatus.SC_CREATED, newEtag);
         }
     }
@@ -385,6 +386,13 @@ public class DbsDAO implements Database {
     @Override
     public DBCollection getCollection(String dbName, String collName) {
         return collectionDAO.getCollection(dbName, collName);
+    }
+
+    @Override
+    public MongoCollection<BsonDocument> getMongoCollection(String dbName, String collName) {
+        MongoDatabase mdb = client.getDatabase(dbName);
+        MongoCollection<BsonDocument> mcoll = mdb.getCollection(collName, BsonDocument.class);
+        return mcoll;
     }
 
     @Override

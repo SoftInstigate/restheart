@@ -217,7 +217,7 @@ public class ResponseHelper {
                 // Write request for sharded collection must specify the shardkey.
                 return HttpStatus.SC_BAD_REQUEST;
             case 66:
-                // Update results in changing the immutable shardkey
+                // Update tried to change the immutable shardkey
                 return HttpStatus.SC_FORBIDDEN;
             case 121:
                 //Document failed validation
@@ -240,9 +240,9 @@ public class ResponseHelper {
             case 18:
                 return "Wrong MongoDB user credentials (wrong password or need to specify the authentication dababase with 'authSource=<db>' option in mongo-uri).";
             case 61:
-                return "Write request for sharded collection must specify the shardkey.";
+                return "Write request for sharded collection must specify the shardkey. Use the 'shardkey' query parameter.";
             case 66:
-                return "Update results in changing the immutable shardkey.";
+                return "Update tried to change the immutable shardkey.";
             case 121:
                 //Document failed validation
                 return "Document failed collection validation.";
