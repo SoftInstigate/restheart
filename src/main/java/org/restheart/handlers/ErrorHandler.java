@@ -54,34 +54,22 @@ public class ErrorHandler implements HttpHandler {
             next.handleRequest(exchange);
         } catch (MongoTimeoutException nte) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Timeout connecting to MongoDB, is it running?", nte);
-        } catch(MongoBulkWriteException mce) {
+        } catch (MongoBulkWriteException mce) {
             MongoBulkWriteException bmce = (MongoBulkWriteException) mce;
 
             BulkResultRepresentationFactory rf = new BulkResultRepresentationFactory();
-            
+
             Representation rep = rf.getRepresentation(exchange, bmce);
-            
+
             exchange.setStatusCode(HttpStatus.SC_MULTI_STATUS);
-            
+
             rf.sendRepresentation(exchange, null, rep);
-            
+
             exchange.endExchange();
         } catch (MongoException mce) {
-            switch (mce.getCode()) {
-                case 13:
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "The MongoDB user does not have enough permissions to execute this operation.");
-                    break;
-                case 18:
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "Wrong MongoDB user credentials (wrong password or need to specify the authentication dababase with 'authSource=<db>' option in mongo-uri).");
-                    break;
-                case 121:
-                    //Document failed validation
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "Document failed collection validation.");
-                    break;
-                default:
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see log for more information", mce);
-                    break;
-            }
+            ResponseHelper.endExchangeWithMessage(exchange, 
+                    ResponseHelper.getHttpStatusFromErrorCode(mce.getCode()), 
+                    ResponseHelper.getMessageFromErrorCode(mce.getCode()));
         } catch (Throwable t) {
             LOGGER.error("Error handling the request", t);
 

@@ -33,6 +33,7 @@ import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import static org.restheart.utils.URLUtils.getReferenceLink;
+import static org.restheart.utils.URLUtils.getReferenceLink;
 
 /**
  *
