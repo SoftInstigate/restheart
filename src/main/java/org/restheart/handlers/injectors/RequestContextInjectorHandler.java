@@ -90,6 +90,18 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         RequestContext rcontext = new RequestContext(exchange, whereUri, whatUri);
 
+        // skip parameters injection if method is OPTIONS
+        // this makes sure OPTIONS works even on wrong paramenter
+        // e.g. OPTIONS 127.0.0.1:8080?page=a
+        if (rcontext.getMethod() == METHOD.OPTIONS) {
+            if (getNext() != null) {
+                getNext()
+                        .handleRequest(exchange, rcontext);
+            }
+
+            return;
+        }
+
         // check database name to be a valid mongodb name
         if (rcontext.getDBName() != null
                 && rcontext.isDbNameInvalid()) {
@@ -360,9 +372,8 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal " + HAL_QPARAM_KEY + " paramenter; valid values are " + Arrays.toString(HAL_MODE.values()));
             }
         }
-        
+
         // get the shardkey query parameter
-        
         // get and check shardKeys parameter
         Deque<String> shardKeys = exchange.getQueryParameters().get(SHARDKEY_QPARAM_KEY);
 
@@ -382,7 +393,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                                 "illegal shardkey paramenter (empty json object)");
                         return true;
                     }
-                    
+
                     rcontext.setShardKey(_shardKeys);
 
                 } catch (Throwable t) {
