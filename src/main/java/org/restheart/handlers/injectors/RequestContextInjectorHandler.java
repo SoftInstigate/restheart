@@ -86,6 +86,18 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         RequestContext rcontext = new RequestContext(exchange, whereUri, whatUri);
 
+        // skip parameters injection if method is OPTIONS
+        // this makes sure OPTIONS works even on wrong paramenter
+        // e.g. OPTIONS 127.0.0.1:8080?page=a
+        if (rcontext.getMethod() == METHOD.OPTIONS) {
+            if (getNext() != null) {
+                getNext()
+                        .handleRequest(exchange, rcontext);
+            }
+
+            return;
+        }
+
         // check database name to be a valid mongodb name
         if (rcontext.getDBName() != null
                 && rcontext.isDbNameInvalid()) {
@@ -93,7 +105,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                     "illegal database name, see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
             return;
         }
-        
+
         // check collection name to be a valid mongodb name
         if (rcontext.getCollectionName() != null
                 && rcontext.isCollectionNameInvalid()) {
@@ -101,8 +113,8 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                     "illegal collection name, see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
             return;
         }
-        
-         // check collection name to be a valid mongodb name
+
+        // check collection name to be a valid mongodb name
         if (rcontext.isReservedResource()) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN,
                     "reserved resource");
