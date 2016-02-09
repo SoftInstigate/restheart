@@ -38,6 +38,7 @@ import static org.restheart.handlers.RequestContext.PAGE_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.SORT_BY_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.HAL_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.HAL_MODE;
+import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
