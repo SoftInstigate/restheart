@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.restheart.security.handlers;
 
 import io.undertow.security.api.AuthenticationMode;
@@ -30,15 +29,19 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 
 /**
- * This is the PipedHttpHandler version of io.undertow.security.handlers.SecurityInitialHandler
- * the security handler responsible for attaching the SecurityContext to the current {@link HttpServerExchange}.
+ * This is the PipedHttpHandler version of
+ * io.undertow.security.handlers.SecurityInitialHandler the security handler
+ * responsible for attaching the SecurityContext to the current
+ * {@link HttpServerExchange}.
  *
- * This handler is called early in the processing of the incoming request, subsequently supported authentication mechanisms will
- * be added to the context, a decision will then be made if authentication is required or optional and the associated mechanisms
- * will be called.
+ * This handler is called early in the processing of the incoming request,
+ * subsequently supported authentication mechanisms will be added to the
+ * context, a decision will then be made if authentication is required or
+ * optional and the associated mechanisms will be called.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@SuppressWarnings("deprecation")
 public class SecurityInitialHandler extends PipedHttpHandler {
 
     private final AuthenticationMode authenticationMode;
@@ -57,7 +60,11 @@ public class SecurityInitialHandler extends PipedHttpHandler {
 
     public SecurityInitialHandler(final AuthenticationMode authenticationMode, final IdentityManager identityManager,
             final String programaticMechName, final PipedHttpHandler next) {
-        this(authenticationMode, identityManager, programaticMechName, SecurityContextFactoryImpl.INSTANCE, next);
+        this(authenticationMode, 
+                identityManager, 
+                programaticMechName, 
+                SecurityContextFactoryImpl.INSTANCE, 
+                next);
     }
 
     public SecurityInitialHandler(final AuthenticationMode authenticationMode, final IdentityManager identityManager,
@@ -67,12 +74,16 @@ public class SecurityInitialHandler extends PipedHttpHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        SecurityContext newContext = this.contextFactory.createSecurityContext(exchange, authenticationMode, identityManager,
-                programaticMechName);
+        SecurityContext newContext = this.contextFactory
+                .createSecurityContext(exchange,
+                        authenticationMode,
+                        identityManager,
+                        programaticMechName);
+        
         setSecurityContext(exchange, newContext);
         getNext().handleRequest(exchange, context);
     }
-    
+
     static void setSecurityContext(final HttpServerExchange exchange, final SecurityContext securityContext) {
         if (System.getSecurityManager() == null) {
             exchange.setSecurityContext(securityContext);
@@ -85,4 +96,3 @@ public class SecurityInitialHandler extends PipedHttpHandler {
     }
 
 }
-
