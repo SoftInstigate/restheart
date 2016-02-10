@@ -130,10 +130,11 @@ public class DBCursorPoolEntryKey {
 
     String getCacheStatsGroup() {
         Formatter f = new Formatter();
-
-        return (filter == null ? "no filter" : filter.toString())
+        String str = (filter == null ? "no filter" : filter.toString())
                 + " - " + (sort == null ? "no sort_by" : sort.toString())
                 + " - " + f.format("%10d", getSkipped());
+        f.close();
+        return str;
     }
 
 }
