@@ -1,18 +1,30 @@
 language: java
 jdk:
-- oraclejdk8
+   - oraclejdk8
+
 notifications:
   email:
     recipients:
-    - info@softinstigate.com
+      - info@softinstigate.com
     on_success: always
   slack:
     secure: IeoyrbTPjPtopkmTFbcCzgy+9q8MMzhla9lXhZYdqsbn19KKe4UKNp0Cu0SY601ss586Lw4jsegvba6LFF3bi3j4aK0ZITtGJ4PYGvYByh3O7zi4Y0K2RUeYU1CfTIl18QBHcAIjQSmKLJPnyN9Y5Y4/4KhfWTqXy7tvkB36Oys=
-before_install:
-- git submodule update --init --recursive
+
+services:
+   - mongodb
+
+before_scritp:
+   - git submodule update --init --recursive
+
+script:
+   - mvn clean install -DskipITs=false
+
+install: true
+
 after_success:
-- wget https://gist.githubusercontent.com/mkjsix/98debbbbfcf310b6a33f/raw/4be0460cec34e09d106e13b3f773937cb2a4ff36/settings.xml
-- mvn deploy --settings settings.xml
+   - wget https://gist.githubusercontent.com/mkjsix/98debbbbfcf310b6a33f/raw/4be0460cec34e09d106e13b3f773937cb2a4ff36/settings.xml
+   - mvn deploy --settings settings.xml
+
 env:
   global:
     secure: rlLQCDykTqV7/EC+kTCw5JpYbuZwk0Neq5q1kRQ6hjcUYRdgjPJretVg+1e5+GcGOH4/Z/aOGdQrk1HtPW6tE+ePIUDAUwuLX2+6AUt2FqIqumYoJxYR7rsw+THkjiPaopB7qmWOUJ1vec7QCEiaGexYcjs3j6mv//SbnUksY2w=
