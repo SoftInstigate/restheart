@@ -50,7 +50,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.FileSystem;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -146,14 +145,8 @@ public final class Bootstrapper {
             }
 
             // RHDaemon only works on POSIX OSes
-            FileSystem fileSystem = FileSystems.getDefault();
-            final boolean isPosix = fileSystem
+            final boolean isPosix = FileSystems.getDefault()
                     .supportedFileAttributeViews().contains("posix");
-            try {
-                fileSystem.close();
-            } catch (IOException e) {
-                LOGGER.error(e.getMessage(), e);
-            }
 
             if (!isPosix) {
                 logErrorAndExit("Unable to fork process, this is only supported on POSIX compliant OSes", null, false, -1);
