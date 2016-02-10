@@ -46,6 +46,7 @@ public class GridFsDAO implements GridFsRepository {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public OperationResult createFile(
             final Database db,
             final String dbName,
@@ -67,7 +68,11 @@ public class GridFsDAO implements GridFsRepository {
 
         gfsFile.setId(fileId);
 
-        properties.toMap().keySet().stream().forEach(k -> gfsFile.put((String) k, properties.get((String) k)));
+        // unchecked
+        properties.toMap()
+                .keySet()
+                .stream()
+                .forEach(k -> gfsFile.put((String) k, properties.get((String) k)));
 
         gfsFile.save();
 

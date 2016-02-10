@@ -82,6 +82,7 @@ public class DocumentDAO implements Repository {
      * @return the HttpStatus code
      */
     @Override
+    @SuppressWarnings("unchecked")
     public OperationResult upsertDocument(
             final String dbName,
             final String collName,
@@ -102,6 +103,7 @@ public class DocumentDAO implements Repository {
         content.put("_etag", newEtag);
 
         //TODO remove this after migration to mongodb driver 3.2 completes
+        // unchecked
         Document dcontent = new Document(content.toMap());
 
         OperationResult updateResult = DAOUtils.updateDocument(
@@ -162,6 +164,7 @@ public class DocumentDAO implements Repository {
      * @return
      */
     @Override
+    @SuppressWarnings("unchecked")
     public OperationResult upsertDocumentPost(
             final String dbName,
             final String collName,
@@ -179,6 +182,7 @@ public class DocumentDAO implements Repository {
         content.put("_etag", newEtag);
 
         //TODO remove this after migration to mongodb driver 3.2 completes
+        // unchecked
         Document dcontent = new Document(content.toMap());
 
         Object documentId;
@@ -224,6 +228,7 @@ public class DocumentDAO implements Repository {
      * @return
      */
     @Override
+    @SuppressWarnings("unchecked")
     public BulkOperationResult bulkUpsertDocumentsPost(
             final String dbName,
             final String collName,
@@ -242,6 +247,7 @@ public class DocumentDAO implements Repository {
         documents
                 .stream()
                 .forEachOrdered(document -> {
+                    // unckecked
                     Document _document = new Document(((BasicDBObject) document).toMap());
 
                     _document.put("_etag", newEtag);
@@ -323,7 +329,7 @@ public class DocumentDAO implements Repository {
             _filter = filter;
         }
         
-        deletes.add(new DeleteManyModel(_filter));
+        deletes.add(new DeleteManyModel<>(_filter));
 
         BulkWriteResult result = mcoll.bulkWrite(deletes);
 
@@ -350,7 +356,7 @@ public class DocumentDAO implements Repository {
             _filter = filter;
         }
         
-        patches.add(new UpdateManyModel(
+        patches.add(new UpdateManyModel<>(
                 _filter,
                 DAOUtils.getUpdateDocument(data),
                 DAOUtils.U_NOT_UPSERT_OPS));

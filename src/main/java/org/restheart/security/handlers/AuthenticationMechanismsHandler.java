@@ -49,6 +49,7 @@ public class AuthenticationMechanismsHandler extends PipedHttpHandler {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         final SecurityContext sc = exchange.getSecurityContext();
         if(sc != null) {

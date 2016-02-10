@@ -627,6 +627,7 @@ public class Configuration {
         this(getConfigurationFromFile(confFilePath), silent);
     }
 
+    @SuppressWarnings("unchecked")
     private static Map<String, Object> getConfigurationFromFile(final Path confFilePath) throws ConfigurationException {
         Yaml yaml = new Yaml();
 
@@ -827,6 +828,7 @@ public class Configuration {
      * @param defaultValue
      * @return
      */
+    @SuppressWarnings("unchecked")
     private List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key, final List<Map<String, Object>> defaultValue) {
         if (conf == null) {
             if (!silent) {
@@ -854,6 +856,7 @@ public class Configuration {
      * @param key
      * @return
      */
+    @SuppressWarnings("unchecked")
     private Map<String, Object> getAsMap(final Map<String, Object> conf, final String key) {
         if (conf == null) {
             if (!silent) {
@@ -881,6 +884,7 @@ public class Configuration {
      * @param defaultValue
      * @return
      */
+    @SuppressWarnings("unchecked")
     private Boolean getAsBooleanOrDefault(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
         if (conf == null) {
             if (!silent) {
@@ -917,6 +921,7 @@ public class Configuration {
      * @param defaultValue
      * @return
      */
+    @SuppressWarnings("unchecked")
     private String getAsStringOrDefault(final Map<String, Object> conf, final String key, final String defaultValue) {
 
         if (conf == null || conf.get(key) == null) {
@@ -945,6 +950,7 @@ public class Configuration {
      * @param defaultValue
      * @return
      */
+    @SuppressWarnings("unchecked")
     private Integer getAsIntegerOrDefault(final Map<String, Object> conf, final String key, final Integer defaultValue) {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
@@ -972,6 +978,7 @@ public class Configuration {
      * @param defaultValue
      * @return
      */
+    @SuppressWarnings("unchecked")
     private Long getAsLongOrDefault(final Map<String, Object> conf, final String key, final Long defaultValue) {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
@@ -1006,6 +1013,7 @@ public class Configuration {
      * @param defaultValue
      * @return
      */
+    @SuppressWarnings("unchecked")
     private int[] getAsArrayOfInts(final Map<String, Object> conf, final String key, final int[] defaultValue) {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually

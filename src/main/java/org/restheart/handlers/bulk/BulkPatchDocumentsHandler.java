@@ -61,6 +61,7 @@ public class BulkPatchDocumentsHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
+    @SuppressWarnings("unchecked")
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         //TODO remove this after migration to mongodb driver 3.2 completes
         Document dcontent;

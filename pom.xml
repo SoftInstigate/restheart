@@ -97,7 +97,7 @@
         <connection>scm:git:git@github.com:SoftInstigate/restheart.git</connection>
         <developerConnection>scm:git:git@github.com:SoftInstigate/restheart.git</developerConnection>
     </scm>
-
+    
     <!-- TODO: Continuous Integration Management -->
 
     <dependencies>
@@ -278,6 +278,7 @@
                 <version>3.5</version>
                 <configuration>
                     <debug>true</debug>
+                    <!--<compilerArgument>-Xlint</compilerArgument>-->
                 </configuration>
             </plugin>
 

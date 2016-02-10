@@ -54,9 +54,6 @@ public class DbsDAO implements Database {
     public static final BasicDBObject PROPS_QUERY_LEGACY = new BasicDBObject("_id", "_properties");
     public static final Document PROPS_QUERY = new Document("_id", "_properties");
 
-    private final static UpdateOptions UPSERT_OPS
-            = new UpdateOptions().upsert(true);
-
     private static final Document FIELDS_TO_RETURN;
 
     static {
@@ -136,7 +133,7 @@ public class DbsDAO implements Database {
      */
     @Override
     public List<String> getCollectionNames(final DB db) {
-        List<String> _colls = new ArrayList(db.getCollectionNames());
+        List<String> _colls = new ArrayList<>(db.getCollectionNames());
 
         // filter out reserved dbs
         return _colls.stream().filter(coll -> !RequestContext.isReservedResourceCollection(coll)).sorted().collect(Collectors.toList());
@@ -274,6 +271,7 @@ public class DbsDAO implements Database {
      * @return
      */
     @Override
+    @SuppressWarnings("unchecked")
     public OperationResult upsertDB(
             final String dbName,
             final DBObject newContent,
@@ -417,7 +415,11 @@ public class DbsDAO implements Database {
 
     @Override
     public List<String> getDatabaseNames() {
-        return client.getDatabaseNames();
+        ArrayList<String> dbNames = new ArrayList<>();
+
+        client.listDatabaseNames().into(dbNames);
+
+        return dbNames;
     }
 
     @Override

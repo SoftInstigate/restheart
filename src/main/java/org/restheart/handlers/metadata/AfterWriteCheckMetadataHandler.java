@@ -63,7 +63,7 @@ public class AfterWriteCheckMetadataHandler extends BeforeWriteCheckMetadataHand
 
                 MongoClient client = MongoDBClientSingleton.getInstance().getClient();
                 MongoDatabase mdb = client.getDatabase(context.getDBName());
-                MongoCollection coll = mdb.getCollection(context.getCollectionName());
+                MongoCollection<Document> coll = mdb.getCollection(context.getCollectionName());
 
                 // send error response
                 StringBuilder sb = new StringBuilder();
