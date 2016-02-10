@@ -30,6 +30,7 @@ import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Iterator;
 import org.apache.tika.Tika;
@@ -166,11 +167,14 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                 return;
             }
 
-            final File file = formData.getFirst(fileField).getFile();
+            final Path path = formData.getFirst(fileField).getPath();
 
-            putFilename(formData.getFirst(fileField).getFileName(), file.getName(), content);
+            putFilename(
+                    formData.getFirst(fileField).getFileName(),
+                    "file",
+                    content);
 
-            context.setFile(file);
+            context.setFile(path.toFile());
 
             // check id
             String invalidId = checkSpecialStringId(content);
@@ -179,7 +183,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                 return;
             }
 
-            injectContentTypeFromFile(content, file);
+            injectContentTypeFromFile(content, path.toFile());
         }
 
         if (content == null) {
@@ -249,7 +253,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      */
     protected static void putFilename(final String formDataFilename, final String defaultFilename, final DBObject target) {
         // a filename attribute in optional properties overrides the provided part's filename 
-        String filename = target.containsField(FILENAME) && target.get(FILENAME) instanceof String
+        String filename = target.containsField(FILENAME)
+                && target.get(FILENAME) instanceof String
                 ? (String) target.get(FILENAME)
                 : formDataFilename;
         if (filename == null || filename.isEmpty()) {
@@ -260,11 +265,13 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     }
 
     private static boolean isPostFilesbucketRequest(final RequestContext context) {
-        return context.getType() == RequestContext.TYPE.FILES_BUCKET && context.getMethod() == RequestContext.METHOD.POST;
+        return context.getType() == RequestContext.TYPE.FILES_BUCKET 
+                && context.getMethod() == RequestContext.METHOD.POST;
     }
 
     private static boolean isPutFileRequest(final RequestContext context) {
-        return context.getType() == RequestContext.TYPE.FILE && context.getMethod() == RequestContext.METHOD.PUT;
+        return context.getType() == RequestContext.TYPE.FILE 
+                && context.getMethod() == RequestContext.METHOD.PUT;
     }
 
     /**

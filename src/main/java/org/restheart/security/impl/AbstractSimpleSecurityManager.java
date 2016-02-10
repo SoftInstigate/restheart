@@ -42,6 +42,7 @@ abstract class AbstractSimpleSecurityManager {
 
     abstract Consumer<? super Map<String, Object>> consumeConfiguration();
 
+    @SuppressWarnings("unchecked")
     final void init(Map<String, Object> arguments, String type) throws FileNotFoundException {
         InputStream is = null;
         try {
@@ -83,6 +84,7 @@ abstract class AbstractSimpleSecurityManager {
         return confFilePath;
     }
 
+    @SuppressWarnings("unchecked")
     final List<Map<String, Object>> extractConfItems(final Map<String, Object> conf, String type) throws IllegalArgumentException {
         Object _users = conf.get(type);
         if (_users == null || !(_users instanceof List)) {

@@ -296,6 +296,7 @@ class CollectionDAO {
      * @param checkEtag true if etag must be checked
      * @return the HttpStatus code to set in the http response
      */
+    @SuppressWarnings("unchecked")
     OperationResult upsertCollection(
             final String dbName,
             final String collName,

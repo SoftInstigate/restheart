@@ -86,7 +86,7 @@ public class GetAggregationHandler extends PipedHttpHandler {
             return;
         }
 
-        ArrayList<DBObject> data = new ArrayList();
+        ArrayList<DBObject> data = new ArrayList<>();
         int size;
 
         AbstractAggregationOperation query = _query.get();

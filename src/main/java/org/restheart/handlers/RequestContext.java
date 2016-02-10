@@ -584,7 +584,7 @@ public class RequestContext {
 
         if (filter != null) {
             if (filter.size() > 1) {
-                List<Document> _filters = new ArrayList();
+                List<Document> _filters = new ArrayList<>();
 
                 filter.stream().forEach((String f) -> {
                     _filters.add(Document.parse(f));

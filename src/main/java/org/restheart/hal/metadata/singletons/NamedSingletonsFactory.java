@@ -44,7 +44,7 @@ public class NamedSingletonsFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NamedSingletonsFactory.class);
 
-    private static final Cache CACHE = CacheFactory.createLocalCache(Integer.MAX_VALUE, Cache.EXPIRE_POLICY.NEVER, -1);
+    private static final Cache<String, Object> CACHE = CacheFactory.createLocalCache(Integer.MAX_VALUE, Cache.EXPIRE_POLICY.NEVER, -1);
     
     private static NamedSingletonsFactory HOLDER;
     
@@ -56,6 +56,7 @@ public class NamedSingletonsFactory {
         return HOLDER;
     }
 
+    @SuppressWarnings("unchecked")
     private NamedSingletonsFactory() {
         List<Map<String, Object>> mdNS = Bootstrapper.getConfiguration().getMetadaNamedSingletons();
 

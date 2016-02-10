@@ -32,6 +32,7 @@ import org.restheart.cache.Cache.EXPIRE_POLICY;
  * @param <K> the class of the keys.
  * @param <V> the class of the values (is Optional-ized).
  */
+@SuppressWarnings("unchecked")
 public class GuavaCache<K, V> implements org.restheart.cache.Cache<K, V> {
     private final Cache<K, Optional<V>> wrapped;
 

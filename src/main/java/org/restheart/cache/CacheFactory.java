@@ -40,7 +40,7 @@ public class CacheFactory {
      * @return the cache
     */
     public static <K,V> LoadingCache<K,V> createLocalLoadingCache(long size, Cache.EXPIRE_POLICY expirePolicy, long ttl, Function<K,V> loader) {
-        return new GuavaLoadingCache(size, expirePolicy, ttl, loader);
+        return new GuavaLoadingCache<>(size, expirePolicy, ttl, loader);
     }
     
     /**
@@ -53,7 +53,7 @@ public class CacheFactory {
      * @return the cache.
     */
     public static <K,V> Cache<K,V> createLocalCache(long size, Cache.EXPIRE_POLICY expirePolicy, long ttl) {
-        return new GuavaCache(size, expirePolicy, ttl);
+        return new GuavaCache<>(size, expirePolicy, ttl);
     }
     /**
      * 
@@ -66,7 +66,7 @@ public class CacheFactory {
      * @return the cache.
     */
     public static <K,V> Cache<K,V> createLocalCache(long size, Cache.EXPIRE_POLICY expirePolicy, long ttl, Consumer<Map.Entry<K, Optional<V>>> remover) {
-        return new GuavaCache(size, expirePolicy, ttl, remover);
+        return new GuavaCache<>(size, expirePolicy, ttl, remover);
     }
 
     private CacheFactory() {
