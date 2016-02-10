@@ -94,7 +94,7 @@ public class JsonPathConditionsChecker implements Checker {
     @Override
     public boolean check(HttpServerExchange exchange, RequestContext context, BasicDBObject contentToCheck, DBObject args) {
         if (args instanceof BasicDBList) {
-            BasicDBList conditions = filterMissingOptionalAndNullNullableConditions((BasicDBList) args, context.getContent());
+            BasicDBList conditions = filterMissingOptionalAndNullNullableConditions((BasicDBList) args, contentToCheck);
             return applyConditions(conditions, contentToCheck, context);
         } else {
             context.addWarning("checker wrong definition: args property must be an arrary of string property names.");
@@ -247,7 +247,7 @@ public class JsonPathConditionsChecker implements Checker {
                 if (_optional != null && _optional instanceof Boolean) {
                     optional = (Boolean) _optional;
                 }
-                if (nullable || optional) {
+                if (nullable) {
                     Object _path = ((BasicDBObject) condition).get("path");
                     if (_path != null && _path instanceof String) {
                         String path = (String) _path;
@@ -258,6 +258,23 @@ public class JsonPathConditionsChecker implements Checker {
                                 return prop != null && !prop.isPresent();
                             })) {
                                 LOGGER.debug("ignoring null path {}", path);
+                                nullPaths.add(path);
+                            }
+                        } catch (IllegalArgumentException ex) {
+                            nullPaths.add(path);
+                        }
+                    }
+                }
+                if (optional) {
+                    Object _path = ((BasicDBObject) condition).get("path");
+                    if (_path != null && _path instanceof String) {
+                        String path = (String) _path;
+                        List<Optional<Object>> props;
+                        try {
+                            props = JsonUtils.getPropsFromPath(content, path);
+                            if (props == null || props.stream().allMatch((Optional<Object> prop) -> {
+                                return prop == null;
+                            })) {
                                 nullPaths.add(path);
                             }
                         } catch (IllegalArgumentException ex) {

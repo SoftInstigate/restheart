@@ -25,7 +25,6 @@ import org.restheart.utils.HttpStatus;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import static org.restheart.test.integration.AbstactIT.adminExecutor;
 import static org.restheart.test.integration.AbstactIT.collectionTmpUri;
@@ -200,8 +199,6 @@ public class JsonPathConditionsCheckerIT extends AbstactIT {
     
     /**
      * see bug https://softinstigate.atlassian.net/browse/RH-160
-     * 
-     * the bug is won't fix because checker is deprecated
      * 
      * @throws Exception 
      */
