@@ -19,7 +19,6 @@ package org.restheart.security.handlers;
 
 import io.undertow.security.api.AuthenticationMode;
 import io.undertow.security.api.SecurityContext;
-import io.undertow.security.api.SecurityContextFactory;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.impl.SecurityContextFactoryImpl;
 import io.undertow.server.HttpServerExchange;
@@ -47,10 +46,12 @@ public class SecurityInitialHandler extends PipedHttpHandler {
     private final AuthenticationMode authenticationMode;
     private final IdentityManager identityManager;
     private final String programaticMechName;
-    private final SecurityContextFactory contextFactory;
+    private final io.undertow.security.api.SecurityContextFactory contextFactory;
 
     public SecurityInitialHandler(final AuthenticationMode authenticationMode, final IdentityManager identityManager,
-            final String programaticMechName, final SecurityContextFactory contextFactory, final PipedHttpHandler next) {
+            final String programaticMechName, 
+            final io.undertow.security.api.SecurityContextFactory contextFactory, 
+            final PipedHttpHandler next) {
         super(next);
         this.authenticationMode = authenticationMode;
         this.identityManager = identityManager;
