@@ -40,6 +40,7 @@ script:
 after_success:
    - wget https://gist.githubusercontent.com/mkjsix/98debbbbfcf310b6a33f/raw/4be0460cec34e09d106e13b3f773937cb2a4ff36/settings.xml
    - mvn deploy --settings settings.xml -DskipTests=true
+   - curl -H "Content-Type: application/json" --data '{"source_type": "Branch", "source_name": "dev"}' -X POST https://registry.hub.docker.com/u/softinstigate/restheart/trigger/aaf12bf2-e01c-473e-9329-589c050f8f07/
 
 env:
   global:
