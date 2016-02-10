@@ -17,23 +17,27 @@
  */
 package org.restheart.security.impl;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import static com.mongodb.client.model.Filters.eq;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
+import org.bson.conversions.Bson;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
@@ -48,7 +52,7 @@ import org.slf4j.LoggerFactory;
 public final class DbIdentityManager extends AbstractSimpleSecurityManager implements IdentityManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DbIdentityManager.class);
 
-    private DBCollection mongoColl;
+    private MongoCollection<BsonDocument> mongoColl;
 
     private String db;
     private String coll;
@@ -69,23 +73,31 @@ public final class DbIdentityManager extends AbstractSimpleSecurityManager imple
 
         if (this.cacheEnabled) {
             this.cache = CacheFactory.createLocalLoadingCache(this.cacheSize, this.cacheExpirePolicy, this.cacheTTL, (String key) -> {
-                        return this.findAccount(key);
-                    });
+                return this.findAccount(key);
+            });
         }
 
         MongoClient mongoClient = MongoDBClientSingleton.getInstance().getClient();
 
-        if (!mongoClient.getDatabaseNames().contains(this.db)) {
+        ArrayList<String> dbNames = new ArrayList<>();
+
+        mongoClient.listDatabaseNames().into(dbNames);
+
+        if (!dbNames.contains(this.db)) {
             throw new IllegalArgumentException("error configuring the DbIdentityManager. The specified db does not exist: " + db);
         }
 
-        DB mongoDb = mongoClient.getDB(this.db);
+        MongoDatabase mongoDb = mongoClient.getDatabase(this.db);
 
-        if (!mongoDb.collectionExists(this.coll)) {
+        ArrayList<String> collectionNames = new ArrayList<>();
+
+        mongoDb.listCollectionNames().into(collectionNames);
+        
+        if (!collectionNames.contains(this.coll)) {
             throw new IllegalArgumentException("error configuring the DbIdentityManager. The specified collection does not exist: " + coll);
         }
 
-        this.mongoColl = mongoDb.getCollection(coll);
+        this.mongoColl = mongoDb.getCollection(coll, BsonDocument.class);
     }
 
     @Override
@@ -132,7 +144,7 @@ public final class DbIdentityManager extends AbstractSimpleSecurityManager imple
 
             if (_cacheSize != null) {
                 if (_cacheSize instanceof Integer) {
-                    this.cacheSize = ((Integer)_cacheSize).longValue();
+                    this.cacheSize = ((Integer) _cacheSize).longValue();
                 } else {
                     this.cacheSize = (Long) _cacheSize;
                 }
@@ -140,7 +152,7 @@ public final class DbIdentityManager extends AbstractSimpleSecurityManager imple
 
             if (_cacheTTL != null) {
                 if (_cacheTTL instanceof Integer) {
-                    this.cacheTTL = ((Integer)_cacheTTL).longValue();
+                    this.cacheTTL = ((Integer) _cacheTTL).longValue();
                 } else {
                     this.cacheTTL = (Long) _cacheTTL;
                 }
@@ -174,13 +186,13 @@ public final class DbIdentityManager extends AbstractSimpleSecurityManager imple
 
     private boolean verifyCredential(Account account, Credential credential) {
         String id = account.getPrincipal().getName();
-        
+
         SimpleAccount ourAccount = getAccount(id);
-        
+
         if (ourAccount == null) {
             return false;
         }
-        
+
         if (credential instanceof PasswordCredential && account instanceof SimpleAccount) {
             char[] password = ((PasswordCredential) credential).getPassword();
             char[] expectedPassword = ourAccount.getCredentials().getPassword();
@@ -189,13 +201,13 @@ public final class DbIdentityManager extends AbstractSimpleSecurityManager imple
         }
         return false;
     }
-    
+
     private SimpleAccount getAccount(String id) {
         if (cache == null) {
             return findAccount(id);
         } else {
             Optional<SimpleAccount> _account = cache.get(id);
-            
+
             if (_account.isPresent()) {
                 return _account.get();
             } else {
@@ -205,51 +217,57 @@ public final class DbIdentityManager extends AbstractSimpleSecurityManager imple
     }
 
     private SimpleAccount findAccount(String _id) {
-        DBObject query = new BasicDBObject();
-        query.put("_id", _id);
+        Bson query = eq("_id", _id);
 
-        DBObject _account = mongoColl.findOne(query);
-
-        if (_account == null) {
+        FindIterable<BsonDocument> result = mongoColl
+                .find(query)
+                .limit(1);
+        
+        if (result == null || ! result.iterator().hasNext()) {
             LOGGER.debug("no account found with _id: {}", _id);
             return null;
         }
+        
+        BsonDocument _account = result.iterator().next();
 
-        Object _password = _account.get("password");
-        Object _roles = _account.get("roles");
-
-        if (_password == null) {
-            LOGGER.debug("account with _id: {} does not have password property", _id);
+        if (!_account.containsKey("password")) {
+            LOGGER.error("account with _id: {} does not have password property", _id);
             return null;
         }
         
-        if (!(_password instanceof String)) {
-            LOGGER.debug("account with _id: {} has the password property, but it is not a String", _id);
-            return null;
-        }
-        
-        String password = (String) _password;
+        BsonValue _password = _account.get("password");
 
-        if (_roles == null) {
-            LOGGER.debug("account with _id: {} does not have the roles property", _id);
+        if (_password == null || !_password.isString()) {
+            LOGGER.debug("account with _id: {} has an invalid password (not string): {}", _id, _password);
             return null;
         }
         
-        if (!(_roles instanceof BasicDBList)) {
-            LOGGER.debug("account with _id: {} has the roles property, but it is not an array: {}", _id, _roles.toString());
+        String password = _password.asString().getValue();
+
+        if (!_account.containsKey("roles")) {
+            LOGGER.error("account with _id: {} does not have password property", _id);
+            return null;
+        }
+        
+        BsonValue _roles = _account.get("roles");
+        
+        if (_roles == null || !_roles.isArray()) {
+            LOGGER.debug("account with _id: {} has an invalid roles (not array): {}", _id, _roles);
             return null;
         }
         
         Set<String> roles = new HashSet<>();
         
-        ((BasicDBList)_roles).forEach(el -> {
-            if ((el != null && el instanceof String)) {
-                roles.add((String)el);
+        List<BsonValue> __roles = _roles.asArray().getValues();
+        
+        __roles.forEach(el -> {
+            if (el != null && el.isString()) {
+                roles.add(el.asString().getValue());
             } else {
-                LOGGER.debug("account with _id: {} has a role that is not a string and it is not taken into account: {}", _id, el);
+                LOGGER.debug("account with _id: {} has a not string role: {} ; ignoring it", _id, el);
             }
         });
-        
+
         return new SimpleAccount(_id, password.toCharArray(), roles);
     }
 }
