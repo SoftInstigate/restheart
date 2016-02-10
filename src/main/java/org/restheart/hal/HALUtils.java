@@ -28,6 +28,10 @@ import java.util.TreeMap;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class HALUtils {
+
+    private HALUtils() {
+    }
+
     /**
      *
      * @param exchange

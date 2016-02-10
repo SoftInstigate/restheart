@@ -31,6 +31,9 @@ import org.slf4j.LoggerFactory;
 public class Shutdowner {
     private static final Logger LOGGER = LoggerFactory.getLogger(Shutdowner.class);
 
+    private Shutdowner() {
+    }
+
     public static void main(final String[] args) {
         if (askingForHelp(args)) {
             LOGGER.info("usage: java -cp restheart.jar org.restheart.Shutdowner [configuration file].");
