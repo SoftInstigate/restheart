@@ -124,7 +124,9 @@ public class RequestTransformerMetadataHandler extends AbstractTransformerMetada
                 DBObject content = context.getContent();
 
                 // content can be an array for bulk POST
-                if (content instanceof BasicDBObject) {
+                if (content == null)  {
+                    appyTransformationOnObject(t, exchange, context, requestMethod, requestType, rt.getScope(), new BasicDBObject(), rt.getArgs());
+                } else if (content instanceof BasicDBObject) {
                     appyTransformationOnObject(t, exchange, context, requestMethod, requestType, rt.getScope(), (BasicDBObject) content, rt.getArgs());
                 } else {
                     BasicDBList arrayContent = (BasicDBList) content;
