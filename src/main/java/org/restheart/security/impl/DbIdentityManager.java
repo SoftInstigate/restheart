@@ -206,9 +206,9 @@ public final class DbIdentityManager extends AbstractSimpleSecurityManager imple
         if (cache == null) {
             return findAccount(id);
         } else {
-            Optional<SimpleAccount> _account = cache.get(id);
+            Optional<SimpleAccount> _account = cache.getLoading(id);
 
-            if (_account.isPresent()) {
+            if (_account != null && _account.isPresent()) {
                 return _account.get();
             } else {
                 return null;
