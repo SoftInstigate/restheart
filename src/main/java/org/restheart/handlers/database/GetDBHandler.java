@@ -62,7 +62,11 @@ public class GetDBHandler extends PipedHttpHandler {
         List<DBObject> data = null;
 
         if (context.getPagesize() > 0) {
-            data = getDatabase().getData(context.getDBName(), colls, context.getPage(), context.getPagesize());
+            data = getDatabase().getDatabaseData(
+                    context.getDBName(), 
+                    colls, 
+                    context.getPage(), 
+                    context.getPagesize());
         }
 
         DBRepresentationFactory repf = new DBRepresentationFactory();

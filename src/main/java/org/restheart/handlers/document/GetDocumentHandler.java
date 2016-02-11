@@ -18,16 +18,12 @@
 package org.restheart.handlers.document;
 
 import com.mongodb.DBObject;
-import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
-import com.mongodb.util.JSON;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
-import org.bson.BSONObject;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.conversions.Bson;
-import org.bson.types.ObjectId;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -36,6 +32,7 @@ import org.restheart.utils.JsonUtils;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
+import static com.mongodb.client.model.Filters.and;
 
 /**
  *

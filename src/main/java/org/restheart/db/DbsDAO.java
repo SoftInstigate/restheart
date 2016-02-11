@@ -28,13 +28,10 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
-import com.mongodb.client.model.UpdateOptions;
-
 import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
-
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
@@ -42,7 +39,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.bson.Document;
-
 import org.bson.types.ObjectId;
 
 /**
@@ -203,7 +199,11 @@ public class DbsDAO implements Database {
      *
      */
     @Override
-    public List<DBObject> getData(final String dbName, final List<String> colls, final int page, final int pagesize)
+    public List<DBObject> getDatabaseData(
+            final String dbName, 
+            final List<String> colls, 
+            final int page, 
+            final int pagesize)
             throws IllegalQueryParamenterException {
         // filter out reserved resources
         List<String> _colls = colls.stream()
@@ -246,7 +246,10 @@ public class DbsDAO implements Database {
                         collProperties = LocalCachesSingleton.getInstance()
                         .getCollectionProps(dbName, collName);
                     } else {
-                        collProperties = collectionDAO.getCollectionProps(dbName, collName, true);
+                        collProperties = collectionDAO.getCollectionProps(
+                                dbName, 
+                                collName, 
+                                true);
                     }
 
                     if (collProperties != null) {
@@ -377,8 +380,14 @@ public class DbsDAO implements Database {
     }
 
     @Override
-    public DBObject getCollectionProperties(String dbName, String collName, boolean fixMissingProperties) {
-        return collectionDAO.getCollectionProps(dbName, collName, fixMissingProperties);
+    public DBObject getCollectionProperties(
+            String dbName, 
+            String collName, 
+            boolean fixMissingProperties) {
+        return collectionDAO.getCollectionProps(
+                dbName, 
+                collName, 
+                fixMissingProperties);
     }
 
     @Override

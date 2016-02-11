@@ -145,7 +145,7 @@ public interface Database {
      * @throws org.restheart.handlers.IllegalQueryParamenterException
      *
      */
-    List<DBObject> getData(String dbName, List<String> collections, int page, int pagesize) throws IllegalQueryParamenterException;
+    List<DBObject> getDatabaseData(String dbName, List<String> collections, int page, int pagesize) throws IllegalQueryParamenterException;
 
     /**
      *
