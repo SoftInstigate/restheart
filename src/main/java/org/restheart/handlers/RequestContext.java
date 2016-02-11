@@ -114,6 +114,7 @@ public class RequestContext {
     public static final String DOC_ID_TYPE_QPARAM_KEY = "id_type";
     public static final String ETAG_CHECK_QPARAM_KEY = "checkEtag";
     public static final String SHARDKEY_QPARAM_KEY = "shardkey";
+    public static final String NO_PROPS_KEY = "np";
 
     // matadata
     public static final String ETAG_DOC_POLICY_METADATA_KEY = "etagDocPolicy";
@@ -187,6 +188,8 @@ public class RequestContext {
     private OperationResult dbOperationResult;
     
     private BsonDocument shardKey = null;
+    
+    private boolean noProps = false;
 
     /**
      * the HAL mode
@@ -243,6 +246,8 @@ public class RequestContext {
         this.etag = etagHvs == null || etagHvs.getFirst() == null ? null : etagHvs.getFirst();
 
         this.forceEtagCheck = exchange.getQueryParameters().get(ETAG_CHECK_QPARAM_KEY) != null;
+        
+        this.noProps = exchange.getQueryParameters().get(NO_PROPS_KEY) != null;
     }
 
     protected static METHOD selectRequestMethod(HttpString _method) {
@@ -1064,5 +1069,12 @@ public class RequestContext {
      */
     public void setShardKey(BsonDocument shardKey) {
         this.shardKey = shardKey;
+    }
+
+    /**
+     * @return the noProps
+     */
+    public boolean isNoProps() {
+        return noProps;
     }
 }

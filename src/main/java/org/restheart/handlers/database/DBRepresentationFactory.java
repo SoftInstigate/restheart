@@ -57,7 +57,9 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
             rep = createRepresentation(exchange, context, null);
         }
 
-        addProperties(rep, context);
+        if (!context.isNoProps()) {
+            addProperties(rep, context);
+        }
 
         addSizeAndTotalPagesProperties(size, context, rep);
 
@@ -74,7 +76,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
             // curies
             rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
                     + "/{rel}.html", true), true);
-        } 
+        }
 
         return rep;
     }
