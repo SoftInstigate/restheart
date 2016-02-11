@@ -130,13 +130,13 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST,
                 new NormalOrBulkDispatcherHandler(
-                        new BeforeWriteCheckMetadataHandler(
-                                new RequestTransformerMetadataHandler(
+                        new RequestTransformerMetadataHandler(
+                                new BeforeWriteCheckMetadataHandler(
                                         new PostCollectionHandler(
                                                 new AfterWriteCheckMetadataHandler(
                                                         new WebHookMetadataHandler())))),
-                        new BeforeWriteCheckMetadataHandler(
-                                new RequestTransformerMetadataHandler(
+                        new RequestTransformerMetadataHandler(
+                                new BeforeWriteCheckMetadataHandler(
                                         new BulkPostCollectionHandler(
                                                 new WebHookMetadataHandler())))));
 
@@ -158,8 +158,8 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                                 new WebHookMetadataHandler())));
 
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PUT,
-                new BeforeWriteCheckMetadataHandler(
-                        new RequestTransformerMetadataHandler(
+                new RequestTransformerMetadataHandler(
+                        new BeforeWriteCheckMetadataHandler(
                                 new PutDocumentHandler(
                                         new AfterWriteCheckMetadataHandler(
                                                 new WebHookMetadataHandler())))));
@@ -169,8 +169,8 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                         new WebHookMetadataHandler()));
 
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PATCH,
-                new BeforeWriteCheckMetadataHandler(
-                        new RequestTransformerMetadataHandler(
+                new RequestTransformerMetadataHandler(
+                        new BeforeWriteCheckMetadataHandler(
                                 new PatchDocumentHandler(
                                         new AfterWriteCheckMetadataHandler(
                                                 new WebHookMetadataHandler())))));
@@ -181,8 +181,8 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                         new WebHookMetadataHandler()));
 
         putPipedHttpHandler(TYPE.BULK_DOCUMENTS, METHOD.PATCH,
-                new BeforeWriteCheckMetadataHandler(
-                        new RequestTransformerMetadataHandler(
+                new RequestTransformerMetadataHandler(
+                        new BeforeWriteCheckMetadataHandler(
                                 new BulkPatchDocumentsHandler(
                                         new WebHookMetadataHandler()))));
 
@@ -204,8 +204,8 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                                 new WebHookMetadataHandler())));
 
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.POST,
-                new BeforeWriteCheckMetadataHandler(
-                        new RequestTransformerMetadataHandler(
+                new RequestTransformerMetadataHandler(
+                        new BeforeWriteCheckMetadataHandler(
                                 new PostBucketHandler(
                                         new WebHookMetadataHandler()))));
 
@@ -226,8 +226,8 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                         new WebHookMetadataHandler()));
 
         putPipedHttpHandler(TYPE.FILE, METHOD.PUT,
-                new BeforeWriteCheckMetadataHandler(
-                        new RequestTransformerMetadataHandler(
+                new RequestTransformerMetadataHandler(
+                        new BeforeWriteCheckMetadataHandler(
                                 new PutFileHandler(
                                         new WebHookMetadataHandler()))));
 
@@ -315,7 +315,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
     }
 
     private PipedHttpHandler getHandlerToLog(PipedHttpHandler handler) {
-        if (handler instanceof BeforeWriteCheckMetadataHandler 
+        if (handler instanceof BeforeWriteCheckMetadataHandler
                 || handler instanceof RequestTransformerMetadataHandler
                 || handler instanceof CheckHandler
                 || handler instanceof TransformerHandler) {
