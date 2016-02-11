@@ -67,7 +67,9 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
             rep = createRepresentation(exchange, context, null);
         }
 
-        addProperties(rep, context);
+        if (!context.isNoProps()) {
+            addProperties(rep, context);
+        }
 
         addSizeAndTotalPagesProperties(size, context, rep);
 
