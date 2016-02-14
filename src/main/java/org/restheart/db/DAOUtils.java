@@ -323,11 +323,11 @@ public class DAOUtils {
             document.put("_etag", etag);
 
             Bson filter = eq("_id", document.get("_id"));
-            
+
             if (shardKeys != null) {
                 filter = and(filter, shardKeys);
             }
-            
+
             updates.add(new UpdateOneModel<>(
                     filter,
                     getUpdateDocument(document),
@@ -346,6 +346,13 @@ public class DAOUtils {
     public static Document getUpdateDocument(Document document) {
         Document ret = new Document();
 
+        // add other update operators
+        document.keySet().stream().filter((String key)
+                -> UPDATE_OPERATORS.contains(key))
+                .forEach(key -> {
+                    ret.put(key, document.get(key));
+                });
+
         // add properties to $set update operator
         List<String> setKeys;
 
@@ -354,7 +361,6 @@ public class DAOUtils {
                 .collect(Collectors.toList());
 
         if (setKeys != null && !setKeys.isEmpty()) {
-
             Document set = new Document();
 
             setKeys.stream().forEach((String key)
@@ -362,25 +368,20 @@ public class DAOUtils {
                 set.append(key, document.get(key));
             });
 
-            if (document.get("$set") == null) {
-                ret.put("$set", set);
-            } else if (document.get("$set") instanceof Document) {
-                ((Document) ret.get("$set"))
-                        .putAll(set);
-            } else if (document.get("$set") instanceof DBObject) { //TODO remove this after migration to mongodb driver 3.2 completes
-                ((DBObject) ret.get("$set"))
-                        .putAll(set);
-            } else {
-                LOGGER.warn("count not add properties to $set since request data contains $set property which is not an object: {}", document.get("$set"));
+            if (!set.isEmpty()) {
+                if (ret.get("$set") == null) {
+                    ret.put("$set", set);
+                } else if (ret.get("$set") instanceof Document){
+                    ((Document)ret.get("$set")).putAll(set);
+                } else if (ret.get("$set") instanceof DBObject){
+                    ((DBObject)ret.get("$set")).putAll(set);
+                } else {
+                    // update is going to fail on mongodb
+                    // error 9, Modifiers operate on fields but we found a String instead
+                    LOGGER.debug("$set is not an object: {}", ret.get("$set"));
+                }
             }
         }
-
-        // add other update operators
-        document.keySet().stream().filter((String key)
-                -> UPDATE_OPERATORS.contains(key))
-                .forEach(key -> {
-                    ret.put(key, document.get(key));
-                });
 
         return ret;
     }
