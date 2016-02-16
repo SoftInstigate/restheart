@@ -19,6 +19,7 @@ package org.restheart.security.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 import org.restheart.Bootstrapper;
 import org.restheart.hal.Representation;
@@ -48,6 +49,17 @@ public class AuthTokenHandler extends PipedHttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (!ENABLED) {
+            return;
+        }
+
+        if (exchange.getRequestPath().startsWith("/_authtokens/")
+                && exchange.getRequestPath().length() > 13
+                && Methods.OPTIONS.equals(exchange.getRequestMethod())) {
+            exchange.getResponseHeaders()
+                    .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, DELETE")
+                    .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+
+            ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);
             return;
         }
 
