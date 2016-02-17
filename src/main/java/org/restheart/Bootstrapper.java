@@ -506,7 +506,7 @@ public final class Bootstrapper {
         }
 
         Builder builder = Undertow.builder();
-        
+
         if (configuration.isHttpsListener()) {
             builder.addHttpsListener(configuration.getHttpsPort(), configuration.getHttpHost(), sslContext);
             LOGGER.info("HTTPS listener bound at {}:{}", configuration.getHttpsHost(), configuration.getHttpsPort());
@@ -549,9 +549,9 @@ public final class Bootstrapper {
                 .setBufferSize(configuration.getBufferSize())
                 .setBuffersPerRegion(configuration.getBuffersPerRegion())
                 .setHandler(shutdownHandler);
-        
+
         ConfigurationHelper.setConnectionOptions(builder, configuration);
-        
+
         builder.build().start();
     }
 
@@ -732,8 +732,12 @@ public final class Bootstrapper {
                     String path = (String) sr.get(Configuration.STATIC_RESOURCES_MOUNT_WHAT_KEY);
                     String where = (String) sr.get(Configuration.STATIC_RESOURCES_MOUNT_WHERE_KEY);
                     String welcomeFile = (String) sr.get(Configuration.STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY);
-                    boolean embedded = (Boolean) sr.get(Configuration.STATIC_RESOURCES_MOUNT_EMBEDDED_KEY);
-                    boolean secured = (Boolean) sr.get(Configuration.STATIC_RESOURCES_MOUNT_SECURED_KEY);
+
+                    Boolean embedded = (Boolean) sr.get(Configuration.STATIC_RESOURCES_MOUNT_EMBEDDED_KEY);
+                    embedded = embedded == null ? false : embedded; // makes embedded optional with default to false
+
+                    Boolean secured = (Boolean) sr.get(Configuration.STATIC_RESOURCES_MOUNT_SECURED_KEY);
+                    secured = secured == null ? false : secured; // makes secured optional with default to false
 
                     if (where == null || !where.startsWith("/")) {
                         LOGGER.error("Cannot bind static resources to {}. parameter 'where' must start with /", where);
@@ -784,25 +788,30 @@ public final class Bootstrapper {
                         file = new File(path);
                     }
 
-                    ResourceHandler handler = resource(new FileResourceManager(file, 3))
-                            .addWelcomeFiles(welcomeFile)
-                            .setDirectoryListingEnabled(false);
+                    if (file.exists()) {
 
-                    PipedHttpHandler ph;
-                    
-                    if (secured) {
-                        ph = new RequestLoggerHandler(
-                                        new SecurityHandlerDispacher(
-                                                new PipedWrappingHandler(null, handler),
-                                                identityManager,
-                                                accessManager));
+                        ResourceHandler handler = resource(new FileResourceManager(file, 3))
+                                .addWelcomeFiles(welcomeFile)
+                                .setDirectoryListingEnabled(false);
+
+                        PipedHttpHandler ph;
+
+                        if (secured) {
+                            ph = new RequestLoggerHandler(
+                                    new SecurityHandlerDispacher(
+                                            new PipedWrappingHandler(null, handler),
+                                            identityManager,
+                                            accessManager));
+                        } else {
+                            ph = new RequestLoggerHandler(handler);
+                        }
+
+                        paths.addPrefixPath(where, ph);
+
+                        LOGGER.info("URL {} bound to static resources {}. Access Manager: {}", where, path, secured);
                     } else {
-                        ph = new RequestLoggerHandler(handler);
+                        LOGGER.error("Failed to bind URL {} to static resources {}. Directory does not exist.", where, path);
                     }
-                    
-                    paths.addPrefixPath(where, ph);
-                    
-                    LOGGER.info("URL {} bound to static resources {}. Access Manager: {}", where, path, secured);
 
                 } catch (Throwable t) {
                     LOGGER.error("Cannot bind static resources to {}", sr.get(Configuration.STATIC_RESOURCES_MOUNT_WHERE_KEY), t);
