@@ -66,9 +66,9 @@ public class LoggingInitializer {
      * @param logFilePath
      */
     public static void startFileLogging(String logFilePath) {
-        Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        Logger rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
-        LoggerContext loggerContext = root.getLoggerContext();
+        LoggerContext loggerContext = rootLogger.getLoggerContext();
 
         RollingFileAppender<ILoggingEvent> rfAppender = new RollingFileAppender<>();
         rfAppender.setContext(loggerContext);
@@ -102,7 +102,7 @@ public class LoggingInitializer {
         asyncAppender.addAppender(rfAppender);
         asyncAppender.start();
 
-        root.addAppender(asyncAppender);
+        rootLogger.addAppender(asyncAppender);
     }
 
     public static void stopLogging() {
