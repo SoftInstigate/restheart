@@ -286,7 +286,7 @@ public class DbsDAO implements Database {
         if (patching && !updating) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
         }
-
+        
         ObjectId newEtag = new ObjectId();
 
         final DBObject content = DAOUtils.validContent(newContent);
