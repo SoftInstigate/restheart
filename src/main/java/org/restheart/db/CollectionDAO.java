@@ -309,6 +309,10 @@ class CollectionDAO {
         if (patching && !updating) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
         }
+        
+        if (!updating) {
+            client.getDatabase(dbName).createCollection(collName);
+        }
 
         ObjectId newEtag = new ObjectId();
 
