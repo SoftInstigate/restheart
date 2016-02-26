@@ -18,9 +18,6 @@
 package org.restheart.handlers.files;
 
 import com.eclipsesource.json.JsonObject;
-import com.mongodb.DB;
-import com.mongodb.gridfs.GridFS;
-import com.mongodb.gridfs.GridFSInputFile;
 import io.undertow.util.Headers;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -32,19 +29,13 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.util.EntityUtils;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.restheart.test.integration.AbstactIT;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import org.junit.Before;
 import org.restheart.hal.Representation;
 import org.restheart.utils.HttpStatus;
 import static org.junit.Assert.assertEquals;
@@ -70,6 +61,9 @@ public class GetFileHandlerIT extends AbstactIT {
 
     @Test
     public void testGetFile() throws Exception {
+        createBucket();
+        createFile();
+        
         String url = dbTmpUri + "/" + BUCKET + ".files/" + ID + "/binary";
         Response resp = adminExecutor.execute(Request.Get(url));
         
@@ -90,9 +84,17 @@ public class GetFileHandlerIT extends AbstactIT {
         entity.writeTo(fos);
         assertTrue(tempFile.length() > 0);
     }
+    
+    @Test
+    public void testPostFile() throws Exception {
+        createBucket();
+        createFile();
+    }
 
     @Test
-    public void testGetBucket() throws Exception {
+    public void testEmptyBucket() throws Exception {
+        createBucket();
+        
         // test that GET /db includes the rh:bucket array
         Response resp = adminExecutor.execute(Request.Get(dbTmpUri));
 
@@ -128,25 +130,31 @@ public class GetFileHandlerIT extends AbstactIT {
         assertTrue(json.get("_embedded").asObject().get("rh:bucket").isArray());
 
         assertTrue(!json.get("_embedded").asObject().get("rh:bucket").asArray().isEmpty());
-
+    }
+    
+    @Test
+    public void testBucketWithFile() throws Exception {
+        createBucket();
+        createFile();
+        
         // test that GET /db/bucket.files includes the file
         String bucketUrl = dbTmpUri + "/" + BUCKET + ".files";
-        resp = adminExecutor.execute(Request.Get(bucketUrl));
+        Response resp = adminExecutor.execute(Request.Get(bucketUrl));
 
-        httpResp = resp.returnResponse();
+        HttpResponse httpResp = resp.returnResponse();
         assertNotNull(httpResp);
-        entity = httpResp.getEntity();
+        HttpEntity entity = httpResp.getEntity();
         assertNotNull(entity);
-        statusLine = httpResp.getStatusLine();
+        StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
         assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
         assertNotNull("content type not null", entity.getContentType());
         assertEquals("check content type", Representation.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
 
-        content = EntityUtils.toString(entity);
+        String content = EntityUtils.toString(entity);
 
-        json = null;
+        JsonObject json = null;
 
         try {
             json = JsonObject.readFrom(content);
@@ -164,10 +172,9 @@ public class GetFileHandlerIT extends AbstactIT {
         assertNotNull(json.get("_embedded").asObject().get("rh:file"));
         assertTrue(json.get("_embedded").asObject().get("rh:file").isArray());
     }
-
-    @Before
-    public void createFile() throws UnknownHostException, IOException {
-        // create db
+    
+    private void createBucket() throws IOException {
+         // create db
         Response resp = adminExecutor.execute(Request.Put(dbTmpUri)
                 .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
@@ -189,6 +196,10 @@ public class GetFileHandlerIT extends AbstactIT {
         
         assertNotNull(statusLine);
         assertEquals("check status code", HttpStatus.SC_CREATED, statusLine.getStatusCode());
+    }
+
+    private void createFile() throws UnknownHostException, IOException {
+        String bucketUrl = dbTmpUri + "/" + BUCKET + ".files/";
 
         InputStream is = GetFileHandlerIT.class.getResourceAsStream("/" + FILENAME);
 
@@ -198,12 +209,13 @@ public class GetFileHandlerIT extends AbstactIT {
                 .addTextBody("properties", "{\"_id\": \"" + ID + "\"}")
                 .build();
 
-        resp = adminExecutor.execute(Request.Post(bucketUrl)
+        Response resp = adminExecutor.execute(Request.Post(bucketUrl)
                 .body(entity));
 
-        httpResp = resp.returnResponse();
+        HttpResponse httpResp = resp.returnResponse();
         assertNotNull(httpResp);
-        statusLine = httpResp.getStatusLine();
+        
+        StatusLine statusLine = httpResp.getStatusLine();
         
         assertNotNull(statusLine);
         assertEquals("check status code", HttpStatus.SC_CREATED, statusLine.getStatusCode());
