@@ -62,9 +62,6 @@ class CollectionDAO {
         this.client = client;
     }
 
-    private final static UpdateOptions UPSERT_OPS
-            = new UpdateOptions().upsert(true);
-
     static {
         FIELDS_TO_RETURN = new BasicDBObject();
         FIELDS_TO_RETURN.put("_id", 1);
