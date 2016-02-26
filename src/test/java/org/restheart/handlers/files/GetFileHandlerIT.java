@@ -21,7 +21,10 @@ import com.eclipsesource.json.JsonObject;
 import com.mongodb.DB;
 import com.mongodb.gridfs.GridFS;
 import com.mongodb.gridfs.GridFSInputFile;
+import io.undertow.util.Headers;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
 import org.apache.http.HttpEntity;
@@ -29,6 +32,9 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.util.EntityUtils;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -41,6 +47,10 @@ import static org.junit.Assert.fail;
 import org.junit.Before;
 import org.restheart.hal.Representation;
 import org.restheart.utils.HttpStatus;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  *
@@ -53,23 +63,14 @@ public class GetFileHandlerIT extends AbstactIT {
 
     public static final String FILENAME = "RESTHeart_documentation.pdf";
     public static final String BUCKET = "mybucket";
-    public static Object OID;
+    public static Object ID = "myfile";
 
     public GetFileHandlerIT() {
     }
-    
+
     @Test
     public void testGetFile() throws Exception {
-        String url = dbTmpUri + "/" + BUCKET + ".files/" + OID + "/binary";
-        Response resp = adminExecutor.execute(Request.Get(url));
-        File tempFile = tempFolder.newFile(FILENAME);
-        resp.saveContent(tempFile);
-        assertTrue(tempFile.length() > 0);
-    }
-    
-    @Test
-    public void testGetBucket() throws Exception {
-        String url = dbTmpUri + "/" + BUCKET + ".files";
+        String url = dbTmpUri + "/" + BUCKET + ".files/" + ID + "/binary";
         Response resp = adminExecutor.execute(Request.Get(url));
         
         HttpResponse httpResp = resp.returnResponse();
@@ -81,10 +82,33 @@ public class GetFileHandlerIT extends AbstactIT {
 
         assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
         assertNotNull("content type not null", entity.getContentType());
+        
+        File tempFile = tempFolder.newFile(FILENAME);
+        
+        FileOutputStream fos = new FileOutputStream(tempFile);
+        
+        entity.writeTo(fos);
+        assertTrue(tempFile.length() > 0);
+    }
+
+    @Test
+    public void testGetBucket() throws Exception {
+        // test that GET /db includes the rh:bucket array
+        Response resp = adminExecutor.execute(Request.Get(dbTmpUri));
+
+        HttpResponse httpResp = resp.returnResponse();
+        assertNotNull(httpResp);
+        HttpEntity entity = httpResp.getEntity();
+        assertNotNull(entity);
+        StatusLine statusLine = httpResp.getStatusLine();
+        assertNotNull(statusLine);
+
+        assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
+        assertNotNull("content type not null", entity.getContentType());
         assertEquals("check content type", Representation.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
-        
+
         String content = EntityUtils.toString(entity);
-        
+
         JsonObject json = null;
 
         try {
@@ -92,30 +116,96 @@ public class GetFileHandlerIT extends AbstactIT {
         } catch (Throwable t) {
             fail("parsing received json");
         }
-        
+
         assertNotNull(json.get("_returned"));
-        assertTrue(json.get("_returned").isNumber()); 
+        assertTrue(json.get("_returned").isNumber());
         assertTrue(json.getInt("_returned", 0) > 0);
-        
+
         assertNotNull(json.get("_embedded"));
         assertTrue(json.get("_embedded").isObject());
-        
+
+        assertNotNull(json.get("_embedded").asObject().get("rh:bucket"));
+        assertTrue(json.get("_embedded").asObject().get("rh:bucket").isArray());
+
+        assertTrue(!json.get("_embedded").asObject().get("rh:bucket").asArray().isEmpty());
+
+        // test that GET /db/bucket.files includes the file
+        String bucketUrl = dbTmpUri + "/" + BUCKET + ".files";
+        resp = adminExecutor.execute(Request.Get(bucketUrl));
+
+        httpResp = resp.returnResponse();
+        assertNotNull(httpResp);
+        entity = httpResp.getEntity();
+        assertNotNull(entity);
+        statusLine = httpResp.getStatusLine();
+        assertNotNull(statusLine);
+
+        assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
+        assertNotNull("content type not null", entity.getContentType());
+        assertEquals("check content type", Representation.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
+
+        content = EntityUtils.toString(entity);
+
+        json = null;
+
+        try {
+            json = JsonObject.readFrom(content);
+        } catch (Throwable t) {
+            fail("parsing received json");
+        }
+
+        assertNotNull(json.get("_returned"));
+        assertTrue(json.get("_returned").isNumber());
+        assertTrue(json.getInt("_returned", 0) > 0);
+
+        assertNotNull(json.get("_embedded"));
+        assertTrue(json.get("_embedded").isObject());
+
         assertNotNull(json.get("_embedded").asObject().get("rh:file"));
         assertTrue(json.get("_embedded").asObject().get("rh:file").isArray());
     }
 
     @Before
-    public void createFile() throws UnknownHostException {
-        DB db = getDatabase();
-        InputStream is = GetFileHandlerIT.class.getResourceAsStream("/" + FILENAME);
-        GridFS gridfs = new GridFS(db, BUCKET);
-        GridFSInputFile gfsFile = gridfs.createFile(is);
-        OID = gfsFile.getId();
-        gfsFile.setFilename(FILENAME);
-        gfsFile.save();
-    }
+    public void createFile() throws UnknownHostException, IOException {
+        // create db
+        Response resp = adminExecutor.execute(Request.Put(dbTmpUri)
+                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
-    private static DB getDatabase() throws UnknownHostException {
-        return mongoClient.getDB(dbTmpName);
+        HttpResponse httpResp = resp.returnResponse();
+        assertNotNull(httpResp);
+        StatusLine statusLine = httpResp.getStatusLine();
+        
+        assertNotNull(statusLine);
+        assertEquals("check status code", HttpStatus.SC_CREATED, statusLine.getStatusCode());
+        
+        // create bucket
+        String bucketUrl = dbTmpUri + "/" + BUCKET + ".files/";
+        resp = adminExecutor.execute(Request.Put(bucketUrl)
+                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+
+        httpResp = resp.returnResponse();
+        assertNotNull(httpResp);
+        statusLine = httpResp.getStatusLine();
+        
+        assertNotNull(statusLine);
+        assertEquals("check status code", HttpStatus.SC_CREATED, statusLine.getStatusCode());
+
+        InputStream is = GetFileHandlerIT.class.getResourceAsStream("/" + FILENAME);
+
+        HttpEntity entity = MultipartEntityBuilder
+                .create()
+                .addBinaryBody("file", is, ContentType.create("application/octet-stream"), FILENAME)
+                .addTextBody("properties", "{\"_id\": \"" + ID + "\"}")
+                .build();
+
+        resp = adminExecutor.execute(Request.Post(bucketUrl)
+                .body(entity));
+
+        httpResp = resp.returnResponse();
+        assertNotNull(httpResp);
+        statusLine = httpResp.getStatusLine();
+        
+        assertNotNull(statusLine);
+        assertEquals("check status code", HttpStatus.SC_CREATED, statusLine.getStatusCode());
     }
 }
