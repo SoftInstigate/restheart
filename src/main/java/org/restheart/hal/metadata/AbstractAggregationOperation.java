@@ -221,4 +221,40 @@ public abstract class AbstractAggregationOperation {
             return obj;
         }
     }
+
+    /**
+     * checks if the aggregation variable start with $ this is not allowed since
+     * the client would be able to modify the aggregation stages
+     *
+     * @param aVars RequestContext.getAggregationVars()
+     */
+    public static void checkAggregationVariables(Object aVars)
+            throws SecurityException {
+        if (aVars == null) {
+            return;
+        }
+
+        if (aVars instanceof BasicDBObject) {
+            BasicDBObject _obj = (BasicDBObject) aVars;
+
+            _obj.forEach((key, value) -> {
+                if (key.startsWith("$")) {
+                    throw new SecurityException("aggregaton variables cannot include operators");
+                }
+                
+                if (value instanceof BasicDBObject
+                        || value instanceof BasicDBList) {
+                    checkAggregationVariables(value);
+                }
+            });
+            
+        } else if (aVars instanceof BasicDBList) {
+            for (Object el : ((BasicDBList) aVars).toArray()) {
+                if (el instanceof BasicDBObject
+                        || el instanceof BasicDBList) {
+                    checkAggregationVariables(el);
+                }
+            }
+        }
+    }
 }
