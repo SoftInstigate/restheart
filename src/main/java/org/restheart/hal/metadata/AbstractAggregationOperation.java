@@ -239,7 +239,7 @@ public abstract class AbstractAggregationOperation {
 
             _obj.forEach((key, value) -> {
                 if (key.startsWith("$")) {
-                    throw new SecurityException("aggregaton variables cannot include operators");
+                    throw new SecurityException("aggregation variables cannot include operators");
                 }
                 
                 if (value instanceof BasicDBObject
