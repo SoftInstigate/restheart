@@ -27,6 +27,7 @@ import org.bson.BSONObject;
 import org.bson.BsonDocument;
 import org.restheart.db.DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.hal.UnsupportedDocumentIdException;
+import org.restheart.hal.metadata.AggregationPipeline;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
@@ -286,6 +287,9 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
             try {
                 Object qvars = JSON.parse(_qvars.get());
+                
+                // throws SecurityException if aVars contains operators
+                AggregationPipeline.checkAggregationVariables(qvars);
 
                 if (!(qvars instanceof BasicDBObject)) {
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
@@ -300,7 +304,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 return;
             }
         }
-
+        
         // get and check eager parameter
         Deque<String> __eager = exchange.getQueryParameters().get(EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY);
 
