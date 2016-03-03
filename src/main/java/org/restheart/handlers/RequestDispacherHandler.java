@@ -352,7 +352,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      */
     @Override
     public final void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.getType() == TYPE.ERROR) {
+        if (context.getType() == TYPE.INVALID) {
             LOGGER.debug("This is a bad request: returning a <{}> HTTP code", HttpStatus.SC_BAD_REQUEST);
             ResponseHelper.endExchange(exchange, HttpStatus.SC_BAD_REQUEST);
             return;

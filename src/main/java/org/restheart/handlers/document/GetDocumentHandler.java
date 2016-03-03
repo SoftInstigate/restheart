@@ -33,6 +33,7 @@ import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
 
 /**
  *
