@@ -85,6 +85,7 @@ public class OptionsHandler extends PipedHttpHandler {
                     exchange.getResponseHeaders()
                             .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "POST, PATCH, DELETE, OPTIONS")
                             .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
                 case DOCUMENT:
                     exchange.getResponseHeaders()
                             .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, PATCH, DELETE, OPTIONS")
