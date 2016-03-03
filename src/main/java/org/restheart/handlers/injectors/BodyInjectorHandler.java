@@ -47,6 +47,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
+ * injects the request body in RequestContext
+ * also check the Content-Type header in case body is not empty
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BodyInjectorHandler extends PipedHttpHandler {
@@ -93,130 +96,126 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             return;
         }
 
-        if (isPutRequest(context)
-                || isPostRequest(context)) {
+        DBObject content;
+        
+        if ((isPutRequest(context) && isFileRequest(context))
+                || (isPostRequest(context) && isFilesBucketRequest(context))) {
 
-            DBObject content;
+            // check content type
+            if (unsupportedContentTypeForFiles(exchange
+                    .getRequestHeaders()
+                    .get(Headers.CONTENT_TYPE))) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE_FILE);
+                return;
+            }
 
-            if (isFileRequest(context)
-                    || isFilesBucketRequest(context)) {
-                // check content type
+            FormDataParser parser = this.formParserFactory.createParser(exchange);
 
-                if (unsupportedContentTypeForFiles(exchange
+            if (parser == null) {
+                String errMsg = "There is no form parser registered for the request content type";
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
+                return;
+            }
+
+            FormData formData;
+
+            try {
+                formData = parser.parseBlocking();
+            } catch (IOException ioe) {
+                String errMsg = "Error parsing the multipart form: data could not be read";
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, ioe);
+                return;
+            }
+
+            try {
+                content = extractProperties(formData);
+            } catch (JSONParseException | IllegalArgumentException ex) {
+                String errMsg = "Invalid data: 'properties' field is not a valid JSON";
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, ex);
+                return;
+            }
+
+            final String fileField = extractFileField(formData);
+
+            if (fileField == null) {
+                String errMsg = "This request does not contain any binary file";
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
+                return;
+            }
+
+            final Path path = formData.getFirst(fileField).getPath();
+
+            putFilename(
+                    formData.getFirst(fileField).getFileName(),
+                    "file",
+                    content);
+
+            context.setFile(path.toFile());
+
+            injectContentTypeFromFile(content, path.toFile());
+        } else {
+            // get and parse the content
+            final String contentString = ChannelReader.read(exchange.getRequestChannel());
+
+            if (contentString != null && !contentString.isEmpty()) { // check content type
+                if (unsupportedContentType(exchange
                         .getRequestHeaders()
                         .get(Headers.CONTENT_TYPE))) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE_FILE);
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE);
                     return;
                 }
+            }
 
-                FormDataParser parser = this.formParserFactory.createParser(exchange);
-
-                if (parser == null) {
-                    String errMsg = "There is no form parser registered for the request content type";
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
-                    return;
-                }
-
-                FormData formData;
-
-                try {
-                    formData = parser.parseBlocking();
-                } catch (IOException ioe) {
-                    String errMsg = "Error parsing the multipart form: data could not be read";
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, ioe);
-                    return;
-                }
-
-                try {
-                    content = extractProperties(formData);
-                } catch (JSONParseException | IllegalArgumentException ex) {
-                    String errMsg = "Invalid data: 'properties' field is not a valid JSON";
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, ex);
-                    return;
-                }
-
-                final String fileField = extractFileField(formData);
-
-                if (fileField == null) {
-                    String errMsg = "This request does not contain any binary file";
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
-                    return;
-                }
-
-                final Path path = formData.getFirst(fileField).getPath();
-
-                putFilename(
-                        formData.getFirst(fileField).getFileName(),
-                        "file",
-                        content);
-
-                context.setFile(path.toFile());
-
-                injectContentTypeFromFile(content, path.toFile());
-            } else {
-                // get and parse the content
-                final String contentString = ChannelReader.read(exchange.getRequestChannel());
-
+            try {
                 Object _content = JSON.parse(contentString);
 
-                if (_content != null) { // check content type
-                    if (unsupportedContentType(exchange
-                            .getRequestHeaders()
-                            .get(Headers.CONTENT_TYPE))) {
-                        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE);
-                        return;
-                    }
+                if (_content == null
+                        || _content instanceof BasicDBObject
+                        || _content instanceof BasicDBList) {
+                    content = (DBObject) _content;
+                } else {
+                    throw new IllegalArgumentException("JSON parser returned a " + _content.getClass().getSimpleName() + ". Must be a json object.");
                 }
+            } catch (JSONParseException | IllegalArgumentException ex) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON", ex);
+                return;
+            }
+        }
+
+        if (content == null) {
+            context.setContent(null);
+        } else {
+            if (content instanceof BasicDBList) {
+                ((BasicDBList) content).stream().forEach(_doc -> {
+                    if (_doc instanceof BasicDBObject) {
+                        Object _id = ((BasicDBObject) _doc).get(_ID);
+
+                        try {
+                            checkIdType((BasicDBObject) _doc);
+                        } catch (UnsupportedDocumentIdException udie) {
+                            String errMsg = "the type of _id in content body is not supported: " + (_id == null ? "" : _id.getClass().getSimpleName());
+                            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
+                        }
+                    } else {
+                        String errMsg = "the content must be either an object or an array of objects";
+                        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
+                    }
+                });
+            } else if (content instanceof BasicDBObject) {
+                Object _id = content.get(_ID);
 
                 try {
-                    if (_content == null
-                            || _content instanceof BasicDBObject
-                            || _content instanceof BasicDBList) {
-                        content = (DBObject) _content;
-                    } else {
-                        throw new IllegalArgumentException("JSON parser returned a " + _content.getClass().getSimpleName() + ". Must be a json object.");
-                    }
-                } catch (JSONParseException | IllegalArgumentException ex) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON", ex);
+                    checkIdType((BasicDBObject) content);
+                } catch (UnsupportedDocumentIdException udie) {
+                    String errMsg = "the type of _id in content body is not supported: " + (_id == null ? "" : _id.getClass().getSimpleName());
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
                     return;
                 }
+
+                filterJsonContent(content, context);
             }
 
-            if (content == null) {
-                context.setContent(null);
-            } else {
-                if (content instanceof BasicDBList) {
-                    ((BasicDBList) content).stream().forEach(_doc -> {
-                        if (_doc instanceof BasicDBObject) {
-                            Object _id = ((BasicDBObject) _doc).get(_ID);
-
-                            try {
-                                checkIdType((BasicDBObject) _doc);
-                            } catch (UnsupportedDocumentIdException udie) {
-                                String errMsg = "the type of _id in content body is not supported: " + (_id == null ? "" : _id.getClass().getSimpleName());
-                                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
-                            }
-                        } else {
-                            String errMsg = "the content must be either an object or an array of objects";
-                            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
-                        }
-                    });
-                } else if (content instanceof BasicDBObject) {
-                    Object _id = content.get(_ID);
-
-                    try {
-                        checkIdType((BasicDBObject) content);
-                    } catch (UnsupportedDocumentIdException udie) {
-                        String errMsg = "the type of _id in content body is not supported: " + (_id == null ? "" : _id.getClass().getSimpleName());
-                        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
-                        return;
-                    }
-
-                    filterJsonContent(content, context);
-                }
-
-                context.setContent(content);
-            }
+            context.setContent(content);
         }
 
         getNext().handleRequest(exchange, context);
