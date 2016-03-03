@@ -49,7 +49,7 @@ public class RequestContext {
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestContext.class);
 
     public enum TYPE {
-        ERROR,
+        INVALID,
         ROOT,
         DB,
         COLLECTION,
@@ -76,14 +76,14 @@ public class RequestContext {
     };
 
     public enum DOC_ID_TYPE {
-        OID,        // ObjectId
+        OID, // ObjectId
         STRING_OID, // String eventually converted to ObjectId in case ObjectId.isValid() is true
-        STRING,     // String
-        NUMBER,     // any Number (including mongodb NumberLong)
-        DATE,       // Date
-        MINKEY,     // org.bson.types.MinKey;
-        MAXKEY,     // org.bson.types.MaxKey
-        NULL,       // null
+        STRING, // String
+        NUMBER, // any Number (including mongodb NumberLong)
+        DATE, // Date
+        MINKEY, // org.bson.types.MinKey;
+        MAXKEY, // org.bson.types.MaxKey
+        NULL, // null
         BOOLEAN     // boolean
     }
 
@@ -186,9 +186,9 @@ public class RequestContext {
     private boolean forceEtagCheck = false;
 
     private OperationResult dbOperationResult;
-    
+
     private BsonDocument shardKey = null;
-    
+
     private boolean noProps = false;
 
     /**
@@ -246,7 +246,7 @@ public class RequestContext {
         this.etag = etagHvs == null || etagHvs.getFirst() == null ? null : etagHvs.getFirst();
 
         this.forceEtagCheck = exchange.getQueryParameters().get(ETAG_CHECK_QPARAM_KEY) != null;
-        
+
         this.noProps = exchange.getQueryParameters().get(NO_PROPS_KEY) != null;
     }
 
@@ -307,11 +307,14 @@ public class RequestContext {
             type = TYPE.BULK_DOCUMENTS;
         } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.INDEX;
+        } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
+            type = TYPE.INVALID;
         } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
             type = TYPE.AGGREGATION;
         } else {
             type = TYPE.DOCUMENT;
         }
+
         return type;
     }
 
