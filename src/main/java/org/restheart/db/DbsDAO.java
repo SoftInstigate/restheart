@@ -23,7 +23,6 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import com.mongodb.MongoException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
@@ -158,35 +157,9 @@ public class DbsDAO implements Database {
      */
     @Override
     public DBObject getDatabaseProperties(final String dbName, final boolean fixMissingProperties) {
-        if (!doesDbExist(dbName)) {
-            // this check is important, otherwise the db would get created if not existing after the query
-            return null;
-        }
-
         DBCollection propsColl = collectionDAO.getCollection(dbName, "_properties");
 
-        DBObject properties = propsColl.findOne(PROPS_QUERY_LEGACY);
-
-        if (properties != null) {
-            properties.put("_id", dbName);
-        } else if (fixMissingProperties) {
-            try {
-                new PropsFixer().addDbProps(dbName);
-                return getDatabaseProperties(dbName, false);
-            } catch (MongoException mce) {
-                int errCode = mce.getCode();
-
-                if (errCode == 13) {
-                    // mongodb user is not allowed to write (no readWrite role)
-                    // just return properties with _id
-                    properties = new BasicDBObject("_id", dbName);
-                } else {
-                    throw mce;
-                }
-            }
-        }
-
-        return properties;
+        return propsColl.findOne(PROPS_QUERY_LEGACY);
     }
 
     /**

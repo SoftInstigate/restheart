@@ -17,6 +17,7 @@
  */
 package org.restheart.handlers.injectors;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipedHttpHandler;
@@ -33,7 +34,6 @@ import org.restheart.utils.ResponseHelper;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class DbPropsInjectorHandler extends PipedHttpHandler {
-
     /**
      * Creates a new instance of DbPropsInjectorHandler
      *
@@ -51,30 +51,35 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.getDBName() != null) {
+        String dbName = context.getDBName();
+
+        if (dbName != null) {
             DBObject dbProps;
 
             if (!LocalCachesSingleton.isEnabled()) {
-                dbProps = getDatabase().getDatabaseProperties(context.getDBName(), true);
-
-                if (dbProps != null) {
-                    dbProps.put("_db-props-cached", false);
-                } else if (!(context.getType() == RequestContext.TYPE.DB
-                        && context.getMethod() == RequestContext.METHOD.PUT)
-                        && context.getType() != RequestContext.TYPE.ROOT) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "Db '" + context.getDBName() + "' does not exist");
-                    return;
-                }
+                dbProps = getDatabase().getDatabaseProperties(dbName, true);
             } else {
-                dbProps = LocalCachesSingleton.getInstance().getDBProps(context.getDBName());
+                dbProps = LocalCachesSingleton.getInstance().getDBProps(dbName);
             }
 
+            // if dbProps is null, we need to expliclty check if the db exists
+            // it can exists without properties
             if (dbProps == null
                     && !(context.getType() == RequestContext.TYPE.DB
                     && context.getMethod() == RequestContext.METHOD.PUT)
-                    && context.getType() != RequestContext.TYPE.ROOT) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "Db '" + context.getDBName() + "' does not exist");
+                    && context.getType() != RequestContext.TYPE.ROOT
+                    && !getDatabase().doesDbExist(dbName)) {
+                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "Db '" + dbName + "' does not exist");
                 return;
+            }
+
+            if (dbProps == null
+                    && context.getMethod() == RequestContext.METHOD.GET) {
+                dbProps = new BasicDBObject("_id", dbName);
+            } 
+            
+            if (dbProps != null) {
+                dbProps.put("_id", dbName);
             }
 
             context.setDbProps(dbProps);

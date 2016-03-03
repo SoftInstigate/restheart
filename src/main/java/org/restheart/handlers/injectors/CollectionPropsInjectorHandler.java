@@ -17,6 +17,7 @@
  */
 package org.restheart.handlers.injectors;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipedHttpHandler;
@@ -56,26 +57,36 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.getDBName() != null && context.getCollectionName() != null) {
+        String dbName = context.getDBName();
+        String collName = context.getCollectionName();
+
+        if (dbName != null && collName != null) {
             DBObject collProps;
 
             if (!LocalCachesSingleton.isEnabled()) {
                 collProps = getDatabase().
-                        getCollectionProperties(context.getDBName(), context.getCollectionName(), true);
-                if (collProps != null) {
-                    collProps.put("_collection-props-cached", false);
-                } else if (checkCollection(context)) {
+                        getCollectionProperties(dbName, collName, true);
+            } else {
+                collProps = LocalCachesSingleton.getInstance()
+                        .getCollectionProps(dbName, collName);
+            }
+            
+            // if collProps is null, we need to expliclty check if the collection exists
+            // it can exists without properties
+            if (collProps == null
+                    && checkCollection(context)
+                    && !getDatabase().doesCollectionExist(dbName, collName)) {
                     collectionDoesNotExists(context, exchange);
                     return;
                 }
-            } else {
-                collProps = LocalCachesSingleton.getInstance()
-                        .getCollectionProps(context.getDBName(), context.getCollectionName());
-            }
 
-            if (collProps == null && checkCollection(context)) {
-                collectionDoesNotExists(context, exchange);
-                return;
+            if (collProps == null
+                    && context.getMethod() == RequestContext.METHOD.GET) {
+                collProps = new BasicDBObject("_id", collName);
+            } 
+            
+            if (collProps != null) {
+                collProps.put("_id", collName);
             }
 
             context.setCollectionProps(collProps);
@@ -88,7 +99,7 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
         return !(context.getType() == RequestContext.TYPE.COLLECTION && context.getMethod() == RequestContext.METHOD.PUT)
                 && !(context.getType() == RequestContext.TYPE.FILES_BUCKET && context.getMethod() == RequestContext.METHOD.PUT)
                 && context.getType() != RequestContext.TYPE.ROOT
-                && context.getType() != RequestContext.TYPE.DB 
+                && context.getType() != RequestContext.TYPE.DB
                 && context.getType() != RequestContext.TYPE.SCHEMA_STORE;
     }
 
