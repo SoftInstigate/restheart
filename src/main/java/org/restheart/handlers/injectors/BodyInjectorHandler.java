@@ -93,139 +93,136 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             return;
         }
 
-        // check the content type
-        HeaderValues contentTypes = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
+        if (isPutRequest(context)
+                || isPostRequest(context)) {
 
-        if (isPutFileRequest(context) || isPostFilesbucketRequest(context)) {
-            if (unsupportedContentTypeForFiles(contentTypes)) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE_FILE);
-                return;
-            }
-        } else if (unsupportedContentType(contentTypes)) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE);
-            return;
-        }
+            DBObject content;
 
-        DBObject content;
+            if (isFileRequest(context)
+                    || isFilesBucketRequest(context)) {
+                // check content type
 
-        if (isNotFormData(contentTypes)) { // json or hal+json
-            final String contentString = ChannelReader.read(exchange.getRequestChannel());
-
-            try {
-                Object _content = JSON.parse(contentString);
-
-                if (_content == null
-                        || _content instanceof BasicDBObject
-                        || _content instanceof BasicDBList) {
-                    content = (DBObject) _content;
-                } else {
-                    throw new IllegalArgumentException("JSON parser returned a " + _content.getClass().getSimpleName() + ". Must be a json object.");
-                }
-            } catch (JSONParseException | IllegalArgumentException ex) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON", ex);
-                return;
-            }
-
-            // check id
-            String invalidId = checkSpecialStringId(content);
-            if (invalidId != null) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Reserved string id " + invalidId);
-                return;
-            }
-        } else { // multipart form -> file
-            FormDataParser parser = this.formParserFactory.createParser(exchange);
-
-            if (parser == null) {
-                String errMsg = "There is no form parser registered for the request content type";
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
-                return;
-            }
-
-            FormData formData;
-
-            try {
-                formData = parser.parseBlocking();
-            } catch (IOException ioe) {
-                String errMsg = "Error parsing the multipart form: data could not be read";
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, ioe);
-                return;
-            }
-
-            try {
-                content = extractProperties(formData);
-            } catch (JSONParseException | IllegalArgumentException ex) {
-                String errMsg = "Invalid data: 'properties' field is not a valid JSON";
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, ex);
-                return;
-            }
-
-            final String fileField = extractFileField(formData);
-
-            if (fileField == null) {
-                String errMsg = "This request does not contain any binary file";
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
-                return;
-            }
-
-            final Path path = formData.getFirst(fileField).getPath();
-
-            putFilename(
-                    formData.getFirst(fileField).getFileName(),
-                    "file",
-                    content);
-
-            context.setFile(path.toFile());
-
-            // check id
-            String invalidId = checkSpecialStringId(content);
-            if (invalidId != null) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Reserved string id " + invalidId);
-                return;
-            }
-
-            injectContentTypeFromFile(content, path.toFile());
-        }
-
-        if (content == null) {
-            context.setContent(null);
-        } else {
-            if (content instanceof BasicDBList) {
-                ((BasicDBList) content).stream().forEach(_doc -> {
-                    if (_doc instanceof BasicDBObject) {
-                        Object _id = ((BasicDBObject) _doc).get(_ID);
-
-                        try {
-                            checkId((BasicDBObject) _doc);
-                        } catch (UnsupportedDocumentIdException udie) {
-                            String errMsg = "the type of _id in content body is not supported: " + (_id == null ? "" : _id.getClass().getSimpleName());
-                            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
-                        }
-                    } else {
-                        String errMsg = "the content must be either an object or an array of objects";
-                        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
-                    }
-                });
-            } else if (content instanceof BasicDBObject) {
-                Object _id = content.get(_ID);
-
-                try {
-                    checkId((BasicDBObject) content);
-                } catch (UnsupportedDocumentIdException udie) {
-                    String errMsg = "the type of _id in content body is not supported: " + (_id == null ? "" : _id.getClass().getSimpleName());
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
+                if (unsupportedContentTypeForFiles(exchange
+                        .getRequestHeaders()
+                        .get(Headers.CONTENT_TYPE))) {
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE_FILE);
                     return;
                 }
 
-                filterJsonContent(content, context);
+                FormDataParser parser = this.formParserFactory.createParser(exchange);
+
+                if (parser == null) {
+                    String errMsg = "There is no form parser registered for the request content type";
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
+                    return;
+                }
+
+                FormData formData;
+
+                try {
+                    formData = parser.parseBlocking();
+                } catch (IOException ioe) {
+                    String errMsg = "Error parsing the multipart form: data could not be read";
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, ioe);
+                    return;
+                }
+
+                try {
+                    content = extractProperties(formData);
+                } catch (JSONParseException | IllegalArgumentException ex) {
+                    String errMsg = "Invalid data: 'properties' field is not a valid JSON";
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, ex);
+                    return;
+                }
+
+                final String fileField = extractFileField(formData);
+
+                if (fileField == null) {
+                    String errMsg = "This request does not contain any binary file";
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
+                    return;
+                }
+
+                final Path path = formData.getFirst(fileField).getPath();
+
+                putFilename(
+                        formData.getFirst(fileField).getFileName(),
+                        "file",
+                        content);
+
+                context.setFile(path.toFile());
+
+                injectContentTypeFromFile(content, path.toFile());
+            } else {
+                // get and parse the content
+                final String contentString = ChannelReader.read(exchange.getRequestChannel());
+
+                Object _content = JSON.parse(contentString);
+
+                if (_content != null) { // check content type
+                    if (unsupportedContentType(exchange
+                            .getRequestHeaders()
+                            .get(Headers.CONTENT_TYPE))) {
+                        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE);
+                        return;
+                    }
+                }
+
+                try {
+                    if (_content == null
+                            || _content instanceof BasicDBObject
+                            || _content instanceof BasicDBList) {
+                        content = (DBObject) _content;
+                    } else {
+                        throw new IllegalArgumentException("JSON parser returned a " + _content.getClass().getSimpleName() + ". Must be a json object.");
+                    }
+                } catch (JSONParseException | IllegalArgumentException ex) {
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON", ex);
+                    return;
+                }
             }
 
-            context.setContent(content);
+            if (content == null) {
+                context.setContent(null);
+            } else {
+                if (content instanceof BasicDBList) {
+                    ((BasicDBList) content).stream().forEach(_doc -> {
+                        if (_doc instanceof BasicDBObject) {
+                            Object _id = ((BasicDBObject) _doc).get(_ID);
+
+                            try {
+                                checkIdType((BasicDBObject) _doc);
+                            } catch (UnsupportedDocumentIdException udie) {
+                                String errMsg = "the type of _id in content body is not supported: " + (_id == null ? "" : _id.getClass().getSimpleName());
+                                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
+                            }
+                        } else {
+                            String errMsg = "the content must be either an object or an array of objects";
+                            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
+                        }
+                    });
+                } else if (content instanceof BasicDBObject) {
+                    Object _id = content.get(_ID);
+
+                    try {
+                        checkIdType((BasicDBObject) content);
+                    } catch (UnsupportedDocumentIdException udie) {
+                        String errMsg = "the type of _id in content body is not supported: " + (_id == null ? "" : _id.getClass().getSimpleName());
+                        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
+                        return;
+                    }
+
+                    filterJsonContent(content, context);
+                }
+
+                context.setContent(content);
+            }
         }
 
         getNext().handleRequest(exchange, context);
     }
 
-    private Object checkId(BasicDBObject doc) throws UnsupportedDocumentIdException {
+    private Object checkIdType(BasicDBObject doc) throws UnsupportedDocumentIdException {
         Object _id = doc.get(_ID);
 
         if (_id != null) {
@@ -264,25 +261,20 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         target.put(FILENAME, filename);
     }
 
-    private static boolean isPostFilesbucketRequest(final RequestContext context) {
-        return context.getType() == RequestContext.TYPE.FILES_BUCKET 
-                && context.getMethod() == RequestContext.METHOD.POST;
+    private static boolean isFilesBucketRequest(final RequestContext context) {
+        return context.getType() == RequestContext.TYPE.FILES_BUCKET;
     }
 
-    private static boolean isPutFileRequest(final RequestContext context) {
-        return context.getType() == RequestContext.TYPE.FILE 
-                && context.getMethod() == RequestContext.METHOD.PUT;
+    private static boolean isFileRequest(final RequestContext context) {
+        return context.getType() == RequestContext.TYPE.FILE;
     }
 
-    /**
-     *
-     * @param contentTypes
-     * @return true if the content-type is NOT form data
-     */
-    private static boolean isNotFormData(final HeaderValues contentTypes) {
-        return contentTypes.stream()
-                .noneMatch(ct -> ct.startsWith(Representation.APP_FORM_URLENCODED_TYPE)
-                        || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE));
+    private static boolean isPostRequest(final RequestContext context) {
+        return context.getMethod() == RequestContext.METHOD.POST;
+    }
+
+    private static boolean isPutRequest(final RequestContext context) {
+        return context.getMethod() == RequestContext.METHOD.PUT;
     }
 
     /**
@@ -293,7 +285,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      * @param content
      * @return null if ok, or the first not valid id
      */
-    public static String checkSpecialStringId(DBObject content) {
+    public static String checkReservedId(DBObject content) {
         if (content == null) {
             return null;
         } else if (content instanceof BasicDBObject) {
@@ -325,7 +317,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                 Object obj = objs.next();
 
                 if (obj instanceof BasicDBObject) {
-                    ret = checkSpecialStringId((BasicDBObject) obj);
+                    ret = checkReservedId((BasicDBObject) obj);
                     if (ret != null) {
                         break;
                     }
