@@ -1,13 +1,12 @@
 RESTHeart
 =========
 
-[![Join the chat at https://gitter.im/SoftInstigate/restheart](https://badges.gitter.im/SoftInstigate/restheart.svg)](https://gitter.im/SoftInstigate/restheart?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
 The leading REST API Server for MongoDB.
 
 [![Build Status](https://travis-ci.org/SoftInstigate/restheart.svg?branch=develop)](https://travis-ci.org/SoftInstigate/restheart)
 [![Issue Stats](http://issuestats.com/github/SoftInstigate/restheart/badge/pr)](http://issuestats.com/github/SoftInstigate/restheart)
 [![Issue Stats](http://issuestats.com/github/SoftInstigate/restheart/badge/issue)](http://issuestats.com/github/SoftInstigate/restheart)
+[![Join the chat at https://gitter.im/SoftInstigate/restheart](https://badges.gitter.im/SoftInstigate/restheart.svg)](https://gitter.im/SoftInstigate/restheart?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 **RESTHeart** connects to **MongoDB** and opens data to the Web: Mobile and JavaScript applications can use the database via **RESTful HTTP API** calls.
 
@@ -217,6 +216,10 @@ Maven dependencies
 
 RESTHeart's releases are available on [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22org.restheart%22).
 
+Stable releases are available at:
+
+https://oss.sonatype.org/content/repositories/releases/org/restheart/restheart/
+
 If you want to embed RESTHeart in your project, add the dependency to your POM file:
 
 ```
@@ -234,7 +237,7 @@ If you want to embed RESTHeart in your project, add the dependency to your POM f
 Snapshot builds
 ----
 
-Snapshots are available on:
+Snapshots are available at:
 
 https://oss.sonatype.org/content/repositories/snapshots/org/restheart/restheart/
 
