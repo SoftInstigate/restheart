@@ -23,11 +23,9 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import com.mongodb.MongoException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
-import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 
@@ -256,28 +254,7 @@ class CollectionDAO {
     public DBObject getCollectionProps(final String dbName, final String collName, final boolean fixMissingProperties) {
         DBCollection propsColl = getCollection(dbName, "_properties");
 
-        DBObject properties = propsColl.findOne(new BasicDBObject("_id", "_properties.".concat(collName)));
-
-        if (properties != null) {
-            properties.put("_id", collName);
-        } else if (fixMissingProperties) {
-            try {
-                new PropsFixer().addCollectionProps(dbName, collName);
-                return getCollectionProps(dbName, collName, false);
-            } catch (MongoException mce) {
-                int errCode = mce.getCode();
-
-                if (errCode == 13 || errCode == 1000) {
-                    // mongodb user is not allowed to write (no readWrite role)
-                    // just return properties with _id
-                    properties = new BasicDBObject("_id", collName);
-                } else {
-                    throw mce;
-                }
-            }
-        }
-
-        return properties;
+        return propsColl.findOne(new BasicDBObject("_id", "_properties.".concat(collName)));
     }
 
     /**
@@ -306,7 +283,7 @@ class CollectionDAO {
         if (patching && !updating) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
         }
-        
+
         if (!updating) {
             client.getDatabase(dbName).createCollection(collName);
         }
@@ -361,30 +338,28 @@ class CollectionDAO {
     private OperationResult doCollPropsUpdate(String collName, boolean patching, boolean updating, MongoCollection<Document> mcoll, Document dcontent, ObjectId newEtag) {
         if (patching) {
             DAOUtils.updateDocument(
-                    mcoll, 
-                    "_properties.".concat(collName), 
+                    mcoll,
+                    "_properties.".concat(collName),
                     null,
-                    dcontent, 
+                    dcontent,
                     false);
             return new OperationResult(HttpStatus.SC_OK, newEtag);
+        } else if (updating) {
+            DAOUtils.updateDocument(
+                    mcoll,
+                    "_properties.".concat(collName),
+                    null,
+                    dcontent,
+                    true);
+            return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else {
-            if (updating) {
-                DAOUtils.updateDocument(
-                        mcoll, 
-                        "_properties.".concat(collName), 
-                        null,
-                        dcontent, 
-                        true);
-                return new OperationResult(HttpStatus.SC_OK, newEtag);
-            } else {
-                DAOUtils.updateDocument(
-                        mcoll, 
-                        "_properties.".concat(collName),
-                        null,
-                        dcontent, 
-                        false);
-                return new OperationResult(HttpStatus.SC_CREATED, newEtag);
-            }
+            DAOUtils.updateDocument(
+                    mcoll,
+                    "_properties.".concat(collName),
+                    null,
+                    dcontent,
+                    false);
+            return new OperationResult(HttpStatus.SC_CREATED, newEtag);
         }
     }
 
@@ -421,7 +396,6 @@ class CollectionDAO {
             }
         }
 
-        
         MongoCollection<Document> collToDelete = mdb.getCollection(collName);
         collToDelete.drop();
         mcoll.deleteOne(eq("_id", "_properties.".concat(collName)));

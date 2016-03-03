@@ -26,8 +26,6 @@ import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -109,16 +107,13 @@ public class LocalCachesSingleton {
             throw new IllegalStateException("tried to use disabled cache");
         }
 
-        DBObject dbProps;
-
         Optional<DBObject> _dbProps = dbPropsCache.get(dbName);
 
         if (_dbProps != null) {
             if (_dbProps.isPresent()) {
-                dbProps = _dbProps.get();
-                dbProps.put("_db-props-cached", true);
+                return _dbProps.get();
             } else {
-                dbProps = null;
+                return null;
             }
         } else {
             try {
@@ -132,14 +127,11 @@ public class LocalCachesSingleton {
             }
 
             if (_dbProps != null && _dbProps.isPresent()) {
-                dbProps = _dbProps.get();
-                dbProps.put("_db-props-cached", false);
+                return _dbProps.get();
             } else {
-                dbProps = null;
+                return null;
             }
         }
-
-        return dbProps;
     }
 
     /**
@@ -153,16 +145,13 @@ public class LocalCachesSingleton {
             throw new IllegalStateException("tried to use disabled cache");
         }
 
-        DBObject collProps;
-
         Optional<DBObject> _collProps = collectionPropsCache.get(dbName + SEPARATOR + collName);
 
         if (_collProps != null) {
             if (_collProps.isPresent()) {
-                collProps = _collProps.get();
-                collProps.put("_collection-props-cached", true);
+                return _collProps.get();
             } else {
-                collProps = null;
+                return null;
             }
         } else {
             try {
@@ -176,14 +165,11 @@ public class LocalCachesSingleton {
             }
 
             if (_collProps.isPresent()) {
-                collProps = _collProps.get();
-                collProps.put("_collection-props-cached", false);
+                return _collProps.get();
             } else {
-                collProps = null;
+                return null;
             }
         }
-
-        return collProps;
     }
 
     /**
