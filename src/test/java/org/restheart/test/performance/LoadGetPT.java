@@ -26,6 +26,7 @@ package org.restheart.test.performance;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
+import com.eclipsesource.json.JsonObject;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
@@ -48,10 +49,13 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
+import org.apache.http.util.EntityUtils;
 import org.bson.types.ObjectId;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 
@@ -180,7 +184,13 @@ public class LoadGetPT extends AbstractPT {
             _page = page;
         }
 
-        String pagedUrl = url + "?page=" + (_page % 10000);
+        String pagedUrl;
+        
+        if (url.contains("?")) {
+            pagedUrl = url + "&page=" + (_page % 10000);
+        } else {
+            pagedUrl = url + "?page=" + (_page % 10000);
+        }
         
         if (getEager() != null) {
             pagedUrl = pagedUrl + "&eager=" + getEager();
@@ -203,6 +213,29 @@ public class LoadGetPT extends AbstractPT {
         assertNotNull(statusLine);
 
         assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
+        
+        String content = EntityUtils.toString(entity);
+
+        assertNotNull("", content);
+
+        JsonObject json = null;
+
+        try {
+            json = JsonObject.readFrom(content);
+        } catch (Throwable t) {
+            fail("parsing received json");
+        }
+
+        assertNotNull("check json not null", json);
+        assertNotNull("check not null _returned property", json.get("_returned"));
+        
+        System.out.println(Thread.currentThread().getId() + " -> " + _page + " -> " + json.get("_returned").asInt());
+        
+        if (json.get("_returned").asInt() == 0) {
+            System.exit(-1);
+        }
+        
+        //assertTrue("check _size > 0", json.get("_returned").asInt() > 0);
     }
 
     public void getPagesRandomly() throws Exception {
