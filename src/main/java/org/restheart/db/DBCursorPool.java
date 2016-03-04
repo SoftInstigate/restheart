@@ -24,8 +24,11 @@ import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -46,15 +49,15 @@ public class DBCursorPool {
     private final DbsDAO dbsDAO;
 
     /**
-     * Cursor in the pool won't be used if<br>REQUESTED_SKIPS - POOL_SKIPS
-     * &gt; MIN_SKIP_DISTANCE_PERCENTAGE * REQUESTED_SKIPS.<br>The cursor from
-     * the pool need to be iterated via the next() method (REQUESTED_SKIPS -
+     * Cursor in the pool won't be used if<br>REQUESTED_SKIPS - POOL_SKIPS &gt;
+     * MIN_SKIP_DISTANCE_PERCENTAGE * REQUESTED_SKIPS.<br>The cursor from the
+     * pool need to be iterated via the next() method (REQUESTED_SKIPS -
      * POOL_SKIPS) times to reach the requested page; since skip() is more
      * efficient than next(), using the cursor in the pool is worthwhile only if
      * next() has to be used less than MIN_SKIP_DISTANCE_PERCENTAGE *
      * REQUESTED_SKIPS times.
      */
-    public static final double MIN_SKIP_DISTANCE_PERCENTAGE = 10/100f; // 10%
+    public static final double MIN_SKIP_DISTANCE_PERCENTAGE = 10 / 100f; // 10%
 
     //TODO make those configurable
     private final int SKIP_SLICE_LINEAR_DELTA = Bootstrapper.getConfiguration().getEagerLinearSliceDelta();
@@ -78,6 +81,9 @@ public class DBCursorPool {
     private static final long POOL_SIZE = Bootstrapper.getConfiguration().getEagerPoolSize();
 
     ExecutorService executor = Executors.newSingleThreadExecutor();
+    ScheduledExecutorService canceller = Executors.newSingleThreadScheduledExecutor();
+    
+    private static final int CACHE_POPULATION_TIMEOUT = 10; // seconds
 
     public static DBCursorPool getInstance() {
         return DBCursorPoolSingletonHolder.INSTANCE;
@@ -126,7 +132,7 @@ public class DBCursorPool {
                 ret = new SkippedDBCursor(_dbcur.get(), _bestKey.get().getSkipped());
                 cache.invalidate(_bestKey.get());
 
-                LOGGER.debug("found cursor to reuse in pool, asked with skipped {} and saving {} seeks", key.getSkipped(), _bestKey.get().getSkipped());
+                LOGGER.debug("found cursor to reuse in pool with id {}, asked with skipped {} and saving {} seeks", _bestKey.get().getCursorId(), key.getSkipped(), _bestKey.get().getSkipped());
             } else {
                 ret = null;
 
@@ -158,7 +164,7 @@ public class DBCursorPool {
 
         int firstSlice = key.getSkipped() / SKIP_SLICE_LINEAR_WIDTH;
 
-        executor.submit(() -> {
+        Future future = executor.submit(() -> {
             int slice = firstSlice;
 
             for (int tohave : SKIP_SLICES_HEIGHTS) {
@@ -173,7 +179,6 @@ public class DBCursorPool {
                     // create the first cursor
                     DBCursor cursor = dbsDAO.getCollectionDBCursor(key.getCollection(), key.getSort(), key.getFilter(), key.getKeys());
                     cursor
-                            .limit(1000 + SKIP_SLICE_LINEAR_DELTA)
                             .skip(sliceSkips);
 
                     cursor.hasNext(); // this forces the actual skipping
@@ -196,10 +201,17 @@ public class DBCursorPool {
                 slice++;
             }
         });
+
+        // cancel cache population if taking too long
+        canceller.schedule(() -> {
+            future.cancel(true);
+            LOGGER.debug("timeout creating new cursor in pool");
+            return null;
+        }, CACHE_POPULATION_TIMEOUT, TimeUnit.SECONDS);
     }
 
     private void populateCacheRandom(DBCursorPoolEntryKey key) {
-        executor.submit(() -> {
+        Future future =  executor.submit(() -> {
             Long size = collSizes.getLoading(key).get();
 
             int sliceWidht;
@@ -224,8 +236,7 @@ public class DBCursorPool {
                 if (existing == 0) {
                     DBCursor cursor = dbsDAO.getCollectionDBCursor(key.getCollection(), key.getSort(), key.getFilter(), key.getKeys());
                     cursor
-                            .skip(sliceSkips)
-                            .limit(1000 + sliceWidht);
+                            .skip(sliceSkips);
 
                     cursor.hasNext(); // this forces the actual skipping
 
@@ -235,6 +246,13 @@ public class DBCursorPool {
                 }
             }
         });
+        
+        // cancel cache population if taking too long
+        canceller.schedule(() -> {
+            future.cancel(true);
+            LOGGER.debug("timeout creating of new cursor in pool");
+            return null;
+        }, CACHE_POPULATION_TIMEOUT, TimeUnit.SECONDS);
     }
 
     private long getSliceHeight(DBCursorPoolEntryKey key) {
