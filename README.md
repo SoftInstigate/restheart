@@ -182,6 +182,28 @@ Then include the SNAPSHOT dependency in your POM:
 
 Development releases are continually deployed to Maven Central by [Travis-CI](https://travis-ci.org/SoftInstigate/restheart).
 
+## Project data
+
+     391 text files.
+     355 unique files.                                          
+      86 files ignored.
+
+	https://github.com/AlDanial/cloc v 1.66  T=3.65 s (84.1 files/s, 16382.3 lines/s)
+	-------------------------------------------------------------------------------
+	Language                     files          blank        comment           code
+	-------------------------------------------------------------------------------
+	Java                           218           4634           8798          18037
+	JavaScript                      28           2672           2573          10913
+	CSS                              3            988             26           6331
+	XML                             39             59            135           2346
+	Maven                            1             43              4            479
+	YAML                             6            229            434            436
+	JSON                             9              1              0            429
+	HTML                             1             30              0            226
+	Bourne Shell                     2              4              0              9
+	-------------------------------------------------------------------------------
+	SUM:                           307           8660          11970          39206
+
 <hr></hr>
 
 _Made with :heart: by [The SoftInstigate Team](http://www.softinstigate.com/). Follow us on [Twitter](https://twitter.com/softinstigate)_.
