@@ -100,7 +100,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * and PipedHttpHandler objects
      */
     protected void defaultInit() {
-        LOGGER.debug("Initialize default HTTP handlers:");
+        LOGGER.trace("Initialize default HTTP handlers:");
 
         // *** ROOT handlers
         putPipedHttpHandler(TYPE.ROOT, METHOD.GET,
@@ -305,7 +305,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * @param handler the PipedHttpHandler
      */
     void putPipedHttpHandler(TYPE type, METHOD method, PipedHttpHandler handler) {
-        LOGGER.debug("putPipedHttpHandler( {}, {}, {} )", type, method, getHandlerToLog(handler).getClass().getCanonicalName());
+        LOGGER.trace("putPipedHttpHandler( {}, {}, {} )", type, method, getHandlerToLog(handler).getClass().getCanonicalName());
         Map<METHOD, PipedHttpHandler> methodsMap = handlersMultimap.get(type);
         if (methodsMap == null) {
             methodsMap = new HashMap<>();
