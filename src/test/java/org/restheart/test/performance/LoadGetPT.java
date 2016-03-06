@@ -180,16 +180,16 @@ public class LoadGetPT extends AbstractPT {
         Integer _page = threadPages.get(Thread.currentThread().getId());
 
         if (_page == null) {
-            threadPages.put(Thread.currentThread().getId(), page);
+            threadPages.put(Thread.currentThread().getId(), page > 0 ? page : 1);
             _page = page;
         }
 
         String pagedUrl;
         
         if (url.contains("?")) {
-            pagedUrl = url + "&page=" + (_page % 10000);
+            pagedUrl = url + "&page=" + (_page);
         } else {
-            pagedUrl = url + "?page=" + (_page % 10000);
+            pagedUrl = url + "?page=" + (_page);
         }
         
         if (getEager() != null) {
@@ -242,7 +242,13 @@ public class LoadGetPT extends AbstractPT {
 
         long rpage = Math.round(Math.random() * 10000);
 
-        String pagedUrl = url + "?page=" + rpage;
+        String pagedUrl;
+        
+        if (url.contains("?")) {
+            pagedUrl = url + "&page=" + (rpage);
+        } else {
+            pagedUrl = url + "?page=" + (rpage);
+        }
 
         //System.out.println(pagedUrl);
         Response resp = httpExecutor.execute(Request.Get(new URI(pagedUrl)));

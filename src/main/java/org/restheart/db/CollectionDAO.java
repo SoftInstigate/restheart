@@ -229,10 +229,23 @@ class CollectionDAO {
 
             cursor = _cursor.getCursor();
             alreadySkipped = _cursor.getAlreadySkipped();
+            
+            long startSkipping = 0;
+            int cursorSkips = alreadySkipped;
+            
+            if (LOGGER.isDebugEnabled()) {
+                startSkipping = System.currentTimeMillis();
+            }
+            
+            LOGGER.debug("got cursor from pool with skips {}. need to reach {} skips.", alreadySkipped, toskip);
 
             while (toskip > alreadySkipped && cursor.hasNext()) {
                 cursor.next();
                 alreadySkipped++;
+            }
+            
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("skipping {} times took {} msecs", toskip - cursorSkips, System.currentTimeMillis() - startSkipping);
             }
 
             while (_pagesize > 0 && cursor.hasNext()) {
@@ -240,6 +253,12 @@ class CollectionDAO {
                 _pagesize--;
             }
         }
+        
+        // the pool is populated here because, skipping with cursor.next() is heavy operation
+        // and we want to minimize the chances that pool cursors are allocated in parallel
+        DBCursorPool.getInstance().populateCache(
+                new DBCursorPoolEntryKey(coll, sortBy, filters, keys, toskip, 0), 
+                eager);
 
         return ret;
     }
