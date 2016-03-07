@@ -17,7 +17,9 @@
  */
 package org.restheart.db;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.mongodb.DBCursor;
+import static java.lang.Thread.MIN_PRIORITY;
 import org.restheart.Bootstrapper;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -26,9 +28,8 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -88,7 +89,13 @@ public class DBCursorPool {
     private static final ThreadPoolExecutor POOL_POPULATOR = new ThreadPoolExecutor(
             1, 2,
             1, TimeUnit.MINUTES,
-            new ArrayBlockingQueue(1));
+            new ArrayBlockingQueue(1),
+            new ThreadFactoryBuilder()
+            .setDaemon(true)
+            .setNameFormat("cursor-pool-populator-%d")
+            .setPriority(MIN_PRIORITY)
+            .build()
+    );
 
     public static DBCursorPool getInstance() {
         return DBCursorPoolSingletonHolder.INSTANCE;
@@ -215,7 +222,9 @@ public class DBCursorPool {
                 }
             });
         } catch (RejectedExecutionException rej) {
-            LOGGER.debug("populate cursor pool {}",
+            // this happens if the thread executor (whose pool size is 1)
+            // is already creating a cursor
+            LOGGER.trace("creation of new cursor pool {}",
                     ansi().fg(RED).bold().a("rejected").reset().toString());
         }
     }
@@ -243,9 +252,9 @@ public class DBCursorPool {
                     DBCursorPoolEntryKey sliceKey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), key.getKeys(), sliceSkips, -1);
 
                     LOGGER.debug("{} cursor in pool: {}",
-                                ansi().fg(YELLOW).bold().a("new").reset().toString(),
-                                sliceKey);
-                    
+                            ansi().fg(YELLOW).bold().a("new").reset().toString(),
+                            sliceKey);
+
                     long existing = getSliceHeight(sliceKey);
 
                     if (existing == 0) {
@@ -257,7 +266,7 @@ public class DBCursorPool {
 
                         DBCursorPoolEntryKey newkey = new DBCursorPoolEntryKey(key.getCollection(), key.getSort(), key.getFilter(), key.getKeys(), sliceSkips, System.nanoTime());
                         cache.put(newkey, cursor);
-                        
+
                         LOGGER.debug("{} cursor in pool (copied): {}",
                                 ansi().fg(YELLOW).bold().a("new").reset().toString(),
                                 sliceKey);
