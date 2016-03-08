@@ -96,6 +96,7 @@ public class LoggingInitializer {
         rfAppender.start();
 
         AsyncAppender asyncAppender = new AsyncAppender();
+        asyncAppender.setContext(loggerContext);
         asyncAppender.setName("ASYNC");
         asyncAppender.setQueueSize(ASYNC_QUEUE_SIZE);
         asyncAppender.setMaxFlushTime(ASYNC_MAX_FLUSH_TIME);
