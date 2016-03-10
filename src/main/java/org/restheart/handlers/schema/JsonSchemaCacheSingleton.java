@@ -105,7 +105,7 @@ public class JsonSchemaCacheSingleton {
     }
     
     private DBObject loadRaw(String schemaStoreDb, Object schemaId) throws JsonSchemaNotFoundException {
-        DBObject document = dbsDAO.getCollection(schemaStoreDb, RequestContext._SCHEMAS).findOne(schemaId);
+        DBObject document = dbsDAO.getCollectionLegacy(schemaStoreDb, RequestContext._SCHEMAS).findOne(schemaId);
 
         if (Objects.isNull(document)) {
             throw new JsonSchemaNotFoundException("schema not found " + schemaStoreDb + "/" + schemaId);

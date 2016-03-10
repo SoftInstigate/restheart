@@ -23,9 +23,12 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
+import java.util.stream.Collectors;
+import org.bson.BsonDocument;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.hal.Representation;
+import org.restheart.utils.JsonUtils;
 import org.restheart.utils.ResponseHelper;
 
 /**
@@ -59,21 +62,29 @@ public class GetDBHandler extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         List<String> colls = getDatabase().getCollectionNames(getDatabase().getDB(context.getDBName()));
 
-        List<DBObject> data = null;
+        List<BsonDocument> data = null;
 
         if (context.getPagesize() > 0) {
             data = getDatabase().getDatabaseData(
-                    context.getDBName(), 
-                    colls, 
-                    context.getPage(), 
+                    context.getDBName(),
+                    colls,
+                    context.getPage(),
                     context.getPagesize());
         }
 
+        //TODO remove this after migration to mongodb driver 3.2 completes
+        List<DBObject> _data = null;
+        if (data != null) {
+            _data = data.stream().map(props -> {
+                return JsonUtils.convertBsonValueToDBObject(props);
+            }).collect(Collectors.toList());
+        }
+
         DBRepresentationFactory repf = new DBRepresentationFactory();
-        Representation rep = repf.getRepresentation(exchange, context, data, getDatabase().getDBSize(colls));
+        Representation rep = repf.getRepresentation(exchange, context, _data, getDatabase().getDBSize(colls));
 
         ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
-        
+
         exchange.setStatusCode(HttpStatus.SC_OK);
 
         // call the next handler if existing

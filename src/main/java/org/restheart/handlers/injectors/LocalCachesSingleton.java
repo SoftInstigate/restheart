@@ -17,9 +17,9 @@
  */
 package org.restheart.handlers.injectors;
 
-import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import java.util.Optional;
+import org.bson.BsonDocument;
 import org.restheart.Configuration;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
@@ -37,8 +37,8 @@ public class LocalCachesSingleton {
 
     private final Database dbsDAO;
 
-    private LoadingCache<String, DBObject> dbPropsCache = null;
-    private LoadingCache<String, DBObject> collectionPropsCache = null;
+    private LoadingCache<String, BsonDocument> dbPropsCache = null;
+    private LoadingCache<String, BsonDocument> collectionPropsCache = null;
 
     private static long ttl = 1_000;
     private static boolean enabled = false;
@@ -70,13 +70,16 @@ public class LocalCachesSingleton {
         if (enabled) {
             this.dbPropsCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl,
                     (String key) -> {
-                        return this.dbsDAO.getDatabaseProperties(key, true);
+                        return this.dbsDAO.getDatabaseProperties(key);
                     });
 
             this.collectionPropsCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl,
                     (String key) -> {
                         String[] dbNameAndCollectionName = key.split(SEPARATOR);
-                        return this.dbsDAO.getCollectionProperties(dbNameAndCollectionName[0], dbNameAndCollectionName[1], true);
+                        return this.dbsDAO
+                                .getCollectionProperties(
+                                        dbNameAndCollectionName[0],
+                                        dbNameAndCollectionName[1]);
                     });
         }
     }
@@ -102,12 +105,12 @@ public class LocalCachesSingleton {
      * @param dbName
      * @return
      */
-    public DBObject getDBProps(String dbName) {
+    public BsonDocument getDBProperties(String dbName) {
         if (!enabled) {
             throw new IllegalStateException("tried to use disabled cache");
         }
 
-        Optional<DBObject> _dbProps = dbPropsCache.get(dbName);
+        Optional<BsonDocument> _dbProps = dbPropsCache.get(dbName);
 
         if (_dbProps != null) {
             if (_dbProps.isPresent()) {
@@ -140,12 +143,12 @@ public class LocalCachesSingleton {
      * @param collName
      * @return
      */
-    public DBObject getCollectionProps(String dbName, String collName) {
+    public BsonDocument getCollectionProperties(String dbName, String collName) {
         if (!enabled) {
             throw new IllegalStateException("tried to use disabled cache");
         }
 
-        Optional<DBObject> _collProps = collectionPropsCache.get(dbName + SEPARATOR + collName);
+        Optional<BsonDocument> _collProps = collectionPropsCache.get(dbName + SEPARATOR + collName);
 
         if (_collProps != null) {
             if (_collProps.isPresent()) {

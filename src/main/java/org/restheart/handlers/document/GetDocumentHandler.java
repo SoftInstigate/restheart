@@ -34,6 +34,12 @@ import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
 
 /**
  *
@@ -83,7 +89,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
             });
         }
 
-        BsonDocument document = getDatabase().getMongoCollection(
+        BsonDocument document = getDatabase().getCollection(
                 context.getDBName(),
                 context.getCollectionName())
                 .find(query)

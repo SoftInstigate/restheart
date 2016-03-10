@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
@@ -151,15 +152,20 @@ public class DbsDAO implements Database {
 
     /**
      * @param dbName
-     * @param fixMissingProperties
      * @return the db props
      *
      */
     @Override
-    public DBObject getDatabaseProperties(final String dbName, final boolean fixMissingProperties) {
-        DBCollection propsColl = collectionDAO.getCollection(dbName, "_properties");
+    public BsonDocument getDatabaseProperties(final String dbName) {
+        MongoCollection<BsonDocument> propsColl = collectionDAO.getCollection(dbName, "_properties");
 
-        return propsColl.findOne(PROPS_QUERY_LEGACY);
+        BsonDocument props = propsColl.find(PROPS_QUERY).limit(1).first();
+
+        if (props != null) {
+            props.append("_id", new BsonString(dbName));
+        }
+
+        return props;
     }
 
     /**
@@ -172,10 +178,10 @@ public class DbsDAO implements Database {
      *
      */
     @Override
-    public List<DBObject> getDatabaseData(
-            final String dbName, 
-            final List<String> colls, 
-            final int page, 
+    public List<BsonDocument> getDatabaseData(
+            final String dbName,
+            final List<String> colls,
+            final int page,
             final int pagesize)
             throws IllegalQueryParamenterException {
         // filter out reserved resources
@@ -205,24 +211,21 @@ public class DbsDAO implements Database {
                 ? _colls.size()
                 : (page - 1) * pagesize + pagesize);
 
-        List<DBObject> data = new ArrayList<>();
+        List<BsonDocument> data = new ArrayList<>();
 
         _colls.stream().map(
                 (collName) -> {
-                    BasicDBObject properties = new BasicDBObject();
+                    BsonDocument properties = new BsonDocument("_id", new BsonString(collName));
 
-                    properties.put("_id", collName);
-
-                    DBObject collProperties;
+                    BsonDocument collProperties;
 
                     if (LocalCachesSingleton.isEnabled()) {
                         collProperties = LocalCachesSingleton.getInstance()
-                        .getCollectionProps(dbName, collName);
+                        .getCollectionProperties(dbName, collName);
                     } else {
                         collProperties = collectionDAO.getCollectionProps(
-                                dbName, 
-                                collName, 
-                                true);
+                                dbName,
+                                collName);
                     }
 
                     if (collProperties != null) {
@@ -259,7 +262,7 @@ public class DbsDAO implements Database {
         if (patching && !updating) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
         }
-        
+
         ObjectId newEtag = new ObjectId();
 
         final DBObject content = DAOUtils.validContent(newContent);
@@ -353,23 +356,21 @@ public class DbsDAO implements Database {
     }
 
     @Override
-    public DBObject getCollectionProperties(
-            String dbName, 
-            String collName, 
-            boolean fixMissingProperties) {
+    public BsonDocument getCollectionProperties(
+            String dbName,
+            String collName) {
         return collectionDAO.getCollectionProps(
-                dbName, 
-                collName, 
-                fixMissingProperties);
+                dbName,
+                collName);
     }
 
     @Override
-    public DBCollection getCollection(String dbName, String collName) {
-        return collectionDAO.getCollection(dbName, collName);
+    public DBCollection getCollectionLegacy(String dbName, String collName) {
+        return collectionDAO.getCollectionLegacy(dbName, collName);
     }
 
     @Override
-    public MongoCollection<BsonDocument> getMongoCollection(String dbName, String collName) {
+    public MongoCollection<BsonDocument> getCollection(String dbName, String collName) {
         MongoDatabase mdb = client.getDatabase(dbName);
         MongoCollection<BsonDocument> mcoll = mdb.getCollection(collName, BsonDocument.class);
         return mcoll;

@@ -39,7 +39,6 @@ import org.bson.codecs.BsonArrayCodec;
 import org.bson.codecs.BsonValueCodecProvider;
 import org.bson.codecs.DecoderContext;
 import org.bson.codecs.configuration.CodecRegistries;
-import org.bson.conversions.Bson;
 import org.bson.json.JsonParseException;
 import org.bson.json.JsonReader;
 import org.bson.types.BSONTimestamp;

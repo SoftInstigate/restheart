@@ -62,7 +62,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        DBCollection coll = getDatabase().getCollection(context.getDBName(), context.getCollectionName());
+        DBCollection coll = getDatabase().getCollectionLegacy(context.getDBName(), context.getCollectionName());
         
         long size = -1;
 

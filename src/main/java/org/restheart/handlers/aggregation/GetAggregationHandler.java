@@ -98,7 +98,7 @@ public class GetAggregationHandler extends PipedHttpHandler {
 
             try {
                 mrOutput = getDatabase()
-                        .getCollection(context.getDBName(),
+                        .getCollectionLegacy(context.getDBName(),
                                 context.getCollectionName())
                         .mapReduce(mapReduce.getResolvedMap(context.getAggreationVars()),
                                 mapReduce.getResolvedReduce(context.getAggreationVars()),
@@ -135,7 +135,7 @@ public class GetAggregationHandler extends PipedHttpHandler {
 
             try {
                 agrOutput = getDatabase()
-                        .getCollection(context.getDBName(),
+                        .getCollectionLegacy(context.getDBName(),
                                 context.getCollectionName())
                         .aggregate(((AggregationPipeline) query)
                                 .getResolvedStagesAsList(context.getAggreationVars()));

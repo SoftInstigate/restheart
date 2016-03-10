@@ -104,7 +104,7 @@ public class LoadGetPT extends AbstractPT {
      */
     public void dbdirect() {
         final Database dbsDAO = new DbsDAO();
-        DBCollection dbcoll = dbsDAO.getCollection(db, coll);
+        DBCollection dbcoll = dbsDAO.getCollectionLegacy(db, coll);
 
         Deque<String> _filter;
         Deque<String> _keys = null;
@@ -138,7 +138,7 @@ public class LoadGetPT extends AbstractPT {
      */
     public void dbdirectdoc() {
         final Database dbDao = new DbsDAO();
-        DBCollection dbcoll = dbDao.getCollection(db, coll);
+        DBCollection dbcoll = dbDao.getCollectionLegacy(db, coll);
         
         ObjectId oid;
         String sid;

@@ -23,11 +23,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.bson.BsonDocument;
 import org.restheart.db.Database;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.JsonUtils;
 
 /**
  *
@@ -57,7 +59,7 @@ public class GetRootHandler extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         int size = 0;
 
-        List<DBObject> data = new ArrayList<>();
+        List<BsonDocument> data = new ArrayList<>();
 
         if (context.getPagesize() >= 0) {
             List<String> _dbs = getDatabase().getDatabaseNames();
@@ -80,9 +82,9 @@ public class GetRootHandler extends PipedHttpHandler {
 
                 dbs.stream().map((db) -> {
                     if (LocalCachesSingleton.isEnabled()) {
-                        return LocalCachesSingleton.getInstance().getDBProps(db);
+                        return LocalCachesSingleton.getInstance().getDBProperties(db);
                     } else {
-                        return getDatabase().getDatabaseProperties(db, true);
+                        return getDatabase().getDatabaseProperties(db);
                     }
                 }
                 ).forEach((item) -> {
@@ -94,7 +96,14 @@ public class GetRootHandler extends PipedHttpHandler {
         exchange.setStatusCode(HttpStatus.SC_OK);
         RootRepresentationFactory rf = new RootRepresentationFactory();
 
-        rf.sendRepresentation(exchange, context, rf.getRepresentation(exchange, context, data, size));
+        //TODO remove this after migration to mongodb driver 3.2 completes
+        List<DBObject> _data = data.stream().map(props -> {
+            return JsonUtils.convertBsonValueToDBObject(props);
+        }).collect(Collectors.toList());
+
+        rf.sendRepresentation(exchange,
+                context,
+                rf.getRepresentation(exchange, context, _data, size));
 
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);

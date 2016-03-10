@@ -75,7 +75,7 @@ public class SkipTimeTest {
         System.out.println("skipping cursor " + N + " times by " + REQUESTED_SKIPS + " documents");
 
         final Database dbsDAO = new DbsDAO();
-        DBCollection coll = dbsDAO.getCollection("test", "huge");
+        DBCollection coll = dbsDAO.getCollectionLegacy("test", "huge");
 
         long tot = 0;
 
@@ -100,7 +100,7 @@ public class SkipTimeTest {
         System.out.println("skipping cursor that has been pre-skipped by " + POOL_SKIPS + " documents, " + N + " times by " + (REQUESTED_SKIPS - POOL_SKIPS) + " documents");
 
         final Database dbsDAO = new DbsDAO();
-        DBCollection coll = dbsDAO.getCollection("test", "huge");
+        DBCollection coll = dbsDAO.getCollectionLegacy("test", "huge");
 
         long tot = 0;
 
