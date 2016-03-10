@@ -71,7 +71,7 @@ public class DocumentRepresentationFactory {
         } else {
             rep = new Representation();
         }
-        
+
         data.keySet()
                 .stream().forEach((key) -> rep.addProperty(key, data.get(key)));
 
@@ -93,20 +93,22 @@ public class DocumentRepresentationFactory {
             parentPath = URLUtils.getParentPath(requestPath);
         }
 
+        if (isBinaryFile(data)) {
+            if (_docIdType == null) {
+                rep.addLink(new Link("rh:data",
+                        String.format("%s/%s", href, RequestContext.BINARY_CONTENT)));
+            } else {
+                rep.addLink(new Link("rh:data",
+                        String.format("%s/%s?%s", href, RequestContext.BINARY_CONTENT, _docIdType)));
+            }
+        }
+
         // link templates
         if (!isEmbedded && context.isFullHalMode()) {
 
             addSpecialProperties(rep, context.getType(), data);
 
             if (isBinaryFile(data)) {
-                if (_docIdType == null) {
-                    rep.addLink(new Link("rh:data",
-                            String.format("%s/%s", href, RequestContext.BINARY_CONTENT)));
-                } else {
-                    rep.addLink(new Link("rh:data",
-                            String.format("%s/%s?%s", href, RequestContext.BINARY_CONTENT, _docIdType)));
-                }
-
                 if (context.isParentAccessible()) {
                     rep.addLink(new Link("rh:bucket", parentPath));
                 }
@@ -124,7 +126,7 @@ public class DocumentRepresentationFactory {
                 rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
                         + "/{rel}.html", true), true);
             }
-        } 
+        }
 
         return rep;
     }
