@@ -17,12 +17,13 @@
  */
 package org.restheart.handlers.injectors;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.JsonUtils;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,14 +62,14 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
         String collName = context.getCollectionName();
 
         if (dbName != null && collName != null) {
-            DBObject collProps;
+            BsonDocument collProps;
 
             if (!LocalCachesSingleton.isEnabled()) {
                 collProps = getDatabase().
-                        getCollectionProperties(dbName, collName, true);
+                        getCollectionProperties(dbName, collName);
             } else {
                 collProps = LocalCachesSingleton.getInstance()
-                        .getCollectionProps(dbName, collName);
+                        .getCollectionProperties(dbName, collName);
             }
             
             // if collProps is null, we need to expliclty check if the collection exists
@@ -82,14 +83,15 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
 
             if (collProps == null
                     && context.getMethod() == RequestContext.METHOD.GET) {
-                collProps = new BasicDBObject("_id", collName);
+                collProps = new BsonDocument("_id", new BsonString(collName));
             } 
             
             if (collProps != null) {
-                collProps.put("_id", collName);
+                collProps.append("_id", new BsonString(collName));
             }
 
-            context.setCollectionProps(collProps);
+            context.setCollectionProps(
+                    JsonUtils.convertBsonValueToDBObject(collProps));
         }
 
         getNext().handleRequest(exchange, context);

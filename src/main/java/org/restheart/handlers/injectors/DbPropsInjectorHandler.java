@@ -17,12 +17,13 @@
  */
 package org.restheart.handlers.injectors;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.JsonUtils;
 import org.restheart.utils.ResponseHelper;
 
 /**
@@ -54,12 +55,12 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
         String dbName = context.getDBName();
 
         if (dbName != null) {
-            DBObject dbProps;
+            BsonDocument dbProps;
 
             if (!LocalCachesSingleton.isEnabled()) {
-                dbProps = getDatabase().getDatabaseProperties(dbName, true);
+                dbProps = getDatabase().getDatabaseProperties(dbName);
             } else {
-                dbProps = LocalCachesSingleton.getInstance().getDBProps(dbName);
+                dbProps = LocalCachesSingleton.getInstance().getDBProperties(dbName);
             }
 
             // if dbProps is null, we need to expliclty check if the db exists
@@ -75,14 +76,14 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
 
             if (dbProps == null
                     && context.getMethod() == RequestContext.METHOD.GET) {
-                dbProps = new BasicDBObject("_id", dbName);
+                dbProps = new BsonDocument("_id", new BsonString(dbName));
             } 
             
             if (dbProps != null) {
-                dbProps.put("_id", dbName);
+                dbProps.append("_id", new BsonString(dbName));
             }
 
-            context.setDbProps(dbProps);
+            context.setDbProps(JsonUtils.convertBsonValueToDBObject(dbProps));
         }
 
         getNext().handleRequest(exchange, context);

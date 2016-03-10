@@ -81,7 +81,7 @@ public interface Database {
      * @param collectionName
      * @return A Collection
      */
-    DBCollection getCollection(String dbName, String collectionName);
+    DBCollection getCollectionLegacy(String dbName, String collectionName);
 
     /**
      *
@@ -89,7 +89,7 @@ public interface Database {
      * @param collectionName
      * @return A Collection
      */
-    MongoCollection<BsonDocument> getMongoCollection(String dbName, String collectionName);
+    MongoCollection<BsonDocument> getCollection(String dbName, String collectionName);
     
     /**
      *
@@ -108,10 +108,9 @@ public interface Database {
      *
      * @param dbName
      * @param collectionName
-     * @param fixMissingProperties if true, initialize the collection properties if missing
      * @return Collection properties
      */
-    DBObject getCollectionProperties(String dbName, String collectionName, boolean fixMissingProperties);
+    BsonDocument getCollectionProperties(String dbName, String collectionName);
 
     /**
      *
@@ -145,7 +144,7 @@ public interface Database {
      * @throws org.restheart.handlers.IllegalQueryParamenterException
      *
      */
-    List<DBObject> getDatabaseData(String dbName, List<String> collections, int page, int pagesize) throws IllegalQueryParamenterException;
+    List<BsonDocument> getDatabaseData(String dbName, List<String> collections, int page, int pagesize) throws IllegalQueryParamenterException;
 
     /**
      *
@@ -162,11 +161,10 @@ public interface Database {
 
     /**
      * @param dbName
-     * @param fixMissingProperties if true, initialize the db properties if missing
      * @return the db props
      *
      */
-    DBObject getDatabaseProperties(String dbName, boolean fixMissingProperties);
+    BsonDocument getDatabaseProperties(String dbName);
 
     /**
      *

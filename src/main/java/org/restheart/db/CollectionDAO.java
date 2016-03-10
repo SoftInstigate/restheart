@@ -36,6 +36,8 @@ import java.util.Deque;
 import java.util.Objects;
 
 import org.bson.BSONObject;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -74,8 +76,20 @@ class CollectionDAO {
      * @param collName the collection name
      * @return the mongodb DBCollection object for the collection in db dbName
      */
-    DBCollection getCollection(final String dbName, final String collName) {
+    DBCollection getCollectionLegacy(final String dbName, final String collName) {
         return client.getDB(dbName).getCollection(collName);
+    }
+    
+    /**
+     * Returns the  MongoCollection object for the collection in db dbName.
+     *
+     * @param dbName the database name of the collection the database name of
+     * the collection
+     * @param collName the collection name
+     * @return the mongodb DBCollection object for the collection in db dbName
+     */
+    MongoCollection<BsonDocument> getCollection(final String dbName, final String collName) {
+        return client.getDatabase(dbName).getCollection(collName, BsonDocument.class);
     }
 
     /**
@@ -270,10 +284,20 @@ class CollectionDAO {
      * @param collName the collection name
      * @return the collection properties document
      */
-    public DBObject getCollectionProps(final String dbName, final String collName, final boolean fixMissingProperties) {
-        DBCollection propsColl = getCollection(dbName, "_properties");
+    public BsonDocument getCollectionProps(final String dbName, final String collName) {
+        MongoCollection<BsonDocument> propsColl = getCollection(dbName, "_properties");
 
-        return propsColl.findOne(new BasicDBObject("_id", "_properties.".concat(collName)));
+        BsonDocument props = propsColl
+                .find(new BsonDocument("_id", 
+                        new BsonString("_properties.".concat(collName))))
+                .limit(1)
+                .first();
+                
+        if (props != null) {
+            props.append("_id", new BsonString(collName));
+        }
+                
+        return props;
     }
 
     /**
