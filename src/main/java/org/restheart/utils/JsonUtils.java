@@ -156,14 +156,16 @@ public class JsonUtils {
 
     /**
      * replaces the dollar prefixed keys (eg $exists) with the corresponding
-     * underscore prefixed key (eg _$exists). This is needed because MongoDB
-     * does not allow to store keys that starts with $.
+     * underscore prefixed key (eg _$exists). Also replaces dots if escapeDots
+     * is true. This is needed because MongoDB does not allow to store keys that
+     * starts with $ and that contains dots.
      *
      * @param obj
+     * @param escapeDots
      * @return the json object where the underscore prefixed keys are replaced
      * with the corresponding keys
      */
-    public static Object escapeKeys(Object obj) {
+    public static Object escapeKeys(Object obj, boolean escapeDots) {
         if (obj == null) {
             return null;
         }
@@ -173,23 +175,26 @@ public class JsonUtils {
 
             ((BasicDBObject) obj).keySet().stream().forEach(k -> {
                 String newKey = k.startsWith("$") ? "_" + k : k;
-                newKey = newKey.replaceAll("\\.", ESCAPED_DOT);
+
+                if (escapeDots) {
+                    newKey = newKey.replaceAll("\\.", ESCAPED_DOT);
+                }
 
                 Object value = ((BasicDBObject) obj).get(k);
 
                 if (value instanceof BasicDBObject) {
                     ret.put(newKey,
-                            escapeKeys((BasicDBObject) value));
+                            escapeKeys((BasicDBObject) value, escapeDots));
                 } else if (value instanceof BasicDBList) {
                     BasicDBList newList = new BasicDBList();
 
                     ((BasicDBList) value).stream().forEach(v -> {
-                        newList.add(escapeKeys(v));
+                        newList.add(escapeKeys(v, escapeDots));
                     });
 
                     ret.put(newKey, newList);
                 } else {
-                    ret.put(newKey, escapeKeys(value));
+                    ret.put(newKey, escapeKeys(value, escapeDots));
                 }
 
             });
@@ -200,17 +205,17 @@ public class JsonUtils {
 
             ((BasicDBList) obj).stream().forEach(value -> {
                 if (value instanceof BasicDBObject) {
-                    ret.add(escapeKeys((BasicDBObject) value));
+                    ret.add(escapeKeys((BasicDBObject) value, escapeDots));
                 } else if (value instanceof BasicDBList) {
                     BasicDBList newList = new BasicDBList();
 
                     ((BasicDBList) value).stream().forEach(v -> {
-                        newList.add(escapeKeys(v));
+                        newList.add(escapeKeys(v, escapeDots));
                     });
 
                     ret.add(newList);
                 } else {
-                    ret.add(escapeKeys(value));
+                    ret.add(escapeKeys(value, escapeDots));
                 }
 
             });
@@ -234,7 +239,7 @@ public class JsonUtils {
      * @see org.restheart.test.unit.JsonUtilsTest form code examples
      *
      */
-    public static List<Optional<Object>> getPropsFromPath(Object root, String path) 
+    public static List<Optional<Object>> getPropsFromPath(Object root, String path)
             throws IllegalArgumentException {
         String pathTokens[] = path.split(Pattern.quote("."));
 
@@ -247,7 +252,7 @@ public class JsonUtils {
         }
     }
 
-    private static List<Optional<Object>> _getPropsFromPath(Object json, String[] pathTokens, int totalTokensLength) 
+    private static List<Optional<Object>> _getPropsFromPath(Object json, String[] pathTokens, int totalTokensLength)
             throws IllegalArgumentException {
         if (pathTokens == null) {
             throw new IllegalArgumentException("pathTokens argument cannot be null");
@@ -443,7 +448,7 @@ public class JsonUtils {
      * expression or null if path does not exist
      * @throws IllegalArgumentException
      */
-    public static Integer countPropsFromPath(Object root, String path) 
+    public static Integer countPropsFromPath(Object root, String path)
             throws IllegalArgumentException {
         List<Optional<Object>> items = getPropsFromPath(root, path);
 
@@ -563,8 +568,7 @@ public class JsonUtils {
                     ++i;
                 }
             } else // we're outside of the special modes, so look for mode openers (comment start, string start)
-            {
-                if (cc.equals("/*")) {
+             if (cc.equals("/*")) {
                     in_multiline_comment = true;
                     ++i;
                 } else if (cc.equals("//")) {
@@ -577,7 +581,6 @@ public class JsonUtils {
                 } else if (!Character.isWhitespace(c)) {
                     out.append(c);
                 }
-            }
         }
         return out.toString();
     }

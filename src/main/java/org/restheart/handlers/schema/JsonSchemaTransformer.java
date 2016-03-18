@@ -107,7 +107,7 @@ public class JsonSchemaTransformer implements Transformer {
     }
 
     public static void escapeSchema(DBObject schema) {
-        DBObject escaped = (DBObject) JsonUtils.escapeKeys(schema);
+        DBObject escaped = (DBObject) JsonUtils.escapeKeys(schema, false);
 
         List<String> keys = Lists.newArrayList(schema.keySet().iterator());
 
