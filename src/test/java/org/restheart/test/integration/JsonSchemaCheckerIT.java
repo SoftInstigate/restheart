@@ -17,8 +17,11 @@
  */
 package org.restheart.test.integration;
 
+import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import java.net.URISyntaxException;
+import org.apache.http.HttpStatus;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -26,18 +29,37 @@ import org.junit.Test;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class JsonSchemaCheckerIT extends AbstactIT {
-
+    private final String DB = "test-jsonschema-db";
+    private final String COLL = "coll";
+    private final String SCHEMA_STORE = "_schemas";
+    
     public JsonSchemaCheckerIT() throws URISyntaxException {
     }
 
     @Before
     public void createTestData() throws Exception {
-        Unirest.post("http://httpbin.org/post")
-                .queryString("name", "Mark")
-                .field("last", "Polo")
+        HttpResponse resp;
+        
+        // create test db
+        resp = Unirest.put(url(DB))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asJson() ;
 
+        Assert.assertEquals("create db " + DB, HttpStatus.SC_CREATED, resp.getStatus());
+        
+        // create test collection
+        resp = Unirest.put(url(DB, COLL))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .asJson() ;
 
+        Assert.assertEquals("create collection " + DB.concat("/").concat(COLL), HttpStatus.SC_CREATED, resp.getStatus());
+        
+        // create schema store
+        resp = Unirest.put(url(DB, SCHEMA_STORE))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .asJson() ;
+
+        Assert.assertEquals("create schema store " + DB.concat("/").concat(SCHEMA_STORE), HttpStatus.SC_CREATED, resp.getStatus());
     }
 
     @Test
