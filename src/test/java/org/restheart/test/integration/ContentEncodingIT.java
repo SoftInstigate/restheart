@@ -40,7 +40,7 @@ import org.junit.Test;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ContentEncodingIT extends AbstactIT {
+public class ContentEncodingIT extends HttpClientAbstactIT {
 
     protected static Executor notDecompressingExecutor = null;
 

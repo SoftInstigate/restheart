@@ -37,13 +37,13 @@ import org.restheart.hal.Representation;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_HEADER;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_VALID_HEADER;
-import static org.restheart.test.integration.AbstactIT.HTTP;
+import static org.restheart.test.integration.HttpClientAbstactIT.HTTP;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class SecurityAuthTokenIT extends AbstactIT {
+public class SecurityAuthTokenIT extends HttpClientAbstactIT {
 
     public SecurityAuthTokenIT() {
     }

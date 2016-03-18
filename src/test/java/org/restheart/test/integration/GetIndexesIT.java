@@ -35,7 +35,7 @@ import org.junit.Test;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class GetIndexesIT extends AbstactIT {
+public class GetIndexesIT extends HttpClientAbstactIT {
 
     public GetIndexesIT() {
     }

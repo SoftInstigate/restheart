@@ -26,18 +26,18 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.junit.Before;
 import org.junit.Test;
-import static org.restheart.test.integration.AbstactIT.adminExecutor;
-import static org.restheart.test.integration.AbstactIT.collectionTmpUri;
+import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
+import static org.restheart.test.integration.HttpClientAbstactIT.collectionTmpUri;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static org.restheart.test.integration.AbstactIT.dbTmpUri;
-import static org.restheart.test.integration.AbstactIT.halCT;
-import static org.restheart.test.integration.AbstactIT.buildURI;
+import static org.restheart.test.integration.HttpClientAbstactIT.dbTmpUri;
+import static org.restheart.test.integration.HttpClientAbstactIT.halCT;
+import static org.restheart.test.integration.HttpClientAbstactIT.buildURI;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class JsonPathConditionsCheckerIT extends AbstactIT {
+public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(JsonPathConditionsCheckerIT.class);
 

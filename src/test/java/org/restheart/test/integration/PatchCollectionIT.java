@@ -19,7 +19,7 @@ package org.restheart.test.integration;
 
 import com.eclipsesource.json.JsonObject;
 import org.restheart.hal.Representation;
-import static org.restheart.test.integration.AbstactIT.adminExecutor;
+import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import org.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
 import org.apache.http.client.fluent.Request;
@@ -31,7 +31,7 @@ import org.junit.Test;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class PatchCollectionIT extends AbstactIT {
+public class PatchCollectionIT extends HttpClientAbstactIT {
 
     public PatchCollectionIT() {
     }

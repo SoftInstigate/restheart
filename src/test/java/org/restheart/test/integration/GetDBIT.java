@@ -36,7 +36,7 @@ import org.junit.Test;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class GetDBIT extends AbstactIT {
+public class GetDBIT extends HttpClientAbstactIT {
 
     public GetDBIT() {
     }

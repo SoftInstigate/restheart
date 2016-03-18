@@ -31,8 +31,8 @@ import org.apache.http.client.fluent.Response;
 import org.apache.http.message.BasicNameValuePair;
 import org.junit.Test;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
-import static org.restheart.test.integration.AbstactIT.adminExecutor;
-import static org.restheart.test.integration.AbstactIT.collectionTmpUri;
+import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
+import static org.restheart.test.integration.HttpClientAbstactIT.collectionTmpUri;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
@@ -40,7 +40,7 @@ import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class DocIdTypeIT extends AbstactIT {
+public class DocIdTypeIT extends HttpClientAbstactIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(DocIdTypeIT.class);
 
