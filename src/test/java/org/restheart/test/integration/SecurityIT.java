@@ -32,7 +32,7 @@ import org.junit.Test;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class SecurityIT extends AbstactIT {
+public class SecurityIT extends HttpClientAbstactIT {
 
     public SecurityIT() {
     }

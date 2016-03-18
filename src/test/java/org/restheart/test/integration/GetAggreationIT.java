@@ -35,12 +35,12 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.junit.Test;
 import org.restheart.handlers.RequestContext;
-import static org.restheart.test.integration.AbstactIT.adminExecutor;
+import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class GetAggreationIT extends AbstactIT {
+public class GetAggreationIT extends HttpClientAbstactIT {
     public GetAggreationIT() {
     }
 

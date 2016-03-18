@@ -36,7 +36,7 @@ import org.junit.Test;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class GetRootIT extends AbstactIT {
+public class GetRootIT extends HttpClientAbstactIT {
 
     public GetRootIT() {
     }

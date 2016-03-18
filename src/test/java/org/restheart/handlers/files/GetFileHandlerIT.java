@@ -35,9 +35,13 @@ import org.apache.http.util.EntityUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.restheart.test.integration.AbstactIT;
+import org.restheart.test.integration.HttpClientAbstactIT;
 import org.restheart.hal.Representation;
 import org.restheart.utils.HttpStatus;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -47,7 +51,7 @@ import static org.junit.Assert.fail;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class GetFileHandlerIT extends AbstactIT {
+public class GetFileHandlerIT extends HttpClientAbstactIT {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();

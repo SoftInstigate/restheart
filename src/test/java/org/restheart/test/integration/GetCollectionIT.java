@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class GetCollectionIT extends AbstactIT {
+public class GetCollectionIT extends HttpClientAbstactIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(GetCollectionIT.class);
 

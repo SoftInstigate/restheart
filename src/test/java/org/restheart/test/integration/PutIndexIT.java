@@ -19,7 +19,7 @@ package org.restheart.test.integration;
 
 import com.eclipsesource.json.JsonObject;
 import org.restheart.hal.Representation;
-import static org.restheart.test.integration.AbstactIT.adminExecutor;
+import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import org.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
 import org.apache.http.HttpEntity;
@@ -32,12 +32,15 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class PutIndexIT extends AbstactIT {
+public class PutIndexIT extends HttpClientAbstactIT {
 
     public PutIndexIT() {
     }
