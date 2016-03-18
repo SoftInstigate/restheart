@@ -173,7 +173,7 @@ public class JsonUtils {
 
             ((BasicDBObject) obj).keySet().stream().forEach(k -> {
                 String newKey = k.startsWith("$") ? "_" + k : k;
-                newKey = newKey.replaceAll(".", ESCAPED_DOT);
+                newKey = newKey.replaceAll("\\.", ESCAPED_DOT);
 
                 Object value = ((BasicDBObject) obj).get(k);
 
