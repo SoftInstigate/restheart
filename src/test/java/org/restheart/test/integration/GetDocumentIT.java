@@ -29,7 +29,6 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.util.EntityUtils;
-import org.bson.types.ObjectId;
 import org.junit.Test;
 
 /**

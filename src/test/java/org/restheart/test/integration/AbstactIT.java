@@ -17,15 +17,12 @@
  */
 package org.restheart.test.integration;
 
-import com.mongodb.DBObject;
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 import com.mongodb.MongoClient;
-import com.mongodb.util.JSON;
-import io.undertow.util.Headers;
 import org.restheart.Configuration;
-import org.restheart.db.DbsDAO;
-import org.restheart.db.DocumentDAO;
 import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.hal.Representation;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -34,29 +31,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import static org.junit.Assert.*;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.StatusLine;
-import org.apache.http.client.fluent.Executor;
-import org.apache.http.client.fluent.Request;
-import org.apache.http.client.fluent.Response;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.entity.ContentType;
-import org.apache.http.message.BasicNameValuePair;
-import org.bson.types.ObjectId;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.restheart.db.Database;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,10 +51,21 @@ public abstract class AbstactIT {
 
     protected static final String MONGO_HOST = System.getenv("MONGO_HOST") == null ? "127.0.0.1" : System.getenv("MONGO_HOST");
     protected static final Path CONF_FILE_PATH = new File("etc/restheart-integrationtest.yml").toPath();
-    
+
     protected static MongoClient mongoClient;
     protected static Configuration conf = null;
-    
+
+    protected static final String ADMIN_ID = "admin";
+    protected static final String ADMIN_PWD = "changeit";
+
+    /**
+     * dbs starting with this prefix will be automatically deleted after test
+     * execution
+     */
+    protected static final String TEST_DB_PREFIX = "restheart-integrationtests-";
+
+    protected static String BASE_URL;
+
     @Rule
     public TestRule watcher = new TestWatcher() {
         @Override
@@ -84,9 +77,11 @@ public abstract class AbstactIT {
     @BeforeClass
     public static void setUpClass() throws Exception {
         conf = new Configuration(CONF_FILE_PATH);
-        
+
+        BASE_URL = "http://" + conf.getHttpHost() + ":" + conf.getHttpPort();
+
         MongoDBClientSingleton.init(conf);
-        
+
         mongoClient = MongoDBClientSingleton.getInstance().getClient();
     }
 
@@ -96,7 +91,7 @@ public abstract class AbstactIT {
 
     public AbstactIT() {
     }
-    
+
     protected static String getResourceFile(String resourcePath) throws IOException, URISyntaxException {
         StringBuilder result = new StringBuilder();
 
@@ -115,5 +110,76 @@ public abstract class AbstactIT {
         });
 
         return result.toString();
+    }
+
+    @After
+    public void tearDown() {
+        deleteTestData();
+    }
+
+    private void deleteTestData() {
+        ArrayList<String> dbNames = new ArrayList<>();
+
+        MongoDBClientSingleton.getInstance()
+                .getClient()
+                .listDatabaseNames()
+                .into(dbNames);
+
+        ArrayList<String> deleted = new ArrayList<>();
+
+        dbNames
+                .stream()
+                .filter(db -> db.startsWith(TEST_DB_PREFIX))
+                .forEach(dbToDelete -> {
+                    MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbToDelete);
+                    deleted.add(dbToDelete);
+                });
+
+        LOG.debug("test data deleted");
+
+        // clear cache
+        if (conf.isLocalCacheEnabled()) {
+            deleted.stream().forEach(db -> {
+                HttpResponse resp;
+                try {
+                    resp = Unirest.post(BASE_URL + "/_logic/ic")
+                            .basicAuth(ADMIN_ID, ADMIN_PWD)
+                            .queryString("db", db)
+                            .asJson();
+
+                    LOG.debug("invalidating cache for {}, repospose {}", db, resp.getStatus());
+                } catch (UnirestException ex) {
+                    LOG.warn("error invalidating cache for delete db {}", db, ex);
+                }
+            });
+        }
+    }
+
+    /**
+     * returns the url composed of the parts note the db anem will be prefixed
+     * with TEST_DB_PREFIX and thus deleted after test execution
+     *
+     * @param dbname
+     * @param parts
+     * @return
+     */
+    protected static String url(String dbname, String... parts) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(BASE_URL);
+
+        if (dbname != null) {
+            sb.append("/")
+                    .append(TEST_DB_PREFIX)
+                    .append(dbname);
+
+            if (parts != null) {
+                for (String part : parts) {
+                    sb.append("/").append(part);
+                }
+            }
+        }
+
+        return sb.toString();
     }
 }

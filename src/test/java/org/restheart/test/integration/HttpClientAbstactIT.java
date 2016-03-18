@@ -39,8 +39,6 @@ import org.apache.http.message.BasicNameValuePair;
 import org.bson.types.ObjectId;
 import org.junit.After;
 import org.junit.AfterClass;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -53,6 +51,8 @@ import org.restheart.db.DbsDAO;
 import org.restheart.db.DocumentDAO;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.hal.Representation;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  *
@@ -72,13 +72,13 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
     protected static URI dbUri;
     protected static URI dbUriRemappedAll;
     protected static URI dbUriRemappedDb;
-    protected static final String dbName = "mydb";
+    protected static final String dbName = TEST_DB_PREFIX + "mydb";
     protected static URI dbTmpUri;
-    protected static final String dbTmpName = "mytmpdb";
+    protected static final String dbTmpName = TEST_DB_PREFIX + "mytmpdb";
     protected static URI dbTmpUri2;
-    protected static final String dbTmpName2 = "tmpdb2";
+    protected static final String dbTmpName2 = TEST_DB_PREFIX + "tmpdb2";
     protected static URI dbTmpUri3;
-    protected static final String dbTmpName3 = "tmpdb3";
+    protected static final String dbTmpName3 = TEST_DB_PREFIX + "tmpdb3";
     protected static URI collection1Uri;
     protected static URI collection1UriRemappedAll;
     protected static URI collection1UriRemappedDb;
@@ -174,19 +174,13 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
 
     private final Database dbsDAO = new DbsDAO();
 
-    @Rule
-    public TestRule watcher = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            LOG.info("executing test {}", description.toString());
-        }
-    };
-
     @BeforeClass
     public static void setUpClass() throws Exception {
         conf = new Configuration(CONF_FILE_PATH);
         MongoDBClientSingleton.init(conf);
         mongoClient = MongoDBClientSingleton.getInstance().getClient();
+        
+        BASE_URL = "http://" + conf.getHttpHost() + ":" + conf.getHttpPort();
 
         createURIs();
 
@@ -208,11 +202,6 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
     @Before
     public void setUp() {
         createTestData();
-    }
-
-    @After
-    public void tearDown() {
-        deleteTestData();
     }
 
     protected HttpResponse check(String message, Response resp, int expectedCode) throws Exception {
@@ -246,44 +235,6 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
             documentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), null, ((DBObject) JSON.parse(doc)), new ObjectId().toString(), false, false);
         }
         LOG.debug("test data created");
-    }
-
-    private void deleteTestData() {
-        List<String> databases = MongoDBClientSingleton.getInstance().getClient().getDatabaseNames();
-        if (databases.contains(dbName)) {
-            MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbName);
-        }
-        if (databases.contains(dbTmpName)) {
-            MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbTmpName);
-        }
-        if (databases.contains(dbTmpName2)) {
-            MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbTmpName2);
-        }
-        if (databases.contains(dbTmpName3)) {
-            MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbTmpName3);
-        }
-
-        LOG.debug("test data deleted");
-
-        if (conf.isLocalCacheEnabled()) {
-            List<String> dbs = new ArrayList<>();
-            dbs.add(dbName);
-            dbs.add(dbTmpName);
-            dbs.add(dbTmpName2);
-            dbs.add(dbTmpName3);
-
-            dbs.stream().forEach(db -> {
-                try {
-                    Response rep = adminExecutor.execute(Request.Post(buildURI("/_logic/ic",
-                            new NameValuePair[]{new BasicNameValuePair("db", db)})).
-                            addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE)
-                    );
-                    LOG.debug("invalidating cache for {}, repospose {}", db, rep.returnResponse().getStatusLine());
-                } catch (IOException | URISyntaxException ex) {
-                    LOG.warn("Error invalidating cache", ex);
-                }
-            });
-        }
     }
 
     private static void createURIs() throws URISyntaxException {

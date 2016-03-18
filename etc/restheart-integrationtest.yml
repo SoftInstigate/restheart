@@ -59,15 +59,15 @@ mongo-mounts:
       where: /
     - what: "*"
       where: /remappedall
-    - what: /mydb
+    - what: /restheart-integrationtests-mydb
       where: /remappeddb
-    - what: /mydb/refcoll1
+    - what: /restheart-integrationtests-mydb/refcoll1
       where: /remappedrefcoll1
-    - what: /mydb/refcoll2
+    - what: /restheart-integrationtests-mydb/refcoll2
       where: /remappedrefcoll2
-    - what: /mydb/refcoll1/doc1
+    - what: /restheart-integrationtests-mydb/refcoll1/doc1
       where: /remappeddoc1
-    - what: /mydb/refcoll2/doc2
+    - what: /restheart-integrationtests-mydb/refcoll2/doc2
       where: /remappeddoc2
 
 #### Static Web Resources
