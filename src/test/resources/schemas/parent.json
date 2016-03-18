@@ -16,6 +16,18 @@
         },
         "n": {
             "type": "number"
+        },
+        "_etag": {
+            "type": "object",
+            "properties": {
+                "_$oid": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "_$oid"
+            ]
         }
     },
     "required": [

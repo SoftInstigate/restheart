@@ -19,8 +19,10 @@ package org.restheart.test.integration;
 
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 import java.net.URISyntaxException;
 import org.apache.http.HttpStatus;
+import org.bson.types.ObjectId;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -34,14 +36,14 @@ public class JsonSchemaCheckerIT extends AbstactIT {
     private final String COLL_BASIC = "coll_basic";
     private final String COLL_CHILD = "coll_child";
     private final String SCHEMA_STORE = "_schemas";
+    
+    HttpResponse resp;
 
     public JsonSchemaCheckerIT() throws URISyntaxException {
     }
 
     @Before
     public void createTestData() throws Exception {
-        HttpResponse resp;
-
         // create test db
         resp = Unirest.put(url(DB))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
@@ -104,99 +106,192 @@ public class JsonSchemaCheckerIT extends AbstactIT {
     public void testPostData() throws Exception {
         _testPostData(COLL_BASIC);
     }
-    
+
     @Test
     public void testPostDataComposite() throws Exception {
         _testPostData(COLL_CHILD);
     }
-    
+
     private void _testPostData(String coll) throws Exception {
-        HttpResponse resp;
-        
         // *** test create invalid data
-        
-        resp = Unirest.post(url(DB, COLL_CHILD))
+        resp = Unirest.post(url(DB, coll))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .body("{'n': 'ciao', 's': 'a' }")
                 .asString();
-        
+
         Assert.assertEquals("test invalid data 1", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
-        
-        resp = Unirest.post(url(DB, COLL_CHILD))
+
+        resp = Unirest.post(url(DB, coll))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .body("{'n': 1, 's': 1 }")
                 .asString();
-        
+
         Assert.assertEquals("test invalid data 2", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
-        
-        resp = Unirest.post(url(DB, COLL_CHILD))
+
+        resp = Unirest.post(url(DB, coll))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .body("{'s': 'string' }")
                 .asString();
-        
+
         Assert.assertEquals("test invalid data 3", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
 
         // *** test create valid data
-        
-        resp = Unirest.put(url(DB, COLL_CHILD, "doc"))
+        resp = Unirest.put(url(DB, coll, "doc"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .body("{'n': 1, 's': 'string' }")
                 .asString();
-        
+
         Assert.assertEquals("test create valid data", HttpStatus.SC_CREATED, resp.getStatus());
-        
+
         // *** test update invalid data
-        
-        resp = Unirest.patch(url(DB, COLL_CHILD, "doc"))
+        resp = Unirest.patch(url(DB, coll, "doc"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .body("{'n': 'string' }")
                 .asString();
-        
+
         Assert.assertEquals("test update invalid data", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
-        
+
         // *** test update valid data
-        
-        resp = Unirest.patch(url(DB, COLL_CHILD, "doc"))
+        resp = Unirest.patch(url(DB, coll, "doc"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .body("{'n': 100 }")
                 .asString();
-        
+
         Assert.assertEquals("test update valid data", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
     }
 
     @Test
-    @Ignore
+    public void testPostInvalidDueToAdditionalProperty() throws UnirestException {
+        resp = Unirest.post(url(DB, COLL_BASIC))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{'s': 'string', 'n':1, 'other': 2 }")
+                .asString();
+
+        Assert.assertEquals("test invalid data due to additional property", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
+    }
+
+    @Test
     public void testPostDataDotNotation() throws Exception {
+        // create valid data
+        resp = Unirest.post(url(DB, COLL_BASIC))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{'n': 1, 's': 'string', 'obj.s': 'string' }")
+                .asString();
+
+        Assert.assertEquals("test create valid data with dot notation", HttpStatus.SC_CREATED, resp.getStatus());
+
+        // create invalid data 1
+        resp = Unirest.post(url(DB, COLL_BASIC))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{'n': 1, 's': 'string', 'obj.s': 1 }")
+                .asString();
+
+        Assert.assertEquals("test create invalid data with dot notation 1", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
+
+        // create invalid data 2
+        resp = Unirest.post(url(DB, COLL_BASIC))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{'n': 1, 's': 'string', 'obj.a': 1 }")
+                .asString();
+
+        Assert.assertEquals("test create invalid data with dot notation 2", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
+
         // *** test post valid data with dot notation
     }
 
     @Test
-    @Ignore
     public void testPostIncompleteDataDotNotation() throws Exception {
-        // *** test post valid data with dot notation
+        resp = Unirest.post(url(DB, COLL_BASIC))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{'n': 1, 's': 'string', 'obj': {} }")
+                .asString();
+
+        Assert.assertEquals("test create incomplate data with dot notation", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
     }
 
     @Test
-    @Ignore
     public void testPutDataDotNotation() throws Exception {
-        // *** test post valid data with dot notation
+        // create valid data
+        resp = Unirest.put(url(DB, COLL_BASIC, new ObjectId().toString()))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{'n': 1, 's': 'string', 'obj.s': 'string' }")
+                .asString();
+
+        Assert.assertEquals("test create valid data with dot notation", HttpStatus.SC_CREATED, resp.getStatus());
+
+        // create invalid data 1
+        resp = Unirest.put(url(DB, COLL_BASIC, new ObjectId().toString()))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{'n': 1, 's': 'string', 'obj.s': 1 }")
+                .asString();
+
+        Assert.assertEquals("test create invalid data with dot notation 1", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
+
+        // create invalid data 2
+        resp = Unirest.put(url(DB, COLL_BASIC, new ObjectId().toString()))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{'n': 1, 's': 'string', 'obj.a': 1 }")
+                .asString();
+
+        Assert.assertEquals("test create invalid data with dot notation 2", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
     }
 
     @Test
-    @Ignore
     public void testPatchData() throws Exception {
-        // *** test create valid data
+        String id = new ObjectId().toString();
+        
+        // create valid data
+        resp = Unirest.put(url(DB, COLL_BASIC, id))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{'n': 1, 's': 'string', 'obj.s': 'string' }")
+                .asString();
+
+        Assert.assertEquals("test create valid data with dot notation", HttpStatus.SC_CREATED, resp.getStatus());
+        
         // *** test patch valid data with dot notation
+        
+        resp = Unirest.patch(url(DB, COLL_BASIC, id))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{'obj.s': 'new string' }")
+                .asString();
+        
+        Assert.assertEquals("test create valid data with dot notation", HttpStatus.SC_OK, resp.getStatus());
+        
         // *** test patch invalid key
-        // *** test patch invalid key
+        
+        resp = Unirest.patch(url(DB, COLL_BASIC, id))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{'other.s': 'new string' }")
+                .asString();
+
+        Assert.assertEquals("test create valid data with dot notation", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
+        
         // *** test patch wrong type object data
-        // *** test patch invalid array data
+        
+        resp = Unirest.patch(url(DB, COLL_BASIC, id))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{'obj.s': 1 }")
+                .asString();
+
+        Assert.assertEquals("test create valid data with dot notation", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
     }
 
     /**
@@ -207,9 +302,24 @@ public class JsonSchemaCheckerIT extends AbstactIT {
     @Test
     @Ignore
     public void testPatchIncompleteObject() throws Exception {
+        String id = new ObjectId().toString();
+        
         // *** test create valid data
-
-        // *** test patch valid data with dot notation
-        // an incomplete details object. address and country are nullable but mandatory
+        
+        resp = Unirest.put(url(DB, COLL_BASIC, id))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{'n': 1, 's': 'string', 'obj.s': 'string' }")
+                .asString();
+        
+        Assert.assertEquals("test create valid data with dot notation", HttpStatus.SC_CREATED, resp.getStatus());
+        
+        resp = Unirest.patch(url(DB, COLL_BASIC, id))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{'$unset': {'obj.s': true} }")
+                .asString();
+        
+        Assert.assertEquals("test patch invalid data", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
     }
 }

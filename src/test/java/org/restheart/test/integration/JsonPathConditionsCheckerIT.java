@@ -39,8 +39,6 @@ import static org.restheart.test.integration.HttpClientAbstactIT.buildURI;
  */
 public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
-    private static final Logger LOG = LoggerFactory.getLogger(JsonPathConditionsCheckerIT.class);
-
     private static URI userURI;
     
     public JsonPathConditionsCheckerIT() throws URISyntaxException {
