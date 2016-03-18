@@ -102,11 +102,20 @@ public class JsonSchemaCheckerIT extends AbstactIT {
 
     @Test
     public void testPostData() throws Exception {
+        _testPostData(COLL_BASIC);
+    }
+    
+    @Test
+    public void testPostDataComposite() throws Exception {
+        _testPostData(COLL_CHILD);
+    }
+    
+    private void _testPostData(String coll) throws Exception {
         HttpResponse resp;
         
         // *** test create invalid data
         
-        resp = Unirest.post(url(DB, COLL_BASIC))
+        resp = Unirest.post(url(DB, COLL_CHILD))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .body("{'n': 'ciao', 's': 'a' }")
@@ -114,7 +123,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         
         Assert.assertEquals("test invalid data 1", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
         
-        resp = Unirest.post(url(DB, COLL_BASIC))
+        resp = Unirest.post(url(DB, COLL_CHILD))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .body("{'n': 1, 's': 1 }")
@@ -122,7 +131,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         
         Assert.assertEquals("test invalid data 2", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
         
-        resp = Unirest.post(url(DB, COLL_BASIC))
+        resp = Unirest.post(url(DB, COLL_CHILD))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .body("{'s': 'string' }")
@@ -132,7 +141,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
 
         // *** test create valid data
         
-        resp = Unirest.put(url(DB, COLL_BASIC, "doc"))
+        resp = Unirest.put(url(DB, COLL_CHILD, "doc"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .body("{'n': 1, 's': 'string' }")
@@ -142,7 +151,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         
         // *** test update invalid data
         
-        resp = Unirest.patch(url(DB, COLL_BASIC, "doc"))
+        resp = Unirest.patch(url(DB, COLL_CHILD, "doc"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .body("{'n': 'string' }")
@@ -152,7 +161,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         
         // *** test update valid data
         
-        resp = Unirest.patch(url(DB, COLL_BASIC, "doc"))
+        resp = Unirest.patch(url(DB, COLL_CHILD, "doc"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .body("{'n': 100 }")
