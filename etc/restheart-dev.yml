@@ -21,6 +21,13 @@ ajp-listener: false
 ajp-host: 0.0.0.0
 ajp-port: 8009
 
+#### Instance name
+
+# The name of this restheart instance. displayed in log, also allows to implement instance specific custom code
+# For instance, an email notifier hook can send emails to a test email address in development environments
+
+instance-name: develop
+
 #### SSL Configuration
 
 # Configure the keystore to enable the https listener.
