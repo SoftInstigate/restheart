@@ -22,7 +22,7 @@ import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.RequestContext;
 
 /**
- * A WebHook is custom logic executed after requests completes.
+ * An Hook is executed after requests completes.
  * <p>
  * Some useful info that can be retrived from arguments request content:
  * <ul>
@@ -57,7 +57,7 @@ import org.restheart.handlers.RequestContext;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
  */
-public interface WebHook {
+public interface Hook {
     /**
      * 
      * @param exchange
@@ -73,7 +73,7 @@ public interface WebHook {
     /**
      *
      * @param context
-     * @return true if the webhook supports the requests
+     * @return true if the hook supports the requests
      */
     boolean doesSupportRequests(RequestContext context);
 }

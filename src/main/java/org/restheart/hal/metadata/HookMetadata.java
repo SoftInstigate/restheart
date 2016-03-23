@@ -26,8 +26,8 @@ import java.util.List;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class WebHookMetadata {
-    public final static String ROOT_KEY = "webhooks";
+public class HookMetadata {
+    public final static String ROOT_KEY = "hooks";
     public final static String NAME_KEY = "name";
     public final static String ARGS_KEY = "args";
 
@@ -39,7 +39,7 @@ public class WebHookMetadata {
      * @param checker
      * @param args
      */
-    public WebHookMetadata(String checker, DBObject args) {
+    public HookMetadata(String checker, DBObject args) {
         this.name = checker;
         this.args = args;
     }
@@ -62,7 +62,7 @@ public class WebHookMetadata {
         return props == null ? null : props.get(ROOT_KEY);
     }
 
-    public static List<WebHookMetadata> getFromJson(DBObject props) throws InvalidMetadataException {
+    public static List<HookMetadata> getFromJson(DBObject props) throws InvalidMetadataException {
         Object _scs = getProps(props);
 
         if (_scs == null || !(_scs instanceof BasicDBList)) {
@@ -71,7 +71,7 @@ public class WebHookMetadata {
 
         BasicDBList scs = (BasicDBList) _scs;
 
-        List<WebHookMetadata> ret = new ArrayList<>();
+        List<HookMetadata> ret = new ArrayList<>();
 
         for (Object o : scs) {
             if (o instanceof DBObject) {
@@ -84,7 +84,7 @@ public class WebHookMetadata {
         return ret;
     }
 
-    private static WebHookMetadata getSingleFromJson(DBObject props) throws InvalidMetadataException {
+    private static HookMetadata getSingleFromJson(DBObject props) throws InvalidMetadataException {
         Object _name = props.get(NAME_KEY);
 
         if (_name == null || !(_name instanceof String)) {
@@ -102,6 +102,6 @@ public class WebHookMetadata {
 
         DBObject args = (DBObject) _args;
 
-        return new WebHookMetadata(name, args);
+        return new HookMetadata(name, args);
     }
 }
