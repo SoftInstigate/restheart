@@ -70,6 +70,8 @@ public class Configuration {
     private final int ajpPort;
     private final String ajpHost;
 
+    private final String instanceName;
+    
     private final boolean useEmbeddedKeystore;
     private final String keystoreFile;
     private final String keystorePassword;
@@ -165,6 +167,11 @@ public class Configuration {
     public static final int DEFAULT_HTTPS_PORT = 4443;
 
     /**
+     * default restheart instance name default
+     */
+    public static final String DEFAULT_INSTANCE_NAME = "default";
+    
+    /**
      * default am implementation class.
      */
     public static final String DEFAULT_AM_IMPLEMENTATION_CLASS = null;
@@ -192,6 +199,12 @@ public class Configuration {
     public static final ETAG_CHECK_POLICY DEFAULT_DOC_ETAG_CHECK_POLICY
             = ETAG_CHECK_POLICY.OPTIONAL;
 
+    /**
+     * the key for the instance-name property.
+     */
+    public static final String INSTANCE_NAME_KEY = "instance-name";
+    
+    
     /**
      * the key for the local-cache-enabled property.
      */
@@ -528,6 +541,8 @@ public class Configuration {
         ajpListener = false;
         ajpPort = DEFAULT_AJP_PORT;
         ajpHost = DEFAULT_AJP_HOST;
+        
+        instanceName = DEFAULT_INSTANCE_NAME;
 
         useEmbeddedKeystore = true;
         keystoreFile = null;
@@ -677,6 +692,8 @@ public class Configuration {
         ajpListener = getAsBooleanOrDefault(conf, AJP_LISTENER_KEY, false);
         ajpPort = getAsIntegerOrDefault(conf, AJP_PORT_KEY, DEFAULT_AJP_PORT);
         ajpHost = getAsStringOrDefault(conf, AJP_HOST_KEY, DEFAULT_AJP_HOST);
+        
+        instanceName = getAsStringOrDefault(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
 
         useEmbeddedKeystore = getAsBooleanOrDefault(conf, USE_EMBEDDED_KEYSTORE_KEY, true);
         keystoreFile = getAsStringOrDefault(conf, KEYSTORE_FILE_KEY, null);
@@ -1421,5 +1438,12 @@ public class Configuration {
      */
     public Map<String, Object> getConnectionOptions() {
         return connectionOptions;
+    }
+
+    /**
+     * @return the instanceName
+     */
+    public String getInstanceName() {
+        return instanceName;
     }
 }

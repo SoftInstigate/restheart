@@ -37,7 +37,7 @@ import org.restheart.hal.metadata.singletons.Hook;
 public class HookMetadataHandler extends PipedHttpHandler {
 
     static final Logger LOGGER = LoggerFactory.getLogger(HookMetadataHandler.class);
-
+    
     /**
      * Creates a new instance of ResponseTranformerMetadataHandler
      */

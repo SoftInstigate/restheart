@@ -85,12 +85,6 @@ import org.slf4j.LoggerFactory;
 import org.restheart.handlers.RequestLoggerHandler;
 import static io.undertow.Handlers.path;
 import static org.fusesource.jansi.Ansi.ansi;
-import static io.undertow.Handlers.path;
-import static org.fusesource.jansi.Ansi.ansi;
-import static io.undertow.Handlers.path;
-import static org.fusesource.jansi.Ansi.ansi;
-import static io.undertow.Handlers.path;
-import static org.fusesource.jansi.Ansi.ansi;
 
 /**
  *
@@ -121,7 +115,10 @@ public final class Bootstrapper {
             // read configuration silently, to avoid logging before initializing the logger
             configuration = FileUtils.getConfiguration(args, true);
         } catch (ConfigurationException ex) {
-            LOGGER.info("Starting " + ansi().fg(RED).bold().a("RESTHeart").reset().toString());
+            LOGGER.info("Starting "
+                    + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
+                    + " instance "
+                    + ansi().fg(RED).bold().a(configuration.getInstanceName()).reset().toString());
 
             if (RESTHEART_VERSION != null) {
                 LOGGER.info("version {}", RESTHEART_VERSION);
@@ -135,7 +132,10 @@ public final class Bootstrapper {
             startServer(false);
         } else {
             if (OSChecker.isWindows()) {
-                LOGGER.info("Starting " + ansi().fg(RED).bold().a("RESTHeart").reset().toString());
+                LOGGER.info("Starting "
+                        + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
+                        + " instance "
+                        + ansi().fg(RED).bold().a(configuration.getInstanceName()).reset().toString());
 
                 if (RESTHEART_VERSION != null) {
                     LOGGER.info("version {}", RESTHEART_VERSION);
@@ -172,7 +172,10 @@ public final class Bootstrapper {
                 initLogging(args, d);
 
                 try {
-                    LOGGER.info("Starting " + ansi().fg(RED).bold().a("RESTHeart").reset().toString());
+                    LOGGER.info("Starting "
+                            + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
+                            + " instance "
+                            + ansi().fg(RED).bold().a(configuration.getInstanceName()).reset().toString());
 
                     if (RESTHEART_VERSION != null) {
                         LOGGER.info("version {}", RESTHEART_VERSION);
@@ -316,7 +319,10 @@ public final class Bootstrapper {
      * @param fork
      */
     private static void startServer(boolean fork) {
-        LOGGER.info("Starting " + ansi().fg(RED).bold().a("RESTHeart").reset().toString());
+        LOGGER.info("Starting "
+                + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
+                + " instance "
+                + ansi().fg(RED).bold().a(configuration.getInstanceName()).reset().toString());
 
         if (RESTHEART_VERSION != null) {
             LOGGER.info("version {}", RESTHEART_VERSION);
