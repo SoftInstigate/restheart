@@ -30,8 +30,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class SnooperWebHook implements WebHook {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SnooperWebHook.class);
+public class SnooperHook implements Hook {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SnooperHook.class);
     private final static ObjectSerializer SERIALIZER = JSONSerializers.getStrict();
 
     @Override

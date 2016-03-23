@@ -20,28 +20,28 @@ package org.restheart.handlers.metadata;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.restheart.hal.metadata.InvalidMetadataException;
-import org.restheart.hal.metadata.WebHookMetadata;
+import org.restheart.hal.metadata.HookMetadata;
 import org.restheart.hal.metadata.singletons.NamedSingletonsFactory;
-import org.restheart.hal.metadata.singletons.WebHook;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.restheart.hal.metadata.singletons.Hook;
 
 /**
  *
- * handler that executes the webhooks defined in the collection properties
+ * handler that executes the hooks defined in the collection properties
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class WebHookMetadataHandler extends PipedHttpHandler {
+public class HookMetadataHandler extends PipedHttpHandler {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(WebHookMetadataHandler.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(HookMetadataHandler.class);
 
     /**
      * Creates a new instance of ResponseTranformerMetadataHandler
      */
-    public WebHookMetadataHandler() {
+    public HookMetadataHandler() {
         super(null);
     }
 
@@ -50,7 +50,7 @@ public class WebHookMetadataHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public WebHookMetadataHandler(PipedHttpHandler next) {
+    public HookMetadataHandler(PipedHttpHandler next) {
         super(next);
     }
 
@@ -58,29 +58,29 @@ public class WebHookMetadataHandler extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getCollectionProps() != null
                 && context.getCollectionProps()
-                .containsField(WebHookMetadata.ROOT_KEY)) {
+                .containsField(HookMetadata.ROOT_KEY)) {
 
-            List<WebHookMetadata> mdHooks = null;
+            List<HookMetadata> mdHooks = null;
 
             try {
-                mdHooks = WebHookMetadata.getFromJson(context.getCollectionProps());
+                mdHooks = HookMetadata.getFromJson(context.getCollectionProps());
             } catch (InvalidMetadataException ime) {
                 context.addWarning(ime.getMessage());
             }
 
             if (mdHooks != null) {
-                for (WebHookMetadata mdHook : mdHooks) {
-                    WebHook wh;
+                for (HookMetadata mdHook : mdHooks) {
+                    Hook wh;
 
                     try {
-                        wh = (WebHook) NamedSingletonsFactory.getInstance().get("webhooks", mdHook.getName());
+                        wh = (Hook) NamedSingletonsFactory.getInstance().get("hooks", mdHook.getName());
                     } catch (IllegalArgumentException ex) {
-                        context.addWarning("error applying webhook: " + ex.getMessage());
+                        context.addWarning("error applying hook: " + ex.getMessage());
                         return;
                     }
 
                     if (wh == null) {
-                        throw new IllegalArgumentException("cannot find singleton " + mdHook.getName() + " in singleton group webhook");
+                        throw new IllegalArgumentException("cannot find singleton " + mdHook.getName() + " in singleton group hook");
                     }
 
                     if (wh.doesSupportRequests(context)) {
