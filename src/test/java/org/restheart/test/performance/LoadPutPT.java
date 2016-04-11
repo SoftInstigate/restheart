@@ -26,51 +26,71 @@ package org.restheart.test.performance;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.request.HttpRequestWithBody;
 import com.mongodb.BasicDBObject;
-import io.undertow.util.Headers;
 import org.restheart.db.DocumentDAO;
 import java.io.IOException;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.StatusLine;
-import org.apache.http.client.fluent.Request;
-import org.apache.http.client.fluent.Response;
-import org.apache.http.entity.ContentType;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import org.restheart.hal.Representation;
+import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
+import static org.junit.Assert.assertEquals;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class LoadPutPT extends AbstractPT {
-    private static final ContentType halCT = ContentType.create(Representation.HAL_JSON_MEDIA_TYPE);
+    public void post() throws Exception {
+        HttpRequestWithBody req = Unirest.post(url);
+        HttpResponse resp;
 
-    /**
-     *
-     * @throws IOException
-     */
-    public void put() throws Exception {
-        BasicDBObject content = new BasicDBObject("nanostamp", System.nanoTime());
+        if (id != null && pwd != null) {
+            req.basicAuth(id, pwd);
+        }
 
-        Response resp = httpExecutor.execute(Request.Post(url).bodyString(content.toString(), halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        resp = req
+                .header("content-type", "application/json")
+                .body("{'nanostamp': " + System.nanoTime() + "}")
+                .asString();
 
-        HttpResponse httpResp = resp.returnResponse();
-        assertNotNull(httpResp);
-        HttpEntity entity = httpResp.getEntity();
-        assertNotNull(entity);
-        StatusLine statusLine = httpResp.getStatusLine();
-        assertNotNull(statusLine);
-
-        assertEquals("check status code", HttpStatus.SC_CREATED, statusLine.getStatusCode());
+        assertEquals("check status code", HttpStatus.SC_CREATED, resp.getStatus());
     }
 
-    /**
-     *
-     * @throws IOException
-     */
+    public void postWitId() throws Exception {
+        HttpRequestWithBody req = Unirest.post(url);
+        HttpResponse resp;
+
+        if (id != null && pwd != null) {
+            req.basicAuth(id, pwd);
+        }
+
+        resp = req
+                .header("content-type", "application/json")
+                .body("{'_id': {'$oid': '" + new ObjectId().toString() + "'}, 'nanostamp': " + System.nanoTime() + "}")
+                .asString();
+
+        assertEquals("check status code", HttpStatus.SC_CREATED, resp.getStatus());
+    }
+
+    public void put() throws Exception {
+        String _url = url + "/" + new ObjectId().toString();
+        
+        HttpRequestWithBody req = Unirest.put(_url);
+        HttpResponse resp;
+
+        if (id != null && pwd != null) {
+            req.basicAuth(id, pwd);
+        }
+                
+        resp = req
+                .header("content-type", "application/json")
+                .body("{'nanostamp': " + System.nanoTime() + "}")
+                .asString();
+
+        assertEquals("check status code", HttpStatus.SC_CREATED, resp.getStatus());
+    }
+
     public void dbdirect() throws IOException {
         BasicDBObject content = new BasicDBObject("random", Math.random());
 
