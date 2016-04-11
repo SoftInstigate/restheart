@@ -25,7 +25,6 @@ import org.apache.http.HttpStatus;
 import org.bson.types.ObjectId;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -300,7 +299,6 @@ public class JsonSchemaCheckerIT extends AbstactIT {
      * @throws Exception
      */
     @Test
-    @Ignore
     public void testPatchIncompleteObject() throws Exception {
         String id = new ObjectId().toString();
         

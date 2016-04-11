@@ -194,7 +194,7 @@ public class JsonUtils {
 
                     ret.put(newKey, newList);
                 } else {
-                    ret.put(newKey, escapeKeys(value, escapeDots));
+                    ret.put(newKey, value);
                 }
 
             });
@@ -215,7 +215,7 @@ public class JsonUtils {
 
                     ret.add(newList);
                 } else {
-                    ret.add(escapeKeys(value, escapeDots));
+                    ret.add(value);
                 }
 
             });
