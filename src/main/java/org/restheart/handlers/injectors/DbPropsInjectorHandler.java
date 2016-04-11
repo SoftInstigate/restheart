@@ -63,22 +63,18 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
                 dbProps = LocalCachesSingleton.getInstance().getDBProperties(dbName);
             }
 
-            // if dbProps is null, we need to expliclty check if the db exists
-            // it can exists without properties
+            // if dbProps is null, the db does not exist
             if (dbProps == null
                     && !(context.getType() == RequestContext.TYPE.DB
                     && context.getMethod() == RequestContext.METHOD.PUT)
-                    && context.getType() != RequestContext.TYPE.ROOT
-                    && !getDatabase().doesDbExist(dbName)) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "Db '" + dbName + "' does not exist");
+                    && context.getType() != RequestContext.TYPE.ROOT) {
+                ResponseHelper
+                        .endExchangeWithMessage(exchange,
+                                HttpStatus.SC_NOT_FOUND,
+                                "Db '" + dbName + "' does not exist");
                 return;
             }
 
-            if (dbProps == null
-                    && context.getMethod() == RequestContext.METHOD.GET) {
-                dbProps = new BsonDocument("_id", new BsonString(dbName));
-            } 
-            
             if (dbProps != null) {
                 dbProps.append("_id", new BsonString(dbName));
             }
