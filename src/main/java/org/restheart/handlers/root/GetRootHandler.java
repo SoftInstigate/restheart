@@ -65,7 +65,9 @@ public class GetRootHandler extends PipedHttpHandler {
             List<String> _dbs = getDatabase().getDatabaseNames();
 
             // filter out reserved resources
-            List<String> dbs = _dbs.stream().filter(db -> !RequestContext.isReservedResourceDb(db)).collect(Collectors.toList());
+            List<String> dbs = _dbs.stream()
+                    .filter(db -> !RequestContext.isReservedResourceDb(db))
+                    .collect(Collectors.toList());
 
             if (dbs == null) {
                 dbs = new ArrayList<>();
@@ -82,9 +84,11 @@ public class GetRootHandler extends PipedHttpHandler {
 
                 dbs.stream().map((db) -> {
                     if (LocalCachesSingleton.isEnabled()) {
-                        return LocalCachesSingleton.getInstance().getDBProperties(db);
+                        return LocalCachesSingleton.getInstance()
+                                .getDBProperties(db);
                     } else {
-                        return getDatabase().getDatabaseProperties(db);
+                        return getDatabase()
+                                .getDatabaseProperties(db);
                     }
                 }
                 ).forEach((item) -> {

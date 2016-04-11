@@ -88,28 +88,15 @@ public class DbsDAO implements Database {
     }
 
     /**
+     * Returns true if the collection exists
      *
-     * @param dbName
-     * @return
-     *
+     * @param dbName the database name of the collection
+     * @param collName the collection name
+     * @return true if the collection exists
      */
     @Override
     public boolean doesCollectionExist(String dbName, String collName) {
-        // at least one collection exists for an existing db
-        MongoCursor<String> dbCollections = client
-                .getDatabase(dbName)
-                .listCollectionNames()
-                .iterator();
-
-        while (dbCollections.hasNext()) {
-            String dbCollection = dbCollections.next();
-
-            if (collName.equals(dbCollection)) {
-                return true;
-            }
-        }
-
-        return false;
+        return collectionDAO.doesCollectionExist(dbName, collName);
     }
 
     /**
@@ -163,6 +150,8 @@ public class DbsDAO implements Database {
 
         if (props != null) {
             props.append("_id", new BsonString(dbName));
+        } else if (doesDbExist(dbName)) {
+            return new BsonDocument("_id", new BsonString(dbName));
         }
 
         return props;

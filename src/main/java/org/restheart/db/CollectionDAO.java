@@ -24,6 +24,7 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.util.JSON;
@@ -295,9 +296,35 @@ class CollectionDAO {
                 
         if (props != null) {
             props.append("_id", new BsonString(collName));
+        } else if (doesCollectionExist(dbName, collName)) {
+            return new BsonDocument("_id", new BsonString(collName));
         }
                 
         return props;
+    }
+    
+    /**
+     * Returns true if the collection exists
+     *
+     * @param dbName the database name of the collection
+     * @param collName the collection name
+     * @return true if the collection exists
+     */
+    public boolean doesCollectionExist(String dbName, String collName) {
+        MongoCursor<String> dbCollections = client
+                .getDatabase(dbName)
+                .listCollectionNames()
+                .iterator();
+
+        while (dbCollections.hasNext()) {
+            String dbCollection = dbCollections.next();
+
+            if (collName.equals(dbCollection)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

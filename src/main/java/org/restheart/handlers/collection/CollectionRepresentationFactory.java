@@ -60,7 +60,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
         final Representation rep;
-        
+
         if (context.isFullHalMode()) {
             rep = createRepresentation(exchange, context, requestPath);
         } else {
@@ -90,7 +90,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
             // curies
             rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
                     + "/{rel}.html", true), true);
-        } 
+        }
 
         return rep;
     }
@@ -131,8 +131,9 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
     }
 
     private void addAggregationsLinks(final RequestContext context, final Representation rep, final String requestPath) {
-
-        Object _aggregations = context.getCollectionProps().get(RequestContext.AGGREGATIONS_QPARAM_KEY);
+        Object _aggregations = context
+                .getCollectionProps()
+                .get(RequestContext.AGGREGATIONS_QPARAM_KEY);
 
         if (_aggregations instanceof BasicDBList) {
             BasicDBList aggregations = (BasicDBList) _aggregations;
@@ -183,41 +184,41 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
                 rep.addWarning("filtered out reserved resource " + requestPath + "/" + _id.toString());
             } else {
                 Representation nrep;
-                
+
                 if (_id == null) {
                     nrep = new DocumentRepresentationFactory().getRepresentation(requestPath + "/_null", exchange, context, d);
                 } else {
                     nrep = new DocumentRepresentationFactory().getRepresentation(requestPath + "/" + _id.toString(), exchange, context, d);
                 }
-            
-            if (context.getType() == RequestContext.TYPE.FILES_BUCKET) {
-                if (context.isFullHalMode()) {
-                    DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.FILE, d);
+
+                if (context.getType() == RequestContext.TYPE.FILES_BUCKET) {
+                    if (context.isFullHalMode()) {
+                        DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.FILE, d);
+                    }
+
+                    rep.addRepresentation("rh:file", nrep);
+                } else if (context.getType() == RequestContext.TYPE.SCHEMA_STORE) {
+                    if (context.isFullHalMode()) {
+                        DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.SCHEMA, d);
+                    }
+
+                    rep.addRepresentation("rh:schema", nrep);
+
+                } else {
+                    if (context.isFullHalMode()) {
+                        DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.DOCUMENT, d);
+                    }
+
+                    rep.addRepresentation("rh:doc", nrep);
                 }
-
-                rep.addRepresentation("rh:file", nrep);
-            } else if (context.getType() == RequestContext.TYPE.SCHEMA_STORE) {
-                if (context.isFullHalMode()) {
-                    DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.SCHEMA, d);
-                }
-
-                rep.addRepresentation("rh:schema", nrep);
-
-            } else {
-                if (context.isFullHalMode()) {
-                    DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.DOCUMENT, d);
-                }
-
-                rep.addRepresentation("rh:doc", nrep);
             }
         }
     }
-}
 
 // TODO this is hardcoded, if name of checker is changed in conf file
 // method won't work. need to get the name from the configuration
-private static final String JSON_SCHEMA_NAME = "jsonSchema";
-    
+    private static final String JSON_SCHEMA_NAME = "jsonSchema";
+
     private static void addSchemaLinks(Representation rep, RequestContext context) {
         try {
             List<RequestChecker> checkers = RequestChecker.getFromJson(context.getCollectionProps());
@@ -234,7 +235,7 @@ private static final String JSON_SCHEMA_NAME = "jsonSchema";
                     if (schemaId == null) {
                         return;
                     }
-                    
+
                     String schemaStoreDb;
 
                     if (_schemaStoreDb == null) {
@@ -245,7 +246,7 @@ private static final String JSON_SCHEMA_NAME = "jsonSchema";
 
                     try {
                         rep.addLink(new Link("schema", URLUtils
-                                .getUriWithDocId(context, 
+                                .getUriWithDocId(context,
                                         schemaStoreDb, "_schemas", schemaId)));
                     } catch (UnsupportedDocumentIdException ex) {
                     }
@@ -253,6 +254,7 @@ private static final String JSON_SCHEMA_NAME = "jsonSchema";
 
             }
         } catch (InvalidMetadataException ime) {
+            // nothing to do
         }
     }
 }

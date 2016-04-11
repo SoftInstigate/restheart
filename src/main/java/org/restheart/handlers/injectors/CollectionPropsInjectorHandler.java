@@ -71,30 +71,25 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
                 collProps = LocalCachesSingleton.getInstance()
                         .getCollectionProperties(dbName, collName);
             }
-            
-            // if collProps is null, we need to expliclty check if the collection exists
-            // it can exists without properties
+
+            // if collProps is null, the collection does not exist
             if (collProps == null
-                    && checkCollection(context)
-                    && !getDatabase().doesCollectionExist(dbName, collName)) {
-                    collectionDoesNotExists(context, exchange);
-                    return;
-                }
+                    && checkCollection(context)) {
+                collectionDoesNotExists(context, exchange);
+                return;
+            }
 
             if (collProps == null
                     && context.getMethod() == RequestContext.METHOD.GET) {
                 collProps = new BsonDocument("_id", new BsonString(collName));
-            } 
-            
-            if (collProps != null) {
-                collProps.append("_id", new BsonString(collName));
             }
 
             context.setCollectionProps(
                     JsonUtils.convertBsonValueToDBObject(collProps));
         }
 
-        getNext().handleRequest(exchange, context);
+        getNext()
+                .handleRequest(exchange, context);
     }
 
     public static boolean checkCollection(RequestContext context) {
