@@ -21,7 +21,6 @@ import com.mongodb.DBObject;
 import com.mongodb.DuplicateKeyException;
 import io.undertow.server.HttpServerExchange;
 import java.io.IOException;
-import org.restheart.db.Database;
 import org.restheart.db.GridFsDAO;
 import org.restheart.db.GridFsRepository;
 import org.restheart.db.OperationResult;

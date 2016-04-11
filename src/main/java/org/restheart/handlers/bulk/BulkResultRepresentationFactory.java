@@ -31,7 +31,6 @@ import org.restheart.db.BulkOperationResult;
 import org.restheart.hal.AbstractRepresentationFactory;
 import org.restheart.hal.Link;
 import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
-import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 

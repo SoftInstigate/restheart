@@ -19,7 +19,6 @@ package org.restheart.utils;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
-import com.mongodb.MongoException;
 import com.mongodb.util.JSONParseException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;

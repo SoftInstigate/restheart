@@ -31,9 +31,6 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
 
 /**
  *

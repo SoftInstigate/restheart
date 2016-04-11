@@ -17,16 +17,12 @@
  */
 package org.restheart.utils;
 
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import java.util.Arrays;
 import java.util.List;
-import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
-import org.bson.BsonString;
-import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 
 /**
