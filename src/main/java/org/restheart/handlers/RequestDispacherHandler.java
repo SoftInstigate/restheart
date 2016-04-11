@@ -42,6 +42,7 @@ import java.util.Map;
 import org.restheart.handlers.schema.JsonMetaSchemaChecker;
 import static org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.TYPE;
+import org.restheart.handlers.aggregation.AggregationTransformer;
 import org.restheart.handlers.files.DeleteBucketHandler;
 import org.restheart.handlers.files.DeleteFileHandler;
 import org.restheart.handlers.files.GetFileBinaryHandler;
@@ -104,7 +105,8 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         // *** ROOT handlers
         putPipedHttpHandler(TYPE.ROOT, METHOD.GET,
-                new GetRootHandler());
+                new GetRootHandler(new TransformerHandler(null,
+                        new AggregationTransformer())));
 
         // *** DB handlers
         putPipedHttpHandler(TYPE.DB, METHOD.GET,
@@ -126,7 +128,10 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.GET,
                 new GetCollectionHandler(
                         new ResponseTranformerMetadataHandler(
-                                new HookMetadataHandler())));
+                                new TransformerHandler(
+                                        new HookMetadataHandler(),
+                                        new AggregationTransformer())
+                        )));
 
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST,
                 new NormalOrBulkDispatcherHandler(
@@ -142,7 +147,10 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.PUT,
                 new RequestTransformerMetadataHandler(
-                        new PutCollectionHandler()));
+                        new TransformerHandler(new PutCollectionHandler(),
+                                new AggregationTransformer())
+                )
+        );
 
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.DELETE,
                 new DeleteCollectionHandler());

@@ -18,6 +18,7 @@
 package org.restheart.handlers.metadata;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import java.util.List;
@@ -25,6 +26,7 @@ import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.singletons.Transformer;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import static org.restheart.handlers.RequestContext.METHOD.GET;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +59,9 @@ public class TransformerHandler extends PipedHttpHandler {
             transform(exchange, context);
         }
 
-        getNext().handleRequest(exchange, context);
+        if (getNext() != null) {
+            getNext().handleRequest(exchange, context);
+        }
     }
 
     private boolean doesTransformerAppy() {
@@ -68,10 +72,20 @@ public class TransformerHandler extends PipedHttpHandler {
     private void transform(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
         if (context.getContent() != null
                 && !(context.getContent() instanceof BasicDBObject)) {
-            throw new RuntimeException("this hanlder only supports content of type json object; content "
+            throw new RuntimeException(
+                    "this hanlder only supports content of type json object; content "
                     + context.getContent());
         }
 
-        transformers.stream().forEachOrdered(t -> t.tranform(exchange, context, context.getContent(), null));
+        DBObject data;
+        
+        if (context.getMethod() == GET) {
+           data = context.getResponseContent();
+        } else {
+            data = context.getContent();
+        }
+        
+        transformers.stream().forEachOrdered(
+                t -> t.tranform(exchange, context, data, null));
     }
 }

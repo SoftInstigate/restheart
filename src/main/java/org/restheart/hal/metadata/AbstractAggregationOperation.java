@@ -150,14 +150,14 @@ public abstract class AbstractAggregationOperation {
     /**
      * @return the type
      */
-    public TYPE getType() {
+    public final TYPE getType() {
         return type;
     }
 
     /**
      * @return the uri
      */
-    public String getUri() {
+    public final String getUri() {
         return uri;
     }
 
