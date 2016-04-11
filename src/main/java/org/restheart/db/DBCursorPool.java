@@ -36,14 +36,11 @@ import java.util.stream.Collectors;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.Color.YELLOW;
-import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static org.fusesource.jansi.Ansi.ansi;
-import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.ansi;
 
 /**

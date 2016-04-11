@@ -42,7 +42,7 @@ public class GetRoleHandler extends ApplicationLogicHandler {
     /**
      * the key for the url property.
      */
-    public static final String urlKey = "url";
+    public static final String URL_KEY = "url";
 
     private String url;
 
@@ -60,7 +60,7 @@ public class GetRoleHandler extends ApplicationLogicHandler {
             throw new IllegalArgumentException("args cannot be null");
         }
 
-        this.url = (String) ((Map<String, Object>) args).get(urlKey);
+        this.url = (String) ((Map<String, Object>) args).get(URL_KEY);
     }
 
     /**

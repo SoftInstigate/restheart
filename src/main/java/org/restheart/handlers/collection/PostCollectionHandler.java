@@ -23,8 +23,6 @@ import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
-import java.util.Optional;
-import org.bson.types.ObjectId;
 import org.restheart.db.DocumentDAO;
 import org.restheart.db.OperationResult;
 import org.restheart.handlers.PipedHttpHandler;
@@ -32,9 +30,6 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
 import static org.restheart.utils.URLUtils.getReferenceLink;
 
 /**
