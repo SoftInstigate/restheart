@@ -54,9 +54,9 @@ public class GetAggreationIT extends HttpClientAbstactIT {
                 + "\"uri\":\"" + uri + "\","
                 + "\"stages\":"
                 + "["
-                + "{\"_$match\": { \"name\": { \"_$exists\": true}}},"
-                + "{\"_$group\":"
-                + "{\"_id\": \"$name\", \"value\": {\"_$avg\": \"$age\"} }}"
+                + "{\"$match\": { \"name\": { \"$exists\": true}}},"
+                + "{\"$group\":"
+                + "{\"_id\": \"$name\", \"value\": {\"$avg\": \"$age\"} }}"
                 + "]"
                 + "}]}";
         
@@ -75,9 +75,9 @@ public class GetAggreationIT extends HttpClientAbstactIT {
                 + "\"uri\":\"" + uri + "\","
                 + "\"stages\":"
                 + "["
-                + "{\"_$match\": { \"obj::name\": { \"_$exists\": true}}},"
-                + "{\"_$group\":"
-                + "{\"_id\": \"$obj.name\", \"value\": {\"_$avg\": \"$obj.age\"} }}"
+                + "{\"$match\": { \"obj.name\": { \"$exists\": true}}},"
+                + "{\"$group\":"
+                + "{\"_id\": \"$obj.name\", \"value\": {\"$avg\": \"$obj.age\"} }}"
                 + "]"
                 + "}]}";
 
@@ -96,7 +96,7 @@ public class GetAggreationIT extends HttpClientAbstactIT {
                 + "\"uri\":\"" + uri + "\","
                 + "\"map\": \"function() { emit(this.name, this.age); }\"" + ","
                 + "\"reduce\":\"function(key, values) { return Array.avg(values); }\"" + ","
-                + "\"query\":{\"name\":{\"_$exists\":true}}"
+                + "\"query\":{\"name\":{\"$exists\":true}}"
                 + "}]}";
         
         createTmpCollection();
@@ -114,7 +114,7 @@ public class GetAggreationIT extends HttpClientAbstactIT {
                 + "\"uri\": \"" + uri + "\","
                 + "\"map\": \"function() { var minage = JSON.parse($vars).minage; if (this.age > minage ) { emit(this.name, this.age); }; }\","
                 + "\"reduce\":\"function(key, values) { return Array.avg(values); }\"" + ","
-                + "\"query\":{\"name\":{\"_$var\":\"name\"}}"
+                + "\"query\":{\"name\":{\"$var\":\"name\"}}"
                 + "}]}";
 
         createTmpCollection();
@@ -196,7 +196,7 @@ public class GetAggreationIT extends HttpClientAbstactIT {
                 + "\"uri\": \"" + uri + "\","
                 + "\"map\": \"function() { emit(this.name, this.age) }\"" + ","
                 + "\"reduce\":\"function(key, values) { return Array.avg(values) }\"" + ","
-                + "\"query\":{\"name\":{\"_$var\":\"name\"}}"
+                + "\"query\":{\"name\":{\"$var\":\"name\"}}"
                 + "}]}";
 
         createTmpCollection();

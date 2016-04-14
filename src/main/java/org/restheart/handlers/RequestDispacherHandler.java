@@ -105,13 +105,14 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         // *** ROOT handlers
         putPipedHttpHandler(TYPE.ROOT, METHOD.GET,
-                new GetRootHandler(new TransformerHandler(null,
-                        new AggregationTransformer())));
+                new GetRootHandler());
 
         // *** DB handlers
         putPipedHttpHandler(TYPE.DB, METHOD.GET,
                 new GetDBHandler(
-                        new ResponseTranformerMetadataHandler()));
+                        new ResponseTranformerMetadataHandler(
+                                new TransformerHandler(null,
+                                        new AggregationTransformer()))));
 
         putPipedHttpHandler(TYPE.DB, METHOD.PUT,
                 new RequestTransformerMetadataHandler(
@@ -157,7 +158,8 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.PATCH,
                 new RequestTransformerMetadataHandler(
-                        new PatchCollectionHandler()));
+                        new TransformerHandler(new PatchCollectionHandler(),
+                                new AggregationTransformer())));
 
         // *** DOCUMENT handlers
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.GET,

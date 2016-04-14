@@ -21,6 +21,9 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
+import java.util.List;
+import java.util.Optional;
+import org.restheart.hal.metadata.AbstractAggregationOperation;
 import org.restheart.hal.metadata.singletons.Transformer;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.JsonUtils;
@@ -28,8 +31,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * this transformer is responsible of escaping in the aggregation stages that
- * can contain dollar prefixed keys (for operator) and . (dot notation)
+ * transformer in charge of escaping the aggregation stages that can contain
+ * dollar prefixed keys (for operator) use the dot notation
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -48,23 +51,80 @@ public class AggregationTransformer implements Transformer {
         }
 
         if (context.getType() == RequestContext.TYPE.COLLECTION) {
+            BasicDBList aggrs = getAggregationMetadata(contentToTransform);
+
+            if (aggrs == null) {
+                // nothing to do
+                return;
+            }
+
             if (context.getMethod() == RequestContext.METHOD.PUT
                     || context.getMethod() == RequestContext.METHOD.PATCH) {
-                contentToTransform.putAll(
-                        (DBObject) JsonUtils.escapeKeys(contentToTransform, true));
+                contentToTransform.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
+                        (DBObject) JsonUtils.escapeKeys(aggrs, true));
             } else if (context.getMethod() == RequestContext.METHOD.GET) {
-                contentToTransform.putAll(
-                        (DBObject) JsonUtils.unescapeKeys(contentToTransform));
+                contentToTransform.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
+                        (DBObject) JsonUtils.unescapeKeys(aggrs));
             }
-        } else if ((context.getType() == RequestContext.TYPE.COLLECTION)
+        } else if ((context.getType() == RequestContext.TYPE.DB)
                 && context.getMethod() == RequestContext.METHOD.GET) {
             // apply transformation on embedded schemas
 
             BasicDBObject _embedded = (BasicDBObject) contentToTransform.get("_embedded");
 
-            contentToTransform.put("_embedded",
-                    (DBObject) JsonUtils.unescapeKeys(_embedded));
+            if (_embedded == null) {
+                // nothing to do
+                return;
+            }
 
+            BasicDBList colls = (BasicDBList) _embedded.get("rh:coll");
+
+            if (colls == null) {
+                // nothing to do
+                return;
+            }
+
+            colls.stream()
+                    .filter(coll -> {
+                        return coll instanceof BasicDBObject;
+                    })
+                    .forEach(_coll -> {
+                        BasicDBObject coll = (BasicDBObject) _coll;
+
+                        BasicDBList aggrs = getAggregationMetadata(coll);
+
+                        if (aggrs == null) {
+                            // nothing to do
+                            return;
+                        }
+
+                        coll.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
+                                (DBObject) JsonUtils.unescapeKeys(aggrs));
+                    });
+        }
+    }
+
+    private BasicDBList getAggregationMetadata(DBObject contentToTransform) {
+        List<Optional<Object>> ___aggrs = JsonUtils
+                .getPropsFromPath(contentToTransform,
+                        "$." + AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME);
+
+        if (___aggrs == null || ___aggrs.isEmpty()) {
+            return null;
+        }
+
+        Optional<Object> __aggrs = ___aggrs.get(0);
+
+        if (__aggrs == null || !__aggrs.isPresent()) {
+            return null;
+        }
+
+        Object _aggrs = __aggrs.get();
+
+        if (_aggrs instanceof BasicDBList) {
+            return (BasicDBList) _aggrs;
+        } else {
+            return null;
         }
     }
 }
