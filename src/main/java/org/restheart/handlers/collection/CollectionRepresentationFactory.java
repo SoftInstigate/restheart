@@ -28,6 +28,7 @@ import org.restheart.hal.AbstractRepresentationFactory;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
 import org.restheart.hal.UnsupportedDocumentIdException;
+import org.restheart.hal.metadata.AbstractAggregationOperation;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.RequestChecker;
 import org.restheart.hal.metadata.singletons.JsonSchemaChecker;
@@ -133,7 +134,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
     private void addAggregationsLinks(final RequestContext context, final Representation rep, final String requestPath) {
         Object _aggregations = context
                 .getCollectionProps()
-                .get(RequestContext.AGGREGATIONS_QPARAM_KEY);
+                .get(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME);
 
         if (_aggregations instanceof BasicDBList) {
             BasicDBList aggregations = (BasicDBList) _aggregations;

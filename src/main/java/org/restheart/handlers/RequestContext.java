@@ -109,7 +109,6 @@ public class RequestContext {
     public static final String AGGREGATION_VARIABLES_QPARAM_KEY = "avars";
     public static final String KEYS_QPARAM_KEY = "keys";
     public static final String EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY = "eager";
-    public static final String AGGREGATIONS_QPARAM_KEY = "aggrs";
     public static final String HAL_QPARAM_KEY = "hal";
     public static final String DOC_ID_TYPE_QPARAM_KEY = "id_type";
     public static final String ETAG_CHECK_QPARAM_KEY = "checkEtag";
