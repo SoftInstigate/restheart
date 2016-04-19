@@ -49,10 +49,6 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
 
         addBulkResult(result, context, rep, requestPath);
 
-        // empty curies section. this is needed due to HAL browser issue
-        // https://github.com/mikekelly/hal-browser/issues/71
-        rep.addLinkArray("curies");
-
         return rep;
     }
 
@@ -64,10 +60,6 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
         addWriteResult(mbwe.getWriteResult(), rep, requestPath);
 
         addWriteErrors(mbwe.getWriteErrors(), rep);
-
-        // empty curies section. this is needed due to HAL browser issue
-        // https://github.com/mikekelly/hal-browser/issues/71
-        rep.addLinkArray("curies");
 
         return rep;
     }
@@ -91,10 +83,10 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
                             nrep.addLink(
                                     new Link("rh:newdoc",
                                             URLUtils
-                                                    .getReferenceLink(
-                                                            context, 
-                                                            requestPath, 
-                                                            update.getId())),
+                                            .getReferenceLink(
+                                                    context,
+                                                    requestPath,
+                                                    update.getId())),
                                     true);
                         });
             }
@@ -127,9 +119,9 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
                             nrep.addLink(
                                     new Link("rh:newdoc",
                                             URLUtils
-                                                    .getReferenceLink(
-                                                            requestPath, 
-                                                            update.getId())),
+                                            .getReferenceLink(
+                                                    requestPath,
+                                                    update.getId())),
                                     true);
                         });
             }
@@ -151,14 +143,14 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
             final Representation rep) {
         wes.stream().forEach(error -> {
             Representation nrep = new Representation();
-            
+
             nrep.addProperty("index", error.getIndex());
             nrep.addProperty("mongodbErrorCode", error.getCode());
-            nrep.addProperty("httpStatus", 
+            nrep.addProperty("httpStatus",
                     ResponseHelper.getHttpStatusFromErrorCode(error.getCode()));
-            nrep.addProperty("message", 
+            nrep.addProperty("message",
                     ResponseHelper.getMessageFromErrorCode(error.getCode()));
-            
+
             rep.addRepresentation("rh:error", nrep);
         });
     }
