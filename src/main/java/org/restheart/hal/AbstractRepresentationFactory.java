@@ -96,10 +96,10 @@ public abstract class AbstractRepresentationFactory {
 
         Representation rep;
         
-        if (requestPath == null) {
-            rep = new Representation();
-        } else {
+        if (requestPath != null || context.isFullHalMode()) {
             rep = new Representation(requestPath + queryString);
+        } else {
+            rep = new Representation();
         }
         
         return rep;
