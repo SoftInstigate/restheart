@@ -17,14 +17,20 @@
  */
 package org.restheart.test.integration;
 
+import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
+import com.eclipsesource.json.JsonValue;
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.Unirest;
 import org.restheart.hal.Representation;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import org.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
+import org.junit.Assert;
 import static org.junit.Assert.*;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -32,6 +38,10 @@ import org.junit.Test;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PatchDocumentIT extends HttpClientAbstactIT {
+    private final String DB = "test-patch-document-db";
+    private final String COLL = "coll";
+    
+    private HttpResponse resp;
 
     public PatchDocumentIT() {
     }
@@ -84,5 +94,149 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
         assertNotNull("check patched content", content.get("a"));
         assertNotNull("check patched content", content.get("b"));
         assertTrue("check patched content", content.get("a").asInt() == 1 && content.get("b").asInt() == 2);
+    }
+    
+    @Before
+    public void createTestData() throws Exception {
+        // create test db
+        resp = Unirest.put(url(DB))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .asString();
+
+        Assert.assertEquals("create db " + DB, org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+
+        // create collection
+        resp = Unirest.put(url(DB, COLL))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .asString();
+
+        Assert.assertEquals("create collection " + DB.concat("/").concat(COLL), org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+    }
+    
+    @Test
+    public void testPatchDocumentDotNotation() throws Exception {
+        resp = Unirest.put(url(DB, COLL, "docid1"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{ 'array': [] }")
+                .asString();
+
+        Assert.assertEquals("check response status of create test data", org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+
+        resp = Unirest.patch(url(DB, COLL, "docid1"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{ 'doc.number': 1, 'array.0': {'string': 'ciao'} }")
+                .asString();
+
+        Assert.assertEquals("check response status of update test data", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
+        
+        resp = Unirest.get(url(DB, COLL, "docid"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .asString();
+
+        Assert.assertEquals("check response status of get test data", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
+        
+        JsonValue rbody = Json.parse(resp.getBody().toString());
+
+        Assert.assertTrue("check data to be a json object",
+                rbody != null
+                && rbody.isObject());
+        
+        JsonValue doc = rbody.asObject().get("doc");
+        
+        Assert.assertTrue("check data to have the 'doc' json object",
+                doc != null
+                && doc.isObject());
+
+        JsonValue number = doc.asObject().get("number");
+
+        Assert.assertTrue("check doc to have the 'number' property",
+                number != null
+                && number.isNumber()
+                && number.asInt() == 1);
+        
+        JsonValue array = rbody.asObject().get("array");
+
+        Assert.assertTrue("check data to have the 'array' json array",
+                array != null
+                && array.isArray());
+
+        JsonValue element = array.asArray().get(0);
+
+        Assert.assertTrue("check array to have an object element",
+                element != null
+                && element.isObject());
+        
+        JsonValue string = element.asObject().get("string");
+        
+        Assert.assertTrue("check the array element to have the 'string' property",
+                string != null
+                && string.isString()
+                        && string.asString().equals("ciao"));
+    }
+    
+    @Test
+    public void testPatchDocumentOperators() throws Exception {
+        resp = Unirest.put(url(DB, COLL, "docid2"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{ }")
+                .asString();
+        
+        Assert.assertEquals("check response status of create test data", org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+        
+        resp = Unirest.patch(url(DB, COLL, "docid2"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{ '$push': {'array': 'a'}, '$inc': { 'count': 100 }, '$currentDate': {'timestamp': true } }")
+                .asString();
+
+        Assert.assertEquals("check response status of patch test data", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
+
+        resp = Unirest.get(url(DB, COLL, "docid"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .asString();
+
+        Assert.assertEquals("check response status of get test data", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
+
+        JsonValue rbody = Json.parse(resp.getBody().toString());
+
+        Assert.assertTrue("check data to be a json object",
+                rbody != null
+                && rbody.isObject());
+
+        JsonValue array = rbody.asObject().get("array");
+
+        Assert.assertTrue("check data to have the 'array' array with one element",
+                array != null
+                && array.isArray()
+                && array.asArray().size() == 1);
+
+        JsonValue element = array.asArray().get(0);
+
+        Assert.assertTrue("check array element to be the string 'a'",
+                element != null
+                && element.isString()
+                && element.asString().equals("a"));
+
+        JsonValue count = rbody.asObject().get("count");
+        
+        Assert.assertTrue("check count property to be 100",
+                count != null
+                && count.isNumber()
+                && count.asInt() == 100);
+        
+        JsonValue timestamp = rbody.asObject().get("timestamp");
+        
+        Assert.assertTrue("check timestamp to be an object",
+                timestamp != null
+                && timestamp.isObject());
+        
+        JsonValue $date = timestamp.asObject().get("$date");
+        
+        Assert.assertTrue("check $date to be numeric",
+                $date != null
+                && $date.isNumber());
     }
 }
