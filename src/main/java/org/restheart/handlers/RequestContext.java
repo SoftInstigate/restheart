@@ -939,7 +939,7 @@ public class RequestContext {
 
             if (_policy != null && _policy instanceof String) {
                 try {
-                    policy = ETAG_CHECK_POLICY.valueOf((String) _policy);
+                    policy = ETAG_CHECK_POLICY.valueOf(((String) _policy).toUpperCase());
                 } catch (IllegalArgumentException iae) {
                     policy = null;
                 }
@@ -965,7 +965,7 @@ public class RequestContext {
 
             if (_policy != null && _policy instanceof String) {
                 try {
-                    policy = ETAG_CHECK_POLICY.valueOf((String) _policy);
+                    policy = ETAG_CHECK_POLICY.valueOf(((String) _policy).toUpperCase());
                 } catch (IllegalArgumentException iae) {
                     policy = null;
                 }
@@ -981,7 +981,7 @@ public class RequestContext {
         }
 
         // for collection consider coll etagPolicy metadata
-        if (type == TYPE.DB && collectionProps != null) {
+        if (type == TYPE.COLLECTION && collectionProps != null) {
             // check the coll  metadata
             Object _policy = collectionProps.get(ETAG_POLICY_METADATA_KEY);
 
@@ -991,7 +991,7 @@ public class RequestContext {
 
             if (_policy != null && _policy instanceof String) {
                 try {
-                    policy = ETAG_CHECK_POLICY.valueOf((String) _policy);
+                    policy = ETAG_CHECK_POLICY.valueOf(((String) _policy).toUpperCase());
                 } catch (IllegalArgumentException iae) {
                     policy = null;
                 }
