@@ -921,11 +921,11 @@ public class RequestContext {
 
         // for documents consider db and coll etagDocPolicy metadata
         if (type == TYPE.DOCUMENT || type == TYPE.FILE) {
-            // check the coll  metadata
+            // check the coll metadata
             Object _policy = collectionProps != null
                     ? collectionProps.get(ETAG_DOC_POLICY_METADATA_KEY)
                     : null;
-
+            
             LOGGER.trace("collection etag policy (from coll properties) {}", _policy);
 
             if (_policy == null) {
@@ -980,12 +980,20 @@ public class RequestContext {
             }
         }
 
-        // for collection consider coll etagPolicy metadata
+        // for collection consider coll and db etagPolicy metadata
         if (type == TYPE.COLLECTION && collectionProps != null) {
             // check the coll  metadata
             Object _policy = collectionProps.get(ETAG_POLICY_METADATA_KEY);
 
             LOGGER.trace("coll etag policy (from coll properties) {}", _policy);
+            
+            if (_policy == null) {
+                // check the db metadata
+                _policy = dbProps != null ? dbProps.get(ETAG_POLICY_METADATA_KEY)
+                        : null;
+                
+                LOGGER.trace("coll etag policy (from db properties) {}", _policy);
+            }
 
             ETAG_CHECK_POLICY policy = null;
 
