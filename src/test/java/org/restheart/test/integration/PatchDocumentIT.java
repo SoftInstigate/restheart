@@ -131,7 +131,7 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
 
         Assert.assertEquals("check response status of update test data", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
         
-        resp = Unirest.get(url(DB, COLL, "docid"))
+        resp = Unirest.get(url(DB, COLL, "docid1"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
@@ -194,7 +194,7 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
 
         Assert.assertEquals("check response status of patch test data", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
 
-        resp = Unirest.get(url(DB, COLL, "docid"))
+        resp = Unirest.get(url(DB, COLL, "docid2"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
