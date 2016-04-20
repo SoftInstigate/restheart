@@ -53,7 +53,7 @@ public class BulkRequestsIT extends AbstactIT {
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
-        Assert.assertEquals("create schema store " + DB.concat("/").concat(COLL), HttpStatus.SC_CREATED, resp.getStatus());
+        Assert.assertEquals("create collection " + DB.concat("/").concat(COLL), HttpStatus.SC_CREATED, resp.getStatus());
     }
 
     @Test
