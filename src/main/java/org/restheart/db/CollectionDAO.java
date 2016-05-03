@@ -40,6 +40,7 @@ import org.bson.BSONObject;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.Document;
+import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,9 +81,9 @@ class CollectionDAO {
     DBCollection getCollectionLegacy(final String dbName, final String collName) {
         return client.getDB(dbName).getCollection(collName);
     }
-    
+
     /**
-     * Returns the  MongoCollection object for the collection in db dbName.
+     * Returns the MongoCollection object for the collection in db dbName.
      *
      * @param dbName the database name of the collection the database name of
      * the collection
@@ -163,16 +164,23 @@ class CollectionDAO {
 
                 String _s = s.trim(); // the + sign is decoded into a space, in case remove it
 
-                if (_s.startsWith("-")) {
-                    sort.put(_s.substring(1), -1);
-                } else if (_s.startsWith("+")) {
-                    sort.put(_s.substring(1), 1);
-                } else {
-                    sort.put(_s, 1);
+                // manage the case where sort_by is a json object
+                try {
+                    BsonDocument _sort = BsonDocument.parse(_s);
+                    
+                    sort.putAll(_sort);
+                } catch (JsonParseException e) {
+                    // sort_by is just a string, i.e. a property name
+                    if (_s.startsWith("-")) {
+                        sort.put(_s.substring(1), -1);
+                    } else if (_s.startsWith("+")) {
+                        sort.put(_s.substring(1), 1);
+                    } else {
+                        sort.put(_s, 1);
+                    }
                 }
             });
         }
-
         // apply filter
         // TODO refactoring mongodb 3.2 driver. use RequestContext.getComposedFilters()
         final BasicDBObject query = new BasicDBObject();
@@ -244,21 +252,21 @@ class CollectionDAO {
 
             cursor = _cursor.getCursor();
             alreadySkipped = _cursor.getAlreadySkipped();
-            
+
             long startSkipping = 0;
             int cursorSkips = alreadySkipped;
-            
+
             if (LOGGER.isDebugEnabled()) {
                 startSkipping = System.currentTimeMillis();
             }
-            
+
             LOGGER.debug("got cursor from pool with skips {}. need to reach {} skips.", alreadySkipped, toskip);
 
             while (toskip > alreadySkipped && cursor.hasNext()) {
                 cursor.next();
                 alreadySkipped++;
             }
-            
+
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("skipping {} times took {} msecs", toskip - cursorSkips, System.currentTimeMillis() - startSkipping);
             }
@@ -268,11 +276,11 @@ class CollectionDAO {
                 _pagesize--;
             }
         }
-        
+
         // the pool is populated here because, skipping with cursor.next() is heavy operation
         // and we want to minimize the chances that pool cursors are allocated in parallel
         DBCursorPool.getInstance().populateCache(
-                new DBCursorPoolEntryKey(coll, sortBy, filters, keys, toskip, 0), 
+                new DBCursorPoolEntryKey(coll, sortBy, filters, keys, toskip, 0),
                 eager);
 
         return ret;
@@ -289,20 +297,20 @@ class CollectionDAO {
         MongoCollection<BsonDocument> propsColl = getCollection(dbName, "_properties");
 
         BsonDocument props = propsColl
-                .find(new BsonDocument("_id", 
+                .find(new BsonDocument("_id",
                         new BsonString("_properties.".concat(collName))))
                 .limit(1)
                 .first();
-                
+
         if (props != null) {
             props.append("_id", new BsonString(collName));
         } else if (doesCollectionExist(dbName, collName)) {
             return new BsonDocument("_id", new BsonString(collName));
         }
-                
+
         return props;
     }
-    
+
     /**
      * Returns true if the collection exists
      *
