@@ -434,7 +434,11 @@ public class JsonPathConditionsChecker implements Checker {
                     return optional;
                 }
                 if (prop.isPresent()) {
-                    return p.matcher(JsonUtils.serialize(prop.get())).find();
+                    if (prop.get() instanceof String) {
+                        return p.matcher((String)prop.get()).find();
+                    } else {
+                        return p.matcher(JsonUtils.serialize(prop.get())).find();
+                    }
                 } else {
                     return nullable;
                 }
