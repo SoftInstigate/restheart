@@ -81,10 +81,10 @@ public abstract class AbstractRepresentationFactory {
     }
 
     protected void addReturnedProperty(final List<DBObject> embeddedData, final Representation rep) {
-        long count = embeddedData == null ? 0 : embeddedData.stream()
-                .filter((props) -> props != null && props.keySet().stream()
-                        .anyMatch((k) -> k.equals("id") || k.equals("_id")))
-                .count();
+        long count = embeddedData == null ? 0 : embeddedData.stream().count();
+                //.filter(props) -> props != null && props.keySet().stream()
+                        //.anyMatch((k) -> k.equals("id") || k.equals("_id")))
+                //.count();
 
         rep.addProperty("_returned", count);
     }
