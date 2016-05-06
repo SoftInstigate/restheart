@@ -398,13 +398,28 @@ public class JsonPathConditionsChecker implements Checker {
                 }
             }
         }
-        LOGGER.debug("checkType({}, {}, {}, {}) -> {} -> {}", path, type, mandatoryFields, optionalFields, props, ret);
+
+        LOGGER.debug("checkType({}, {}, {}, {}) -> {} -> {}", path, type, mandatoryFields, optionalFields, getRootPropsString(props), ret);
+
         if (ret == false) {
+            String errorMessage;
             if (!failedFieldsCheck) {
-                context.addWarning("checkType condition failed: path: " + path + ", expected type: " + type + ", got: " + (props == null ? "null" : avoidEscapedChars(props.toString())));
+                errorMessage = "checkType condition failed: path: " + path
+                        + ", expected type: " + type
+                        + ", got: " + (props == null
+                                ? "null"
+                                : avoidEscapedChars(getRootPropsString(props)));
+
             } else {
-                context.addWarning("checkType condition failed: path: " + path + ", mandatory fields: " + mandatoryFields + ", optional fields: " + optionalFields + ", got: " + (props == null ? "null" : avoidEscapedChars(props.toString())));
+                errorMessage = "checkType condition failed: path: " + path
+                        + ", mandatory fields: " + mandatoryFields
+                        + ", optional fields: " + optionalFields
+                        + ", got: " + (props == null
+                                ? "null"
+                                : avoidEscapedChars(getRootPropsString(props)));
             }
+
+            context.addWarning(errorMessage);
         }
         return ret;
     }
@@ -435,7 +450,7 @@ public class JsonPathConditionsChecker implements Checker {
                 }
                 if (prop.isPresent()) {
                     if (prop.get() instanceof String) {
-                        return p.matcher((String)prop.get()).find();
+                        return p.matcher((String) prop.get()).find();
                     } else {
                         return p.matcher(JsonUtils.serialize(prop.get())).find();
                     }
@@ -444,10 +459,86 @@ public class JsonPathConditionsChecker implements Checker {
                 }
             });
         }
-        LOGGER.debug("checkRegex({}, {}) -> {} -> {}", path, regex, props, ret);
+
+        LOGGER.debug("checkRegex({}, {}) -> {} -> {}", path, regex, getRootPropsString(props), ret);
+
         if (ret == false) {
-            context.addWarning("checkRegex condition failed: path: " + path + ", regex: " + regex + ", got: " + (props == null ? "null" : avoidEscapedChars(props.toString())));
+            String errorMessage = "checkRegex condition failed: path: " + path
+                    + ", regex: " + regex
+                    + ", got: " + (props == null
+                            ? "null"
+                            : avoidEscapedChars(getRootPropsString(props)));
+
+            context.addWarning(errorMessage);
         }
         return ret;
+    }
+
+    private String getRootPropsString(List<Optional<Object>> props) {
+        if (props == null) {
+            return null;
+        }
+
+        StringBuilder sb = new StringBuilder();
+
+        props.stream().forEach((_prop) -> {
+            if (_prop.isPresent()) {
+                Object prop = _prop.get();
+
+                if (prop == null) {
+                    sb.append("null");
+                } else if (prop instanceof BasicDBList) {
+                    BasicDBList array = (BasicDBList) prop;
+
+                    sb.append("[");
+
+                    array.stream().forEach((item) -> {
+                        if (item instanceof BasicDBObject) {
+                            sb.append("{obj}");
+                        } else if (item instanceof BasicDBList) {
+                            sb.append("[array]");
+                        } else if (item instanceof String) {
+                            sb.append("'");
+                            sb.append(item.toString());
+                            sb.append("'");
+                        } else {
+                            sb.append(item.toString());
+                        }
+
+                        sb.append(", ");
+                    });
+
+                    // remove last comma
+                    if (sb.length() > 1) {
+                        sb.deleteCharAt(sb.length() - 1);
+                        sb.deleteCharAt(sb.length() - 1);
+                    }
+
+                    sb.append("]");
+                } else if (prop instanceof BasicDBObject) {
+                    BasicDBObject obj = (BasicDBObject) prop;
+
+                    sb.append(obj.keySet().toString());
+                } else if (prop instanceof String) {
+                    sb.append("'");
+                    sb.append(prop.toString());
+                    sb.append("'");
+                } else {
+                    sb.append(prop.toString());
+                }
+            } else {
+                sb.append("<missing>");
+            }
+
+            sb.append(", ");
+        });
+
+        // remove last comma
+        if (sb.length() > 1) {
+            sb.deleteCharAt(sb.length() - 1);
+            sb.deleteCharAt(sb.length() - 1);
+        }
+
+        return sb.toString();
     }
 }
