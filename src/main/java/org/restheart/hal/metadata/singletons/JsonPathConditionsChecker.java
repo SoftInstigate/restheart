@@ -482,12 +482,12 @@ public class JsonPathConditionsChecker implements Checker {
         StringBuilder sb = new StringBuilder();
 
         props.stream().forEach((_prop) -> {
-            if (_prop.isPresent()) {
+            if (_prop == null) {
+                sb.append("<property not existing>");
+            } else if (_prop.isPresent()) {
                 Object prop = _prop.get();
 
-                if (prop == null) {
-                    sb.append("null");
-                } else if (prop instanceof BasicDBList) {
+                if (prop instanceof BasicDBList) {
                     BasicDBList array = (BasicDBList) prop;
 
                     sb.append("[");
@@ -527,7 +527,7 @@ public class JsonPathConditionsChecker implements Checker {
                     sb.append(prop.toString());
                 }
             } else {
-                sb.append("<missing>");
+                sb.append("null");
             }
 
             sb.append(", ");
