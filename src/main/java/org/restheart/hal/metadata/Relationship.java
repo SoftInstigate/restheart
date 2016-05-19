@@ -275,7 +275,7 @@ public class Relationship {
                 if (obj != null && obj.isPresent()) {
                     ret.add(obj.get());
                 } else {
-                    LOGGER.debug("the reference field {} resolved to {} from {}", referenceField, objs, data);
+                    LOGGER.trace("the reference field {} resolved to {} from {}", referenceField, objs, data);
                 }
             });
 
