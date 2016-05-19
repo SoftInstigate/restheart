@@ -399,7 +399,11 @@ public class JsonPathConditionsChecker implements Checker {
             }
         }
 
-        LOGGER.debug("checkType({}, {}, {}, {}) -> {} -> {}", path, type, mandatoryFields, optionalFields, getRootPropsString(props), ret);
+        if (ret) {
+            LOGGER.trace("checkType({}, {}, {}, {}) -> {} -> {}", path, type, mandatoryFields, optionalFields, getRootPropsString(props), ret);
+        } else {
+            LOGGER.debug("checkType({}, {}, {}, {}) -> {} -> {}", path, type, mandatoryFields, optionalFields, getRootPropsString(props), ret);
+        }
 
         if (ret == false) {
             String errorMessage;
@@ -460,7 +464,11 @@ public class JsonPathConditionsChecker implements Checker {
             });
         }
 
-        LOGGER.debug("checkRegex({}, {}) -> {} -> {}", path, regex, getRootPropsString(props), ret);
+        if (ret) {
+            LOGGER.trace("checkRegex({}, {}) -> {} -> {}", path, regex, getRootPropsString(props), ret);
+        } else {
+            LOGGER.debug("checkRegex({}, {}) -> {} -> {}", path, regex, getRootPropsString(props), ret);
+        }
 
         if (ret == false) {
             String errorMessage = "checkRegex condition failed: path: " + path
