@@ -208,7 +208,7 @@ class CollectionDAO {
             keys.stream().forEach((String f) -> {
                 BSONObject keyQuery = (BSONObject) JSON.parse(f);
 
-                fields.putAll(keyQuery);  // this can throw JSONParseException for invalid filter parameters
+                fields.putAll(keyQuery);  // this can throw JSONParseException for invalid keys parameters
             });
         }
 
