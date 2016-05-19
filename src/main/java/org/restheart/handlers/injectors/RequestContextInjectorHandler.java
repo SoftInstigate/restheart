@@ -214,7 +214,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                     }
                 } catch (Throwable t) {
                     ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
-                            "illegal filter paramenter: " + f, t);
+                            "illegal keys paramenter: " + f, t);
                     return true;
                 }
 
