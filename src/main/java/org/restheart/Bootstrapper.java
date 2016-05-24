@@ -85,8 +85,6 @@ import org.slf4j.LoggerFactory;
 import org.restheart.handlers.RequestLoggerHandler;
 import static io.undertow.Handlers.path;
 import static org.fusesource.jansi.Ansi.ansi;
-import static io.undertow.Handlers.path;
-import static org.fusesource.jansi.Ansi.ansi;
 
 /**
  *
