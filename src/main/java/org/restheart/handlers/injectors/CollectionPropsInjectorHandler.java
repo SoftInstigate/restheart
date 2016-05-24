@@ -39,7 +39,10 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CollectionPropsInjectorHandler.class);
 
+    private static final String RESOURCE_DOES_NOT_EXIST = "Resource does not exist";
     private static final String COLLECTION_DOES_NOT_EXIST = "Collection '%s' does not exist";
+    private static final String FILE_BUCKET_DOES_NOT_EXIST = "File Bucket '%s' does not exist";
+    private static final String SCHEMA_STORE_DOES_NOT_EXIST = "Schema Store does not exist";
 
     /**
      * Creates a new instance of MetadataInjecterHandler
@@ -75,7 +78,7 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
             // if collProps is null, the collection does not exist
             if (collProps == null
                     && checkCollection(context)) {
-                collectionDoesNotExists(context, exchange);
+                doesNotExists(context, exchange);
                 return;
             }
 
@@ -95,13 +98,25 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
     public static boolean checkCollection(RequestContext context) {
         return !(context.getType() == RequestContext.TYPE.COLLECTION && context.getMethod() == RequestContext.METHOD.PUT)
                 && !(context.getType() == RequestContext.TYPE.FILES_BUCKET && context.getMethod() == RequestContext.METHOD.PUT)
+                && !(context.getType() == RequestContext.TYPE.SCHEMA_STORE && context.getMethod() == RequestContext.METHOD.PUT)
                 && context.getType() != RequestContext.TYPE.ROOT
-                && context.getType() != RequestContext.TYPE.DB
-                && context.getType() != RequestContext.TYPE.SCHEMA_STORE;
+                && context.getType() != RequestContext.TYPE.DB;
     }
 
-    protected void collectionDoesNotExists(RequestContext context, HttpServerExchange exchange) {
-        final String errMsg = String.format(COLLECTION_DOES_NOT_EXIST, context.getCollectionName(), context.getMethod());
+    protected void doesNotExists(RequestContext context, HttpServerExchange exchange) {
+        final String errMsg;
+        final String resourceName = context.getCollectionName();
+        
+        if (resourceName == null) {
+            errMsg = RESOURCE_DOES_NOT_EXIST;
+        } else if (resourceName.endsWith(RequestContext.FS_FILES_SUFFIX)) {
+            errMsg = String.format(FILE_BUCKET_DOES_NOT_EXIST, context.getCollectionName(), context.getMethod());
+        } else if (RequestContext._SCHEMAS.equals(resourceName)) {
+            errMsg = SCHEMA_STORE_DOES_NOT_EXIST;
+        } else {
+            errMsg = String.format(COLLECTION_DOES_NOT_EXIST, context.getCollectionName(), context.getMethod());
+        }
+        
         LOGGER.debug(errMsg);
         ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, errMsg);
     }
