@@ -174,6 +174,12 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
                     }
 
                     rep.addRepresentation("rh:bucket", nrep);
+                } else if (RequestContext._SCHEMAS.equals(id)) {
+                    if (context.isFullHalMode()) {
+                        CollectionRepresentationFactory.addSpecialProperties(nrep, TYPE.SCHEMA_STORE, d);
+                    }
+
+                    rep.addRepresentation("rh:schema-store", nrep);
                 } else {
                     if (context.isFullHalMode()) {
                         CollectionRepresentationFactory.addSpecialProperties(nrep, TYPE.COLLECTION, d);
