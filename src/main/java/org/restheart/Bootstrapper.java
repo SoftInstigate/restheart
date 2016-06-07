@@ -84,6 +84,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.restheart.handlers.RequestLoggerHandler;
 import static io.undertow.Handlers.path;
+import java.nio.file.Paths;
 import static org.fusesource.jansi.Ansi.ansi;
 
 /**
@@ -791,15 +792,24 @@ public final class Bootstrapper {
                         // this is to allow specifying the configuration file path relative
                         // to the jar (also working when running from classes)
                         URL location = Bootstrapper.class
-                                .getProtectionDomain().getCodeSource().getLocation();
+                                .getProtectionDomain()
+                                .getCodeSource()
+                                .getLocation();
+
                         File locationFile = new File(location.getPath());
-                        file = new File(locationFile.getParent() + File.separator + path);
+
+                        Path _path = Paths.get(
+                                locationFile.getParent()
+                                .concat(File.separator)
+                                .concat(path));
+
+                        // normalize addresses https://issues.jboss.org/browse/UNDERTOW-742
+                        file = _path.normalize().toFile();
                     } else {
                         file = new File(path);
                     }
 
                     if (file.exists()) {
-
                         ResourceHandler handler = resource(new FileResourceManager(file, 3))
                                 .addWelcomeFiles(welcomeFile)
                                 .setDirectoryListingEnabled(false);
@@ -818,7 +828,7 @@ public final class Bootstrapper {
 
                         paths.addPrefixPath(where, ph);
 
-                        LOGGER.info("URL {} bound to static resources {}. Access Manager: {}", where, path, secured);
+                        LOGGER.info("URL {} bound to static resources {}. Access Manager: {}", where, file.getAbsolutePath(), secured);
                     } else {
                         LOGGER.error("Failed to bind URL {} to static resources {}. Directory does not exist.", where, path);
                     }
