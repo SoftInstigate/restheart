@@ -37,7 +37,7 @@ Fast & Light
 ----
 
 * **High throughput** check the [performance tests](https://softinstigate.atlassian.net/wiki/x/gICM).
-* **Lightweight** ~7Mb footprint, low RAM usage, starts in ~1 sec.
+* **Lightweight** ~10Mb footprint, low RAM usage, starts in ~1 sec.
 * **Horizontally Scalable** with **Stateless Architecture** and full support for MongoDB **replica sets** and **shards**.
 * **µService**: it does one thing and it does it well.
 
