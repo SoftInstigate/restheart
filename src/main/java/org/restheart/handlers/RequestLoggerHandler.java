@@ -176,7 +176,8 @@ public class RequestLoggerHandler extends PipedHttpHandler {
             if (logLevel == 1) {
                 sb.append(" =>").append(" status=");
 
-                if (exchange.getStatusCode() >= 300) {
+                if (exchange.getStatusCode() >= 300
+                        && exchange.getStatusCode() != 304) {
                     sb.append(ansi().fg(RED).bold().a(exchange.getStatusCode()).reset().toString());
                 } else {
                     sb.append(ansi().fg(GREEN).bold().a(exchange.getStatusCode()).reset().toString());
