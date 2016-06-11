@@ -33,17 +33,17 @@ import org.yaml.snakeyaml.Yaml;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-abstract class AbstractSimpleSecurityManager {
+public abstract class AbstractSimpleSecurityManager {
 
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(AbstractSimpleSecurityManager.class);
 
-    AbstractSimpleSecurityManager() {
+    public AbstractSimpleSecurityManager() {
     }
 
-    abstract Consumer<? super Map<String, Object>> consumeConfiguration();
+    protected abstract Consumer<? super Map<String, Object>> consumeConfiguration();
 
     @SuppressWarnings("unchecked")
-    final void init(Map<String, Object> arguments, String type) throws FileNotFoundException {
+    public final void init(Map<String, Object> arguments, String type) throws FileNotFoundException {
         InputStream is = null;
         try {
             final String confFilePath = extractConfigFilePath(arguments);
@@ -66,7 +66,7 @@ abstract class AbstractSimpleSecurityManager {
         }
     }
 
-    final String extractConfigFilePath(Map<String, Object> arguments) throws IllegalArgumentException {
+    public final String extractConfigFilePath(Map<String, Object> arguments) throws IllegalArgumentException {
         if (arguments == null) {
             throw new IllegalArgumentException("missing required arguments conf-file");
         }
@@ -85,7 +85,7 @@ abstract class AbstractSimpleSecurityManager {
     }
 
     @SuppressWarnings("unchecked")
-    final List<Map<String, Object>> extractConfItems(final Map<String, Object> conf, String type) throws IllegalArgumentException {
+    public final List<Map<String, Object>> extractConfItems(final Map<String, Object> conf, String type) throws IllegalArgumentException {
         Object _users = conf.get(type);
         if (_users == null || !(_users instanceof List)) {
             throw new IllegalArgumentException("wrong configuration file format. missing mandatory '" + type + "' section.");

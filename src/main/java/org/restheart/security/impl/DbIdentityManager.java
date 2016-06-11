@@ -101,7 +101,7 @@ public final class DbIdentityManager extends AbstractSimpleSecurityManager imple
     }
 
     @Override
-    Consumer<? super Map<String, Object>> consumeConfiguration() {
+	protected Consumer<? super Map<String, Object>> consumeConfiguration() {
         return ci -> {
             Object _db = ci.get("db");
             Object _coll = ci.get("coll");

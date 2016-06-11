@@ -49,7 +49,7 @@ public final class SimpleAccessManager extends AbstractSimpleSecurityManager imp
     }
 
     @Override
-    Consumer<? super Map<String, Object>> consumeConfiguration() {
+	protected Consumer<? super Map<String, Object>> consumeConfiguration() {
         return u -> {
             Object _role = u.get("role");
             Object _predicate = u.get("predicate");

@@ -122,7 +122,11 @@ public class Configuration {
 
     private final boolean authTokenEnabled;
     private final int authTokenTtl;
-
+    public static final String AUTH_TOKEN_MECHANISM_CLASS_KEY = "auth-token-authentication-mechanism-class";
+    public static final String AUTH_TOKEN_INJECTER_HANDLER_CLASS_KEY = "auth-token-injecter-handler-class";
+    private final String authTokenMechanismImpl;
+    private final String authTokenInjecterImpl;
+        
     private final ETAG_CHECK_POLICY dbEtagCheckPolicy;
     private final ETAG_CHECK_POLICY collEtagCheckPolicy;
     private final ETAG_CHECK_POLICY docEtagCheckPolicy;
@@ -181,6 +185,16 @@ public class Configuration {
      */
     public static final String DEFAULT_IDM_IMPLEMENTATION_CLASS = null;
 
+    /**
+     * default Auth token authentication machanism class.
+     */
+    public static final String DEFAULT_AUTH_TOKEN_MECHANISM_CLASS = null;
+    
+    /**
+     * default auth token injecter class.
+     */
+    public static final String DEFAULT_AUTH_TOKEN_INJECTER_CLASS = null;
+    
     /**
      * default db etag check policy
      */
@@ -609,6 +623,8 @@ public class Configuration {
 
         authTokenEnabled = true;
         authTokenTtl = 15; // minutes
+        authTokenMechanismImpl = null;
+        authTokenInjecterImpl = null;
 
         dbEtagCheckPolicy = DEFAULT_DB_ETAG_CHECK_POLICY;
         collEtagCheckPolicy = DEFAULT_COLL_ETAG_CHECK_POLICY;
@@ -774,7 +790,8 @@ public class Configuration {
 
         authTokenEnabled = getAsBooleanOrDefault(conf, AUTH_TOKEN_ENABLED, true);
         authTokenTtl = getAsIntegerOrDefault(conf, AUTH_TOKEN_TTL, 15);
-
+        authTokenMechanismImpl = getAsStringOrDefault(conf, AUTH_TOKEN_MECHANISM_CLASS_KEY, DEFAULT_AUTH_TOKEN_MECHANISM_CLASS);
+        authTokenInjecterImpl = getAsStringOrDefault(conf, AUTH_TOKEN_INJECTER_HANDLER_CLASS_KEY, DEFAULT_AUTH_TOKEN_INJECTER_CLASS);
         Map<String, Object> etagCheckPolicies = getAsMap(conf, ETAG_CHECK_POLICY_KEY);
 
         if (etagCheckPolicies != null) {
@@ -1383,6 +1400,20 @@ public class Configuration {
         return authTokenTtl;
     }
 
+    /**
+     * @return the amImpl
+     */
+    public final String getAuthTokenMechanismClass() {
+        return authTokenMechanismImpl;
+    }
+
+    /**
+     * @return the amImpl
+     */
+    public final String getAuthTokenInjecterImpl() {
+        return authTokenInjecterImpl;
+    }
+    
     /**
      * @return the mongoUri
      */

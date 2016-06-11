@@ -175,6 +175,8 @@ access-manager:
 
 auth-token-enabled: true
 auth-token-ttl: 15
+auth-token-authentication-mechanism-class: org.restheart.security.AuthTokenAuthenticationMechanism
+auth-token-injecter-handler-class: org.restheart.security.handlers.AuthTokenInjecterHandler
 
 #### Logging
 
