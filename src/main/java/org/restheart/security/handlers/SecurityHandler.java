@@ -24,9 +24,9 @@ import java.util.List;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.security.AccessManager;
-import org.restheart.security.AuthTokenAuthenticationMechanism;
 import static org.restheart.security.RestheartIdentityManager.RESTHEART_REALM;
 import org.restheart.security.SilentBasicAuthenticationMechanism;
+import org.restheart.Bootstrapper;
 
 /**
  *
@@ -54,7 +54,7 @@ public class SecurityHandler extends PipedHttpHandler {
         if (identityManager != null) {
             final List<AuthenticationMechanism> mechanisms = new ArrayList<>();
 
-            mechanisms.add(new AuthTokenAuthenticationMechanism(RESTHEART_REALM));
+            mechanisms.add(Bootstrapper.loadAuthenticationMechanism(RESTHEART_REALM));
 
             if (challenging) {
                 mechanisms.add(new BasicAuthenticationMechanism(RESTHEART_REALM));

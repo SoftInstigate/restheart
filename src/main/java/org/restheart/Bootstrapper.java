@@ -43,6 +43,7 @@ import org.restheart.security.handlers.CORSHandler;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.OSChecker;
 import io.undertow.Undertow;
+import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
 import io.undertow.server.handlers.resource.FileResourceManager;
@@ -79,6 +80,7 @@ import java.util.Map;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import org.restheart.security.FullAccessManager;
+import org.restheart.security.handlers.AccessManagerHandler;
 import org.restheart.security.handlers.AuthTokenHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -598,7 +600,7 @@ public final class Bootstrapper {
      * @return the AccessManager
      */
     private static AccessManager loadAccessManager() {
-        AccessManager accessManager = new FullAccessManager();
+        AccessManager accessManager = null;
         if (configuration.getAmImpl() == null && configuration.getIdmImpl() != null) {
             LOGGER.warn("***** no access manager specified. authenticated users can do anything.");
         } else if (configuration.getAmImpl() == null && configuration.getIdmImpl() == null) {
@@ -613,9 +615,57 @@ public final class Bootstrapper {
                 logErrorAndExit("Error configuring acess manager implementation " + configuration.getAmImpl(), ex, false, -3);
             }
         }
+        
+        if (accessManager == null)
+        	accessManager = new FullAccessManager();
+
         return accessManager;
     }
+    
+	/**
+     * loadAuthenticationMechanism
+     *
+     * @return the AuthenticationMechanism
+     */
+    public static AuthenticationMechanism loadAuthenticationMechanism(String restheartRealm) {
+    	AuthenticationMechanism authenticationMechanism = null; 
+    	String authenticationMechanismClass = configuration.getAuthTokenMechanismClass();
+    	
+        if (authenticationMechanismClass != null) {
+            try {
+                Object obj = Class.forName(authenticationMechanismClass)
+                        .getConstructor(String.class)
+                        .newInstance(restheartRealm);
+                authenticationMechanism = (AuthenticationMechanism) obj;
+            } catch (Exception ex) {
+            	logErrorAndExit("Error configuring Authentication Mechanism implementation. " + configuration.getAuthTokenMechanismClass(), ex, false, -3);
+            }
+        }
+        return authenticationMechanism;
+    }
 
+    /**
+     * loadAuthTokenInjecter
+     *
+     * @return the PipedHttpHandler
+     */
+	public static PipedHttpHandler loadAuthTokenInjecterImpl(AccessManagerHandler accessManagerHandler) {
+    	PipedHttpHandler authTokenInjecter = null; 
+    	String authTokenInjecterClass = configuration.getAuthTokenInjecterImpl();
+    	
+        if (authTokenInjecterClass != null) {
+            try {
+                Object obj = Class.forName(authTokenInjecterClass)
+                        .getConstructor(PipedHttpHandler.class)
+                        .newInstance(accessManagerHandler);
+                authTokenInjecter = (PipedHttpHandler) obj;
+            } catch (Exception ex) {
+            	logErrorAndExit("Error configuring Auth Token Injecter implementation " + configuration.getAuthTokenInjecterImpl(), ex, false, -3);
+            }
+        }
+        return authTokenInjecter;
+    }
+    
     /**
      * logErrorAndExit
      *

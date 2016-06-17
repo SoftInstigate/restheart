@@ -50,7 +50,7 @@ public final class SimpleFileIdentityManager extends AbstractSimpleSecurityManag
 
     @Override
     @SuppressWarnings("unchecked")
-    Consumer<? super Map<String, Object>> consumeConfiguration() {
+	protected Consumer<? super Map<String, Object>> consumeConfiguration() {
         return u -> {
             Object _userid = u.get("userid");
             Object _password = u.get("password");

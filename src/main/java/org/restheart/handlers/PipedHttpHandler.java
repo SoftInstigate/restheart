@@ -31,11 +31,11 @@ import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.security.AccessManager;
 import org.restheart.security.handlers.AccessManagerHandler;
-import org.restheart.security.handlers.AuthTokenInjecterHandler;
 import org.restheart.security.handlers.AuthenticationCallHandler;
 import org.restheart.security.handlers.AuthenticationConstraintHandler;
 import org.restheart.security.handlers.AuthenticationMechanismsHandler;
 import org.restheart.security.handlers.SecurityInitialHandler;
+import org.restheart.Bootstrapper;
 
 /**
  *
@@ -118,7 +118,7 @@ public abstract class PipedHttpHandler implements HttpHandler {
             throw new IllegalArgumentException("Error, accessManager cannot be null. Eventually use FullAccessManager that gives full access power ");
         }
 
-        handler = new AuthTokenInjecterHandler(new AccessManagerHandler(accessManager, next));
+        handler = Bootstrapper.loadAuthTokenInjecterImpl(new AccessManagerHandler(accessManager, next));
         
         handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE,
                 identityManager,
