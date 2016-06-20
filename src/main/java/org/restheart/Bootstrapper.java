@@ -117,9 +117,7 @@ public final class Bootstrapper {
             configuration = FileUtils.getConfiguration(args, true);
         } catch (ConfigurationException ex) {
             LOGGER.info("Starting "
-                    + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
-                    + " instance "
-                    + ansi().fg(RED).bold().a(configuration.getInstanceName()).reset().toString());
+                    + ansi().fg(RED).bold().a("RESTHeart").reset().toString());
 
             if (RESTHEART_VERSION != null) {
                 LOGGER.info("version {}", RESTHEART_VERSION);
