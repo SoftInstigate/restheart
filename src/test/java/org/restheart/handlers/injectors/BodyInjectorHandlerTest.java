@@ -17,10 +17,9 @@
  */
 package org.restheart.handlers.injectors;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
-import com.mongodb.util.JSON;
 import io.undertow.server.handlers.form.FormData;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -39,10 +38,15 @@ public class BodyInjectorHandlerTest {
      */
     @Test
     public void test_putFilename() {
-        DBObject properties = new BasicDBObject();
-        String expectedFilename = "myFilename";
-        BodyInjectorHandler.putFilename(expectedFilename, "defaultFilename", properties);
-        assertEquals(expectedFilename, properties.get(BodyInjectorHandler.FILENAME));
+        BsonDocument properties = new BsonDocument();
+        BsonString expectedFilename = new BsonString("myFilename");
+        BodyInjectorHandler.putFilename(
+                expectedFilename.getValue(),
+                "defaultFilename", properties);
+
+        assertEquals(
+                expectedFilename,
+                properties.get(BodyInjectorHandler.FILENAME));
     }
 
     /**
@@ -51,10 +55,21 @@ public class BodyInjectorHandlerTest {
      */
     @Test
     public void test_overrideFilename() {
-        String expectedFilename = "other";
-        DBObject properties = (DBObject) JSON.parse("{\"filename\": \"" + expectedFilename + "\"}");
-        BodyInjectorHandler.putFilename("formDataFilename", "defaultFilename", properties);
-        assertEquals(expectedFilename, properties.get(BodyInjectorHandler.FILENAME));
+        BsonString expectedFilename = new BsonString("other");
+
+        BsonDocument properties
+                = BsonDocument.parse(
+                        "{\"filename\": \""
+                        + expectedFilename.getValue()
+                        + "\"}");
+
+        BodyInjectorHandler.putFilename(
+                "formDataFilename",
+                "defaultFilename",
+                properties);
+        assertEquals(
+                expectedFilename,
+                properties.get(BodyInjectorHandler.FILENAME));
     }
 
     /**
@@ -63,10 +78,15 @@ public class BodyInjectorHandlerTest {
      */
     @Test
     public void test_emptyFilename() {
-        String expectedFilename = "defaultFilename";
-        DBObject properties = new BasicDBObject();
-        BodyInjectorHandler.putFilename("", expectedFilename, properties);
-        assertEquals(expectedFilename, properties.get(BodyInjectorHandler.FILENAME));
+        BsonString expectedFilename = new BsonString("defaultFilename");
+        BsonDocument properties = new BsonDocument();
+        BodyInjectorHandler.putFilename("", 
+                expectedFilename.getValue(), 
+                properties);
+
+        assertEquals(
+                expectedFilename,
+                properties.get(BodyInjectorHandler.FILENAME));
     }
 
     /**
@@ -74,11 +94,12 @@ public class BodyInjectorHandlerTest {
      */
     @Test
     public void test_extractProperties() {
-        final String jsonString = "{\"key1\": \"value1\", \"key2\": \"value2\"}";
+        final String jsonString
+                = "{\"key1\": \"value1\", \"key2\": \"value2\"}";
         FormData formData = new FormData(1);
         formData.add(BodyInjectorHandler.PROPERTIES, jsonString);
-        DBObject result = BodyInjectorHandler.extractProperties(formData);
-        DBObject expected = (DBObject) JSON.parse(jsonString);
+        BsonDocument result = BodyInjectorHandler.extractProperties(formData);
+        BsonDocument expected = BsonDocument.parse(jsonString);
         assertEquals(expected, result);
     }
 

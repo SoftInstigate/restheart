@@ -17,14 +17,15 @@
  */
 package org.restheart.hal.metadata;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.DBObject;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.URLUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -74,7 +75,13 @@ public class Relationship {
      * @param targetCollection
      * @param referenceField
      */
-    public Relationship(String rel, TYPE type, ROLE role, String targetDb, String targetCollection, String referenceField) {
+    public Relationship(
+            String rel,
+            TYPE type,
+            ROLE role,
+            String targetDb,
+            String targetCollection,
+            String referenceField) {
         this.rel = rel;
         this.type = type;
         this.role = role;
@@ -93,19 +100,36 @@ public class Relationship {
      * @param referenceField
      * @throws InvalidMetadataException
      */
-    public Relationship(String rel, String type, String role, String targetDb, String targetCollection, String referenceField) throws InvalidMetadataException {
+    public Relationship(
+            String rel,
+            String type,
+            String role,
+            String targetDb,
+            String targetCollection,
+            String referenceField)
+            throws InvalidMetadataException {
         this.rel = rel;
 
         try {
             this.type = TYPE.valueOf(type);
         } catch (IllegalArgumentException iae) {
-            throw new InvalidMetadataException("invalid type value: " + type + ". valid values are " + Arrays.toString(TYPE.values()), iae);
+            throw new InvalidMetadataException(
+                    "invalid type value: "
+                    + type
+                    + ". valid values are "
+                    + Arrays.toString(TYPE.values()),
+                    iae);
         }
 
         try {
             this.role = ROLE.valueOf(role);
         } catch (IllegalArgumentException iae) {
-            throw new InvalidMetadataException("invalid role value " + role + ". valid values are " + Arrays.toString(ROLE.values()), iae);
+            throw new InvalidMetadataException(
+                    "invalid role value "
+                    + role
+                    + ". valid values are "
+                    + Arrays.toString(ROLE.values()),
+                    iae);
         }
 
         this.targetDb = targetDb;
@@ -119,77 +143,114 @@ public class Relationship {
      * @return
      * @throws InvalidMetadataException
      */
-    public static List<Relationship> getFromJson(DBObject collProps) throws InvalidMetadataException {
+    public static List<Relationship> getFromJson(BsonDocument collProps)
+            throws InvalidMetadataException {
         if (collProps == null) {
             return null;
         }
 
         ArrayList<Relationship> ret = new ArrayList<>();
 
-        Object _rels = collProps.get(RELATIONSHIPS_ELEMENT_NAME);
+        BsonValue _rels = collProps.get(RELATIONSHIPS_ELEMENT_NAME);
 
         if (_rels == null) {
             return ret;
         }
 
-        if (!(_rels instanceof BasicDBList)) {
-            throw new InvalidMetadataException("element '" + RELATIONSHIPS_ELEMENT_NAME + "' is not an array list." + _rels);
+        if (!_rels.isArray()) {
+            throw new InvalidMetadataException(
+                    "element '"
+                    + RELATIONSHIPS_ELEMENT_NAME
+                    + "' is not an array list."
+                    + _rels);
         }
 
-        BasicDBList rels = (BasicDBList) _rels;
+        BsonArray rels = _rels.asArray();
 
-        for (Object _rel : rels.toArray()) {
-            if (!(_rel instanceof DBObject)) {
-                throw new InvalidMetadataException("element '" + RELATIONSHIPS_ELEMENT_NAME + "' is not valid." + _rel);
+        for (BsonValue _rel : rels.getValues()) {
+            if (!_rel.isDocument()) {
+                throw new InvalidMetadataException(
+                        "element '"
+                        + RELATIONSHIPS_ELEMENT_NAME
+                        + "' is not valid."
+                        + _rel);
             }
 
-            DBObject rel = (DBObject) _rel;
+            BsonDocument rel = _rel.asDocument();
             ret.add(getRelFromJson(rel));
         }
 
         return ret;
     }
 
-    private static Relationship getRelFromJson(DBObject content) throws InvalidMetadataException {
-        Object _rel = content.get(REL_ELEMENT_NAME);
-        Object _type = content.get(TYPE_ELEMENT_NAME);
-        Object _role = content.get(ROLE_ELEMENT_NAME);
-        Object _targetDb = content.get(TARGET_DB_ELEMENT_NAME);
-        Object _targetCollection = content.get(TARGET_COLLECTION_ELEMENT_NAME);
-        Object _referenceField = content.get(REF_ELEMENT_NAME);
+    private static Relationship getRelFromJson(BsonDocument content)
+            throws InvalidMetadataException {
+        BsonValue _rel = content.get(REL_ELEMENT_NAME);
+        BsonValue _type = content.get(TYPE_ELEMENT_NAME);
+        BsonValue _role = content.get(ROLE_ELEMENT_NAME);
+        BsonValue _targetDb = content.get(TARGET_DB_ELEMENT_NAME);
+        BsonValue _targetCollection = content.get(TARGET_COLLECTION_ELEMENT_NAME);
+        BsonValue _referenceField = content.get(REF_ELEMENT_NAME);
 
-        if (_rel == null || !(_rel instanceof String)) {
-            throw new InvalidMetadataException((_rel == null ? "missing " : "invalid ") + REL_ELEMENT_NAME + " element.");
+        if (_rel == null || !_rel.isString()) {
+            throw new InvalidMetadataException(
+                    (_rel == null ? "missing " : "invalid ")
+                    + REL_ELEMENT_NAME
+                    + " element.");
         }
 
-        if (_type == null || !(_type instanceof String)) {
-            throw new InvalidMetadataException((_type == null ? "missing " : "invalid ") + TYPE_ELEMENT_NAME + " element.");
+        if (_type == null || !_type.isString()) {
+            throw new InvalidMetadataException(
+                    (_type == null ? "missing " : "invalid ")
+                    + TYPE_ELEMENT_NAME
+                    + " element.");
         }
 
-        if (_role == null || !(_role instanceof String)) {
-            throw new InvalidMetadataException((_role == null ? "missing " : "invalid ") + ROLE_ELEMENT_NAME + " element.");
+        if (_role == null || !_role.isString()) {
+            throw new InvalidMetadataException(
+                    (_role == null ? "missing " : "invalid ")
+                    + ROLE_ELEMENT_NAME
+                    + " element.");
         }
 
-        if (_targetDb != null && !(_targetDb instanceof String)) {
-            throw new InvalidMetadataException("invalid " + TARGET_DB_ELEMENT_NAME + " field.");
+        if (_targetDb != null && !_targetDb.isString()) {
+            throw new InvalidMetadataException(
+                    "invalid "
+                    + TARGET_DB_ELEMENT_NAME
+                    + " field.");
         }
 
-        if (_targetCollection == null || !(_targetCollection instanceof String)) {
-            throw new InvalidMetadataException((_targetCollection == null ? "missing " : "invalid ") + TARGET_COLLECTION_ELEMENT_NAME + " element.");
+        if (_targetCollection == null || !_targetCollection.isString()) {
+            throw new InvalidMetadataException(
+                    (_targetCollection == null ? "missing " : "invalid ")
+                    + TARGET_COLLECTION_ELEMENT_NAME
+                    + " element.");
         }
 
-        if (_referenceField == null || !(_referenceField instanceof String)) {
-            throw new InvalidMetadataException((_referenceField == null ? "missing " : "invalid ") + REF_ELEMENT_NAME + " element.");
+        if (_referenceField == null || !_referenceField.isString()) {
+            throw new InvalidMetadataException(
+                    (_referenceField == null ? "missing " : "invalid ")
+                    + REF_ELEMENT_NAME
+                    + " element.");
         }
 
-        String rel = (String) _rel;
-        String type = (String) _type;
-        String role = (String) _role;
-        String targetDb = (String) _targetDb;
-        String targetCollection = (String) _targetCollection;
-        String referenceField = (String) _referenceField;
+        String rel = _rel.asString().getValue();
+        String type = _type.asString().getValue();
+        String role = _role.asString().getValue();
+        String targetDb = _targetDb == null
+                ? null
+                : _targetDb.asString().getValue();
 
-        return new Relationship(rel, type, role, targetDb, targetCollection, referenceField);
+        String targetCollection = _targetCollection.asString().getValue();
+        String referenceField = _referenceField.asString().getValue();
+
+        return new Relationship(
+                rel,
+                type,
+                role,
+                targetDb,
+                targetCollection,
+                referenceField);
     }
 
     /**
@@ -202,8 +263,14 @@ public class Relationship {
      * @throws IllegalArgumentException
      * @throws org.restheart.hal.UnsupportedDocumentIdException
      */
-    public String getRelationshipLink(RequestContext context, String dbName, String collName, DBObject data) throws IllegalArgumentException, UnsupportedDocumentIdException {
-        Object _referenceValue = getReferenceFieldValue(referenceField, data);
+    public String getRelationshipLink(
+            RequestContext context,
+            String dbName,
+            String collName,
+            BsonDocument data)
+            throws IllegalArgumentException, UnsupportedDocumentIdException {
+        BsonValue _referenceValue
+                = getReferenceFieldValue(referenceField, data);
 
         String db = (targetDb == null ? dbName : targetDb);
 
@@ -214,31 +281,56 @@ public class Relationship {
             }
 
             if (type == TYPE.ONE_TO_ONE || type == TYPE.MANY_TO_ONE) {
-                Object id = _referenceValue;
+                BsonValue id = _referenceValue;
 
-                // can be a BasicDBList if ref-field is a json path expression
-                if (id instanceof BasicDBList && ((BasicDBList) id).size() == 1) {
-                    id = ((BasicDBList) id).get(0);
+                // can be an array if ref-field is a json path expression
+                if (id.isArray() && id.asArray().size() == 1) {
+                    id = id.asArray().get(0);
                 }
 
                 return URLUtils.getUriWithDocId(context, db, targetCollection, id);
             } else {
-                if (!(_referenceValue instanceof BasicDBList)) {
-                    throw new IllegalArgumentException("in resource " + dbName + "/" + collName + "/" + data.get("_id")
-                            + " the " + type.name() + " relationship ref-field " + this.referenceField + " should be an array, but it is " + _referenceValue);
+                if (!_referenceValue.isArray()) {
+                    throw new IllegalArgumentException(
+                            "in resource "
+                            + dbName
+                            + "/"
+                            + collName
+                            + "/"
+                            + data.get("_id")
+                            + " the "
+                            + type.name()
+                            + " relationship ref-field "
+                            + this.referenceField
+                            + " should be an array, but it is "
+                            + _referenceValue);
                 }
 
-                Object[] ids = ((BasicDBList) _referenceValue).toArray();
+                BsonValue[] ids = _referenceValue
+                        .asArray()
+                        .getValues()
+                        .toArray(new BsonValue[0]);
+                
                 return URLUtils.getUriWithFilterMany(context, db, targetCollection, ids);
             }
         } else {
             // INVERSE
-            Object id = data.get("_id");
+            BsonValue id = data.get("_id");
 
             if (type == TYPE.ONE_TO_ONE || type == TYPE.ONE_TO_MANY) {
-                return URLUtils.getUriWithFilterOne(context, db, targetCollection, referenceField, id);
+                return URLUtils.getUriWithFilterOne(
+                        context, 
+                        db, 
+                        targetCollection, 
+                        referenceField, 
+                        id);
             } else if (type == TYPE.MANY_TO_ONE || type == TYPE.MANY_TO_MANY) {
-                return URLUtils.getUriWithFilterManyInverse(context, db, targetCollection, referenceField, id);
+                return URLUtils.getUriWithFilterManyInverse(
+                        context, 
+                        db, 
+                        targetCollection, 
+                        referenceField, 
+                        id);
             }
         }
 
@@ -249,15 +341,17 @@ public class Relationship {
     /**
      *
      * @returns the reference field value, either it is an object or, in case
-     * referenceField is a json path, a BasicDBObject
+     * referenceField is a json path, a BsonDocument
      *
      *
      */
-    private Object getReferenceFieldValue(String referenceField, DBObject data) {
+    private BsonValue getReferenceFieldValue(
+            String referenceField,
+            BsonDocument data) {
         if (referenceField.startsWith("$.")) {
             // it is a json path expression
 
-            List<Optional<Object>> objs;
+            List<Optional<BsonValue>> objs;
 
             try {
                 objs = JsonUtils.getPropsFromPath(data, referenceField);
@@ -269,13 +363,17 @@ public class Relationship {
                 return null;
             }
 
-            BasicDBList ret = new BasicDBList();
+            BsonArray ret = new BsonArray();
 
-            objs.stream().forEach((Optional<Object> obj) -> {
+            objs.stream().forEach((Optional<BsonValue> obj) -> {
                 if (obj != null && obj.isPresent()) {
                     ret.add(obj.get());
                 } else {
-                    LOGGER.trace("the reference field {} resolved to {} from {}", referenceField, objs, data);
+                    LOGGER.trace(
+                            "the reference field {} resolved to {} from {}",
+                            referenceField,
+                            objs,
+                            data);
                 }
             });
 

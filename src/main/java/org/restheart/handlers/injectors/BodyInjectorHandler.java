@@ -17,10 +17,6 @@
  */
 package org.restheart.handlers.injectors;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
-import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.form.FormData;
@@ -34,12 +30,18 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Iterator;
 import org.apache.tika.Tika;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
+import org.bson.BsonValue;
+import org.bson.json.JsonParseException;
 import org.restheart.hal.Representation;
 import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.ChannelReader;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.JsonUtils;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
@@ -47,25 +49,28 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * injects the request body in RequestContext
- * also check the Content-Type header in case body is not empty
- * 
+ * injects the request body in RequestContext also check the Content-Type header
+ * in case body is not empty
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BodyInjectorHandler extends PipedHttpHandler {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(BodyInjectorHandler.class);
+    static final Logger LOGGER
+            = LoggerFactory.getLogger(BodyInjectorHandler.class);
 
     static final String PROPERTIES = "properties";
     static final String _ID = "_id";
     static final String CONTENT_TYPE = "contentType";
     static final String FILENAME = "filename";
 
-    private static final String ERROR_INVALID_CONTENTTYPE = "Content-Type must be either: "
+    private static final String ERROR_INVALID_CONTENTTYPE
+            = "Content-Type must be either: "
             + Representation.HAL_JSON_MEDIA_TYPE
             + " or " + Representation.JSON_MEDIA_TYPE;
 
-    private static final String ERROR_INVALID_CONTENTTYPE_FILE = "Content-Type must be either: "
+    private static final String ERROR_INVALID_CONTENTTYPE_FILE
+            = "Content-Type must be either: "
             + Representation.APP_FORM_URLENCODED_TYPE
             + " or " + Representation.MULTIPART_FORM_DATA_TYPE;
 
@@ -88,7 +93,10 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(final HttpServerExchange exchange, final RequestContext context) throws Exception {
+    public void handleRequest(
+            final HttpServerExchange exchange,
+            final RequestContext context)
+            throws Exception {
         if (context.getMethod() == RequestContext.METHOD.GET
                 || context.getMethod() == RequestContext.METHOD.OPTIONS
                 || context.getMethod() == RequestContext.METHOD.DELETE) {
@@ -96,8 +104,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             return;
         }
 
-        DBObject content;
-        
+        BsonValue content;
+
         if ((isPutRequest(context) && isFileRequest(context))
                 || (isPostRequest(context) && isFilesBucketRequest(context))) {
 
@@ -105,15 +113,24 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             if (unsupportedContentTypeForFiles(exchange
                     .getRequestHeaders()
                     .get(Headers.CONTENT_TYPE))) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE_FILE);
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
+                        ERROR_INVALID_CONTENTTYPE_FILE);
                 return;
             }
 
-            FormDataParser parser = this.formParserFactory.createParser(exchange);
+            FormDataParser parser
+                    = this.formParserFactory.createParser(exchange);
 
             if (parser == null) {
-                String errMsg = "There is no form parser registered for the request content type";
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
+                String errMsg = "There is no form parser registered "
+                        + "for the request content type";
+
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        errMsg);
                 return;
             }
 
@@ -122,16 +139,29 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             try {
                 formData = parser.parseBlocking();
             } catch (IOException ioe) {
-                String errMsg = "Error parsing the multipart form: data could not be read";
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, ioe);
+                String errMsg = "Error parsing the multipart form: "
+                        + "data could not be read";
+
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        errMsg,
+                        ioe);
                 return;
             }
 
             try {
                 content = extractProperties(formData);
             } catch (JSONParseException | IllegalArgumentException ex) {
-                String errMsg = "Invalid data: 'properties' field is not a valid JSON";
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, ex);
+                String errMsg = "Invalid data: "
+                        + "'properties' field is not a valid JSON";
+
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        errMsg,
+                        ex);
+
                 return;
             }
 
@@ -139,7 +169,11 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
             if (fileField == null) {
                 String errMsg = "This request does not contain any binary file";
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
+
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        errMsg);
                 return;
             }
 
@@ -148,80 +182,119 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             putFilename(
                     formData.getFirst(fileField).getFileName(),
                     "file",
-                    content);
+                    content.asDocument());
 
-            context.setFile(path.toFile());
+            context.setFilePath(path);
 
-            injectContentTypeFromFile(content, path.toFile());
+            injectContentTypeFromFile(content.asDocument(), path.toFile());
         } else {
             // get and parse the content
-            final String contentString = ChannelReader.read(exchange.getRequestChannel());
+            final String contentString
+                    = ChannelReader.read(exchange.getRequestChannel());
 
-            if (contentString != null && !contentString.isEmpty()) { // check content type
+            if (contentString != null
+                    && !contentString.isEmpty()) { // check content type
                 if (unsupportedContentType(exchange
                         .getRequestHeaders()
                         .get(Headers.CONTENT_TYPE))) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE);
+                    ResponseHelper.endExchangeWithMessage(
+                            exchange,
+                            HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
+                            ERROR_INVALID_CONTENTTYPE);
                     return;
                 }
             }
 
             try {
-                Object _content = JSON.parse(contentString);
+                content = JsonUtils.parse(contentString);
 
-                if (_content == null
-                        || _content instanceof BasicDBObject
-                        || _content instanceof BasicDBList) {
-                    content = (DBObject) _content;
-                } else {
-                    throw new IllegalArgumentException("JSON parser returned a " + _content.getClass().getSimpleName() + ". Must be a json object.");
+                if (content != null
+                        && !content.isDocument()
+                        && !content.isArray()) {
+                    throw new IllegalArgumentException(
+                            "data must be either a json object or array, got "
+                            + content == null
+                                    ? " no data"
+                                    : content.getBsonType().name());
                 }
-            } catch (JSONParseException | IllegalArgumentException ex) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON", ex);
+            } catch (JsonParseException | IllegalArgumentException ex) {
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "Invalid JSON",
+                        ex);
                 return;
             }
         }
 
-        if (content == null) {
+        if (content
+                == null) {
             context.setContent(null);
         } else {
-            if (content instanceof BasicDBList) {
-                ((BasicDBList) content).stream().forEach(_doc -> {
-                    if (_doc instanceof BasicDBObject) {
-                        Object _id = ((BasicDBObject) _doc).get(_ID);
+            if (content.isArray()) {
+                 content.asArray().stream().forEach(_doc -> {
+                    if (_doc.isDocument()) {
+                        BsonValue _id = _doc.asDocument().get(_ID);
 
                         try {
-                            checkIdType((BasicDBObject) _doc);
+                            checkIdType(_doc.asDocument());
                         } catch (UnsupportedDocumentIdException udie) {
-                            String errMsg = "the type of _id in content body is not supported: " + (_id == null ? "" : _id.getClass().getSimpleName());
-                            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
+                            String errMsg = "the type of _id in content body"
+                                    + " is not supported: " 
+                                    + (_id == null 
+                                    ? "" 
+                                    : _id.getBsonType().name());
+                            
+                            ResponseHelper.endExchangeWithMessage(
+                                    exchange, 
+                                    HttpStatus.SC_NOT_ACCEPTABLE, 
+                                    errMsg, 
+                                    udie);
                         }
                     } else {
-                        String errMsg = "the content must be either an object or an array of objects";
-                        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
+                        String errMsg = "the content must be either "
+                                + "an json object or an array of objects";
+                        
+                        ResponseHelper.endExchangeWithMessage(
+                                exchange, 
+                                HttpStatus.SC_NOT_ACCEPTABLE, 
+                                errMsg);
                     }
                 });
-            } else if (content instanceof BasicDBObject) {
-                Object _id = content.get(_ID);
+            } else if (content.isDocument()) {
+                BsonDocument _content = content.asDocument();
+                
+                BsonValue _id = _content.get(_ID);
 
                 try {
-                    checkIdType((BasicDBObject) content);
+                    checkIdType(_content);
                 } catch (UnsupportedDocumentIdException udie) {
-                    String errMsg = "the type of _id in content body is not supported: " + (_id == null ? "" : _id.getClass().getSimpleName());
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, errMsg, udie);
+                    String errMsg = "the type of _id in content body "
+                            + "is not supported: " 
+                            + (_id == null 
+                            ? "" 
+                            : _id.getBsonType().name());
+                    
+                    ResponseHelper.endExchangeWithMessage(
+                            exchange, 
+                            HttpStatus.SC_NOT_ACCEPTABLE, 
+                            errMsg, 
+                            udie);
                     return;
                 }
 
-                filterJsonContent(content, context);
+                filterJsonContent(_content, context);
             }
 
             context.setContent(content);
         }
 
-        getNext().handleRequest(exchange, context);
+        getNext()
+                .handleRequest(exchange, context);
     }
 
-    private Object checkIdType(BasicDBObject doc) throws UnsupportedDocumentIdException {
+    private Object checkIdType(BsonDocument doc)
+            throws UnsupportedDocumentIdException {
         Object _id = doc.get(_ID);
 
         if (_id != null) {
@@ -232,7 +305,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     }
 
     /**
-     * put the filename into target DBObject
+     * put the filename into target BsonDocument
      *
      * If filename is not null and properties don't have a filename then put the
      * filename.
@@ -247,17 +320,23 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      * @param defaultFilename
      * @param target
      */
-    protected static void putFilename(final String formDataFilename, final String defaultFilename, final DBObject target) {
+    protected static void putFilename(
+            final String formDataFilename,
+            final String defaultFilename,
+            final BsonDocument target) {
         // a filename attribute in optional properties overrides the provided part's filename 
-        String filename = target.containsField(FILENAME)
-                && target.get(FILENAME) instanceof String
-                ? (String) target.get(FILENAME)
+        String filename = target.containsKey(FILENAME)
+                && target.get(FILENAME).isString()
+                ? target.get(FILENAME).asString().getValue()
                 : formDataFilename;
+
         if (filename == null || filename.isEmpty()) {
-            LOGGER.debug("No filename in neither multipart content disposition header nor in properties! Using default value");
+            LOGGER.debug("No filename in neither multipart content disposition "
+                    + "header nor in properties! Using default value");
             filename = defaultFilename;
         }
-        target.put(FILENAME, filename);
+
+        target.append(FILENAME, new BsonString(filename));
     }
 
     private static boolean isFilesBucketRequest(final RequestContext context) {
@@ -284,17 +363,17 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      * @param content
      * @return null if ok, or the first not valid id
      */
-    public static String checkReservedId(DBObject content) {
+    public static String checkReservedId(BsonValue content) {
         if (content == null) {
             return null;
-        } else if (content instanceof BasicDBObject) {
-            Object id = content.get("_id");
+        } else if (content.isDocument()) {
+            BsonValue id = content.asDocument().get("_id");
 
-            if (id == null || !(id instanceof String)) {
+            if (id == null || !id.isString()) {
                 return null;
             }
 
-            String _id = (String) id;
+            String _id = id.asString().getValue();
 
             if (RequestContext.MAX_KEY_ID.equalsIgnoreCase(_id)
                     || RequestContext.MIN_KEY_ID.equalsIgnoreCase(_id)
@@ -305,18 +384,18 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             } else {
                 return null;
             }
-        } else if (content instanceof BasicDBList) {
-            BasicDBList arrayContent = (BasicDBList) content;
+        } else if (content.isArray()) {
+            BsonArray arrayContent = content.asArray();
 
-            Iterator<Object> objs = arrayContent.iterator();
+            Iterator<BsonValue> objs = arrayContent.getValues().iterator();
 
             String ret = null;
 
             while (objs.hasNext()) {
-                Object obj = objs.next();
+                BsonValue obj = objs.next();
 
-                if (obj instanceof BasicDBObject) {
-                    ret = checkReservedId((BasicDBObject) obj);
+                if (obj.isDocument()) {
+                    ret = checkReservedId(obj);
                     if (ret != null) {
                         break;
                     }
@@ -338,7 +417,9 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      * @param content
      * @param ctx
      */
-    private static void filterJsonContent(final DBObject content, final RequestContext ctx) {
+    private static void filterJsonContent(
+            final BsonDocument content,
+            final RequestContext ctx) {
         filterOutReservedKeys(content, ctx);
     }
 
@@ -351,7 +432,9 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      * @param content
      * @param context
      */
-    private static void filterOutReservedKeys(final DBObject content, final RequestContext context) {
+    private static void filterOutReservedKeys(
+            final BsonDocument content,
+            final RequestContext context) {
         final HashSet<String> keysToRemove = new HashSet<>();
         content.keySet().stream()
                 .filter(key -> key.startsWith("_") && !key.equals(_ID))
@@ -360,18 +443,24 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                 });
 
         keysToRemove.stream().map(keyToRemove -> {
-            content.removeField(keyToRemove);
+            content.remove(keyToRemove);
             return keyToRemove;
         }).forEach(keyToRemove -> {
-            context.addWarning("Reserved field " + keyToRemove + " was filtered out from the request");
+            context.addWarning("Reserved field "
+                    + keyToRemove
+                    + " was filtered out from the request");
         });
     }
 
-    private static void injectContentTypeFromFile(final DBObject content, final File file) throws IOException {
+    private static void injectContentTypeFromFile(
+            final BsonDocument content,
+            final File file)
+            throws IOException {
         if (content.get(CONTENT_TYPE) == null && file != null) {
             final String contentType = detectMediaType(file);
             if (contentType != null) {
-                content.put(CONTENT_TYPE, contentType);
+                content.append(CONTENT_TYPE,
+                        new BsonString(contentType));
             }
         }
     }
@@ -382,12 +471,15 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      * @param contentTypes
      * @return
      */
-    private static boolean unsupportedContentType(final HeaderValues contentTypes) {
+    private static boolean unsupportedContentType(
+            final HeaderValues contentTypes) {
         return contentTypes == null
                 || contentTypes.isEmpty()
                 || contentTypes.stream().noneMatch(
-                        ct -> ct.startsWith(Representation.HAL_JSON_MEDIA_TYPE)
-                        || ct.startsWith(Representation.JSON_MEDIA_TYPE));
+                        ct -> ct.startsWith(
+                                Representation.HAL_JSON_MEDIA_TYPE)
+                        || ct.startsWith(
+                                Representation.JSON_MEDIA_TYPE));
     }
 
     /**
@@ -396,12 +488,15 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      * @param contentTypes
      * @return
      */
-    private static boolean unsupportedContentTypeForFiles(final HeaderValues contentTypes) {
+    private static boolean unsupportedContentTypeForFiles(
+            final HeaderValues contentTypes) {
         return contentTypes == null
                 || contentTypes.isEmpty()
                 || contentTypes.stream().noneMatch(
-                        ct -> ct.startsWith(Representation.APP_FORM_URLENCODED_TYPE)
-                        || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE));
+                        ct -> ct.startsWith(
+                                Representation.APP_FORM_URLENCODED_TYPE)
+                        || ct.startsWith(
+                                Representation.MULTIPART_FORM_DATA_TYPE));
     }
 
     /**
@@ -409,17 +504,19 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      * valid JSON
      *
      * @param formData
-     * @return the parsed DBObject from the form data or an empty DBObject
+     * @return the parsed BsonDocument from the form data or an empty BsonDocument
      */
-    protected static DBObject extractProperties(final FormData formData) throws JSONParseException {
-        DBObject properties = new BasicDBObject();
+    protected static BsonDocument extractProperties(
+            final FormData formData)
+            throws JSONParseException {
+        BsonDocument properties = new BsonDocument();
 
         final String propsString = formData.getFirst(PROPERTIES) != null
                 ? formData.getFirst(PROPERTIES).getValue()
                 : null;
 
         if (propsString != null) {
-            properties = (DBObject) JSON.parse(propsString);
+            properties = BsonDocument.parse(propsString);
         }
 
         return properties;

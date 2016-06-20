@@ -17,7 +17,6 @@
  */
 package org.restheart.handlers.applicationlogic;
 
-import com.mongodb.BasicDBObject;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -28,6 +27,10 @@ import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import java.util.Map;
 import java.util.Set;
+import org.bson.BsonArray;
+import org.bson.BsonBoolean;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
 import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_HEADER;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
@@ -99,12 +102,18 @@ public class GetRoleHandler extends ApplicationLogicHandler {
 
             } else {
                 rep = new Representation(URLUtils.removeTrailingSlashes(url) + "/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
-                BasicDBObject root = new BasicDBObject();
+                BsonDocument root = new BsonDocument();
 
                 Set<String> _roles = exchange.getSecurityContext().getAuthenticatedAccount().getRoles();
 
-                root.append("authenticated", true);
-                root.append("roles", _roles);
+                BsonArray roles = new BsonArray();
+                
+                for (String role: _roles) {
+                    roles.add(new BsonString(role));
+                }
+                
+                root.append("authenticated", new BsonBoolean(true));
+                root.append("roles", roles);
 
                 rep.addProperties(root);
             }

@@ -17,15 +17,17 @@
  */
 package org.restheart.hal.metadata.singletons;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Objects;
-import org.bson.BSONObject;
+import org.bson.BsonArray;
+import org.bson.BsonDateTime;
+import org.bson.BsonDocument;
+import org.bson.BsonNull;
+import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -61,7 +63,8 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class RequestPropsInjecterTransformer implements Transformer {
-    static final Logger LOGGER = LoggerFactory.getLogger(RequestPropsInjecterTransformer.class);
+    static final Logger LOGGER
+            = LoggerFactory.getLogger(RequestPropsInjecterTransformer.class);
 
     /**
      *
@@ -71,50 +74,63 @@ public class RequestPropsInjecterTransformer implements Transformer {
      * @param args properties to add
      */
     @Override
-    public void tranform(final HttpServerExchange exchange, final RequestContext context, DBObject contentToTransform, final DBObject args) {
-        BasicDBObject injected = new BasicDBObject();
+    public void tranform(
+            final HttpServerExchange exchange,
+            final RequestContext context,
+            BsonDocument contentToTransform,
+            final BsonValue args) {
+        BsonDocument injected = new BsonDocument();
 
-        if (args instanceof BasicDBObject) {
-            HashMap<String, Object> properties = getPropsValues(exchange, context);
+        if (args.isDocument()) {
+            BsonDocument _args = args.asDocument();
 
-            String firstKey = args.keySet().iterator().next();
+            HashMap<String, BsonValue> properties
+                    = getPropsValues(exchange, context);
 
-            Object _toinject = args.get(firstKey);
+            String firstKey = _args.keySet().iterator().next();
 
-            if (_toinject instanceof BasicDBList) {
+            BsonValue _toinject = _args.get(firstKey);
 
-                BasicDBList toinject = (BasicDBList) _toinject;
+            if (_toinject.isArray()) {
+
+                BsonArray toinject = _toinject.asArray();
 
                 toinject.forEach(_el -> {
-                    if (_el instanceof String) {
-                        String el = (String) _el;
+                    if (_el.isString()) {
+                        String el = _el.asString().getValue();
 
-                        Object value = properties.get(el);
+                        BsonValue value = properties.get(el);
 
                         if (value != null) {
                             injected.put(el, value);
                         } else {
-                            context.addWarning("property in the args list does not have a value: " + _el);
+                            context.addWarning("property in the args list "
+                                    + "does not have a value: " + _el);
                         }
                     } else {
-                        context.addWarning("property in the args list is not a string: " + _el);
+                        context.addWarning("property in the args list "
+                                + "is not a string: " + _el);
                     }
                 });
 
                 contentToTransform.put(firstKey, injected);
             } else {
-                context.addWarning("transformer wrong definition: args must be an object with a array containing the names of the properties to inject. got " + JsonUtils.serialize(args));
+                context.addWarning("transformer wrong definition: "
+                        + "args must be an object with a array containing "
+                        + "the names of the properties to inject. got "
+                        + _args.toJson());
             }
-        } else if (args instanceof BasicDBList) {
-            HashMap<String, Object> properties = getPropsValues(exchange, context);
+        } else if (args.isArray()) {
+            HashMap<String, BsonValue> properties
+                    = getPropsValues(exchange, context);
 
-            BasicDBList toinject = (BasicDBList) args;
+            BsonArray toinject = args.asArray();
 
             toinject.forEach(_el -> {
-                if (_el instanceof String) {
-                    String el = (String) _el;
+                if (_el.isString()) {
+                    String el = _el.asString().getValue();
 
-                    Object value = properties.get(el);
+                    BsonValue value = properties.get(el);
 
                     if (value != null) {
                         injected.put(el, value);
@@ -126,56 +142,81 @@ public class RequestPropsInjecterTransformer implements Transformer {
                 }
             });
 
-            contentToTransform.putAll((BSONObject) injected);
+            contentToTransform.putAll(injected);
         } else {
-            context.addWarning("transformer wrong definition: args must be an object with a array containing the names of the properties to inject. got " + JsonUtils.serialize(args));
+            context.addWarning("transformer wrong definition: "
+                    + "args must be an object with a array containing "
+                    + "the names of the properties to inject. got "
+                    + JsonUtils.toJson(args));
         }
     }
 
-    HashMap<String, Object> getPropsValues(final HttpServerExchange exchange, final RequestContext context) {
-        HashMap<String, Object> properties = new HashMap<>();
+    HashMap<String, BsonValue> getPropsValues(
+            final HttpServerExchange exchange,
+            final RequestContext context) {
+        HashMap<String, BsonValue> properties = new HashMap<>();
 
         // remote user
-        properties.put("userName", ExchangeAttributes.remoteUser().readAttribute(exchange));
+        properties.put("userName", new BsonString(
+                ExchangeAttributes
+                .remoteUser()
+                .readAttribute(exchange)));
 
         // user roles
         if (Objects.nonNull(exchange.getSecurityContext())
-                && Objects.nonNull(exchange.getSecurityContext().getAuthenticatedAccount())
-                && Objects.nonNull(exchange.getSecurityContext().getAuthenticatedAccount().getRoles())) {
-            properties.put("userRoles", exchange.getSecurityContext().getAuthenticatedAccount().getRoles().toString());
+                && Objects.nonNull(
+                        exchange.getSecurityContext()
+                        .getAuthenticatedAccount())
+                && Objects.nonNull(exchange
+                        .getSecurityContext()
+                        .getAuthenticatedAccount().getRoles())) {
+            properties.put("userRoles", new BsonString(
+                    exchange
+                    .getSecurityContext()
+                    .getAuthenticatedAccount().getRoles().toString()));
         } else {
-            properties.put("userRoles", null);
+            properties.put("userRoles", new BsonNull());
         }
 
         // dateTime
-        properties.put("epochTimeStamp", Instant.now().getEpochSecond());
+        properties.put("epochTimeStamp",
+                new BsonDateTime(Instant.now().getEpochSecond()));
 
         // dateTime
-        properties.put("dateTime", ExchangeAttributes.dateTime().readAttribute(exchange));
+        properties.put("dateTime", new BsonString(
+                ExchangeAttributes.dateTime().readAttribute(exchange)));
 
         // local ip
-        properties.put("localIp", ExchangeAttributes.localIp().readAttribute(exchange));
+        properties.put("localIp", new BsonString(
+                ExchangeAttributes.localIp().readAttribute(exchange)));
 
         // local port
-        properties.put("localPort", ExchangeAttributes.localPort().readAttribute(exchange));
+        properties.put("localPort", new BsonString(
+                ExchangeAttributes.localPort().readAttribute(exchange)));
 
         // local server name
-        properties.put("localServerName", ExchangeAttributes.localServerName().readAttribute(exchange));
+        properties.put("localServerName", new BsonString(
+                ExchangeAttributes.localServerName().readAttribute(exchange)));
 
         // request query string
-        properties.put("queryString", ExchangeAttributes.queryString().readAttribute(exchange));
+        properties.put("queryString", new BsonString(
+                ExchangeAttributes.queryString().readAttribute(exchange)));
 
         // request relative path
-        properties.put("relativePath", ExchangeAttributes.relativePath().readAttribute(exchange));
+        properties.put("relativePath", new BsonString(
+                ExchangeAttributes.relativePath().readAttribute(exchange)));
 
         // remote ip
-        properties.put("remoteIp", ExchangeAttributes.remoteIp().readAttribute(exchange));
+        properties.put("remoteIp", new BsonString(
+                ExchangeAttributes.remoteIp().readAttribute(exchange)));
 
         // request method
-        properties.put("requestMethod", ExchangeAttributes.requestMethod().readAttribute(exchange));
+        properties.put("requestMethod", new BsonString(
+                ExchangeAttributes.requestMethod().readAttribute(exchange)));
 
         // request protocol
-        properties.put("requestProtocol", ExchangeAttributes.requestProtocol().readAttribute(exchange));
+        properties.put("requestProtocol", new BsonString(
+                ExchangeAttributes.requestProtocol().readAttribute(exchange)));
 
         return properties;
     }

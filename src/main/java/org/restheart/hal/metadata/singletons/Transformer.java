@@ -17,8 +17,9 @@
  */
 package org.restheart.hal.metadata.singletons;
 
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 
 /**
@@ -39,5 +40,9 @@ public interface Transformer {
      * @param args the args sepcified in the collection metadata via args
      * property
      */
-    void tranform(final HttpServerExchange exchange, final RequestContext context, DBObject contentToTransform, final DBObject args);
+    void tranform(
+            final HttpServerExchange exchange,
+            final RequestContext context,
+            BsonDocument contentToTransform,
+            final BsonValue args);
 }

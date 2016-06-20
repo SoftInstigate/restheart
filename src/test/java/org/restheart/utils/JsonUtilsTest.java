@@ -17,19 +17,19 @@
  */
 package org.restheart.utils;
 
-import com.mongodb.DBObject;
-import com.mongodb.util.JSON;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import org.bson.BsonDocument;
+import org.bson.BsonDouble;
 import org.bson.BsonValue;
+import org.bson.types.ObjectId;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -89,12 +89,12 @@ public class JsonUtilsTest {
         String _json5 = "{a: []}";
         String _json6 = "{a1: [{f1:1, f2:2, a2:[{f1:1,f2:2}]}, {f1:1, f2:2}]}";
 
-        Object json1 = JSON.parse(_json1);
-        Object json2 = JSON.parse(_json2);
-        Object json3 = JSON.parse(_json3);
-        Object json4 = JSON.parse(_json4);
-        Object json5 = JSON.parse(_json5);
-        Object json6 = JSON.parse(_json6);
+        BsonDocument json1 = BsonDocument.parse(_json1);
+        BsonDocument json2 = BsonDocument.parse(_json2);
+        BsonDocument json3 = BsonDocument.parse(_json3);
+        BsonDocument json4 = BsonDocument.parse(_json4);
+        BsonDocument json5 = BsonDocument.parse(_json5);
+        BsonDocument json6 = BsonDocument.parse(_json6);
 
         Assert.assertTrue(checkGetPropsFromPath(json6, "$.a1.[*].a2", "[{f1:1,f2:2}]", null));
         Assert.assertTrue(checkGetPropsFromPath(json6, "$.a1.[*].a2.[*].f1", "1"));
@@ -170,13 +170,13 @@ public class JsonUtilsTest {
         String _json2 = "{a: [{}]}}";
         String _json3 = "{a: [{f: 1}]}}";
         String _json4 = "{a: [{e: 1}, {e: 2}, {e: 3}]}}";
-        String _json5 = "{a: {1: {e: 1}, 2: {e: 2}, 3: {e: 3}}}}";
+        String _json5 = "{a: {'1': {e: 1}, '2': {e: 2}, '3': {e: 3}}}}";
 
-        Object json1 = JSON.parse(_json1);
-        Object json2 = JSON.parse(_json2);
-        Object json3 = JSON.parse(_json3);
-        Object json4 = JSON.parse(_json4);
-        Object json5 = JSON.parse(_json5);
+        BsonDocument json1 = BsonDocument.parse(_json1);
+        BsonDocument json2 = BsonDocument.parse(_json2);
+        BsonDocument json3 = BsonDocument.parse(_json3);
+        BsonDocument json4 = BsonDocument.parse(_json4);
+        BsonDocument json5 = BsonDocument.parse(_json5);
 
         Assert.assertTrue(checkGetPropsFromPath(json1, "$.a", "[]"));
         Assert.assertTrue(checkGetPropsFromPath(json1, "$.a.[*]"));
@@ -209,9 +209,9 @@ public class JsonUtilsTest {
         String _json2 = "{o: {o: {}}}";
         String _json3 = "{o: {o: {f: 1}}}";
 
-        Object json1 = JSON.parse(_json1);
-        Object json2 = JSON.parse(_json2);
-        Object json3 = JSON.parse(_json3);
+        BsonDocument json1 = BsonDocument.parse(_json1);
+        BsonDocument json2 = BsonDocument.parse(_json2);
+        BsonDocument json3 = BsonDocument.parse(_json3);
 
         Assert.assertTrue(checkGetPropsFromPath(json1, "$.o", "{}"));
         Assert.assertTrue(checkGetPropsFromPath(json1, "$.*", "{}"));
@@ -545,7 +545,7 @@ public class JsonUtilsTest {
                 + "    }\n"
                 + "}";
 
-        Object json = JSON.parse(_json);
+        BsonDocument json = BsonDocument.parse(_json);
 
         LOG.debug("$.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.*"));
         LOG.debug("$._id" + " -> " + JsonUtils.getPropsFromPath(json, "$._id"));
@@ -577,7 +577,7 @@ public class JsonUtilsTest {
     public void testParseToBsonObject() {
         String object = JsonUtils.minify("{\"a\" :1 }");
 
-        BsonValue bson = JsonUtils.parseToBson(object);
+        BsonValue bson = JsonUtils.parse(object);
         
         String actual = JsonUtils.toJson(bson);
 
@@ -588,7 +588,7 @@ public class JsonUtilsTest {
     public void testParseToBsonArray() {
         String array = "[\"a\", \"b\", 2 ]";
 
-        BsonValue bson = JsonUtils.parseToBson(array);
+        BsonValue bson = JsonUtils.parse(array);
         
         String actual = JsonUtils.toJson(bson);
 
@@ -596,53 +596,40 @@ public class JsonUtilsTest {
     }
     
     @Test
+    public void testParseObjectId() {
+        ObjectId id = new ObjectId();
+
+        BsonValue parsed = JsonUtils.parse(
+                "{'$oid':'"
+                .concat(id.toString())
+                .concat("'}"));
+        
+        Assert.assertTrue(parsed.isObjectId());
+        Assert.assertEquals(parsed.asObjectId().getValue(), id);
+    }
+    
+    @Test
+    public void testParseFloat() {
+        ObjectId id = new ObjectId();
+
+        BsonValue parsed = JsonUtils.parse("3.1415");
+        
+        Assert.assertTrue(parsed.isNumber());
+        Assert.assertEquals(parsed.asDouble(), new BsonDouble(3.1415));
+    }
+    
+    @Test
     public void testParseToBsonArrayOfObjectets() {
         String arrayOfObjs = "[{\"a\" :1 },{\"b\" :2 }]";
 
-        BsonValue bson = JsonUtils.parseToBson(arrayOfObjs);
+        BsonValue bson = JsonUtils.parse(arrayOfObjs);
         
         String actual = JsonUtils.toJson(bson);
 
         Assert.assertEquals(JsonUtils.minify(arrayOfObjs), actual);
     }
     
-    @Test
-    public void testConversionToBsonObject() {
-        String object = JsonUtils.minify("{\"a\" :1 }");
-
-        DBObject data =  (DBObject) JSON.parse(object);
-        
-        BsonValue converted = JsonUtils.convertDBObjectToBsonValue(data);
-        
-        Assert.assertEquals(JsonUtils.minify(JsonUtils.serialize(data)), 
-                JsonUtils.toJson(converted));
-    }
-    
-    @Test
-    public void testConversionToBsonArray() {
-        String array = "[\"a\", \"b\", 2 ]";
-
-        DBObject data =  (DBObject) JSON.parse(array);
-        
-        BsonValue converted = JsonUtils.convertDBObjectToBsonValue(data);
-        
-        Assert.assertEquals(JsonUtils.minify(JsonUtils.serialize(data)), 
-                JsonUtils.toJson(converted));
-    }
-    
-    @Test
-    public void testConversionToBsonArrayOfObjectets() {
-        String arrayOfObjs = "[{\"a\" :1 },{\"b\" :2 }]";
-
-        DBObject data =  (DBObject) JSON.parse(arrayOfObjs);
-        
-        BsonValue converted = JsonUtils.convertDBObjectToBsonValue(data);
-        
-        Assert.assertEquals(JsonUtils.minify(JsonUtils.serialize(data)), 
-                JsonUtils.toJson(converted));
-    }
-
-    private boolean eq(List<Optional<Object>> left, List<Optional<Object>> right) {
+    private boolean eq(List<Optional<BsonValue>> left, List<Optional<BsonValue>> right) {
         if (left == null && right != null) {
             return false;
         }
@@ -662,8 +649,8 @@ public class JsonUtilsTest {
         boolean ret = true;
 
         for (int cont = 0; cont < left.size(); cont++) {
-            Optional<Object> lo = left.get(cont);
-            Optional<Object> ro = right.get(cont);
+            Optional<BsonValue> lo = left.get(cont);
+            Optional<BsonValue> ro = right.get(cont);
 
             if (lo == null && ro != null) {
                 ret = false;
@@ -696,8 +683,8 @@ public class JsonUtilsTest {
         return ret;
     }
 
-    private boolean checkGetPropsFromPath(Object json, String path, String... expected) {
-        List<Optional<Object>> gots;
+    private boolean checkGetPropsFromPath(BsonValue json, String path, String... expected) {
+        List<Optional<BsonValue>> gots;
 
         try {
             gots = JsonUtils.getPropsFromPath(json, path);
@@ -711,13 +698,13 @@ public class JsonUtilsTest {
             return gots == null;
         }
 
-        List<Optional<Object>> exps = new ArrayList<>();
+        List<Optional<BsonValue>> exps = new ArrayList<>();
 
         for (String exp : expected) {
             if (exp == null) {
                 exps.add(null);
             } else {
-                exps.add(Optional.ofNullable(JSON.parse(exp)));
+                exps.add(Optional.ofNullable(JsonUtils.parse(exp)));
             }
         }
 
@@ -726,8 +713,8 @@ public class JsonUtilsTest {
         return eq(exps, gots);
     }
 
-    private boolean checkType(Object json, String path, String expectedType) {
-        List<Optional<Object>> gots;
+    private boolean checkType(BsonDocument json, String path, String expectedType) {
+        List<Optional<BsonValue>> gots;
         try {
             gots = JsonUtils.getPropsFromPath(json, path);
         } catch (IllegalArgumentException ex) {
@@ -742,7 +729,7 @@ public class JsonUtilsTest {
 
         boolean typeMatch = true;
 
-        for (Optional<Object> got : gots) {
+        for (Optional<BsonValue> got : gots) {
             typeMatch = typeMatch && JsonUtils.checkType(got, expectedType);
         }
 

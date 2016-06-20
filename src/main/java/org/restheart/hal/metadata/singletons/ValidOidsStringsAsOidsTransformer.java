@@ -17,12 +17,14 @@
  */
 package org.restheart.hal.metadata.singletons;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonObjectId;
+import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.RequestContext;
 
@@ -48,41 +50,58 @@ public class ValidOidsStringsAsOidsTransformer implements Transformer {
      * ObjectId) as an array of strings (["_id", "prop2"]
      */
     @Override
-    public void tranform(final HttpServerExchange exchange, final RequestContext context, DBObject contentToTransform, final DBObject args) {
+    public void tranform(
+            final HttpServerExchange exchange,
+            final RequestContext context,
+            BsonDocument contentToTransform,
+            final BsonValue args) {
         // this set contains the names of the properties to transform eventually
         Set<String> propertiesToTransform = new HashSet<>();
 
-        if (args instanceof BasicDBList) {
-            BasicDBList _ids = (BasicDBList) args;
+        if (args.isArray()) {
+            BsonArray _ids = args.asArray();
 
             _ids.forEach(propertyName -> {
-                if (propertyName instanceof String) {
-                    propertiesToTransform.add((String) propertyName);
+                if (propertyName.isString()) {
+                    propertiesToTransform.add(
+                            propertyName
+                            .asString()
+                            .getValue());
 
                 } else {
-                    context.addWarning("element in the args list is not a string: " + propertyName);
+                    context.addWarning("element in the args "
+                            + "list is not a string: " + propertyName);
                 }
             });
 
         } else {
-            context.addWarning("transformer wrong definition: args property must be an arrary of string (properties names).");
+            context.addWarning("transformer wrong definition: "
+                    + "args property must be an arrary "
+                    + "of string (properties names).");
         }
 
         _transform(contentToTransform, propertiesToTransform);
     }
 
-    private void _transform(DBObject data, Set<String> propertiesNames) {
+    private void _transform(BsonDocument data, Set<String> propertiesNames) {
         data.keySet().stream().forEach(key -> {
-            Object value = data.get(key);
+            BsonValue value = data.get(key);
 
             if (shouldTransform(key, propertiesNames)) {
-                if (value instanceof String && ObjectId.isValid((String) value)) {
-                    data.put(key, new ObjectId((String) value));
+                if (value.isString()
+                        && ObjectId.isValid(value
+                                .asString()
+                                .getValue())) {
+                    data.put(key,
+                            new BsonObjectId(
+                                    new ObjectId(value
+                                            .asString()
+                                            .getValue())));
                 }
             }
 
-            if (value instanceof DBObject) {
-                _transform((DBObject) value, propertiesNames);
+            if (value instanceof BsonDocument) {
+                _transform(value.asDocument(), propertiesNames);
             }
         });
     }
@@ -94,13 +113,14 @@ public class ValidOidsStringsAsOidsTransformer implements Transformer {
      * their value is a valid ObjectId
      * @return true if the property should be transformed
      */
-    private boolean shouldTransform(String key, Set<String> propertiesToTransform) {
+    private boolean shouldTransform(String key, 
+            Set<String> propertiesToTransform) {
         if (key.contains(".")) {
             String keyTokens[] = key.split(Pattern.quote("."));
-            
+
             key = keyTokens[keyTokens.length - 1];
-        } 
-        
+        }
+
         return propertiesToTransform.contains(key);
     }
 }

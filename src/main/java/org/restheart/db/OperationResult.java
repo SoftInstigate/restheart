@@ -17,7 +17,7 @@
  */
 package org.restheart.db;
 
-import org.bson.Document;
+import org.bson.BsonDocument;
 
 /**
  *
@@ -26,8 +26,8 @@ import org.bson.Document;
 public class OperationResult {
     private final int httpCode;
     private final Object etag;
-    private final Document newData;
-    private final Document oldData;
+    private final BsonDocument newData;
+    private final BsonDocument oldData;
     
     public OperationResult(int httpCode) {
         this.httpCode = httpCode;
@@ -36,7 +36,7 @@ public class OperationResult {
         this.oldData = null;
     }
     
-    public OperationResult(int httpCode, Document oldData, Document newData) {
+    public OperationResult(int httpCode, BsonDocument oldData, BsonDocument newData) {
         this.httpCode = httpCode;
         this.etag = null;
         this.newData = newData;
@@ -50,7 +50,7 @@ public class OperationResult {
         this.oldData = null;
     }
     
-    public OperationResult(int httpCode, Object etag, Document oldData, Document newData) {
+    public OperationResult(int httpCode, Object etag, BsonDocument oldData, BsonDocument newData) {
         this.httpCode = httpCode;
         this.etag = etag;
         this.newData = newData;
@@ -74,14 +74,14 @@ public class OperationResult {
     /**
      * @return the newData
      */
-    public Document getNewData() {
+    public BsonDocument getNewData() {
         return newData;
     }
     
     /**
      * @return the oldData
      */
-    public Document getOldData() {
+    public BsonDocument getOldData() {
         return oldData;
     }
 }

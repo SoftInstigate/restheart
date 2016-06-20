@@ -17,9 +17,10 @@
  */
 package org.restheart.handlers.aggregation;
 
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
 import org.restheart.Configuration;
 import org.restheart.hal.AbstractRepresentationFactory;
 import org.restheart.hal.Link;
@@ -51,7 +52,7 @@ public class AggregationResultRepresentationFactory
     @Override
     public Representation getRepresentation(HttpServerExchange exchange,
             RequestContext context,
-            List<DBObject> embeddedData,
+            List<BsonDocument> embeddedData,
             long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
@@ -83,7 +84,7 @@ public class AggregationResultRepresentationFactory
         return rep;
     }
 
-    private void addEmbeddedData(List<DBObject> embeddedData,
+    private void addEmbeddedData(List<BsonDocument> embeddedData,
             final Representation rep)
             throws IllegalQueryParamenterException {
         if (embeddedData != null) {
@@ -93,7 +94,7 @@ public class AggregationResultRepresentationFactory
                 embeddedDocuments(embeddedData, rep);
             }
         } else {
-            rep.addProperty("_returned", 0);
+            rep.addProperty("_returned", new BsonInt32(0));
         }
     }
 
@@ -105,7 +106,7 @@ public class AggregationResultRepresentationFactory
                 requestPath + "{?page}{&pagesize}", true));
     }
 
-    private void embeddedDocuments(List<DBObject> embeddedData,
+    private void embeddedDocuments(List<BsonDocument> embeddedData,
             Representation rep) throws IllegalQueryParamenterException {
         embeddedData.stream().map((d) -> {
             Representation nrep = new Representation();

@@ -17,9 +17,7 @@
  */
 package org.restheart.handlers;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
-import org.restheart.db.DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
+import org.restheart.db.FindIterablePool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
@@ -29,12 +27,16 @@ import io.undertow.util.Methods;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
-import org.bson.Document;
+import org.bson.BsonInt32;
+import org.bson.BsonValue;
+import org.bson.json.JsonParseException;
 import org.restheart.Bootstrapper;
 import org.restheart.db.OperationResult;
 import org.slf4j.Logger;
@@ -46,7 +48,8 @@ import org.slf4j.LoggerFactory;
  */
 public class RequestContext {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RequestContext.class);
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(RequestContext.class);
 
     public enum TYPE {
         INVALID,
@@ -153,14 +156,14 @@ public class RequestContext {
     private final METHOD method;
     private final String[] pathTokens;
 
-    private DBObject dbProps;
-    private DBObject collectionProps;
+    private BsonDocument dbProps;
+    private BsonDocument collectionProps;
 
-    private DBObject content;
+    private BsonValue content;
 
-    private File file;
+    private Path filePath;
 
-    private DBObject responseContent;
+    private BsonDocument responseContent;
 
     private final List<String> warnings = new ArrayList<>();
 
@@ -169,11 +172,11 @@ public class RequestContext {
     private boolean count = false;
     private EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy;
     private Deque<String> filter = null;
-    private BasicDBObject aggregationVars = null; // aggregation vars
+    private BsonDocument aggregationVars = null; // aggregation vars
     private Deque<String> keys = null;
     private Deque<String> sortBy = null;
     private DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OID;
-    private Object documentId;
+    private BsonValue documentId;
 
     private String mappedUri = null;
     private String unmappedUri = null;
@@ -219,14 +222,18 @@ public class RequestContext {
      * @param whereUri the uri to map to
      * @param whatUri the uri to map
      */
-    public RequestContext(HttpServerExchange exchange, String whereUri, String whatUri) {
+    public RequestContext(
+            HttpServerExchange exchange, 
+            String whereUri, 
+            String whatUri) {
         this.whereUri = URLUtils.removeTrailingSlashes(whereUri == null ? null
                 : whereUri.startsWith("/") ? whereUri
                 : "/" + whereUri);
 
         this.whatUri = URLUtils.removeTrailingSlashes(
                 whatUri == null ? null
-                        : whatUri.startsWith("/") || "*".equals(whatUri) ? whatUri
+                        : whatUri.startsWith("/") 
+                                || "*".equals(whatUri) ? whatUri
                         : "/" + whatUri);
 
         this.mappedUri = exchange.getRequestPath();
@@ -242,9 +249,13 @@ public class RequestContext {
         HeaderValues etagHvs = exchange.getRequestHeaders() == null
                 ? null : exchange.getRequestHeaders().get(Headers.IF_MATCH);
 
-        this.etag = etagHvs == null || etagHvs.getFirst() == null ? null : etagHvs.getFirst();
+        this.etag = etagHvs == null || etagHvs.getFirst() == null 
+                ? null 
+                : etagHvs.getFirst();
 
-        this.forceEtagCheck = exchange.getQueryParameters().get(ETAG_CHECK_QPARAM_KEY) != null;
+        this.forceEtagCheck = exchange
+                .getQueryParameters()
+                .get(ETAG_CHECK_QPARAM_KEY) != null;
 
         this.noProps = exchange.getQueryParameters().get(NO_PROPS_KEY) != null;
     }
@@ -275,24 +286,33 @@ public class RequestContext {
             type = TYPE.ROOT;
         } else if (pathTokens.length < 3) {
             type = TYPE.DB;
-        } else if (pathTokens.length >= 3 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
+        } else if (pathTokens.length >= 3 
+                && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
             if (pathTokens.length == 3) {
                 type = TYPE.FILES_BUCKET;
-            } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
+            } else if (pathTokens.length == 4 
+                    && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
                 type = TYPE.COLLECTION_INDEXES;
-            } else if (pathTokens.length == 4 && !pathTokens[3].equalsIgnoreCase(_INDEXES) && !pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
+            } else if (pathTokens.length == 4 
+                    && !pathTokens[3].equalsIgnoreCase(_INDEXES) 
+                    && !pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
                 type = TYPE.FILE;
-            } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
+            } else if (pathTokens.length > 4 
+                    && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
                 type = TYPE.INDEX;
-            } else if (pathTokens.length > 4 && !pathTokens[3].equalsIgnoreCase(_INDEXES) && !pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
+            } else if (pathTokens.length > 4 
+                    && !pathTokens[3].equalsIgnoreCase(_INDEXES) 
+                    && !pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
                 type = TYPE.FILE;
-            } else if (pathTokens.length == 5 && pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
-                // URL: <host>/db/bucket.file/xxx/binary
+            } else if (pathTokens.length == 5 
+                    && pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
+                // URL: <host>/db/bucket.filePath/xxx/binary
                 type = TYPE.FILE_BINARY;
             } else {
                 type = TYPE.DOCUMENT;
             }
-        } else if (pathTokens.length >= 3 && pathTokens[2].endsWith(_SCHEMAS)) {
+        } else if (pathTokens.length >= 3 
+                && pathTokens[2].endsWith(_SCHEMAS)) {
             if (pathTokens.length == 3) {
                 type = TYPE.SCHEMA_STORE;
             } else {
@@ -300,15 +320,20 @@ public class RequestContext {
             }
         } else if (pathTokens.length < 4) {
             type = TYPE.COLLECTION;
-        } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
+        } else if (pathTokens.length == 4 
+                && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.COLLECTION_INDEXES;
-        } else if (pathTokens.length == 4 && pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
+        } else if (pathTokens.length == 4 
+                && pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
             type = TYPE.BULK_DOCUMENTS;
-        } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
+        } else if (pathTokens.length > 4 
+                && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.INDEX;
-        } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
+        } else if (pathTokens.length == 4 
+                && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
             type = TYPE.INVALID;
-        } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
+        } else if (pathTokens.length > 4 
+                && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
             type = TYPE.AGGREGATION;
         } else {
             type = TYPE.DOCUMENT;
@@ -333,9 +358,11 @@ public class RequestContext {
                 ret = ret.replaceFirst("^" + this.whereUri, "");
             }
         } else if (!this.whereUri.equals(SLASH)) {
-            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + this.whereUri, this.whatUri));
+            ret = URLUtils.removeTrailingSlashes(
+                    ret.replaceFirst("^" + this.whereUri, this.whatUri));
         } else {
-            ret = URLUtils.removeTrailingSlashes(URLUtils.removeTrailingSlashes(this.whatUri) + ret);
+            ret = URLUtils.removeTrailingSlashes(
+                    URLUtils.removeTrailingSlashes(this.whatUri) + ret);
         }
 
         if (ret.isEmpty()) {
@@ -361,7 +388,8 @@ public class RequestContext {
                 return this.whereUri + unmappedUri;
             }
         } else {
-            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + this.whatUri, this.whereUri));
+            ret = URLUtils.removeTrailingSlashes(
+                    ret.replaceFirst("^" + this.whatUri, this.whereUri));
         }
 
         if (ret.isEmpty()) {
@@ -442,7 +470,9 @@ public class RequestContext {
      * @throws URISyntaxException
      */
     public URI getUri() throws URISyntaxException {
-        return new URI(Arrays.asList(pathTokens).stream().reduce(SLASH, (t1, t2) -> t1 + SLASH + t2));
+        return new URI(Arrays.asList(pathTokens)
+                .stream()
+                .reduce(SLASH, (t1, t2) -> t1 + SLASH + t2));
     }
 
     /**
@@ -486,13 +516,16 @@ public class RequestContext {
      * @param documentIdRaw
      * @return true if the documentIdRaw is a reserved resource
      */
-    public static boolean isReservedResourceDocument(TYPE type, String documentIdRaw) {
+    public static boolean isReservedResourceDocument(
+            TYPE type, 
+            String documentIdRaw) {
         if (documentIdRaw == null) {
             return false;
         }
 
         return (documentIdRaw.startsWith(UNDERSCORE)
-                || (type != TYPE.AGGREGATION && _AGGREGATIONS.equalsIgnoreCase(documentIdRaw)))
+                || (type != TYPE.AGGREGATION 
+                && _AGGREGATIONS.equalsIgnoreCase(documentIdRaw)))
                 && !documentIdRaw.equalsIgnoreCase(_INDEXES)
                 && !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID)
                 && !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID)
@@ -582,50 +615,94 @@ public class RequestContext {
     }
 
     /**
-     *
-     * @return the $and composed filter qparam values
-     */
-    public Document getComposedFilters() {
-        // apply filter
-        final Document query = new Document();
-
-        if (filter != null) {
-            if (filter.size() > 1) {
-                List<Document> _filters = new ArrayList<>();
-
-                filter.stream().forEach((String f) -> {
-                    _filters.add(Document.parse(f));
-                });
-
-                query.put("$and", _filters);
-            } else if (filter.size() == 1) {
-                query.putAll(Document.parse(filter.getFirst()));  // this can throw JSONParseException for invalid filter parameters
-            } else {
-                return null;
-            }
-        }
-
-        return query;
-    }
-
-    /**
      * @param filter the filter to set
      */
     public void setFilter(Deque<String> filter) {
         this.filter = filter;
     }
+    
+    /**
+     *
+     * @return the $and composed filter qparam values
+     */
+    public BsonDocument getFiltersDocument() throws JsonParseException {
+        final BsonDocument filterQuery = new BsonDocument();
+
+        if (filter != null) {
+            if (filter.size() > 1) {
+                BsonArray _filters = new BsonArray();
+
+                filter.stream().forEach((String f) -> {
+                    _filters.add(BsonDocument.parse(f));
+                });
+
+                filterQuery.put("$and", _filters);
+            } else if (filter.size() == 1) {
+                filterQuery.putAll(BsonDocument.parse(filter.getFirst()));  // this can throw JsonParseException for invalid filter parameters
+            } else {
+                return null;
+            }
+        }
+
+        return filterQuery;
+    }
+    
+    public BsonDocument getSortByDocument() throws JsonParseException {
+        BsonDocument sort = new BsonDocument();
+
+        if (sortBy == null || sortBy.isEmpty()) {
+            sort.put("_id", new BsonInt32(-1));
+        } else {
+            sortBy.stream().forEach((s) -> {
+
+                String _s = s.trim(); // the + sign is decoded into a space, in case remove it
+
+                // manage the case where sort_by is a json object
+                try {
+                    BsonDocument _sort = BsonDocument.parse(_s);
+                    
+                    sort.putAll(_sort);
+                } catch (JsonParseException e) {
+                    // sort_by is just a string, i.e. a property name
+                    if (_s.startsWith("-")) {
+                        sort.put(_s.substring(1), new BsonInt32(-1));
+                    } else if (_s.startsWith("+")) {
+                        sort.put(_s.substring(1), new BsonInt32(11));
+                    } else {
+                        sort.put(_s, new BsonInt32(1));
+                    }
+                }
+            });
+        }
+        
+        return sort;
+    }
+    
+    public BsonDocument getProjectionDocument() throws JsonParseException {
+        final BsonDocument projection = new BsonDocument();
+
+        if (keys == null || keys.isEmpty()) {
+            return null;
+        } else {
+            keys.stream().forEach((String f) -> {
+                projection.putAll(BsonDocument.parse(f));  // this can throw JsonParseException for invalid keys parameters
+            });
+        }
+        
+        return projection;
+    }
 
     /**
      * @return the aggregationVars
      */
-    public BasicDBObject getAggreationVars() {
+    public BsonDocument getAggreationVars() {
         return aggregationVars;
     }
 
     /**
      * @param aggregationVars the aggregationVars to set
      */
-    public void setAggregationVars(BasicDBObject aggregationVars) {
+    public void setAggregationVars(BsonDocument aggregationVars) {
         this.aggregationVars = aggregationVars;
     }
 
@@ -646,42 +723,42 @@ public class RequestContext {
     /**
      * @return the collectionProps
      */
-    public DBObject getCollectionProps() {
+    public BsonDocument getCollectionProps() {
         return collectionProps;
     }
 
     /**
      * @param collectionProps the collectionProps to set
      */
-    public void setCollectionProps(DBObject collectionProps) {
+    public void setCollectionProps(BsonDocument collectionProps) {
         this.collectionProps = collectionProps;
     }
 
     /**
      * @return the dbProps
      */
-    public DBObject getDbProps() {
+    public BsonDocument getDbProps() {
         return dbProps;
     }
 
     /**
      * @param dbProps the dbProps to set
      */
-    public void setDbProps(DBObject dbProps) {
+    public void setDbProps(BsonDocument dbProps) {
         this.dbProps = dbProps;
     }
 
     /**
      * @return the content
      */
-    public DBObject getContent() {
+    public BsonValue getContent() {
         return content;
     }
 
     /**
      * @param content the content to set
      */
-    public void setContent(DBObject content) {
+    public void setContent(BsonValue content) {
         this.content = content;
     }
 
@@ -740,7 +817,8 @@ public class RequestContext {
     /**
      * @param cursorAllocationPolicy the cursorAllocationPolicy to set
      */
-    public void setCursorAllocationPolicy(EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
+    public void setCursorAllocationPolicy(
+            EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
         this.cursorAllocationPolicy = cursorAllocationPolicy;
     }
 
@@ -761,43 +839,43 @@ public class RequestContext {
     /**
      * @param documentId the documentId to set
      */
-    public void setDocumentId(Object documentId) {
+    public void setDocumentId(BsonValue documentId) {
         this.documentId = documentId;
     }
 
     /**
      * @return the documentId
      */
-    public Object getDocumentId() {
+    public BsonValue getDocumentId() {
         return documentId;
     }
 
     /**
      * @return the responseContent
      */
-    public DBObject getResponseContent() {
+    public BsonDocument getResponseContent() {
         return responseContent;
     }
 
     /**
      * @param responseContent the responseContent to set
      */
-    public void setResponseContent(DBObject responseContent) {
+    public void setResponseContent(BsonDocument responseContent) {
         this.responseContent = responseContent;
     }
 
     /**
-     * @return the file
+     * @return the filePath
      */
-    public File getFile() {
-        return file;
+    public Path getFilePath() {
+        return filePath;
     }
 
     /**
-     * @param file the file to set
+     * @param filePath the filePath to set
      */
-    public void setFile(File file) {
-        this.file = file;
+    public void setFilePath(Path filePath) {
+        this.filePath = filePath;
     }
 
     /**
@@ -926,20 +1004,25 @@ public class RequestContext {
                     ? collectionProps.get(ETAG_DOC_POLICY_METADATA_KEY)
                     : null;
             
-            LOGGER.trace("collection etag policy (from coll properties) {}", _policy);
+            LOGGER.trace(
+                    "collection etag policy (from coll properties) {}",
+                    _policy);
 
             if (_policy == null) {
                 // check the db metadata
                 _policy = dbProps != null ? dbProps.get(ETAG_DOC_POLICY_METADATA_KEY)
                         : null;
-                LOGGER.trace("collection etag policy (from db properties) {}", _policy);
+                LOGGER.trace(
+                        "collection etag policy (from db properties) {}", 
+                        _policy);
             }
 
             ETAG_CHECK_POLICY policy = null;
 
             if (_policy != null && _policy instanceof String) {
                 try {
-                    policy = ETAG_CHECK_POLICY.valueOf(((String) _policy).toUpperCase());
+                    policy = ETAG_CHECK_POLICY.valueOf(((String) _policy)
+                            .toUpperCase());
                 } catch (IllegalArgumentException iae) {
                     policy = null;
                 }
@@ -965,7 +1048,8 @@ public class RequestContext {
 
             if (_policy != null && _policy instanceof String) {
                 try {
-                    policy = ETAG_CHECK_POLICY.valueOf(((String) _policy).toUpperCase());
+                    policy = ETAG_CHECK_POLICY.valueOf(((String) _policy)
+                            .toUpperCase());
                 } catch (IllegalArgumentException iae) {
                     policy = null;
                 }
@@ -985,21 +1069,26 @@ public class RequestContext {
             // check the coll  metadata
             Object _policy = collectionProps.get(ETAG_POLICY_METADATA_KEY);
 
-            LOGGER.trace("coll etag policy (from coll properties) {}", _policy);
+            LOGGER.trace(
+                    "coll etag policy (from coll properties) {}",
+                    _policy);
             
             if (_policy == null) {
                 // check the db metadata
                 _policy = dbProps != null ? dbProps.get(ETAG_POLICY_METADATA_KEY)
                         : null;
                 
-                LOGGER.trace("coll etag policy (from db properties) {}", _policy);
+                LOGGER.trace(
+                        "coll etag policy (from db properties) {}",
+                        _policy);
             }
 
             ETAG_CHECK_POLICY policy = null;
 
             if (_policy != null && _policy instanceof String) {
                 try {
-                    policy = ETAG_CHECK_POLICY.valueOf(((String) _policy).toUpperCase());
+                    policy = ETAG_CHECK_POLICY.valueOf(((String) _policy)
+                            .toUpperCase());
                 } catch (IllegalArgumentException iae) {
                     policy = null;
                 }
@@ -1015,9 +1104,14 @@ public class RequestContext {
         }
 
         // apply the default policy from configuration
-        ETAG_CHECK_POLICY dbP = Bootstrapper.getConfiguration().getDbEtagCheckPolicy();
-        ETAG_CHECK_POLICY collP = Bootstrapper.getConfiguration().getCollEtagCheckPolicy();
-        ETAG_CHECK_POLICY docP = Bootstrapper.getConfiguration().getDocEtagCheckPolicy();
+        ETAG_CHECK_POLICY dbP = Bootstrapper.getConfiguration()
+                .getDbEtagCheckPolicy();
+        
+        ETAG_CHECK_POLICY collP = Bootstrapper.getConfiguration()
+                .getCollEtagCheckPolicy();
+        
+        ETAG_CHECK_POLICY docP = Bootstrapper.getConfiguration()
+                .getDocEtagCheckPolicy();
 
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace("default etag db check (from conf) {}", dbP);

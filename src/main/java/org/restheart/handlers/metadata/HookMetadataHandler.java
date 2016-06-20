@@ -36,7 +36,8 @@ import org.restheart.hal.metadata.singletons.Hook;
  */
 public class HookMetadataHandler extends PipedHttpHandler {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(HookMetadataHandler.class);
+    static final Logger LOGGER =
+            LoggerFactory.getLogger(HookMetadataHandler.class);
     
     /**
      * Creates a new instance of ResponseTranformerMetadataHandler
@@ -55,15 +56,19 @@ public class HookMetadataHandler extends PipedHttpHandler {
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(
+            HttpServerExchange exchange, 
+            RequestContext context) 
+            throws Exception {
         if (context.getCollectionProps() != null
                 && context.getCollectionProps()
-                .containsField(HookMetadata.ROOT_KEY)) {
+                .containsKey(HookMetadata.ROOT_KEY)) {
 
             List<HookMetadata> mdHooks = null;
 
             try {
-                mdHooks = HookMetadata.getFromJson(context.getCollectionProps());
+                mdHooks = HookMetadata.getFromJson(
+                        context.getCollectionProps());
             } catch (InvalidMetadataException ime) {
                 context.addWarning(ime.getMessage());
             }
@@ -73,14 +78,20 @@ public class HookMetadataHandler extends PipedHttpHandler {
                     Hook wh;
 
                     try {
-                        wh = (Hook) NamedSingletonsFactory.getInstance().get("hooks", mdHook.getName());
+                        wh = (Hook) NamedSingletonsFactory
+                                .getInstance()
+                                .get("hooks", mdHook.getName());
                     } catch (IllegalArgumentException ex) {
-                        context.addWarning("error applying hook: " + ex.getMessage());
+                        context.addWarning("error applying hook: " 
+                                + ex.getMessage());
                         return;
                     }
 
                     if (wh == null) {
-                        throw new IllegalArgumentException("cannot find singleton " + mdHook.getName() + " in singleton group hook");
+                        throw new IllegalArgumentException(
+                                "cannot find singleton " 
+                                        + mdHook.getName() 
+                                        + " in singleton group hook");
                     }
 
                     if (wh.doesSupportRequests(context)) {

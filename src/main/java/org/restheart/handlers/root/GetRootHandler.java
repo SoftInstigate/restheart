@@ -17,7 +17,6 @@
  */
 package org.restheart.handlers.root;
 
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,7 +28,6 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.JsonUtils;
 
 /**
  *
@@ -100,14 +98,9 @@ public class GetRootHandler extends PipedHttpHandler {
         exchange.setStatusCode(HttpStatus.SC_OK);
         RootRepresentationFactory rf = new RootRepresentationFactory();
 
-        //TODO remove this after migration to mongodb driver 3.2 completes
-        List<DBObject> _data = data.stream().map(props -> {
-            return JsonUtils.convertBsonValueToDBObject(props);
-        }).collect(Collectors.toList());
-
         rf.sendRepresentation(exchange,
                 context,
-                rf.getRepresentation(exchange, context, _data, size));
+                rf.getRepresentation(exchange, context, data, size));
 
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);

@@ -17,15 +17,16 @@
  */
 package org.restheart.handlers.files;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.gridfs.GridFS;
-import com.mongodb.gridfs.GridFSDBFile;
+import com.mongodb.client.gridfs.GridFSBucket;
+import com.mongodb.client.gridfs.GridFSBuckets;
+import com.mongodb.client.gridfs.model.GridFSFile;
+import static com.mongodb.client.model.Filters.eq;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.io.IOException;
-import java.time.Instant;
 import org.bson.BsonObjectId;
 import org.bson.types.ObjectId;
+import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
@@ -40,10 +41,14 @@ import org.slf4j.LoggerFactory;
  */
 public class GetFileBinaryHandler extends PipedHttpHandler {
 
-    public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
-    public static final String CONTENT_TRANSFER_ENCODING_BINARY = "binary";
-    
-    private static final Logger LOGGER = LoggerFactory.getLogger(GetFileBinaryHandler.class);
+    public static final String APPLICATION_OCTET_STREAM
+            = "application/octet-stream";
+
+    public static final String CONTENT_TRANSFER_ENCODING_BINARY
+            = "binary";
+
+    private static final Logger LOGGER
+            = LoggerFactory.getLogger(GetFileBinaryHandler.class);
 
     /**
      * Creates a new instance of GetFileBinaryHandler
@@ -52,7 +57,7 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
     public GetFileBinaryHandler() {
         super();
     }
-    
+
     /**
      * Creates a new instance of GetFileBinaryHandler
      *
@@ -63,43 +68,49 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(
+            HttpServerExchange exchange,
+            RequestContext context)
+            throws Exception {
         LOGGER.trace("GET " + exchange.getRequestURL());
         final String bucket = extractBucketName(context.getCollectionName());
 
-        GridFS gridfs = new GridFS(getDatabase().getDB(context.getDBName()), bucket);
-        GridFSDBFile dbsfile = gridfs.findOne(new BasicDBObject("_id", context.getDocumentId()));
+        GridFSBucket gridFSBucket = GridFSBuckets.create(
+                MongoDBClientSingleton.getInstance().getClient()
+                .getDatabase(context.getDBName()),
+                bucket);
+
+        GridFSFile dbsfile = gridFSBucket
+                .find(eq("_id", context.getDocumentId()))
+                .limit(1).iterator().tryNext();
 
         if (dbsfile == null) {
             fileNotFound(context, exchange);
-        } else {
-            if (!checkEtag(exchange, dbsfile)) {
-                sendBinaryContent(dbsfile, exchange);
-            }
+        } else if (!checkEtag(exchange, dbsfile)) {
+            sendBinaryContent(gridFSBucket, dbsfile, exchange);
         }
-        
+
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }
     }
 
-    private boolean checkEtag(HttpServerExchange exchange, GridFSDBFile dbsfile) {
+    private boolean checkEtag(HttpServerExchange exchange, GridFSFile dbsfile) {
         if (dbsfile != null) {
-            Object etag = dbsfile.get("_etag");
-            
+            Object etag = dbsfile.getMetadata().get("_etag");
+
             if (etag != null && etag instanceof ObjectId) {
                 ObjectId _etag = (ObjectId) etag;
-                
-                // TODO refactoring mongodb 3.2 driver. use RequestContext.getComposedFilters()
+
+                // TODO refactoring mongodb 3.2 driver. use RequestContext.getFiltersDocument()
                 BsonObjectId __etag = new BsonObjectId(_etag);
-                
-                // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
-                dbsfile.put("_lastupdated_on", Instant.ofEpochSecond(((ObjectId)etag).getTimestamp()).toString());
 
                 // in case the request contains the IF_NONE_MATCH header with the current etag value,
                 // just return 304 NOT_MODIFIED code
                 if (RequestHelper.checkReadEtag(exchange, __etag)) {
-                    ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_MODIFIED);
+                    ResponseHelper.endExchange(
+                            exchange,
+                            HttpStatus.SC_NOT_MODIFIED);
                     return true;
                 }
             }
@@ -108,37 +119,63 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
         return false;
     }
 
-    private void fileNotFound(RequestContext context, HttpServerExchange exchange) {
-        final String errMsg = String.format("File with ID <%s> not found", context.getDocumentId());
+    private void fileNotFound(
+            RequestContext context,
+            HttpServerExchange exchange) {
+        final String errMsg = String.format(
+                "File with ID <%s> not found", context.getDocumentId());
         LOGGER.trace(errMsg);
-        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, errMsg);
+        ResponseHelper.endExchangeWithMessage(
+                exchange,
+                HttpStatus.SC_NOT_FOUND,
+                errMsg);
     }
 
-    private void sendBinaryContent(final GridFSDBFile dbsfile, final HttpServerExchange exchange) throws IOException {
-        LOGGER.trace("Filename = {}", dbsfile.getFilename());
-        LOGGER.trace("Content length = {}", dbsfile.getLength());
+    private void sendBinaryContent(
+            final GridFSBucket gridFSBucket,
+            final GridFSFile file,
+            final HttpServerExchange exchange)
+            throws IOException {
+        LOGGER.trace("Filename = {}", file.getFilename());
+        LOGGER.trace("Content length = {}", file.getLength());
 
-        if (dbsfile.get("contentType") != null) {
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, dbsfile.get("contentType").toString());
+        if (file.getMetadata().get("contentType") != null) {
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
+                    file.getMetadata().get("contentType").toString());
         } else {
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
+            exchange.getResponseHeaders().put(
+                    Headers.CONTENT_TYPE,
+                    APPLICATION_OCTET_STREAM);
         }
-        
-        exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, dbsfile.getLength());
-        exchange.getResponseHeaders().put(Headers.CONTENT_DISPOSITION,
-                String.format("inline; filename=\"%s\"", extractFilename(dbsfile)));
-        exchange.getResponseHeaders().put(Headers.CONTENT_TRANSFER_ENCODING, CONTENT_TRANSFER_ENCODING_BINARY);
-        ResponseHelper.injectEtagHeader(exchange, dbsfile);
-        
+
+        exchange.getResponseHeaders().put(
+                Headers.CONTENT_LENGTH,
+                file.getLength());
+
+        exchange.getResponseHeaders().put(
+                Headers.CONTENT_DISPOSITION,
+                String.format("inline; filename=\"%s\"",
+                        extractFilename(file)));
+
+        exchange.getResponseHeaders().put(
+                Headers.CONTENT_TRANSFER_ENCODING,
+                CONTENT_TRANSFER_ENCODING_BINARY);
+
+        ResponseHelper.injectEtagHeader(exchange, file.getMetadata());
+
         exchange.setStatusCode(HttpStatus.SC_OK);
 
-        dbsfile.writeTo(exchange.getOutputStream());
-        
+        gridFSBucket.downloadToStream(
+                file.getId().asObjectId().getValue(),
+                exchange.getOutputStream());
+
         exchange.endExchange();
     }
 
-    private String extractFilename(final GridFSDBFile dbsfile) {
-        return dbsfile.getFilename() != null ? dbsfile.getFilename() : dbsfile.getId().toString();
+    private String extractFilename(final GridFSFile dbsfile) {
+        return dbsfile.getFilename() != null
+                ? dbsfile.getFilename()
+                : dbsfile.getId().toString();
     }
 
     static String extractBucketName(final String collectionName) {

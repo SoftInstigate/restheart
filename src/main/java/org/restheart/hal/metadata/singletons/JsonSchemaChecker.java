@@ -17,10 +17,10 @@
  */
 package org.restheart.hal.metadata.singletons;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.Objects;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.json.JSONException;
@@ -30,6 +30,8 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.handlers.schema.JsonSchemaCacheSingleton;
 import org.restheart.handlers.schema.JsonSchemaNotFoundException;
+import org.restheart.utils.HttpStatus;
+import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,36 +46,53 @@ public class JsonSchemaChecker implements Checker {
     public static final String SCHEMA_STORE_DB_PROPERTY = "schemaStoreDb";
     public static final String SCHEMA_ID_PROPERTY = "schemaId";
 
-    static final Logger LOGGER = LoggerFactory.getLogger(JsonSchemaChecker.class);
+    static final Logger LOGGER =
+            LoggerFactory.getLogger(JsonSchemaChecker.class);
 
     @Override
     public boolean check(
             HttpServerExchange exchange,
             RequestContext context,
-            BasicDBObject contentToCheck,
-            DBObject args) {
+            BsonDocument contentToCheck,
+            BsonValue args) {
         Objects.requireNonNull(args, "missing metadata property 'args'");
+        
+        // cannot PUT an array
+        if (args == null || !args.isDocument()) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "args must be a json object");
+            return false;
+        }
+        
+        BsonDocument _args = args.asDocument();
 
-        Object _schemaStoreDb = args.get(SCHEMA_STORE_DB_PROPERTY);
+        BsonValue _schemaStoreDb = _args.get(SCHEMA_STORE_DB_PROPERTY);
         String schemaStoreDb;
 
-        Object schemaId = args.get(SCHEMA_ID_PROPERTY);
+        BsonValue schemaId = _args.get(SCHEMA_ID_PROPERTY);
 
-        Objects.requireNonNull(schemaId, "missing property '" + SCHEMA_ID_PROPERTY + "' in metadata property 'args'");
+        Objects.requireNonNull(schemaId, "missing property '" 
+                + SCHEMA_ID_PROPERTY 
+                + "' in metadata property 'args'");
 
         if (_schemaStoreDb == null) {
             // if not specified assume the current db as the schema store db
             schemaStoreDb = context.getDBName();
-        } else if (_schemaStoreDb instanceof String) {
-            schemaStoreDb = (String) _schemaStoreDb;
+        } else if (_schemaStoreDb.isString()) {
+            schemaStoreDb = _schemaStoreDb.asString().getValue();
         } else {
-            throw new IllegalArgumentException("property " + SCHEMA_STORE_DB_PROPERTY + " in metadata 'args' must be a string");
+            throw new IllegalArgumentException("property " 
+                    + SCHEMA_STORE_DB_PROPERTY 
+                    + " in metadata 'args' must be a string");
         }
 
         try {
             URLUtils.checkId(schemaId);
         } catch (UnsupportedDocumentIdException ex) {
-            throw new IllegalArgumentException("schema 'id' is not a valid id", ex);
+            throw new IllegalArgumentException(
+                    "schema 'id' is not a valid id", ex);
         }
 
         Schema theschema;
@@ -121,8 +140,10 @@ public class JsonSchemaChecker implements Checker {
     @Override
     public PHASE getPhase(RequestContext context) {
         if (context.getMethod() == METHOD.PATCH
-                || CheckersUtils.doesRequestUsesDotNotation(context.getContent())
-                || CheckersUtils.doesRequestUsesUpdateOperators(context.getContent())) {
+                || CheckersUtils
+                        .doesRequestUsesDotNotation(context.getContent())
+                || CheckersUtils
+                        .doesRequestUsesUpdateOperators(context.getContent())) {
             return PHASE.AFTER_WRITE;
         } else {
             return PHASE.BEFORE_WRITE;

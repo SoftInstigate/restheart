@@ -17,27 +17,23 @@
  */
 package org.restheart.db;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
-import com.mongodb.util.JSON;
 import com.mongodb.util.JSONParseException;
 
 import org.restheart.utils.HttpStatus;
 
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.Objects;
 
-import org.bson.BSONObject;
 import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.json.JsonParseException;
@@ -58,21 +54,22 @@ class CollectionDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CollectionDAO.class);
 
-    private static final BasicDBObject FIELDS_TO_RETURN;
+    private static final BsonDocument FIELDS_TO_RETURN;
 
     CollectionDAO(MongoClient client) {
         this.client = client;
     }
 
     static {
-        FIELDS_TO_RETURN = new BasicDBObject();
-        FIELDS_TO_RETURN.put("_id", 1);
-        FIELDS_TO_RETURN.put("_etag", 1);
+        FIELDS_TO_RETURN = new BsonDocument();
+        FIELDS_TO_RETURN.put("_id", new BsonInt32(1));
+        FIELDS_TO_RETURN.put("_etag", new BsonInt32(1));
     }
 
     /**
      * Returns the mongodb DBCollection object for the collection in db dbName.
      *
+     * @deprecated
      * @param dbName the database name of the collection the database name of
      * the collection
      * @param collName the collection name
@@ -103,7 +100,7 @@ class CollectionDAO {
      * @param coll the mongodb DBCollection object
      * @return true if the commection is empty
      */
-    public boolean isCollectionEmpty(final DBCollection coll) {
+    public boolean isCollectionEmpty(final MongoCollection<BsonDocument> coll) {
         return coll.count() == 0;
     }
 
@@ -117,140 +114,75 @@ class CollectionDAO {
      * @return the number of documents in the given collection (taking into
      * account the filters in case)
      */
-    public long getCollectionSize(final DBCollection coll, final Deque<String> filters) {
-        final BasicDBObject query = new BasicDBObject();
-
-        if (filters != null) {
-            try {
-                filters.stream().forEach(f -> {
-                    query.putAll((BSONObject) JSON.parse(f));  // this can throw JSONParseException for invalid filter parameters
-                });
-            } catch (JSONParseException jpe) {
-                LOGGER.warn("****** error parsing filter expression {}", filters, jpe);
-            }
-        }
+    public long getCollectionSize(
+            final MongoCollection<BsonDocument> coll,
+            final BsonDocument filters) {
+        final BsonDocument query = new BsonDocument();
 
         return coll.count(query);
     }
 
     /**
-     * Returs the DBCursor of the collection applying sorting and filtering.
+     * Returs the FindIterable<BsonDocument> of the collection applying 
+     * sorting, filtering and projection.
      *
-     * @param coll the mongodb DBCollection object <<<<<<< HEAD
-     * @param sortBy the Deque collection of fields to use for sorting (prepend
-     * field name with - for descending sorting)
-     * @param filters the filters to apply. it is a Deque collection of mongodb
-     * query conditions. =======
-     * @param sortBy the Deque collection of fields to use for sorting (prepend
-     * field name with - for descending sorting)
-     * @param filters the filters to apply. it is a Deque collection of mongodb
-     * query conditions. >>>>>>> 3d60559d7f3582061f69b35b54ef03c3a01c20de
-     * @param keys
+     * @param sortBy the sort expression to use for sorting (prepend field name
+     * with - for descending sorting)
+     * @param filters the filters to apply.
+     * @param keys the keys to return (projection)
      * @return
-     * @throws JSONParseException
+     * @throws JsonParseException
      */
-    DBCursor getCollectionDBCursor(
-            final DBCollection coll,
-            final Deque<String> sortBy,
-            final Deque<String> filters,
-            final Deque<String> keys) throws JSONParseException {
-        // apply sort_by
-        DBObject sort = new BasicDBObject();
+    FindIterable<BsonDocument> getFindIterable(
+            final MongoCollection<BsonDocument> coll,
+            final BsonDocument sortBy,
+            final BsonDocument filters,
+            final BsonDocument keys) throws JsonParseException {
 
-        if (sortBy == null || sortBy.isEmpty()) {
-            sort.put("_id", -1);
-        } else {
-            sortBy.stream().forEach((s) -> {
-
-                String _s = s.trim(); // the + sign is decoded into a space, in case remove it
-
-                // manage the case where sort_by is a json object
-                try {
-                    BsonDocument _sort = BsonDocument.parse(_s);
-                    
-                    sort.putAll(_sort);
-                } catch (JsonParseException e) {
-                    // sort_by is just a string, i.e. a property name
-                    if (_s.startsWith("-")) {
-                        sort.put(_s.substring(1), -1);
-                    } else if (_s.startsWith("+")) {
-                        sort.put(_s.substring(1), 1);
-                    } else {
-                        sort.put(_s, 1);
-                    }
-                }
-            });
-        }
-        // apply filter
-        // TODO refactoring mongodb 3.2 driver. use RequestContext.getComposedFilters()
-        final BasicDBObject query = new BasicDBObject();
-
-        if (filters != null) {
-            if (filters.size() > 1) {
-                BasicDBList _filters = new BasicDBList();
-
-                filters.stream().forEach((String f) -> {
-                    _filters.add((BSONObject) JSON.parse(f));
-                });
-
-                query.put("$and", _filters);
-            } else {
-                BSONObject filterQuery = (BSONObject) JSON.parse(filters.getFirst());
-
-                query.putAll(filterQuery);  // this can throw JSONParseException for invalid filter parameters
-            }
-        }
-
-        final BasicDBObject fields = new BasicDBObject();
-
-        if (keys
-                != null) {
-            keys.stream().forEach((String f) -> {
-                BSONObject keyQuery = (BSONObject) JSON.parse(f);
-
-                fields.putAll(keyQuery);  // this can throw JSONParseException for invalid keys parameters
-            });
-        }
-
-        return coll.find(query, fields)
-                .sort(sort);
+        return coll.find(filters)
+                .projection(keys)
+                .sort(sortBy);
     }
 
-    ArrayList<DBObject> getCollectionData(
-            final DBCollection coll,
+    ArrayList<BsonDocument> getCollectionData(
+            final MongoCollection<BsonDocument> coll,
             final int page,
             final int pagesize,
-            final Deque<String> sortBy,
-            final Deque<String> filters,
-            final Deque<String> keys, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager) throws JSONParseException {
+            final BsonDocument sortBy,
+            final BsonDocument filters,
+            final BsonDocument keys,
+            FindIterablePool.EAGER_CURSOR_ALLOCATION_POLICY eager) throws JSONParseException {
 
-        ArrayList<DBObject> ret = new ArrayList<>();
+        ArrayList<BsonDocument> ret = new ArrayList<>();
 
         int toskip = pagesize * (page - 1);
 
-        SkippedDBCursor _cursor = null;
+        SkippedFindIterable _cursor = null;
 
-        if (eager != DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE) {
+        if (eager != FindIterablePool.EAGER_CURSOR_ALLOCATION_POLICY.NONE) {
 
-            _cursor = DBCursorPool.getInstance().get(new DBCursorPoolEntryKey(coll, sortBy, filters, keys, toskip, 0), eager);
+            _cursor = FindIterablePool.getInstance().get(new CursorPoolEntryKey(coll, sortBy, filters, keys, toskip, 0), eager);
         }
 
         int _pagesize = pagesize;
 
         // in case there is not cursor in the pool to reuse
-        DBCursor cursor;
+        FindIterable<BsonDocument> cursor;
+
         if (_cursor == null) {
-            cursor = getCollectionDBCursor(coll, sortBy, filters, keys);
+            cursor = getFindIterable(coll, sortBy, filters, keys);
             cursor.skip(toskip);
 
-            while (_pagesize > 0 && cursor.hasNext()) {
-                ret.add(cursor.next());
+            MongoCursor<BsonDocument> mc = cursor.iterator();
+            
+            while (_pagesize > 0 && mc.hasNext()) {
+                ret.add(mc.next());
                 _pagesize--;
             }
         } else {
             int alreadySkipped;
 
-            cursor = _cursor.getCursor();
+            cursor = _cursor.getFindIterable();
             alreadySkipped = _cursor.getAlreadySkipped();
 
             long startSkipping = 0;
@@ -262,8 +194,10 @@ class CollectionDAO {
 
             LOGGER.debug("got cursor from pool with skips {}. need to reach {} skips.", alreadySkipped, toskip);
 
-            while (toskip > alreadySkipped && cursor.hasNext()) {
-                cursor.next();
+            MongoCursor<BsonDocument> mc = cursor.iterator();
+            
+            while (toskip > alreadySkipped && mc.hasNext()) {
+                mc.next();
                 alreadySkipped++;
             }
 
@@ -271,16 +205,16 @@ class CollectionDAO {
                 LOGGER.debug("skipping {} times took {} msecs", toskip - cursorSkips, System.currentTimeMillis() - startSkipping);
             }
 
-            while (_pagesize > 0 && cursor.hasNext()) {
-                ret.add(cursor.next());
+            while (_pagesize > 0 && mc.hasNext()) {
+                ret.add(mc.next());
                 _pagesize--;
             }
         }
 
         // the pool is populated here because, skipping with cursor.next() is heavy operation
         // and we want to minimize the chances that pool cursors are allocated in parallel
-        DBCursorPool.getInstance().populateCache(
-                new DBCursorPoolEntryKey(coll, sortBy, filters, keys, toskip, 0),
+        FindIterablePool.getInstance().populateCache(
+                new CursorPoolEntryKey(coll, sortBy, filters, keys, toskip, 0),
                 eager);
 
         return ret;
@@ -352,7 +286,7 @@ class CollectionDAO {
     OperationResult upsertCollection(
             final String dbName,
             final String collName,
-            final DBObject properties,
+            final BsonDocument properties,
             final String requestEtag,
             final boolean updating,
             final boolean patching,
@@ -368,19 +302,16 @@ class CollectionDAO {
 
         ObjectId newEtag = new ObjectId();
 
-        final DBObject content = DAOUtils.validContent(properties);
+        final BsonDocument content = DAOUtils.validContent(properties);
 
-        content.put("_etag", newEtag);
-        content.removeField("_id"); // make sure we don't change this field
-
-        //TODO remove this after migration to mongodb driver 3.2 completes
-        Document dcontent = new Document(content.toMap());
+        content.put("_etag", new BsonObjectId(newEtag));
+        content.remove("_id"); // make sure we don't change this field
 
         MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<Document> mcoll = mdb.getCollection("_properties");
+        MongoCollection<BsonDocument> mcoll = mdb.getCollection("_properties", BsonDocument.class);
 
         if (checkEtag && updating) {
-            Document oldProperties = mcoll.find(eq("_id", "_properties.".concat(collName)))
+            BsonDocument oldProperties = mcoll.find(eq("_id", "_properties.".concat(collName)))
                     .projection(FIELDS_TO_RETURN).first();
 
             if (oldProperties != null) {
@@ -399,21 +330,21 @@ class CollectionDAO {
                 }
 
                 if (Objects.equals(requestEtag, _oldEtag)) {
-                    return doCollPropsUpdate(collName, patching, updating, mcoll, dcontent, newEtag);
+                    return doCollPropsUpdate(collName, patching, updating, mcoll, content, newEtag);
                 } else {
                     return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
                 }
             } else {
                 // this is the case when the coll does not have properties
                 // e.g. it has not been created by restheart
-                return doCollPropsUpdate(collName, patching, updating, mcoll, dcontent, newEtag);
+                return doCollPropsUpdate(collName, patching, updating, mcoll, content, newEtag);
             }
         } else {
-            return doCollPropsUpdate(collName, patching, updating, mcoll, dcontent, newEtag);
+            return doCollPropsUpdate(collName, patching, updating, mcoll, content, newEtag);
         }
     }
 
-    private OperationResult doCollPropsUpdate(String collName, boolean patching, boolean updating, MongoCollection<Document> mcoll, Document dcontent, ObjectId newEtag) {
+    private OperationResult doCollPropsUpdate(String collName, boolean patching, boolean updating, MongoCollection<BsonDocument> mcoll, BsonDocument dcontent, ObjectId newEtag) {
         if (patching) {
             DAOUtils.updateDocument(
                     mcoll,

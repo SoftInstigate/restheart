@@ -17,7 +17,6 @@
  */
 package org.restheart.handlers.document;
 
-import com.mongodb.DBObject;
 import static com.mongodb.client.model.Filters.eq;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
@@ -28,10 +27,104 @@ import org.restheart.hal.Representation;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.JsonUtils;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.and;
 
 /**
@@ -63,13 +156,16 @@ public class GetDocumentHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(
+            HttpServerExchange exchange,
+            RequestContext context)
+            throws Exception {
         Bson query = eq("_id", context.getDocumentId());
 
         if (context.getShardKey() != null) {
             query = and(query, context.getShardKey());
         }
-        
+
         final BsonDocument fieldsToReturn = new BsonDocument();
 
         Deque<String> keys = context.getKeys();
@@ -113,7 +209,10 @@ public class GetDocumentHandler extends PipedHttpHandler {
                 }
             }
 
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, errMsg);
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    HttpStatus.SC_NOT_FOUND,
+                    errMsg);
             return;
         }
 
@@ -126,24 +225,25 @@ public class GetDocumentHandler extends PipedHttpHandler {
             return;
         }
 
-        String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
+        String requestPath = URLUtils.removeTrailingSlashes(
+                exchange.getRequestPath());
 
         ResponseHelper.injectEtagHeader(exchange, document);
         exchange.setStatusCode(HttpStatus.SC_OK);
 
         DocumentRepresentationFactory drp = new DocumentRepresentationFactory();
-        
-        // 
-        DBObject data = JsonUtils.convertBsonValueToDBObject(document);
-        
-        Representation rep = drp.getRepresentation(requestPath, exchange, context,
-                data);
+
+        Representation rep = drp.getRepresentation(
+                requestPath,
+                exchange,
+                context,
+                document);
 
         exchange.setStatusCode(HttpStatus.SC_OK);
 
         // call the ResponseTranformerMetadataHandler if piped in
         if (getNext() != null) {
-            DBObject responseContent = rep.asDBObject();
+            BsonDocument responseContent = rep.asBsonDocument();
             context.setResponseContent(responseContent);
 
             getNext().handleRequest(exchange, context);

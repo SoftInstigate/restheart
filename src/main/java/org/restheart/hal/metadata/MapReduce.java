@@ -17,9 +17,9 @@
  */
 package org.restheart.hal.metadata;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import java.util.regex.Matcher;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.utils.JsonUtils;
 
 /**
@@ -30,7 +30,7 @@ import org.restheart.utils.JsonUtils;
 public class MapReduce extends AbstractAggregationOperation {
     private final String map;
     private final String reduce;
-    private final DBObject query;
+    private final BsonValue query;
 
     public static final String MAP_ELEMENT_NAME = "map";
     public static final String REDUCE_ELEMENT_NAME = "reduce";
@@ -64,38 +64,38 @@ public class MapReduce extends AbstractAggregationOperation {
      * </code>
      * @throws org.restheart.hal.metadata.InvalidMetadataException
      */
-    public MapReduce(DBObject properties)
+    public MapReduce(BsonDocument properties)
             throws InvalidMetadataException {
         super(properties);
 
-        Object _map = properties.get(MAP_ELEMENT_NAME);
-        Object _reduce = properties.get(REDUCE_ELEMENT_NAME);
-        Object _query = properties.get(QUERY_ELEMENT_NAME);
+        BsonValue _map = properties.get(MAP_ELEMENT_NAME);
+        BsonValue _reduce = properties.get(REDUCE_ELEMENT_NAME);
+        BsonValue _query = properties.get(QUERY_ELEMENT_NAME);
 
-        if (_map == null || !(_map instanceof String)) {
+        if (_map == null || !_map.isString()) {
             throw new InvalidMetadataException("invalid query with uri "
                     + getUri() + "; the "
                     + MAP_ELEMENT_NAME
                     + " property is not valid: " + _map);
         }
 
-        if (_reduce == null || !(_reduce instanceof String)) {
+        if (_reduce == null || !_map.isString()) {
             throw new InvalidMetadataException("invalid query with uri "
                     + getUri()
                     + "; the " + REDUCE_ELEMENT_NAME
                     + " property is not valid: " + _reduce);
         }
 
-        if (_query != null && !(_query instanceof DBObject)) {
+        if (_query != null) {
             throw new InvalidMetadataException("invalid query with uri "
                     + getUri()
                     + "; the " + QUERY_ELEMENT_NAME
                     + " property is not valid: " + _query);
         }
 
-        this.map = (String) _map;
-        this.reduce = (String) _reduce;
-        this.query = (DBObject) _query;
+        this.map = _map.asString().getValue();
+        this.reduce = _reduce.asString().getValue();
+        this.query = _query;
     }
 
     /**
@@ -115,7 +115,7 @@ public class MapReduce extends AbstractAggregationOperation {
     /**
      * @return the query
      */
-    public DBObject getQuery() {
+    public BsonValue getQuery() {
         return query;
     }
 
@@ -125,24 +125,25 @@ public class MapReduce extends AbstractAggregationOperation {
      * @throws org.restheart.hal.metadata.InvalidMetadataException
      * @throws org.restheart.hal.metadata.QueryVariableNotBoundException
      */
-    public DBObject getResolvedQuery(BasicDBObject aVars)
+    public BsonDocument getResolvedQuery(BsonDocument aVars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
-        return (DBObject) bindAggregationVariables(
-                JsonUtils.unescapeKeys(query), aVars);
+        return bindAggregationVariables(
+                JsonUtils.unescapeKeys(query), aVars)
+                .asDocument();
     }
 
     /**
      * @param aVars RequestContext.getAggregationVars()
      * @return the map function with bound aggregation variables
      */
-    public String getResolvedMap(BasicDBObject aVars) {
+    public String getResolvedMap(BsonDocument aVars) {
         if (aVars == null || aVars.isEmpty()) {
             return map;
         } else {
             String escapedAVars = "\""
                     + aVars.toString().replaceAll("\"", "\\\\\\\\\"")
                     + "\"";
-            
+
             String ret = map == null ? null
                     : map.replaceAll(
                             Matcher.quoteReplacement("$") + "vars",
@@ -156,14 +157,14 @@ public class MapReduce extends AbstractAggregationOperation {
      * @param aVars RequestContext.getAggregationVars()
      * @return the reduce function with bound aggregation variables
      */
-    public String getResolvedReduce(BasicDBObject aVars) {
+    public String getResolvedReduce(BsonDocument aVars) {
         if (aVars == null || aVars.isEmpty()) {
             return reduce;
         } else {
             String escapedAVars = "\""
                     + aVars.toString().replaceAll("\"", "\\\\\\\\\"")
                     + "\"";
-            
+
             String ret = reduce == null ? null
                     : reduce.replaceAll(
                             Matcher.quoteReplacement("$") + "vars",

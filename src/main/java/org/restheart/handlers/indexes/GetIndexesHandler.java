@@ -17,9 +17,9 @@
  */
 package org.restheart.handlers.indexes;
 
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
+import org.bson.BsonDocument;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
@@ -52,10 +52,22 @@ public class GetIndexesHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        List<DBObject> indexes = getDatabase().getCollectionIndexes(context.getDBName(), context.getCollectionName());
+    public void handleRequest(
+            HttpServerExchange exchange, 
+            RequestContext context) 
+            throws Exception {
+        List<BsonDocument> indexes = getDatabase()
+                .getCollectionIndexes(
+                        context.getDBName(), 
+                        context.getCollectionName());
+        
         exchange.setStatusCode(HttpStatus.SC_OK);
-        IndexesRepresentationFactory.sendHal(exchange, context, indexes, indexes.size());
+        
+        IndexesRepresentationFactory.sendHal(
+                exchange, 
+                context, 
+                indexes, 
+                indexes.size());
         
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);

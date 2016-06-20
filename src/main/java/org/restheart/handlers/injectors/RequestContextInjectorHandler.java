@@ -17,7 +17,6 @@
  */
 package org.restheart.handlers.injectors;
 
-import com.mongodb.BasicDBObject;
 import com.mongodb.util.JSON;
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
@@ -25,7 +24,8 @@ import java.util.Deque;
 import java.util.Optional;
 import org.bson.BSONObject;
 import org.bson.BsonDocument;
-import org.restheart.db.DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
+import org.bson.json.JsonParseException;
+import org.restheart.db.FindIterablePool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.hal.metadata.AggregationPipeline;
 import org.restheart.handlers.PipedHttpHandler;
@@ -286,25 +286,27 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             }
 
             try {
-                Object qvars = JSON.parse(_qvars.get());
-                
+                BsonDocument qvars;
+
+                try {
+                    qvars = BsonDocument.parse(_qvars.get());
+                } catch (JsonParseException jpe) {
+                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                            "illegal avars paramenter, it is not a json object: " + _qvars.get());
+                    return;
+                }
+
                 // throws SecurityException if aVars contains operators
                 AggregationPipeline.checkAggregationVariables(qvars);
 
-                if (!(qvars instanceof BasicDBObject)) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
-                            "illegal avars paramenter, it is not a json object: " + qvars + " => " + qvars.getClass().getSimpleName());
-                    return;
-                } else {
-                    rcontext.setAggregationVars((BasicDBObject) qvars);
-                }
+                rcontext.setAggregationVars(qvars);
             } catch (Throwable t) {
                 ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
                         "illegal avars paramenter: " + _qvars.get(), t);
                 return;
             }
         }
-        
+
         // get and check eager parameter
         Deque<String> __eager = exchange.getQueryParameters().get(EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY);
 

@@ -30,7 +30,8 @@ import com.eclipsesource.json.JsonObject;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import org.restheart.db.DBCursorPool;
+import com.mongodb.client.MongoCollection;
+import org.restheart.db.FindIterablePool;
 import org.restheart.utils.HttpStatus;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -40,9 +41,7 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -50,6 +49,7 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
+import org.bson.BsonDocument;
 import org.bson.types.ObjectId;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -72,7 +72,8 @@ public class LoadGetPT extends AbstractPT {
     private String eager;
 
 
-    private final ConcurrentHashMap<Long, Integer> threadPages = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, Integer> threadPages 
+            = new ConcurrentHashMap<>();
 
     /**
      *
@@ -85,7 +86,8 @@ public class LoadGetPT extends AbstractPT {
 
         //connection.setRequestProperty("Accept-Encoding", "gzip");
         InputStream stream = connection.getInputStream();
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+        try (BufferedReader in = new BufferedReader(
+                new InputStreamReader(stream, StandardCharsets.UTF_8))) {
             String data = in.readLine();
 
             while (data != null) {
@@ -103,22 +105,18 @@ public class LoadGetPT extends AbstractPT {
      */
     public void dbdirect() {
         final Database dbsDAO = new DbsDAO();
-        DBCollection dbcoll = dbsDAO.getCollectionLegacy(db, coll);
-
-        Deque<String> _filter;
-        Deque<String> _keys = null;
-
-        if (filter == null) {
-            _filter = null;
-        } else {
-            _filter = new ArrayDeque<>();
-            _filter.add(filter);
-        }
+        MongoCollection dbcoll = dbsDAO.getCollection(db, coll);
 
         ArrayList<DBObject> data;
         
         try {
-            data = new DbsDAO().getCollectionData(dbcoll, page, pagesize, null, _filter, _keys, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE);
+            data = new DbsDAO().getCollectionData(dbcoll, 
+                    page, 
+                    pagesize, 
+                    null, 
+                    BsonDocument.parse(filter), 
+                    null, 
+                    FindIterablePool.EAGER_CURSOR_ALLOCATION_POLICY.NONE);
         } catch(Exception e) {
             System.out.println("error: " + e.getMessage());
             return;
@@ -228,7 +226,13 @@ public class LoadGetPT extends AbstractPT {
         assertNotNull("check json not null", json);
         assertNotNull("check not null _returned property", json.get("_returned"));
         
-        System.out.println(Thread.currentThread().getId() + " -> " + _page + " -> " + json.get("_returned").asInt());
+        System.out.println(
+                Thread.currentThread()
+                        .getId() 
+                        + " -> " 
+                        + _page 
+                        + " -> " 
+                        + json.get("_returned").asInt());
         
         if (json.get("_returned").asInt() == 0) {
             System.exit(-1);
@@ -259,7 +263,10 @@ public class LoadGetPT extends AbstractPT {
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
-        assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
+        assertEquals(
+                "check status code", 
+                HttpStatus.SC_OK, 
+                statusLine.getStatusCode());
     }
 
     

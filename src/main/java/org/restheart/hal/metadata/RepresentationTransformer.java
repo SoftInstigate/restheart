@@ -17,11 +17,12 @@
  */
 package org.restheart.hal.metadata;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.DBObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 
 /**
  *
@@ -46,7 +47,7 @@ public class RepresentationTransformer {
     private final String name;
     private final PHASE phase;
     private final SCOPE scope;
-    private final DBObject args;
+    private final BsonValue args;
 
     /**
      *
@@ -56,7 +57,7 @@ public class RepresentationTransformer {
      * configuration file
      * @param args
      */
-    public RepresentationTransformer(PHASE phase, SCOPE scope, String name, DBObject args) {
+    public RepresentationTransformer(PHASE phase, SCOPE scope, String name, BsonValue args) {
         this.phase = phase;
         this.scope = scope;
         this.name = name;
@@ -87,24 +88,24 @@ public class RepresentationTransformer {
     /**
      * @return the args
      */
-    public DBObject getArgs() {
+    public BsonValue getArgs() {
         return args;
     }
 
-    public static List<RepresentationTransformer> getFromJson(DBObject props) throws InvalidMetadataException {
-        Object _rts = props.get(RTS_ELEMENT_NAME);
+    public static List<RepresentationTransformer> getFromJson(BsonDocument props) throws InvalidMetadataException {
+        BsonValue _rts = props.get(RTS_ELEMENT_NAME);
 
-        if (!(_rts == null || _rts instanceof BasicDBList)) {
+        if (_rts == null || !_rts.isArray()) {
             throw new InvalidMetadataException((_rts == null ? "missing '" : "invalid '") + RTS_ELEMENT_NAME + "' element; it must be an array");
         }
 
-        BasicDBList rts = (BasicDBList) _rts;
+        BsonArray rts = _rts.asArray();
 
         List<RepresentationTransformer> ret = new ArrayList<>();
 
-        for (Object o : rts) {
-            if (o instanceof DBObject) {
-                ret.add(getSingleFromJson((DBObject) o));
+        for (BsonValue o : rts.getValues()) {
+            if (o.isDocument()) {
+                ret.add(getSingleFromJson(o.asDocument()));
             } else {
                 throw new InvalidMetadataException("invalid '" + RTS_ELEMENT_NAME + "'. Array elements must be json objects");
             }
@@ -113,50 +114,42 @@ public class RepresentationTransformer {
         return ret;
     }
 
-    private static RepresentationTransformer getSingleFromJson(DBObject props) throws InvalidMetadataException {
-        Object _phase = props.get(RT_PHASE_ELEMENT_NAME);
-        Object _scope = props.get(RT_SCOPE_ELEMENT_NAME);
-        Object _name = props.get(RT_NAME_ELEMENT_NAME);
-        Object _args = props.get(RT_ARGS_ELEMENT_NAME);
+    private static RepresentationTransformer getSingleFromJson(BsonDocument props) throws InvalidMetadataException {
+        BsonValue _phase = props.get(RT_PHASE_ELEMENT_NAME);
+        BsonValue _scope = props.get(RT_SCOPE_ELEMENT_NAME);
+        BsonValue _name = props.get(RT_NAME_ELEMENT_NAME);
+        BsonValue _args = props.get(RT_ARGS_ELEMENT_NAME);
 
-        if (_phase == null || !(_phase instanceof String)) {
+        if (_phase == null || !_phase.isString()) {
             throw new InvalidMetadataException((_phase == null ? "missing '" : "invalid '") + RT_PHASE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(PHASE.values()));
         }
 
         PHASE phase;
 
         try {
-            phase = PHASE.valueOf((String) _phase);
+            phase = PHASE.valueOf(_phase.asString().getValue());
         } catch (IllegalArgumentException iae) {
             throw new InvalidMetadataException("invalid '" + RT_PHASE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(PHASE.values()));
         }
 
-        if (_scope == null || !(_scope instanceof String)) {
+        if (_scope == null || !_scope.isString()) {
             throw new InvalidMetadataException((phase == null ? "missing '" : "invalid '") + RT_SCOPE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(SCOPE.values()));
         }
 
         SCOPE scope;
 
         try {
-            scope = SCOPE.valueOf((String) _scope);
+            scope = SCOPE.valueOf(_scope.asString().getValue());
         } catch (IllegalArgumentException iae) {
             throw new InvalidMetadataException("invalid '" + RT_SCOPE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(SCOPE.values()));
         }
 
-        if (_name == null || !(_name instanceof String)) {
+        if (_name == null || !_name.isString()) {
             throw new InvalidMetadataException((_name == null ? "missing '" : "invalid '") + RT_NAME_ELEMENT_NAME + "' element");
         }
 
-        String name = (String) _name;
+        String name = (String) _name.asString().getValue();
 
-        DBObject args;
-
-        if (_args == null || !(_args instanceof DBObject)) {
-            args = null;
-        } else {
-            args = (DBObject) _args;
-        }
-
-        return new RepresentationTransformer(phase, scope, name, args);
+        return new RepresentationTransformer(phase, scope, name, _args);
     }
 }

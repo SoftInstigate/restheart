@@ -20,6 +20,11 @@ package org.restheart.utils;
 import org.restheart.hal.UnsupportedDocumentIdException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
+import org.bson.BsonDouble;
+import org.bson.BsonInt32;
+import org.bson.BsonObjectId;
+import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -32,7 +37,6 @@ import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.restheart.handlers.RequestContext;
-import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +46,7 @@ import org.slf4j.LoggerFactory;
  */
 public class URLUtilsTest {
     private static final Logger LOG = LoggerFactory.getLogger(URLUtilsTest.class);
-    
+
     @Rule
     public TestRule watcher = new TestWatcher() {
         @Override
@@ -106,7 +110,7 @@ public class URLUtilsTest {
             fail(ex.getMessage());
         }
     }
-    
+
     @Test
     public void testGetUriWithDocIdStringValidObjectId() {
         RequestContext context = prepareRequestContext();
@@ -135,7 +139,11 @@ public class URLUtilsTest {
 
     @Test
     public void testGetUriWithFilterMany() {
-        Object[] ids = new Object[]{1, 20.0f, "id"};
+        BsonValue[] ids = new BsonValue[]{
+            new BsonInt32(1),
+            new BsonDouble(20.0d),
+            new BsonString("id")};
+
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName?filter={'_id':{'$in':[1,20.0,\'id\']}}";
         String result;
@@ -146,10 +154,13 @@ public class URLUtilsTest {
             fail(ex.getMessage());
         }
     }
-    
+
     @Test
     public void testGetUriWithFilterManyIdsWithSpaces() {
-        Object[] ids = new Object[]{"Three Imaginary Boys", "Seventeen Seconds"};
+        BsonValue[] ids = new BsonValue[]{
+            new BsonString("Three Imaginary Boys"),
+            new BsonString("Seventeen Seconds")
+        };
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName?filter={'_id':{'$in':[\'Three Imaginary Boys\','Seventeen Seconds\']}}";
         String result;
@@ -163,7 +174,11 @@ public class URLUtilsTest {
 
     @Test
     public void testGetUriWithFilterManyString() {
-        Object[] ids = new Object[]{1, 20.0f, "id"};
+        BsonValue[] ids = new BsonValue[]{
+            new BsonInt32(1),
+            new BsonDouble(20.0d),
+            new BsonString("id")};
+        
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName?filter={'_id':{'$in':[1,20.0,'id']}}";
         String result;
@@ -181,7 +196,7 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName?filter={'referenceField':'id'}";
         String result;
         try {
-            result = URLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField", "id");
+            result = URLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField", new BsonString("id"));
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -194,7 +209,7 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName?filter={'referenceField':123}";
         String result;
         try {
-            result = URLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField", 123);
+            result = URLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField", new BsonInt32(123));
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -203,9 +218,9 @@ public class URLUtilsTest {
 
     @Test
     public void testGetUriWithFilterOneObjectId() {
-        ObjectId id = new ObjectId();
+        BsonObjectId id = new BsonObjectId(new ObjectId());
         RequestContext context = prepareRequestContext();
-        String expResult = "/dbName/collName?filter={'referenceField':{'$oid':'" + id.toString() + "'}}";
+        String expResult = "/dbName/collName?filter={'referenceField':{'$oid':'" + id.getValue().toString() + "'}}";
         String result;
         try {
             result = URLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField", id);
@@ -221,7 +236,7 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':'ids'}}}";
         String result;
         try {
-            result = URLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", "ids");
+            result = URLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", new BsonString("ids"));
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -234,7 +249,7 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':123}}}";
         String result;
         try {
-            result = URLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", 123);
+            result = URLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", new BsonInt32(123));
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -244,8 +259,8 @@ public class URLUtilsTest {
     @Test
     public void testGetUriWithFilterManyInverseObjectId() {
         RequestContext context = prepareRequestContext();
-        ObjectId id = new ObjectId();
-        String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':{'$oid':'" + id.toString() + "'}}}}";
+        BsonObjectId id = new BsonObjectId(new ObjectId());
+        String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':{'$oid':'" + id.getValue().toString() + "'}}}}";
         String result;
         try {
             result = URLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", id);

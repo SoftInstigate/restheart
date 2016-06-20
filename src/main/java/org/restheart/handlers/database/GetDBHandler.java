@@ -17,18 +17,15 @@
  */
 package org.restheart.handlers.database;
 
-import com.mongodb.DBObject;
 import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.hal.Representation;
-import org.restheart.utils.JsonUtils;
 import org.restheart.utils.ResponseHelper;
 
 /**
@@ -59,8 +56,12 @@ public class GetDBHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        List<String> colls = getDatabase().getCollectionNames(getDatabase().getDB(context.getDBName()));
+    public void handleRequest(
+            HttpServerExchange exchange, 
+            RequestContext context) 
+            throws Exception {
+        List<String> colls = getDatabase()
+                .getCollectionNames(context.getDBName());
 
         List<BsonDocument> data = null;
 
@@ -72,16 +73,9 @@ public class GetDBHandler extends PipedHttpHandler {
                     context.getPagesize());
         }
 
-        //TODO remove this after migration to mongodb driver 3.2 completes
-        List<DBObject> _data = null;
-        if (data != null) {
-            _data = data.stream().map(props -> {
-                return JsonUtils.convertBsonValueToDBObject(props);
-            }).collect(Collectors.toList());
-        }
-
         DBRepresentationFactory repf = new DBRepresentationFactory();
-        Representation rep = repf.getRepresentation(exchange, context, _data, getDatabase().getDBSize(colls));
+        Representation rep = repf.getRepresentation(
+                exchange, context, data, getDatabase().getDBSize(colls));
 
         ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
 
@@ -89,7 +83,7 @@ public class GetDBHandler extends PipedHttpHandler {
 
         // call the next handler if existing
         if (getNext() != null) {
-            DBObject responseContent = rep.asDBObject();
+            BsonDocument responseContent = rep.asBsonDocument();
             context.setResponseContent(responseContent);
 
             getNext().handleRequest(exchange, context);

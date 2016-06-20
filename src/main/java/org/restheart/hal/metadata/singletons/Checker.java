@@ -17,9 +17,9 @@
  */
 package org.restheart.hal.metadata.singletons;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 
 /**
@@ -72,8 +72,8 @@ public interface Checker {
     boolean check(
             HttpServerExchange exchange,
             RequestContext context,
-            BasicDBObject contentToCheck,
-            DBObject args);
+            BsonDocument contentToCheck,
+            BsonValue args);
 
     /**
      * Specify when the checker should be performed: with BEFORE_WRITE the

@@ -17,9 +17,9 @@
  */
 package org.restheart.handlers.schema;
 
-import com.mongodb.DBObject;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import org.bson.BsonDocument;
 import org.everit.json.schema.loader.SchemaClient;
 import org.everit.json.schema.loader.internal.DefaultSchemaClient;
 import org.slf4j.Logger;
@@ -32,7 +32,8 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SchemaStoreClient implements SchemaClient {
-    static final Logger LOGGER = LoggerFactory.getLogger(SchemaStoreClient.class);
+    static final Logger LOGGER = 
+            LoggerFactory.getLogger(SchemaStoreClient.class);
 
     private static final SchemaClient WRAPPED = new DefaultSchemaClient();
 
@@ -47,8 +48,11 @@ public class SchemaStoreClient implements SchemaClient {
             try {
                 SchemaStoreURL _uri = new SchemaStoreURL(uri);
 
-                DBObject s = JsonSchemaCacheSingleton.getInstance()
-                        .getRaw(_uri.getSchemaDb(), _uri.getSchemaId());
+                BsonDocument s = JsonSchemaCacheSingleton
+                        .getInstance()
+                        .getRaw(
+                                _uri.getSchemaDb(), 
+                                _uri.getSchemaId());
 
                 return new ByteArrayInputStream(s.toString().getBytes());
             } catch (JsonSchemaNotFoundException ex) {

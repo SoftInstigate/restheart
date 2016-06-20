@@ -17,11 +17,12 @@
  */
 package org.restheart.handlers.document;
 
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.time.Instant;
 import java.util.List;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.bson.types.ObjectId;
 import org.restheart.Configuration;
 import org.restheart.hal.Link;
@@ -58,7 +59,7 @@ public class DocumentRepresentationFactory {
      * @return
      * @throws IllegalQueryParamenterException
      */
-    public Representation getRepresentation(String href, HttpServerExchange exchange, RequestContext context, DBObject data)
+    public Representation getRepresentation(String href, HttpServerExchange exchange, RequestContext context, BsonDocument data)
             throws IllegalQueryParamenterException {
         Representation rep;
 
@@ -131,19 +132,20 @@ public class DocumentRepresentationFactory {
         return rep;
     }
 
-    private static boolean isBinaryFile(DBObject data) {
-        return data.containsField("filename") && data.containsField("chunkSize");
+    private static boolean isBinaryFile(BsonDocument data) {
+        return data.containsKey("filename") && data.containsKey("chunkSize");
     }
 
-    public static void addSpecialProperties(final Representation rep, RequestContext.TYPE type, DBObject data) {
-        rep.addProperty("_type", type.name());
+    public static void addSpecialProperties(final Representation rep, RequestContext.TYPE type, BsonDocument data) {
+        rep.addProperty("_type", new BsonString(type.name()));
 
         Object etag = data.get("_etag");
 
         if (etag != null && etag instanceof ObjectId) {
             if (data.get("_lastupdated_on") == null) {
                 // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
-                rep.addProperty("_lastupdated_on", Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString());
+                rep.addProperty("_lastupdated_on", 
+                        new BsonString(Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString()));
             }
         }
 
@@ -151,7 +153,8 @@ public class DocumentRepresentationFactory {
 
         // generate the _created_on timestamp from the _id if this is an instance of ObjectId
         if (data.get("_created_on") == null && id != null && id instanceof ObjectId) {
-            rep.addProperty("_created_on", Instant.ofEpochSecond(((ObjectId) id).getTimestamp()).toString());
+            rep.addProperty("_created_on", 
+                    new BsonString(Instant.ofEpochSecond(((ObjectId) id).getTimestamp()).toString()));
         }
     }
 
@@ -170,11 +173,11 @@ public class DocumentRepresentationFactory {
         exchange.getResponseSender().send(rep.toString());
     }
 
-    private static void addRelationshipsLinks(Representation rep, RequestContext context, DBObject data) {
+    private static void addRelationshipsLinks(Representation rep, RequestContext context, BsonDocument data) {
         List<Relationship> rels = null;
 
         try {
-            rels = Relationship.getFromJson((DBObject) context.getCollectionProps());
+            rels = Relationship.getFromJson(context.getCollectionProps());
         } catch (InvalidMetadataException ex) {
             rep.addWarning("collection " + context.getDBName()
                     + "/" + context.getCollectionName()

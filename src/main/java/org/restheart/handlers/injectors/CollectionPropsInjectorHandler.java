@@ -87,8 +87,7 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
                 collProps = new BsonDocument("_id", new BsonString(collName));
             }
 
-            context.setCollectionProps(
-                    JsonUtils.convertBsonValueToDBObject(collProps));
+            context.setCollectionProps(collProps);
         }
 
         getNext()

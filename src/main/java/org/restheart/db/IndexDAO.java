@@ -17,11 +17,19 @@
  */
 package org.restheart.db;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.client.ListIndexesIterable;
+import static com.mongodb.client.model.Filters.eq;
+import com.mongodb.client.model.IndexOptions;
+import java.util.ArrayList;
 import org.restheart.utils.HttpStatus;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonValue;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 
 /**
  *
@@ -31,14 +39,15 @@ class IndexDAO {
 
     private final MongoClient client;
 
-    public static final BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "_properties");
+    public static final Bson METADATA_QUERY 
+            = eq("_id", "_properties");
 
-    private static final BasicDBObject FIELDS_TO_RETURN_INDEXES;
+    private static final BsonDocument FIELDS_TO_RETURN_INDEXES;
 
     static {
-        FIELDS_TO_RETURN_INDEXES = new BasicDBObject();
-        FIELDS_TO_RETURN_INDEXES.put("key", 1);
-        FIELDS_TO_RETURN_INDEXES.put("name", 1);
+        FIELDS_TO_RETURN_INDEXES = new BsonDocument();
+        FIELDS_TO_RETURN_INDEXES.put("key", new BsonInt32(1));
+        FIELDS_TO_RETURN_INDEXES.put("name", new BsonInt32(1));
     }
 
     IndexDAO(MongoClient client) {
@@ -51,18 +60,25 @@ class IndexDAO {
      * @param collName
      * @return
      */
-    List<DBObject> getCollectionIndexes(String dbName, String collName) {
-        List<DBObject> indexes = client
-                .getDB(dbName)
-                .getCollection(collName)
-                .getIndexInfo();
-        
-        indexes.forEach(i -> {
-            i.put("_id", i.get("name"));
-            i.removeField("name");
-        });
-        
-        return indexes;
+    List<BsonDocument> getCollectionIndexes(String dbName, String collName) {
+        List<BsonDocument> ret = new ArrayList<>();
+
+        ListIndexesIterable<Document> indexes = client
+                .getDatabase(dbName)
+                .getCollection(collName, BsonDocument.class)
+                .listIndexes();
+
+        indexes.iterator().forEachRemaining(
+                i -> {
+                    BsonDocument bi = BsonDocument.parse(i.toJson());
+
+                    BsonValue name = bi.remove("name");
+                    bi.put("_id", name);
+
+                    ret.add(bi);
+                });
+
+        return ret;
     }
 
     /**
@@ -72,11 +88,26 @@ class IndexDAO {
      * @param keys
      * @param options
      */
-    void createIndex(String dbName, String collection, DBObject keys, DBObject options) {
+    void createIndex(
+            String dbName,
+            String collection,
+            BsonDocument keys,
+            BsonDocument options) {
         if (options == null) {
-            client.getDB(dbName).getCollection(collection).createIndex(keys);
+            client
+                    .getDatabase(dbName)
+                    .getCollection(collection)
+                    .createIndex(keys);
         } else {
-            client.getDB(dbName).getCollection(collection).createIndex(keys, options);
+            // need to find a way to get IndexOptions from json
+            IndexOptions io = new IndexOptions();
+
+            io.background(true);
+
+            client
+                    .getDatabase(dbName)
+                    .getCollection(collection)
+                    .createIndex(keys, getIndexOptions(options));
         }
     }
 
@@ -87,8 +118,137 @@ class IndexDAO {
      * @param indexId
      * @return
      */
-    int deleteIndex(String dbName, String collection, String indexId) {
-        client.getDB(dbName).getCollection(collection).dropIndex(indexId);
+    int deleteIndex(
+            String dbName,
+            String collection,
+            String indexId) {
+        client
+                .getDatabase(dbName)
+                .getCollection(collection)
+                .dropIndex(indexId);
+
         return HttpStatus.SC_NO_CONTENT;
+    }
+
+    IndexOptions getIndexOptions(BsonDocument options) {
+        IndexOptions ret = new IndexOptions();
+
+        //***Options for All Index Types
+        //name  string
+        if (options.containsKey("name")
+                && options.get("name").isString()) {
+            ret.name(options.get("name").asString().getValue());
+        }
+
+        //background    boolean
+        if (options.containsKey("background")
+                && options.get("background").isBoolean()) {
+            ret.background(options.get("background").asBoolean().getValue());
+        }
+
+        //expireAfterSeconds    integer
+        if (options.containsKey("expireAfterSeconds")
+                && options.get("expireAfterSeconds").isInt32()) {
+            ret.expireAfter(0l + options.get("expireAfterSeconds")
+                    .asInt32().getValue(),
+                    TimeUnit.SECONDS
+            );
+        }
+
+        //partialFilterExpression   document
+        if (options.containsKey("partialFilterExpression")
+                && options.get("partialFilterExpression").isDocument()) {
+            ret.partialFilterExpression(options.get("partialFilterExpression")
+                    .asDocument());
+        }
+
+        //storageEngine document
+        if (options.containsKey("storageEngine")
+                && options.get("storageEngine").isDocument()) {
+            ret.storageEngine(options.get("storageEngine")
+                    .asDocument());
+        }
+
+        //unique   boolean
+        if (options.containsKey("unique")
+                && options.get("unique").isBoolean()) {
+            ret.unique(options.get("unique")
+                    .asBoolean().getValue());
+        }
+
+        //sparse    boolean
+        if (options.containsKey("sparse")
+                && options.get("sparse").isBoolean()) {
+            ret.sparse(options.get("sparse")
+                    .asBoolean().getValue());
+        }
+
+        //***Options for text Indexes
+        //weights	document
+        if (options.containsKey("weights")
+                && options.get("weights").isDocument()) {
+            ret.weights(options.get("weights")
+                    .asDocument());
+        }
+        //default_language	string
+        if (options.containsKey("default_language")
+                && options.get("default_language").isString()) {
+            ret.defaultLanguage(options.get("default_language")
+                    .asString().getValue());
+        }
+
+        //language_override	string
+        if (options.containsKey("language_override")
+                && options.get("language_override").isString()) {
+            ret.languageOverride(options.get("language_override")
+                    .asString().getValue());
+        }
+
+        //textIndexVersion	integer
+        if (options.containsKey("textIndexVersion")
+                && options.get("textIndexVersion").isInt32()) {
+            ret.textVersion(options.get("textIndexVersion")
+                    .asInt32().getValue());
+        }
+
+        //***Options for 2dsphere Indexes
+        //2dsphereIndexVersion	integer
+        if (options.containsKey("2dsphereIndexVersion")
+                && options.get("2dsphereIndexVersion").isInt32()) {
+            ret.sphereVersion(options.get("2dsphereIndexVersion")
+                    .asInt32().getValue());
+        }
+
+        //***Options for 2d Indexes
+        //bits	integer
+        if (options.containsKey("bits")
+                && options.get("bits").isInt32()) {
+            ret.bits(options.get("bits")
+                    .asInt32().getValue());
+        }
+
+        //min	number
+        if (options.containsKey("min")
+                && options.get("min").isDouble()) {
+            ret.min(options.get("min")
+                    .asDouble().getValue());
+        }
+
+        //max	number
+        if (options.containsKey("max")
+                && options.get("max").isDouble()) {
+            ret.max(options.get("max")
+                    .asDouble().getValue());
+        }
+
+        //***Options for geoHaystack Indexes
+        //bucketSize	number
+        if (options.containsKey("bucketSize")
+                && options.get("bucketSize").isDouble()) {
+            ret.bucketSize(options.get("bucketSize")
+                    .asDouble().getValue());
+        }
+
+        return ret;
     }
 }

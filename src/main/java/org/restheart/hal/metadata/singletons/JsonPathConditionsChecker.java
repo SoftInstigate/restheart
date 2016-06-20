@@ -17,15 +17,15 @@
  */
 package org.restheart.hal.metadata.singletons;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -92,12 +92,22 @@ public class JsonPathConditionsChecker implements Checker {
     }
 
     @Override
-    public boolean check(HttpServerExchange exchange, RequestContext context, BasicDBObject contentToCheck, DBObject args) {
-        if (args instanceof BasicDBList) {
-            BasicDBList conditions = filterMissingOptionalAndNullNullableConditions((BasicDBList) args, contentToCheck);
+    public boolean check(
+            HttpServerExchange exchange,
+            RequestContext context,
+            BsonDocument contentToCheck,
+            BsonValue args) {
+        if (args.isArray()) {
+            BsonArray conditions
+                    = filterMissingOptionalAndNullNullableConditions(
+                            args.asArray(),
+                            contentToCheck);
+
             return applyConditions(conditions, contentToCheck, context);
         } else {
-            context.addWarning("checker wrong definition: args property must be an arrary of string property names.");
+            context.addWarning(
+                    "checker wrong definition: args property must be "
+                    + "an arrary of string property names.");
             return true;
         }
     }
@@ -105,8 +115,10 @@ public class JsonPathConditionsChecker implements Checker {
     @Override
     public PHASE getPhase(RequestContext context) {
         if (context.getMethod() == RequestContext.METHOD.PATCH
-                || CheckersUtils.doesRequestUsesDotNotation(context.getContent())
-                || CheckersUtils.doesRequestUsesUpdateOperators(context.getContent())) {
+                || CheckersUtils
+                .doesRequestUsesDotNotation(context.getContent())
+                || CheckersUtils
+                .doesRequestUsesUpdateOperators(context.getContent())) {
             return PHASE.AFTER_WRITE;
         } else {
             return PHASE.BEFORE_WRITE;
@@ -119,58 +131,70 @@ public class JsonPathConditionsChecker implements Checker {
                 && getPhase(context) == PHASE.AFTER_WRITE);
     }
 
-    protected boolean applyConditions(BasicDBList conditions, DBObject json, final RequestContext context) {
-        return conditions.stream().allMatch((Object _condition) -> {
-            if (_condition instanceof BasicDBObject) {
-                BasicDBObject condition = (BasicDBObject) _condition;
+    protected boolean applyConditions(BsonArray conditions, BsonDocument json, final RequestContext context) {
+        return conditions.stream().allMatch(_condition -> {
+            if (_condition.isDocument()) {
+                BsonDocument condition = _condition.asDocument();
+
                 String path = null;
-                Object _path = condition.get("path");
-                if (_path != null && _path instanceof String) {
-                    path = (String) _path;
+                BsonValue _path = condition.get("path");
+                if (_path != null && _path.isString()) {
+                    path = _path.asString().getValue();
                 }
+
                 String type = null;
-                Object _type = condition.get("type");
-                if (_type != null && _type instanceof String) {
-                    type = (String) _type;
+                BsonValue _type = condition.get("type");
+                if (_type != null && _type.isString()) {
+                    type = _type.asString().getValue();
                 }
+
                 Set<Integer> counts = new HashSet<>();
-                Object _count = condition.get("count");
+                BsonValue _count = condition.get("count");
                 if (_count != null) {
-                    if (_count instanceof Integer) {
-                        counts.add((Integer) _count);
-                    } else if (_count instanceof BasicDBList) {
-                        BasicDBList countsArray = (BasicDBList) _count;
-                        countsArray.forEach((Object countElement) -> {
-                            if (countElement instanceof Integer) {
-                                counts.add((Integer) countElement);
+                    if (_count.isInt32()) {
+                        counts.add(_count.asInt32().getValue());
+                    } else if (_count.isArray()) {
+                        BsonArray countsArray = _count.asArray();
+
+                        countsArray.forEach(countElement -> {
+                            if (countElement.isInt32()) {
+                                counts.add(countElement.asInt32().getValue());
                             }
                         });
                     }
                 }
+
                 Set<String> mandatoryFields;
-                Object _mandatoryFields = condition.get("mandatoryFields");
+                BsonValue _mandatoryFields = condition.get("mandatoryFields");
                 if (_mandatoryFields != null) {
                     mandatoryFields = new HashSet<>();
-                    if (_mandatoryFields instanceof BasicDBList) {
-                        BasicDBList mandatoryFieldsArray = (BasicDBList) _mandatoryFields;
-                        mandatoryFieldsArray.forEach((Object element) -> {
-                            if (element instanceof String) {
-                                mandatoryFields.add((String) element);
+                    if (_mandatoryFields.isArray()) {
+                        BsonArray mandatoryFieldsArray = _mandatoryFields
+                                .asArray();
+
+                        mandatoryFieldsArray.forEach(element -> {
+                            if (element.isString()) {
+                                mandatoryFields.add(element
+                                        .asString().getValue());
                             }
                         });
                     }
                 } else {
                     mandatoryFields = null;
                 }
+
                 Set<String> optionalFields;
-                Object _optionalFields = condition.get("optionalFields");
+                BsonValue _optionalFields = condition.get("optionalFields");
                 if (_optionalFields != null) {
                     optionalFields = new HashSet<>();
-                    if (_optionalFields instanceof BasicDBList) {
-                        BasicDBList optionalFieldsArray = (BasicDBList) _optionalFields;
-                        optionalFieldsArray.forEach((Object element) -> {
-                            if (element instanceof String) {
-                                optionalFields.add((String) element);
+                    if (_optionalFields.isArray()) {
+                        BsonArray optionalFieldsArray = _optionalFields
+                                .asArray();
+
+                        optionalFieldsArray.forEach(element -> {
+                            if (element.isString()) {
+                                optionalFields.add(
+                                        element.asString().getValue());
                             }
                         });
                     }
@@ -179,46 +203,131 @@ public class JsonPathConditionsChecker implements Checker {
                 }
                 String regex = null;
 
-                Object _regex = condition.get("regex");
-                if (_regex != null && _regex instanceof String) {
-                    regex = (String) _regex;
+                BsonValue _regex = condition.get("regex");
+                if (_regex != null && _regex.isString()) {
+                    regex = _regex.asString().getValue();
                 }
+
                 Boolean optional = false;
-                Object _optional = condition.get("optional");
-                if (_optional != null && _optional instanceof Boolean) {
-                    optional = (Boolean) _optional;
+                BsonValue _optional = condition.get("optional");
+                if (_optional != null && _optional.isBoolean()) {
+                    optional = _optional.asBoolean().getValue();
                 }
+
                 Boolean nullable = false;
-                Object _nullable = condition.get("nullable");
-                if (_nullable != null && _nullable instanceof Boolean) {
-                    nullable = (Boolean) _nullable;
+                BsonValue _nullable = condition.get("nullable");
+                if (_nullable != null && _nullable.isBoolean()) {
+                    nullable = _nullable.asBoolean().getValue();
                 }
                 if (counts.isEmpty() && type == null && regex == null) {
-                    context.addWarning("condition does not have any of 'count', 'type' and 'regex' properties, specify at least one: " + _condition);
+                    context.addWarning("condition does not have any of "
+                            + "'count', 'type' and 'regex' properties, "
+                            + "specify at least one: " + _condition);
                     return true;
                 }
                 if (path == null) {
-                    context.addWarning("condition in the args list does not have the 'path' property: " + _condition);
+                    context.addWarning(
+                            "condition in the args list does "
+                            + "not have the 'path' property: " + _condition);
                     return true;
                 }
                 if (type != null && !counts.isEmpty() && regex != null) {
-                    return checkCount(json, path, counts, context) && checkType(json, path, type, mandatoryFields, optionalFields, optional, nullable, context) && checkRegex(json, path, regex, optional, nullable, context);
+                    return checkCount(
+                            json,
+                            path,
+                            counts,
+                            context)
+                            && checkType(
+                                    json,
+                                    path,
+                                    type,
+                                    mandatoryFields,
+                                    optionalFields,
+                                    optional,
+                                    nullable,
+                                    context)
+                            && checkRegex(
+                                    json,
+                                    path,
+                                    regex,
+                                    optional,
+                                    nullable,
+                                    context);
                 } else if (type != null && !counts.isEmpty()) {
-                    return checkCount(json, path, counts, context) && checkType(json, path, type, mandatoryFields, optionalFields, optional, nullable, context);
+                    return checkCount(
+                            json,
+                            path,
+                            counts,
+                            context)
+                            && checkType(
+                                    json,
+                                    path,
+                                    type,
+                                    mandatoryFields,
+                                    optionalFields,
+                                    optional,
+                                    nullable,
+                                    context);
                 } else if (type != null && regex != null) {
-                    return checkType(json, path, type, mandatoryFields, optionalFields, optional, nullable, context) && checkRegex(json, path, regex, optional, nullable, context);
+                    return checkType(
+                            json,
+                            path,
+                            type,
+                            mandatoryFields,
+                            optionalFields,
+                            optional,
+                            nullable,
+                            context)
+                            && checkRegex(
+                                    json,
+                                    path,
+                                    regex,
+                                    optional,
+                                    nullable,
+                                    context);
                 } else if (!counts.isEmpty() && regex != null) {
-                    return checkCount(json, path, counts, context) && checkRegex(json, path, regex, optional, nullable, context);
+                    return checkCount(
+                            json,
+                            path,
+                            counts,
+                            context)
+                            && checkRegex(
+                                    json,
+                                    path,
+                                    regex,
+                                    optional,
+                                    nullable,
+                                    context);
                 } else if (type != null) {
-                    return checkType(json, path, type, mandatoryFields, optionalFields, optional, nullable, context);
+                    return checkType(
+                            json,
+                            path,
+                            type,
+                            mandatoryFields,
+                            optionalFields,
+                            optional,
+                            nullable,
+                            context);
                 } else if (!counts.isEmpty()) {
-                    return checkCount(json, path, counts, context);
+                    return checkCount(
+                            json,
+                            path,
+                            counts,
+                            context);
                 } else if (regex != null) {
-                    return checkRegex(json, path, regex, optional, nullable, context);
+                    return checkRegex(
+                            json,
+                            path,
+                            regex,
+                            optional,
+                            nullable,
+                            context);
                 }
                 return true;
             } else {
-                context.addWarning("property in the args list is not an object: " + _condition);
+                context.addWarning(
+                        "property in the args list is not an object: "
+                        + _condition);
                 return true;
             }
         });
@@ -232,31 +341,36 @@ public class JsonPathConditionsChecker implements Checker {
      * @param content
      * @return
      */
-    protected BasicDBList filterMissingOptionalAndNullNullableConditions(BasicDBList conditions, DBObject content) {
+    protected BsonArray filterMissingOptionalAndNullNullableConditions(BsonArray conditions, BsonValue content) {
         Set<String> nullPaths = new HashSet<>();
-        BasicDBList ret = new BasicDBList();
-        conditions.stream().forEach((Object condition) -> {
-            if (condition instanceof BasicDBObject) {
+        BsonArray ret = new BsonArray();
+
+        conditions.stream().forEach(_condition -> {
+            if (_condition.isDocument()) {
+                BsonDocument condition = _condition.asDocument();
+
                 Boolean nullable = false;
-                Object _nullable = ((BasicDBObject) condition).get("nullable");
-                if (_nullable != null && _nullable instanceof Boolean) {
-                    nullable = (Boolean) _nullable;
+                BsonValue _nullable = condition.get("nullable");
+                if (_nullable != null && _nullable.isBoolean()) {
+                    nullable = _nullable.asBoolean().getValue();
                 }
+
                 Boolean optional = false;
-                Object _optional = ((BasicDBObject) condition).get("optional");
-                if (_optional != null && _optional instanceof Boolean) {
-                    optional = (Boolean) _optional;
+                BsonValue _optional = condition.get("optional");
+                if (_optional != null && _optional.isBoolean()) {
+                    optional = _optional.asBoolean().getValue();
                 }
                 if (nullable) {
-                    Object _path = ((BasicDBObject) condition).get("path");
-                    if (_path != null && _path instanceof String) {
-                        String path = (String) _path;
-                        List<Optional<Object>> props;
+                    BsonValue _path = condition.get("path");
+                    if (_path != null && _path.isString()) {
+                        String path = _path.asString().getValue();
+                        List<Optional<BsonValue>> props;
                         try {
                             props = JsonUtils.getPropsFromPath(content, path);
-                            if (props != null && props.stream().allMatch((Optional<Object> prop) -> {
-                                return prop != null && !prop.isPresent();
-                            })) {
+                            if (props != null && props.stream().allMatch(
+                                    (Optional<BsonValue> prop) -> {
+                                        return prop != null && !prop.isPresent();
+                                    })) {
                                 LOGGER.debug("ignoring null path {}", path);
                                 nullPaths.add(path);
                             }
@@ -266,15 +380,16 @@ public class JsonPathConditionsChecker implements Checker {
                     }
                 }
                 if (optional) {
-                    Object _path = ((BasicDBObject) condition).get("path");
-                    if (_path != null && _path instanceof String) {
-                        String path = (String) _path;
-                        List<Optional<Object>> props;
+                    BsonValue _path = condition.get("path");
+                    if (_path != null && _path.isString()) {
+                        String path = _path.asString().getValue();
+                        List<Optional<BsonValue>> props;
                         try {
                             props = JsonUtils.getPropsFromPath(content, path);
-                            if (props == null || props.stream().allMatch((Optional<Object> prop) -> {
-                                return prop == null;
-                            })) {
+                            if (props == null || props.stream().allMatch(
+                                    (Optional<BsonValue> prop) -> {
+                                        return prop == null;
+                                    })) {
                                 nullPaths.add(path);
                             }
                         } catch (IllegalArgumentException ex) {
@@ -284,14 +399,17 @@ public class JsonPathConditionsChecker implements Checker {
                 }
             }
         });
-        conditions.stream().forEach((Object condition) -> {
-            if (condition instanceof BasicDBObject) {
-                Object _path = ((BasicDBObject) condition).get("path");
-                if (_path != null && _path instanceof String) {
-                    String path = (String) _path;
-                    boolean hasNullParent = nullPaths.stream().anyMatch((String nullPath) -> {
-                        return JsonUtils.isAncestorPath(nullPath, path);
-                    });
+        conditions.stream().forEach(_condition -> {
+            if (_condition.isDocument()) {
+                BsonDocument condition = _condition.asDocument();
+
+                BsonValue _path = condition.get("path");
+                if (_path != null && _path.isString()) {
+                    String path = _path.asString().getValue();
+                    boolean hasNullParent = nullPaths.stream().anyMatch(
+                            (String nullPath) -> {
+                                return JsonUtils.isAncestorPath(nullPath, path);
+                            });
                     if (!hasNullParent) {
                         ret.add(condition);
                     }
@@ -301,7 +419,7 @@ public class JsonPathConditionsChecker implements Checker {
         return ret;
     }
 
-    protected boolean checkCount(DBObject json,
+    protected boolean checkCount(BsonValue json,
             String path, Set<Integer> expectedCounts,
             RequestContext context) {
         Integer count;
@@ -317,51 +435,71 @@ public class JsonPathConditionsChecker implements Checker {
         boolean ret = expectedCounts.contains(count);
         LOGGER.debug("checkCount({}, {}) -> {}", path, expectedCounts, ret);
         if (ret == false) {
-            context.addWarning("checkCount condition failed: path: " + path + ", expected: " + expectedCounts + ", got: " + count);
+            context.addWarning("checkCount condition failed: path: "
+                    + path
+                    + ", expected: "
+                    + expectedCounts
+                    + ", got: "
+                    + count);
         }
         return ret;
     }
 
-    protected boolean checkType(DBObject json,
+    protected boolean checkType(BsonDocument json,
             String path, String type,
             Set<String> mandatoryFields,
             Set<String> optionalFields,
             boolean optional,
             boolean nullable,
             RequestContext context) {
-        BasicDBObject _json = (BasicDBObject) json;
-        List<Optional<Object>> props;
+        List<Optional<BsonValue>> props;
         boolean ret;
         boolean failedFieldsCheck = false;
         try {
-            props = JsonUtils.getPropsFromPath(_json, path);
+            props = JsonUtils.getPropsFromPath(json, path);
         } catch (IllegalArgumentException ex) {
-            LOGGER.debug("checkType({}, {}, {}, {}) -> {} -> false", path, type, mandatoryFields, optionalFields, ex.getMessage());
-            context.addWarning("checkType condition failed: path: " + path + ", expected type: " + type + ", error: " + ex.getMessage());
+            LOGGER.debug("checkType({}, {}, {}, {}) -> {} -> false",
+                    path,
+                    type,
+                    mandatoryFields,
+                    optionalFields,
+                    ex.getMessage());
+
+            context.addWarning(
+                    "checkType condition failed: path: "
+                    + path
+                    + ", expected type: "
+                    + type + ", error: "
+                    + ex.getMessage());
             return false;
         }
         // props is null when path does not exist.
         if (props == null) {
             ret = optional;
         } else {
-            ret = props.stream().allMatch((Optional<Object> prop) -> {
+            ret = props.stream().allMatch((Optional<BsonValue> prop) -> {
                 if (prop == null) {
                     return optional;
                 }
                 if (prop.isPresent()) {
-                    if ("array".equals(type) && prop.get() instanceof DBObject) {
+                    if ("array".equals(type) && prop.get().isDocument()) {
                         // this might be the case of PATCHING an element array using the dot notation
                         // e.g. object.array.2
-                        // if so, the array comes as an BasicDBObject with all numberic keys
+                        // if so, the array comes as an BsonDocument with all numberic keys
                         // in any case, it might also be the object { "object": { "array": {"2": xxx }}}
-                        return ((DBObject) prop.get()).keySet().stream().allMatch((String k) -> {
-                            try {
-                                Integer.parseInt(k);
-                                return true;
-                            } catch (NumberFormatException nfe) {
-                                return false;
-                            }
-                        }) || JsonUtils.checkType(prop, type);
+                        return (prop
+                                .get())
+                                .asDocument()
+                                .keySet()
+                                .stream()
+                                .allMatch((String k) -> {
+                                    try {
+                                        Integer.parseInt(k);
+                                        return true;
+                                    } catch (NumberFormatException nfe) {
+                                        return false;
+                                    }
+                                }) || JsonUtils.checkType(prop, type);
                     } else {
                         return JsonUtils.checkType(prop, type);
                     }
@@ -370,7 +508,9 @@ public class JsonPathConditionsChecker implements Checker {
                 }
             });
             // check object fields
-            if (ret && "object".equals(type) && (mandatoryFields != null || optionalFields != null)) {
+            if (ret && "object".equals(type)
+                    && (mandatoryFields != null
+                    || optionalFields != null)) {
                 Set<String> allFields = new HashSet<>();
                 if (mandatoryFields != null) {
                     allFields.addAll(mandatoryFields);
@@ -378,14 +518,16 @@ public class JsonPathConditionsChecker implements Checker {
                 if (optionalFields != null) {
                     allFields.addAll(optionalFields);
                 }
-                ret = props.stream().allMatch((Optional<Object> prop) -> {
+                ret = props.stream().allMatch((Optional<BsonValue> prop) -> {
                     if (prop == null) {
                         return optional;
                     }
                     if (prop.isPresent()) {
-                        BasicDBObject obj = (BasicDBObject) prop.get();
+                        BsonDocument obj = prop.get().asDocument();
                         if (mandatoryFields != null) {
-                            return obj.keySet().containsAll(mandatoryFields) && allFields.containsAll(obj.keySet());
+                            return obj.keySet()
+                                    .containsAll(mandatoryFields)
+                                    && allFields.containsAll(obj.keySet());
                         } else {
                             return allFields.containsAll(obj.keySet());
                         }
@@ -400,10 +542,24 @@ public class JsonPathConditionsChecker implements Checker {
         }
 
         if (ret) {
-            LOGGER.trace("checkType({}, {}, {}, {}) -> {} -> {}", path, type, mandatoryFields, optionalFields, getRootPropsString(props), ret);
+            LOGGER.trace(
+                    "checkType({}, {}, {}, {}) -> {} -> {}",
+                    path,
+                    type,
+                    mandatoryFields,
+                    optionalFields,
+                    getRootPropsString(props),
+                    ret);
         } else {
-            LOGGER.debug("checkType({}, {}, {}, {}) -> {} -> {}", path, type, mandatoryFields, optionalFields, getRootPropsString(props), ret);
-            
+            LOGGER.debug(
+                    "checkType({}, {}, {}, {}) -> {} -> {}",
+                    path,
+                    type,
+                    mandatoryFields,
+                    optionalFields,
+                    getRootPropsString(props),
+                    ret);
+
             String errorMessage;
             if (!failedFieldsCheck) {
                 errorMessage = "checkType condition failed: path: " + path
@@ -427,18 +583,29 @@ public class JsonPathConditionsChecker implements Checker {
         return ret;
     }
 
-    protected boolean checkRegex(DBObject json,
+    protected boolean checkRegex(BsonDocument json,
             String path, String regex,
             boolean optional,
             boolean nullable,
             RequestContext context) {
-        BasicDBObject _json = (BasicDBObject) json;
-        List<Optional<Object>> props;
+        List<Optional<BsonValue>> props;
         try {
-            props = JsonUtils.getPropsFromPath(_json, path);
+            props = JsonUtils.getPropsFromPath(json, path);
         } catch (IllegalArgumentException ex) {
-            LOGGER.debug("checkRegex({}, {}) -> {}", path, regex, ex.getMessage());
-            context.addWarning("checkRegex condition failed: path: " + path + ", regex: " + regex + ", got: " + ex.getMessage());
+            LOGGER.debug(
+                    "checkRegex({}, {}) -> {}",
+                    path,
+                    regex,
+                    ex.getMessage());
+
+            context.addWarning(
+                    "checkRegex condition failed: path: "
+                    + path
+                    + ", regex: "
+                    + regex
+                    + ", got: "
+                    + ex.getMessage());
+
             return false;
         }
         boolean ret;
@@ -447,15 +614,16 @@ public class JsonPathConditionsChecker implements Checker {
             ret = optional;
         } else {
             Pattern p = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
-            ret = props.stream().allMatch((Optional<Object> prop) -> {
+            ret = props.stream().allMatch((Optional<BsonValue> prop) -> {
                 if (prop == null) {
                     return optional;
                 }
                 if (prop.isPresent()) {
-                    if (prop.get() instanceof String) {
-                        return p.matcher((String) prop.get()).find();
+                    if (prop.get().isString()) {
+                        return p.matcher(prop.get().asString().getValue())
+                                .find();
                     } else {
-                        return p.matcher(JsonUtils.serialize(prop.get())).find();
+                        return p.matcher(JsonUtils.toJson(prop.get())).find();
                     }
                 } else {
                     return nullable;
@@ -464,10 +632,20 @@ public class JsonPathConditionsChecker implements Checker {
         }
 
         if (ret) {
-            LOGGER.trace("checkRegex({}, {}) -> {} -> {}", path, regex, getRootPropsString(props), ret);
+            LOGGER.trace(
+                    "checkRegex({}, {}) -> {} -> {}",
+                    path,
+                    regex,
+                    getRootPropsString(props),
+                    ret);
         } else {
-            LOGGER.debug("checkRegex({}, {}) -> {} -> {}", path, regex, getRootPropsString(props), ret);
-            
+            LOGGER.debug(
+                    "checkRegex({}, {}) -> {} -> {}",
+                    path,
+                    regex,
+                    getRootPropsString(props),
+                    ret);
+
             String errorMessage = "checkRegex condition failed: path: " + path
                     + ", regex: " + regex
                     + ", got: " + (props == null
@@ -480,7 +658,7 @@ public class JsonPathConditionsChecker implements Checker {
         return ret;
     }
 
-    private String getRootPropsString(List<Optional<Object>> props) {
+    private String getRootPropsString(List<Optional<BsonValue>> props) {
         if (props == null) {
             return null;
         }
@@ -491,24 +669,24 @@ public class JsonPathConditionsChecker implements Checker {
             if (_prop == null) {
                 sb.append("<property not existing>");
             } else if (_prop.isPresent()) {
-                Object prop = _prop.get();
+                BsonValue prop = _prop.get();
 
-                if (prop instanceof BasicDBList) {
-                    BasicDBList array = (BasicDBList) prop;
+                if (prop.isArray()) {
+                    BsonArray array = prop.asArray();
 
                     sb.append("[");
 
                     array.stream().forEach((item) -> {
-                        if (item instanceof BasicDBObject) {
+                        if (item.isDocument()) {
                             sb.append("{obj}");
-                        } else if (item instanceof BasicDBList) {
+                        } else if (item.isArray()) {
                             sb.append("[array]");
-                        } else if (item instanceof String) {
+                        } else if (item.isString()) {
                             sb.append("'");
-                            sb.append(item.toString());
+                            sb.append(item.asString().getValue());
                             sb.append("'");
                         } else {
-                            sb.append(item.toString());
+                            sb.append(JsonUtils.toJson(prop));
                         }
 
                         sb.append(", ");
@@ -521,13 +699,13 @@ public class JsonPathConditionsChecker implements Checker {
                     }
 
                     sb.append("]");
-                } else if (prop instanceof BasicDBObject) {
-                    BasicDBObject obj = (BasicDBObject) prop;
+                } else if (prop.isDocument()) {
+                    BsonDocument obj = prop.asDocument();
 
                     sb.append(obj.keySet().toString());
-                } else if (prop instanceof String) {
+                } else if (prop.isString()) {
                     sb.append("'");
-                    sb.append(prop.toString());
+                    sb.append(prop.asString().getValue());
                     sb.append("'");
                 } else {
                     sb.append(prop.toString());

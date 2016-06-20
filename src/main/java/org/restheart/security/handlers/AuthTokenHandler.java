@@ -21,6 +21,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
+import org.bson.BsonString;
 import org.restheart.Bootstrapper;
 import org.restheart.hal.Representation;
 import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
@@ -76,8 +77,13 @@ public class AuthTokenHandler extends PipedHttpHandler {
             Representation rep = new Representation("/_authtokens/"
                     + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
 
-            rep.addProperty("auth_token", exchange.getResponseHeaders().get(AUTH_TOKEN_HEADER).getFirst());
-            rep.addProperty("auth_token_valid_until", exchange.getResponseHeaders().get(AUTH_TOKEN_VALID_HEADER).getFirst());
+            rep.addProperty("auth_token", 
+                    new BsonString(exchange.getResponseHeaders()
+                            .get(AUTH_TOKEN_HEADER).getFirst()));
+            
+            rep.addProperty("auth_token_valid_until", 
+                    new BsonString(exchange.getResponseHeaders()
+                            .get(AUTH_TOKEN_VALID_HEADER).getFirst()));
 
             exchange.setStatusCode(HttpStatus.SC_OK);
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);

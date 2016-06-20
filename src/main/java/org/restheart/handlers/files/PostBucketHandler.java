@@ -17,11 +17,13 @@
  */
 package org.restheart.handlers.files;
 
-import com.mongodb.DBObject;
 import com.mongodb.DuplicateKeyException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.io.IOException;
+import org.bson.BsonDocument;
+import org.bson.BsonObjectId;
+import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.db.GridFsDAO;
 import org.restheart.db.GridFsRepository;
@@ -30,6 +32,17 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
+import static org.restheart.utils.URLUtils.getReferenceLink;
+import static org.restheart.utils.URLUtils.getReferenceLink;
+import static org.restheart.utils.URLUtils.getReferenceLink;
+import static org.restheart.utils.URLUtils.getReferenceLink;
+import static org.restheart.utils.URLUtils.getReferenceLink;
+import static org.restheart.utils.URLUtils.getReferenceLink;
+import static org.restheart.utils.URLUtils.getReferenceLink;
+import static org.restheart.utils.URLUtils.getReferenceLink;
+import static org.restheart.utils.URLUtils.getReferenceLink;
+import static org.restheart.utils.URLUtils.getReferenceLink;
+import static org.restheart.utils.URLUtils.getReferenceLink;
 import static org.restheart.utils.URLUtils.getReferenceLink;
 
 /**
@@ -43,7 +56,7 @@ public class PostBucketHandler extends PipedHttpHandler {
         super();
         this.gridFsDAO = new GridFsDAO();
     }
-    
+
     public PostBucketHandler(PipedHttpHandler next) {
         super(next);
         this.gridFsDAO = new GridFsDAO();
@@ -55,21 +68,42 @@ public class PostBucketHandler extends PipedHttpHandler {
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        final DBObject props = context.getContent();
+    public void handleRequest(
+            HttpServerExchange exchange,
+            RequestContext context)
+            throws Exception {
+        final BsonValue _props = context.getContent();
 
-        Object _id = props.get("_id");
+        // must be an object
+        if (!_props.isDocument()) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "data cannot be an array");
+            return;
+        }
 
-        // id
-        if (_id == null) {
-            _id = new ObjectId();
+        BsonDocument props = _props.asDocument();
+
+        BsonValue _id;
+
+        if (props.containsKey("_id")) {
+            _id = props.get("_id");
+        } else {
+            _id = new BsonObjectId(new ObjectId());
         }
 
         OperationResult result;
 
         try {
-            if (context.getFile() != null) {
-                result = gridFsDAO.createFile(getDatabase(), context.getDBName(), context.getCollectionName(), _id, props, context.getFile());
+            if (context.getFilePath() != null) {
+                result = gridFsDAO
+                        .createFile(getDatabase(),
+                                context.getDBName(),
+                                context.getCollectionName(),
+                                _id,
+                                props,
+                                context.getFilePath());
             } else {
                 throw new RuntimeException("error. file data is null");
             }
@@ -77,22 +111,27 @@ public class PostBucketHandler extends PipedHttpHandler {
             if (t instanceof DuplicateKeyException) {
                 // update not supported
                 String errMsg = "file resource update is not yet implemented";
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_IMPLEMENTED, errMsg);
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        HttpStatus.SC_NOT_IMPLEMENTED,
+                        errMsg);
                 return;
             }
 
             throw t;
         }
-        
+
         context.setDbOperationResult(result);
 
         // insert the Location handler
         exchange.getResponseHeaders()
                 .add(HttpString.tryFromString("Location"),
-                        getReferenceLink(context, exchange.getRequestURL(), _id));
+                        getReferenceLink(
+                                context,
+                                exchange.getRequestURL(), _id));
 
         exchange.setStatusCode(result.getHttpCode());
-        
+
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }

@@ -17,9 +17,9 @@
  */
 package org.restheart.hal.metadata.singletons;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 import static org.restheart.utils.RequestHelper.UPDATE_OPERATORS;
 
@@ -34,22 +34,22 @@ public class CheckersUtils {
 
     public static boolean isBulkRequest(RequestContext context) {
         return context.getType() == RequestContext.TYPE.BULK_DOCUMENTS
-                || context.getContent() instanceof BasicDBList;
+                || context.getContent().isArray();
     }
 
-    public static boolean doesRequestUsesUpdateOperators(DBObject content) {
-        if (content instanceof BasicDBObject) {
-            BasicDBObject obj = (BasicDBObject) content;
+    public static boolean doesRequestUsesUpdateOperators(BsonValue content) {
+        if (content.isDocument()) {
+            BsonDocument obj = content.asDocument();
             
             return obj.keySet().stream().anyMatch(key -> {
                 return UPDATE_OPERATORS.contains(key);
             });
-        } else if (content instanceof BasicDBList) {
-            BasicDBList objs = (BasicDBList) content;
+        } else if (content.isArray()) {
+            BsonArray objs = content.asArray();
             
             return objs.stream().allMatch(obj -> {
-                if (obj instanceof BasicDBObject) {
-                    return doesRequestUsesUpdateOperators((BasicDBObject)obj);
+                if (obj.isDocument()) {
+                    return doesRequestUsesUpdateOperators(obj);
                 } else {
                     return true;
                 }
@@ -59,19 +59,19 @@ public class CheckersUtils {
         }
     }
 
-    public static boolean doesRequestUsesDotNotation(DBObject content) {
-        if (content instanceof BasicDBObject) {
-            BasicDBObject obj = (BasicDBObject) content;
+    public static boolean doesRequestUsesDotNotation(BsonValue content) {
+        if (content.isDocument()) {
+            BsonDocument obj = content.asDocument();
             
             return obj.keySet().stream().anyMatch(key -> {
                 return key.contains(".");
             });
-        } else if (content instanceof BasicDBList) {
-            BasicDBList objs = (BasicDBList) content;
+        } else if (content.isArray()) {
+            BsonArray objs = content.asArray();
             
             return objs.stream().anyMatch(obj -> {
-                if (obj instanceof BasicDBObject) {
-                    return doesRequestUsesDotNotation((BasicDBObject)obj);
+                if (obj.isDocument()) {
+                    return doesRequestUsesDotNotation(obj);
                 } else {
                     return true;
                 }

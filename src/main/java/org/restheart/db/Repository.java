@@ -17,8 +17,7 @@
  */
 package org.restheart.db;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.DBObject;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.Document;
 
@@ -28,17 +27,17 @@ import org.bson.Document;
  */
 public interface Repository {
     
-    OperationResult upsertDocument(String dbName, String collName, Object documentId, BsonDocument shardedKeys, DBObject content, String requestEtag, boolean patching, final boolean checkEtag);
+    OperationResult upsertDocument(String dbName, String collName, Object documentId, BsonDocument shardedKeys, BsonDocument content, String requestEtag, boolean patching, final boolean checkEtag);
     
-    OperationResult upsertDocumentPost(String dbName, String collName, BsonDocument shardedKeys, DBObject content, String requestEtag, final boolean checkEtag);
+    OperationResult upsertDocumentPost(String dbName, String collName, BsonDocument shardedKeys, BsonDocument content, String requestEtag, final boolean checkEtag);
     
     OperationResult deleteDocument(String dbName, String collName, Object documentId, BsonDocument shardedKeys, String requestEtag, final boolean checkEtag);
     
-    BulkOperationResult bulkUpsertDocumentsPost(String dbName, String collName, BasicDBList documents, BsonDocument shardKeys);
+    BulkOperationResult bulkUpsertDocumentsPost(String dbName, String collName, BsonArray documents, BsonDocument shardKeys);
     
-    BulkOperationResult bulkPatchDocuments(String dbName, String collName, Document filter, BsonDocument shardKeys, Document data);
+    BulkOperationResult bulkPatchDocuments(String dbName, String collName, BsonDocument filter, BsonDocument shardKeys, BsonDocument data);
     
-    BulkOperationResult bulkDeleteDocuments(String dbName, String collName, Document filter, BsonDocument shardKeys);
+    BulkOperationResult bulkDeleteDocuments(String dbName, String collName, BsonDocument filter, BsonDocument shardKeys);
     
     /**
      * returns the ETag of the document

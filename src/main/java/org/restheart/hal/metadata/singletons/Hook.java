@@ -17,8 +17,8 @@
  */
 package org.restheart.hal.metadata.singletons;
 
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
+import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 
 /**
@@ -68,7 +68,7 @@ public interface Hook {
     boolean hook(
             HttpServerExchange exchange,
             RequestContext context,
-            DBObject args);
+            BsonValue args);
 
     /**
      *

@@ -17,15 +17,17 @@
  */
 package org.restheart.utils;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.DBObject;
 import com.mongodb.util.JSONParseException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Arrays;
-import java.util.Map;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonString;
+import org.bson.BsonValue;
+import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.restheart.hal.Representation;
 
@@ -51,7 +53,10 @@ public class ResponseHelper {
      * @param code
      * @param message
      */
-    public static void endExchangeWithMessage(HttpServerExchange exchange, int code, String message) {
+    public static void endExchangeWithMessage(
+            HttpServerExchange exchange, 
+            int code, 
+            String message) {
         endExchangeWithMessage(exchange, code, message, null);
     }
 
@@ -62,7 +67,8 @@ public class ResponseHelper {
      * @param message
      * @param t
      */
-    public static void endExchangeWithMessage(HttpServerExchange exchange,
+    public static void endExchangeWithMessage(
+            HttpServerExchange exchange,
             int code,
             String message,
             Throwable t) {
@@ -70,7 +76,9 @@ public class ResponseHelper {
 
         String httpStatuText = HttpStatus.getStatusText(code);
 
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
+        exchange.getResponseHeaders().put(
+                Headers.CONTENT_TYPE, 
+                Representation.HAL_JSON_MEDIA_TYPE);
 
         exchange.getResponseSender().send(
                 getErrorJsonDocument(exchange.getRequestPath(),
@@ -89,28 +97,37 @@ public class ResponseHelper {
             boolean includeStackTrace) {
         Representation rep = new Representation(href);
 
-        rep.addProperty("http status code", code);
-        rep.addProperty("http status description", httpStatusText);
+        rep.addProperty("http status code", 
+                new BsonInt32(code));
+        rep.addProperty("http status description", 
+                new BsonString(httpStatusText));
         if (message != null) {
-            rep.addProperty("message", avoidEscapedChars(message));
+            rep.addProperty(
+                    "message", 
+                    new BsonString(avoidEscapedChars(message)));
         }
 
         Representation nrep = new Representation();
 
         if (t != null) {
-            nrep.addProperty("exception", t.getClass().getName());
+            nrep.addProperty(
+                    "exception", 
+                    new BsonString(t.getClass().getName()));
 
             if (t.getMessage() != null) {
                 if (t instanceof JSONParseException) {
-                    nrep.addProperty("exception message", "invalid json");
+                    nrep.addProperty("exception message", 
+                            new BsonString("invalid json"));
                 } else {
-                    nrep.addProperty("exception message", avoidEscapedChars(t.getMessage()));
+                    nrep.addProperty("exception message", 
+                            new BsonString(
+                                    avoidEscapedChars(t.getMessage())));
                 }
 
             }
 
             if (includeStackTrace) {
-                BasicDBList stackTrace = getStackTraceJson(t);
+                BsonArray stackTrace = getStackTraceJson(t);
 
                 if (stackTrace != null) {
                     nrep.addProperty("stack trace", stackTrace);
@@ -123,10 +140,11 @@ public class ResponseHelper {
         return rep.toString();
     }
 
-    private static BasicDBList getStackTraceJson(Throwable t) {
+    private static BsonArray getStackTraceJson(Throwable t) {
         if (t == null || t.getStackTrace() == null) {
             return null;
         }
+        
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
         t.printStackTrace(pw);
@@ -134,9 +152,12 @@ public class ResponseHelper {
         st = avoidEscapedChars(st);
         String[] lines = st.split("\n");
 
-        BasicDBList list = new BasicDBList();
-
-        list.addAll(Arrays.asList(lines));
+        BsonArray list = new BsonArray();
+        
+        for (String line: lines) {
+            list.add(new BsonString(line));
+        }
+                
         return list;
     }
 
@@ -153,26 +174,32 @@ public class ResponseHelper {
      * @param exchange
      * @param properties
      */
-    public static void injectEtagHeader(HttpServerExchange exchange, Map<String, Object> properties) {
+    public static void injectEtagHeader(
+            HttpServerExchange exchange, 
+            BsonDocument properties) {
         if (properties == null) {
             return;
         }
 
-        Object _etag = properties.get("_etag");
+        BsonValue _etag = properties.get("_etag");
 
-        if (ObjectId.isValid("" + _etag)) {
-            ObjectId etag = (ObjectId) _etag;
-
-            exchange.getResponseHeaders().put(Headers.ETAG, etag.toString());
+        if (_etag == null || !_etag.isObjectId()) {
+            return;
         }
-    }
 
+        exchange.getResponseHeaders().put(
+                Headers.ETAG, 
+                _etag.asObjectId().getValue().toString());
+    }
+    
     /**
      *
      * @param exchange
      * @param properties
      */
-    public static void injectEtagHeader(HttpServerExchange exchange, DBObject properties) {
+    public static void injectEtagHeader(
+            HttpServerExchange exchange, 
+            Document properties) {
         if (properties == null) {
             return;
         }
@@ -183,7 +210,9 @@ public class ResponseHelper {
             return;
         }
 
-        exchange.getResponseHeaders().put(Headers.ETAG, _etag.toString());
+        exchange.getResponseHeaders().put(
+                Headers.ETAG, 
+                _etag.toString());
     }
 
     /**
@@ -191,12 +220,16 @@ public class ResponseHelper {
      * @param exchange
      * @param etag
      */
-    public static void injectEtagHeader(HttpServerExchange exchange, Object etag) {
-        if (etag == null || !(etag instanceof ObjectId)) {
+    public static void injectEtagHeader(
+            HttpServerExchange exchange, 
+            BsonValue etag) {
+        if (etag == null || !etag.isObjectId()) {
             return;
         }
 
-        exchange.getResponseHeaders().put(Headers.ETAG, etag.toString());
+        exchange.getResponseHeaders().put(
+                Headers.ETAG, 
+                etag.asObjectId().getValue().toString());
     }
     
     /**
@@ -235,18 +268,25 @@ public class ResponseHelper {
     public static String getMessageFromErrorCode(int code) {
         switch (code) {
             case 13:
-                return "The MongoDB user does not have enough permissions to execute this operation.";
+                return "The MongoDB user does not have enough "
+                        + "permissions to execute this operation.";
             case 18:
-                return "Wrong MongoDB user credentials (wrong password or need to specify the authentication dababase with 'authSource=<db>' option in mongo-uri).";
+                return "Wrong MongoDB user credentials "
+                        + "(wrong password or need to specify the "
+                        + "authentication dababase "
+                        + "with 'authSource=<db>' option in mongo-uri).";
             case 61:
-                return "Write request for sharded collection must specify the shardkey. Use the 'shardkey' query parameter.";
+                return "Write request for sharded "
+                        + "collection must specify the shardkey. "
+                        + "Use the 'shardkey' query parameter.";
             case 66:
                 return "Update tried to change the immutable shardkey.";
             case 121:
                 //Document failed validation
                 return "Document failed collection validation.";
             default:
-                return "Error handling the request, see log for more information";
+                return "Error handling the request, "
+                        + "see log for more information";
         }
     }
 

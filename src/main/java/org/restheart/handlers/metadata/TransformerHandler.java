@@ -17,11 +17,10 @@
  */
 package org.restheart.handlers.metadata;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import java.util.List;
+import org.bson.BsonDocument;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.singletons.Transformer;
 import org.restheart.handlers.PipedHttpHandler;
@@ -37,7 +36,8 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class TransformerHandler extends PipedHttpHandler {
-    static final Logger LOGGER = LoggerFactory.getLogger(TransformerHandler.class);
+    static final Logger LOGGER =
+            LoggerFactory.getLogger(TransformerHandler.class);
 
     private final List<Transformer> transformers;
 
@@ -47,14 +47,19 @@ public class TransformerHandler extends PipedHttpHandler {
      * @param next
      * @param transformers
      */
-    public TransformerHandler(PipedHttpHandler next, Transformer... transformers) {
+    public TransformerHandler(
+            PipedHttpHandler next, 
+            Transformer... transformers) {
         super(next);
 
         this.transformers = Arrays.asList(transformers);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(
+            HttpServerExchange exchange, 
+            RequestContext context) 
+            throws Exception {
         if (doesTransformerAppy()) {
             transform(exchange, context);
         }
@@ -69,22 +74,28 @@ public class TransformerHandler extends PipedHttpHandler {
                 && !transformers.isEmpty();
     }
 
-    private void transform(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
+    private void transform(
+            HttpServerExchange exchange, 
+            RequestContext context) 
+            throws InvalidMetadataException {
         if (context.getContent() != null
-                && !(context.getContent() instanceof BasicDBObject)) {
+                && !(context.getContent().isDocument())) {
             throw new RuntimeException(
-                    "this hanlder only supports content of type json object; content "
-                    + context.getContent());
+                    "this hanlder only supports content of type json object; "
+                            + "content type: " + context
+                                    .getContent()
+                                    .getBsonType()
+                                    .name());
         }
 
-        DBObject data;
-        
+        BsonDocument data;
+
         if (context.getMethod() == GET) {
-           data = context.getResponseContent();
+            data = context.getResponseContent();
         } else {
-            data = context.getContent();
+            data = context.getContent().asDocument();
         }
-        
+
         transformers.stream().forEachOrdered(
                 t -> t.tranform(exchange, context, data, null));
     }

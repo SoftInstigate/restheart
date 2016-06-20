@@ -17,10 +17,11 @@
  */
 package org.restheart.hal.metadata;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.DBObject;
 import java.util.ArrayList;
 import java.util.List;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 
 /**
  *
@@ -32,14 +33,14 @@ public class HookMetadata {
     public final static String ARGS_KEY = "args";
 
     private final String name;
-    private final DBObject args;
+    private final BsonValue args;
 
     /**
      *
      * @param checker
      * @param args
      */
-    public HookMetadata(String checker, DBObject args) {
+    public HookMetadata(String checker, BsonValue args) {
         this.name = checker;
         this.args = args;
     }
@@ -54,54 +55,63 @@ public class HookMetadata {
     /**
      * @return the args
      */
-    public DBObject getArgs() {
+    public BsonValue getArgs() {
         return args;
     }
 
-    public static Object getProps(DBObject props) {
-        return props == null ? null : props.get(ROOT_KEY);
+    public static BsonValue getProps(BsonDocument props) {
+        return props == null 
+                ? null 
+                : props.containsKey(ROOT_KEY) 
+                ? props.get(ROOT_KEY)
+                : null;
     }
 
-    public static List<HookMetadata> getFromJson(DBObject props) throws InvalidMetadataException {
-        Object _scs = getProps(props);
+    public static List<HookMetadata> getFromJson(BsonDocument props)
+            throws InvalidMetadataException {
+        BsonValue _scs = getProps(props);
 
-        if (_scs == null || !(_scs instanceof BasicDBList)) {
-            throw new InvalidMetadataException((_scs == null ? "missing '" : "invalid '") + ROOT_KEY + "' element. it must be a json array");
+        if (_scs == null || !_scs.isArray()) {
+            throw new InvalidMetadataException(
+                    (_scs == null ? "missing '" : "invalid '") 
+                            + ROOT_KEY 
+                            + "' element. it must be a json array");
         }
 
-        BasicDBList scs = (BasicDBList) _scs;
+        BsonArray scs = _scs.asArray();
 
         List<HookMetadata> ret = new ArrayList<>();
 
-        for (Object o : scs) {
-            if (o instanceof DBObject) {
-                ret.add(getSingleFromJson((DBObject) o));
+        for (BsonValue o : scs) {
+            if (o.isDocument()) {
+                ret.add(getSingleFromJson(o.asDocument()));
             } else {
-                throw new InvalidMetadataException("invalid '" + ROOT_KEY + "'. Array elements must be json objects");
+                throw new InvalidMetadataException("invalid '" 
+                        + ROOT_KEY 
+                        + "'. Array elements must be json objects");
             }
         }
 
         return ret;
     }
 
-    private static HookMetadata getSingleFromJson(DBObject props) throws InvalidMetadataException {
-        Object _name = props.get(NAME_KEY);
+    private static HookMetadata getSingleFromJson(BsonDocument props) 
+            throws InvalidMetadataException {
+        BsonValue _name = props.get(NAME_KEY);
 
-        if (_name == null || !(_name instanceof String)) {
-            throw new InvalidMetadataException((_name == null ? "missing '" : "invalid '") + NAME_KEY + "' element. it must be of type String");
+        if (_name == null 
+                || !(_name.isString())) {
+            throw new InvalidMetadataException(
+                    (_name == null 
+                            ? "missing '" 
+                            : "invalid '") 
+                            + NAME_KEY 
+                            + "' element. it must be of type String");
         }
 
-        String name = (String) _name;
-
-        Object _args = props.get(ARGS_KEY);
+        String name = _name.asString().getValue();
 
         // args is optional
-        if (_args != null && !(_args instanceof DBObject)) {
-            throw new InvalidMetadataException("invalid '" + ARGS_KEY + "' element. it must be a json object");
-        }
-
-        DBObject args = (DBObject) _args;
-
-        return new HookMetadata(name, args);
+        return new HookMetadata(name, props.get(ARGS_KEY));
     }
 }

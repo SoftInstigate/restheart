@@ -17,27 +17,22 @@
  */
 package org.restheart.handlers.document;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.db.DocumentDAO;
 import org.restheart.db.OperationResult;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PutDocumentHandler extends PipedHttpHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PutDocumentHandler.class);
-
     private final DocumentDAO documentDAO;
 
     /**
@@ -46,9 +41,10 @@ public class PutDocumentHandler extends PipedHttpHandler {
     public PutDocumentHandler() {
         this(null, new DocumentDAO());
     }
-    
+
     /**
      * Default ctor
+     *
      * @param next
      */
     public PutDocumentHandler(PipedHttpHandler next) {
@@ -73,30 +69,41 @@ public class PutDocumentHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        DBObject content = context.getContent();
+    public void handleRequest(
+            HttpServerExchange exchange,
+            RequestContext context)
+            throws Exception {
+        BsonValue _content = context.getContent();
 
-        if (content == null) {
-            content = new BasicDBObject();
+        if (_content == null) {
+            _content = new BsonDocument();
         }
 
         // cannot PUT an array
-        if (content instanceof BasicDBList) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
+        if (!_content.isDocument()) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "data must be a josn object");
             return;
         }
 
-        Object id = context.getDocumentId();
+        BsonDocument content = _content.asDocument();
+
+        BsonValue id = context.getDocumentId();
 
         if (content.get("_id") == null) {
             content.put("_id", id);
         } else if (!content.get("_id").equals(id)) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is different than id in URL");
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "_id in content body is different than id in URL");
             return;
         }
-        
+
         String etag = context.getETag();
-        
+
         OperationResult result = this.documentDAO.upsertDocument(
                 context.getDBName(),
                 context.getCollectionName(),
@@ -106,31 +113,38 @@ public class PutDocumentHandler extends PipedHttpHandler {
                 etag,
                 false,
                 context.isETagCheckRequired());
-        
+
         context.setDbOperationResult(result);
 
         // inject the etag
         if (result.getEtag() != null) {
-            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+            exchange.getResponseHeaders().put(
+                    Headers.ETAG,
+                    result.getEtag().toString());
         }
-        
+
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
-                    "The document's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    HttpStatus.SC_CONFLICT,
+                    "The document's ETag must be provided using the '"
+                    + Headers.IF_MATCH
+                    + "' header");
             return;
         }
-        
+
         // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
+        if (context.getWarnings() != null
+                && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
         } else {
             exchange.setStatusCode(result.getHttpCode());
         }
-        
+
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }
-        
+
         exchange.endExchange();
     }
 }

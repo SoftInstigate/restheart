@@ -17,14 +17,11 @@
  */
 package org.restheart.handlers.metadata;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
-import com.mongodb.util.JSON;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import java.util.Objects;
-import org.bson.Document;
+import org.bson.BsonArray;
+import org.bson.BsonValue;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.RequestChecker;
 import org.restheart.hal.metadata.singletons.Checker;
@@ -43,7 +40,8 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
-    static final Logger LOGGER = LoggerFactory.getLogger(BeforeWriteCheckMetadataHandler.class);
+    static final Logger LOGGER
+            = LoggerFactory.getLogger(BeforeWriteCheckMetadataHandler.class);
 
     public static final String SINGLETON_GROUP_NAME = "checkers";
 
@@ -93,7 +91,7 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
 
     private boolean doesCheckerAppy(RequestContext context) {
         return context.getCollectionProps() != null
-                && context.getCollectionProps().containsField(ROOT_KEY);
+                && context.getCollectionProps().containsKey(ROOT_KEY);
     }
 
     protected boolean check(
@@ -111,7 +109,8 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                                 .get(ROOT_KEY, checker.getName());
 
                         if (_checker == null) {
-                            throw new IllegalArgumentException("cannot find singleton "
+                            throw new IllegalArgumentException(
+                                    "cannot find singleton "
                                     + checker.getName()
                                     + " in singleton group checkers");
                         }
@@ -124,80 +123,94 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                                 && !checker.skipNotSupported()) {
                             LOGGER.debug("checker "
                                     + _checker.getClass().getSimpleName()
-                                    + " does not support this request. check will "
-                                    + (checker.skipNotSupported() ? "not fail" : "fail"));
+                                    + " does not support this request. "
+                                    + "check will "
+                                    + (checker.skipNotSupported()
+                                            ? "not fail"
+                                            : "fail"));
 
                             String noteMsg = "";
 
-                            if (CheckersUtils.doesRequestUsesDotNotation(context.getContent())) {
-                                noteMsg = noteMsg.concat("uses the dot notation");
+                            if (CheckersUtils.doesRequestUsesDotNotation(
+                                    context.getContent())) {
+                                noteMsg = noteMsg.concat(
+                                        "uses the dot notation");
                             }
 
-                            if (CheckersUtils.doesRequestUsesUpdateOperators(context.getContent())) {
+                            if (CheckersUtils.doesRequestUsesUpdateOperators(
+                                    context.getContent())) {
                                 noteMsg = noteMsg.isEmpty()
                                         ? "uses update operators"
-                                        : noteMsg.concat(" and update operators");
+                                        : noteMsg
+                                        .concat(" and update operators");
                             }
 
                             if (CheckersUtils.isBulkRequest(context)) {
                                 noteMsg = noteMsg.isEmpty()
                                         ? "is a bulk operation"
-                                        : noteMsg.concat(" and it is a bulk operation");
+                                        : noteMsg
+                                        .concat(" and it is a "
+                                                + "bulk operation");
                             }
 
                             context.addWarning("the checker "
                                     + _checker.getClass().getSimpleName()
-                                    + " does not support this request and is configured to fail in this case. "
-                                    + "Note that the request " + noteMsg);
+                                    + " does not support this request and "
+                                    + "is configured to fail in this case. "
+                                    + "Note that the request "
+                                    + noteMsg);
                             return false;
                         }
 
                         if (doesCheckerApply(context, _checker)
                                 && _checker.doesSupportRequests(context)) {
 
-                            DBObject content = context.getContent();
+                            BsonValue content = context.getContent();
 
-                            DBObject _data;
+                            BsonValue _data;
 
-                            if (_checker.getPhase(context) == PHASE.BEFORE_WRITE) {
+                            if (_checker.getPhase(context)
+                                    == PHASE.BEFORE_WRITE) {
                                 _data = context.getContent();
                             } else {
-                                Objects.requireNonNull(context.getDbOperationResult());
+                                Objects.requireNonNull(
+                                        context.getDbOperationResult());
 
-                                Document data = context
+                                _data = context
                                         .getDbOperationResult()
                                         .getNewData();
-
-                                _data = (DBObject) JSON.parse(data.toJson());
                             }
 
-                            if (_data instanceof BasicDBObject) {
+                            if (_data.isDocument()) {
                                 return _checker.check(
                                         exchange,
                                         context,
-                                        (BasicDBObject) _data,
+                                        _data.asDocument(),
                                         checker.getArgs());
-                            } else if (content instanceof BasicDBList) {
+                            } else if (content.isArray()) {
                                 // content can be an array of bulk POST
 
-                                BasicDBList arrayContent = (BasicDBList) _data;
+                                BsonArray arrayContent = _data.asArray();
 
                                 return arrayContent.stream().allMatch(obj -> {
-                                    if (obj instanceof BasicDBObject) {
+                                    if (obj.isDocument()) {
                                         return _checker
                                                 .check(
                                                         exchange,
                                                         context,
-                                                        (BasicDBObject) obj,
+                                                        obj.asDocument(),
                                                         checker.getArgs());
                                     } else {
-                                        LOGGER.warn("element of content array is not an object");
+                                        LOGGER.warn(
+                                                "element of content array "
+                                                + "is not an object");
                                         return true;
                                     }
                                 });
 
                             } else {
-                                LOGGER.warn("content is not an object or an array");
+                                LOGGER.warn(
+                                        "content is not an object or an array");
                                 return true;
                             }
                         } else {
@@ -205,13 +218,16 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                         }
 
                     } catch (IllegalArgumentException ex) {
-                        context.addWarning("error applying checker: " + ex.getMessage());
+                        context.addWarning("error applying checker: "
+                                + ex.getMessage());
                         return false;
                     }
                 });
     }
 
-    protected boolean doesCheckerApply(RequestContext context, Checker checker) {
+    protected boolean doesCheckerApply(
+            RequestContext context,
+            Checker checker) {
         return checker.getPhase(context) == Checker.PHASE.BEFORE_WRITE;
     }
 }

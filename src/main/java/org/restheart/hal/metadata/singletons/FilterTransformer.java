@@ -17,9 +17,10 @@
  */
 package org.restheart.hal.metadata.singletons;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 
 /**
@@ -48,22 +49,29 @@ public class FilterTransformer implements Transformer {
      * "prop2"]
      */
     @Override
-    public void tranform(final HttpServerExchange exchange, final RequestContext context, DBObject contentToTransform, final DBObject args) {
-        if (args instanceof BasicDBList) {
-            BasicDBList toremove = (BasicDBList) args;
+    public void tranform(
+            final HttpServerExchange exchange, 
+            final RequestContext context, 
+            BsonDocument contentToTransform, 
+            final BsonValue args) {
+        if (args.isArray()) {
+            BsonArray toremove = args.asArray();
 
             toremove.forEach(_prop -> {
-                if (_prop instanceof String) {
-                    String prop = (String) _prop;
+                if (_prop.isString()) {
+                    String prop = (String) _prop.asString().getValue();
 
-                    contentToTransform.removeField(prop);
+                    contentToTransform.remove(prop);
                 } else {
-                    context.addWarning("property in the args list is not a string: " + _prop);
+                    context.addWarning("property in the args list "
+                            + "is not a string: " + _prop);
                 }
             });
 
         } else {
-            context.addWarning("transformer wrong definition: args property must be an arrary of string property names.");
+            context.addWarning("transformer wrong definition: "
+                    + "args property must be an arrary "
+                    + "of string property names.");
         }
     }
 }

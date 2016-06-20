@@ -17,11 +17,14 @@
  */
 package org.restheart.hal;
 
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import static java.lang.Math.toIntExact;
 import java.util.List;
 import java.util.TreeMap;
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonInt64;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
@@ -38,12 +41,17 @@ public abstract class AbstractRepresentationFactory {
      * @param context
      * @param rep
      */
-    public void sendRepresentation(HttpServerExchange exchange, RequestContext context, Representation rep) {
+    public void sendRepresentation(
+            HttpServerExchange exchange,
+            RequestContext context,
+            Representation rep) {
         if (context.getWarnings() != null) {
             context.getWarnings().forEach(w -> rep.addWarning(w));
         }
 
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
+        exchange.getResponseHeaders().put(
+                Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
+        
         exchange.getResponseSender().send(rep.toString());
     }
 
@@ -56,15 +64,22 @@ public abstract class AbstractRepresentationFactory {
      * @return the resource HAL representation
      * @throws IllegalQueryParamenterException
      */
-    public abstract Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
+    public abstract Representation getRepresentation(
+            HttpServerExchange exchange,
+            RequestContext context,
+            List<BsonDocument> embeddedData,
+            long size)
             throws IllegalQueryParamenterException;
 
-    protected void addSizeAndTotalPagesProperties(final long size, final RequestContext context, final Representation rep) {
+    protected void addSizeAndTotalPagesProperties(
+            final long size,
+            final RequestContext context,
+            final Representation rep) {
         if (size == 0) {
-            rep.addProperty("_size", 0);
+            rep.addProperty("_size", new BsonInt32(0));
 
             if (context.getPagesize() > 0) {
-                rep.addProperty("_total_pages", 0);
+                rep.addProperty("_total_pages", new BsonInt32(0));
             }
         }
 
@@ -72,42 +87,61 @@ public abstract class AbstractRepresentationFactory {
             float _size = size + 0f;
             float _pagesize = context.getPagesize() + 0f;
 
-            rep.addProperty("_size", size);
+            rep.addProperty("_size", new BsonInt32(toIntExact(size)));
 
             if (context.getPagesize() > 0) {
-                rep.addProperty("_total_pages", Math.max(1, Math.round(Math.ceil(_size / _pagesize))));
+                rep.addProperty("_total_pages", new BsonInt32(
+                        toIntExact(
+                                Math.max(1,
+                                        Math.round(
+                                                Math.ceil(_size / _pagesize)
+                                        )))));
             }
         }
     }
 
-    protected void addReturnedProperty(final List<DBObject> embeddedData, final Representation rep) {
+    protected void addReturnedProperty(
+            final List<BsonDocument> embeddedData,
+            final Representation rep) {
         long count = embeddedData == null ? 0 : embeddedData.size();
 
-        rep.addProperty("_returned", count);
+        rep.addProperty("_returned", new BsonInt32(toIntExact(count)));
     }
 
-    protected Representation createRepresentation(final HttpServerExchange exchange, final RequestContext context, final String requestPath) {
-        String queryString = exchange.getQueryString() == null || exchange.getQueryString().isEmpty()
-                ? ""
-                : "?" + URLUtils.decodeQueryString(exchange.getQueryString());
+    protected Representation createRepresentation(
+            final HttpServerExchange exchange,
+            final RequestContext context,
+            final String requestPath) {
+        String queryString
+                = exchange.getQueryString() == null
+                || exchange.getQueryString().isEmpty()
+                        ? ""
+                        : "?" + URLUtils.decodeQueryString(
+                                exchange.getQueryString());
 
         Representation rep;
-        
+
         if (requestPath != null || context.isFullHalMode()) {
             rep = new Representation(requestPath + queryString);
         } else {
             rep = new Representation();
         }
-        
+
         return rep;
     }
 
     protected String buildRequestPath(final HttpServerExchange exchange) {
-        String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
+        String requestPath = URLUtils.removeTrailingSlashes(
+                exchange.getRequestPath());
         return requestPath;
     }
 
-    protected void addPaginationLinks(HttpServerExchange exchange, RequestContext context, long size, final Representation rep) throws IllegalQueryParamenterException {
+    protected void addPaginationLinks(
+            HttpServerExchange exchange,
+            RequestContext context,
+            long size,
+            final Representation rep)
+            throws IllegalQueryParamenterException {
         if (context.getPagesize() > 0) {
             TreeMap<String, String> links;
             links = HALUtils.getPaginationLinks(exchange, context, size);
@@ -120,6 +154,8 @@ public abstract class AbstractRepresentationFactory {
     }
 
     protected boolean hasTrailingSlash(final String requestPath) {
-        return requestPath.substring(requestPath.length() > 0 ? requestPath.length() - 1 : 0).equals("/");
+        return requestPath.substring(requestPath.length() > 0
+                ? requestPath.length() - 1
+                : 0).equals("/");
     }
 }

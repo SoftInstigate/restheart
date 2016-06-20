@@ -18,7 +18,6 @@
 package org.restheart.handlers.bulk;
 
 import io.undertow.server.HttpServerExchange;
-import org.bson.Document;
 import org.restheart.db.BulkOperationResult;
 import org.restheart.db.DocumentDAO;
 import org.restheart.handlers.PipedHttpHandler;
@@ -63,21 +62,13 @@ public class BulkPatchDocumentsHandler extends PipedHttpHandler {
     @Override
     @SuppressWarnings("unchecked")
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        //TODO remove this after migration to mongodb driver 3.2 completes
-        Document dcontent;
-        if (context.getContent() != null) {
-            dcontent = new Document(context.getContent().toMap());
-        } else {
-            dcontent = new Document();
-        }
-            
         BulkOperationResult result = this.documentDAO
                 .bulkPatchDocuments(
                         context.getDBName(), 
                         context.getCollectionName(), 
-                        context.getComposedFilters(),
+                        context.getFiltersDocument(),
                         context.getShardKey(),
-                        dcontent);
+                        context.getContent().asDocument());
 
         context.setDbOperationResult(result);
 

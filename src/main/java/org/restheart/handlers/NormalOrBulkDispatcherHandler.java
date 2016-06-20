@@ -17,9 +17,8 @@
  */
 package org.restheart.handlers;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
+import org.bson.BsonValue;
 
 /**
  * this handler dispatches request to normal or bulk post collection handlers
@@ -35,7 +34,9 @@ public class NormalOrBulkDispatcherHandler extends PipedHttpHandler {
      * @param nextNormal next handler for normal requests
      * @param nextBulk next handler for bulk requests
      */
-    public NormalOrBulkDispatcherHandler(PipedHttpHandler nextNormal, PipedHttpHandler nextBulk) {
+    public NormalOrBulkDispatcherHandler(
+            PipedHttpHandler nextNormal, 
+            PipedHttpHandler nextBulk) {
         super(null);
         
         this.nextNormal = nextNormal;
@@ -49,10 +50,13 @@ public class NormalOrBulkDispatcherHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        DBObject content = context.getContent();
+    public void handleRequest(
+            HttpServerExchange exchange, 
+            RequestContext context) throws Exception {
+        BsonValue content = context.getContent();
 
-        if (content instanceof BasicDBList) {
+        if (content != null 
+                && content.isArray()) {
             nextBulk.handleRequest(exchange, context);
         } else {
             nextNormal.handleRequest(exchange, context);

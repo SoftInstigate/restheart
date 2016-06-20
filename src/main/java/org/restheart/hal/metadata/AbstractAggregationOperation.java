@@ -18,12 +18,12 @@
 package org.restheart.hal.metadata;
 
 import com.google.common.collect.Sets;
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 
 /**
  *
@@ -57,7 +57,7 @@ public abstract class AbstractAggregationOperation {
      * @param properties
      * @throws org.restheart.hal.metadata.InvalidMetadataException
      */
-    public AbstractAggregationOperation(DBObject properties)
+    public AbstractAggregationOperation(BsonDocument properties)
             throws InvalidMetadataException {
         Object _type = properties.get(TYPE_ELEMENT_NAME);
         Object _uri = properties.get(URI_ELEMENT_NAME);
@@ -91,7 +91,7 @@ public abstract class AbstractAggregationOperation {
      * @throws InvalidMetadataException
      */
     public static List<AbstractAggregationOperation>
-            getFromJson(DBObject collProps)
+            getFromJson(BsonDocument collProps)
             throws InvalidMetadataException {
         if (collProps == null) {
             return null;
@@ -99,37 +99,37 @@ public abstract class AbstractAggregationOperation {
 
         ArrayList<AbstractAggregationOperation> ret = new ArrayList<>();
 
-        Object _aggregations = collProps.get(AGGREGATIONS_ELEMENT_NAME);
+        BsonValue _aggregations = collProps.get(AGGREGATIONS_ELEMENT_NAME);
 
         if (_aggregations == null) {
             return ret;
         }
 
-        if (!(_aggregations instanceof BasicDBList)) {
+        if (!_aggregations.isArray()) {
             throw new InvalidMetadataException("element '"
                     + AGGREGATIONS_ELEMENT_NAME
                     + "' is not an array list." + _aggregations);
         }
 
-        BasicDBList aggregations = (BasicDBList) _aggregations;
+        BsonArray aggregations = _aggregations.asArray();
 
-        for (Object _query : aggregations.toArray()) {
-            if (!(_query instanceof DBObject)) {
+        for (BsonValue _query : aggregations.getValues()) {
+            if (!_query.isDocument()) {
                 throw new InvalidMetadataException("element '"
                         + AGGREGATIONS_ELEMENT_NAME
                         + "' is not valid." + _query);
             }
 
-            ret.add(getQuery((DBObject) _query));
+            ret.add(getQuery(_query.asDocument()));
         }
 
         return ret;
     }
 
-    private static AbstractAggregationOperation getQuery(DBObject query)
+    private static AbstractAggregationOperation getQuery(BsonDocument query)
             throws InvalidMetadataException {
 
-        Object _type = query.get(TYPE_ELEMENT_NAME);
+        BsonValue _type = query.get(TYPE_ELEMENT_NAME);
 
         if (_type == null) {
             throw new InvalidMetadataException("query element does not have '"
@@ -168,14 +168,16 @@ public abstract class AbstractAggregationOperation {
      * @throws org.restheart.hal.metadata.InvalidMetadataException
      * @throws org.restheart.hal.metadata.QueryVariableNotBoundException
      */
-    protected Object bindAggregationVariables(Object obj, DBObject aVars)
+    protected BsonValue bindAggregationVariables(
+            BsonValue obj,
+            BsonDocument aVars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
         if (obj == null) {
             return null;
         }
 
-        if (obj instanceof BasicDBObject) {
-            BasicDBObject _obj = (BasicDBObject) obj;
+        if (obj.isDocument()) {
+            BsonDocument _obj = obj.asDocument();
 
             if (_obj.size() == 1 && _obj.get("$var") != null) {
                 Object varName = _obj.get("$var");
@@ -192,23 +194,24 @@ public abstract class AbstractAggregationOperation {
 
                 return aVars.get((String) varName);
             } else {
-                BasicDBObject ret = new BasicDBObject();
+                BsonDocument ret = new BsonDocument();
 
-                for (String key : ((BasicDBObject) obj).keySet()) {
-                    ret.put(key, bindAggregationVariables(((BasicDBObject) obj)
-                            .get(key), aVars));
+                for (String key : _obj.keySet()) {
+                    ret.put(key,
+                            bindAggregationVariables(
+                                    _obj.get(key), aVars));
                 }
 
                 return ret;
             }
-        } else if (obj instanceof BasicDBList) {
-            BasicDBList ret = new BasicDBList();
+        } else if (obj.isArray()) {
+            BsonArray ret = new BsonArray();
 
-            for (Object el : ((BasicDBList) obj).toArray()) {
-                if (el instanceof BasicDBObject) {
-                    ret.add(bindAggregationVariables((BasicDBObject) el, aVars));
-                } else if (el instanceof BasicDBList) {
-                    ret.add(bindAggregationVariables((BasicDBList) el, aVars));
+            for (BsonValue el : obj.asArray().getValues()) {
+                if (el.isDocument()) {
+                    ret.add(bindAggregationVariables(el, aVars));
+                } else if (el.isArray()) {
+                    ret.add(bindAggregationVariables(el, aVars));
                 } else {
                     ret.add(el);
                 }
@@ -227,30 +230,31 @@ public abstract class AbstractAggregationOperation {
      *
      * @param aVars RequestContext.getAggregationVars()
      */
-    public static void checkAggregationVariables(Object aVars)
+    public static void checkAggregationVariables(BsonValue aVars)
             throws SecurityException {
         if (aVars == null) {
             return;
         }
 
-        if (aVars instanceof BasicDBObject) {
-            BasicDBObject _obj = (BasicDBObject) aVars;
+        if (aVars.isDocument()) {
+            BsonDocument _obj = aVars.asDocument();
 
             _obj.forEach((key, value) -> {
                 if (key.startsWith("$")) {
-                    throw new SecurityException("aggregation variables cannot include operators");
+                    throw new SecurityException(
+                            "aggregation variables cannot include operators");
                 }
-                
-                if (value instanceof BasicDBObject
-                        || value instanceof BasicDBList) {
+
+                if (value.isDocument()
+                        || value.isArray()) {
                     checkAggregationVariables(value);
                 }
             });
-            
-        } else if (aVars instanceof BasicDBList) {
-            for (Object el : ((BasicDBList) aVars).toArray()) {
-                if (el instanceof BasicDBObject
-                        || el instanceof BasicDBList) {
+
+        } else if (aVars.isArray()) {
+            for (BsonValue el : aVars.asArray().getValues()) {
+                if (el.isDocument()
+                        || el.isArray()) {
                     checkAggregationVariables(el);
                 }
             }

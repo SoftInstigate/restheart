@@ -17,11 +17,14 @@
  */
 package org.restheart.handlers.indexes;
 
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import static java.lang.Math.toIntExact;
 import java.util.List;
-import org.bson.types.ObjectId;
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.restheart.Configuration;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
@@ -38,7 +41,8 @@ import org.slf4j.LoggerFactory;
  */
 public class IndexesRepresentationFactory {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(IndexesRepresentationFactory.class);
+    private static final Logger LOGGER
+            = LoggerFactory.getLogger(IndexesRepresentationFactory.class);
 
     /**
      *
@@ -48,17 +52,24 @@ public class IndexesRepresentationFactory {
      * @param size
      * @throws IllegalQueryParamenterException
      */
-    static public void sendHal(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
+    static public void sendHal(
+            HttpServerExchange exchange,
+            RequestContext context,
+            List<BsonDocument> embeddedData,
+            long size)
             throws IllegalQueryParamenterException {
-        String requestPath = URLUtils.removeTrailingSlashes(context.getUnmappedRequestUri());
-        String queryString = exchange.getQueryString() == null || exchange.getQueryString().isEmpty()
-                ? ""
-                : "?" + URLUtils.decodeQueryString(exchange.getQueryString());
+        String requestPath = URLUtils.removeTrailingSlashes(
+                context.getUnmappedRequestUri());
+        
+        String queryString = exchange.getQueryString() == null
+                || exchange.getQueryString().isEmpty()
+                        ? ""
+                        : "?" + URLUtils.decodeQueryString(exchange.getQueryString());
 
         Representation rep = new Representation(requestPath + queryString);
 
         if (size >= 0) {
-            rep.addProperty("_size", size);
+            rep.addProperty("_size", new BsonInt32(toIntExact(size)));
         }
 
         if (embeddedData != null) {
@@ -67,28 +78,40 @@ public class IndexesRepresentationFactory {
                             .anyMatch((k) -> k.equals("id") || k.equals("_id")))
                     .count();
 
-            rep.addProperty("_returned", count);
+            rep.addProperty("_returned", new BsonInt32(toIntExact(count)));
 
             if (!embeddedData.isEmpty()) {
-                embeddedDocuments(embeddedData, requestPath, rep, context.isFullHalMode());
+                embeddedDocuments(
+                        embeddedData,
+                        requestPath,
+                        rep,
+                        context.isFullHalMode());
             }
         }
 
         if (context.isFullHalMode()) {
-            rep.addProperty("_type", context.getType().name());
+            rep.addProperty("_type",
+                    new BsonString(context.getType().name()));
 
             if (context.isParentAccessible()) {
                 // this can happen due to mongo-mounts mapped URL
-                if (context.getCollectionName().endsWith(RequestContext.FS_FILES_SUFFIX)) {
-                    rep.addLink(new Link("rh:bucket", URLUtils.getParentPath(requestPath)));
+                if (context.getCollectionName().endsWith(
+                        RequestContext.FS_FILES_SUFFIX)) {
+                    rep.addLink(new Link(
+                            "rh:bucket",
+                            URLUtils.getParentPath(requestPath)));
                 } else {
-                    rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath)));
+                    rep.addLink(new Link(
+                            "rh:coll",
+                            URLUtils.getParentPath(requestPath)));
                 }
             }
 
             rep.addLink(new Link("rh:indexes", requestPath));
 
-            rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
+            rep.addLink(new Link("rh",
+                    "curies",
+                    Configuration.RESTHEART_ONLINE_DOC_URL
                     + "/{rel}.html", true), true);
         }
 
@@ -96,22 +119,37 @@ public class IndexesRepresentationFactory {
         exchange.getResponseSender().send(rep.toString());
     }
 
-    private static void embeddedDocuments(List<DBObject> embeddedData, String requestPath, Representation rep, boolean isHalFull) {
+    private static void embeddedDocuments(
+            List<BsonDocument> embeddedData,
+            String requestPath,
+            Representation rep,
+            boolean isHalFull) {
         embeddedData.stream().forEach((d) -> {
-            Object _id = d.get("_id");
+            BsonValue _id = d.get("_id");
 
-            if (_id != null && (_id instanceof String || _id instanceof ObjectId)) {
+            if (_id != null 
+                    && (_id.isString()
+                    || _id.isObjectId())) {
                 Representation nrep = new Representation();
 
                 if (isHalFull) {
-                    nrep.addProperty("_type", RequestContext.TYPE.INDEX.name());
+                    nrep.addProperty("_type",
+                            new BsonString(RequestContext.TYPE.INDEX.name()));
                 }
 
                 nrep.addProperties(d);
-                
+
                 rep.addRepresentation("rh:index", nrep);
             } else {
-                rep.addWarning("index with _id " + _id + (_id == null ? " " : " of type " + _id.getClass().getSimpleName()) + "filtered out. Indexes can only have ids of type String");
+                rep.addWarning("index with _id "
+                        + _id
+                        + (_id == null
+                                ? " "
+                                : " of type "
+                                + _id.getBsonType().name())
+                        + "filtered out. Indexes can only "
+                        + "have ids of type String");
+                
                 LOGGER.debug("index missing string _id field", d);
             }
         });

@@ -17,10 +17,11 @@
  */
 package org.restheart.handlers.files;
 
-import com.mongodb.DBObject;
 import com.mongodb.DuplicateKeyException;
 import io.undertow.server.HttpServerExchange;
 import java.io.IOException;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.db.GridFsDAO;
 import org.restheart.db.GridFsRepository;
 import org.restheart.db.OperationResult;
@@ -44,7 +45,7 @@ public class PutFileHandler extends PipedHttpHandler {
         super();
         this.gridFsDAO = new GridFsDAO();
     }
-    
+
     /**
      * Creates a new instance of PutFileHandler
      *
@@ -67,24 +68,47 @@ public class PutFileHandler extends PipedHttpHandler {
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(
+            HttpServerExchange exchange, 
+            RequestContext context) 
+            throws Exception {
 
-        final DBObject content = context.getContent();
+        final BsonValue _props = context.getContent();
+        
+        // must be an object
+        if (!_props.isDocument()) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "data must be a json object");
+            return;
+        }
 
-        Object id = context.getDocumentId();
+        BsonDocument props = _props.asDocument();
 
-        if (content.get("_id") == null) {
-            content.put("_id", id);
-        } else if (!content.get("_id").equals(id)) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is different than id in URL");
+        BsonValue _id = context.getDocumentId();
+
+        if (props.containsKey("_id") 
+                && !props.get("_id").equals(_id)) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange, 
+                    HttpStatus.SC_NOT_ACCEPTABLE, 
+                    "_id in content body is different than id in URL");
             return;
         }
 
         OperationResult result;
 
         try {
-            if (context.getFile() != null) {
-                result = gridFsDAO.createFile(getDatabase(), context.getDBName(), context.getCollectionName(), id, content, context.getFile());
+            if (context.getFilePath() != null) {
+                result = gridFsDAO
+                        .createFile(
+                                getDatabase(), 
+                                context.getDBName(), 
+                                context.getCollectionName(), 
+                                _id, 
+                                props, 
+                                context.getFilePath());
             } else {
                 throw new RuntimeException("error. file data is null");
             }
@@ -92,21 +116,24 @@ public class PutFileHandler extends PipedHttpHandler {
             if (t instanceof DuplicateKeyException) {
                 // update not supported
                 String errMsg = "file resource update is not yet implemented";
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_IMPLEMENTED, errMsg);
+                ResponseHelper.endExchangeWithMessage(
+                        exchange, 
+                        HttpStatus.SC_NOT_IMPLEMENTED, 
+                        errMsg);
                 return;
             }
 
             throw t;
         }
-        
+
         context.setDbOperationResult(result);
 
         exchange.setStatusCode(result.getHttpCode());
-        
+
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }
-        
+
         exchange.endExchange();
     }
 }

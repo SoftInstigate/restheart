@@ -17,9 +17,9 @@
  */
 package org.restheart.hal.metadata.singletons;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.hal.metadata.singletons.Checker.PHASE;
 import org.restheart.handlers.RequestContext;
 import org.slf4j.Logger;
@@ -44,18 +44,19 @@ public class ContentSizeChecker implements Checker {
     public boolean check(
             HttpServerExchange exchange,
             RequestContext context,
-            BasicDBObject contentToCheck,
-            DBObject args) {
-        if (args instanceof BasicDBObject) {
-            BasicDBObject condition = (BasicDBObject) args;
+            BsonDocument contentToCheck,
+            BsonValue args) {
+        if (args.isDocument()) {
+            BsonDocument condition = args.asDocument();
 
             Integer maxSize = null;
-            Object _maxSize = condition.get("max");
+            BsonValue _maxSize = condition.get("max");
 
-            if (_maxSize != null && _maxSize instanceof Integer) {
-                maxSize = (Integer) _maxSize;
+            if (_maxSize != null && _maxSize.isInt32()) {
+                maxSize = _maxSize.asInt32().getValue();
             } else {
-                context.addWarning("checker wrong definition: 'max' property missing.");
+                context.addWarning("checker wrong definition: "
+                        + "'max' property missing.");
                 return true;
             }
 
@@ -66,10 +67,14 @@ public class ContentSizeChecker implements Checker {
                 minSize = (Integer) _minSize;
             }
 
-            return (minSize == null ? checkSize(exchange, -1, maxSize) : checkSize(exchange, minSize, maxSize));
+            return (minSize == null 
+                    ? checkSize(exchange, -1, maxSize) 
+                    : checkSize(exchange, minSize, maxSize));
 
         } else {
-            context.addWarning("checker wrong definition: args property must be a json object with 'min' and 'max' properties.");
+            context.addWarning("checker wrong definition: "
+                    + "args property must be a json object "
+                    + "with 'min' and 'max' properties.");
             return true;
         }
     }
@@ -80,9 +85,15 @@ public class ContentSizeChecker implements Checker {
             int maxSize) {
         long requestLenght = exchange.getRequestContentLength();
 
-        boolean ret = (minSize < 0 ? requestLenght <= maxSize : requestLenght >= minSize && requestLenght <= maxSize);
+        boolean ret = (minSize < 0 
+                ? requestLenght <= maxSize 
+                : requestLenght >= minSize && requestLenght <= maxSize);
 
-        LOGGER.debug("checkSize({}, {}, {}) -> {}", requestLenght, minSize, maxSize, ret);
+        LOGGER.debug("checkSize({}, {}, {}) -> {}", 
+                requestLenght, 
+                minSize, 
+                maxSize, 
+                ret);
 
         return ret;
     }

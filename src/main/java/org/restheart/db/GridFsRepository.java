@@ -17,20 +17,37 @@
  */
 package org.restheart.db;
 
-import com.mongodb.DBObject;
 import com.mongodb.DuplicateKeyException;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface GridFsRepository {
-    
-    OperationResult createFile(Database db, String dbName, String bucketName, Object fileId, DBObject properties, File data) throws IOException, DuplicateKeyException;
-    
-    OperationResult deleteFile(Database db, String dbName, String bucketName, Object fileId, String requestEtag, final boolean checkEtag );
-    
-    void deleteChunksCollection(Database db, String dbName, String bucketName);
+
+    OperationResult createFile(
+            Database db, 
+            String dbName, 
+            String bucketName, 
+            BsonValue fileId, 
+            BsonDocument properties, 
+            Path filePath) 
+            throws IOException, DuplicateKeyException;
+
+    OperationResult deleteFile(
+            Database db, 
+            String dbName, 
+            String bucketName, 
+            BsonValue fileId, 
+            String requestEtag, 
+            final boolean checkEtag);
+
+    void deleteChunksCollection(
+            Database db, 
+            String dbName, 
+            String bucketName);
 }

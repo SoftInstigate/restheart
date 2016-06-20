@@ -17,11 +17,9 @@
  */
 package org.restheart.hal.metadata.singletons;
 
-import com.mongodb.DBObject;
-import com.mongodb.util.JSONSerializers;
-import com.mongodb.util.ObjectSerializer;
 import io.undertow.server.HttpServerExchange;
-import org.bson.Document;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,27 +29,39 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SnooperHook implements Hook {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SnooperHook.class);
-    private final static ObjectSerializer SERIALIZER = JSONSerializers.getStrict();
+    private static final Logger LOGGER
+            = LoggerFactory.getLogger(SnooperHook.class);
 
     @Override
-    public boolean hook(HttpServerExchange exchange, RequestContext context, DBObject args) {
-        LOGGER.info("Request {} {} {}", 
-                context.getMethod(), 
+    public boolean hook(
+            HttpServerExchange exchange,
+            RequestContext context,
+            BsonValue args) {
+        LOGGER.info("Request {} {} {}",
+                context.getMethod(),
                 exchange.getRequestURI(), exchange.getStatusCode());
 
         if (context.getDbOperationResult() != null) {
-            Document newData = context.getDbOperationResult().getNewData();
-            Document oldData = context.getDbOperationResult().getOldData();
+            BsonDocument newData = context
+                    .getDbOperationResult()
+                    .getNewData();
+
+            BsonDocument oldData = context
+                    .getDbOperationResult()
+                    .getOldData();
+
+            LOGGER.info("**** New data ****\n{}", 
+                    newData == null ? null : newData.toJson());
             
-            LOGGER.info("**** New data ****\n{}", newData == null ? null : newData.toJson());
-            LOGGER.info("**** Old data ****\n{}", oldData == null ? null : oldData.toJson());
+            LOGGER.info("**** Old data ****\n{}", 
+                    oldData == null ? null : oldData.toJson());
         }
-        
-        DBObject responseContent = context.getResponseContent();
-        
+
+        BsonDocument responseContent = context.getResponseContent();
+
         if (responseContent != null) {
-            LOGGER.info("*** Response content ****\n{}", SERIALIZER.serialize(responseContent));
+            LOGGER.info("*** Response content ****\n{}",
+                    responseContent.toJson());
         }
 
         return true;

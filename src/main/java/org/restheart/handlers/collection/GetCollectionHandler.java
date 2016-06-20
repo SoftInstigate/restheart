@@ -17,12 +17,12 @@
  */
 package org.restheart.handlers.collection;
 
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
 import com.mongodb.MongoException;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.util.JSONParseException;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
+import org.bson.BsonDocument;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.hal.Representation;
@@ -62,16 +62,16 @@ public class GetCollectionHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        DBCollection coll = getDatabase().getCollectionLegacy(context.getDBName(), context.getCollectionName());
+        MongoCollection<BsonDocument> coll = getDatabase().getCollection(context.getDBName(), context.getCollectionName());
         
         long size = -1;
 
         if (context.isCount()) {
-            size = getDatabase().getCollectionSize(coll, exchange.getQueryParameters().get("filter"));
+            size = getDatabase().getCollectionSize(coll, context.getFiltersDocument());
         }
 
         // ***** get data
-        ArrayList<DBObject> data = null;
+        ArrayList<BsonDocument> data = null;
 
         if (context.getPagesize() > 0) {
 
@@ -80,9 +80,9 @@ public class GetCollectionHandler extends PipedHttpHandler {
                         coll, 
                         context.getPage(), 
                         context.getPagesize(),
-                        context.getSortBy(), 
-                        context.getFilter(), 
-                        context.getKeys(),
+                        context.getSortByDocument(), 
+                        context.getFiltersDocument(), 
+                        context.getProjectionDocument(),
                         context.getCursorAllocationPolicy());
             } catch (JSONParseException jpe) {
                 // the filter expression is not a valid json string
@@ -115,7 +115,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
 
             // call the ResponseTranformerMetadataHandler if piped in
             if (getNext() != null) {
-                DBObject responseContent = rep.asDBObject();
+                BsonDocument responseContent = rep.asBsonDocument();
                 context.setResponseContent(responseContent);
 
                 getNext().handleRequest(exchange, context);

@@ -17,7 +17,6 @@
  */
 package org.restheart.handlers.metadata;
 
-import com.mongodb.BasicDBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import java.util.List;
@@ -53,7 +52,10 @@ public class CheckHandler extends PipedHttpHandler {
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(
+            HttpServerExchange exchange, 
+            RequestContext context) 
+            throws Exception {
         if (doesCheckerAppy()) {
             if (check(exchange, context)) {
                 getNext().handleRequest(exchange, context);
@@ -69,7 +71,10 @@ public class CheckHandler extends PipedHttpHandler {
                     });
                 }
 
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, sb.toString());
+                ResponseHelper.endExchangeWithMessage(
+                        exchange, 
+                        HttpStatus.SC_BAD_REQUEST, 
+                        sb.toString());
             }
         } else {
             getNext().handleRequest(exchange, context);
@@ -81,15 +86,24 @@ public class CheckHandler extends PipedHttpHandler {
                 && !checkers.isEmpty();
     }
 
-    private boolean check(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
+    private boolean check(
+            HttpServerExchange exchange, 
+            RequestContext context) 
+            throws InvalidMetadataException {
         if (context.getContent() != null
-                && !(context.getContent() instanceof BasicDBObject)) {
-            throw new RuntimeException("this hanlder only supports content of type json object; content "
-                    + context.getContent());
+                && !context.getContent().isDocument()) {
+            throw new RuntimeException(
+                    "this hanlder only supports content of type json object; "
+                            + "content type: " + context
+                                    .getContent()
+                                    .getBsonType()
+                                    .name());
         }
 
         return checkers.stream().allMatch(checker -> 
-                checker.check(exchange, context, 
-                        (BasicDBObject) context.getContent(), null));
+                checker.check(exchange,
+                        context, 
+                        context.getContent().asDocument(),
+                        null));
     }
 }

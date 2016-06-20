@@ -17,19 +17,18 @@
  */
 package org.restheart.db;
 
-import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
+import com.mongodb.client.MongoDatabase;
 import com.mongodb.util.JSONParseException;
 
-
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
 import org.bson.BsonDocument;
+import org.bson.BsonString;
 
 import org.restheart.handlers.IllegalQueryParamenterException;
 
@@ -38,8 +37,8 @@ import org.restheart.handlers.IllegalQueryParamenterException;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public interface Database {
-
-    BasicDBObject METADATA_QUERY = new BasicDBObject("_id", "_properties");
+    BsonDocument METADATA_QUERY
+            = new BsonDocument("_id", new BsonString("_properties"));
 
     /**
      *
@@ -49,7 +48,11 @@ public interface Database {
      * @param checkEtag
      * @return HTTP status code
      */
-    OperationResult deleteCollection(String dbName, String collectionName, String requestEtag, boolean checkEtag);
+    OperationResult deleteCollection(
+            String dbName,
+            String collectionName,
+            String requestEtag,
+            boolean checkEtag);
 
     /**
      *
@@ -58,7 +61,10 @@ public interface Database {
      * @param checkEtag
      * @return HTTP status code
      */
-    OperationResult deleteDatabase(String dbName, String requestEtag, boolean checkEtag);
+    OperationResult deleteDatabase(
+            String dbName,
+            String requestEtag,
+            boolean checkEtag);
 
     /**
      * @param dbName
@@ -66,14 +72,16 @@ public interface Database {
      *
      */
     boolean doesDbExist(String dbName);
-    
+
     /**
      * @param dbName
      * @param collName
      * @return true if exists the collection collName exists in DB dbName
      *
      */
-    boolean doesCollectionExist(String dbName, String collName);
+    boolean doesCollectionExist(
+            String dbName,
+            String collName);
 
     /**
      *
@@ -81,7 +89,9 @@ public interface Database {
      * @param collectionName
      * @return A Collection
      */
-    DBCollection getCollectionLegacy(String dbName, String collectionName);
+    DBCollection getCollectionLegacy(
+            String dbName,
+            String collectionName);
 
     /**
      *
@@ -89,8 +99,10 @@ public interface Database {
      * @param collectionName
      * @return A Collection
      */
-    MongoCollection<BsonDocument> getCollection(String dbName, String collectionName);
-    
+    MongoCollection<BsonDocument> getCollection(
+            String dbName,
+            String collectionName);
+
     /**
      *
      * @param collection
@@ -100,9 +112,16 @@ public interface Database {
      * @param filter
      * @param keys
      * @param cursorAllocationPolicy
-     * @return Collection Data as ArrayList of DBObject
+     * @return Collection Data as ArrayList of BsonDocument
      */
-    ArrayList<DBObject> getCollectionData(DBCollection collection, int page, int pagesize, Deque<String> sortBy, Deque<String> filter, Deque<String> keys, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy);
+    ArrayList<BsonDocument> getCollectionData(
+            MongoCollection<BsonDocument> collection,
+            int page,
+            int pagesize,
+            BsonDocument sortBy,
+            BsonDocument filter,
+            BsonDocument keys,
+            FindIterablePool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy);
 
     /**
      *
@@ -110,7 +129,9 @@ public interface Database {
      * @param collectionName
      * @return Collection properties
      */
-    BsonDocument getCollectionProperties(String dbName, String collectionName);
+    BsonDocument getCollectionProperties(
+            String dbName,
+            String collectionName);
 
     /**
      *
@@ -119,14 +140,23 @@ public interface Database {
      * @return the number of documents in the given collection (taking into
      * account the filters in case)
      */
-    long getCollectionSize(DBCollection collection, Deque<String> filters);
+    long getCollectionSize(
+            final MongoCollection<BsonDocument> collection,
+            BsonDocument filters);
 
     /**
      *
      * @param dbName
      * @return the Mongo DB
      */
-    DB getDB(String dbName);
+    DB getDBLegacy(String dbName);
+
+    /**
+     *
+     * @param dbName
+     * @return the MongoDatabase
+     */
+    MongoDatabase getDatabase(String dbName);
 
     /**
      * @param collections the collection names
@@ -144,7 +174,11 @@ public interface Database {
      * @throws org.restheart.handlers.IllegalQueryParamenterException
      *
      */
-    List<BsonDocument> getDatabaseData(String dbName, List<String> collections, int page, int pagesize) throws IllegalQueryParamenterException;
+    List<BsonDocument> getDatabaseData(
+            String dbName, List<String> collections,
+            int page,
+            int pagesize)
+            throws IllegalQueryParamenterException;
 
     /**
      *
@@ -154,10 +188,10 @@ public interface Database {
 
     /**
      *
-     * @param db
+     * @param dbName
      * @return A List of collection names
      */
-    List<String> getCollectionNames(DB db);
+    List<String> getCollectionNames(String dbName);
 
     /**
      * @param dbName
@@ -177,7 +211,14 @@ public interface Database {
      * @param checkEtag
      * @return
      */
-    OperationResult upsertCollection(String dbName, String collectionName, DBObject content, String requestEtag, boolean updating, boolean patching, boolean checkEtag);
+    OperationResult upsertCollection(
+            String dbName,
+            String collectionName,
+            BsonDocument content,
+            String requestEtag,
+            boolean updating,
+            boolean patching,
+            boolean checkEtag);
 
     /**
      *
@@ -189,7 +230,13 @@ public interface Database {
      * @param checkEtag
      * @return
      */
-    OperationResult upsertDB(String dbName, DBObject content, String requestEtag, boolean updating, boolean patching, boolean checkEtag);
+    OperationResult upsertDB(
+            String dbName,
+            BsonDocument content,
+            String requestEtag,
+            boolean updating,
+            boolean patching,
+            boolean checkEtag);
 
     /**
      *
@@ -198,7 +245,10 @@ public interface Database {
      * @param indexId
      * @return the operation result
      */
-    int deleteIndex(String dbName, String collection, String indexId);
+    int deleteIndex(
+            String dbName,
+            String collection,
+            String indexId);
 
     /**
      *
@@ -206,21 +256,9 @@ public interface Database {
      * @param collectionName
      * @return A List of indexes for collectionName in dbName
      */
-    List<DBObject> getCollectionIndexes(String dbName, String collectionName);
-
-    /**
-     * Returs the DBCursor of the collection applying sorting and filtering.
-     *
-     * @param collection the mongodb DBCollection object
-     * @param sortBy the Deque collection of fields to use for sorting (prepend
-     * field name with - for descending sorting)
-     * @param filters the filters to apply. it is a Deque collection of mongodb
-     * query conditions.
-     * @param keys
-     * @return
-     * @throws JSONParseException
-     */
-    DBCursor getCollectionDBCursor(DBCollection collection, Deque<String> sortBy, Deque<String> filters, Deque<String> keys) throws JSONParseException;
+    List<BsonDocument> getCollectionIndexes(
+            String dbName,
+            String collectionName);
 
     /**
      *
@@ -229,6 +267,29 @@ public interface Database {
      * @param keys
      * @param options
      */
-    void createIndex(String dbName, String collection, DBObject keys, DBObject options);
+    void createIndex(
+            String dbName,
+            String collection,
+            BsonDocument keys,
+            BsonDocument options);
 
+    /**
+     * Returs the FindIterable of the collection applying sorting, filtering and
+     * projection.
+     *
+     * @param collection the mongodb MongoCollection<BsonDocument> object
+     * @param sortBy the Deque collection of fields to use for sorting (prepend
+     * field name with - for descending sorting)
+     * @param filters the filters to apply. it is a Deque collection of mongodb
+     * query conditions.
+     * @param keys
+     * @return
+     * @throws JSONParseException
+     */
+    FindIterable<BsonDocument> getFindIterable(
+            MongoCollection<BsonDocument> collection,
+            BsonDocument sortBy,
+            BsonDocument filters,
+            BsonDocument keys)
+            throws JSONParseException;
 }

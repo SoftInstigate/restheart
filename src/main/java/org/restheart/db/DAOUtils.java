@@ -17,9 +17,6 @@
  */
 package org.restheart.db;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.MongoCollection;
 import static com.mongodb.client.model.Filters.eq;
@@ -30,13 +27,9 @@ import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
 import com.mongodb.client.result.UpdateResult;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
-import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
@@ -45,7 +38,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.mongodb.client.model.Filters.and;
 import java.util.Optional;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonObjectId;
 
 /**
  *
@@ -75,96 +70,12 @@ public class DAOUtils {
     }
 
     /**
-     * @param rows list of DBObject rows as returned by getDataFromCursor()
-     * @return
-     */
-    public static List<Map<String, Object>> getDataFromRows(final List<DBObject> rows) {
-        if (rows == null) {
-            return null;
-        }
-
-        List<Map<String, Object>> data = new ArrayList<>();
-
-        rows.stream().map((row) -> {
-            TreeMap<String, Object> properties = getDataFromRow(row);
-
-            return properties;
-        }).forEach((item) -> {
-            data.add(item);
-        });
-
-        return data;
-    }
-
-    /**
-     * @param row a DBObject row
-     * @param fieldsToFilter list of field names to filter
-     * @return
-     */
-    public static TreeMap<String, Object> getDataFromRow(final DBObject row, String... fieldsToFilter) {
-        if (row == null) {
-            return null;
-        }
-
-        if (row instanceof BasicDBList) {
-            throw new IllegalArgumentException("cannot convert an array to a map");
-        }
-
-        List<String> _fieldsToFilter = Arrays.asList(fieldsToFilter);
-
-        TreeMap<String, Object> properties = new TreeMap<>();
-
-        row.keySet().stream().forEach((key) -> {
-            if (!_fieldsToFilter.contains(key)) {
-                properties.put(key, getElement(row.get(key)));
-            }
-        });
-
-        return properties;
-    }
-
-    /**
-     * @param row a DBObject row
-     * @param fieldsToFilter list of field names to filter
-     * @return
-     */
-    private static Object getElement(final Object element) {
-        if (element == null) {
-            return null;
-        }
-
-        if (element instanceof BasicDBList) {
-            ArrayList<Object> ret = new ArrayList<>();
-
-            BasicDBList dblist = (BasicDBList) element;
-
-            dblist.stream().forEach((subel) -> {
-                ret.add(getElement(subel));
-            });
-
-            return ret;
-        } else if (element instanceof BasicDBObject) {
-            TreeMap<String, Object> ret = new TreeMap<>();
-
-            BasicDBObject el = (BasicDBObject) element;
-
-            el.keySet().stream().forEach((key) -> {
-                ret.put(key, el.get(key));
-            });
-
-            return ret;
-        } else {
-            return element;
-        }
-    }
-
-    /**
      *
      * @param newContent the value of newContent
-     * @return a not null DBObject
+     * @return a not null BsonDocument
      */
-    protected static DBObject validContent(final DBObject newContent) {
-        return (newContent == null) ? new BasicDBObject() : newContent;
+    protected static BsonDocument validContent(final BsonDocument newContent) {
+        return (newContent == null) ? new BsonDocument() : newContent;
     }
 
     /**
@@ -178,15 +89,22 @@ public class DAOUtils {
      * @return the old document
      */
     public static OperationResult updateDocument(
-            MongoCollection<Document> coll,
+            MongoCollection<BsonDocument> coll,
             Object documentId,
             BsonDocument shardKeys,
-            Document data,
+            BsonDocument data,
             boolean replace) {
-        return updateDocument(coll, documentId, shardKeys, data, replace, false);
+        return updateDocument(
+                coll, 
+                documentId, 
+                shardKeys, 
+                data, 
+                replace, 
+                false);
     }
 
-    private static final Bson IMPOSSIBLE_CONDITION = eq("_etag", new ObjectId());
+    private static final Bson IMPOSSIBLE_CONDITION 
+            = eq("_etag", new ObjectId());
 
     /**
      *
@@ -200,18 +118,19 @@ public class DAOUtils {
      * @return the new or old document depending on returnNew
      */
     public static OperationResult updateDocument(
-            MongoCollection<Document> coll,
+            MongoCollection<BsonDocument> coll,
             Object documentId,
             BsonDocument shardKeys,
-            Document data,
+            BsonDocument data,
             boolean replace,
             boolean returnNew) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(data);
 
-        Document document = getUpdateDocument(data);
+        BsonDocument document = getUpdateDocument(data);
 
         Bson query;
+
         boolean idPresent = true;
 
         if (documentId instanceof Optional
@@ -230,7 +149,7 @@ public class DAOUtils {
             // here we cannot use the atomic findOneAndReplace because it does
             // not support update operators.
 
-            Document oldDocument;
+            BsonDocument oldDocument;
 
             if (idPresent) {
                 oldDocument = coll.findOneAndDelete(query);
@@ -238,25 +157,34 @@ public class DAOUtils {
                 oldDocument = null;
             }
 
-            Document newDocument = coll.findOneAndUpdate(query, document, FAU_AFTER_UPSERT_OPS);
+            BsonDocument newDocument = coll.findOneAndUpdate(
+                    query, 
+                    document, 
+                    FAU_AFTER_UPSERT_OPS);
 
             return new OperationResult(-1, oldDocument, newDocument);
         } else if (returnNew) {
-            Document newDocument = coll.findOneAndUpdate(query, document, FAU_AFTER_UPSERT_OPS);
+            BsonDocument newDocument = coll.findOneAndUpdate(
+                    query, 
+                    document, 
+                    FAU_AFTER_UPSERT_OPS);
 
             return new OperationResult(-1, null, newDocument);
         } else {
-            Document oldDocument = coll.findOneAndUpdate(query, document, FAU_UPSERT_OPS);
+            BsonDocument oldDocument = coll.findOneAndUpdate(
+                    query, 
+                    document, 
+                    FAU_UPSERT_OPS);
 
             return new OperationResult(-1, oldDocument, null);
         }
     }
 
     public static boolean restoreDocument(
-            MongoCollection<Document> coll,
+            MongoCollection<BsonDocument> coll,
             Object documentId,
             BsonDocument shardKeys,
-            Document data,
+            BsonDocument data,
             Object etag) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(documentId);
@@ -284,15 +212,15 @@ public class DAOUtils {
     }
 
     public static BulkOperationResult bulkUpsertDocuments(
-            MongoCollection<Document> coll,
-            final List<Document> documents,
+            MongoCollection<BsonDocument> coll,
+            final BsonArray documents,
             BsonDocument shardKeys) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(documents);
 
         ObjectId newEtag = new ObjectId();
 
-        List<WriteModel<Document>> wm = getBulkWriteModel(
+        List<WriteModel<BsonDocument>> wm = getBulkWriteModel(
                 coll,
                 documents,
                 shardKeys,
@@ -303,78 +231,80 @@ public class DAOUtils {
         return new BulkOperationResult(HttpStatus.SC_OK, newEtag, result);
     }
 
-    private static List<WriteModel<Document>> getBulkWriteModel(
-            final MongoCollection<Document> mcoll,
-            final List<Document> documents,
+    private static List<WriteModel<BsonDocument>> getBulkWriteModel(
+            final MongoCollection<BsonDocument> mcoll,
+            final BsonArray documents,
             BsonDocument shardKeys,
             final ObjectId etag) {
         Objects.requireNonNull(mcoll);
         Objects.requireNonNull(documents);
 
-        List<WriteModel<Document>> updates = new ArrayList<>();
+        List<WriteModel<BsonDocument>> updates = new ArrayList<>();
 
-        documents.stream().forEach((document) -> {
-            // generate new id if missing, will be an insert
-            if (!document.containsKey("_id")) {
-                document.put("_id", new ObjectId());
-            }
+        documents.stream().filter(_document -> _document.isDocument())
+                .forEach(_document -> {
+                    BsonDocument document = _document.asDocument();
 
-            // add the _etag
-            document.put("_etag", etag);
+                    // generate new id if missing, will be an insert
+                    if (!document.containsKey("_id")) {
+                        document
+                                .put("_id", new BsonObjectId(new ObjectId()));
+                    }
 
-            Bson filter = eq("_id", document.get("_id"));
+                    // add the _etag
+                    document.put("_etag", new BsonObjectId(etag));
 
-            if (shardKeys != null) {
-                filter = and(filter, shardKeys);
-            }
+                    Bson filter = eq("_id", document.get("_id"));
 
-            updates.add(new UpdateOneModel<>(
-                    filter,
-                    getUpdateDocument(document),
-                    new UpdateOptions().upsert(true)
-            ));
-        });
+                    if (shardKeys != null) {
+                        filter = and(filter, shardKeys);
+                    }
+
+                    updates.add(new UpdateOneModel<>(
+                            filter,
+                            getUpdateDocument(document),
+                            new UpdateOptions().upsert(true)
+                    ));
+                });
 
         return updates;
     }
 
     /**
      *
-     * @param document
+     * @param data
      * @return the document for update operation, with proper update operators
      */
-    public static Document getUpdateDocument(Document document) {
-        Document ret = new Document();
+    public static BsonDocument getUpdateDocument(BsonDocument data) {
+        BsonDocument ret = new BsonDocument();
 
         // add other update operators
-        document.keySet().stream().filter((String key)
+        data.keySet().stream().filter((String key)
                 -> UPDATE_OPERATORS.contains(key))
                 .forEach(key -> {
-                    ret.put(key, document.get(key));
+                    ret.put(key, data.get(key));
                 });
 
         // add properties to $set update operator
         List<String> setKeys;
 
-        setKeys = document.keySet().stream().filter((String key)
+        setKeys = data.keySet().stream().filter((String key)
                 -> !UPDATE_OPERATORS.contains(key))
                 .collect(Collectors.toList());
 
         if (setKeys != null && !setKeys.isEmpty()) {
-            Document set = new Document();
+            BsonDocument set = new BsonDocument();
 
             setKeys.stream().forEach((String key)
                     -> {
-                set.append(key, document.get(key));
+                set.append(key, data.get(key));
             });
 
             if (!set.isEmpty()) {
                 if (ret.get("$set") == null) {
                     ret.put("$set", set);
-                } else if (ret.get("$set") instanceof Document){
-                    ((Document)ret.get("$set")).putAll(set);
-                } else if (ret.get("$set") instanceof DBObject){
-                    ((DBObject)ret.get("$set")).putAll(set);
+                } else if (ret.get("$set").isDocument()) {
+                    ret.get("$set").asDocument().putAll(set);
                 } else {
                     // update is going to fail on mongodb
                     // error 9, Modifiers operate on fields but we found a String instead
