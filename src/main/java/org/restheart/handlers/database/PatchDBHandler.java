@@ -17,10 +17,10 @@
  */
 package org.restheart.handlers.database;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.db.OperationResult;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.RepresentationTransformer;
@@ -59,53 +59,83 @@ public class PatchDBHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.getDBName().isEmpty() || context.getDBName().startsWith("_")) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, db name cannot be empty or start with _");
+    public void handleRequest(
+            HttpServerExchange exchange, 
+            RequestContext context) 
+            throws Exception {
+        if (context.getDBName().isEmpty() 
+                || context.getDBName().startsWith("_")) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange, HttpStatus.SC_NOT_ACCEPTABLE, 
+                    "wrong request, db name cannot be empty or start with _");
             return;
         }
 
-        DBObject content = context.getContent();
+        BsonValue _content = context.getContent();
 
-        if (content == null) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data is empty");
+        if (_content == null) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange, 
+                    HttpStatus.SC_NOT_ACCEPTABLE, 
+                    "data is empty");
             return;
         }
 
         // cannot PATCH an array
-        if (content instanceof BasicDBList) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
+        if (!_content .isDocument()) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange, 
+                    HttpStatus.SC_NOT_ACCEPTABLE, "data must be a json object");
             return;
         }
+        
+        BsonDocument content = _content.asDocument();
 
         // check RTL metadata
-        if (content.containsField(RepresentationTransformer.RTS_ELEMENT_NAME)) {
+        if (content.containsKey(RepresentationTransformer.RTS_ELEMENT_NAME)) {
             try {
                 RepresentationTransformer.getFromJson(content);
             } catch (InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong representation transform logic definition. " + ex.getMessage(), ex);
+                ResponseHelper.endExchangeWithMessage(
+                        exchange, 
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "wrong representation transform logic definition. " 
+                                + ex.getMessage(), 
+                        ex);
                 return;
             }
         }
 
-        OperationResult result = getDatabase().upsertDB(context.getDBName(), content, context.getETag(), true, true, context.isETagCheckRequired());
+        OperationResult result = getDatabase().upsertDB(
+                context.getDBName(), 
+                content, 
+                context.getETag(), 
+                true, 
+                true, 
+                context.isETagCheckRequired());
 
         context.setDbOperationResult(result);
         
         // inject the etag
         if (result.getEtag() != null) {
-            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+            exchange.getResponseHeaders().put(
+                    Headers.ETAG, 
+                    result.getEtag().toString());
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
-                    "The database's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
+            ResponseHelper.endExchangeWithMessage(
+                    exchange, 
+                    HttpStatus.SC_CONFLICT,
+                    "The database's ETag must be provided using the '" 
+                            + Headers.IF_MATCH 
+                            + "' header.");
             return;
         }
 
         // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
+        if (context.getWarnings() != null 
+                && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
         } else {
             exchange.setStatusCode(result.getHttpCode());

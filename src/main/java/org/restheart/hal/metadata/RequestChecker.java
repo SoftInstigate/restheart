@@ -17,10 +17,11 @@
  */
 package org.restheart.hal.metadata;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.DBObject;
 import java.util.ArrayList;
 import java.util.List;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 
 /**
  *
@@ -33,7 +34,7 @@ public class RequestChecker {
     public final static String SKIP_NOT_SUPPORTED = "skipNotSupported";
 
     private final String name;
-    private final DBObject args;
+    private final BsonDocument args;
     private final boolean skipNotSupported;
 
     /**
@@ -41,7 +42,7 @@ public class RequestChecker {
      * @param checker
      * @param args
      */
-    public RequestChecker(String checker, DBObject args) {
+    public RequestChecker(String checker, BsonDocument args) {
         this.name = checker;
         this.args = args;
         this.skipNotSupported = false;
@@ -54,7 +55,7 @@ public class RequestChecker {
      * @param skipNotSupported false if the checker should fail if it does not
      * support the request
      */
-    public RequestChecker(String checker, DBObject args, boolean skipNotSupported) {
+    public RequestChecker(String checker, BsonDocument args, boolean skipNotSupported) {
         this.name = checker;
         this.args = args;
         this.skipNotSupported = skipNotSupported;
@@ -70,28 +71,28 @@ public class RequestChecker {
     /**
      * @return the args
      */
-    public DBObject getArgs() {
+    public BsonDocument getArgs() {
         return args;
     }
 
-    public static Object getProps(DBObject props) {
+    public static BsonValue getProps(BsonDocument props) {
         return props.get(ROOT_KEY);
     }
 
-    public static List<RequestChecker> getFromJson(DBObject props) throws InvalidMetadataException {
-        Object _scs = getProps(props);
+    public static List<RequestChecker> getFromJson(BsonDocument props) throws InvalidMetadataException {
+        BsonValue _scs = getProps(props);
 
-        if (_scs == null || !(_scs instanceof BasicDBList)) {
+        if (_scs == null || !_scs.isArray()) {
             throw new InvalidMetadataException((_scs == null ? "missing '" : "invalid '") + ROOT_KEY + "' element. it must be a json array");
         }
 
-        BasicDBList scs = (BasicDBList) _scs;
+        BsonArray scs = _scs.asArray();
 
         List<RequestChecker> ret = new ArrayList<>();
 
-        for (Object o : scs) {
-            if (o instanceof DBObject) {
-                ret.add(getSingleFromJson((DBObject) o));
+        for (BsonValue o : scs.getValues()) {
+            if (o.isDocument()) {
+                ret.add(getSingleFromJson(o.asDocument()));
             } else {
                 throw new InvalidMetadataException("invalid '" + ROOT_KEY + "'. Array elements must be json objects");
             }
@@ -100,23 +101,23 @@ public class RequestChecker {
         return ret;
     }
 
-    private static RequestChecker getSingleFromJson(DBObject props) throws InvalidMetadataException {
-        Object _name = props.get(NAME_KEY);
+    private static RequestChecker getSingleFromJson(BsonDocument props) throws InvalidMetadataException {
+        BsonValue _name = props.get(NAME_KEY);
 
-        if (_name == null || !(_name instanceof String)) {
+        if (_name == null || _name.isString()) {
             throw new InvalidMetadataException((_name == null ? "missing '" : "invalid '") + NAME_KEY + "' element. it must be of type String");
         }
 
-        String name = (String) _name;
+        String name = _name.asString().getValue();
 
-        Object _args = props.get(ARGS_KEY);
+        BsonValue _args = props.get(ARGS_KEY);
 
         // args is optional
-        if (_args != null && !(_args instanceof DBObject)) {
+        if (_args != null && !(_args.isDocument())) {
             throw new InvalidMetadataException("invalid '" + ARGS_KEY + "' element. it must be a json object");
         }
 
-        DBObject args = (DBObject) _args;
+        BsonDocument args = _args == null ? null : _args.asDocument();
 
         Object _skipNotSupported = props.get(SKIP_NOT_SUPPORTED);
 

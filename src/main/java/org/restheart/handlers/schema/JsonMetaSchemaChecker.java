@@ -17,10 +17,10 @@
  */
 package org.restheart.handlers.schema;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.io.InputStream;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.everit.json.schema.loader.SchemaLoader;
@@ -41,7 +41,8 @@ import org.slf4j.LoggerFactory;
 public class JsonMetaSchemaChecker implements Checker {
     static final String JSON_METASCHEMA_FILENAME = "json-schema-draft-v4.json";
     
-    static final Logger LOGGER = LoggerFactory.getLogger(JsonMetaSchemaChecker.class);
+    static final Logger LOGGER =
+            LoggerFactory.getLogger(JsonMetaSchemaChecker.class);
 
     private static Schema schema;
 
@@ -64,8 +65,8 @@ public class JsonMetaSchemaChecker implements Checker {
     public boolean check(
             HttpServerExchange exchange, 
             RequestContext context, 
-            BasicDBObject contentToCheck, 
-            DBObject args) {
+            BsonDocument contentToCheck, 
+            BsonValue args) {
         if (contentToCheck == null) {
             return false;
         }
@@ -87,8 +88,10 @@ public class JsonMetaSchemaChecker implements Checker {
     @Override
     public PHASE getPhase(RequestContext context) {
         if (context.getMethod() == RequestContext.METHOD.PATCH
-                || CheckersUtils.doesRequestUsesDotNotation(context.getContent())
-                || CheckersUtils.doesRequestUsesUpdateOperators(context.getContent())) {
+                || CheckersUtils.doesRequestUsesDotNotation(
+                        context.getContent())
+                || CheckersUtils.doesRequestUsesUpdateOperators(
+                        context.getContent())) {
             return PHASE.AFTER_WRITE;
         } else {
             return PHASE.BEFORE_WRITE;

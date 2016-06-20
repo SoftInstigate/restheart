@@ -18,11 +18,12 @@
 package org.restheart.handlers.schema;
 
 import com.google.common.collect.Lists;
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
+import org.bson.BsonDocument;
+import org.bson.BsonObjectId;
+import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.hal.metadata.singletons.Transformer;
 import org.restheart.handlers.RequestContext;
@@ -38,10 +39,17 @@ public class JsonSchemaTransformer implements Transformer {
     static final Logger LOGGER = LoggerFactory
             .getLogger(JsonSchemaTransformer.class);
 
+    private static final BsonString $SCHEMA
+            = new BsonString("http://json-schema.org/draft-04/schema#");
+
     @Override
-    public void tranform(HttpServerExchange exchange, 
-            RequestContext context, 
-            final DBObject contentToTransform, DBObject args) {
+    public void tranform(HttpServerExchange exchange,
+            RequestContext context,
+            final BsonDocument contentToTransform,
+            BsonValue args) {
+        
+        BsonDocument content = context.getContent().asDocument();
+        
         if (context.getType() == RequestContext.TYPE.SCHEMA) {
             if (context.getMethod() == RequestContext.METHOD.GET) {
                 unescapeSchema(context.getResponseContent());
@@ -53,76 +61,93 @@ public class JsonSchemaTransformer implements Transformer {
                         context.getDBName(),
                         context.getDocumentId());
 
-                context.getContent().put("id", uri.toString());
+                content.put("id", new BsonString(uri.toString()));
 
                 // escape all $ prefixed keys
                 escapeSchema(contentToTransform);
 
                 // add (overwrite) $schema field
-                contentToTransform.put("_$schema",
-                        "http://json-schema.org/draft-04/schema#");
+                contentToTransform.put("_$schema", $SCHEMA);
             }
         } else if (context.getType() == RequestContext.TYPE.SCHEMA_STORE) {
             if (context.getMethod() == RequestContext.METHOD.POST) {
                 // generate id as specs mandates
-                Object schemaId;
+                BsonValue schemaId;
 
-                if (context.getContent().get("_id") == null) {
-                    schemaId = new ObjectId();
-                    context.getContent().put("id", schemaId);
+                if (!content.containsKey("_id")) {
+                    schemaId = new BsonObjectId(new ObjectId());
+                    content.put(
+                            "id",
+                            schemaId);
                 } else {
-                    schemaId = context.getContent().get("_id");
+                    schemaId = content.get("_id");
                 }
 
-                SchemaStoreURL uri = new SchemaStoreURL(context.getDBName(), schemaId);
+                SchemaStoreURL uri = new SchemaStoreURL(
+                        context.getDBName(),
+                        schemaId);
 
-                context.getContent().put("id", uri.toString());
+                content.put("id", new BsonString(uri.toString()));
 
                 // escape all $ prefixed keys
                 escapeSchema(contentToTransform);
 
                 // add (overwrite) $schema field
-                contentToTransform.put("_$schema",
-                        "http://json-schema.org/draft-04/schema#");
+                contentToTransform.put("_$schema", $SCHEMA);
             } else if (context.getMethod() == RequestContext.METHOD.GET) {
                 // apply transformation on embedded schemas
 
-                BasicDBObject _embedded = (BasicDBObject) context
-                        .getResponseContent().get("_embedded");
+                if (context.getResponseContent().containsKey("_embedded")) {
 
-                if (_embedded != null) {
-                    // execute the logic on children documents
-                    BasicDBList docs = (BasicDBList) _embedded.get("rh:schema");
+                    BsonValue _embedded = context
+                            .getResponseContent()
+                            .get("_embedded");
 
-                    if (docs != null) {
-                        docs.keySet().stream().map((k) -> (DBObject) 
-                                docs.get(k))
-                                .forEach((doc) -> {
-                                    unescapeSchema(doc);
-                                });
+                    if (_embedded.isDocument()
+                            && _embedded.asDocument()
+                            .containsKey("rh:schema")) {
+
+                        // execute the logic on children documents
+                        BsonValue docs = _embedded
+                                .asDocument()
+                                .get("rh:schema");
+
+                        if (docs.isArray()) {
+                            docs.asArray().stream()
+                                    .filter(doc -> {
+                                        return doc.isDocument();
+                                    })
+                                    .forEach((doc) -> {
+                                        unescapeSchema(doc.asDocument());
+                                    });
+                        }
                     }
                 }
             }
         }
     }
 
-    public static void escapeSchema(DBObject schema) {
-        DBObject escaped = (DBObject) JsonUtils.escapeKeys(schema, false);
+    public static void escapeSchema(BsonDocument schema) {
+        BsonValue escaped = JsonUtils.escapeKeys(schema, false);
 
-        List<String> keys = Lists.newArrayList(schema.keySet().iterator());
+        if (escaped.isDocument()) {
+            List<String> keys = Lists.newArrayList(schema.keySet().iterator());
 
-        keys.stream().forEach(f -> schema.removeField(f));
+            keys.stream().forEach(f -> schema.remove(f));
 
-        schema.putAll(escaped);
+            schema.putAll(escaped.asDocument());
+        }
     }
 
-    public static void unescapeSchema(DBObject schema) {
-        DBObject unescaped = (DBObject) JsonUtils.unescapeKeys(schema);
+    public static void unescapeSchema(BsonDocument schema) {
+        BsonValue unescaped = JsonUtils.unescapeKeys(schema);
 
-        List<String> keys = Lists.newArrayList(schema.keySet().iterator());
+        if (unescaped.isDocument()) {
+            List<String> keys = Lists.newArrayList(schema.keySet().iterator());
 
-        keys.stream().forEach(f -> schema.removeField(f));
+            keys.stream().forEach(f -> schema.remove(f));
 
-        schema.putAll(unescaped);
+            schema.putAll(unescaped.asDocument());
+        }
     }
 }

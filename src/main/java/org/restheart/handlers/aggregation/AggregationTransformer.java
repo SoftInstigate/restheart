@@ -17,12 +17,12 @@
  */
 package org.restheart.handlers.aggregation;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import java.util.Optional;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.hal.metadata.AbstractAggregationOperation;
 import org.restheart.hal.metadata.singletons.Transformer;
 import org.restheart.handlers.RequestContext;
@@ -43,7 +43,7 @@ public class AggregationTransformer implements Transformer {
     @Override
     public void tranform(HttpServerExchange exchange,
             RequestContext context,
-            final DBObject contentToTransform, DBObject args) {
+            final BsonDocument contentToTransform, BsonValue args) {
 
         if (contentToTransform == null) {
             // nothing to do
@@ -51,7 +51,7 @@ public class AggregationTransformer implements Transformer {
         }
 
         if (context.getType() == RequestContext.TYPE.COLLECTION) {
-            BasicDBList aggrs = getAggregationMetadata(contentToTransform);
+            BsonArray aggrs = getAggregationMetadata(contentToTransform);
 
             if (aggrs == null) {
                 // nothing to do
@@ -61,51 +61,51 @@ public class AggregationTransformer implements Transformer {
             if (context.getMethod() == RequestContext.METHOD.PUT
                     || context.getMethod() == RequestContext.METHOD.PATCH) {
                 contentToTransform.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
-                        (DBObject) JsonUtils.escapeKeys(aggrs, true));
+                        JsonUtils.escapeKeys(aggrs, true));
             } else if (context.getMethod() == RequestContext.METHOD.GET) {
                 contentToTransform.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
-                        (DBObject) JsonUtils.unescapeKeys(aggrs));
+                        JsonUtils.unescapeKeys(aggrs));
             }
         } else if ((context.getType() == RequestContext.TYPE.DB)
                 && context.getMethod() == RequestContext.METHOD.GET) {
             // apply transformation on embedded schemas
 
-            BasicDBObject _embedded = (BasicDBObject) contentToTransform.get("_embedded");
+            if (contentToTransform.containsKey("_embedded")) {
+                BsonValue _embedded = contentToTransform.get("_embedded");
 
-            if (_embedded == null) {
-                // nothing to do
-                return;
+                if (_embedded.isDocument()
+                        && _embedded.asDocument().containsKey("rh:coll")
+                        && _embedded.asDocument().get("rh:coll").isArray()) {
+
+                    BsonArray colls = _embedded
+                            .asDocument()
+                            .get("rh:coll")
+                            .asArray();
+
+                    colls.stream()
+                            .filter(coll -> {
+                                return coll.isDocument();
+                            })
+                            .forEach(_coll -> {
+                                BsonDocument coll = _coll.asDocument();
+
+                                BsonArray aggrs = getAggregationMetadata(coll);
+
+                                if (aggrs == null) {
+                                    // nothing to do
+                                    return;
+                                }
+
+                                coll.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
+                                        JsonUtils.unescapeKeys(aggrs));
+                            });
+                }
             }
-
-            BasicDBList colls = (BasicDBList) _embedded.get("rh:coll");
-
-            if (colls == null) {
-                // nothing to do
-                return;
-            }
-
-            colls.stream()
-                    .filter(coll -> {
-                        return coll instanceof BasicDBObject;
-                    })
-                    .forEach(_coll -> {
-                        BasicDBObject coll = (BasicDBObject) _coll;
-
-                        BasicDBList aggrs = getAggregationMetadata(coll);
-
-                        if (aggrs == null) {
-                            // nothing to do
-                            return;
-                        }
-
-                        coll.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
-                                (DBObject) JsonUtils.unescapeKeys(aggrs));
-                    });
         }
     }
 
-    private BasicDBList getAggregationMetadata(DBObject contentToTransform) {
-        List<Optional<Object>> ___aggrs = JsonUtils
+    private BsonArray getAggregationMetadata(BsonDocument contentToTransform) {
+        List<Optional<BsonValue>> ___aggrs = JsonUtils
                 .getPropsFromPath(contentToTransform,
                         "$." + AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME);
 
@@ -113,16 +113,16 @@ public class AggregationTransformer implements Transformer {
             return null;
         }
 
-        Optional<Object> __aggrs = ___aggrs.get(0);
+        Optional<BsonValue> __aggrs = ___aggrs.get(0);
 
         if (__aggrs == null || !__aggrs.isPresent()) {
             return null;
         }
 
-        Object _aggrs = __aggrs.get();
+        BsonValue _aggrs = __aggrs.get();
 
-        if (_aggrs instanceof BasicDBList) {
-            return (BasicDBList) _aggrs;
+        if (_aggrs.isArray()) {
+            return _aggrs.asArray();
         } else {
             return null;
         }

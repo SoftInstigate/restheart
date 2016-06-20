@@ -29,9 +29,10 @@ package org.restheart.test.performance;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.request.HttpRequestWithBody;
-import com.mongodb.BasicDBObject;
 import org.restheart.db.DocumentDAO;
 import java.io.IOException;
+import org.bson.BsonDocument;
+import org.bson.BsonDouble;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
 import static org.junit.Assert.assertEquals;
@@ -54,7 +55,8 @@ public class LoadPutPT extends AbstractPT {
                 .body("{'nanostamp': " + System.nanoTime() + "}")
                 .asString();
 
-        assertEquals("check status code", HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals("check status code", 
+                HttpStatus.SC_CREATED, resp.getStatus());
     }
 
     public void postWitId() throws Exception {
@@ -67,10 +69,16 @@ public class LoadPutPT extends AbstractPT {
 
         resp = req
                 .header("content-type", "application/json")
-                .body("{'_id': {'$oid': '" + new ObjectId().toString() + "'}, 'nanostamp': " + System.nanoTime() + "}")
+                .body("{'_id': {'$oid': '" 
+                        + new ObjectId().toString() 
+                        + "'}, 'nanostamp': " 
+                        + System.nanoTime() + "}")
                 .asString();
 
-        assertEquals("check status code", HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(
+                "check status code", 
+                HttpStatus.SC_CREATED, 
+                resp.getStatus());
     }
 
     public void put() throws Exception {
@@ -88,12 +96,24 @@ public class LoadPutPT extends AbstractPT {
                 .body("{'nanostamp': " + System.nanoTime() + "}")
                 .asString();
 
-        assertEquals("check status code", HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(
+                "check status code", 
+                HttpStatus.SC_CREATED, 
+                resp.getStatus());
     }
 
     public void dbdirect() throws IOException {
-        BasicDBObject content = new BasicDBObject("random", Math.random());
+        BsonDocument content = new BsonDocument("random"
+                , new BsonDouble(Math.random()));
 
-        new DocumentDAO().upsertDocument(db, coll, null, null, content, null, false, false);
+        new DocumentDAO().upsertDocument(
+                db, 
+                coll, 
+                null, 
+                null, 
+                content, 
+                null, 
+                false, 
+                false);
     }
 }

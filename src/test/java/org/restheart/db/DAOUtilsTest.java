@@ -5,8 +5,8 @@
  */
 package org.restheart.db;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Rule;
@@ -46,11 +46,11 @@ public class DAOUtilsTest {
 
     @Test
     public void testValidContent() {
-        DBObject dbo = DAOUtils.validContent(null);
+        BsonDocument dbo = DAOUtils.validContent(null);
         assertNotNull(dbo);
-        assertTrue(dbo instanceof BasicDBObject);
+        assertTrue(dbo.isDocument());
         
-        dbo = new BasicDBObject("name", "test");
+        dbo = new BsonDocument("name", new BsonString("test"));
         assertEquals(DAOUtils.validContent(dbo), dbo);
     }
     

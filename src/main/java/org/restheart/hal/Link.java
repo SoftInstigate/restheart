@@ -17,16 +17,16 @@
  */
 package org.restheart.hal;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
+import org.bson.BsonBoolean;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class Link {
-
-    private final BasicDBObject dbObject = new BasicDBObject();
+    private final BsonDocument doc = new BsonDocument();
 
     /**
      *
@@ -38,7 +38,7 @@ public class Link {
             throw new IllegalArgumentException("constructor args cannot be null or empty");
         }
 
-        dbObject.put(ref, new BasicDBObject("href", href));
+        doc.put(ref, new BsonDocument("href", new BsonString(href)));
     }
 
     /**
@@ -51,7 +51,7 @@ public class Link {
         this(ref, href);
 
         if (templated) {
-            ((BasicDBObject) dbObject.get(ref)).put("templated", true);
+            doc.getDocument(ref).put("templated", new BsonBoolean(true));
         }
     }
 
@@ -65,7 +65,7 @@ public class Link {
     public Link(String name, String ref, String href, boolean templated) {
         this(ref, href, templated);
 
-        ((BasicDBObject) dbObject.get(ref)).put("name", name);
+        doc.getDocument(ref).put("name", new BsonString(name));
     }
 
     /**
@@ -73,7 +73,7 @@ public class Link {
      * @return
      */
     public String getRef() {
-        return (String) dbObject.keySet().toArray()[0];
+        return (String) doc.keySet().toArray()[0];
     }
 
     /**
@@ -81,10 +81,10 @@ public class Link {
      * @return
      */
     public String getHref() {
-        return (String) ((DBObject) dbObject.get(getRef())).get("href");
+        return doc.getDocument(getRef()).getString("href").getValue();
     }
 
-    BasicDBObject getDBObject() {
-        return dbObject;
+    BsonDocument getBsonDocument() {
+        return doc;
     }
 }

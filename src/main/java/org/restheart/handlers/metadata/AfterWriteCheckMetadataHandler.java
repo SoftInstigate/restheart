@@ -24,7 +24,6 @@ import static com.mongodb.client.model.Filters.eq;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.util.List;
-import org.bson.Document;
 import org.restheart.db.DAOUtils;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.hal.metadata.RequestChecker;
@@ -35,13 +34,16 @@ import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import static com.mongodb.client.model.Filters.and;
+import org.bson.BsonDocument;
+import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.and;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class AfterWriteCheckMetadataHandler extends BeforeWriteCheckMetadataHandler {
+public class AfterWriteCheckMetadataHandler
+        extends BeforeWriteCheckMetadataHandler {
     public AfterWriteCheckMetadataHandler() {
         super(null);
     }
@@ -51,19 +53,32 @@ public class AfterWriteCheckMetadataHandler extends BeforeWriteCheckMetadataHand
     }
 
     @Override
-    protected boolean doesCheckerApply(RequestContext context, Checker checker) {
+    protected boolean doesCheckerApply(
+            RequestContext context,
+            Checker checker) {
         return checker.getPhase(context) == Checker.PHASE.AFTER_WRITE;
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(
+            HttpServerExchange exchange,
+            RequestContext context)
+            throws Exception {
         if (doesCheckerAppy(context)) {
             if (!check(exchange, context)) {
                 // restore old data
 
-                MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-                MongoDatabase mdb = client.getDatabase(context.getDBName());
-                MongoCollection<Document> coll = mdb.getCollection(context.getCollectionName());
+                MongoClient client = MongoDBClientSingleton
+                        .getInstance()
+                        .getClient();
+
+                MongoDatabase mdb = client
+                        .getDatabase(context.getDBName());
+
+                MongoCollection<BsonDocument> coll = mdb
+                        .getCollection(
+                                context.getCollectionName(),
+                                BsonDocument.class);
 
                 // send error response
                 StringBuilder sb = new StringBuilder();
@@ -77,24 +92,32 @@ public class AfterWriteCheckMetadataHandler extends BeforeWriteCheckMetadataHand
                     });
                 }
 
-                Document oldData = context.getDbOperationResult().getOldData();
+                BsonDocument oldData = context
+                        .getDbOperationResult()
+                        .getOldData();
 
                 Object newEtag = context.getDbOperationResult().getEtag();
 
                 if (oldData != null) {
                     // document was updated, restore old one
-                    DAOUtils.restoreDocument(coll, 
-                            oldData.get("_id"), 
-                            context.getShardKey(), 
-                            oldData, 
+                    DAOUtils.restoreDocument(coll,
+                            oldData.get("_id"),
+                            context.getShardKey(),
+                            oldData,
                             newEtag);
 
                     // add to response old etag
                     if (oldData.get("$set") != null
-                            && oldData.get("$set") instanceof Document
-                            && ((Document) oldData.get("$set")).get("_etag") != null) {
+                            && oldData.get("$set").isDocument()
+                            && oldData.get("$set")
+                            .asDocument()
+                            .get("_etag") != null) {
                         exchange.getResponseHeaders().put(Headers.ETAG,
-                                ((Document) oldData.get("$set")).get("_etag")
+                                oldData.get("$set")
+                                .asDocument()
+                                .get("_etag")
+                                .asObjectId()
+                                .getValue()
                                 .toString());
                     } else {
                         exchange.getResponseHeaders().remove(Headers.ETAG);
@@ -108,7 +131,10 @@ public class AfterWriteCheckMetadataHandler extends BeforeWriteCheckMetadataHand
                     coll.deleteOne(and(eq("_id", newId), eq("_etag", newEtag)));
                 }
 
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, sb.toString());
+                ResponseHelper.endExchangeWithMessage(
+                        exchange, 
+                        HttpStatus.SC_BAD_REQUEST, 
+                        sb.toString());
             }
         }
 
@@ -128,7 +154,8 @@ public class AfterWriteCheckMetadataHandler extends BeforeWriteCheckMetadataHand
                 && (context.getType() == RequestContext.TYPE.COLLECTION
                 || context.getType() == RequestContext.TYPE.FILES_BUCKET
                 || context.getType() == RequestContext.TYPE.SCHEMA_STORE))
-                && context.getCollectionProps().containsField(RequestChecker.ROOT_KEY)
+                && context.getCollectionProps()
+                        .containsKey(RequestChecker.ROOT_KEY)
                 && context.getDbOperationResult().getHttpCode() < 300;
     }
 }

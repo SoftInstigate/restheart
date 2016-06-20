@@ -17,14 +17,11 @@
  */
 package org.restheart.db;
 
-import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
 import org.restheart.utils.HttpStatus;
@@ -32,13 +29,14 @@ import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
+import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 
 /**
@@ -46,9 +44,7 @@ import org.bson.types.ObjectId;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class DbsDAO implements Database {
-
-    public static final BasicDBObject PROPS_QUERY_LEGACY = new BasicDBObject("_id", "_properties");
-    public static final Document PROPS_QUERY = new Document("_id", "_properties");
+    public static final Bson PROPS_QUERY = eq("_id", "_properties");
 
     private static final Document FIELDS_TO_RETURN;
 
@@ -105,21 +101,37 @@ public class DbsDAO implements Database {
      * @return
      */
     @Override
-    public DB getDB(String dbName) {
+    public DB getDBLegacy(String dbName) {
         return client.getDB(dbName);
+    }
+    
+    /**
+     *
+     * @param dbName
+     * @return the MongoDatabase
+     */
+    @Override
+    public MongoDatabase getDatabase(String dbName) {
+        return client.getDatabase(dbName);
     }
 
     /**
      *
-     * @param db
      * @return A ordered List of collection names
      */
     @Override
-    public List<String> getCollectionNames(final DB db) {
-        List<String> _colls = new ArrayList<>(db.getCollectionNames());
+    public List<String> getCollectionNames(String dbName) {
+        MongoDatabase db = getDatabase(dbName);
+        
+        List<String> _colls = new ArrayList<>();
 
+        db.listCollectionNames().into(_colls);
+        
         // filter out reserved dbs
-        return _colls.stream().filter(coll -> !RequestContext.isReservedResourceCollection(coll)).sorted().collect(Collectors.toList());
+        return _colls.stream().filter(coll -> !RequestContext
+                .isReservedResourceCollection(coll))
+                .sorted()
+                .collect(Collectors.toList());
     }
 
     /**
@@ -131,7 +143,8 @@ public class DbsDAO implements Database {
     public long getDBSize(final List<String> colls) {
         // filter out reserved resources
         List<String> _colls = colls.stream()
-                .filter(coll -> !RequestContext.isReservedResourceCollection(coll))
+                .filter(coll -> !RequestContext
+                        .isReservedResourceCollection(coll))
                 .collect(Collectors.toList());
 
         return _colls.size();
@@ -144,7 +157,8 @@ public class DbsDAO implements Database {
      */
     @Override
     public BsonDocument getDatabaseProperties(final String dbName) {
-        MongoCollection<BsonDocument> propsColl = collectionDAO.getCollection(dbName, "_properties");
+        MongoCollection<BsonDocument> propsColl
+                = collectionDAO.getCollection(dbName, "_properties");
 
         BsonDocument props = propsColl.find(PROPS_QUERY).limit(1).first();
 
@@ -175,7 +189,8 @@ public class DbsDAO implements Database {
             throws IllegalQueryParamenterException {
         // filter out reserved resources
         List<String> _colls = colls.stream()
-                .filter(coll -> !RequestContext.isReservedResourceCollection(coll))
+                .filter(coll -> !RequestContext
+                        .isReservedResourceCollection(coll))
                 .collect(Collectors.toList());
 
         int size = _colls.size();
@@ -190,21 +205,27 @@ public class DbsDAO implements Database {
             total_pages = Math.max(1, Math.round(Math.ceil(_size / _pagesize)));
 
             if (page > total_pages) {
-                throw new IllegalQueryParamenterException("illegal query paramenter,"
-                        + " page is bigger that total pages which is " + total_pages);
+                throw new IllegalQueryParamenterException(
+                        "illegal query paramenter,"
+                        + " page is bigger that total pages which is "
+                        + total_pages);
             }
         }
 
         // apply page and pagesize
-        _colls = _colls.subList((page - 1) * pagesize, (page - 1) * pagesize + pagesize > _colls.size()
-                ? _colls.size()
-                : (page - 1) * pagesize + pagesize);
+        _colls = _colls
+                .subList(
+                        (page - 1) * pagesize,
+                        (page - 1) * pagesize + pagesize > _colls.size()
+                                ? _colls.size()
+                                : (page - 1) * pagesize + pagesize);
 
         List<BsonDocument> data = new ArrayList<>();
 
         _colls.stream().map(
                 (collName) -> {
-                    BsonDocument properties = new BsonDocument("_id", new BsonString(collName));
+                    BsonDocument properties =
+                            new BsonDocument("_id", new BsonString(collName));
 
                     BsonDocument collProperties;
 
@@ -242,7 +263,7 @@ public class DbsDAO implements Database {
     @SuppressWarnings("unchecked")
     public OperationResult upsertDB(
             final String dbName,
-            final DBObject newContent,
+            final BsonDocument newContent,
             final String requestEtag,
             final boolean updating,
             final boolean patching,
@@ -254,19 +275,17 @@ public class DbsDAO implements Database {
 
         ObjectId newEtag = new ObjectId();
 
-        final DBObject content = DAOUtils.validContent(newContent);
+        final BsonDocument content = DAOUtils.validContent(newContent);
 
-        content.put("_etag", newEtag);
-        content.removeField("_id"); // make sure we don't change this field
-
-        //TODO remove this after migration to mongodb driver 3.2 completes
-        Document dcontent = new Document(content.toMap());
+        content.put("_etag", new BsonObjectId(newEtag));
+        content.remove("_id"); // make sure we don't change this field
 
         MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<Document> mcoll = mdb.getCollection("_properties");
+        MongoCollection<BsonDocument> mcoll
+                = mdb.getCollection("_properties", BsonDocument.class);
 
         if (checkEtag && updating) {
-            Document oldProperties = mcoll.find(eq("_id", "_properties"))
+            BsonDocument oldProperties = mcoll.find(eq("_id", "_properties"))
                     .projection(FIELDS_TO_RETURN).first();
 
             if (oldProperties != null) {
@@ -285,29 +304,65 @@ public class DbsDAO implements Database {
                 }
 
                 if (Objects.equals(requestEtag, _oldEtag)) {
-                    return doDbPropsUpdate(patching, updating, mcoll, dcontent, newEtag);
+                    return doDbPropsUpdate(
+                            patching,
+                            updating,
+                            mcoll,
+                            content,
+                            newEtag);
                 } else {
-                    return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+                    return new OperationResult(
+                            HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
                 }
             } else {
                 // this is the case when the db does not have properties
                 // e.g. it has not been created by restheart
-                return doDbPropsUpdate(patching, updating, mcoll, dcontent, newEtag);
+                return doDbPropsUpdate(
+                        patching,
+                        updating,
+                        mcoll,
+                        content,
+                        newEtag);
             }
         } else {
-            return doDbPropsUpdate(patching, updating, mcoll, dcontent, newEtag);
+            return doDbPropsUpdate(
+                    patching,
+                    updating,
+                    mcoll,
+                    content,
+                    newEtag);
         }
     }
 
-    private OperationResult doDbPropsUpdate(boolean patching, boolean updating, MongoCollection<Document> mcoll, Document dcontent, ObjectId newEtag) {
+    private OperationResult doDbPropsUpdate(
+            boolean patching,
+            boolean updating,
+            MongoCollection<BsonDocument> mcoll,
+            BsonDocument dcontent,
+            ObjectId newEtag) {
         if (patching) {
-            DAOUtils.updateDocument(mcoll, "_properties", null, dcontent, false);
+            DAOUtils.updateDocument(
+                    mcoll,
+                    "_properties",
+                    null,
+                    dcontent,
+                    false);
             return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else if (updating) {
-            DAOUtils.updateDocument(mcoll, "_properties", null, dcontent, true);
+            DAOUtils.updateDocument(
+                    mcoll,
+                    "_properties",
+                    null,
+                    dcontent,
+                    true);
             return new OperationResult(HttpStatus.SC_OK, newEtag);
         } else {
-            DAOUtils.updateDocument(mcoll, "_properties", null, dcontent, false);
+            DAOUtils.updateDocument(
+                    mcoll,
+                    "_properties",
+                    null,
+                    dcontent,
+                    false);
             return new OperationResult(HttpStatus.SC_CREATED, newEtag);
         }
     }
@@ -319,7 +374,10 @@ public class DbsDAO implements Database {
      * @return
      */
     @Override
-    public OperationResult deleteDatabase(final String dbName, final String requestEtag, final boolean checkEtag) {
+    public OperationResult deleteDatabase(
+            final String dbName,
+            final String requestEtag,
+            final boolean checkEtag) {
         MongoDatabase mdb = client.getDatabase(dbName);
         MongoCollection<Document> mcoll = mdb.getCollection("_properties");
 
@@ -332,9 +390,14 @@ public class DbsDAO implements Database {
 
                 if (oldEtag != null) {
                     if (requestEtag == null) {
-                        return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
-                    } else if (!Objects.equals(oldEtag.toString(), requestEtag)) {
-                        return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+                        return new OperationResult(
+                                HttpStatus.SC_CONFLICT, oldEtag);
+                    } else if (!Objects.equals(
+                            oldEtag.toString(),
+                            requestEtag)) {
+                        return new OperationResult(
+                                HttpStatus.SC_PRECONDITION_FAILED,
+                                oldEtag);
                     }
                 }
             }
@@ -354,35 +417,79 @@ public class DbsDAO implements Database {
     }
 
     @Override
-    public DBCollection getCollectionLegacy(String dbName, String collName) {
+    public DBCollection getCollectionLegacy(
+            String dbName,
+            String collName) {
         return collectionDAO.getCollectionLegacy(dbName, collName);
     }
 
     @Override
-    public MongoCollection<BsonDocument> getCollection(String dbName, String collName) {
+    public MongoCollection<BsonDocument> getCollection(
+            String dbName,
+            String collName) {
         MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<BsonDocument> mcoll = mdb.getCollection(collName, BsonDocument.class);
+        MongoCollection<BsonDocument> mcoll = mdb.getCollection(
+                collName,
+                BsonDocument.class);
         return mcoll;
     }
 
     @Override
-    public OperationResult upsertCollection(String dbName, String collName, DBObject content, String requestEtag, boolean updating, boolean patching, final boolean checkEtag) {
-        return collectionDAO.upsertCollection(dbName, collName, content, requestEtag, updating, patching, checkEtag);
+    public OperationResult upsertCollection(
+            String dbName,
+            String collName,
+            BsonDocument content,
+            String requestEtag,
+            boolean updating,
+            boolean patching,
+            final boolean checkEtag) {
+        return collectionDAO.upsertCollection(
+                dbName,
+                collName,
+                content,
+                requestEtag,
+                updating,
+                patching,
+                checkEtag);
     }
 
     @Override
-    public OperationResult deleteCollection(String dbName, String collectionName, String requestEtag, final boolean checkEtag) {
-        return collectionDAO.deleteCollection(dbName, collectionName, requestEtag, checkEtag);
+    public OperationResult deleteCollection(
+            String dbName,
+            String collectionName,
+            String requestEtag,
+            final boolean checkEtag) {
+        return collectionDAO.deleteCollection(
+                dbName,
+                collectionName,
+                requestEtag,
+                checkEtag);
     }
 
     @Override
-    public long getCollectionSize(DBCollection coll, Deque<String> filters) {
+    public long getCollectionSize(
+            final MongoCollection<BsonDocument> coll,
+            BsonDocument filters) {
         return collectionDAO.getCollectionSize(coll, filters);
     }
 
     @Override
-    public ArrayList<DBObject> getCollectionData(DBCollection coll, int page, int pagesize, Deque<String> sortBy, Deque<String> filter, Deque<String> keys, DBCursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
-        return collectionDAO.getCollectionData(coll, page, pagesize, sortBy, filter, keys, cursorAllocationPolicy);
+    public ArrayList<BsonDocument> getCollectionData(
+            MongoCollection<BsonDocument> coll,
+            int page,
+            int pagesize,
+            BsonDocument sortBy,
+            BsonDocument filter,
+            BsonDocument keys,
+            FindIterablePool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
+        return collectionDAO.getCollectionData(
+                coll,
+                page,
+                pagesize,
+                sortBy,
+                filter,
+                keys,
+                cursorAllocationPolicy);
     }
 
     @Override
@@ -400,17 +507,31 @@ public class DbsDAO implements Database {
     }
 
     @Override
-    public List<DBObject> getCollectionIndexes(String dbName, String collectionName) {
+    public List<BsonDocument> getCollectionIndexes(
+            String dbName,
+            String collectionName) {
         return indexDAO.getCollectionIndexes(dbName, collectionName);
     }
 
     @Override
-    public DBCursor getCollectionDBCursor(DBCollection collection, Deque<String> sortBy, Deque<String> filters, Deque<String> keys) {
-        return collectionDAO.getCollectionDBCursor(collection, sortBy, filters, keys);
+    public FindIterable<BsonDocument> getFindIterable(
+            MongoCollection<BsonDocument> collection,
+            BsonDocument sortBy,
+            BsonDocument filters,
+            BsonDocument keys) {
+        return collectionDAO.getFindIterable(
+                collection,
+                sortBy,
+                filters,
+                keys);
     }
 
     @Override
-    public void createIndex(String dbName, String collection, DBObject keys, DBObject options) {
+    public void createIndex(
+            String dbName,
+            String collection,
+            BsonDocument keys,
+            BsonDocument options) {
         indexDAO.createIndex(dbName, collection, keys, options);
     }
 }

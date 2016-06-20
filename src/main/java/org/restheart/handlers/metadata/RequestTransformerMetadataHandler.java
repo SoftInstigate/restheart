@@ -17,11 +17,11 @@
  */
 package org.restheart.handlers.metadata;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.RepresentationTransformer;
 import org.restheart.hal.metadata.singletons.NamedSingletonsFactory;
@@ -37,8 +37,10 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestTransformerMetadataHandler extends AbstractTransformerMetadataHandler {
-    static final Logger LOGGER = LoggerFactory.getLogger(RequestTransformerMetadataHandler.class);
+public class RequestTransformerMetadataHandler
+        extends AbstractTransformerMetadataHandler {
+    static final Logger LOGGER
+            = LoggerFactory.getLogger(RequestTransformerMetadataHandler.class);
 
     /**
      * Creates a new instance of RequestTransformerMetadataHandler
@@ -61,7 +63,9 @@ public class RequestTransformerMetadataHandler extends AbstractTransformerMetada
                 || context.getType() == RequestContext.TYPE.SCHEMA_STORE
                 || context.getType() == RequestContext.TYPE.SCHEMA)
                 && context.getCollectionProps() != null
-                && context.getCollectionProps().containsField(RepresentationTransformer.RTS_ELEMENT_NAME));
+                && context.getCollectionProps()
+                .containsKey(
+                        RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
@@ -73,12 +77,18 @@ public class RequestTransformerMetadataHandler extends AbstractTransformerMetada
                 || context.getType() == RequestContext.TYPE.FILES_BUCKET
                 || context.getType() == RequestContext.TYPE.SCHEMA_STORE)
                 && context.getDbProps() != null
-                && context.getDbProps().containsField(RepresentationTransformer.RTS_ELEMENT_NAME));
+                && context.getDbProps()
+                .containsKey(
+                        RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
-    void enforceDbRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
-        List<RepresentationTransformer> dbRts = RepresentationTransformer.getFromJson(context.getDbProps());
+    void enforceDbRepresentationTransformLogic(
+            HttpServerExchange exchange, 
+            RequestContext context) 
+            throws InvalidMetadataException {
+        List<RepresentationTransformer> dbRts
+                = RepresentationTransformer.getFromJson(context.getDbProps());
 
         RequestContext.TYPE requestType = context.getType(); // DB, COLLECTION or FILES_BUCKET
 
@@ -86,56 +96,106 @@ public class RequestTransformerMetadataHandler extends AbstractTransformerMetada
             Transformer t;
 
             try {
-                t = (Transformer) NamedSingletonsFactory.getInstance().get("transformers", rt.getName());
+                t = (Transformer) NamedSingletonsFactory
+                        .getInstance()
+                        .get("transformers", rt.getName());
             } catch (IllegalArgumentException ex) {
-                context.addWarning("error applying transformer: " + ex.getMessage());
+                context.addWarning("error applying transformer: "
+                        + ex.getMessage());
                 return;
             }
 
             if (t == null) {
-                throw new IllegalArgumentException("cannot find singleton " + rt.getName() + " in singleton group transformers");
+                throw new IllegalArgumentException("cannot find singleton "
+                        + rt.getName()
+                        + " in singleton group transformers");
             }
 
             if (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST) {
-                if (rt.getScope() == RepresentationTransformer.SCOPE.THIS && requestType == RequestContext.TYPE.DB) {
-                    t.tranform(exchange, context, context.getContent(), rt.getArgs());
+                if (rt.getScope() == RepresentationTransformer.SCOPE.THIS 
+                        && requestType == RequestContext.TYPE.DB) {
+                    t.tranform(
+                            exchange,
+                            context,
+                            context.getContent().asDocument(),
+                            rt.getArgs());
                 } else {
-                    t.tranform(exchange, context, context.getContent(), rt.getArgs());
+                    t.tranform(
+                            exchange,
+                            context,
+                            context.getContent().asDocument(),
+                            rt.getArgs());
                 }
             }
         }
     }
 
     @Override
-    void enforceCollRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
-        List<RepresentationTransformer> collRts = RepresentationTransformer.getFromJson(context.getCollectionProps());
+    void enforceCollRepresentationTransformLogic(
+            HttpServerExchange exchange,
+            RequestContext context)
+            throws InvalidMetadataException {
+        List<RepresentationTransformer> collRts = RepresentationTransformer
+                .getFromJson(context.getCollectionProps());
 
-        RequestContext.TYPE requestType = context.getType(); // DOCUMENT, FILE, COLLECTION or FILES_BUCKET
-        RequestContext.METHOD requestMethod = context.getMethod(); // PUT, PATCH or POST
+        // DOCUMENT, FILE, COLLECTION or FILES_BUCKET
+        RequestContext.TYPE requestType = context.getType();
+
+        // PUT, PATCH or POST
+        RequestContext.METHOD requestMethod = context.getMethod();
 
         for (RepresentationTransformer rt : collRts) {
             if (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST) {
-                Transformer t = (Transformer) NamedSingletonsFactory.getInstance().get("transformers", rt.getName());
+                Transformer t = (Transformer) NamedSingletonsFactory
+                        .getInstance()
+                        .get("transformers", rt.getName());
 
                 if (t == null) {
-                    throw new IllegalArgumentException("cannot find singleton " + rt.getName() + " in singleton group transformers");
+                    throw new IllegalArgumentException("cannot find singleton "
+                            + rt.getName()
+                            + " in singleton group transformers");
                 }
 
-                DBObject content = context.getContent();
+                BsonDocument content = context.getContent().asDocument();
 
                 // content can be an array for bulk POST
-                if (content == null)  {
-                    appyTransformationOnObject(t, exchange, context, requestMethod, requestType, rt.getScope(), new BasicDBObject(), rt.getArgs());
-                } else if (content instanceof BasicDBObject) {
-                    appyTransformationOnObject(t, exchange, context, requestMethod, requestType, rt.getScope(), (BasicDBObject) content, rt.getArgs());
+                if (content == null) {
+                    appyTransformationOnObject(
+                            t,
+                            exchange,
+                            context,
+                            requestMethod,
+                            requestType,
+                            rt.getScope(),
+                            new BsonDocument(),
+                            rt.getArgs());
+                } else if (content.isDocument()) {
+                    appyTransformationOnObject(
+                            t,
+                            exchange,
+                            context,
+                            requestMethod,
+                            requestType,
+                            rt.getScope(),
+                            content.asDocument(),
+                            rt.getArgs());
                 } else {
-                    BasicDBList arrayContent = (BasicDBList) content;
+                    BsonArray arrayContent = content.asArray();
 
                     arrayContent.stream().forEach(obj -> {
-                        if (obj instanceof BasicDBObject) {
-                            appyTransformationOnObject(t, exchange, context, requestMethod, requestType, rt.getScope(), (BasicDBObject) obj, rt.getArgs());
+                        if (obj.isDocument()) {
+                            appyTransformationOnObject(
+                                    t,
+                                    exchange,
+                                    context,
+                                    requestMethod,
+                                    requestType,
+                                    rt.getScope(),
+                                    obj.asDocument(),
+                                    rt.getArgs());
                         } else {
-                            LOGGER.warn("an element of content array is not an object");
+                            LOGGER.warn("an element of content array "
+                                    + "is not an object");
                         }
                     });
                 }
@@ -149,18 +209,26 @@ public class RequestTransformerMetadataHandler extends AbstractTransformerMetada
             RequestContext.METHOD requestMethod,
             RequestContext.TYPE requestType,
             RepresentationTransformer.SCOPE scope,
-            BasicDBObject data,
-            DBObject args) {
+            BsonDocument data,
+            BsonValue args) {
         if ((requestMethod == RequestContext.METHOD.PUT
                 || requestMethod == RequestContext.METHOD.PATCH)
                 && scope == RepresentationTransformer.SCOPE.THIS
                 && requestType == RequestContext.TYPE.COLLECTION) {
             t.tranform(exchange, context, data, args);
-        } else if ((requestMethod == RequestContext.METHOD.PUT || requestMethod == RequestContext.METHOD.PATCH) && scope == RepresentationTransformer.SCOPE.CHILDREN && (requestType == RequestContext.TYPE.DOCUMENT || requestType == RequestContext.TYPE.FILE)) {
+        } else if ((requestMethod == RequestContext.METHOD.PUT
+                || requestMethod == RequestContext.METHOD.PATCH)
+                && scope == RepresentationTransformer.SCOPE.CHILDREN
+                && (requestType == RequestContext.TYPE.DOCUMENT
+                || requestType == RequestContext.TYPE.FILE)) {
             t.tranform(exchange, context, data, args);
-        } else if (requestMethod == RequestContext.METHOD.POST && scope == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.COLLECTION) {
+        } else if (requestMethod == RequestContext.METHOD.POST
+                && scope == RepresentationTransformer.SCOPE.CHILDREN
+                && requestType == RequestContext.TYPE.COLLECTION) {
             t.tranform(exchange, context, data, args);
-        } else if (requestMethod == RequestContext.METHOD.POST && scope == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.FILES_BUCKET) {
+        } else if (requestMethod == RequestContext.METHOD.POST
+                && scope == RepresentationTransformer.SCOPE.CHILDREN
+                && requestType == RequestContext.TYPE.FILES_BUCKET) {
             t.tranform(exchange, context, data, args);
         }
     }

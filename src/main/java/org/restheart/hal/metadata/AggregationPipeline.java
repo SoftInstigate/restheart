@@ -17,11 +17,11 @@
  */
 package org.restheart.hal.metadata;
 
-import com.google.common.collect.Lists;
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
+import java.util.ArrayList;
 import java.util.List;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.utils.JsonUtils;
 
 /**
@@ -30,7 +30,7 @@ import org.restheart.utils.JsonUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class AggregationPipeline extends AbstractAggregationOperation {
-    private final BasicDBList stages;
+    private final BsonArray stages;
 
     public static final String STAGES_ELEMENT_NAME = "stages";
 
@@ -58,35 +58,35 @@ public class AggregationPipeline extends AbstractAggregationOperation {
      * </code>
      * @throws org.restheart.hal.metadata.InvalidMetadataException
      */
-    public AggregationPipeline(DBObject properties)
+    public AggregationPipeline(BsonDocument properties)
             throws InvalidMetadataException {
         super(properties);
 
-        Object _stages = properties.get(STAGES_ELEMENT_NAME);
+        BsonValue _stages = properties.get(STAGES_ELEMENT_NAME);
 
-        if (_stages == null || !(_stages instanceof BasicDBList)) {
+        if (_stages == null || !_stages.isArray()) {
             throw new InvalidMetadataException("query /" + getUri()
                     + "has invalid '" + STAGES_ELEMENT_NAME
                     + "': " + _stages
                     + "; must be an array of stage objects");
         }
 
-        // chekcs that the _stages BasicDBList elements are all BasicDBObjects
-        if (((BasicDBList) _stages).stream()
-                .anyMatch(s -> !(s instanceof BasicDBObject))) {
+        // chekcs that the _stages array elements are all documents
+        if (_stages.asArray().stream()
+                .anyMatch(s -> !s.isDocument())) {
             throw new InvalidMetadataException("query /" + getUri()
                     + "has invalid '" + STAGES_ELEMENT_NAME
                     + "': " + _stages
                     + "; must be an array of stage objects");
         }
 
-        this.stages = (BasicDBList) _stages;
+        this.stages = _stages.asArray();
     }
 
     /**
      * @return the stages
      */
-    public BasicDBList getStages() {
+    public BsonArray getStages() {
         return stages;
     }
 
@@ -96,15 +96,19 @@ public class AggregationPipeline extends AbstractAggregationOperation {
      * @throws org.restheart.hal.metadata.InvalidMetadataException
      * @throws org.restheart.hal.metadata.QueryVariableNotBoundException
      */
-    public List<DBObject> getResolvedStagesAsList(BasicDBObject vars)
+    public List<BsonDocument> getResolvedStagesAsList(BsonDocument vars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
-        Object replacedStages = bindAggregationVariables(
-                JsonUtils.unescapeKeys(stages), vars);
+        BsonArray replacedStages = bindAggregationVariables(
+                JsonUtils.unescapeKeys(stages), vars)
+                .asArray();
 
-        return Lists.newArrayList(
-                ((BasicDBList) replacedStages)
-                .toArray(
-                        new BasicDBObject[((BasicDBList) replacedStages)
-                        .size()]));
+        List<BsonDocument> ret = new ArrayList<>();
+
+        replacedStages.stream().filter((stage) -> (stage.isDocument()))
+                .forEach((stage) -> {
+                    ret.add(stage.asDocument());
+                });
+        
+        return ret;
     }
 }

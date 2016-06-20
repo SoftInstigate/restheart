@@ -17,26 +17,31 @@
  */
 package org.restheart.db;
 
-import com.mongodb.DBCollection;
-
-import java.util.Deque;
+import com.mongodb.client.MongoCollection;
 import java.util.Formatter;
 import java.util.Objects;
+import org.bson.BsonDocument;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class DBCursorPoolEntryKey {
+public class CursorPoolEntryKey {
 
-    private final DBCollection collection;
-    private final Deque<String> sort;
-    private final Deque<String> filter;
-    private final Deque<String> keys;
+    private final MongoCollection collection;
+    private final BsonDocument sort;
+    private final BsonDocument filter;
+    private final BsonDocument keys;
     private final int skipped;
     private final long cursorId;
 
-    public DBCursorPoolEntryKey(DBCollection collection, Deque<String> sort, Deque<String> filter, Deque<String> keys, int skipped, long cursorId) {
+    public CursorPoolEntryKey(
+            MongoCollection collection,
+            BsonDocument sort,
+            BsonDocument filter,
+            BsonDocument keys,
+            int skipped,
+            long cursorId) {
         this.collection = collection;
         this.filter = filter;
         this.keys = keys;
@@ -48,21 +53,21 @@ public class DBCursorPoolEntryKey {
     /**
      * @return the collection
      */
-    public DBCollection getCollection() {
+    public MongoCollection getCollection() {
         return collection;
     }
 
     /**
      * @return the filter
      */
-    public Deque<String> getFilter() {
+    public BsonDocument getFilter() {
         return filter;
     }
 
     /**
      * @return the sort
      */
-    public Deque<String> getSort() {
+    public BsonDocument getSort() {
         return sort;
     }
 
@@ -83,7 +88,7 @@ public class DBCursorPoolEntryKey {
     /**
      * @return keys
      */
-    public Deque<String> getKeys() {
+    public BsonDocument getKeys() {
         return keys;
     }
 
@@ -100,7 +105,7 @@ public class DBCursorPoolEntryKey {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final DBCursorPoolEntryKey other = (DBCursorPoolEntryKey) obj;
+        final CursorPoolEntryKey other = (CursorPoolEntryKey) obj;
         if (!Objects.equals(this.collection, other.collection)) {
             return false;
         }
@@ -121,19 +126,29 @@ public class DBCursorPoolEntryKey {
 
     @Override
     public String toString() {
-        return "{ collection: " + collection.getFullName() + ", "
-                + "filter: " + (filter == null ? "null" : filter.toString()) + ", "
-                + "sort: " + (sort == null ? "null" : sort.toString()) + ", "
-                + "skipped: " + skipped + ", "
-                + "cursorId: " + cursorId + "}";
+        return "{ collection: "
+                + collection.getNamespace()
+                + ", "
+                + "filter: "
+                + (filter == null ? "null" : filter.toString())
+                + ", "
+                + "sort: "
+                + (sort == null ? "null" : sort.toString())
+                + ", "
+                + "skipped: "
+                + skipped + ", "
+                + "cursorId: "
+                + cursorId + "}";
     }
 
     String getCacheStatsGroup() {
         Formatter f = new Formatter();
 
         return (filter == null ? "no filter" : filter.toString())
-                + " - " + (sort == null ? "no sort_by" : sort.toString())
-                + " - " + f.format("%10d", getSkipped());
+                + " - "
+                + (sort == null ? "no sort_by" : sort.toString())
+                + " - "
+                + f.format("%10d", getSkipped());
     }
 
 }

@@ -79,7 +79,7 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
                 dbProps.append("_id", new BsonString(dbName));
             }
 
-            context.setDbProps(JsonUtils.convertBsonValueToDBObject(dbProps));
+            context.setDbProps(dbProps);
         }
 
         getNext().handleRequest(exchange, context);

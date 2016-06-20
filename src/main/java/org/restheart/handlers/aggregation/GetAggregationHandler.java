@@ -17,16 +17,15 @@
  */
 package org.restheart.handlers.aggregation;
 
-import com.mongodb.AggregationOutput;
-import com.mongodb.DBObject;
-import com.mongodb.MapReduceCommand.OutputType;
-import com.mongodb.MapReduceOutput;
 import com.mongodb.MongoCommandException;
+import com.mongodb.client.AggregateIterable;
+import com.mongodb.client.MapReduceIterable;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.bson.BsonDocument;
 import org.restheart.hal.Representation;
 import org.restheart.hal.metadata.AbstractAggregationOperation;
 import org.restheart.hal.metadata.AggregationPipeline;
@@ -86,24 +85,23 @@ public class GetAggregationHandler extends PipedHttpHandler {
             return;
         }
 
-        ArrayList<DBObject> data = new ArrayList<>();
+        ArrayList<BsonDocument> data = new ArrayList<>();
         int size;
 
         AbstractAggregationOperation query = _query.get();
 
         if (query.getType() == AbstractAggregationOperation.TYPE.MAP_REDUCE) {
-            MapReduceOutput mrOutput;
+            MapReduceIterable<BsonDocument> mrOutput;
 
             MapReduce mapReduce = (MapReduce) query;
-
             try {
                 mrOutput = getDatabase()
-                        .getCollectionLegacy(context.getDBName(),
+                        .getCollection(context.getDBName(),
                                 context.getCollectionName())
-                        .mapReduce(mapReduce.getResolvedMap(context.getAggreationVars()),
-                                mapReduce.getResolvedReduce(context.getAggreationVars()),
-                                null,
-                                OutputType.INLINE,
+                        .mapReduce(
+                                mapReduce.getResolvedMap(context.getAggreationVars()),
+                                mapReduce.getResolvedReduce(context.getAggreationVars()))
+                        .filter(
                                 mapReduce.getResolvedQuery(context.getAggreationVars()));
             } catch (MongoCommandException | InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange,
@@ -124,21 +122,26 @@ public class GetAggregationHandler extends PipedHttpHandler {
             }
 
             // ***** get data
-            for (DBObject obj : mrOutput.results()) {
+            for (BsonDocument obj : mrOutput) {
                 data.add(obj);
             }
-
-            size = mrOutput.getOutputCount();
+            
+            size = data.size();
         } else if (query.getType()
                 == AbstractAggregationOperation.TYPE.AGGREGATION_PIPELINE) {
-            AggregationOutput agrOutput;
+            AggregateIterable<BsonDocument> agrOutput;
+            
+            AggregationPipeline pipeline = (AggregationPipeline) query;
 
             try {
                 agrOutput = getDatabase()
-                        .getCollectionLegacy(context.getDBName(),
+                        .getCollection(
+                                context.getDBName(), 
                                 context.getCollectionName())
-                        .aggregate(((AggregationPipeline) query)
-                                .getResolvedStagesAsList(context.getAggreationVars()));
+                        .aggregate(
+                                pipeline
+                                .getResolvedStagesAsList(
+                                        context.getAggreationVars()));                       
             } catch (MongoCommandException | InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(exchange,
                         HttpStatus.SC_INTERNAL_SERVER_ERROR,
@@ -158,12 +161,11 @@ public class GetAggregationHandler extends PipedHttpHandler {
             }
 
             // ***** get data
-            for (DBObject obj : agrOutput.results()) {
+            for (BsonDocument obj : agrOutput) {
                 data.add(obj);
             }
 
             size = data.size();
-
         } else {
             ResponseHelper.endExchangeWithMessage(exchange,
                     HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
@@ -187,7 +189,7 @@ public class GetAggregationHandler extends PipedHttpHandler {
 
             // call the ResponseTranformerMetadataHandler if piped in
             if (getNext() != null) {
-                DBObject responseContent = rep.asDBObject();
+                BsonDocument responseContent = rep.asBsonDocument();
                 context.setResponseContent(responseContent);
 
                 getNext().handleRequest(exchange, context);
@@ -201,8 +203,9 @@ public class GetAggregationHandler extends PipedHttpHandler {
         }
     }
 
-    private List<DBObject>
-            applyPagination(List<DBObject> data, RequestContext context) {
+    private List<BsonDocument> applyPagination(
+            List<BsonDocument> data, 
+            RequestContext context) {
         if (data == null) {
             return data;
         }

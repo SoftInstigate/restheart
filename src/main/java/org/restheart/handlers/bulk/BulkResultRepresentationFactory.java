@@ -17,7 +17,6 @@
  */
 package org.restheart.handlers.bulk;
 
-import com.mongodb.DBObject;
 import com.mongodb.MongoBulkWriteException;
 import com.mongodb.bulk.BulkWriteError;
 import com.mongodb.bulk.BulkWriteResult;
@@ -27,6 +26,9 @@ import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.util.List;
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonString;
 import org.restheart.db.BulkOperationResult;
 import org.restheart.hal.AbstractRepresentationFactory;
 import org.restheart.hal.Link;
@@ -75,7 +77,8 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
 
         if (wr.wasAcknowledged()) {
             if (wr.getUpserts() != null) {
-                nrep.addProperty("inserted", wr.getUpserts().size());
+                nrep.addProperty("inserted", 
+                        new BsonInt32(wr.getUpserts().size()));
 
                 // add links to new, upserted documents
                 wr.getUpserts().stream().
@@ -91,13 +94,16 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
                         });
             }
 
-            nrep.addProperty("deleted", wr.getDeletedCount());
+            nrep.addProperty("deleted", 
+                    new BsonInt32(wr.getDeletedCount()));
 
             if (wr.isModifiedCountAvailable()) {
-                nrep.addProperty("modified", wr.getModifiedCount());
+                nrep.addProperty("modified", 
+                        new BsonInt32(wr.getModifiedCount()));
             }
 
-            nrep.addProperty("matched", wr.getMatchedCount());
+            nrep.addProperty("matched", 
+                    new BsonInt32(wr.getMatchedCount()));
 
             rep.addRepresentation("rh:result", nrep);
         }
@@ -111,7 +117,8 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
 
         if (wr.wasAcknowledged()) {
             if (wr.getUpserts() != null) {
-                nrep.addProperty("inserted", wr.getUpserts().size());
+                nrep.addProperty("inserted", 
+                        new BsonInt32(wr.getUpserts().size()));
 
                 // add links to new, upserted documents
                 wr.getUpserts().stream().
@@ -126,13 +133,16 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
                         });
             }
 
-            nrep.addProperty("deleted", wr.getDeletedCount());
+            nrep.addProperty("deleted", 
+                    new BsonInt32(wr.getDeletedCount()));
 
             if (wr.isModifiedCountAvailable()) {
-                nrep.addProperty("modified", wr.getModifiedCount());
+                nrep.addProperty("modified", 
+                        new BsonInt32(wr.getModifiedCount()));
             }
 
-            nrep.addProperty("matched", wr.getMatchedCount());
+            nrep.addProperty("matched", 
+                    new BsonInt32(wr.getMatchedCount()));
 
             rep.addRepresentation("rh:result", nrep);
         }
@@ -144,19 +154,25 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
         wes.stream().forEach(error -> {
             Representation nrep = new Representation();
 
-            nrep.addProperty("index", error.getIndex());
-            nrep.addProperty("mongodbErrorCode", error.getCode());
+            nrep.addProperty("index",
+                    new BsonInt32(error.getIndex()));
+            nrep.addProperty("mongodbErrorCode",
+                    new BsonInt32(error.getCode()));
             nrep.addProperty("httpStatus",
-                    ResponseHelper.getHttpStatusFromErrorCode(error.getCode()));
+                    new BsonInt32(
+                            ResponseHelper.getHttpStatusFromErrorCode(
+                                    error.getCode())));
             nrep.addProperty("message",
-                    ResponseHelper.getMessageFromErrorCode(error.getCode()));
+                    new BsonString(
+                            ResponseHelper.getMessageFromErrorCode(
+                                    error.getCode())));
 
             rep.addRepresentation("rh:error", nrep);
         });
     }
 
     @Override
-    public Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size) throws IllegalQueryParamenterException {
+    public Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<BsonDocument> embeddedData, long size) throws IllegalQueryParamenterException {
         throw new UnsupportedOperationException("Not supported."); //To change body of generated methods, choose Tools | Templates.
     }
 

@@ -17,10 +17,10 @@
  */
 package org.restheart.handlers.document;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.db.DocumentDAO;
 import org.restheart.db.OperationResult;
 import org.restheart.handlers.PipedHttpHandler;
@@ -65,24 +65,29 @@ public class PatchDocumentHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        DBObject content = context.getContent();
+    public void handleRequest(
+            HttpServerExchange exchange, 
+            RequestContext context) 
+            throws Exception {
+        BsonValue _content = context.getContent();
 
         // cannot PATCH with no data
-        if (content == null) {
+        if (_content == null) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
                     "data is empty");
             return;
         }
 
         // cannot PATCH an array
-        if (content instanceof BasicDBList) {
+        if (!_content.isDocument()) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
-                    "data cannot be an array");
+                    "data must be a json object");
             return;
         }
+        
+        BsonDocument content = _content.asDocument();
 
-        Object id = context.getDocumentId();
+        BsonValue id = context.getDocumentId();
 
         if (content.get("_id") == null) {
             content.put("_id", id);

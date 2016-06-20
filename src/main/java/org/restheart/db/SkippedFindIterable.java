@@ -17,18 +17,21 @@
  */
 package org.restheart.db;
 
-import com.mongodb.DBCursor;
+import com.mongodb.client.FindIterable;
+import org.bson.BsonDocument;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class SkippedDBCursor {
-    private final DBCursor cursor;
+public class SkippedFindIterable {
+    private final FindIterable<BsonDocument> findIterable;
     private final int alreadySkipped;
 
-    public SkippedDBCursor(DBCursor cursor, int alreadySkipped) {
-        this.cursor = cursor;
+    public SkippedFindIterable(
+            FindIterable<BsonDocument> findIterable, 
+            int alreadySkipped) {
+        this.findIterable = findIterable;
         this.alreadySkipped = alreadySkipped;
     }
 
@@ -40,9 +43,9 @@ public class SkippedDBCursor {
     }
 
     /**
-     * @return the cursor
+     * @return the findIterable
      */
-    public DBCursor getCursor() {
-        return cursor;
+    public FindIterable<BsonDocument> getFindIterable() {
+        return findIterable;
     }
 }

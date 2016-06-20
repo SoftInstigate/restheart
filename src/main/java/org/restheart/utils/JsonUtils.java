@@ -17,23 +17,18 @@
  */
 package org.restheart.utils;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
-import com.mongodb.util.JSON;
-import com.mongodb.util.JSONCallback;
-import com.mongodb.util.JSONSerializers;
-import com.mongodb.util.ObjectSerializer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
-import org.bson.BasicBSONDecoder;
-import org.bson.BasicBSONEncoder;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonInvalidOperationException;
+import org.bson.BsonJavaScript;
+import org.bson.BsonMaxKey;
+import org.bson.BsonMinKey;
+import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.codecs.BsonArrayCodec;
 import org.bson.codecs.BsonValueCodecProvider;
@@ -41,12 +36,7 @@ import org.bson.codecs.DecoderContext;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.json.JsonParseException;
 import org.bson.json.JsonReader;
-import org.bson.types.BSONTimestamp;
-import org.bson.types.Code;
-import org.bson.types.MaxKey;
-import org.bson.types.MinKey;
 import org.bson.types.ObjectId;
-import org.bson.types.Symbol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,27 +48,12 @@ public class JsonUtils {
 
     static final Logger LOGGER = LoggerFactory.getLogger(JsonUtils.class);
 
-    private static final ObjectSerializer SERIALIZER = JSONSerializers.getStrict();
-
-    private static final BasicBSONEncoder BSON_ENCODER = new BasicBSONEncoder();
-    private static final BasicBSONDecoder BSON_DECODER = new BasicBSONDecoder();
-
     private static final BsonArrayCodec BSON_ARRAY_CODEC = new BsonArrayCodec(
             CodecRegistries.fromProviders(
                     new BsonValueCodecProvider()));
 
     private static final String ESCAPED_$ = "_$";
     private static final String ESCAPED_DOT = "::";
-
-    /**
-     *
-     * @param bson the BSON object to serialize
-     * @return the JSON strict mode representation of the BSON object
-     *
-     */
-    public static String serialize(Object bson) {
-        return SERIALIZER.serialize(bson);
-    }
 
     /**
      * replaces the underscore prefixed keys (eg _$exists) with the
@@ -89,31 +64,30 @@ public class JsonUtils {
      * @see
      * https://docs.mongodb.org/manual/reference/limits/#Restrictions-on-Field-Names
      *
-     * @param obj
+     * @param json
      * @return the json object where the underscore prefixed keys are replaced
      * with the corresponding keys
      */
-    public static Object unescapeKeys(Object obj) {
-        if (obj == null) {
+    public static BsonValue unescapeKeys(BsonValue json) {
+        if (json == null) {
             return null;
         }
 
-        if (obj instanceof BasicDBObject) {
-            BasicDBObject ret = new BasicDBObject();
+        if (json.isDocument()) {
+            BsonDocument ret = new BsonDocument();
 
-            ((BasicDBObject) obj).keySet().stream().forEach(k -> {
+            json.asDocument().keySet().stream().forEach(k -> {
                 String newKey = k.startsWith(ESCAPED_$) ? k.substring(1) : k;
                 newKey = newKey.replaceAll(ESCAPED_DOT, ".");
 
-                Object value = ((BasicDBObject) obj).get(k);
+                BsonValue value = json.asDocument().get(k);
 
-                if (value instanceof BasicDBObject) {
-                    ret.put(newKey,
-                            unescapeKeys((BasicDBObject) value));
-                } else if (value instanceof BasicDBList) {
-                    BasicDBList newList = new BasicDBList();
+                if (value.isDocument()) {
+                    ret.put(newKey, unescapeKeys(value));
+                } else if (value.isArray()) {
+                    BsonArray newList = new BsonArray();
 
-                    ((BasicDBList) value).stream().forEach(v -> {
+                    value.asArray().stream().forEach(v -> {
                         newList.add(unescapeKeys(v));
                     });
 
@@ -125,16 +99,16 @@ public class JsonUtils {
             });
 
             return ret;
-        } else if (obj instanceof BasicDBList) {
-            BasicDBList ret = new BasicDBList();
+        } else if (json.isArray()) {
+            BsonArray ret = new BsonArray();
 
-            ((BasicDBList) obj).stream().forEach(value -> {
-                if (value instanceof BasicDBObject) {
-                    ret.add(unescapeKeys((BasicDBObject) value));
-                } else if (value instanceof BasicDBList) {
-                    BasicDBList newList = new BasicDBList();
+            json.asArray().stream().forEach(value -> {
+                if (value.isDocument()) {
+                    ret.add(unescapeKeys(value));
+                } else if (value.isArray()) {
+                    BsonArray newList = new BsonArray();
 
-                    ((BasicDBList) value).stream().forEach(v -> {
+                    value.asArray().stream().forEach(v -> {
                         newList.add(unescapeKeys(v));
                     });
 
@@ -146,11 +120,12 @@ public class JsonUtils {
             });
 
             return ret;
-        } else if (obj instanceof String) {
-            return ((String) obj)
-                    .startsWith(ESCAPED_$) ? ((String) obj).substring(1) : obj;
+        } else if (json.isString()) {
+            return json.asString().getValue().startsWith(ESCAPED_$)
+                    ? new BsonString(json.asString().getValue().substring(1))
+                    : json;
         } else {
-            return obj;
+            return json;
         }
     }
 
@@ -160,35 +135,34 @@ public class JsonUtils {
      * is true. This is needed because MongoDB does not allow to store keys that
      * starts with $ and that contains dots.
      *
-     * @param obj
+     * @param json
      * @param escapeDots
      * @return the json object where the underscore prefixed keys are replaced
      * with the corresponding keys
      */
-    public static Object escapeKeys(Object obj, boolean escapeDots) {
-        if (obj == null) {
+    public static BsonValue escapeKeys(BsonValue json, boolean escapeDots) {
+        if (json == null) {
             return null;
         }
 
-        if (obj instanceof BasicDBObject) {
-            BasicDBObject ret = new BasicDBObject();
+        if (json.isDocument()) {
+            BsonDocument ret = new BsonDocument();
 
-            ((BasicDBObject) obj).keySet().stream().forEach(k -> {
+            json.asDocument().keySet().stream().forEach(k -> {
                 String newKey = k.startsWith("$") ? "_" + k : k;
 
                 if (escapeDots) {
                     newKey = newKey.replaceAll("\\.", ESCAPED_DOT);
                 }
 
-                Object value = ((BasicDBObject) obj).get(k);
+                BsonValue value = json.asDocument().get(k);
 
-                if (value instanceof BasicDBObject) {
-                    ret.put(newKey,
-                            escapeKeys((BasicDBObject) value, escapeDots));
-                } else if (value instanceof BasicDBList) {
-                    BasicDBList newList = new BasicDBList();
+                if (value.isDocument()) {
+                    ret.put(newKey, escapeKeys(value, escapeDots));
+                } else if (value.isArray()) {
+                    BsonArray newList = new BsonArray();
 
-                    ((BasicDBList) value).stream().forEach(v -> {
+                    value.asArray().stream().forEach(v -> {
                         newList.add(escapeKeys(v, escapeDots));
                     });
 
@@ -200,16 +174,16 @@ public class JsonUtils {
             });
 
             return ret;
-        } else if (obj instanceof BasicDBList) {
-            BasicDBList ret = new BasicDBList();
+        } else if (json.isArray()) {
+            BsonArray ret = new BsonArray();
 
-            ((BasicDBList) obj).stream().forEach(value -> {
-                if (value instanceof BasicDBObject) {
-                    ret.add(escapeKeys((BasicDBObject) value, escapeDots));
-                } else if (value instanceof BasicDBList) {
-                    BasicDBList newList = new BasicDBList();
+            json.asArray().stream().forEach(value -> {
+                if (value.isDocument()) {
+                    ret.add(escapeKeys(value, escapeDots));
+                } else if (value.isArray()) {
+                    BsonArray newList = new BsonArray();
 
-                    ((BasicDBList) value).stream().forEach(v -> {
+                    value.asArray().stream().forEach(v -> {
                         newList.add(escapeKeys(v, escapeDots));
                     });
 
@@ -221,17 +195,18 @@ public class JsonUtils {
             });
 
             return ret;
-        } else if (obj instanceof String) {
-            return ((String) obj)
-                    .startsWith("$") ? "_" + ((String) obj) : obj;
+        } else if (json.isString()) {
+            return json.asString().getValue().startsWith("$")
+                    ? new BsonString("_" + json.asString().getValue())
+                    : json;
         } else {
-            return obj;
+            return json;
         }
     }
 
     /**
      *
-     * @param root the DBOject to extract properties from
+     * @param root the Bson to extract properties from
      * @param path the path of the properties to extract
      * @return the List of Optional&lt;Object&gt;s extracted from root ojbect
      * and identified by the path or null if path does not exist
@@ -239,20 +214,29 @@ public class JsonUtils {
      * @see org.restheart.test.unit.JsonUtilsTest form code examples
      *
      */
-    public static List<Optional<Object>> getPropsFromPath(Object root, String path)
+    public static List<Optional<BsonValue>> getPropsFromPath(
+            BsonValue root,
+            String path)
             throws IllegalArgumentException {
         String pathTokens[] = path.split(Pattern.quote("."));
 
-        if (pathTokens == null || pathTokens.length == 0 || !pathTokens[0].equals("$")) {
-            throw new IllegalArgumentException("wrong path. it must use the . notation and start with $");
-        } else if (!(root instanceof BasicDBObject)) {
-            throw new IllegalArgumentException("wrong json. it must be an object");
+        if (pathTokens == null
+                || pathTokens.length == 0
+                || !pathTokens[0].equals("$")) {
+            throw new IllegalArgumentException(
+                    "wrong path. it must use the . notation and start with $");
+        } else if (!(root instanceof BsonDocument)) {
+            throw new IllegalArgumentException(
+                    "wrong json. it must be an object");
         } else {
             return _getPropsFromPath(root, pathTokens, pathTokens.length);
         }
     }
 
-    private static List<Optional<Object>> _getPropsFromPath(Object json, String[] pathTokens, int totalTokensLength)
+    private static List<Optional<BsonValue>> _getPropsFromPath(
+            BsonValue json,
+            String[] pathTokens,
+            int totalTokensLength)
             throws IllegalArgumentException {
         if (pathTokens == null) {
             throw new IllegalArgumentException("pathTokens argument cannot be null");
@@ -268,36 +252,50 @@ public class JsonUtils {
                 pathToken = pathTokens[0];
 
                 if ("".equals(pathToken)) {
-                    throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " path tokens cannot be empty strings");
+                    throw new IllegalArgumentException("wrong path "
+                            + Arrays.toString(pathTokens)
+                            + " path tokens cannot be empty strings");
                 }
             }
         } else {
-            ArrayList<Optional<Object>> ret = new ArrayList<>();
+            ArrayList<Optional<BsonValue>> ret = new ArrayList<>();
             ret.add(Optional.ofNullable(json));
             return ret;
         }
 
-        List<Optional<Object>> nested;
+        List<Optional<BsonValue>> nested;
 
         switch (pathToken) {
             case "$":
-                if (!(json instanceof BasicDBObject)) {
-                    throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; it should be an object but found " + SERIALIZER.serialize(json));
+                if (!(json.isDocument())) {
+                    throw new IllegalArgumentException("wrong path "
+                            + Arrays.toString(pathTokens)
+                            + " at token "
+                            + pathToken
+                            + "; it should be an object but found "
+                            + json.toString());
                 }
 
                 if (pathTokens.length != totalTokensLength) {
-                    throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; $ can only start the expression");
+                    throw new IllegalArgumentException("wrong path "
+                            + Arrays.toString(pathTokens)
+                            + " at token "
+                            + pathToken
+                            + "; $ can only start the expression");
                 }
 
-                return _getPropsFromPath(json, subpath(pathTokens), totalTokensLength);
+                return _getPropsFromPath(
+                        json,
+                        subpath(pathTokens),
+                        totalTokensLength);
             case "*":
-                if (!(json instanceof BasicDBObject)) {
+                if (!(json.isDocument())) {
                     return null;
                 } else {
-                    ArrayList<Optional<Object>> ret = new ArrayList<>();
+                    ArrayList<Optional<BsonValue>> ret = new ArrayList<>();
 
-                    for (String key : ((BasicDBObject) json).keySet()) {
-                        nested = _getPropsFromPath(((BasicDBObject) json).get(key), subpath(pathTokens), totalTokensLength);
+                    for (String key : json.asDocument().keySet()) {
+                        nested = _getPropsFromPath(json.asDocument().get(key), subpath(pathTokens), totalTokensLength);
 
                         // only add null if subpath(pathTokens) was the last token
                         if (nested == null && pathTokens.length == 2) {
@@ -310,27 +308,31 @@ public class JsonUtils {
                     return ret;
                 }
             case "[*]":
-                if (!(json instanceof BasicDBList)) {
-                    if (json instanceof BasicDBObject) {
+                if (!(json.isArray())) {
+                    if (json.isDocument()) {
                         // this might be the case of PATCHING an element array using the dot notation
                         // e.g. object.array.2
-                        // if so, the array comes as an BasicDBObject with all numberic keys
+                        // if so, the array comes as an BsonDocument with all numberic keys
                         // in any case, it might also be the object { "object": { "array": {"2": xxx }}}
 
-                        boolean allNumbericKeys = ((BasicDBObject) json).keySet().stream().allMatch(k -> {
-                            try {
-                                Integer.parseInt(k);
-                                return true;
-                            } catch (NumberFormatException nfe) {
-                                return false;
-                            }
-                        });
+                        boolean allNumbericKeys = json.asDocument().keySet()
+                                .stream().allMatch(k -> {
+                                    try {
+                                        Integer.parseInt(k);
+                                        return true;
+                                    } catch (NumberFormatException nfe) {
+                                        return false;
+                                    }
+                                });
 
                         if (allNumbericKeys) {
-                            ArrayList<Optional<Object>> ret = new ArrayList<>();
+                            ArrayList<Optional<BsonValue>> ret = new ArrayList<>();
 
-                            for (String key : ((BasicDBObject) json).keySet()) {
-                                nested = _getPropsFromPath(((BasicDBObject) json).get(key), subpath(pathTokens), totalTokensLength);
+                            for (String key : json.asDocument().keySet()) {
+                                nested = _getPropsFromPath(
+                                        json.asDocument().get(key),
+                                        subpath(pathTokens),
+                                        totalTokensLength);
 
                                 // only add null if subpath(pathTokens) was the last token
                                 if (nested == null && pathTokens.length == 2) {
@@ -346,11 +348,14 @@ public class JsonUtils {
 
                     return null;
                 } else {
-                    ArrayList<Optional<Object>> ret = new ArrayList<>();
+                    ArrayList<Optional<BsonValue>> ret = new ArrayList<>();
 
-                    if (!((BasicDBList) json).isEmpty()) {
-                        for (String key : ((BasicDBList) json).keySet()) {
-                            nested = _getPropsFromPath(((BasicDBList) json).get(key), subpath(pathTokens), totalTokensLength);
+                    if (!json.asArray().isEmpty()) {
+                        for (int index = 0; index < json.asArray().size(); index++) {
+                            nested = _getPropsFromPath(
+                                    json.asArray().get(index),
+                                    subpath(pathTokens),
+                                    totalTokensLength);
 
                             // only add null if subpath(pathTokens) was the last token
                             if (nested == null && pathTokens.length == 2) {
@@ -364,11 +369,18 @@ public class JsonUtils {
                     return ret;
                 }
             default:
-                if (json instanceof BasicDBList) {
-                    throw new IllegalArgumentException("wrong path " + pathFromTokens(pathTokens) + " at token " + pathToken + "; it should be '[*]'");
-                } else if (json instanceof BasicDBObject) {
-                    if (((DBObject) json).containsField(pathToken)) {
-                        return _getPropsFromPath(((DBObject) json).get(pathToken), subpath(pathTokens), totalTokensLength);
+                if (json.isArray()) {
+                    throw new IllegalArgumentException("wrong path "
+                            + pathFromTokens(pathTokens)
+                            + " at token "
+                            + pathToken
+                            + "; it should be '[*]'");
+                } else if (json.isDocument()) {
+                    if (json.asDocument().containsKey(pathToken)) {
+                        return _getPropsFromPath(
+                                json.asDocument().get(pathToken),
+                                subpath(pathTokens),
+                                totalTokensLength);
                     } else {
                         return null;
                     }
@@ -448,9 +460,9 @@ public class JsonUtils {
      * expression or null if path does not exist
      * @throws IllegalArgumentException
      */
-    public static Integer countPropsFromPath(Object root, String path)
+    public static Integer countPropsFromPath(BsonValue root, String path)
             throws IllegalArgumentException {
-        List<Optional<Object>> items = getPropsFromPath(root, path);
+        List<Optional<BsonValue>> items = getPropsFromPath(root, path);
 
         if (items == null) {
             return null;
@@ -487,7 +499,7 @@ public class JsonUtils {
         return subpath.toArray(new String[subpath.size()]);
     }
 
-    public static boolean checkType(Optional<Object> o, String type) {
+    public static boolean checkType(Optional<BsonValue> o, String type) {
         if (!o.isPresent() && !"null".equals(type) && !"notnull".equals(type)) {
             return false;
         }
@@ -498,31 +510,32 @@ public class JsonUtils {
             case "notnull":
                 return o.isPresent();
             case "object":
-                return o.get() instanceof BasicDBObject;
+                return o.get().isDocument();
             case "array":
-                return o.get() instanceof BasicDBList;
+                return o.get().isArray();
             case "string":
-                return o.get() instanceof String;
+                return o.get().isString();
             case "number":
-                return o.get() instanceof Number;
+                return o.get().isNumber();
             case "boolean":
-                return o.get() instanceof Boolean;
+                return o.get().isBoolean();
             case "objectid":
-                return o.get() instanceof ObjectId;
+                return o.get().isObjectId();
             case "objectidstring":
-                return o.get() instanceof String && ObjectId.isValid((String) o.get());
+                return o.get().isString()
+                        && ObjectId.isValid(o.get().asString().getValue());
             case "date":
-                return o.get() instanceof Date;
+                return o.get().isDateTime();
             case "timestamp":
-                return o.get() instanceof BSONTimestamp;
+                return o.get().isTimestamp();
             case "maxkey":
-                return o.get() instanceof MaxKey;
+                return o.get() instanceof BsonMaxKey;
             case "minkey":
-                return o.get() instanceof MinKey;
+                return o.get() instanceof BsonMinKey;
             case "symbol":
-                return o.get() instanceof Symbol;
+                return o.get().isSymbol();
             case "code":
-                return o.get() instanceof Code;
+                return o.get() instanceof BsonJavaScript;
             default:
                 return false;
         }
@@ -545,7 +558,8 @@ public class JsonUtils {
             // get next (c) and next-next character (cc)
 
             char c = jsonString.charAt(i);
-            String cc = jsonString.substring(i, Math.min(i + 2, jsonString.length()));
+            String cc = jsonString.substring(i, 
+                    Math.min(i + 2, jsonString.length()));
 
             // big switch is by what mode we're in (in_string etc.)
             if (in_string) {
@@ -590,7 +604,7 @@ public class JsonUtils {
      * @return either a BsonDocument or a BsonArray from the json string
      * @throws JsonParseException
      */
-    public static BsonValue parseToBson(String json)
+    public static BsonValue parse(String json)
             throws JsonParseException {
         if (json == null) {
             return null;
@@ -599,14 +613,31 @@ public class JsonUtils {
         String trimmed = json.trim();
 
         if (trimmed.startsWith("{")) {
-            return BsonDocument.parse(json);
+            try {
+                return BsonDocument.parse(json);
+            } catch (BsonInvalidOperationException ex) {
+                // this can happen parsing a bson type, e.g.
+                // {"$oid": "xxxxxxxx" }
+                // the string starts with { but is not a document
+                return getBsonValue(json);
+            }
         } else if (trimmed.startsWith("[")) {
             return BSON_ARRAY_CODEC.decode(
                     new JsonReader(json),
                     DecoderContext.builder().build());
         } else {
-            throw new JsonParseException("expected json object or array");
+            return getBsonValue(json);
         }
+    }
+
+    private static BsonValue getBsonValue(String json) {
+        String _json = "{'x':"
+                .concat(json)
+                .concat("}");
+
+        return BsonDocument
+                .parse(_json)
+                .get("x");
     }
 
     /**
@@ -644,62 +675,17 @@ public class JsonUtils {
 
             return json;
         } else {
-            throw new IllegalArgumentException("expected json object or array");
+            BsonDocument doc = new BsonDocument("x", bson);
+            
+            String ret = doc.toJson();
+            
+            ret = ret.replaceFirst("\\{", "");
+            ret = ret.replaceFirst("\"x\"", "");
+            ret = ret.replaceFirst(":", "");
+            int index = ret.lastIndexOf("}");
+            ret = ret.substring(0, index);
+            
+            return ret;
         }
-    }
-
-    /**
-     * utility method to support transitioning to new mongodb java driver 3.x
-     * API
-     *
-     * @param dBObject
-     * @return
-     */
-    public static BsonValue convertDBObjectToBsonValue(DBObject dBObject) {
-        if (dBObject == null) {
-            return null;
-        }
-
-        return parseToBson(serialize(dBObject));
-    }
-
-    /**
-     * utility method to support transitioning to new mongodb java driver 3.x
-     * API
-     *
-     * @param bson
-     * @return
-     * @throws IllegalArgumentException is bson is not a document or an array
-     */
-    public static DBObject convertBsonValueToDBObject(BsonValue bson) {
-        if (bson == null) {
-            return null;
-        }
-
-        if (bson.isArray() || bson.isDocument()) {
-            return (DBObject) JSON.parse(toJson(bson));
-        } else {
-            throw new IllegalArgumentException("expected json object or array");
-        }
-    }
-
-    public static Object find(DBObject obj, String key) {
-        throw new RuntimeException("not yet implemented");
-    }
-
-    private JsonUtils() {
-    }
-
-    public static byte[] dBObjectToBson(DBObject dbObject) {
-        byte bson[] = BSON_ENCODER.encode(dbObject);
-        return bson;
-    }
-
-    public static DBObject bsonToDBObject(byte[] bson) {
-        JSONCallback callback = new JSONCallback();
-        BSON_DECODER.decode(bson, callback);
-        Object obj = callback.get();
-        DBObject dbObject = (DBObject) obj;
-        return dbObject;
     }
 }

@@ -17,11 +17,10 @@
  */
 package org.restheart.handlers.metadata;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
+import org.bson.BsonArray;
+import org.bson.BsonValue;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.RepresentationTransformer;
 import org.restheart.hal.metadata.singletons.NamedSingletonsFactory;
@@ -38,9 +37,11 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ResponseTranformerMetadataHandler extends AbstractTransformerMetadataHandler {
+public class ResponseTranformerMetadataHandler
+        extends AbstractTransformerMetadataHandler {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(ResponseTranformerMetadataHandler.class);
+    static final Logger LOGGER
+            = LoggerFactory.getLogger(ResponseTranformerMetadataHandler.class);
 
     /**
      * Creates a new instance of ResponseTranformerMetadataHandler
@@ -49,7 +50,7 @@ public class ResponseTranformerMetadataHandler extends AbstractTransformerMetada
     public ResponseTranformerMetadataHandler() {
         super(null);
     }
-    
+
     /**
      * Creates a new instance of ResponseTranformerMetadataHandler
      *
@@ -67,7 +68,7 @@ public class ResponseTranformerMetadataHandler extends AbstractTransformerMetada
                 || context.getType() == RequestContext.TYPE.SCHEMA_STORE
                 || context.getType() == RequestContext.TYPE.SCHEMA)
                 && context.getCollectionProps()
-                .containsField(RepresentationTransformer.RTS_ELEMENT_NAME));
+                .containsKey(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
@@ -77,35 +78,66 @@ public class ResponseTranformerMetadataHandler extends AbstractTransformerMetada
                 || context.getType() == RequestContext.TYPE.COLLECTION
                 || context.getType() == RequestContext.TYPE.SCHEMA_STORE)
                 && context.getDbProps()
-                .containsField(RepresentationTransformer.RTS_ELEMENT_NAME));
+                .containsKey(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
-    void enforceDbRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
-        List<RepresentationTransformer> dbRts = RepresentationTransformer.getFromJson(context.getDbProps());
+    void enforceDbRepresentationTransformLogic(
+            HttpServerExchange exchange,
+            RequestContext context)
+            throws InvalidMetadataException {
+        List<RepresentationTransformer> dbRts
+                = RepresentationTransformer
+                .getFromJson(context.getDbProps());
 
         RequestContext.TYPE requestType = context.getType(); // DB or COLLECTION
 
         for (RepresentationTransformer rt : dbRts) {
             if (rt.getPhase() == RepresentationTransformer.PHASE.RESPONSE) {
-                Transformer t = (Transformer) NamedSingletonsFactory.getInstance().get("transformers", rt.getName());
+                Transformer t = (Transformer) NamedSingletonsFactory
+                        .getInstance()
+                        .get("transformers", rt.getName());
 
                 if (t == null) {
-                    throw new IllegalArgumentException("cannot find singleton " + rt.getName() + " in singleton group transformers");
+                    throw new IllegalArgumentException("cannot find singleton "
+                            + rt.getName()
+                            + " in singleton group transformers");
                 }
 
-                if (rt.getScope() == RepresentationTransformer.SCOPE.THIS && requestType == RequestContext.TYPE.DB) {
-                    t.tranform(exchange, context, context.getResponseContent(), rt.getArgs());
-                } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.COLLECTION) {
-                    BasicDBObject _embedded = (BasicDBObject) context.getResponseContent().get("_embedded");
+                if (rt.getScope() == RepresentationTransformer.SCOPE.THIS
+                        && requestType == RequestContext.TYPE.DB) {
+                    t.tranform(
+                            exchange,
+                            context,
+                            context.getResponseContent(),
+                            rt.getArgs());
+                } else if (rt.getScope()
+                        == RepresentationTransformer.SCOPE.CHILDREN
+                        && requestType == RequestContext.TYPE.COLLECTION) {
+                    if (context.getResponseContent().containsKey("_embedded")) {
+                        BsonValue _embedded = context
+                                .getResponseContent().get("_embedded");
 
-                    // evaluate the script on children collection
-                    BasicDBList colls = (BasicDBList) _embedded.get("rh:coll");
+                        if (_embedded.isDocument()
+                                && _embedded
+                                .asDocument()
+                                .containsKey("_embedded")) {
+                            // execute the logic on children documents
+                            BsonArray colls = _embedded.asDocument()
+                                    .get("rh:coll")
+                                    .asArray();
 
-                    if (colls != null) {
-                        colls.keySet().stream().map((k) -> (DBObject) colls.get(k)).forEach((coll) -> {
-                            t.tranform(exchange, context, coll, rt.getArgs());
-                        });
+                            if (colls != null) {
+                                colls.getValues().stream().forEach(
+                                        (coll) -> {
+                                            t.tranform(
+                                                    exchange,
+                                                    context,
+                                                    coll.asDocument(),
+                                                    rt.getArgs());
+                                        });
+                            }
+                        }
                     }
                 }
             }
@@ -113,8 +145,12 @@ public class ResponseTranformerMetadataHandler extends AbstractTransformerMetada
     }
 
     @Override
-    void enforceCollRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException {
-        List<RepresentationTransformer> dbRts = RepresentationTransformer.getFromJson(context.getCollectionProps());
+    void enforceCollRepresentationTransformLogic(
+            HttpServerExchange exchange,
+            RequestContext context)
+            throws InvalidMetadataException {
+        List<RepresentationTransformer> dbRts = RepresentationTransformer
+                .getFromJson(context.getCollectionProps());
 
         RequestContext.TYPE requestType = context.getType(); // DOCUMENT or COLLECTION
 
@@ -123,43 +159,85 @@ public class ResponseTranformerMetadataHandler extends AbstractTransformerMetada
                 Transformer t;
 
                 try {
-                    t = (Transformer) NamedSingletonsFactory.getInstance().get("transformers", rt.getName());
+                    t = (Transformer) NamedSingletonsFactory
+                            .getInstance()
+                            .get("transformers", rt.getName());
                 } catch (IllegalArgumentException ex) {
-                    context.addWarning("error applying transformer: " + ex.getMessage());
+                    context.addWarning("error applying transformer: "
+                            + ex.getMessage());
                     return;
                 }
 
                 if (t == null) {
-                    throw new IllegalArgumentException("cannot find singleton " + rt.getName() + " in singleton group transformers");
+                    throw new IllegalArgumentException("cannot find singleton "
+                            + rt.getName()
+                            + " in singleton group transformers");
                 }
 
-                if (rt.getScope() == RepresentationTransformer.SCOPE.THIS && requestType == RequestContext.TYPE.COLLECTION) {
+                if (rt.getScope() == RepresentationTransformer.SCOPE.THIS
+                        && requestType == RequestContext.TYPE.COLLECTION) {
                     // evaluate the script on collection
-                    t.tranform(exchange, context, context.getResponseContent(), rt.getArgs());
-                } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.COLLECTION) {
-                    BasicDBObject _embedded = (BasicDBObject) context.getResponseContent().get("_embedded");
+                    t.tranform(
+                            exchange,
+                            context,
+                            context.getResponseContent(),
+                            rt.getArgs());
+                } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN
+                        && requestType == RequestContext.TYPE.COLLECTION) {
+                    if (context.getResponseContent().containsKey("_embedded")) {
+                        BsonValue _embedded = context
+                                .getResponseContent()
+                                .get("_embedded");
 
-                    if (_embedded != null) {
-                        // execute the logic on children documents
-                        BasicDBList docs = (BasicDBList) _embedded.get("rh:doc");
+                        if (_embedded.isDocument()
+                                && _embedded
+                                .asDocument()
+                                .containsKey("rh:doc")) {
 
-                        if (docs != null) {
-                            docs.keySet().stream().map((k) -> (DBObject) docs.get(k)).forEach((doc) -> {
-                                t.tranform(exchange, context, doc, rt.getArgs());
+                            // execute the logic on children documents
+                            BsonArray docs = _embedded
+                                    .asDocument()
+                                    .get("rh:doc")
+                                    .asArray();
+
+                            docs.getValues().stream().forEach((doc) -> {
+                                t.tranform(
+                                        exchange,
+                                        context,
+                                        doc.asDocument(),
+                                        rt.getArgs());
                             });
                         }
-                        // execute the logic on children files
-                        BasicDBList files = (BasicDBList) _embedded.get("rh:file");
 
-                        if (files != null) {
-                            files.keySet().stream().map((k) -> (DBObject) files.get(k)).forEach((file) -> {
-                                t.tranform(exchange, context, file, rt.getArgs());
-                            });
+                        if (_embedded.isDocument()
+                                && _embedded
+                                .asDocument().
+                                containsKey("rh:file")) {
+                            // execute the logic on children files
+                            BsonArray files = _embedded
+                                    .asDocument()
+                                    .get("rh:file")
+                                    .asArray();
+
+                            if (files != null) {
+                                files.getValues().stream().forEach((file) -> {
+                                    t.tranform(
+                                            exchange,
+                                            context,
+                                            file.asDocument(),
+                                            rt.getArgs());
+                                });
+                            }
                         }
                     }
-                    
-                } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN && requestType == RequestContext.TYPE.DOCUMENT) {
-                    t.tranform(exchange, context, context.getResponseContent(), rt.getArgs());
+
+                } else if (rt.getScope()
+                        == RepresentationTransformer.SCOPE.CHILDREN
+                        && requestType == RequestContext.TYPE.DOCUMENT) {
+                    t.tranform(exchange,
+                            context,
+                            context.getResponseContent(),
+                            rt.getArgs());
                 }
             }
         }

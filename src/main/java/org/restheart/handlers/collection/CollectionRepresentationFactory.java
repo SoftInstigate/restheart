@@ -17,11 +17,14 @@
  */
 package org.restheart.handlers.collection;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import java.util.List;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.Configuration;
 import org.restheart.hal.AbstractRepresentationFactory;
@@ -57,7 +60,7 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
      * @throws IllegalQueryParamenterException
      */
     @Override
-    public Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<DBObject> embeddedData, long size)
+    public Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<BsonDocument> embeddedData, long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
         final Representation rep;
@@ -81,7 +84,6 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         addEmbeddedData(embeddedData, rep, requestPath, exchange, context);
 
         if (context.isFullHalMode()) {
-
             addSpecialProperties(rep, context.getType(), context.getCollectionProps());
 
             addPaginationLinks(exchange, context, size, rep);
@@ -98,27 +100,27 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
 
     private void addProperties(final Representation rep, final RequestContext context) {
         // add the collection properties
-        final DBObject collProps = context.getCollectionProps();
+        final BsonDocument collProps = context.getCollectionProps();
 
         rep.addProperties(collProps);
     }
 
     public static void addSpecialProperties(final Representation rep,
             final RequestContext.TYPE type,
-            final DBObject data) {
-        rep.addProperty("_type", type.name());
+            final BsonDocument data) {
+        rep.addProperty("_type", new BsonString(type.name()));
 
         Object etag = data.get("_etag");
 
         if (etag != null && etag instanceof ObjectId) {
             if (data.get("_lastupdated_on") == null) {
                 // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
-                rep.addProperty("_lastupdated_on", Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString());
+                rep.addProperty("_lastupdated_on", new BsonString(Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString()));
             }
         }
     }
 
-    private void addEmbeddedData(List<DBObject> embeddedData, final Representation rep, final String requestPath, final HttpServerExchange exchange, final RequestContext context)
+    private void addEmbeddedData(List<BsonDocument> embeddedData, final Representation rep, final String requestPath, final HttpServerExchange exchange, final RequestContext context)
             throws IllegalQueryParamenterException {
         if (embeddedData != null) {
             addReturnedProperty(embeddedData, rep);
@@ -127,26 +129,31 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
                 embeddedDocuments(embeddedData, requestPath, exchange, context, rep);
             }
         } else {
-            rep.addProperty("_returned", 0);
+            rep.addProperty("_returned", new BsonInt32(0));
         }
     }
 
     private void addAggregationsLinks(final RequestContext context, final Representation rep, final String requestPath) {
-        Object _aggregations = context
+        BsonValue _aggregations = context
                 .getCollectionProps()
                 .get(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME);
 
-        if (_aggregations instanceof BasicDBList) {
-            BasicDBList aggregations = (BasicDBList) _aggregations;
+        if (_aggregations != null && _aggregations.isArray()) {
+            BsonArray aggregations = _aggregations.asArray();
 
             aggregations.forEach(q -> {
-                if (q instanceof DBObject) {
-                    Object _uri = ((DBObject) q).get("uri");
+                if (q.isDocument()) {
+                    BsonValue _uri = q.asDocument().get("uri");
 
-                    if (_uri != null && _uri instanceof String) {
+                    if (_uri != null && _uri.isString()) {
+                        String uri = _uri.asString().getValue();
+
                         rep.addLink(
-                                new Link(((String) _uri),
-                                        requestPath + "/" + RequestContext._AGGREGATIONS + "/" + ((String) _uri)));
+                                new Link(uri,
+                                        requestPath
+                                        + "/"
+                                        + RequestContext._AGGREGATIONS + "/"
+                                        + uri));
                     }
                 }
             });
@@ -177,9 +184,9 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         rep.addLink(new Link("rh:indexes", requestPath + "/_indexes"));
     }
 
-    private void embeddedDocuments(List<DBObject> embeddedData, String requestPath, HttpServerExchange exchange, RequestContext context, Representation rep) throws IllegalQueryParamenterException {
-        for (DBObject d : embeddedData) {
-            Object _id = d.get("_id");
+    private void embeddedDocuments(List<BsonDocument> embeddedData, String requestPath, HttpServerExchange exchange, RequestContext context, Representation rep) throws IllegalQueryParamenterException {
+        for (BsonDocument d : embeddedData) {
+            BsonValue _id = d.get("_id");
 
             if (_id != null && RequestContext.isReservedResourceCollection(_id.toString())) {
                 rep.addWarning("filtered out reserved resource " + requestPath + "/" + _id.toString());

@@ -17,8 +17,6 @@
  */
 package org.restheart.test.integration;
 
-import com.mongodb.DBObject;
-import com.mongodb.util.JSON;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -31,6 +29,7 @@ import org.apache.http.client.fluent.Response;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.message.BasicNameValuePair;
+import org.bson.BsonDocument;
 import org.bson.types.ObjectId;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -134,14 +133,14 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
     protected static final String document1PropsString = "{ \"a\": 1, \"oto\": \"doc2\", \"otm\" : [ \"doc2\" ], \"mto\" : \"doc2\", \"mtm\" : [ \"doc2\" ] }";
     protected static final String document2PropsString = "{ \"a\": 2 }";
 
-    protected static DBObject dbProps = (DBObject) JSON.parse(HttpClientAbstactIT.dbPropsString);
-    protected static DBObject coll1Props = (DBObject) JSON.parse(HttpClientAbstactIT.coll1PropsString);
-    protected static DBObject coll2Props = (DBObject) JSON.parse(HttpClientAbstactIT.coll2PropsString);
-    protected static DBObject collTmpProps = (DBObject) JSON.parse(HttpClientAbstactIT.collTmpPropsString);
-    protected static DBObject docsCollectionProps = (DBObject) JSON.parse(HttpClientAbstactIT.docsCollectionPropsStrings);
+    protected static BsonDocument dbProps = BsonDocument.parse(HttpClientAbstactIT.dbPropsString);
+    protected static BsonDocument coll1Props = BsonDocument.parse(HttpClientAbstactIT.coll1PropsString);
+    protected static BsonDocument coll2Props = BsonDocument.parse(HttpClientAbstactIT.coll2PropsString);
+    protected static BsonDocument collTmpProps = BsonDocument.parse(HttpClientAbstactIT.collTmpPropsString);
+    protected static BsonDocument docsCollectionProps = BsonDocument.parse(HttpClientAbstactIT.docsCollectionPropsStrings);
 
-    protected static DBObject document1Props = (DBObject) JSON.parse(HttpClientAbstactIT.document1PropsString);
-    protected static DBObject document2Props = (DBObject) JSON.parse(HttpClientAbstactIT.document2PropsString);
+    protected static BsonDocument document1Props = BsonDocument.parse(HttpClientAbstactIT.document1PropsString);
+    protected static BsonDocument document2Props = BsonDocument.parse(HttpClientAbstactIT.document2PropsString);
 
     protected static final String[] docsPropsStrings = {
         "{ \"ranking\": 1, \"name\": \"Nick\", \"surname\": \"Cave\", \"band\": \"Nick Cave & the Bad Seeds\"}",
@@ -214,7 +213,7 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
         dbsDAO.upsertCollection(dbName, docsCollectionName, docsCollectionProps, new ObjectId().toString(), false, false, false);
 
         for (String index : docsCollectionIndexesStrings) {
-            dbsDAO.createIndex(dbName, docsCollectionName, ((DBObject) JSON.parse(index)), null);
+            dbsDAO.createIndex(dbName, docsCollectionName, BsonDocument.parse(index), null);
         }
 
         final DocumentDAO documentDAO = new DocumentDAO();
@@ -222,7 +221,7 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
         documentDAO.upsertDocument(dbName, collection2Name, document2Id, null, document2Props, new ObjectId().toString(), false, false);
 
         for (String doc : docsPropsStrings) {
-            documentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), null, ((DBObject) JSON.parse(doc)), new ObjectId().toString(), false, false);
+            documentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), null, BsonDocument.parse(doc), new ObjectId().toString(), false, false);
         }
         LOG.debug("test data created");
     }

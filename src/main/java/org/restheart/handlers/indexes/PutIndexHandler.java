@@ -17,9 +17,10 @@
  */
 package org.restheart.handlers.indexes;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.document.DocumentRepresentationFactory;
@@ -54,39 +55,81 @@ public class PutIndexHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(
+            HttpServerExchange exchange, 
+            RequestContext context) 
+            throws Exception {
         final String db = context.getDBName();
         final String co = context.getCollectionName();
         final String id = context.getIndexId();
 
         if (id.startsWith("_")) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+            ResponseHelper.endExchangeWithMessage(
+                    exchange, 
+                    HttpStatus.SC_NOT_ACCEPTABLE,
                     "index name cannot start with _");
             return;
         }
 
-        DBObject content = context.getContent();
+        final BsonValue _content = context.getContent();
+        
+        // must be an object
+        if (!_content.isDocument()) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "data cannot be an array");
+            return;
+        }
+        
+        BsonDocument content = _content.asDocument();
 
-        DBObject keys = (DBObject) content.get("keys");
-        DBObject ops = (DBObject) content.get("ops");
+        BsonValue _keys = content.get("keys");
+        BsonValue _ops = content.get("ops");
+        
+        // must be an object
+        if (!_keys.isDocument()) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "keys must be a json object");
+            return;
+        }
+        
+        // must be an object
+        if (!_ops.isDocument()) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "ops must be a json object");
+            return;
+        }
+        
+        BsonDocument keys = _keys.asDocument();
+        BsonDocument ops = _ops.asDocument();
 
         if (keys == null) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+            ResponseHelper.endExchangeWithMessage(
+                    exchange, 
+                    HttpStatus.SC_NOT_ACCEPTABLE,
                     "wrong request, content must include 'keys' object", null);
             return;
         }
 
         if (ops == null) {
-            ops = new BasicDBObject();
+            ops = new BsonDocument();
         }
 
-        ops.put("name", id);
+        ops.put("name", new BsonString(id));
 
         try {
             getDatabase().createIndex(db, co, keys, ops);
         } catch (Throwable t) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
-                    "error creating the index", t);
+            ResponseHelper.endExchangeWithMessage(
+                    exchange, 
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "error creating the index", 
+                    t);
             return;
         }
 
@@ -95,8 +138,14 @@ public class PutIndexHandler extends PipedHttpHandler {
         // send the warnings if any
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             DocumentRepresentationFactory rf = new DocumentRepresentationFactory();
-            rf.sendRepresentation(exchange, context, rf.getRepresentation(exchange.getRequestPath(),
-                    exchange, context, new BasicDBObject()));
+            
+            rf.sendRepresentation(
+                    exchange, 
+                    context, 
+                    rf.getRepresentation(exchange.getRequestPath(),
+                    exchange, 
+                    context, 
+                    new BsonDocument()));
         }
         
         if (getNext() != null) {

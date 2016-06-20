@@ -17,16 +17,22 @@ package org.restheart.db;
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import com.mongodb.DuplicateKeyException;
 import com.mongodb.MongoClient;
-import com.mongodb.gridfs.GridFS;
-import com.mongodb.gridfs.GridFSDBFile;
-import com.mongodb.gridfs.GridFSInputFile;
-import java.io.File;
+import com.mongodb.client.gridfs.GridFSBucket;
+import com.mongodb.client.gridfs.GridFSBuckets;
+import com.mongodb.client.gridfs.model.GridFSFile;
+import com.mongodb.client.gridfs.model.GridFSUploadOptions;
+import static com.mongodb.client.model.Filters.eq;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Objects;
+import org.bson.BsonDocument;
+import org.bson.BsonObjectId;
+import org.bson.BsonValue;
+import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
 
@@ -37,7 +43,6 @@ import org.restheart.utils.HttpStatus;
 public class GridFsDAO implements GridFsRepository {
 
     private static final String FILENAME = "filename";
-    private static final String _ID = "_id";
 
     private final MongoClient client;
 
@@ -51,41 +56,53 @@ public class GridFsDAO implements GridFsRepository {
             final Database db,
             final String dbName,
             final String bucketName,
-            final Object fileId,
-            final DBObject properties,
-            final File data) throws IOException, DuplicateKeyException {
+            final BsonValue fileId,
+            final BsonDocument properties,
+            final Path filePath)
+            throws IOException, DuplicateKeyException {
 
         final String bucket = extractBucketName(bucketName);
-        GridFS gridfs = new GridFS(db.getDB(dbName), bucket);
-        GridFSInputFile gfsFile = gridfs.createFile(data);
+
+        GridFSBucket gridFSBucket = GridFSBuckets.create(
+                db.getDatabase(dbName),
+                bucket);
 
         String filename = extractFilenameFromProperties(properties);
-        gfsFile.setFilename(filename);
 
-        // add etag
+        //add etag to properties
         ObjectId etag = new ObjectId();
-        properties.put("_etag", etag);
+        properties.put("_etag", new BsonObjectId(etag));
 
-        gfsFile.setId(fileId);
+        GridFSUploadOptions options = new GridFSUploadOptions()
+                .metadata(Document.parse(properties.toJson()));
 
-        // unchecked
-        properties.toMap()
-                .keySet()
-                .stream()
-                .forEach(k -> gfsFile.put((String) k, properties.get((String) k)));
-
-        gfsFile.save();
+        InputStream sourceStream = new FileInputStream(filePath.toFile());
+        
+        gridFSBucket.uploadFromStream(
+                filename, 
+                sourceStream, 
+                options);
 
         return new OperationResult(HttpStatus.SC_CREATED, etag);
     }
 
-    private String extractFilenameFromProperties(final DBObject properties) {
+    private String extractFilenameFromProperties(
+            final BsonDocument properties) {
         String filename = null;
-        if (properties != null && properties.containsField(FILENAME)) {
-            filename = (String) properties.get(FILENAME);
+
+        if (properties != null && properties.containsKey(FILENAME)) {
+            BsonValue _filename = properties.get(FILENAME);
+
+            if (_filename != null && _filename.isString()) {
+                filename = _filename.asString().getValue();
+            }
         }
 
-        return filename;
+        if (filename == null) {
+            return "file";
+        } else {
+            return filename;
+        }
     }
 
     @Override
@@ -93,28 +110,36 @@ public class GridFsDAO implements GridFsRepository {
             final Database db,
             final String dbName,
             final String bucketName,
-            final Object fileId,
+            final BsonValue fileId,
             final String requestEtag,
             final boolean checkEtag) {
-
-        GridFS gridfs = new GridFS(db.getDB(dbName), extractBucketName(bucketName));
-        GridFSDBFile dbsfile = gridfs.findOne(new BasicDBObject(_ID, fileId));
-
-        if (dbsfile == null) {
+        final String bucket = extractBucketName(bucketName);
+        
+        GridFSBucket gridFSBucket = GridFSBuckets.create(
+                db.getDatabase(dbName),
+                bucket);
+        
+        GridFSFile file = gridFSBucket
+                .find(eq("_id", fileId))
+                .limit(1).iterator().tryNext();
+        
+        if (file == null) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
         } else if (checkEtag) {
-            Object oldEtag = dbsfile.get("_etag");
+            Object oldEtag = file.getMetadata().get("_etag");
 
             if (oldEtag != null) {
                 if (requestEtag == null) {
                     return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
                 } else if (!Objects.equals(oldEtag.toString(), requestEtag)) {
-                    return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+                    return new OperationResult(
+                            HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
                 }
             }
         }
 
-        gridfs.remove(new BasicDBObject(_ID, fileId));
+        gridFSBucket.delete(fileId.asObjectId().getValue());
+        
         return new OperationResult(HttpStatus.SC_NO_CONTENT);
     }
 
@@ -124,7 +149,7 @@ public class GridFsDAO implements GridFsRepository {
             final String bucketName
     ) {
         String chunksCollName = extractBucketName(bucketName).concat(".chunks");
-        client.getDB(dbName).getCollection(chunksCollName).drop();
+        client.getDatabase(dbName).getCollection(chunksCollName).drop();
     }
 
     private static String extractBucketName(final String collectionName) {

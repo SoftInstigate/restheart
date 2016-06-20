@@ -18,7 +18,8 @@
 package org.restheart.handlers.schema;
 
 import java.util.Objects;
-import org.bson.types.ObjectId;
+import org.bson.BsonString;
+import org.bson.BsonValue;
 
 /**
  *
@@ -36,17 +37,17 @@ import org.bson.types.ObjectId;
  */
 public class SchemaStoreURL {
     private final String schemaDb;
-    private final Object schemaId;
+    private final BsonValue schemaId;
 
     public static final String SCHEMA_STORE_URL_PREFIX
             = "http://schema-store/";
 
-    public SchemaStoreURL(String schemaDb, Object schemaId) {
+    public SchemaStoreURL(String schemaDb, BsonValue schemaId) {
         Objects.requireNonNull(schemaDb);
         Objects.requireNonNull(schemaId);
 
-        if (schemaId instanceof String
-                || schemaId instanceof ObjectId) {
+        if (schemaId.isString()
+                || schemaId.isObjectId()) {
             this.schemaDb = schemaDb;
             this.schemaId = schemaId;
         } else {
@@ -65,16 +66,16 @@ public class SchemaStoreURL {
         String[] tokens = url.substring(20).split("/");
 
         this.schemaDb = tokens[0];
-        this.schemaId = tokens[1].endsWith("#")
+        this.schemaId = new BsonString(tokens[1].endsWith("#")
                 ? tokens[1].substring(0, tokens[1].length())
-                : tokens[1];
+                : tokens[1]);
     }
 
     public String getSchemaDb() {
         return schemaDb;
     }
 
-    public Object getSchemaId() {
+    public BsonValue getSchemaId() {
         return schemaId;
     }
 

@@ -17,13 +17,13 @@
  */
 package org.restheart.hal;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import com.mongodb.util.JSONSerializers;
 import com.mongodb.util.ObjectSerializer;
 import java.util.Objects;
-import org.bson.BSONObject;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 
 /**
@@ -41,22 +41,22 @@ public class Representation {
     public static final String APP_FORM_URLENCODED_TYPE = "application/x-www-form-urlencoded";
     public static final String MULTIPART_FORM_DATA_TYPE = "multipart/form-data";
 
-    private final BasicDBObject properties;
-    private final BasicDBObject embedded;
-    private final BasicDBObject links;
+    private final BsonDocument properties;
+    private final BsonDocument embedded;
+    private final BsonDocument links;
 
     /**
      *
      * @param href
      */
     public Representation(String href) {
-        properties = new BasicDBObject();
-        embedded = new BasicDBObject();
-        links = new BasicDBObject();
+        properties = new BsonDocument();
+        embedded = new BsonDocument();
+        links = new BsonDocument();
 
         properties.append("_links", links);
 
-        if (href != null) links.put("self", new BasicDBObject("href", href));
+        if (href != null) links.put("self", new BsonDocument("href", new BsonString(href)));
         }
 
     /**
@@ -80,7 +80,7 @@ public class Representation {
         return RequestContext.TYPE.valueOf(_type.toString());
     }
 
-    public BasicDBObject asDBObject() {
+    public BsonDocument asBsonDocument() {
         if (embedded == null || embedded.isEmpty()) {
             properties.remove("_embedded");
         } else {
@@ -101,7 +101,7 @@ public class Representation {
      * @param link
      */
     public void addLink(Link link) {
-        links.putAll((BSONObject) link.getDBObject());
+        links.putAll(link.getBsonDocument());
     }
 
     /**
@@ -109,11 +109,11 @@ public class Representation {
      * @param linkArrayRef
      * @return the created or existing link array
      */
-    public BasicDBList addLinkArray(String linkArrayRef) {
-        BasicDBList linkArray = (BasicDBList) links.get(linkArrayRef);
+    public BsonArray addLinkArray(String linkArrayRef) {
+        BsonArray linkArray = links.getArray(linkArrayRef);
 
         if (linkArray == null) {
-            linkArray = new BasicDBList();
+            linkArray = new BsonArray();
             links.append(linkArrayRef, linkArray);
         }
 
@@ -126,9 +126,9 @@ public class Representation {
      * @param inArray
      */
     public void addLink(Link link, boolean inArray) {
-        BasicDBList linkArray = addLinkArray(link.getRef());
+        BsonArray linkArray = addLinkArray(link.getRef());
 
-        linkArray.add(link.getDBObject().get(link.getRef()));
+        linkArray.add(link.getBsonDocument().get(link.getRef()));
 
         links.put(link.getRef(), linkArray);
     }
@@ -138,7 +138,7 @@ public class Representation {
      * @param key
      * @param value
      */
-    public void addProperty(String key, Object value) {
+    public void addProperty(String key, BsonValue value) {
         properties.append(key, value);
     }
 
@@ -146,7 +146,7 @@ public class Representation {
      *
      * @param props
      */
-    public void addProperties(DBObject props) {
+    public void addProperties(BsonDocument props) {
         if (props == null) {
             return;
         }
@@ -160,26 +160,24 @@ public class Representation {
      * @param rep
      */
     public void addRepresentation(String rel, Representation rep) {
-        BasicDBList repArray = (BasicDBList) embedded.get(rel);
-
-        if (repArray == null) {
-            repArray = new BasicDBList();
-
-            embedded.append(rel, repArray);
+        if (!embedded.containsKey(rel)) {
+            embedded.append(rel, new BsonArray());
         }
+        
+        BsonArray repArray = embedded.getArray(rel);
 
-        repArray.add(rep.asDBObject());
+        repArray.add(rep.asBsonDocument());
     }
 
     public void addWarning(String warning) {
         Representation nrep = new Representation("#warnings");
-        nrep.addProperty("message", warning);
+        nrep.addProperty("message", new BsonString(warning));
         addRepresentation("rh:warnings", nrep);
     }
 
     @Override
     public String toString() {
-        return SERIALIZER.serialize(asDBObject());
+        return asBsonDocument().toJson();
     }
 
     @Override

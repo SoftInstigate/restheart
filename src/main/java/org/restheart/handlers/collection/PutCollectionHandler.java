@@ -17,11 +17,10 @@
  */
 package org.restheart.handlers.collection;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.db.Database;
 import org.restheart.db.OperationResult;
 import org.restheart.hal.metadata.InvalidMetadataException;
@@ -46,9 +45,10 @@ public class PutCollectionHandler extends PipedHttpHandler {
     public PutCollectionHandler() {
         super();
     }
-    
+
     /**
      * Creates a new instance of PutCollectionHandler
+     *
      * @param next
      */
     public PutCollectionHandler(PipedHttpHandler next) {
@@ -57,6 +57,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
 
     /**
      * Creates a new instance of PutCollectionHandler
+     *
      * @param next
      * @param dbsDAO
      */
@@ -71,81 +72,111 @@ public class PutCollectionHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        DBObject content = context.getContent();
+    public void handleRequest(
+            HttpServerExchange exchange,
+            RequestContext context) throws Exception {
+        BsonValue _content = context.getContent();
 
-        if (content == null) {
-            content = new BasicDBObject();
+        if (_content == null) {
+            _content = new BsonDocument();
         }
 
         // cannot PUT an array
-        if (content instanceof BasicDBList) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
-                    "data cannot be an array");
+        if (!_content.isDocument()) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "data must be a json object");
             return;
         }
 
+        BsonDocument content = _content.asDocument();
+
         // check RELS metadata
-        if (content.containsField(Relationship.RELATIONSHIPS_ELEMENT_NAME)) {
+        if (content.containsKey(Relationship.RELATIONSHIPS_ELEMENT_NAME)) {
             try {
                 Relationship.getFromJson(content);
             } catch (InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong relationships definition. " + ex.getMessage(), ex);
                 return;
             }
         }
 
         // check RT metadata
-        if (content.containsField(RepresentationTransformer.RTS_ELEMENT_NAME)) {
+        if (content.containsKey(RepresentationTransformer.RTS_ELEMENT_NAME)) {
             try {
                 RepresentationTransformer.getFromJson(content);
             } catch (InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong representation transformer definition. " + ex.getMessage(), ex);
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "wrong representation transformer definition. "
+                        + ex.getMessage(),
+                        ex);
                 return;
             }
         }
 
         // check SC metadata
-        if (content.containsField(RequestChecker.ROOT_KEY)) {
+        if (content.containsKey(RequestChecker.ROOT_KEY)) {
             try {
                 RequestChecker.getFromJson(content);
             } catch (InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong schema checker definition. " + ex.getMessage(), ex);
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "wrong schema checker definition. "
+                        + ex.getMessage(),
+                        ex);
                 return;
             }
         }
 
         boolean updating = context.getCollectionProps() != null;
 
-        OperationResult result = getDatabase().upsertCollection(context.getDBName(), context.getCollectionName(), 
-                content, context.getETag(), updating, false, context.isETagCheckRequired());
+        OperationResult result = getDatabase().upsertCollection(
+                context.getDBName(),
+                context.getCollectionName(),
+                content,
+                context.getETag(),
+                updating, false,
+                context.isETagCheckRequired());
 
         context.setDbOperationResult(result);
-        
+
         // invalidate the cache collection item
-        LocalCachesSingleton.getInstance().invalidateCollection(context.getDBName(), context.getCollectionName());
+        LocalCachesSingleton.getInstance().invalidateCollection(
+                context.getDBName(),
+                context.getCollectionName());
 
         // inject the etag
         if (result.getEtag() != null) {
-            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+            exchange.getResponseHeaders().put(
+                    Headers.ETAG,
+                    result.getEtag().toString());
         }
-        
+
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
-                    "The collection's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    HttpStatus.SC_CONFLICT,
+                    "The collection's ETag must be provided using the '"
+                    + Headers.IF_MATCH
+                    + "' header.");
             return;
         }
-        
+
         // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
+        if (context.getWarnings() != null
+                && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
         } else {
             exchange.setStatusCode(result.getHttpCode());
         }
-        
+
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }

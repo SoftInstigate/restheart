@@ -35,6 +35,9 @@ import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static org.fusesource.jansi.Ansi.ansi;
+import static org.fusesource.jansi.Ansi.ansi;
+import static org.fusesource.jansi.Ansi.ansi;
 
 /**
  *

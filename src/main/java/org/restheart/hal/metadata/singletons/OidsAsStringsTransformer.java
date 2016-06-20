@@ -17,9 +17,10 @@
  */
 package org.restheart.hal.metadata.singletons;
 
-import com.mongodb.DBObject;
 import io.undertow.server.HttpServerExchange;
-import org.bson.types.ObjectId;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 
 /**
@@ -41,18 +42,26 @@ public class OidsAsStringsTransformer implements Transformer {
      * @param args
      */
     @Override
-    public void tranform(final HttpServerExchange exchange, final RequestContext context, DBObject contentToTransform, final DBObject args) {
+    public void tranform(
+            final HttpServerExchange exchange, 
+            final RequestContext context, 
+            BsonDocument contentToTransform, 
+            final BsonValue args) {
         _transform(contentToTransform);
     }
     
-    private void _transform(DBObject data) {
+    private void _transform(BsonDocument data) {
         data.keySet().stream().forEach(key -> {
-            Object value = data.get(key);
+            BsonValue value = data.get(key);
             
-            if (value instanceof DBObject) {
-                _transform((DBObject)value);
-            } else if (value instanceof ObjectId) {
-                data.put(key, ((ObjectId)value).toString());
+            if (value.isDocument()) {
+                _transform(value.asDocument());
+            } else if (value.isObjectId()) {
+                data.put(key, 
+                        new BsonString(value
+                                .asObjectId()
+                                .getValue()
+                                .toString()));
             }
         });
     }
