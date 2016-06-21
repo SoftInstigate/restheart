@@ -30,102 +30,9 @@ import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
+import org.restheart.utils.JsonUtils;
 import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.and;
+import org.bson.BsonValue;
 
 /**
  *
@@ -184,13 +91,14 @@ public class GetDocumentHandler extends PipedHttpHandler {
                 .find(query)
                 .projection(fieldsToReturn)
                 .first();
-
+        
+        
         if (document == null) {
             String errMsg = context.getDocumentId() == null
                     ? " does not exist"
-                    : " '".concat(
-                            context.getDocumentId().toString()
-                            .concat("' does not exist"));
+                    : " '".concat(JsonUtils.getIdAsString(
+                                    context.getDocumentId()))
+                            .concat("' does not exist");
 
             if (null != context.getType()) {
                 switch (context.getType()) {

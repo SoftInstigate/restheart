@@ -89,7 +89,8 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
             rep.addProperty("_restheart_version", 
                     new BsonString("unknown, not packaged"));
         } else {
-            rep.addProperty("_restheart_version", RESTHEART_VERSION);
+            rep.addProperty("_restheart_version", 
+                    new BsonString(RESTHEART_VERSION));
         }
 
         rep.addProperty("_type", new BsonString(context.getType().name()));

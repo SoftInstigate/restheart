@@ -110,12 +110,11 @@ public class Representation {
      * @return the created or existing link array
      */
     public BsonArray addLinkArray(String linkArrayRef) {
-        BsonArray linkArray = links.getArray(linkArrayRef);
-
-        if (linkArray == null) {
-            linkArray = new BsonArray();
-            links.append(linkArrayRef, linkArray);
+        if (!links.containsKey(linkArrayRef)) {
+            links.append(linkArrayRef, new BsonArray());
         }
+        
+        BsonArray linkArray = links.getArray(linkArrayRef);
 
         return linkArray;
     }

@@ -37,6 +37,7 @@ import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.json.JsonParseException;
 import org.bson.json.JsonReader;
 import org.bson.types.ObjectId;
+import org.restheart.hal.UnsupportedDocumentIdException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -686,6 +687,20 @@ public class JsonUtils {
             ret = ret.substring(0, index);
             
             return ret;
+        }
+    }
+    
+    public static String getIdAsString(BsonValue id)
+            throws UnsupportedDocumentIdException {
+        if (id == null) {
+            return null;
+        } else if (id.isString()) {
+            return "'" + id.asString().getValue() + "'";
+        }  else if (id.isObjectId()) {
+            return id.asObjectId().getValue().toString();
+        } else {
+            return JsonUtils.minify(JsonUtils.toJson(id)
+                    .replace("\"", "'"));
         }
     }
 }

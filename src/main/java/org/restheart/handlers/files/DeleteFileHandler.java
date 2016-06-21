@@ -19,6 +19,7 @@ package org.restheart.handlers.files;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import org.bson.BsonValue;
 import org.restheart.db.GridFsDAO;
 import org.restheart.db.GridFsRepository;
 import org.restheart.db.OperationResult;
@@ -71,12 +72,21 @@ public class DeleteFileHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        BsonValue id = context.getDocumentId();
+
+        if (!id.isObjectId()) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "The file _id must be an ObjectId");
+        }
+
         OperationResult result = this.gridFsDAO
                 .deleteFile(getDatabase(), context.getDBName(),
-                        context.getCollectionName(), context.getDocumentId(),
+                        context.getCollectionName(), id.asObjectId(),
                         context.getETag(),
                         context.isETagCheckRequired());
-        
+
         context.setDbOperationResult(result);
 
         // send the warnings if any (and in case no_content change the return code to ok)
@@ -88,14 +98,17 @@ public class DeleteFileHandler extends PipedHttpHandler {
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
-        
+
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
-                    "The file's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
+            ResponseHelper.endExchangeWithMessage(exchange,
+                    HttpStatus.SC_CONFLICT,
+                    "The file's ETag must be provided using the '"
+                    + Headers.IF_MATCH
+                    + "' header");
         } else {
             ResponseHelper.endExchange(exchange, result.getHttpCode());
         }

@@ -24,6 +24,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
@@ -32,16 +33,13 @@ import org.apache.http.client.fluent.Response;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.util.EntityUtils;
+import org.bson.types.ObjectId;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.restheart.test.integration.HttpClientAbstactIT;
 import org.restheart.hal.Representation;
 import org.restheart.utils.HttpStatus;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -66,9 +64,9 @@ public class GetFileHandlerIT extends HttpClientAbstactIT {
     @Test
     public void testGetFile() throws Exception {
         createBucket();
-        createFile();
+        ObjectId fileId = createFile();
         
-        String url = dbTmpUri + "/" + BUCKET + ".files/" + ID + "/binary";
+        String url = dbTmpUri + "/" + BUCKET + ".files/" + fileId.toString() + "/binary";
         Response resp = adminExecutor.execute(Request.Get(url));
         
         HttpResponse httpResp = resp.returnResponse();
@@ -92,7 +90,7 @@ public class GetFileHandlerIT extends HttpClientAbstactIT {
     @Test
     public void testPostFile() throws Exception {
         createBucket();
-        createFile();
+        ObjectId fileId = createFile();
     }
 
     @Test
@@ -139,7 +137,7 @@ public class GetFileHandlerIT extends HttpClientAbstactIT {
     @Test
     public void testBucketWithFile() throws Exception {
         createBucket();
-        createFile();
+        ObjectId fileId = createFile();
         
         // test that GET /db/bucket.files includes the file
         String bucketUrl = dbTmpUri + "/" + BUCKET + ".files";
@@ -202,7 +200,7 @@ public class GetFileHandlerIT extends HttpClientAbstactIT {
         assertEquals("check status code", HttpStatus.SC_CREATED, statusLine.getStatusCode());
     }
 
-    private void createFile() throws UnknownHostException, IOException {
+    private ObjectId createFile() throws UnknownHostException, IOException {
         String bucketUrl = dbTmpUri + "/" + BUCKET + ".files/";
 
         InputStream is = GetFileHandlerIT.class.getResourceAsStream("/" + FILENAME);
@@ -210,7 +208,7 @@ public class GetFileHandlerIT extends HttpClientAbstactIT {
         HttpEntity entity = MultipartEntityBuilder
                 .create()
                 .addBinaryBody("file", is, ContentType.create("application/octet-stream"), FILENAME)
-                .addTextBody("properties", "{\"_id\": \"" + ID + "\"}")
+                .addTextBody("metadata", "{\"type\": \"documentation\"}")
                 .build();
 
         Response resp = adminExecutor.execute(Request.Post(bucketUrl)
@@ -223,5 +221,17 @@ public class GetFileHandlerIT extends HttpClientAbstactIT {
         
         assertNotNull(statusLine);
         assertEquals("check status code", HttpStatus.SC_CREATED, statusLine.getStatusCode());
+        
+        Header[] hs = httpResp.getHeaders("Location");
+        
+        if (hs == null || hs.length < 1) {
+            return null;
+        } else {
+            String loc = hs[0].getValue();
+            
+            String id = loc.substring(loc.lastIndexOf("/") + 1 );
+            
+            return new ObjectId(id);
+        }
     }
 }

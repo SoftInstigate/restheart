@@ -60,6 +60,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             = LoggerFactory.getLogger(BodyInjectorHandler.class);
 
     static final String PROPERTIES = "properties";
+    static final String FILE_METADATA = "metadata";
     static final String _ID = "_id";
     static final String CONTENT_TYPE = "contentType";
     static final String FILENAME = "filename";
@@ -151,7 +152,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             }
 
             try {
-                content = extractProperties(formData);
+                content = extractMetadata(formData);
             } catch (JSONParseException | IllegalArgumentException ex) {
                 String errMsg = "Invalid data: "
                         + "'properties' field is not a valid JSON";
@@ -179,11 +180,6 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
             final Path path = formData.getFirst(fileField).getPath();
 
-            putFilename(
-                    formData.getFirst(fileField).getFileName(),
-                    "file",
-                    content.asDocument());
-
             context.setFilePath(path);
 
             injectContentTypeFromFile(content.asDocument(), path.toFile());
@@ -203,140 +199,111 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                             ERROR_INVALID_CONTENTTYPE);
                     return;
                 }
+
+                try {
+                    content = JsonUtils.parse(contentString);
+
+                    if (content != null
+                            && !content.isDocument()
+                            && !content.isArray()) {
+                        throw new IllegalArgumentException(
+                                "data must be either a json object or array, got "
+                                + content == null
+                                        ? " no data"
+                                        : content.getBsonType().name());
+                    }
+                } catch (JsonParseException | IllegalArgumentException ex) {
+                    ResponseHelper.endExchangeWithMessage(
+                            exchange,
+                            HttpStatus.SC_NOT_ACCEPTABLE,
+                            "Invalid JSON",
+                            ex);
+                    return;
+                }
+            } else {
+                content = null;
             }
+        }
+
+        if (content == null) {
+            content = new BsonDocument();
+        } else if (content.isArray()) {
+            content.asArray().stream().forEach(_doc -> {
+                if (_doc.isDocument()) {
+                    BsonValue _id = _doc.asDocument().get(_ID);
+
+                    try {
+                        checkIdType(_doc.asDocument());
+                    } catch (UnsupportedDocumentIdException udie) {
+                        String errMsg = "the type of _id in content body"
+                                + " is not supported: "
+                                + (_id == null
+                                        ? ""
+                                        : _id.getBsonType().name());
+
+                        ResponseHelper.endExchangeWithMessage(
+                                exchange,
+                                HttpStatus.SC_NOT_ACCEPTABLE,
+                                errMsg,
+                                udie);
+
+                        return;
+                    }
+
+                    filterJsonContent(_doc.asDocument(), context);
+                } else {
+                    String errMsg = "the content must be either "
+                            + "an json object or an array of objects";
+
+                    ResponseHelper.endExchangeWithMessage(
+                            exchange,
+                            HttpStatus.SC_NOT_ACCEPTABLE,
+                            errMsg);
+                }
+            });
+        } else if (content.isDocument()) {
+            BsonDocument _content = content.asDocument();
+
+            BsonValue _id = _content.get(_ID);
 
             try {
-                content = JsonUtils.parse(contentString);
+                checkIdType(_content);
+            } catch (UnsupportedDocumentIdException udie) {
+                String errMsg = "the type of _id in content body "
+                        + "is not supported: "
+                        + (_id == null
+                                ? ""
+                                : _id.getBsonType().name());
 
-                if (content != null
-                        && !content.isDocument()
-                        && !content.isArray()) {
-                    throw new IllegalArgumentException(
-                            "data must be either a json object or array, got "
-                            + content == null
-                                    ? " no data"
-                                    : content.getBsonType().name());
-                }
-            } catch (JsonParseException | IllegalArgumentException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
                         HttpStatus.SC_NOT_ACCEPTABLE,
-                        "Invalid JSON",
-                        ex);
+                        errMsg,
+                        udie);
                 return;
             }
+
+            filterJsonContent(_content, context);
         }
 
-        if (content
-                == null) {
-            context.setContent(null);
-        } else {
-            if (content.isArray()) {
-                 content.asArray().stream().forEach(_doc -> {
-                    if (_doc.isDocument()) {
-                        BsonValue _id = _doc.asDocument().get(_ID);
-
-                        try {
-                            checkIdType(_doc.asDocument());
-                        } catch (UnsupportedDocumentIdException udie) {
-                            String errMsg = "the type of _id in content body"
-                                    + " is not supported: " 
-                                    + (_id == null 
-                                    ? "" 
-                                    : _id.getBsonType().name());
-                            
-                            ResponseHelper.endExchangeWithMessage(
-                                    exchange, 
-                                    HttpStatus.SC_NOT_ACCEPTABLE, 
-                                    errMsg, 
-                                    udie);
-                        }
-                    } else {
-                        String errMsg = "the content must be either "
-                                + "an json object or an array of objects";
-                        
-                        ResponseHelper.endExchangeWithMessage(
-                                exchange, 
-                                HttpStatus.SC_NOT_ACCEPTABLE, 
-                                errMsg);
-                    }
-                });
-            } else if (content.isDocument()) {
-                BsonDocument _content = content.asDocument();
-                
-                BsonValue _id = _content.get(_ID);
-
-                try {
-                    checkIdType(_content);
-                } catch (UnsupportedDocumentIdException udie) {
-                    String errMsg = "the type of _id in content body "
-                            + "is not supported: " 
-                            + (_id == null 
-                            ? "" 
-                            : _id.getBsonType().name());
-                    
-                    ResponseHelper.endExchangeWithMessage(
-                            exchange, 
-                            HttpStatus.SC_NOT_ACCEPTABLE, 
-                            errMsg, 
-                            udie);
-                    return;
-                }
-
-                filterJsonContent(_content, context);
-            }
-
-            context.setContent(content);
-        }
+        context.setContent(content);
 
         getNext()
                 .handleRequest(exchange, context);
     }
 
-    private Object checkIdType(BsonDocument doc)
+    private BsonValue checkIdType(BsonDocument doc)
             throws UnsupportedDocumentIdException {
-        Object _id = doc.get(_ID);
 
-        if (_id != null) {
+        if (doc.containsKey(_ID)) {
+            BsonValue _id = doc.get(_ID);
+
             URLUtils.checkId(_id);
+
+            return _id;
+        } else {
+            return null;
         }
-
-        return _id;
-    }
-
-    /**
-     * put the filename into target BsonDocument
-     *
-     * If filename is not null and properties don't have a filename then put the
-     * filename.
-     *
-     * If filename is not null but properties contain a filename key then put
-     * the properties filename value.
-     *
-     * If both filename is null and properties don't contain a filename then use
-     * the default value.
-     *
-     * @param formDataFilename
-     * @param defaultFilename
-     * @param target
-     */
-    protected static void putFilename(
-            final String formDataFilename,
-            final String defaultFilename,
-            final BsonDocument target) {
-        // a filename attribute in optional properties overrides the provided part's filename 
-        String filename = target.containsKey(FILENAME)
-                && target.get(FILENAME).isString()
-                ? target.get(FILENAME).asString().getValue()
-                : formDataFilename;
-
-        if (filename == null || filename.isEmpty()) {
-            LOGGER.debug("No filename in neither multipart content disposition "
-                    + "header nor in properties! Using default value");
-            filename = defaultFilename;
-        }
-
-        target.append(FILENAME, new BsonString(filename));
     }
 
     private static boolean isFilesBucketRequest(final RequestContext context) {
@@ -500,26 +467,31 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     }
 
     /**
-     * Search the request for a field named 'properties' which must contain
-     * valid JSON
+     * Search the request for a field named 'metadata' (or 'properties') which 
+     * must contain valid JSON
      *
      * @param formData
-     * @return the parsed BsonDocument from the form data or an empty BsonDocument
+     * @return the parsed BsonDocument from the form data or an empty
+     * BsonDocument
      */
-    protected static BsonDocument extractProperties(
+    protected static BsonDocument extractMetadata(
             final FormData formData)
             throws JSONParseException {
-        BsonDocument properties = new BsonDocument();
+        BsonDocument metadata = new BsonDocument();
 
-        final String propsString = formData.getFirst(PROPERTIES) != null
+        final String metadataString;
+
+        metadataString = formData.getFirst(FILE_METADATA) != null
+                ? formData.getFirst(FILE_METADATA).getValue()
+                : formData.getFirst(PROPERTIES) != null
                 ? formData.getFirst(PROPERTIES).getValue()
                 : null;
 
-        if (propsString != null) {
-            properties = BsonDocument.parse(propsString);
+        if (metadataString != null) {
+            metadata = BsonDocument.parse(metadataString);
         }
 
-        return properties;
+        return metadata;
     }
 
     /**

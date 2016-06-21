@@ -25,6 +25,7 @@ import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Deque;
+import java.util.Objects;
 import org.bson.BsonBoolean;
 import org.bson.BsonDateTime;
 import org.bson.BsonDouble;
@@ -37,6 +38,7 @@ import org.bson.BsonNumber;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonTimestamp;
+import org.bson.BsonType;
 import org.bson.BsonValue;
 import org.bson.types.MaxKey;
 import org.bson.types.MinKey;
@@ -322,38 +324,36 @@ public class URLUtils {
         return uri;
     }
 
-    public static DOC_ID_TYPE checkId(Object id)
+    public static DOC_ID_TYPE checkId(BsonValue id)
             throws UnsupportedDocumentIdException {
-        if (id == null) {
-            return DOC_ID_TYPE.NULL;
-        }
+        Objects.nonNull(id);
 
-        String clazz = id.getClass().getName();
+        BsonType type = id.getBsonType();
 
-        switch (clazz) {
-            case "java.lang.String":
-                return DOC_ID_TYPE.STRING_OID;
-            case "java.lang.Boolean":
-                return DOC_ID_TYPE.BOOLEAN;
-            case "org.bson.types.ObjectId":
+        switch (type) {
+            case STRING:
+                return DOC_ID_TYPE.STRING;
+            case OBJECT_ID:
                 return DOC_ID_TYPE.OID;
-            case "java.lang.Integer":
+            case BOOLEAN:
+                return DOC_ID_TYPE.BOOLEAN;
+            case NULL:
+                return DOC_ID_TYPE.NULL;
+            case INT32:
                 return DOC_ID_TYPE.NUMBER;
-            case "java.lang.Long":
+            case INT64:
                 return DOC_ID_TYPE.NUMBER;
-            case "java.lang.Float":
+            case DOUBLE:
                 return DOC_ID_TYPE.NUMBER;
-            case "java.lang.Double":
-                return DOC_ID_TYPE.NUMBER;
-            case "java.util.Date":
-                return DOC_ID_TYPE.DATE;
-            case "org.bson.types.MaxKey":
+            case MAX_KEY:
                 return DOC_ID_TYPE.MAXKEY;
-            case "org.bson.types.MinKey":
+            case MIN_KEY:
                 return DOC_ID_TYPE.MINKEY;
             default:
                 throw new UnsupportedDocumentIdException(
-                        "unknown _id type: " + id.getClass().getSimpleName());
+                        "unknown _id type: "
+                        + id.getClass()
+                        .getSimpleName());
         }
     }
 
@@ -506,7 +506,7 @@ public class URLUtils {
             RequestContext context,
             String dbName,
             String collName,
-            Object id)
+            BsonValue id)
             throws UnsupportedDocumentIdException {
         DOC_ID_TYPE docIdType = URLUtils.checkId(id);
 
@@ -518,11 +518,13 @@ public class URLUtils {
                 .append("/")
                 .append(collName)
                 .append("/")
-                .append(id);
+                .append(getIdAsStringNoBrachets(id));
 
-        if (docIdType == DOC_ID_TYPE.STRING_OID && ObjectId.isValid((String) id)) {
+        if (docIdType == DOC_ID_TYPE.STRING
+                && ObjectId.isValid(id.asString().getValue())) {
             sb.append("?id_type=STRING");
-        } else if (docIdType != DOC_ID_TYPE.STRING_OID) {
+        } else if (docIdType != DOC_ID_TYPE.STRING
+                && docIdType != DOC_ID_TYPE.OID) {
             sb.append("?id_type=").append(docIdType.name());
         }
 
@@ -550,7 +552,8 @@ public class URLUtils {
         sb.append("/").append(dbName).append("/").append(collName).append("?")
                 .append("filter={").append("'")
                 .append("_id").append("'").append(":")
-                .append("{'$in'").append(":").append(getIdsString(ids)).append("}}");
+                .append("{'$in'").append(":")
+                .append(getIdsString(ids)).append("}}");
 
         return context.mapUri(sb.toString());
     }
@@ -578,7 +581,9 @@ public class URLUtils {
         sb.append("/").append(dbName).append("/").append(collName).append("?")
                 .append("filter={").append("'")
                 .append(referenceField).append("'")
-                .append(":").append(getIdString(id)).append("}");
+                .append(":")
+                .append(getIdString(id))
+                .append("}");
 
         return context.mapUri(sb.toString());
     }
@@ -605,7 +610,8 @@ public class URLUtils {
         ///db/coll/?filter={'referenceField':{"$elemMatch":{'ids'}}}
         sb.append("/").append(dbName).append("/").append(collName).append("?")
                 .append("filter={'").append(referenceField)
-                .append("':{").append("'$elemMatch':{'$eq':").append(getIdString(id)).append("}}}");
+                .append("':{").append("'$elemMatch':{'$eq':")
+                .append(getIdString(id)).append("}}}");
 
         return JsonUtils.minify(context.mapUri(sb.toString()));
     }
@@ -686,15 +692,28 @@ public class URLUtils {
 
         return new BsonString(id);
     }
+    
+    private static String getIdAsStringNoBrachets(BsonValue id)
+            throws UnsupportedDocumentIdException {
+        if (id == null) {
+            return null;
+        } else if (id.isString()) {
+            return id.asString().getValue();
+        } else {
+            return JsonUtils.minify(
+                    JsonUtils.toJson(id));
+        }
+    }
 
     private static String getIdString(BsonValue id)
             throws UnsupportedDocumentIdException {
         if (id == null) {
             return null;
+        } else if (id.isString()) {
+            return "'" + id.asString().getValue() + "'";
         } else {
-            return JsonUtils
-                    .minify(JsonUtils.toJson(id)
-                            .replace("\"", "'"));
+            return JsonUtils.minify(JsonUtils.toJson(id)
+                    .replace("\"", "'"));
         }
     }
 

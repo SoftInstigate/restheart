@@ -97,12 +97,18 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
 
     private boolean checkEtag(HttpServerExchange exchange, GridFSFile dbsfile) {
         if (dbsfile != null) {
-            Object etag = dbsfile.getMetadata().get("_etag");
+            Object etag;
+            
+            if (dbsfile.getMetadata() != null 
+                    && dbsfile.getMetadata().containsKey("_etag")) {
+                etag = dbsfile.getMetadata().get("_etag");
+            } else {
+                etag = null;
+            }
 
             if (etag != null && etag instanceof ObjectId) {
                 ObjectId _etag = (ObjectId) etag;
 
-                // TODO refactoring mongodb 3.2 driver. use RequestContext.getFiltersDocument()
                 BsonObjectId __etag = new BsonObjectId(_etag);
 
                 // in case the request contains the IF_NONE_MATCH header with the current etag value,
@@ -139,9 +145,14 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
         LOGGER.trace("Filename = {}", file.getFilename());
         LOGGER.trace("Content length = {}", file.getLength());
 
-        if (file.getMetadata().get("contentType") != null) {
+        if (file.getMetadata() != null
+                && file.getMetadata().get("contentType") != null) {
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
                     file.getMetadata().get("contentType").toString());
+        } else if (file.getExtraElements()!= null
+                && file.getExtraElements().get("contentType") != null) {
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
+                    file.getExtraElements().get("contentType").toString());
         } else {
             exchange.getResponseHeaders().put(
                     Headers.CONTENT_TYPE,
