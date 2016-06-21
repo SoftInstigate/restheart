@@ -18,6 +18,8 @@
 package org.restheart.db;
 
 import org.bson.BsonDocument;
+import org.bson.BsonObjectId;
+import org.bson.BsonValue;
 
 /**
  *
@@ -28,12 +30,14 @@ public class OperationResult {
     private final Object etag;
     private final BsonDocument newData;
     private final BsonDocument oldData;
+    private final BsonValue newId;
     
     public OperationResult(int httpCode) {
         this.httpCode = httpCode;
         this.etag = null;
         this.newData = null;
         this.oldData = null;
+        this.newId = null;
     }
     
     public OperationResult(int httpCode, BsonDocument oldData, BsonDocument newData) {
@@ -41,11 +45,21 @@ public class OperationResult {
         this.etag = null;
         this.newData = newData;
         this.oldData = oldData;
+        this.newId = null;
     }
     
     public OperationResult(int httpCode, Object etag) {
         this.httpCode = httpCode;
         this.etag = etag;
+        this.newData = null;
+        this.oldData = null;
+        this.newId = null;
+    }
+    
+    public OperationResult(int httpCode, Object etag, BsonValue newId) {
+        this.httpCode = httpCode;
+        this.etag = etag;
+        this.newId = newId;
         this.newData = null;
         this.oldData = null;
     }
@@ -55,6 +69,7 @@ public class OperationResult {
         this.etag = etag;
         this.newData = newData;
         this.oldData = oldData;
+        this.newId = null;
     }
 
     /**
@@ -83,5 +98,12 @@ public class OperationResult {
      */
     public BsonDocument getOldData() {
         return oldData;
+    }
+
+    /**
+     * @return the newId
+     */
+    public BsonValue getNewId() {
+        return newId;
     }
 }

@@ -99,7 +99,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
         
         BsonDocument content = _content.asDocument();
 
-        if (!content.containsKey("_id")
+        if (content.containsKey("_id")
                 && content.get("_id").isString()
                 && RequestContext.isReservedResourceDocument(
                         context.getType(),

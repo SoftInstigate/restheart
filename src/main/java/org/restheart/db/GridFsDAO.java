@@ -56,8 +56,7 @@ public class GridFsDAO implements GridFsRepository {
             final Database db,
             final String dbName,
             final String bucketName,
-            final BsonValue fileId,
-            final BsonDocument properties,
+            final BsonDocument metadata,
             final Path filePath)
             throws IOException, DuplicateKeyException {
 
@@ -67,23 +66,25 @@ public class GridFsDAO implements GridFsRepository {
                 db.getDatabase(dbName),
                 bucket);
 
-        String filename = extractFilenameFromProperties(properties);
+        String filename = extractFilenameFromProperties(metadata);
 
-        //add etag to properties
+        //add etag to metadata
         ObjectId etag = new ObjectId();
-        properties.put("_etag", new BsonObjectId(etag));
+        metadata.put("_etag", new BsonObjectId(etag));
 
         GridFSUploadOptions options = new GridFSUploadOptions()
-                .metadata(Document.parse(properties.toJson()));
+                .metadata(Document.parse(metadata.toJson()));
 
         InputStream sourceStream = new FileInputStream(filePath.toFile());
         
-        gridFSBucket.uploadFromStream(
+        ObjectId _id = gridFSBucket.uploadFromStream(
                 filename, 
                 sourceStream, 
                 options);
 
-        return new OperationResult(HttpStatus.SC_CREATED, etag);
+        return new OperationResult(HttpStatus.SC_CREATED,
+                new BsonObjectId(etag),
+                new BsonObjectId(_id));
     }
 
     private String extractFilenameFromProperties(
@@ -110,7 +111,7 @@ public class GridFsDAO implements GridFsRepository {
             final Database db,
             final String dbName,
             final String bucketName,
-            final BsonValue fileId,
+            final BsonObjectId fileId,
             final String requestEtag,
             final boolean checkEtag) {
         final String bucket = extractBucketName(bucketName);

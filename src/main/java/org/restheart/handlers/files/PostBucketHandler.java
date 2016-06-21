@@ -33,17 +33,6 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
 
 /**
  *
@@ -72,10 +61,10 @@ public class PostBucketHandler extends PipedHttpHandler {
             HttpServerExchange exchange,
             RequestContext context)
             throws Exception {
-        final BsonValue _props = context.getContent();
+        final BsonValue _metadata = context.getContent();
 
         // must be an object
-        if (!_props.isDocument()) {
+        if (!_metadata.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     HttpStatus.SC_NOT_ACCEPTABLE,
@@ -83,15 +72,7 @@ public class PostBucketHandler extends PipedHttpHandler {
             return;
         }
 
-        BsonDocument props = _props.asDocument();
-
-        BsonValue _id;
-
-        if (props.containsKey("_id")) {
-            _id = props.get("_id");
-        } else {
-            _id = new BsonObjectId(new ObjectId());
-        }
+        BsonDocument metadata = _metadata.asDocument();
 
         OperationResult result;
 
@@ -101,8 +82,7 @@ public class PostBucketHandler extends PipedHttpHandler {
                         .createFile(getDatabase(),
                                 context.getDBName(),
                                 context.getCollectionName(),
-                                _id,
-                                props,
+                                metadata,
                                 context.getFilePath());
             } else {
                 throw new RuntimeException("error. file data is null");
@@ -128,7 +108,7 @@ public class PostBucketHandler extends PipedHttpHandler {
                 .add(HttpString.tryFromString("Location"),
                         getReferenceLink(
                                 context,
-                                exchange.getRequestURL(), _id));
+                                exchange.getRequestURL(), result.getNewId()));
 
         exchange.setStatusCode(result.getHttpCode());
 

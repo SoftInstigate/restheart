@@ -49,7 +49,6 @@ import org.restheart.handlers.files.GetFileBinaryHandler;
 import org.restheart.handlers.files.GetFileHandler;
 import org.restheart.handlers.files.PostBucketHandler;
 import org.restheart.handlers.files.PutBucketHandler;
-import org.restheart.handlers.files.PutFileHandler;
 import org.restheart.handlers.metadata.ResponseTranformerMetadataHandler;
 import org.restheart.handlers.metadata.BeforeWriteCheckMetadataHandler;
 import org.restheart.handlers.metadata.RequestTransformerMetadataHandler;
@@ -234,12 +233,6 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         putPipedHttpHandler(TYPE.FILE_BINARY, METHOD.GET,
                 new GetFileBinaryHandler(
                         new HookMetadataHandler()));
-
-        putPipedHttpHandler(TYPE.FILE, METHOD.PUT,
-                new RequestTransformerMetadataHandler(
-                        new BeforeWriteCheckMetadataHandler(
-                                new PutFileHandler(
-                                        new HookMetadataHandler()))));
 
         putPipedHttpHandler(TYPE.FILE, METHOD.DELETE,
                 new DeleteFileHandler(

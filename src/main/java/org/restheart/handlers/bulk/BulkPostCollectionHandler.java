@@ -88,9 +88,7 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
             throw new RuntimeException("error, this handler expects an array of objects");
         }
 
-        BsonArray _documents = content.asArray();
-
-        BsonArray documents = new BsonArray();
+        BsonArray documents = content.asArray();
 
         if (!checkIds(exchange, context, documents)) {
             // if check fails, exchange has been closed

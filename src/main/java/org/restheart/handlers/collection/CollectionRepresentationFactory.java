@@ -236,8 +236,11 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
                         .stream().filter((RequestChecker c) -> {
                             return JSON_SCHEMA_NAME.equals(c.getName());
                         }).forEach((RequestChecker c) -> {
-                    Object schemaId = c.getArgs().get(JsonSchemaChecker.SCHEMA_ID_PROPERTY);
-                    Object _schemaStoreDb = c.getArgs().get(JsonSchemaChecker.SCHEMA_STORE_DB_PROPERTY);
+                    BsonValue schemaId = c.getArgs()
+                            .get(JsonSchemaChecker.SCHEMA_ID_PROPERTY);
+                    
+                    BsonValue _schemaStoreDb = c.getArgs()
+                            .get(JsonSchemaChecker.SCHEMA_STORE_DB_PROPERTY);
 
                     // just in case the checker is missing the mandatory schemaId property
                     if (schemaId == null) {

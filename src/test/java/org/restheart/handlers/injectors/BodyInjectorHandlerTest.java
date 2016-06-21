@@ -19,7 +19,6 @@ package org.restheart.handlers.injectors;
 
 import io.undertow.server.handlers.form.FormData;
 import org.bson.BsonDocument;
-import org.bson.BsonString;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -33,63 +32,6 @@ public class BodyInjectorHandlerTest {
     }
 
     /**
-     * If filename is not null and properties don't have a filename then put the
-     * filename
-     */
-    @Test
-    public void test_putFilename() {
-        BsonDocument properties = new BsonDocument();
-        BsonString expectedFilename = new BsonString("myFilename");
-        BodyInjectorHandler.putFilename(
-                expectedFilename.getValue(),
-                "defaultFilename", properties);
-
-        assertEquals(
-                expectedFilename,
-                properties.get(BodyInjectorHandler.FILENAME));
-    }
-
-    /**
-     * If filename is not null but properties contain a filename key then put
-     * the properties filename value
-     */
-    @Test
-    public void test_overrideFilename() {
-        BsonString expectedFilename = new BsonString("other");
-
-        BsonDocument properties
-                = BsonDocument.parse(
-                        "{\"filename\": \""
-                        + expectedFilename.getValue()
-                        + "\"}");
-
-        BodyInjectorHandler.putFilename(
-                "formDataFilename",
-                "defaultFilename",
-                properties);
-        assertEquals(
-                expectedFilename,
-                properties.get(BodyInjectorHandler.FILENAME));
-    }
-
-    /**
-     * If both filename is null and properties don't contain a filename then use
-     * the default value
-     */
-    @Test
-    public void test_emptyFilename() {
-        BsonString expectedFilename = new BsonString("defaultFilename");
-        BsonDocument properties = new BsonDocument();
-        BodyInjectorHandler.putFilename("", 
-                expectedFilename.getValue(), 
-                properties);
-
-        assertEquals(
-                expectedFilename,
-                properties.get(BodyInjectorHandler.FILENAME));
-    }
-
-    /**
      * If formData contains a PROPERTIES part, then must be valid JSON
      */
     @Test
@@ -98,7 +40,7 @@ public class BodyInjectorHandlerTest {
                 = "{\"key1\": \"value1\", \"key2\": \"value2\"}";
         FormData formData = new FormData(1);
         formData.add(BodyInjectorHandler.PROPERTIES, jsonString);
-        BsonDocument result = BodyInjectorHandler.extractProperties(formData);
+        BsonDocument result = BodyInjectorHandler.extractMetadata(formData);
         BsonDocument expected = BsonDocument.parse(jsonString);
         assertEquals(expected, result);
     }

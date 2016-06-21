@@ -104,7 +104,7 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName/documentId";
         String result;
         try {
-            result = URLUtils.getUriWithDocId(context, "dbName", "collName", "documentId");
+            result = URLUtils.getUriWithDocId(context, "dbName", "collName", new BsonString("documentId"));
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -117,7 +117,7 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName/54d13711c2e692941728e1d3?id_type=STRING";
         String result;
         try {
-            result = URLUtils.getUriWithDocId(context, "dbName", "collName", "54d13711c2e692941728e1d3");
+            result = URLUtils.getUriWithDocId(context, "dbName", "collName", new BsonString("54d13711c2e692941728e1d3"));
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -130,7 +130,7 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName/123?id_type=NUMBER";
         String result;
         try {
-            result = URLUtils.getUriWithDocId(context, "dbName", "collName", 123);
+            result = URLUtils.getUriWithDocId(context, "dbName", "collName", new BsonInt32(123));
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
