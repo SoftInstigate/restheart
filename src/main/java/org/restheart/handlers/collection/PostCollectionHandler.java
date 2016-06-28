@@ -30,17 +30,6 @@ import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
-import static org.restheart.utils.URLUtils.getReferenceLink;
 
 /**
  *
@@ -92,6 +81,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
         if (!_content.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
+                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
             return;
@@ -106,6 +96,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
                         content.get("_id").asString().getValue())) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
+                    context,
                     HttpStatus.SC_FORBIDDEN,
                     "reserved resource");
 
@@ -119,6 +110,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
                     && !(context.getDocIdType() == DOC_ID_TYPE.STRING_OID)) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
+                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "_id in content body is mandatory "
                         + "for documents with id type "
@@ -147,6 +139,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
+                    context,
                     HttpStatus.SC_CONFLICT,
                     "The document's ETag must be provided using the '"
                     + Headers.IF_MATCH

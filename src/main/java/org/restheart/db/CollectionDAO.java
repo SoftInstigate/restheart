@@ -35,6 +35,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
@@ -315,21 +316,23 @@ class CollectionDAO {
                     .projection(FIELDS_TO_RETURN).first();
 
             if (oldProperties != null) {
-                Object oldEtag = oldProperties.get("_etag");
+                BsonValue oldEtag = oldProperties.get("_etag");
 
                 if (oldEtag != null && requestEtag == null) {
                     return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
                 }
 
-                String _oldEtag;
-
-                if (oldEtag != null) {
-                    _oldEtag = oldEtag.toString();
+                BsonValue _requestEtag;
+                
+                if (ObjectId.isValid(requestEtag)) {
+                    _requestEtag = new BsonObjectId(new ObjectId(requestEtag));
                 } else {
-                    _oldEtag = null;
+                    // restheart generates ObjectId etags, but here we support
+                    // strings as well
+                    _requestEtag = new BsonString(requestEtag);
                 }
 
-                if (Objects.equals(requestEtag, _oldEtag)) {
+                if (Objects.equals(_requestEtag, oldEtag)) {
                     return doCollPropsUpdate(collName, patching, updating, mcoll, content, newEtag);
                 } else {
                     return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);

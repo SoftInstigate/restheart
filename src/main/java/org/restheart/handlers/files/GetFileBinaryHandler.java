@@ -133,6 +133,7 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
         LOGGER.trace(errMsg);
         ResponseHelper.endExchangeWithMessage(
                 exchange,
+                context,
                 HttpStatus.SC_NOT_FOUND,
                 errMsg);
     }

@@ -53,7 +53,10 @@ public class PingHandler extends ApplicationLogicHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getMethod() == METHOD.GET) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_OK, msg);
+            ResponseHelper.endExchangeWithMessage(
+                    exchange, 
+                    context,
+                    HttpStatus.SC_OK, msg);
         } else {
             exchange.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             exchange.endExchange();

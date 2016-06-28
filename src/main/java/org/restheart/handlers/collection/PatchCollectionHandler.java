@@ -64,19 +64,21 @@ public class PatchCollectionHandler extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getDBName().isEmpty()) {
             ResponseHelper.endExchangeWithMessage(
-                    exchange, 
+                    exchange,
+                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "wrong request, db name cannot be empty");
             return;
         }
 
-        if (context.getCollectionName().isEmpty() 
+        if (context.getCollectionName().isEmpty()
                 || context.getCollectionName().startsWith("_")) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
+                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "wrong request, collection name cannot be "
-                            + "empty or start with _");
+                    + "empty or start with _");
             return;
         }
 
@@ -84,7 +86,8 @@ public class PatchCollectionHandler extends PipedHttpHandler {
 
         if (_content == null) {
             ResponseHelper.endExchangeWithMessage(
-                    exchange, 
+                    exchange,
+                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
             return;
@@ -93,12 +96,22 @@ public class PatchCollectionHandler extends PipedHttpHandler {
         // cannot PATCH with an array
         if (!_content.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
-                    exchange, 
+                    exchange,
+                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
             return;
         }
-        
+
+        if (_content.asDocument().isEmpty()) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "no data provided");
+            return;
+        }
+
         BsonDocument content = _content.asDocument();
 
         // check RELS metadata
@@ -107,10 +120,11 @@ public class PatchCollectionHandler extends PipedHttpHandler {
                 Relationship.getFromJson(content);
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
-                        exchange, 
+                        exchange,
+                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong relationships definition. " 
-                                + ex.getMessage(), ex);
+                        "wrong relationships definition. "
+                        + ex.getMessage(), ex);
                 return;
             }
         }
@@ -121,10 +135,11 @@ public class PatchCollectionHandler extends PipedHttpHandler {
                 RepresentationTransformer.getFromJson(content);
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
-                        exchange, 
+                        exchange,
+                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong representation transformer definition. " 
-                                + ex.getMessage(), ex);
+                        "wrong representation transformer definition. "
+                        + ex.getMessage(), ex);
                 return;
             }
         }
@@ -135,26 +150,27 @@ public class PatchCollectionHandler extends PipedHttpHandler {
                 RequestChecker.getFromJson(content);
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
-                        exchange, 
+                        exchange,
+                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong schema checker definition. " 
-                                + ex.getMessage(), ex);
+                        "wrong schema checker definition. "
+                        + ex.getMessage(), ex);
                 return;
             }
         }
 
         OperationResult result = getDatabase()
                 .upsertCollection(
-                        context.getDBName(), 
+                        context.getDBName(),
                         context.getCollectionName(),
-                content, 
-                context.getETag(), 
-                true, 
-                true, 
-                context.isETagCheckRequired());
+                        content,
+                        context.getETag(),
+                        true,
+                        true,
+                        context.isETagCheckRequired());
 
         context.setDbOperationResult(result);
-        
+
         // inject the etag
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(
@@ -162,16 +178,16 @@ public class PatchCollectionHandler extends PipedHttpHandler {
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.endExchangeWithMessage
-        (exchange, 
+            ResponseHelper.endExchangeWithMessage(exchange,
+                    context,
                     HttpStatus.SC_CONFLICT,
-                    "The collection's ETag must be provided using the '" 
-                            + Headers.IF_MATCH + "' header.");
+                    "The collection's ETag must be provided using the '"
+                    + Headers.IF_MATCH + "' header.");
             return;
         }
 
         // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings() != null 
+        if (context.getWarnings() != null
                 && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
         } else {
@@ -180,7 +196,7 @@ public class PatchCollectionHandler extends PipedHttpHandler {
 
         LocalCachesSingleton.getInstance()
                 .invalidateCollection(
-                        context.getDBName(), 
+                        context.getDBName(),
                         context.getCollectionName());
 
         if (getNext() != null) {

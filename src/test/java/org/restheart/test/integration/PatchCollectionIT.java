@@ -83,8 +83,9 @@ public class PatchCollectionIT extends HttpClientAbstactIT {
         etag = content.get("_etag").asObject().get("$oid").asString();
 
         // try to patch reserved field name
-        resp = adminExecutor.execute(Request.Patch(collectionTmpUri).bodyString("{_embedded:\"a\"}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
+        resp = adminExecutor.execute(Request.Patch(collectionTmpUri).bodyString("{'_embedded':'a', 'a': 1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
         content = JsonObject.readFrom(resp.returnContent().asString());
         assertNotNull("check patched content", content.get("_embedded").asObject().get("rh:warnings").asArray());
+        
     }
 }

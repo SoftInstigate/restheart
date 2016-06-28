@@ -68,7 +68,9 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
                     && context.getMethod() == RequestContext.METHOD.PUT)
                     && context.getType() != RequestContext.TYPE.ROOT) {
                 ResponseHelper
-                        .endExchangeWithMessage(exchange,
+                        .endExchangeWithMessage(
+                                exchange,
+                                context,
                                 HttpStatus.SC_NOT_FOUND,
                                 "Db '" + dbName + "' does not exist");
                 return;

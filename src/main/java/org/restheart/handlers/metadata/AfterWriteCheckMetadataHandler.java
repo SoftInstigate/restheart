@@ -33,9 +33,7 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
-import static com.mongodb.client.model.Filters.and;
 import org.bson.BsonDocument;
-import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.and;
 
 /**
@@ -133,6 +131,7 @@ public class AfterWriteCheckMetadataHandler
 
                 ResponseHelper.endExchangeWithMessage(
                         exchange, 
+                        context,
                         HttpStatus.SC_BAD_REQUEST, 
                         sb.toString());
             }

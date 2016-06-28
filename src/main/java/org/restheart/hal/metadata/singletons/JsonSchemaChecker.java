@@ -61,6 +61,7 @@ public class JsonSchemaChecker implements Checker {
         if (args == null || !args.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
+                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "args must be a json object");
             return false;

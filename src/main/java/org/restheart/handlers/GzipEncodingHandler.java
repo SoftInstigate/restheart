@@ -60,7 +60,11 @@ public class GzipEncodingHandler extends EncodingHandler {
                 }
             }
 
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "Accept-Encoding header must include gzip");
+            ResponseHelper.endExchangeWithMessage(
+                    exchange, 
+                    null,
+                    HttpStatus.SC_BAD_REQUEST, 
+                    "Accept-Encoding header must include gzip");
         } else {
             super.handleRequest(exchange);
         }

@@ -83,6 +83,7 @@ public class PutDocumentHandler extends PipedHttpHandler {
         if (!_content.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
+                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a josn object");
             return;
@@ -97,6 +98,7 @@ public class PutDocumentHandler extends PipedHttpHandler {
         } else if (!content.get("_id").equals(id)) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
+                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "_id in content body is different than id in URL");
             return;
@@ -126,6 +128,7 @@ public class PutDocumentHandler extends PipedHttpHandler {
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
+                    context,
                     HttpStatus.SC_CONFLICT,
                     "The document's ETag must be provided using the '"
                     + Headers.IF_MATCH

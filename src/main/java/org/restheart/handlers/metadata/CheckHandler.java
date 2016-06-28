@@ -73,6 +73,7 @@ public class CheckHandler extends PipedHttpHandler {
 
                 ResponseHelper.endExchangeWithMessage(
                         exchange, 
+                        context,
                         HttpStatus.SC_BAD_REQUEST, 
                         sb.toString());
             }

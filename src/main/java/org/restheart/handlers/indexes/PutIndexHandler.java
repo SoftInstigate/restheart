@@ -66,6 +66,7 @@ public class PutIndexHandler extends PipedHttpHandler {
         if (id.startsWith("_")) {
             ResponseHelper.endExchangeWithMessage(
                     exchange, 
+                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "index name cannot start with _");
             return;
@@ -77,6 +78,7 @@ public class PutIndexHandler extends PipedHttpHandler {
         if (!_content.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
+                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data cannot be an array");
             return;
@@ -91,6 +93,7 @@ public class PutIndexHandler extends PipedHttpHandler {
         if (!_keys.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
+                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "keys must be a json object");
             return;
@@ -100,6 +103,7 @@ public class PutIndexHandler extends PipedHttpHandler {
         if (!_ops.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
+                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "ops must be a json object");
             return;
@@ -111,6 +115,7 @@ public class PutIndexHandler extends PipedHttpHandler {
         if (keys == null) {
             ResponseHelper.endExchangeWithMessage(
                     exchange, 
+                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "wrong request, content must include 'keys' object", null);
             return;
@@ -127,6 +132,7 @@ public class PutIndexHandler extends PipedHttpHandler {
         } catch (Throwable t) {
             ResponseHelper.endExchangeWithMessage(
                     exchange, 
+                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "error creating the index", 
                     t);

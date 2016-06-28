@@ -80,7 +80,9 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                     });
                 }
 
-                ResponseHelper.endExchangeWithMessage(exchange,
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
                         HttpStatus.SC_BAD_REQUEST,
                         sb.toString());
             }

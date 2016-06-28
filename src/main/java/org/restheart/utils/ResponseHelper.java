@@ -22,6 +22,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
@@ -30,6 +31,7 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.restheart.hal.Representation;
+import org.restheart.handlers.RequestContext;
 
 /**
  *
@@ -50,47 +52,54 @@ public class ResponseHelper {
     /**
      *
      * @param exchange
+     * @param context might be null
      * @param code
      * @param message
      */
     public static void endExchangeWithMessage(
             HttpServerExchange exchange, 
+            RequestContext context, 
             int code, 
             String message) {
-        endExchangeWithMessage(exchange, code, message, null);
+        endExchangeWithMessage(exchange, context, code, message, null);
     }
 
     /**
      *
      * @param exchange
+     * @param context might be null
      * @param code
      * @param message
      * @param t
      */
     public static void endExchangeWithMessage(
             HttpServerExchange exchange,
+            RequestContext context, 
             int code,
             String message,
             Throwable t) {
         exchange.setStatusCode(code);
 
-        String httpStatuText = HttpStatus.getStatusText(code);
+        String httpStatusText = HttpStatus.getStatusText(code);
 
         exchange.getResponseHeaders().put(
                 Headers.CONTENT_TYPE, 
                 Representation.HAL_JSON_MEDIA_TYPE);
-
+        
         exchange.getResponseSender().send(
                 getErrorJsonDocument(exchange.getRequestPath(),
                         code,
-                        httpStatuText,
+                        context,
+                        httpStatusText,
                         message,
                         t, false));
+        
         exchange.endExchange();
     }
 
     private static String getErrorJsonDocument(String href,
             int code,
+            RequestContext context, 
             String httpStatusText,
             String message,
             Throwable t,
@@ -135,6 +144,12 @@ public class ResponseHelper {
             }
 
             rep.addRepresentation("rh:exception", nrep);
+        }
+        
+        // add warnings
+        if (context != null
+                && context.getWarnings() != null) {
+            context.getWarnings().forEach(w -> rep.addWarning(w));
         }
 
         return rep.toString();

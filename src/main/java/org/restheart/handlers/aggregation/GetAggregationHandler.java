@@ -80,7 +80,9 @@ public class GetAggregationHandler extends PipedHttpHandler {
                         -> q.getUri().equals(queryUri)).findFirst();
 
         if (!_query.isPresent()) {
-            ResponseHelper.endExchangeWithMessage(exchange,
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
                     HttpStatus.SC_NOT_FOUND, "query does not exist");
             return;
         }
@@ -104,12 +106,16 @@ public class GetAggregationHandler extends PipedHttpHandler {
                         .filter(
                                 mapReduce.getResolvedQuery(context.getAggreationVars()));
             } catch (MongoCommandException | InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(exchange,
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
                         HttpStatus.SC_INTERNAL_SERVER_ERROR,
                         "error executing mapReduce", ex);
                 return;
             } catch (QueryVariableNotBoundException qvnbe) {
-                ResponseHelper.endExchangeWithMessage(exchange,
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
                         HttpStatus.SC_BAD_REQUEST,
                         "error executing mapReduce: "
                         + qvnbe.getMessage());
@@ -143,12 +149,16 @@ public class GetAggregationHandler extends PipedHttpHandler {
                                 .getResolvedStagesAsList(
                                         context.getAggreationVars()));                       
             } catch (MongoCommandException | InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(exchange,
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
                         HttpStatus.SC_INTERNAL_SERVER_ERROR,
                         "error executing aggreation pipeline", ex);
                 return;
             } catch (QueryVariableNotBoundException qvnbe) {
-                ResponseHelper.endExchangeWithMessage(exchange,
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
                         HttpStatus.SC_BAD_REQUEST,
                         "error executing aggreation pipeline: "
                         + qvnbe.getMessage());
@@ -167,7 +177,9 @@ public class GetAggregationHandler extends PipedHttpHandler {
 
             size = data.size();
         } else {
-            ResponseHelper.endExchangeWithMessage(exchange,
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
                     HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
             return;
         }
@@ -198,7 +210,9 @@ public class GetAggregationHandler extends PipedHttpHandler {
             crp.sendRepresentation(exchange, context, rep);
             exchange.endExchange();
         } catch (IllegalQueryParamenterException ex) {
-            ResponseHelper.endExchangeWithMessage(exchange,
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
                     HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
         }
     }

@@ -49,9 +49,16 @@ public class CacheInvalidator extends ApplicationLogicHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(
+            HttpServerExchange exchange, 
+            RequestContext context) 
+            throws Exception {
         if (!Bootstrapper.getConfiguration().isLocalCacheEnabled()) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_MODIFIED, "caching is off");
+            ResponseHelper.endExchangeWithMessage(
+                    exchange, 
+                    context,
+                    HttpStatus.SC_NOT_MODIFIED, 
+                    "caching is off");
             exchange.endExchange();
             return;
         }
@@ -61,7 +68,11 @@ public class CacheInvalidator extends ApplicationLogicHandler {
             Deque<String> _coll = exchange.getQueryParameters().get("coll");
 
             if (_db == null || _db.getFirst() == null) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "the db query paramter is mandatory");
+                ResponseHelper.endExchangeWithMessage(
+                        exchange, 
+                        context,
+                        HttpStatus.SC_BAD_REQUEST, 
+                        "the db query paramter is mandatory");
             } else {
                 String db = _db.getFirst();
 
@@ -70,7 +81,8 @@ public class CacheInvalidator extends ApplicationLogicHandler {
                 } else {
                     String coll = _coll.getFirst();
 
-                    LocalCachesSingleton.getInstance().invalidateCollection(db, coll);
+                    LocalCachesSingleton.getInstance()
+                            .invalidateCollection(db, coll);
                 }
 
                 exchange.setStatusCode(HttpStatus.SC_OK);
