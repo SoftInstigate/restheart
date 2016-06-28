@@ -47,12 +47,12 @@ public class PatchDocumentHandler extends PipedHttpHandler {
         super(null);
         this.documentDAO = documentDAO;
     }
-    
+
     public PatchDocumentHandler(PipedHttpHandler next) {
         super(next);
         this.documentDAO = new DocumentDAO();
     }
-    
+
     public PatchDocumentHandler(PipedHttpHandler next, DocumentDAO documentDAO) {
         super(next);
         this.documentDAO = documentDAO;
@@ -66,25 +66,40 @@ public class PatchDocumentHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(
-            HttpServerExchange exchange, 
-            RequestContext context) 
+            HttpServerExchange exchange,
+            RequestContext context)
             throws Exception {
         BsonValue _content = context.getContent();
 
         // cannot PATCH with no data
         if (_content == null) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
-                    "data is empty");
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "no data provided");
             return;
         }
 
         // cannot PATCH an array
         if (!_content.isDocument()) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+            ResponseHelper.endExchangeWithMessage(
+                    exchange, 
+                    context,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
             return;
         }
         
+        if (_content.asDocument().isEmpty()) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "no data provided");
+            return;
+        }
+
         BsonDocument content = _content.asDocument();
 
         BsonValue id = context.getDocumentId();
@@ -92,7 +107,10 @@ public class PatchDocumentHandler extends PipedHttpHandler {
         if (content.get("_id") == null) {
             content.put("_id", id);
         } else if (!content.get("_id").equals(id)) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_ACCEPTABLE,
+            ResponseHelper.endExchangeWithMessage(
+                    exchange, 
+                    context,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
                     "_id in json data cannot be different than id in URL");
             return;
         }
@@ -106,31 +124,36 @@ public class PatchDocumentHandler extends PipedHttpHandler {
                 context.getETag(),
                 true,
                 context.isETagCheckRequired());
-        
+
         context.setDbOperationResult(result);
 
         // inject the etag
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
-        
+
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
-                    "The document's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_CONFLICT,
+                    "The document's ETag must be provided using the '"
+                    + Headers.IF_MATCH
+                    + "' header");
             return;
         }
-        
+
         // send the warnings if any (and in case no_content change the return code to ok
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
             sendWarnings(result.getHttpCode(), exchange, context);
         } else {
             exchange.setStatusCode(result.getHttpCode());
         }
-        
+
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }
-        
+
         exchange.endExchange();
     }
 }

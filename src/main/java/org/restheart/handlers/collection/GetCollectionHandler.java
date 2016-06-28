@@ -63,7 +63,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         MongoCollection<BsonDocument> coll = getDatabase().getCollection(context.getDBName(), context.getCollectionName());
-        
+
         long size = -1;
 
         if (context.isCount()) {
@@ -77,23 +77,37 @@ public class GetCollectionHandler extends PipedHttpHandler {
 
             try {
                 data = getDatabase().getCollectionData(
-                        coll, 
-                        context.getPage(), 
+                        coll,
+                        context.getPage(),
                         context.getPagesize(),
-                        context.getSortByDocument(), 
-                        context.getFiltersDocument(), 
+                        context.getSortByDocument(),
+                        context.getFiltersDocument(),
                         context.getProjectionDocument(),
                         context.getCursorAllocationPolicy());
             } catch (JSONParseException jpe) {
                 // the filter expression is not a valid json string
                 LOGGER.debug("invalid filter expression {}", context.getFilter(), jpe);
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", jpe);
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_BAD_REQUEST,
+                        "wrong request, filter expression is invalid",
+                        jpe);
                 return;
             } catch (MongoException me) {
                 if (me.getMessage().matches(".*Can't canonicalize query.*")) {
                     // error with the filter expression during query execution
-                    LOGGER.debug("invalid filter expression {}", context.getFilter(), me);
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", me);
+                    LOGGER.debug(
+                            "invalid filter expression {}",
+                            context.getFilter(),
+                            me);
+                    
+                    ResponseHelper.endExchangeWithMessage(
+                            exchange,
+                            context,
+                            HttpStatus.SC_BAD_REQUEST,
+                            "wrong request, filter expression is invalid",
+                            me);
                     return;
                 } else {
                     throw me;
@@ -124,7 +138,12 @@ public class GetCollectionHandler extends PipedHttpHandler {
             crp.sendRepresentation(exchange, context, rep);
             exchange.endExchange();
         } catch (IllegalQueryParamenterException ex) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
+            ResponseHelper.endExchangeWithMessage(
+                    exchange, 
+                    context,
+                    HttpStatus.SC_BAD_REQUEST, 
+                    ex.getMessage(), 
+                    ex);
         }
     }
 }

@@ -42,7 +42,7 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
         super(null);
         this.documentDAO = new DocumentDAO();
     }
-    
+
     /**
      * Creates a new instance of DeleteDocumentHandler
      *
@@ -52,7 +52,7 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
         super(null);
         this.documentDAO = documentDAO;
     }
-    
+
     /**
      * Creates a new instance of DeleteDocumentHandler
      *
@@ -62,7 +62,7 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
         super(next);
         this.documentDAO = documentDAO;
     }
-    
+
     /**
      * Default ctor
      */
@@ -80,23 +80,28 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         OperationResult result = this.documentDAO
-                .deleteDocument(context.getDBName(), 
-                        context.getCollectionName(), 
+                .deleteDocument(context.getDBName(),
+                        context.getCollectionName(),
                         context.getDocumentId(),
                         context.getShardKey(),
                         context.getETag(),
                         context.isETagCheckRequired());
-        
+
         context.setDbOperationResult(result);
 
         // inject the etag
         if (result.getEtag() != null) {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
-        
+
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_CONFLICT,
-                    "The document's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_CONFLICT,
+                    "The document's ETag must be provided using the '"
+                    + Headers.IF_MATCH
+                    + "' header");
             return;
         }
 
@@ -106,7 +111,7 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
         } else {
             exchange.setStatusCode(result.getHttpCode());
         }
-        
+
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }

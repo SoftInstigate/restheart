@@ -77,6 +77,7 @@ public class DeleteFileHandler extends PipedHttpHandler {
         if (!id.isObjectId()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
+                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "The file _id must be an ObjectId");
         }
@@ -104,7 +105,9 @@ public class DeleteFileHandler extends PipedHttpHandler {
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.endExchangeWithMessage(exchange,
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
                     HttpStatus.SC_CONFLICT,
                     "The file's ETag must be provided using the '"
                     + Headers.IF_MATCH

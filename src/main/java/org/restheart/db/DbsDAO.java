@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
@@ -104,7 +105,7 @@ public class DbsDAO implements Database {
     public DB getDBLegacy(String dbName) {
         return client.getDB(dbName);
     }
-    
+
     /**
      *
      * @param dbName
@@ -122,11 +123,11 @@ public class DbsDAO implements Database {
     @Override
     public List<String> getCollectionNames(String dbName) {
         MongoDatabase db = getDatabase(dbName);
-        
+
         List<String> _colls = new ArrayList<>();
 
         db.listCollectionNames().into(_colls);
-        
+
         // filter out reserved dbs
         return _colls.stream().filter(coll -> !RequestContext
                 .isReservedResourceCollection(coll))
@@ -224,8 +225,8 @@ public class DbsDAO implements Database {
 
         _colls.stream().map(
                 (collName) -> {
-                    BsonDocument properties =
-                            new BsonDocument("_id", new BsonString(collName));
+                    BsonDocument properties
+                    = new BsonDocument("_id", new BsonString(collName));
 
                     BsonDocument collProperties;
 
@@ -289,21 +290,24 @@ public class DbsDAO implements Database {
                     .projection(FIELDS_TO_RETURN).first();
 
             if (oldProperties != null) {
-                Object oldEtag = oldProperties.get("_etag");
+                BsonValue oldEtag = oldProperties.get("_etag");
 
-                if (oldEtag != null && requestEtag == null) {
+                if (oldEtag != null
+                        && requestEtag == null) {
                     return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
                 }
 
-                String _oldEtag;
-
-                if (oldEtag != null) {
-                    _oldEtag = oldEtag.toString();
+                BsonValue _requestEtag;
+                
+                if (ObjectId.isValid(requestEtag)) {
+                    _requestEtag = new BsonObjectId(new ObjectId(requestEtag));
                 } else {
-                    _oldEtag = null;
+                    // restheart generates ObjectId etags, but here we support
+                    // strings as well
+                    _requestEtag = new BsonString(requestEtag);
                 }
-
-                if (Objects.equals(requestEtag, _oldEtag)) {
+                
+                if (Objects.equals(_requestEtag, oldEtag)) {
                     return doDbPropsUpdate(
                             patching,
                             updating,

@@ -67,6 +67,7 @@ public class PostBucketHandler extends PipedHttpHandler {
         if (!_metadata.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
+                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data cannot be an array");
             return;
@@ -93,6 +94,7 @@ public class PostBucketHandler extends PipedHttpHandler {
                 String errMsg = "file resource update is not yet implemented";
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
+                        context,
                         HttpStatus.SC_NOT_IMPLEMENTED,
                         errMsg);
                 return;

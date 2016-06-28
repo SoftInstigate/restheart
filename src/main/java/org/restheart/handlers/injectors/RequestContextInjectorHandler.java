@@ -24,6 +24,7 @@ import java.util.Deque;
 import java.util.Optional;
 import org.bson.BSONObject;
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.db.FindIterablePool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.hal.UnsupportedDocumentIdException;
@@ -46,6 +47,7 @@ import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
 import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.handlers.RequestContext.TYPE;
 import static org.restheart.handlers.RequestContext.SHARDKEY_QPARAM_KEY;
+import org.restheart.utils.JsonUtils;
 
 /**
  *
@@ -106,7 +108,10 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         // check database name to be a valid mongodb name
         if (rcontext.getDBName() != null
                 && rcontext.isDbNameInvalid()) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+            ResponseHelper.endExchangeWithMessage(
+                    exchange, 
+                    context,
+                    HttpStatus.SC_BAD_REQUEST,
                     "illegal database name, see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
             return;
         }
@@ -114,14 +119,20 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         // check collection name to be a valid mongodb name
         if (rcontext.getCollectionName() != null
                 && rcontext.isCollectionNameInvalid()) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
-                    "illegal collection name, see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_BAD_REQUEST,
+                    "illegal collection name, "
+                    + "see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
             return;
         }
 
         // check collection name to be a valid mongodb name
         if (rcontext.isReservedResource()) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN,
+            ResponseHelper.endExchangeWithMessage(
+                    exchange, context,
+                    HttpStatus.SC_FORBIDDEN,
                     "reserved resource");
             return;
         }
@@ -135,14 +146,20 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             try {
                 pagesize = Integer.parseInt(__pagesize.getFirst());
             } catch (NumberFormatException ex) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_BAD_REQUEST,
                         "illegal pagesize paramenter, it is not a number", ex);
                 return;
             }
         }
 
         if (pagesize < 0 || pagesize > 1_000) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_BAD_REQUEST,
                     "illegal page parameter, pagesize must be >= 0 and <= 1000");
             return;
         } else {
@@ -155,14 +172,20 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             try {
                 page = Integer.parseInt(__page.getFirst());
             } catch (NumberFormatException ex) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_BAD_REQUEST,
                         "illegal page paramenter, it is not a number", ex);
                 return;
             }
         }
 
         if (page < 1) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_BAD_REQUEST,
                     "illegal page paramenter, it is < 1");
             return;
         } else {
@@ -179,7 +202,10 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
         if (sort_by != null) {
             if (sort_by.stream().anyMatch(s -> s == null || s.isEmpty())) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_BAD_REQUEST,
                         "illegal sort_by paramenter");
                 return;
             }
@@ -199,7 +225,10 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         if (keys != null) {
             if (keys.stream().anyMatch(f -> {
                 if (f == null || f.isEmpty()) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                    ResponseHelper.endExchangeWithMessage(
+                            exchange,
+                            context,
+                            HttpStatus.SC_BAD_REQUEST,
                             "illegal keys paramenter (empty)");
                     return true;
                 }
@@ -208,12 +237,21 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                     Object _keys = JSON.parse(f);
 
                     if (!(_keys instanceof BSONObject)) {
-                        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
-                                "illegal keys paramenter, it is not a json object: " + f + " => " + f.getClass().getSimpleName());
+                        ResponseHelper.endExchangeWithMessage(
+                                exchange,
+                                context,
+                                HttpStatus.SC_BAD_REQUEST,
+                                "illegal keys paramenter, it is not a json object: "
+                                + f
+                                + " => "
+                                + f.getClass().getSimpleName());
                         return true;
                     }
                 } catch (Throwable t) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                    ResponseHelper.endExchangeWithMessage(
+                            exchange,
+                            context,
+                            HttpStatus.SC_BAD_REQUEST,
                             "illegal keys paramenter: " + f, t);
                     return true;
                 }
@@ -231,7 +269,10 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         if (filters != null) {
             if (filters.stream().anyMatch(f -> {
                 if (f == null || f.isEmpty()) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                    ResponseHelper.endExchangeWithMessage(
+                            exchange,
+                            context,
+                            HttpStatus.SC_BAD_REQUEST,
                             "illegal filter paramenter (empty)");
                     return true;
                 }
@@ -240,17 +281,29 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                     Object _filter = JSON.parse(f);
 
                     if (!(_filter instanceof BSONObject)) {
-                        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
-                                "illegal filter paramenter, it is not a json object: " + f + " => " + f.getClass().getSimpleName());
+                        ResponseHelper.endExchangeWithMessage(
+                                exchange,
+                                context,
+                                HttpStatus.SC_BAD_REQUEST,
+                                "illegal filter paramenter, it is not a json object: "
+                                + f
+                                + " => "
+                                + f.getClass().getSimpleName());
                         return true;
                     } else if (((BSONObject) _filter).keySet().isEmpty()) {
-                        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                        ResponseHelper.endExchangeWithMessage(
+                                exchange,
+                                context,
+                                HttpStatus.SC_BAD_REQUEST,
                                 "illegal filter paramenter (empty json object)");
                         return true;
                     }
 
                 } catch (Throwable t) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                    ResponseHelper.endExchangeWithMessage(
+                            exchange,
+                            context,
+                            HttpStatus.SC_BAD_REQUEST,
                             "illegal filter paramenter: " + f, t);
                     return true;
                 }
@@ -268,7 +321,10 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 && (rcontext.getMethod() == METHOD.DELETE
                 || rcontext.getMethod() == METHOD.PATCH)
                 && (filters == null || filters.isEmpty())) {
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_BAD_REQUEST,
                     "filter paramenter is mandatory for bulk write requests");
             return;
         }
@@ -280,7 +336,10 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             Optional<String> _qvars = dqvars.stream().findFirst();
 
             if (!_qvars.isPresent()) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_BAD_REQUEST,
                         "illegal avars paramenter (empty)");
                 return;
             }
@@ -291,8 +350,12 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 try {
                     qvars = BsonDocument.parse(_qvars.get());
                 } catch (JsonParseException jpe) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
-                            "illegal avars paramenter, it is not a json object: " + _qvars.get());
+                    ResponseHelper.endExchangeWithMessage(
+                            exchange,
+                            context,
+                            HttpStatus.SC_BAD_REQUEST,
+                            "illegal avars paramenter, it is not a json object: "
+                            + _qvars.get());
                     return;
                 }
 
@@ -301,8 +364,13 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
                 rcontext.setAggregationVars(qvars);
             } catch (Throwable t) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
-                        "illegal avars paramenter: " + _qvars.get(), t);
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_BAD_REQUEST,
+                        "illegal avars paramenter: "
+                        + _qvars.get(),
+                        t);
                 return;
             }
         }
@@ -320,7 +388,10 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 try {
                     eager = EAGER_CURSOR_ALLOCATION_POLICY.valueOf(_eager.trim().toUpperCase());
                 } catch (IllegalArgumentException iae) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                    ResponseHelper.endExchangeWithMessage(
+                            exchange,
+                            context,
+                            HttpStatus.SC_BAD_REQUEST,
                             "illegal eager paramenter (must be LINEAR, RANDOM or NONE)");
                     return;
                 }
@@ -342,7 +413,14 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 try {
                     docIdType = DOC_ID_TYPE.valueOf(_docIdType.trim().toUpperCase());
                 } catch (IllegalArgumentException iae) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal " + DOC_ID_TYPE_QPARAM_KEY + " paramenter; must be " + Arrays.toString(DOC_ID_TYPE.values()));
+                    ResponseHelper.endExchangeWithMessage(
+                            exchange,
+                            context,
+                            HttpStatus.SC_BAD_REQUEST,
+                            "illegal "
+                            + DOC_ID_TYPE_QPARAM_KEY
+                            + " paramenter; must be "
+                            + Arrays.toString(DOC_ID_TYPE.values()));
                     return;
                 }
             }
@@ -358,7 +436,13 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             try {
                 rcontext.setDocumentId(URLUtils.getDocumentIdFromURI(_docId, docIdType));
             } catch (UnsupportedDocumentIdException idide) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "wrong document id format: not a valid " + docIdType.name(), idide);
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_BAD_REQUEST,
+                        "wrong document id format: not a valid "
+                        + docIdType.name(),
+                        idide);
                 return;
             }
         }
@@ -375,7 +459,14 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             try {
                 rcontext.setHalMode(HAL_MODE.valueOf(_halMode.trim().toUpperCase()));
             } catch (IllegalArgumentException iae) {
-                ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, "illegal " + HAL_QPARAM_KEY + " paramenter; valid values are " + Arrays.toString(HAL_MODE.values()));
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_BAD_REQUEST,
+                        "illegal "
+                        + HAL_QPARAM_KEY
+                        + " paramenter; valid values are "
+                        + Arrays.toString(HAL_MODE.values()));
             }
         }
 
@@ -386,7 +477,10 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         if (shardKeys != null) {
             if (shardKeys.stream().anyMatch(f -> {
                 if (f == null || f.isEmpty()) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                    ResponseHelper.endExchangeWithMessage(
+                            exchange,
+                            context,
+                            HttpStatus.SC_BAD_REQUEST,
                             "illegal shardkey paramenter (empty)");
                     return true;
                 }
@@ -395,7 +489,10 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                     BsonDocument _shardKeys = BsonDocument.parse(f);
 
                     if (_shardKeys.keySet().isEmpty()) {
-                        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+                        ResponseHelper.endExchangeWithMessage(
+                                exchange,
+                                context,
+                                HttpStatus.SC_BAD_REQUEST,
                                 "illegal shardkey paramenter (empty json object)");
                         return true;
                     }
@@ -403,8 +500,13 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                     rcontext.setShardKey(_shardKeys);
 
                 } catch (Throwable t) {
-                    ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
-                            "illegal shardkey paramenter: " + f, t);
+                    ResponseHelper.endExchangeWithMessage(
+                            exchange,
+                            context,
+                            HttpStatus.SC_BAD_REQUEST,
+                            "illegal shardkey paramenter: "
+                            + f,
+                            t);
                     return true;
                 }
 

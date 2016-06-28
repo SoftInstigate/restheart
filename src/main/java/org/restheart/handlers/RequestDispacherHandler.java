@@ -356,31 +356,44 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
     @Override
     public final void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getType() == TYPE.INVALID) {
-            LOGGER.debug("This is a bad request: returning a <{}> HTTP code", HttpStatus.SC_BAD_REQUEST);
+            LOGGER.debug(
+                    "This is a bad request: returning a <{}> HTTP code", 
+                    HttpStatus.SC_BAD_REQUEST);
             ResponseHelper.endExchange(exchange, HttpStatus.SC_BAD_REQUEST);
             return;
         }
 
         if (context.getMethod() == METHOD.OTHER) {
-            LOGGER.debug("This method is not allowed: returning a <{}> HTTP code", HttpStatus.SC_METHOD_NOT_ALLOWED);
+            LOGGER.debug(
+                    "This method is not allowed: returning a <{}> HTTP code", 
+                    HttpStatus.SC_METHOD_NOT_ALLOWED);
             ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
             return;
         }
 
         if (context.isReservedResource()) {
-            LOGGER.debug("The resource is reserved: returning a <{}> HTTP code", HttpStatus.SC_FORBIDDEN);
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_FORBIDDEN, "reserved resource");
+            LOGGER.debug(
+                    "The resource is reserved: returning a <{}> HTTP code", 
+                    HttpStatus.SC_FORBIDDEN);
+            ResponseHelper.endExchangeWithMessage(
+                    exchange, 
+                    context, 
+                    HttpStatus.SC_FORBIDDEN, 
+                    "reserved resource");
             return;
         }
 
-        final PipedHttpHandler httpHandler = getPipedHttpHandler(context.getType(), context.getMethod());
+        final PipedHttpHandler httpHandler = 
+                getPipedHttpHandler(context.getType(), context.getMethod());
 
         if (httpHandler != null) {
             before(exchange, context);
             httpHandler.handleRequest(exchange, context);
             after(exchange, context);
         } else {
-            LOGGER.error("Can't find PipedHttpHandler({}, {})", context.getType(), context.getMethod());
+            LOGGER.error(
+                    "Can't find PipedHttpHandler({}, {})", 
+                    context.getType(), context.getMethod());
             ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
     }

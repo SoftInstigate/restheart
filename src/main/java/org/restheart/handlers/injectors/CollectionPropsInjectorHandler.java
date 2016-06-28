@@ -117,6 +117,10 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
         }
         
         LOGGER.debug(errMsg);
-        ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, errMsg);
+        ResponseHelper.endExchangeWithMessage(
+                exchange, 
+                context, 
+                HttpStatus.SC_NOT_FOUND, 
+                errMsg);
     }
 }

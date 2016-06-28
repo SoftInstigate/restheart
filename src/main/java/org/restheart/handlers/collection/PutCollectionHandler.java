@@ -85,6 +85,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
         if (!_content.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
+                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
             return;
@@ -99,6 +100,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
+                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong relationships definition. " + ex.getMessage(), ex);
                 return;
@@ -112,6 +114,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
+                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong representation transformer definition. "
                         + ex.getMessage(),
@@ -127,6 +130,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
+                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong schema checker definition. "
                         + ex.getMessage(),
@@ -162,6 +166,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
+                    context,
                     HttpStatus.SC_CONFLICT,
                     "The collection's ETag must be provided using the '"
                     + Headers.IF_MATCH

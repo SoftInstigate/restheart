@@ -34,6 +34,8 @@ import java.util.Optional;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
+import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.restheart.utils.HttpStatus;
@@ -382,7 +384,7 @@ public class DocumentDAO implements Repository {
             final boolean deleting
     ) {
 
-        Object oldEtag = oldDocument.get("_etag");
+        BsonValue oldEtag = oldDocument.get("_etag");
 
         if (oldEtag != null && requestEtag == null) {
             // oopps, we need to restore old document
@@ -407,15 +409,17 @@ public class DocumentDAO implements Repository {
                     HttpStatus.SC_CONFLICT, oldEtag, oldDocument, null);
         }
 
-        String _oldEtag;
+        BsonValue _requestEtag;
+                
+                if (ObjectId.isValid(requestEtag)) {
+                    _requestEtag = new BsonObjectId(new ObjectId(requestEtag));
+                } else {
+                    // restheart generates ObjectId etags, but here we support
+                    // strings as well
+                    _requestEtag = new BsonString(requestEtag);
+                }
 
-        if (oldEtag != null) {
-            _oldEtag = oldEtag.toString();
-        } else {
-            _oldEtag = null;
-        }
-
-        if (Objects.equals(requestEtag, _oldEtag)) {
+        if (Objects.equals(_requestEtag, oldEtag)) {
             BsonDocument newDocument = coll.find(
                     eq("_id", oldDocument.get("_id"))).first();
 

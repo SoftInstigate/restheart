@@ -32,7 +32,6 @@ import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 import org.restheart.utils.JsonUtils;
 import static com.mongodb.client.model.Filters.and;
-import org.bson.BsonValue;
 
 /**
  *
@@ -119,6 +118,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
 
             ResponseHelper.endExchangeWithMessage(
                     exchange,
+                    context,
                     HttpStatus.SC_NOT_FOUND,
                     errMsg);
             return;

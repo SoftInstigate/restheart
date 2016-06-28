@@ -116,6 +116,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                     .get(Headers.CONTENT_TYPE))) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
+                        context,
                         HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
                         ERROR_INVALID_CONTENTTYPE_FILE);
                 return;
@@ -130,6 +131,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
+                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg);
                 return;
@@ -145,6 +147,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
+                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg,
                         ioe);
@@ -159,6 +162,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
+                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg,
                         ex);
@@ -173,6 +177,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
+                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg);
                 return;
@@ -195,6 +200,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                         .get(Headers.CONTENT_TYPE))) {
                     ResponseHelper.endExchangeWithMessage(
                             exchange,
+                            context,
                             HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
                             ERROR_INVALID_CONTENTTYPE);
                     return;
@@ -215,6 +221,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                 } catch (JsonParseException | IllegalArgumentException ex) {
                     ResponseHelper.endExchangeWithMessage(
                             exchange,
+                            context,
                             HttpStatus.SC_NOT_ACCEPTABLE,
                             "Invalid JSON",
                             ex);
@@ -243,6 +250,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
                         ResponseHelper.endExchangeWithMessage(
                                 exchange,
+                                context,
                                 HttpStatus.SC_NOT_ACCEPTABLE,
                                 errMsg,
                                 udie);
@@ -257,6 +265,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
                     ResponseHelper.endExchangeWithMessage(
                             exchange,
+                            context,
                             HttpStatus.SC_NOT_ACCEPTABLE,
                             errMsg);
                 }
@@ -277,6 +286,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
+                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg,
                         udie);
@@ -467,7 +477,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     }
 
     /**
-     * Search the request for a field named 'metadata' (or 'properties') which 
+     * Search the request for a field named 'metadata' (or 'properties') which
      * must contain valid JSON
      *
      * @param formData
