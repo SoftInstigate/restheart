@@ -28,8 +28,6 @@ import org.junit.Before;
 import org.junit.Test;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import static org.restheart.test.integration.HttpClientAbstactIT.collectionTmpUri;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import static org.restheart.test.integration.HttpClientAbstactIT.dbTmpUri;
 import static org.restheart.test.integration.HttpClientAbstactIT.halCT;
 import static org.restheart.test.integration.HttpClientAbstactIT.buildURI;

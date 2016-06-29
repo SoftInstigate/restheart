@@ -53,7 +53,8 @@ class CollectionDAO {
 
     private final MongoClient client;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CollectionDAO.class);
+    private static final Logger LOGGER
+            = LoggerFactory.getLogger(CollectionDAO.class);
 
     private static final BsonDocument FIELDS_TO_RETURN;
 
@@ -76,7 +77,9 @@ class CollectionDAO {
      * @param collName the collection name
      * @return the mongodb DBCollection object for the collection in db dbName
      */
-    DBCollection getCollectionLegacy(final String dbName, final String collName) {
+    DBCollection getCollectionLegacy(
+            final String dbName,
+            final String collName) {
         return client.getDB(dbName).getCollection(collName);
     }
 
@@ -88,8 +91,12 @@ class CollectionDAO {
      * @param collName the collection name
      * @return the mongodb DBCollection object for the collection in db dbName
      */
-    MongoCollection<BsonDocument> getCollection(final String dbName, final String collName) {
-        return client.getDatabase(dbName).getCollection(collName, BsonDocument.class);
+    MongoCollection<BsonDocument> getCollection(
+            final String dbName,
+            final String collName) {
+        return client
+                .getDatabase(dbName)
+                .getCollection(collName, BsonDocument.class);
     }
 
     /**
@@ -122,8 +129,8 @@ class CollectionDAO {
     }
 
     /**
-     * Returs the FindIterable<BsonDocument> of the collection applying 
-     * sorting, filtering and projection.
+     * Returs the FindIterable<BsonDocument> of the collection applying sorting,
+     * filtering and projection.
      *
      * @param sortBy the sort expression to use for sorting (prepend field name
      * with - for descending sorting)
@@ -150,7 +157,8 @@ class CollectionDAO {
             final BsonDocument sortBy,
             final BsonDocument filters,
             final BsonDocument keys,
-            FindIterablePool.EAGER_CURSOR_ALLOCATION_POLICY eager) throws JSONParseException {
+            FindIterablePool.EAGER_CURSOR_ALLOCATION_POLICY eager)
+            throws JSONParseException {
 
         ArrayList<BsonDocument> ret = new ArrayList<>();
 
@@ -160,7 +168,15 @@ class CollectionDAO {
 
         if (eager != FindIterablePool.EAGER_CURSOR_ALLOCATION_POLICY.NONE) {
 
-            _cursor = FindIterablePool.getInstance().get(new CursorPoolEntryKey(coll, sortBy, filters, keys, toskip, 0), eager);
+            _cursor = FindIterablePool.getInstance().get(
+                    new CursorPoolEntryKey(
+                            coll,
+                            sortBy,
+                            filters,
+                            keys,
+                            toskip,
+                            0),
+                    eager);
         }
 
         int _pagesize = pagesize;
@@ -173,7 +189,7 @@ class CollectionDAO {
             cursor.skip(toskip);
 
             MongoCursor<BsonDocument> mc = cursor.iterator();
-            
+
             while (_pagesize > 0 && mc.hasNext()) {
                 ret.add(mc.next());
                 _pagesize--;
@@ -191,17 +207,22 @@ class CollectionDAO {
                 startSkipping = System.currentTimeMillis();
             }
 
-            LOGGER.debug("got cursor from pool with skips {}. need to reach {} skips.", alreadySkipped, toskip);
+            LOGGER.debug("got cursor from pool with skips {}. "
+                    + "need to reach {} skips.",
+                    alreadySkipped,
+                    toskip);
 
             MongoCursor<BsonDocument> mc = cursor.iterator();
-            
+
             while (toskip > alreadySkipped && mc.hasNext()) {
                 mc.next();
                 alreadySkipped++;
             }
 
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("skipping {} times took {} msecs", toskip - cursorSkips, System.currentTimeMillis() - startSkipping);
+                LOGGER.debug("skipping {} times took {} msecs",
+                        toskip - cursorSkips,
+                        System.currentTimeMillis() - startSkipping);
             }
 
             while (_pagesize > 0 && mc.hasNext()) {
@@ -226,8 +247,11 @@ class CollectionDAO {
      * @param collName the collection name
      * @return the collection properties document
      */
-    public BsonDocument getCollectionProps(final String dbName, final String collName) {
-        MongoCollection<BsonDocument> propsColl = getCollection(dbName, "_properties");
+    public BsonDocument getCollectionProps(
+            final String dbName,
+            final String collName) {
+        MongoCollection<BsonDocument> propsColl
+                = getCollection(dbName, "_properties");
 
         BsonDocument props = propsColl
                 .find(new BsonDocument("_id",
@@ -307,10 +331,12 @@ class CollectionDAO {
         content.remove("_id"); // make sure we don't change this field
 
         MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<BsonDocument> mcoll = mdb.getCollection("_properties", BsonDocument.class);
+        MongoCollection<BsonDocument> mcoll
+                = mdb.getCollection("_properties", BsonDocument.class);
 
         if (checkEtag && updating) {
-            BsonDocument oldProperties = mcoll.find(eq("_id", "_properties.".concat(collName)))
+            BsonDocument oldProperties
+                    = mcoll.find(eq("_id", "_properties.".concat(collName)))
                     .projection(FIELDS_TO_RETURN).first();
 
             if (oldProperties != null) {
@@ -321,7 +347,7 @@ class CollectionDAO {
                 }
 
                 BsonValue _requestEtag;
-                
+
                 if (ObjectId.isValid(requestEtag)) {
                     _requestEtag = new BsonObjectId(new ObjectId(requestEtag));
                 } else {
@@ -331,21 +357,47 @@ class CollectionDAO {
                 }
 
                 if (Objects.equals(_requestEtag, oldEtag)) {
-                    return doCollPropsUpdate(collName, patching, updating, mcoll, content, newEtag);
+                    return doCollPropsUpdate(
+                            collName,
+                            patching,
+                            updating,
+                            mcoll,
+                            content,
+                            newEtag);
                 } else {
-                    return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+                    return new OperationResult(
+                            HttpStatus.SC_PRECONDITION_FAILED,
+                            oldEtag);
                 }
             } else {
                 // this is the case when the coll does not have properties
                 // e.g. it has not been created by restheart
-                return doCollPropsUpdate(collName, patching, updating, mcoll, content, newEtag);
+                return doCollPropsUpdate(
+                        collName,
+                        patching,
+                        updating,
+                        mcoll,
+                        content,
+                        newEtag);
             }
         } else {
-            return doCollPropsUpdate(collName, patching, updating, mcoll, content, newEtag);
+            return doCollPropsUpdate(
+                    collName,
+                    patching,
+                    updating,
+                    mcoll,
+                    content,
+                    newEtag);
         }
     }
 
-    private OperationResult doCollPropsUpdate(String collName, boolean patching, boolean updating, MongoCollection<BsonDocument> mcoll, BsonDocument dcontent, ObjectId newEtag) {
+    private OperationResult doCollPropsUpdate(
+            String collName,
+            boolean patching,
+            boolean updating,
+            MongoCollection<BsonDocument> mcoll,
+            BsonDocument dcontent,
+            ObjectId newEtag) {
         if (patching) {
             DAOUtils.updateDocument(
                     mcoll,
@@ -390,7 +442,8 @@ class CollectionDAO {
         MongoCollection<Document> mcoll = mdb.getCollection("_properties");
 
         if (checkEtag) {
-            Document properties = mcoll.find(eq("_id", "_properties.".concat(collName)))
+            Document properties = mcoll.find(
+                    eq("_id", "_properties.".concat(collName)))
                     .projection(FIELDS_TO_RETURN).first();
 
             if (properties != null) {
@@ -398,9 +451,15 @@ class CollectionDAO {
 
                 if (oldEtag != null) {
                     if (requestEtag == null) {
-                        return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
-                    } else if (!Objects.equals(oldEtag.toString(), requestEtag)) {
-                        return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+                        return new OperationResult(
+                                HttpStatus.SC_CONFLICT,
+                                oldEtag);
+                    } else if (!Objects.equals(
+                            oldEtag.toString(),
+                            requestEtag)) {
+                        return new OperationResult(
+                                HttpStatus.SC_PRECONDITION_FAILED,
+                                oldEtag);
                     }
                 }
             }
