@@ -24,7 +24,6 @@ import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
-import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -48,8 +47,8 @@ import org.slf4j.LoggerFactory;
  */
 public class RequestContext {
 
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger(RequestContext.class);
+    private static final Logger LOGGER
+            = LoggerFactory.getLogger(RequestContext.class);
 
     public enum TYPE {
         INVALID,
@@ -223,8 +222,8 @@ public class RequestContext {
      * @param whatUri the uri to map
      */
     public RequestContext(
-            HttpServerExchange exchange, 
-            String whereUri, 
+            HttpServerExchange exchange,
+            String whereUri,
             String whatUri) {
         this.whereUri = URLUtils.removeTrailingSlashes(whereUri == null ? null
                 : whereUri.startsWith("/") ? whereUri
@@ -232,8 +231,8 @@ public class RequestContext {
 
         this.whatUri = URLUtils.removeTrailingSlashes(
                 whatUri == null ? null
-                        : whatUri.startsWith("/") 
-                                || "*".equals(whatUri) ? whatUri
+                        : whatUri.startsWith("/")
+                        || "*".equals(whatUri) ? whatUri
                         : "/" + whatUri);
 
         this.mappedUri = exchange.getRequestPath();
@@ -249,8 +248,8 @@ public class RequestContext {
         HeaderValues etagHvs = exchange.getRequestHeaders() == null
                 ? null : exchange.getRequestHeaders().get(Headers.IF_MATCH);
 
-        this.etag = etagHvs == null || etagHvs.getFirst() == null 
-                ? null 
+        this.etag = etagHvs == null || etagHvs.getFirst() == null
+                ? null
                 : etagHvs.getFirst();
 
         this.forceEtagCheck = exchange
@@ -286,32 +285,32 @@ public class RequestContext {
             type = TYPE.ROOT;
         } else if (pathTokens.length < 3) {
             type = TYPE.DB;
-        } else if (pathTokens.length >= 3 
+        } else if (pathTokens.length >= 3
                 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
             if (pathTokens.length == 3) {
                 type = TYPE.FILES_BUCKET;
-            } else if (pathTokens.length == 4 
+            } else if (pathTokens.length == 4
                     && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
                 type = TYPE.COLLECTION_INDEXES;
-            } else if (pathTokens.length == 4 
-                    && !pathTokens[3].equalsIgnoreCase(_INDEXES) 
+            } else if (pathTokens.length == 4
+                    && !pathTokens[3].equalsIgnoreCase(_INDEXES)
                     && !pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
                 type = TYPE.FILE;
-            } else if (pathTokens.length > 4 
+            } else if (pathTokens.length > 4
                     && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
                 type = TYPE.INDEX;
-            } else if (pathTokens.length > 4 
-                    && !pathTokens[3].equalsIgnoreCase(_INDEXES) 
+            } else if (pathTokens.length > 4
+                    && !pathTokens[3].equalsIgnoreCase(_INDEXES)
                     && !pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
                 type = TYPE.FILE;
-            } else if (pathTokens.length == 5 
+            } else if (pathTokens.length == 5
                     && pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
                 // URL: <host>/db/bucket.filePath/xxx/binary
                 type = TYPE.FILE_BINARY;
             } else {
                 type = TYPE.DOCUMENT;
             }
-        } else if (pathTokens.length >= 3 
+        } else if (pathTokens.length >= 3
                 && pathTokens[2].endsWith(_SCHEMAS)) {
             if (pathTokens.length == 3) {
                 type = TYPE.SCHEMA_STORE;
@@ -320,19 +319,19 @@ public class RequestContext {
             }
         } else if (pathTokens.length < 4) {
             type = TYPE.COLLECTION;
-        } else if (pathTokens.length == 4 
+        } else if (pathTokens.length == 4
                 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.COLLECTION_INDEXES;
-        } else if (pathTokens.length == 4 
+        } else if (pathTokens.length == 4
                 && pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
             type = TYPE.BULK_DOCUMENTS;
-        } else if (pathTokens.length > 4 
+        } else if (pathTokens.length > 4
                 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.INDEX;
-        } else if (pathTokens.length == 4 
+        } else if (pathTokens.length == 4
                 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
             type = TYPE.INVALID;
-        } else if (pathTokens.length > 4 
+        } else if (pathTokens.length > 4
                 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
             type = TYPE.AGGREGATION;
         } else {
@@ -517,14 +516,14 @@ public class RequestContext {
      * @return true if the documentIdRaw is a reserved resource
      */
     public static boolean isReservedResourceDocument(
-            TYPE type, 
+            TYPE type,
             String documentIdRaw) {
         if (documentIdRaw == null) {
             return false;
         }
 
         return (documentIdRaw.startsWith(UNDERSCORE)
-                || (type != TYPE.AGGREGATION 
+                || (type != TYPE.AGGREGATION
                 && _AGGREGATIONS.equalsIgnoreCase(documentIdRaw)))
                 && !documentIdRaw.equalsIgnoreCase(_INDEXES)
                 && !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID)
@@ -620,7 +619,7 @@ public class RequestContext {
     public void setFilter(Deque<String> filter) {
         this.filter = filter;
     }
-    
+
     /**
      *
      * @return the $and composed filter qparam values
@@ -646,7 +645,7 @@ public class RequestContext {
 
         return filterQuery;
     }
-    
+
     public BsonDocument getSortByDocument() throws JsonParseException {
         BsonDocument sort = new BsonDocument();
 
@@ -660,7 +659,7 @@ public class RequestContext {
                 // manage the case where sort_by is a json object
                 try {
                     BsonDocument _sort = BsonDocument.parse(_s);
-                    
+
                     sort.putAll(_sort);
                 } catch (JsonParseException e) {
                     // sort_by is just a string, i.e. a property name
@@ -674,10 +673,10 @@ public class RequestContext {
                 }
             });
         }
-        
+
         return sort;
     }
-    
+
     public BsonDocument getProjectionDocument() throws JsonParseException {
         final BsonDocument projection = new BsonDocument();
 
@@ -688,7 +687,7 @@ public class RequestContext {
                 projection.putAll(BsonDocument.parse(f));  // this can throw JsonParseException for invalid keys parameters
             });
         }
-        
+
         return projection;
     }
 
@@ -1000,10 +999,10 @@ public class RequestContext {
         // for documents consider db and coll etagDocPolicy metadata
         if (type == TYPE.DOCUMENT || type == TYPE.FILE) {
             // check the coll metadata
-            Object _policy = collectionProps != null
+            BsonValue _policy = collectionProps != null
                     ? collectionProps.get(ETAG_DOC_POLICY_METADATA_KEY)
                     : null;
-            
+
             LOGGER.trace(
                     "collection etag policy (from coll properties) {}",
                     _policy);
@@ -1013,16 +1012,17 @@ public class RequestContext {
                 _policy = dbProps != null ? dbProps.get(ETAG_DOC_POLICY_METADATA_KEY)
                         : null;
                 LOGGER.trace(
-                        "collection etag policy (from db properties) {}", 
+                        "collection etag policy (from db properties) {}",
                         _policy);
             }
 
             ETAG_CHECK_POLICY policy = null;
 
-            if (_policy != null && _policy instanceof String) {
+            if (_policy != null && _policy.isString()) {
                 try {
-                    policy = ETAG_CHECK_POLICY.valueOf(((String) _policy)
-                            .toUpperCase());
+                    policy = ETAG_CHECK_POLICY
+                            .valueOf(_policy.asString().getValue()
+                                    .toUpperCase());
                 } catch (IllegalArgumentException iae) {
                     policy = null;
                 }
@@ -1040,15 +1040,16 @@ public class RequestContext {
         // for db consider db etagPolicy metadata
         if (type == TYPE.DB && dbProps != null) {
             // check the coll  metadata
-            Object _policy = dbProps.get(ETAG_POLICY_METADATA_KEY);
+            BsonValue _policy = dbProps.get(ETAG_POLICY_METADATA_KEY);
 
             LOGGER.trace("db etag policy (from db properties) {}", _policy);
 
             ETAG_CHECK_POLICY policy = null;
 
-            if (_policy != null && _policy instanceof String) {
+            if (_policy != null && _policy.isString()) {
                 try {
-                    policy = ETAG_CHECK_POLICY.valueOf(((String) _policy)
+                    policy = ETAG_CHECK_POLICY.valueOf(
+                            _policy.asString().getValue()
                             .toUpperCase());
                 } catch (IllegalArgumentException iae) {
                     policy = null;
@@ -1067,17 +1068,17 @@ public class RequestContext {
         // for collection consider coll and db etagPolicy metadata
         if (type == TYPE.COLLECTION && collectionProps != null) {
             // check the coll  metadata
-            Object _policy = collectionProps.get(ETAG_POLICY_METADATA_KEY);
+            BsonValue _policy = collectionProps.get(ETAG_POLICY_METADATA_KEY);
 
             LOGGER.trace(
                     "coll etag policy (from coll properties) {}",
                     _policy);
-            
+
             if (_policy == null) {
                 // check the db metadata
                 _policy = dbProps != null ? dbProps.get(ETAG_POLICY_METADATA_KEY)
                         : null;
-                
+
                 LOGGER.trace(
                         "coll etag policy (from db properties) {}",
                         _policy);
@@ -1085,9 +1086,10 @@ public class RequestContext {
 
             ETAG_CHECK_POLICY policy = null;
 
-            if (_policy != null && _policy instanceof String) {
+            if (_policy != null && _policy.isString()) {
                 try {
-                    policy = ETAG_CHECK_POLICY.valueOf(((String) _policy)
+                    policy = ETAG_CHECK_POLICY.valueOf(
+                            _policy.asString().getValue()
                             .toUpperCase());
                 } catch (IllegalArgumentException iae) {
                     policy = null;
@@ -1106,10 +1108,10 @@ public class RequestContext {
         // apply the default policy from configuration
         ETAG_CHECK_POLICY dbP = Bootstrapper.getConfiguration()
                 .getDbEtagCheckPolicy();
-        
+
         ETAG_CHECK_POLICY collP = Bootstrapper.getConfiguration()
                 .getCollEtagCheckPolicy();
-        
+
         ETAG_CHECK_POLICY docP = Bootstrapper.getConfiguration()
                 .getDocEtagCheckPolicy();
 
