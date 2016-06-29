@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.TreeMap;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
-import org.bson.BsonInt64;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
