@@ -125,9 +125,7 @@ public class PatchDBHandler extends PipedHttpHandler {
 
         // inject the etag
         if (result.getEtag() != null) {
-            exchange.getResponseHeaders().put(
-                    Headers.ETAG,
-                    result.getEtag().toString());
+            ResponseHelper.injectEtagHeader(exchange, result.getEtag());
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {

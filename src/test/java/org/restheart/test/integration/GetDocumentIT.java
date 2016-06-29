@@ -88,7 +88,6 @@ public class GetDocumentIT extends HttpClientAbstactIT {
 
         assertNotNull("check json not null", json);
         assertNotNull("check not null _etag property", json.get("_etag"));
-        assertNotNull("check not null _lastupdated_on property", json.get("_lastupdated_on"));
         
         assertNotNull("check not null _id property", json.get("_id"));
         assertEquals("check _id value", document1Id, json.get("_id").asString());

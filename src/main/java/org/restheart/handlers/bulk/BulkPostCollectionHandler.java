@@ -105,7 +105,7 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
 
         // inject the etag
         if (result.getEtag() != null) {
-            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+            ResponseHelper.injectEtagHeader(exchange, result.getEtag());
         }
 
         if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
