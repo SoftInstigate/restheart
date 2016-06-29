@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -116,8 +116,14 @@ public final class Bootstrapper {
             // read configuration silently, to avoid logging before initializing the logger
             configuration = FileUtils.getConfiguration(args, true);
         } catch (ConfigurationException ex) {
+            String instanceName = null;
+            if(configuration != null) {
+                instanceName = configuration.getInstanceName();
+            }
             LOGGER.info("Starting "
-                    + ansi().fg(RED).bold().a("RESTHeart").reset().toString());
+                    + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
+                    + " instance "
+                    + ansi().fg(RED).bold().a(instanceName).reset().toString());
 
             if (RESTHEART_VERSION != null) {
                 LOGGER.info("version {}", RESTHEART_VERSION);
