@@ -97,7 +97,7 @@ public class DeleteFileHandler extends PipedHttpHandler {
 
         // inject the etag
         if (result.getEtag() != null) {
-            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+            ResponseHelper.injectEtagHeader(exchange, result.getEtag());
         }
 
         if (getNext() != null) {

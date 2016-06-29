@@ -22,7 +22,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
@@ -57,9 +56,9 @@ public class ResponseHelper {
      * @param message
      */
     public static void endExchangeWithMessage(
-            HttpServerExchange exchange, 
-            RequestContext context, 
-            int code, 
+            HttpServerExchange exchange,
+            RequestContext context,
+            int code,
             String message) {
         endExchangeWithMessage(exchange, context, code, message, null);
     }
@@ -74,7 +73,7 @@ public class ResponseHelper {
      */
     public static void endExchangeWithMessage(
             HttpServerExchange exchange,
-            RequestContext context, 
+            RequestContext context,
             int code,
             String message,
             Throwable t) {
@@ -83,9 +82,9 @@ public class ResponseHelper {
         String httpStatusText = HttpStatus.getStatusText(code);
 
         exchange.getResponseHeaders().put(
-                Headers.CONTENT_TYPE, 
+                Headers.CONTENT_TYPE,
                 Representation.HAL_JSON_MEDIA_TYPE);
-        
+
         exchange.getResponseSender().send(
                 getErrorJsonDocument(exchange.getRequestPath(),
                         code,
@@ -93,26 +92,26 @@ public class ResponseHelper {
                         httpStatusText,
                         message,
                         t, false));
-        
+
         exchange.endExchange();
     }
 
     private static String getErrorJsonDocument(String href,
             int code,
-            RequestContext context, 
+            RequestContext context,
             String httpStatusText,
             String message,
             Throwable t,
             boolean includeStackTrace) {
         Representation rep = new Representation(href);
 
-        rep.addProperty("http status code", 
+        rep.addProperty("http status code",
                 new BsonInt32(code));
-        rep.addProperty("http status description", 
+        rep.addProperty("http status description",
                 new BsonString(httpStatusText));
         if (message != null) {
             rep.addProperty(
-                    "message", 
+                    "message",
                     new BsonString(avoidEscapedChars(message)));
         }
 
@@ -120,15 +119,15 @@ public class ResponseHelper {
 
         if (t != null) {
             nrep.addProperty(
-                    "exception", 
+                    "exception",
                     new BsonString(t.getClass().getName()));
 
             if (t.getMessage() != null) {
                 if (t instanceof JSONParseException) {
-                    nrep.addProperty("exception message", 
+                    nrep.addProperty("exception message",
                             new BsonString("invalid json"));
                 } else {
-                    nrep.addProperty("exception message", 
+                    nrep.addProperty("exception message",
                             new BsonString(
                                     avoidEscapedChars(t.getMessage())));
                 }
@@ -145,7 +144,7 @@ public class ResponseHelper {
 
             rep.addRepresentation("rh:exception", nrep);
         }
-        
+
         // add warnings
         if (context != null
                 && context.getWarnings() != null) {
@@ -159,7 +158,7 @@ public class ResponseHelper {
         if (t == null || t.getStackTrace() == null) {
             return null;
         }
-        
+
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
         t.printStackTrace(pw);
@@ -168,16 +167,16 @@ public class ResponseHelper {
         String[] lines = st.split("\n");
 
         BsonArray list = new BsonArray();
-        
-        for (String line: lines) {
+
+        for (String line : lines) {
             list.add(new BsonString(line));
         }
-                
+
         return list;
     }
 
     private static String avoidEscapedChars(String s) {
-        return s == null 
+        return s == null
                 ? null
                 : s
                 .replaceAll("\"", "'")
@@ -190,7 +189,7 @@ public class ResponseHelper {
      * @param properties
      */
     public static void injectEtagHeader(
-            HttpServerExchange exchange, 
+            HttpServerExchange exchange,
             BsonDocument properties) {
         if (properties == null) {
             return;
@@ -198,22 +197,28 @@ public class ResponseHelper {
 
         BsonValue _etag = properties.get("_etag");
 
-        if (_etag == null || !_etag.isObjectId()) {
+        if (_etag == null) {
             return;
         }
 
-        exchange.getResponseHeaders().put(
-                Headers.ETAG, 
-                _etag.asObjectId().getValue().toString());
+        if (_etag.isObjectId()) {
+            exchange.getResponseHeaders().put(
+                    Headers.ETAG,
+                    _etag.asObjectId().getValue().toString());
+        } else if (_etag.isString()) {
+            exchange.getResponseHeaders().put(
+                    Headers.ETAG,
+                    _etag.asString().getValue());
+        }
     }
-    
+
     /**
      *
      * @param exchange
      * @param properties
      */
     public static void injectEtagHeader(
-            HttpServerExchange exchange, 
+            HttpServerExchange exchange,
             Document properties) {
         if (properties == null) {
             return;
@@ -221,13 +226,19 @@ public class ResponseHelper {
 
         Object _etag = properties.get("_etag");
 
-        if (_etag == null || !(_etag instanceof ObjectId)) {
+        if (_etag == null) {
             return;
         }
 
-        exchange.getResponseHeaders().put(
-                Headers.ETAG, 
-                _etag.toString());
+        if (_etag instanceof ObjectId) {
+            exchange.getResponseHeaders().put(
+                    Headers.ETAG,
+                    _etag.toString());
+        } else if (_etag instanceof String) {
+            exchange.getResponseHeaders().put(
+                    Headers.ETAG,
+                    (String) _etag);
+        }
     }
 
     /**
@@ -236,21 +247,42 @@ public class ResponseHelper {
      * @param etag
      */
     public static void injectEtagHeader(
-            HttpServerExchange exchange, 
-            BsonValue etag) {
-        if (etag == null || !etag.isObjectId()) {
+            HttpServerExchange exchange,
+            Object etag) {
+
+        if (etag == null) {
             return;
         }
 
-        exchange.getResponseHeaders().put(
-                Headers.ETAG, 
-                etag.asObjectId().getValue().toString());
+        if (etag instanceof BsonValue) {
+            BsonValue _etag = (BsonValue) etag;
+
+            if (_etag.isObjectId()) {
+                exchange.getResponseHeaders().put(
+                        Headers.ETAG,
+                        _etag.asObjectId().getValue().toString());
+            } else if (_etag.isString()) {
+                exchange.getResponseHeaders().put(
+                        Headers.ETAG,
+                        _etag.asString().getValue());
+            }
+
+        } else if (etag instanceof ObjectId) {
+            exchange.getResponseHeaders().put(
+                    Headers.ETAG,
+                    etag.toString());
+        } else if (etag instanceof String) {
+            exchange.getResponseHeaders().put(
+                    Headers.ETAG,
+                    (String) etag);
+        }
+
     }
-    
+
     /**
-     * 
+     *
      * @param code mongodb error code from MongoException.getCode()
-     * @return 
+     * @return
      */
     public static int getHttpStatusFromErrorCode(int code) {
         switch (code) {
@@ -276,9 +308,9 @@ public class ResponseHelper {
     }
 
     /**
-     * 
+     *
      * @param code mongodb error code from MongoException.getCode()
-     * @return 
+     * @return
      */
     public static String getMessageFromErrorCode(int code) {
         switch (code) {

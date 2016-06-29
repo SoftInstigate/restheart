@@ -410,14 +410,14 @@ public class DocumentDAO implements Repository {
         }
 
         BsonValue _requestEtag;
-                
-                if (ObjectId.isValid(requestEtag)) {
-                    _requestEtag = new BsonObjectId(new ObjectId(requestEtag));
-                } else {
-                    // restheart generates ObjectId etags, but here we support
-                    // strings as well
-                    _requestEtag = new BsonString(requestEtag);
-                }
+
+        if (ObjectId.isValid(requestEtag)) {
+            _requestEtag = new BsonObjectId(new ObjectId(requestEtag));
+        } else {
+            // restheart generates ObjectId etags, but here we support
+            // strings as well
+            _requestEtag = new BsonString(requestEtag);
+        }
 
         if (Objects.equals(_requestEtag, oldEtag)) {
             BsonDocument newDocument = coll.find(

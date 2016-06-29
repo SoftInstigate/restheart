@@ -156,7 +156,6 @@ public class GetDBIT extends HttpClientAbstactIT {
         assertNotNull("check json not null", json);
         assertNotNull("check not null _type property", json.get("_type"));
         assertNotNull("check not null _etag property", json.get("_etag"));
-        assertNotNull("check not null _lastupdated_on property", json.get("_lastupdated_on"));
         assertNotNull("check not null _returned property", json.get("_returned"));
         assertNotNull("check not null _size property", json.get("_size"));
         assertNotNull("check not null _total_pages property", json.get("_total_pages"));
