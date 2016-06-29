@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.Configuration;
 import org.restheart.hal.Link;
@@ -63,7 +64,7 @@ public class DocumentRepresentationFactory {
             throws IllegalQueryParamenterException {
         Representation rep;
 
-        Object id = data.get("_id");
+        BsonValue id = data.get("_id");
 
         String _docIdType = null;
 

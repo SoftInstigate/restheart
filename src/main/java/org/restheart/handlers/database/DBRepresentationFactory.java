@@ -183,7 +183,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
                 final Representation nrep;
 
                 if (context.isFullHalMode()) {
-                    nrep = new Representation(rp + "/" + id);
+                    nrep = new Representation(rp + "/" + id.getValue());
                 } else {
                     nrep = new Representation();
                 }

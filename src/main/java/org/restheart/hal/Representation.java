@@ -17,8 +17,6 @@
  */
 package org.restheart.hal;
 
-import com.mongodb.util.JSONSerializers;
-import com.mongodb.util.ObjectSerializer;
 import java.util.Objects;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -31,8 +29,6 @@ import org.restheart.handlers.RequestContext;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class Representation {
-    private final static ObjectSerializer SERIALIZER = JSONSerializers.getStrict();
-
     /**
      * Supported content types
      */
