@@ -24,7 +24,6 @@ import java.util.Deque;
 import java.util.Optional;
 import org.bson.BSONObject;
 import org.bson.BsonDocument;
-import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.db.FindIterablePool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.hal.UnsupportedDocumentIdException;
@@ -47,7 +46,6 @@ import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
 import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.handlers.RequestContext.TYPE;
 import static org.restheart.handlers.RequestContext.SHARDKEY_QPARAM_KEY;
-import org.restheart.utils.JsonUtils;
 
 /**
  *

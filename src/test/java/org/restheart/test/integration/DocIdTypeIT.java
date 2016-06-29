@@ -33,17 +33,12 @@ import org.junit.Test;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import static org.restheart.test.integration.HttpClientAbstactIT.collectionTmpUri;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class DocIdTypeIT extends HttpClientAbstactIT {
-
-    private static final Logger LOG = LoggerFactory.getLogger(DocIdTypeIT.class);
-
     public DocIdTypeIT() {
         super();
     }
@@ -81,7 +76,8 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         Header locationH = headers[0];
         String location = locationH.getValue();
 
-        //assertTrue("check location header value", location.endsWith("/100?id_type=NUMBER"));
+        assertTrue("check location header value", location.endsWith("/100?id_type=NUMBER"));
+        
         URI createdDocUri = URI.create(location);
 
         Response resp4 = adminExecutor.execute(Request.Get(createdDocUri)
