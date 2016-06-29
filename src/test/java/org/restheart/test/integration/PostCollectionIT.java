@@ -123,7 +123,7 @@ public class PostCollectionIT extends HttpClientAbstactIT {
     }
 
     @Test
-    public void testPosttDocumentDotNotation() throws Exception {
+    public void testPostDocumentDotNotation() throws Exception {
         resp = Unirest.post(url(DB, COLL))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")

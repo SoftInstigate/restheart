@@ -31,16 +31,11 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GetCollectionIT extends HttpClientAbstactIT {
-
-    private static final Logger LOG = LoggerFactory.getLogger(GetCollectionIT.class);
-
     public GetCollectionIT() {
     }
 
