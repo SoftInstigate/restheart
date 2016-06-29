@@ -118,9 +118,7 @@ class CollectionDAO {
     public long getCollectionSize(
             final MongoCollection<BsonDocument> coll,
             final BsonDocument filters) {
-        final BsonDocument query = new BsonDocument();
-
-        return coll.count(query);
+        return coll.count(filters);
     }
 
     /**
