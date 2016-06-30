@@ -116,14 +116,10 @@ public final class Bootstrapper {
             // read configuration silently, to avoid logging before initializing the logger
             configuration = FileUtils.getConfiguration(args, true);
         } catch (ConfigurationException ex) {
-            String instanceName = null;
-            if(configuration != null) {
-                instanceName = configuration.getInstanceName();
-            }
             LOGGER.info("Starting "
                     + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
                     + " instance "
-                    + ansi().fg(RED).bold().a(instanceName).reset().toString());
+                    + ansi().fg(RED).bold().a("undefined").reset().toString());
 
             if (RESTHEART_VERSION != null) {
                 LOGGER.info("version {}", RESTHEART_VERSION);
