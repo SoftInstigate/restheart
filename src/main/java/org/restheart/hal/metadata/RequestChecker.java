@@ -34,7 +34,7 @@ public class RequestChecker {
     public final static String SKIP_NOT_SUPPORTED = "skipNotSupported";
 
     private final String name;
-    private final BsonDocument args;
+    private final BsonValue args;
     private final boolean skipNotSupported;
 
     /**
@@ -42,7 +42,7 @@ public class RequestChecker {
      * @param checker
      * @param args
      */
-    public RequestChecker(String checker, BsonDocument args) {
+    public RequestChecker(String checker, BsonArray args) {
         this.name = checker;
         this.args = args;
         this.skipNotSupported = false;
@@ -55,7 +55,10 @@ public class RequestChecker {
      * @param skipNotSupported false if the checker should fail if it does not
      * support the request
      */
-    public RequestChecker(String checker, BsonDocument args, boolean skipNotSupported) {
+    public RequestChecker(
+            String checker, 
+            BsonArray args, 
+            boolean skipNotSupported) {
         this.name = checker;
         this.args = args;
         this.skipNotSupported = skipNotSupported;
@@ -71,7 +74,7 @@ public class RequestChecker {
     /**
      * @return the args
      */
-    public BsonDocument getArgs() {
+    public BsonValue getArgs() {
         return args;
     }
 
@@ -79,11 +82,15 @@ public class RequestChecker {
         return props.get(ROOT_KEY);
     }
 
-    public static List<RequestChecker> getFromJson(BsonDocument props) throws InvalidMetadataException {
+    public static List<RequestChecker> getFromJson(BsonDocument props) 
+            throws InvalidMetadataException {
         BsonValue _scs = getProps(props);
 
         if (_scs == null || !_scs.isArray()) {
-            throw new InvalidMetadataException((_scs == null ? "missing '" : "invalid '") + ROOT_KEY + "' element. it must be a json array");
+            throw new InvalidMetadataException(
+                    (_scs == null ? "missing '" : "invalid '") 
+                            + ROOT_KEY 
+                            + "' element. it must be a json array");
         }
 
         BsonArray scs = _scs.asArray();
@@ -94,18 +101,25 @@ public class RequestChecker {
             if (o.isDocument()) {
                 ret.add(getSingleFromJson(o.asDocument()));
             } else {
-                throw new InvalidMetadataException("invalid '" + ROOT_KEY + "'. Array elements must be json objects");
+                throw new InvalidMetadataException(
+                        "invalid '" 
+                                + ROOT_KEY 
+                                + "'. Array elements must be json objects");
             }
         }
 
         return ret;
     }
 
-    private static RequestChecker getSingleFromJson(BsonDocument props) throws InvalidMetadataException {
+    private static RequestChecker getSingleFromJson(BsonDocument props) 
+            throws InvalidMetadataException {
         BsonValue _name = props.get(NAME_KEY);
 
-        if (_name == null || _name.isString()) {
-            throw new InvalidMetadataException((_name == null ? "missing '" : "invalid '") + NAME_KEY + "' element. it must be of type String");
+        if (_name == null || !_name.isString()) {
+            throw new InvalidMetadataException(
+                    (_name == null ? "missing '" : "invalid '") 
+                    + NAME_KEY 
+                    + "' element. it must be of type String");
         }
 
         String name = _name.asString().getValue();
@@ -113,11 +127,14 @@ public class RequestChecker {
         BsonValue _args = props.get(ARGS_KEY);
 
         // args is optional
-        if (_args != null && !(_args.isDocument())) {
-            throw new InvalidMetadataException("invalid '" + ARGS_KEY + "' element. it must be a json object");
+        if (_args != null && !(_args.isArray())) {
+            throw new InvalidMetadataException(
+                    "invalid '" 
+                    + ARGS_KEY 
+                    + "' element. it must be a json object");
         }
 
-        BsonDocument args = _args == null ? null : _args.asDocument();
+        BsonArray args = _args == null ? null : _args.asArray();
 
         Object _skipNotSupported = props.get(SKIP_NOT_SUPPORTED);
 
@@ -127,7 +144,10 @@ public class RequestChecker {
         if (_skipNotSupported == null) {
             skipNotSupported = false;
         } else if (!(_skipNotSupported instanceof Boolean)) {
-            throw new InvalidMetadataException("invalid '" + ARGS_KEY + "' element. it must be boolean");
+            throw new InvalidMetadataException(
+                    "invalid '" 
+                            + ARGS_KEY 
+                            + "' element. it must be boolean");
         } else {
             skipNotSupported = (Boolean) _skipNotSupported;
         }

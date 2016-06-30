@@ -86,7 +86,7 @@ public class MapReduce extends AbstractAggregationOperation {
                     + " property is not valid: " + _reduce);
         }
 
-        if (_query != null) {
+        if (_query == null || !_query.isDocument()) {
             throw new InvalidMetadataException("invalid query with uri "
                     + getUri()
                     + "; the " + QUERY_ELEMENT_NAME

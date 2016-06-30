@@ -45,7 +45,8 @@ import org.restheart.utils.URLUtils;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class CollectionRepresentationFactory extends AbstractRepresentationFactory {
+public class CollectionRepresentationFactory
+        extends AbstractRepresentationFactory {
 
     public CollectionRepresentationFactory() {
     }
@@ -60,7 +61,11 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
      * @throws IllegalQueryParamenterException
      */
     @Override
-    public Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<BsonDocument> embeddedData, long size)
+    public Representation getRepresentation(
+            HttpServerExchange exchange,
+            RequestContext context,
+            List<BsonDocument> embeddedData,
+            long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
         final Representation rep;
@@ -84,7 +89,10 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         addEmbeddedData(embeddedData, rep, requestPath, exchange, context);
 
         if (context.isFullHalMode()) {
-            addSpecialProperties(rep, context.getType(), context.getCollectionProps());
+            addSpecialProperties(
+                    rep,
+                    context.getType(),
+                    context.getCollectionProps());
 
             addPaginationLinks(exchange, context, size, rep);
 
@@ -98,14 +106,17 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         return rep;
     }
 
-    private void addProperties(final Representation rep, final RequestContext context) {
+    private void addProperties(
+            final Representation rep,
+            final RequestContext context) {
         // add the collection properties
         final BsonDocument collProps = context.getCollectionProps();
 
         rep.addProperties(collProps);
     }
 
-    public static void addSpecialProperties(final Representation rep,
+    public static void addSpecialProperties(
+            final Representation rep,
             final RequestContext.TYPE type,
             final BsonDocument data) {
         rep.addProperty("_type", new BsonString(type.name()));
@@ -115,25 +126,41 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         if (etag != null && etag instanceof ObjectId) {
             if (data.get("_lastupdated_on") == null) {
                 // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
-                rep.addProperty("_lastupdated_on", new BsonString(Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString()));
+                rep.addProperty(
+                        "_lastupdated_on",
+                        new BsonString(Instant.ofEpochSecond(
+                                ((ObjectId) etag).getTimestamp()).toString()));
             }
         }
     }
 
-    private void addEmbeddedData(List<BsonDocument> embeddedData, final Representation rep, final String requestPath, final HttpServerExchange exchange, final RequestContext context)
+    private void addEmbeddedData(
+            List<BsonDocument> embeddedData,
+            final Representation rep,
+            final String requestPath,
+            final HttpServerExchange exchange,
+            final RequestContext context)
             throws IllegalQueryParamenterException {
         if (embeddedData != null) {
             addReturnedProperty(embeddedData, rep);
 
             if (!embeddedData.isEmpty()) {
-                embeddedDocuments(embeddedData, requestPath, exchange, context, rep);
+                embeddedDocuments(
+                        embeddedData,
+                        requestPath,
+                        exchange,
+                        context,
+                        rep);
             }
         } else {
             rep.addProperty("_returned", new BsonInt32(0));
         }
     }
 
-    private void addAggregationsLinks(final RequestContext context, final Representation rep, final String requestPath) {
+    private void addAggregationsLinks(
+            final RequestContext context,
+            final Representation rep,
+            final String requestPath) {
         BsonValue _aggregations = context
                 .getCollectionProps()
                 .get(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME);
@@ -160,7 +187,10 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         }
     }
 
-    private void addLinkTemplates(final RequestContext context, final Representation rep, final String requestPath) {
+    private void addLinkTemplates(
+            final RequestContext context,
+            final Representation rep,
+            final String requestPath) {
         // link templates and curies
         if (context.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
@@ -168,15 +198,34 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         }
 
         if (TYPE.FILES_BUCKET.equals(context.getType())) {
-            rep.addLink(new Link("rh:bucket", URLUtils.getParentPath(requestPath) + "/{bucketname}" + RequestContext.FS_FILES_SUFFIX, true));
-            rep.addLink(new Link("rh:file", requestPath + "/{fileid}{?id_type}", true));
+            rep.addLink(new Link(
+                    "rh:bucket",
+                    URLUtils.getParentPath(requestPath)
+                    + "/{bucketname}"
+                    + RequestContext.FS_FILES_SUFFIX,
+                    true));
+            rep.addLink(new Link(
+                    "rh:file",
+                    requestPath + "/{fileid}{?id_type}",
+                    true));
         } else if (TYPE.COLLECTION.equals(context.getType())) {
 
-            rep.addLink(new Link("rh:coll", URLUtils.getParentPath(requestPath) + "/{collname}", true));
-            rep.addLink(new Link("rh:document", requestPath + "/{docid}{?id_type}", true));
+            rep.addLink(new Link(
+                    "rh:coll",
+                    URLUtils.getParentPath(requestPath) + "/{collname}",
+                    true));
+            rep.addLink(new Link(
+                    "rh:document",
+                    requestPath + "/{docid}{?id_type}",
+                    true));
         }
 
-        rep.addLink(new Link("rh:indexes", requestPath + "/" + context.getDBName() + "/" + context.getCollectionName() + "/_indexes"));
+        rep.addLink(new Link("rh:indexes",
+                requestPath
+                + "/"
+                + context.getDBName()
+                + "/" + context.getCollectionName()
+                + "/_indexes"));
 
         rep.addLink(new Link("rh:filter", requestPath + "{?filter}", true));
         rep.addLink(new Link("rh:sort", requestPath + "{?sort_by}", true));
@@ -184,37 +233,67 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
         rep.addLink(new Link("rh:indexes", requestPath + "/_indexes"));
     }
 
-    private void embeddedDocuments(List<BsonDocument> embeddedData, String requestPath, HttpServerExchange exchange, RequestContext context, Representation rep) throws IllegalQueryParamenterException {
+    private void embeddedDocuments(
+            List<BsonDocument> embeddedData,
+            String requestPath,
+            HttpServerExchange exchange,
+            RequestContext context,
+            Representation rep)
+            throws IllegalQueryParamenterException {
         for (BsonDocument d : embeddedData) {
             BsonValue _id = d.get("_id");
 
-            if (_id != null && RequestContext.isReservedResourceCollection(_id.toString())) {
-                rep.addWarning("filtered out reserved resource " + requestPath + "/" + _id.toString());
+            if (_id != null
+                    && RequestContext.isReservedResourceCollection(
+                            _id.toString())) {
+                rep.addWarning("filtered out reserved resource "
+                        + requestPath + "/"
+                        + _id.toString());
             } else {
                 Representation nrep;
 
                 if (_id == null) {
-                    nrep = new DocumentRepresentationFactory().getRepresentation(requestPath + "/_null", exchange, context, d);
+                    nrep = new DocumentRepresentationFactory()
+                            .getRepresentation(
+                                    requestPath + "/_null",
+                                    exchange,
+                                    context,
+                                    d);
                 } else {
-                    nrep = new DocumentRepresentationFactory().getRepresentation(requestPath + "/" + _id.toString(), exchange, context, d);
+                    nrep = new DocumentRepresentationFactory()
+                            .getRepresentation(
+                                    requestPath + "/" + _id.toString(),
+                                    exchange,
+                                    context,
+                                    d);
                 }
 
                 if (context.getType() == RequestContext.TYPE.FILES_BUCKET) {
                     if (context.isFullHalMode()) {
-                        DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.FILE, d);
+                        DocumentRepresentationFactory.addSpecialProperties(
+                                nrep,
+                                TYPE.FILE,
+                                d);
                     }
 
                     rep.addRepresentation("rh:file", nrep);
-                } else if (context.getType() == RequestContext.TYPE.SCHEMA_STORE) {
+                } else if (context.getType()
+                        == RequestContext.TYPE.SCHEMA_STORE) {
                     if (context.isFullHalMode()) {
-                        DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.SCHEMA, d);
+                        DocumentRepresentationFactory.addSpecialProperties(
+                                nrep,
+                                TYPE.SCHEMA,
+                                d);
                     }
 
                     rep.addRepresentation("rh:schema", nrep);
 
                 } else {
                     if (context.isFullHalMode()) {
-                        DocumentRepresentationFactory.addSpecialProperties(nrep, TYPE.DOCUMENT, d);
+                        DocumentRepresentationFactory.addSpecialProperties(
+                                nrep,
+                                TYPE.DOCUMENT,
+                                d);
                     }
 
                     rep.addRepresentation("rh:doc", nrep);
@@ -227,19 +306,22 @@ public class CollectionRepresentationFactory extends AbstractRepresentationFacto
 // method won't work. need to get the name from the configuration
     private static final String JSON_SCHEMA_NAME = "jsonSchema";
 
-    private static void addSchemaLinks(Representation rep, RequestContext context) {
+    private static void addSchemaLinks(
+            Representation rep,
+            RequestContext context) {
         try {
-            List<RequestChecker> checkers = RequestChecker.getFromJson(context.getCollectionProps());
+            List<RequestChecker> checkers
+                    = RequestChecker.getFromJson(context.getCollectionProps());
 
             if (checkers != null) {
                 checkers
                         .stream().filter((RequestChecker c) -> {
                             return JSON_SCHEMA_NAME.equals(c.getName());
                         }).forEach((RequestChecker c) -> {
-                    BsonValue schemaId = c.getArgs()
+                    BsonValue schemaId = c.getArgs().asDocument()
                             .get(JsonSchemaChecker.SCHEMA_ID_PROPERTY);
-                    
-                    BsonValue _schemaStoreDb = c.getArgs()
+
+                    BsonValue _schemaStoreDb = c.getArgs().asDocument()
                             .get(JsonSchemaChecker.SCHEMA_STORE_DB_PROPERTY);
 
                     // just in case the checker is missing the mandatory schemaId property
