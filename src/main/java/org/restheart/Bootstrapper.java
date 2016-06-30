@@ -83,9 +83,7 @@ import org.restheart.security.handlers.AuthTokenHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.restheart.handlers.RequestLoggerHandler;
-import static io.undertow.Handlers.path;
 import java.nio.file.Paths;
-import static org.fusesource.jansi.Ansi.ansi;
 import static io.undertow.Handlers.path;
 import static org.fusesource.jansi.Ansi.ansi;
 
@@ -119,7 +117,9 @@ public final class Bootstrapper {
             configuration = FileUtils.getConfiguration(args, true);
         } catch (ConfigurationException ex) {
             LOGGER.info("Starting "
-                    + ansi().fg(RED).bold().a("RESTHeart").reset().toString());
+                    + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
+                    + " instance "
+                    + ansi().fg(RED).bold().a("undefined").reset().toString());
 
             if (RESTHEART_VERSION != null) {
                 LOGGER.info("version {}", RESTHEART_VERSION);
@@ -133,10 +133,16 @@ public final class Bootstrapper {
             startServer(false);
         } else {
             if (OSChecker.isWindows()) {
+                String instanceName = configuration == null
+                        ? "undefined"
+                        : configuration.getInstanceName() == null
+                                ? "undefined"
+                                : configuration.getInstanceName();
+
                 LOGGER.info("Starting "
                         + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
                         + " instance "
-                        + ansi().fg(RED).bold().a(configuration.getInstanceName()).reset().toString());
+                        + ansi().fg(RED).bold().a(instanceName).reset().toString());
 
                 if (RESTHEART_VERSION != null) {
                     LOGGER.info("version {}", RESTHEART_VERSION);
@@ -173,10 +179,16 @@ public final class Bootstrapper {
                 initLogging(args, d);
 
                 try {
+                    String instanceName = configuration == null
+                            ? "undefined"
+                            : configuration.getInstanceName() == null
+                                    ? "undefined"
+                                    : configuration.getInstanceName();
+
                     LOGGER.info("Starting "
                             + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
                             + " instance "
-                            + ansi().fg(RED).bold().a(configuration.getInstanceName()).reset().toString());
+                            + ansi().fg(RED).bold().a(instanceName).reset().toString());
 
                     if (RESTHEART_VERSION != null) {
                         LOGGER.info("version {}", RESTHEART_VERSION);
@@ -320,10 +332,16 @@ public final class Bootstrapper {
      * @param fork
      */
     private static void startServer(boolean fork) {
+        String instanceName = configuration == null
+                ? "undefined"
+                : configuration.getInstanceName() == null
+                        ? "undefined"
+                        : configuration.getInstanceName();
+
         LOGGER.info("Starting "
                 + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
                 + " instance "
-                + ansi().fg(RED).bold().a(configuration.getInstanceName()).reset().toString());
+                + ansi().fg(RED).bold().a(instanceName).reset().toString());
 
         if (RESTHEART_VERSION != null) {
             LOGGER.info("version {}", RESTHEART_VERSION);
