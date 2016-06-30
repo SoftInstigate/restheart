@@ -19,6 +19,7 @@ package org.restheart.handlers.collection;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.db.Database;
@@ -102,7 +103,8 @@ public class PutCollectionHandler extends PipedHttpHandler {
                         exchange,
                         context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong relationships definition. " + ex.getMessage(), ex);
+                        "wrong relationships definition. " + ex.getMessage()
+                        , ex);
                 return;
             }
         }
@@ -126,7 +128,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
         // check SC metadata
         if (content.containsKey(RequestChecker.ROOT_KEY)) {
             try {
-                RequestChecker.getFromJson(content);
+                RequestChecker.getFromJson((BsonDocument)content);
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,

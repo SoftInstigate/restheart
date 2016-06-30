@@ -59,29 +59,45 @@ public abstract class AbstractAggregationOperation {
      */
     public AbstractAggregationOperation(BsonDocument properties)
             throws InvalidMetadataException {
-        Object _type = properties.get(TYPE_ELEMENT_NAME);
-        Object _uri = properties.get(URI_ELEMENT_NAME);
+        BsonValue _uri = properties.get(URI_ELEMENT_NAME);
 
-        if (_type == null || !(_type instanceof String)) {
-            throw new InvalidMetadataException("query element does not have '"
-                    + TYPE_ELEMENT_NAME + "' property");
+        if (!properties.containsKey(TYPE_ELEMENT_NAME)) {
+            throw new InvalidMetadataException(
+                    "query does not have '"
+                    + TYPE_ELEMENT_NAME
+                    + "' property");
         }
 
-        if (_uri == null || !(_uri instanceof String)) {
-            throw new InvalidMetadataException("query element does not have '"
+        BsonValue _type = properties.get(TYPE_ELEMENT_NAME);
+
+        if (!_type.isString()) {
+            throw new InvalidMetadataException(
+                    "query property not have '"
+                    + TYPE_ELEMENT_NAME
+                    + "' is not a String: "
+                    + _type.toString());
+        }
+
+        String stype = _type.asString().getValue();
+
+        if (MAP_REDUCE_ALIASES.contains(stype)) {
+            this.type = TYPE.MAP_REDUCE;
+        } else if (AGGREGATION_PIPELINE_ALIASES.contains(stype)) {
+            this.type = TYPE.AGGREGATION_PIPELINE;
+        } else {
+            throw new InvalidMetadataException(
+                    "query has invalid '"
+                    + TYPE_ELEMENT_NAME
+                    + "' property: "
+                    + stype);
+        }
+
+        if (!properties.containsKey(URI_ELEMENT_NAME)) {
+            throw new InvalidMetadataException("query does not have '"
                     + URI_ELEMENT_NAME + "' property");
         }
 
-        if (MAP_REDUCE_ALIASES.contains((String) _type)) {
-            this.type = TYPE.MAP_REDUCE;
-        } else if (AGGREGATION_PIPELINE_ALIASES.contains((String) _type)) {
-            this.type = TYPE.AGGREGATION_PIPELINE;
-        } else {
-            throw new InvalidMetadataException("query element has invalid '"
-                    + TYPE_ELEMENT_NAME + "' property: " + _type);
-        }
-
-        this.uri = (String) _uri;
+        this.uri = _uri.asString().getValue();
     }
 
     /**
@@ -131,18 +147,30 @@ public abstract class AbstractAggregationOperation {
 
         BsonValue _type = query.get(TYPE_ELEMENT_NAME);
 
-        if (_type == null) {
-            throw new InvalidMetadataException("query element does not have '"
-                    + TYPE_ELEMENT_NAME + "' property");
+        if (!query.containsKey(TYPE_ELEMENT_NAME)) {
+            throw new InvalidMetadataException(
+                    "query does not have '"
+                    + TYPE_ELEMENT_NAME
+                    + "' property");
         }
 
-        if (MAP_REDUCE_ALIASES.contains(_type.toString())) {
+        if (!_type.isString()) {
+            throw new InvalidMetadataException(
+                    "query property '"
+                    + TYPE_ELEMENT_NAME
+                    + "' must be a String: "
+                    + _type.toString());
+        }
+
+        String type = _type.asString().getValue();
+
+        if (MAP_REDUCE_ALIASES.contains(type)) {
             return new MapReduce(query);
-        } else if (AGGREGATION_PIPELINE_ALIASES.contains(_type.toString())) {
+        } else if (AGGREGATION_PIPELINE_ALIASES.contains(type)) {
             return new AggregationPipeline(query);
         } else {
-            throw new InvalidMetadataException("query element has invalid '"
-                    + TYPE_ELEMENT_NAME + "': " + _type.toString());
+            throw new InvalidMetadataException("query has invalid '"
+                    + TYPE_ELEMENT_NAME + "': " + type);
         }
     }
 
@@ -180,19 +208,20 @@ public abstract class AbstractAggregationOperation {
             BsonDocument _obj = obj.asDocument();
 
             if (_obj.size() == 1 && _obj.get("$var") != null) {
-                Object varName = _obj.get("$var");
+                BsonValue varName = _obj.get("$var");
 
-                if (!(varName instanceof String)) {
+                if (!(varName.isString())) {
                     throw new InvalidMetadataException("wrong variable name "
                             + varName.toString());
                 }
 
-                if (aVars == null || aVars.get((String) varName) == null) {
+                if (aVars == null
+                        || aVars.get(varName.asString().getValue()) == null) {
                     throw new QueryVariableNotBoundException("variable "
                             + varName + " not bound");
                 }
 
-                return aVars.get((String) varName);
+                return aVars.get(varName.asString().getValue());
             } else {
                 BsonDocument ret = new BsonDocument();
 
