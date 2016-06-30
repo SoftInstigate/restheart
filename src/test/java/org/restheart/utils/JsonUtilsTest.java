@@ -704,7 +704,13 @@ public class JsonUtilsTest {
             if (exp == null) {
                 exps.add(null);
             } else {
-                exps.add(Optional.ofNullable(JsonUtils.parse(exp)));
+                BsonValue _exp = JsonUtils.parse(exp);
+                
+                if (_exp.isNull()) {
+                    exps.add(Optional.empty());
+                } else {
+                    exps.add(Optional.ofNullable(_exp));
+                }
             }
         }
 

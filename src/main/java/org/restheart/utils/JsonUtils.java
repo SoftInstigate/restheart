@@ -249,7 +249,6 @@ public class JsonUtils {
             if (json == null) {
                 return null;
             } else {
-
                 pathToken = pathTokens[0];
 
                 if ("".equals(pathToken)) {
@@ -258,6 +257,11 @@ public class JsonUtils {
                             + " path tokens cannot be empty strings");
                 }
             }
+        } else if (json.isNull()){
+            // if value is null return an empty optional
+            ArrayList<Optional<BsonValue>> ret = new ArrayList<>();
+            ret.add(Optional.empty());
+            return ret;
         } else {
             ArrayList<Optional<BsonValue>> ret = new ArrayList<>();
             ret.add(Optional.ofNullable(json));
