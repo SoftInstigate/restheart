@@ -56,8 +56,8 @@ public class RequestChecker {
      * support the request
      */
     public RequestChecker(
-            String checker, 
-            BsonArray args, 
+            String checker,
+            BsonValue args,
             boolean skipNotSupported) {
         this.name = checker;
         this.args = args;
@@ -82,15 +82,15 @@ public class RequestChecker {
         return props.get(ROOT_KEY);
     }
 
-    public static List<RequestChecker> getFromJson(BsonDocument props) 
+    public static List<RequestChecker> getFromJson(BsonDocument props)
             throws InvalidMetadataException {
         BsonValue _scs = getProps(props);
 
         if (_scs == null || !_scs.isArray()) {
             throw new InvalidMetadataException(
-                    (_scs == null ? "missing '" : "invalid '") 
-                            + ROOT_KEY 
-                            + "' element. it must be a json array");
+                    (_scs == null ? "missing '" : "invalid '")
+                    + ROOT_KEY
+                    + "' element. it must be a json array");
         }
 
         BsonArray scs = _scs.asArray();
@@ -102,23 +102,23 @@ public class RequestChecker {
                 ret.add(getSingleFromJson(o.asDocument()));
             } else {
                 throw new InvalidMetadataException(
-                        "invalid '" 
-                                + ROOT_KEY 
-                                + "'. Array elements must be json objects");
+                        "invalid '"
+                        + ROOT_KEY
+                        + "'. Array elements must be json objects");
             }
         }
 
         return ret;
     }
 
-    private static RequestChecker getSingleFromJson(BsonDocument props) 
+    private static RequestChecker getSingleFromJson(BsonDocument props)
             throws InvalidMetadataException {
         BsonValue _name = props.get(NAME_KEY);
 
         if (_name == null || !_name.isString()) {
             throw new InvalidMetadataException(
-                    (_name == null ? "missing '" : "invalid '") 
-                    + NAME_KEY 
+                    (_name == null ? "missing '" : "invalid '")
+                    + NAME_KEY
                     + "' element. it must be of type String");
         }
 
@@ -127,32 +127,32 @@ public class RequestChecker {
         BsonValue _args = props.get(ARGS_KEY);
 
         // args is optional
-        if (_args != null && !(_args.isArray())) {
+        if (_args != null
+                && !(_args.isArray()
+                || _args.isDocument())) {
             throw new InvalidMetadataException(
-                    "invalid '" 
-                    + ARGS_KEY 
-                    + "' element. it must be a json object");
+                    "invalid '"
+                    + ARGS_KEY
+                    + "' element. it must be a json object or array");
         }
 
-        BsonArray args = _args == null ? null : _args.asArray();
-
-        Object _skipNotSupported = props.get(SKIP_NOT_SUPPORTED);
+        BsonValue _skipNotSupported = props.get(SKIP_NOT_SUPPORTED);
 
         Boolean skipNotSupported;
 
         // failNotSupported is optional
         if (_skipNotSupported == null) {
             skipNotSupported = false;
-        } else if (!(_skipNotSupported instanceof Boolean)) {
+        } else if (!(_skipNotSupported.isBoolean())) {
             throw new InvalidMetadataException(
-                    "invalid '" 
-                            + ARGS_KEY 
-                            + "' element. it must be boolean");
+                    "invalid '"
+                    + SKIP_NOT_SUPPORTED
+                    + "' element. it must be boolean");
         } else {
-            skipNotSupported = (Boolean) _skipNotSupported;
+            skipNotSupported = _skipNotSupported.asBoolean().getValue();
         }
 
-        return new RequestChecker(name, args, skipNotSupported);
+        return new RequestChecker(name, _args, skipNotSupported);
     }
 
     /**

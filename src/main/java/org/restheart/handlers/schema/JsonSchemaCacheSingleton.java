@@ -29,7 +29,9 @@ import org.restheart.Bootstrapper;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.db.DbsDAO;
+import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.handlers.RequestContext;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,9 +47,9 @@ public class JsonSchemaCacheSingleton {
 
     private Cache<String, Schema> schemaCache = null;
     private Cache<String, BsonDocument> rawSchemaCache = null;
-    
-    static final Logger LOGGER =
-            LoggerFactory.getLogger(JsonSchemaCacheSingleton.class);
+
+    static final Logger LOGGER
+            = LoggerFactory.getLogger(JsonSchemaCacheSingleton.class);
 
     JsonSchemaCacheSingleton() {
         dbsDAO = new DbsDAO();
@@ -56,7 +58,7 @@ public class JsonSchemaCacheSingleton {
             this.schemaCache = CacheFactory.createLocalCache(MAX_CACHE_SIZE,
                     Cache.EXPIRE_POLICY.AFTER_WRITE,
                     Bootstrapper.getConfiguration().getSchemaCacheTtl());
-            
+
             this.rawSchemaCache = CacheFactory.createLocalCache(MAX_CACHE_SIZE,
                     Cache.EXPIRE_POLICY.AFTER_WRITE,
                     Bootstrapper.getConfiguration().getSchemaCacheTtl());
@@ -64,14 +66,14 @@ public class JsonSchemaCacheSingleton {
     }
 
     public Schema get(
-            String schemaStoreDb, 
-            BsonValue schemaId) 
+            String schemaStoreDb,
+            BsonValue schemaId)
             throws JsonSchemaNotFoundException {
         if (Bootstrapper.getConfiguration().isSchemaCacheEnabled()) {
             Optional<Schema> _schema = schemaCache.get(
-                    schemaStoreDb 
-                            + SEPARATOR 
-                            + schemaId);
+                    schemaStoreDb
+                    + SEPARATOR
+                    + schemaId);
 
             if (_schema != null && _schema.isPresent()) {
                 return _schema.get();
@@ -87,14 +89,14 @@ public class JsonSchemaCacheSingleton {
             return load(schemaStoreDb, schemaId);
         }
     }
-    
+
     public BsonDocument getRaw(
-            String schemaStoreDb, 
-            BsonValue schemaId) 
+            String schemaStoreDb,
+            BsonValue schemaId)
             throws JsonSchemaNotFoundException {
         if (Bootstrapper.getConfiguration().isSchemaCacheEnabled()) {
-            Optional<BsonDocument> _schema =
-                    rawSchemaCache.get(schemaStoreDb + SEPARATOR + schemaId);
+            Optional<BsonDocument> _schema
+                    = rawSchemaCache.get(schemaStoreDb + SEPARATOR + schemaId);
 
             if (_schema != null && _schema.isPresent()) {
                 return _schema.get();
@@ -112,18 +114,18 @@ public class JsonSchemaCacheSingleton {
     }
 
     private Schema load(
-            String schemaStoreDb, 
-            BsonValue schemaId) 
+            String schemaStoreDb,
+            BsonValue schemaId)
             throws JsonSchemaNotFoundException {
         BsonDocument document = loadRaw(schemaStoreDb, schemaId);
 
         return SchemaLoader.load(
-                new JSONObject(document), new SchemaStoreClient());
+                new JSONObject(document.toJson()), new SchemaStoreClient());
     }
-    
+
     private BsonDocument loadRaw(
-            String schemaStoreDb, 
-            BsonValue schemaId) 
+            String schemaStoreDb,
+            BsonValue schemaId)
             throws JsonSchemaNotFoundException {
         BsonDocument document = dbsDAO
                 .getCollection(schemaStoreDb, RequestContext._SCHEMAS)
@@ -131,10 +133,18 @@ public class JsonSchemaCacheSingleton {
                 .first();
 
         if (Objects.isNull(document)) {
+            String sid;
+
+            try {
+                sid = JsonUtils.getIdAsString(schemaId);
+            } catch(UnsupportedDocumentIdException uide) {
+                sid = schemaId.toString();
+            }
+
             throw new JsonSchemaNotFoundException(
-                    "schema not found " 
-                            + schemaStoreDb 
-                            + "/" + schemaId);
+                    "schema not found "
+                    + schemaStoreDb
+                    + "/" + sid);
         }
 
         // schemas are stored with escaped keys, need to unescape them

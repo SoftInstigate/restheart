@@ -20,6 +20,8 @@ package org.restheart.handlers.schema;
 import java.util.Objects;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.restheart.hal.UnsupportedDocumentIdException;
+import org.restheart.utils.JsonUtils;
 
 /**
  *
@@ -81,10 +83,18 @@ public class SchemaStoreURL {
 
     @Override
     public String toString() {
+        String sid;
+
+        try {
+            sid = JsonUtils.getIdAsString(schemaId);
+        } catch (UnsupportedDocumentIdException uide) {
+            sid = schemaId.toString();
+        }
+
         return SCHEMA_STORE_URL_PREFIX
                 .concat(schemaDb)
                 .concat("/")
-                .concat(schemaId.toString())
+                .concat(sid)
                 .concat("#");
     }
 
