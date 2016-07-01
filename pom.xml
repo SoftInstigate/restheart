@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.restheart</groupId>
     <artifactId>restheart</artifactId>
-    <version>2.0.2-SNAPSHOT</version>
+    <version>2.0.2</version>
     <packaging>jar</packaging>
     <name>Restheart</name>
     <description>
@@ -97,7 +97,7 @@
         <connection>scm:git:git@github.com:SoftInstigate/restheart.git</connection>
         <developerConnection>scm:git:git@github.com:SoftInstigate/restheart.git</developerConnection>
     </scm>
-    
+
     <!-- TODO: Continuous Integration Management -->
 
     <dependencies>
@@ -142,7 +142,7 @@
             <artifactId>jansi</artifactId>
             <version>1.12</version>
         </dependency>
-        
+
         <dependency>
             <groupId>org.everit.json</groupId>
             <artifactId>org.everit.json.schema</artifactId>
@@ -169,7 +169,7 @@
             <version>4.5.2</version>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpmime</artifactId>
@@ -183,7 +183,7 @@
             <version>4.5.2</version>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>com.mashape.unirest</groupId>
             <artifactId>unirest-java</artifactId>
@@ -474,7 +474,7 @@
                 </plugins>
             </reporting>
         </profile>
-        
+
         <profile>
             <id>release</id>
             <build>
