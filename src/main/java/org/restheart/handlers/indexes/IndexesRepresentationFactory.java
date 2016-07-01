@@ -66,8 +66,14 @@ public class IndexesRepresentationFactory {
                         ? ""
                         : "?" + URLUtils.decodeQueryString(exchange.getQueryString());
 
-        Representation rep = new Representation(requestPath + queryString);
-
+        Representation rep;
+        
+        if (context.isFullHalMode()) {
+            rep = new Representation(requestPath + queryString);
+        } else {
+            rep = new Representation();
+        }
+        
         if (size >= 0) {
             rep.addProperty("_size", new BsonInt32(toIntExact(size)));
         }
