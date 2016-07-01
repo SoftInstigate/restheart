@@ -76,9 +76,10 @@ public class GetDocumentHandler extends PipedHttpHandler {
 
         if (keys != null) {
             keys.stream().forEach((String f) -> {
+                // this can throw JSONParseException for invalid filter parameters
                 BsonDocument keyQuery = BsonDocument.parse(f);
 
-                fieldsToReturn.putAll(keyQuery);  // this can throw JSONParseException for invalid filter parameters
+                fieldsToReturn.putAll(keyQuery);  
             });
         }
 
@@ -128,7 +129,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
 
         String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
 
-        ResponseHelper.injectEtagHeader(exchange, document);
+        ResponseHelper.injectEtagHeader(exchange, etag);
         exchange.setStatusCode(HttpStatus.SC_OK);
 
         DocumentRepresentationFactory drp = new DocumentRepresentationFactory();

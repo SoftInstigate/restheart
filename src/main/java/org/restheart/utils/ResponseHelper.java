@@ -26,6 +26,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Map;
+import org.bson.BsonObjectId;
 import org.bson.types.ObjectId;
 import org.restheart.hal.Representation;
 
@@ -141,7 +142,7 @@ public class ResponseHelper {
     }
 
     private static String avoidEscapedChars(String s) {
-        return s == null 
+        return s == null
                 ? null
                 : s
                 .replaceAll("\"", "'")
@@ -192,17 +193,22 @@ public class ResponseHelper {
      * @param etag
      */
     public static void injectEtagHeader(HttpServerExchange exchange, Object etag) {
-        if (etag == null || !(etag instanceof ObjectId)) {
-            return;
+        if (etag == null) {
+        } else if (etag instanceof ObjectId) {
+            exchange.getResponseHeaders().put(
+                    Headers.ETAG, etag.toString());
+        } else if (etag instanceof BsonObjectId) {
+            exchange.getResponseHeaders().put(
+                    Headers.ETAG, ((BsonObjectId) etag)
+                    .getValue()
+                    .toString());
         }
-
-        exchange.getResponseHeaders().put(Headers.ETAG, etag.toString());
     }
-    
+
     /**
-     * 
+     *
      * @param code mongodb error code from MongoException.getCode()
-     * @return 
+     * @return
      */
     public static int getHttpStatusFromErrorCode(int code) {
         switch (code) {
@@ -228,9 +234,9 @@ public class ResponseHelper {
     }
 
     /**
-     * 
+     *
      * @param code mongodb error code from MongoException.getCode()
-     * @return 
+     * @return
      */
     public static String getMessageFromErrorCode(int code) {
         switch (code) {
