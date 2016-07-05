@@ -17,7 +17,7 @@
  */
 package org.restheart.handlers;
 
-import org.restheart.db.FindIterablePool.EAGER_CURSOR_ALLOCATION_POLICY;
+import org.restheart.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;

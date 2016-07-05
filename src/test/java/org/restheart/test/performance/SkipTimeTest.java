@@ -28,7 +28,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.restheart.db.FindIterablePool.MIN_SKIP_DISTANCE_PERCENTAGE;
+import static org.restheart.db.CursorPool.MIN_SKIP_DISTANCE_PERCENTAGE;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.db.MongoDBClientSingleton;

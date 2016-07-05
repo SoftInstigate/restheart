@@ -25,7 +25,7 @@ import java.util.Optional;
 import org.bson.BSONObject;
 import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
-import org.restheart.db.FindIterablePool.EAGER_CURSOR_ALLOCATION_POLICY;
+import org.restheart.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.hal.metadata.AggregationPipeline;
 import org.restheart.handlers.PipedHttpHandler;
