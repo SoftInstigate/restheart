@@ -485,7 +485,7 @@ public class DbsDAO implements Database {
             BsonDocument sortBy,
             BsonDocument filter,
             BsonDocument keys,
-            FindIterablePool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
+            CursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
         return collectionDAO.getCollectionData(
                 coll,
                 page,

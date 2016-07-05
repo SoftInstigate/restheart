@@ -157,7 +157,7 @@ class CollectionDAO {
             final BsonDocument sortBy,
             final BsonDocument filters,
             final BsonDocument keys,
-            FindIterablePool.EAGER_CURSOR_ALLOCATION_POLICY eager)
+            CursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager)
             throws JSONParseException {
 
         ArrayList<BsonDocument> ret = new ArrayList<>();
@@ -166,9 +166,9 @@ class CollectionDAO {
 
         SkippedFindIterable _cursor = null;
 
-        if (eager != FindIterablePool.EAGER_CURSOR_ALLOCATION_POLICY.NONE) {
+        if (eager != CursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE) {
 
-            _cursor = FindIterablePool.getInstance().get(
+            _cursor = CursorPool.getInstance().get(
                     new CursorPoolEntryKey(
                             coll,
                             sortBy,
@@ -233,7 +233,7 @@ class CollectionDAO {
 
         // the pool is populated here because, skipping with cursor.next() is heavy operation
         // and we want to minimize the chances that pool cursors are allocated in parallel
-        FindIterablePool.getInstance().populateCache(
+        CursorPool.getInstance().populateCache(
                 new CursorPoolEntryKey(coll, sortBy, filters, keys, toskip, 0),
                 eager);
 

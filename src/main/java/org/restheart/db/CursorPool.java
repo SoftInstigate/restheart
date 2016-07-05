@@ -44,15 +44,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.ansi;
+import static org.fusesource.jansi.Ansi.ansi;
+import static org.fusesource.jansi.Ansi.ansi;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class FindIterablePool {
+public class CursorPool {
 
     private static final Logger LOGGER
-            = LoggerFactory.getLogger(FindIterablePool.class);
+            = LoggerFactory.getLogger(CursorPool.class);
 
     private final DbsDAO dbsDAO;
 
@@ -109,11 +111,11 @@ public class FindIterablePool {
                     .build()
             );
 
-    public static FindIterablePool getInstance() {
+    public static CursorPool getInstance() {
         return DBCursorPoolSingletonHolder.INSTANCE;
     }
 
-    private FindIterablePool(DbsDAO dbsDAO) {
+    private CursorPool(DbsDAO dbsDAO) {
         this.dbsDAO = dbsDAO;
 
         cache = CacheFactory.createLocalCache(
@@ -402,7 +404,7 @@ public class FindIterablePool {
     }
 
     private static class DBCursorPoolSingletonHolder {
-        private static final FindIterablePool INSTANCE
-                = new FindIterablePool(new DbsDAO());
+        private static final CursorPool INSTANCE
+                = new CursorPool(new DbsDAO());
     };
 }

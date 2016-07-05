@@ -31,7 +31,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.client.MongoCollection;
-import org.restheart.db.FindIterablePool;
+import org.restheart.db.CursorPool;
 import org.restheart.utils.HttpStatus;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -116,7 +116,7 @@ public class LoadGetPT extends AbstractPT {
                     null, 
                     BsonDocument.parse(filter), 
                     null, 
-                    FindIterablePool.EAGER_CURSOR_ALLOCATION_POLICY.NONE);
+                    CursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE);
         } catch(Exception e) {
             System.out.println("error: " + e.getMessage());
             return;
