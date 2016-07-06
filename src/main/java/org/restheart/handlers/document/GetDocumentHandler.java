@@ -32,6 +32,7 @@ import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 import org.restheart.utils.JsonUtils;
 import static com.mongodb.client.model.Filters.and;
+import org.restheart.handlers.RequestContext.TYPE;
 
 /**
  *
@@ -90,14 +91,13 @@ public class GetDocumentHandler extends PipedHttpHandler {
                 .find(query)
                 .projection(fieldsToReturn)
                 .first();
-        
-        
+
         if (document == null) {
             String errMsg = context.getDocumentId() == null
                     ? " does not exist"
                     : " ".concat(JsonUtils.getIdAsString(
-                                    context.getDocumentId()))
-                            .concat(" does not exist");
+                            context.getDocumentId()))
+                    .concat(" does not exist");
 
             if (null != context.getType()) {
                 switch (context.getType()) {
@@ -124,7 +124,22 @@ public class GetDocumentHandler extends PipedHttpHandler {
             return;
         }
 
-        Object etag = document.get("_etag");
+        Object etag;
+
+        if (context.getType() == TYPE.FILE) {
+            if (document.containsKey("metadata")
+                    && document.get("metadata").isDocument()) {
+                etag = document.get("metadata").asDocument().get(("_etag"));
+            } else if (document.containsKey("_etag")) {
+                // backward compatibility. until version 2.0.x, _etag was not
+                // in the metadata sub-document
+                etag = document.get("_etag");
+            } else {
+                etag = null;
+            }
+        } else {
+            etag = document.get("_etag");
+        }
 
         // in case the request contains the IF_NONE_MATCH header with the current etag value,
         // just return 304 NOT_MODIFIED code
@@ -136,7 +151,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
         String requestPath = URLUtils.removeTrailingSlashes(
                 exchange.getRequestPath());
 
-        ResponseHelper.injectEtagHeader(exchange, document);
+        ResponseHelper.injectEtagHeader(exchange, etag);
         exchange.setStatusCode(HttpStatus.SC_OK);
 
         DocumentRepresentationFactory drp = new DocumentRepresentationFactory();
