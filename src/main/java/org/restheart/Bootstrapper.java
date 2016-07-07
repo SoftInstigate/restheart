@@ -100,6 +100,7 @@ public final class Bootstrapper {
 
     private static GracefulShutdownHandler shutdownHandler = null;
     private static Configuration configuration;
+    private static Undertow undertowServer;
 
     private Bootstrapper() {
     }
@@ -467,6 +468,8 @@ public final class Bootstrapper {
             }
         });
 
+        undertowServer.stop();
+
         if (!silent) {
             LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart stopped").reset().toString());
         }
@@ -581,7 +584,8 @@ public final class Bootstrapper {
 
         ConfigurationHelper.setConnectionOptions(builder, configuration);
 
-        builder.build().start();
+        undertowServer = builder.build();
+        undertowServer.start();
     }
 
     /**
