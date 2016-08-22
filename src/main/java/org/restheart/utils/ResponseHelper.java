@@ -184,6 +184,16 @@ public class ResponseHelper {
     }
 
     /**
+     * Set the ETag in the response's header
+     * 
+     * @param exchange
+     * @param etag 
+     */
+    protected static void setETagHeader(final HttpServerExchange exchange, final String etag) {
+        exchange.getResponseHeaders().put(Headers.ETAG, etag);
+    }
+
+    /**
      *
      * @param exchange
      * @param properties
@@ -202,13 +212,9 @@ public class ResponseHelper {
         }
 
         if (_etag.isObjectId()) {
-            exchange.getResponseHeaders().put(
-                    Headers.ETAG,
-                    _etag.asObjectId().getValue().toString());
+            setETagHeader(exchange, _etag.asObjectId().getValue().toString());
         } else if (_etag.isString()) {
-            exchange.getResponseHeaders().put(
-                    Headers.ETAG,
-                    _etag.asString().getValue());
+            setETagHeader(exchange, _etag.asString().getValue());
         }
     }
 
@@ -231,13 +237,9 @@ public class ResponseHelper {
         }
 
         if (_etag instanceof ObjectId) {
-            exchange.getResponseHeaders().put(
-                    Headers.ETAG,
-                    _etag.toString());
+            setETagHeader(exchange, _etag.toString());
         } else if (_etag instanceof String) {
-            exchange.getResponseHeaders().put(
-                    Headers.ETAG,
-                    (String) _etag);
+            setETagHeader(exchange, (String) _etag);
         }
     }
 
@@ -258,23 +260,15 @@ public class ResponseHelper {
             BsonValue _etag = (BsonValue) etag;
 
             if (_etag.isObjectId()) {
-                exchange.getResponseHeaders().put(
-                        Headers.ETAG,
-                        _etag.asObjectId().getValue().toString());
+                setETagHeader(exchange, _etag.asObjectId().getValue().toString());
             } else if (_etag.isString()) {
-                exchange.getResponseHeaders().put(
-                        Headers.ETAG,
-                        _etag.asString().getValue());
+                setETagHeader(exchange, _etag.asString().getValue());
             }
 
         } else if (etag instanceof ObjectId) {
-            exchange.getResponseHeaders().put(
-                    Headers.ETAG,
-                    etag.toString());
+            setETagHeader(exchange, etag.toString());
         } else if (etag instanceof String) {
-            exchange.getResponseHeaders().put(
-                    Headers.ETAG,
-                    (String) etag);
+            setETagHeader(exchange, (String) etag);
         }
 
     }
