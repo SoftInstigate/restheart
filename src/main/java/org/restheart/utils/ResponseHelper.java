@@ -185,12 +185,12 @@ public class ResponseHelper {
 
     /**
      * Set the ETag in the response's header
-     * 
+     *
      * @param exchange
-     * @param etag 
+     * @param etag
      */
     protected static void setETagHeader(final HttpServerExchange exchange, final String etag) {
-        exchange.getResponseHeaders().put(Headers.ETAG, etag);
+        exchange.getResponseHeaders().put(Headers.ETAG, "\"" + etag + "\"");
     }
 
     /**
