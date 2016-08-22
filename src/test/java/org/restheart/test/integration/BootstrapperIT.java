@@ -1,16 +1,18 @@
-package org.restheart;
+package org.restheart.test.integration;
 
+import org.junit.Ignore;
 import org.junit.Test;
+import org.restheart.Bootstrapper;
 
-public class BootstrapperTest {
+public class BootstrapperIT {
 
-    @Test
+    @Ignore @Test
     public void testSingleStartStop() {
         Bootstrapper.startup((String) null);
         Bootstrapper.shutdown();
     }
 
-    @Test
+    @Ignore @Test
     public void testMultipleStartStop() {
         Bootstrapper.startup((String) null);
         Bootstrapper.shutdown();
