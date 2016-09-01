@@ -18,7 +18,6 @@
 package org.restheart.handlers.bulk;
 
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 import org.bson.BsonArray;
 import org.bson.BsonValue;
 import org.restheart.db.BulkOperationResult;
