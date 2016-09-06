@@ -27,6 +27,11 @@ dbim:
       cache-ttl: 60000
       cache-expire-policy: AFTER_WRITE
 
+## Config for AD Identity Manager
+adim:
+    - domainControllers: ldap://eastdc.example.com
+      principalNameSuffixes: corp.example.com,example.com
+
 ## Configuration for file based Access Manager
 
 ## Look at undertow documentation for information about predictates syntax
