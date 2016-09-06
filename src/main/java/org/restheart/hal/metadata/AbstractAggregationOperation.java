@@ -218,7 +218,7 @@ public abstract class AbstractAggregationOperation {
                 if (aVars == null
                         || aVars.get(varName.asString().getValue()) == null) {
                     throw new QueryVariableNotBoundException("variable "
-                            + varName + " not bound");
+                            + varName.asString().getValue() + " not bound");
                 }
 
                 return aVars.get(varName.asString().getValue());
