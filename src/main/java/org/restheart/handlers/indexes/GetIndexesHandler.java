@@ -20,6 +20,7 @@ package org.restheart.handlers.indexes;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.BsonDocument;
+import org.restheart.hal.Representation;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
@@ -36,9 +37,10 @@ public class GetIndexesHandler extends PipedHttpHandler {
     public GetIndexesHandler() {
         super();
     }
-    
+
     /**
      * Creates a new instance of GetIndexesHandler
+     *
      * @param next
      */
     public GetIndexesHandler(PipedHttpHandler next) {
@@ -53,26 +55,28 @@ public class GetIndexesHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(
-            HttpServerExchange exchange, 
-            RequestContext context) 
+            HttpServerExchange exchange,
+            RequestContext context)
             throws Exception {
         List<BsonDocument> indexes = getDatabase()
                 .getCollectionIndexes(
-                        context.getDBName(), 
+                        context.getDBName(),
                         context.getCollectionName());
-        
-        exchange.setStatusCode(HttpStatus.SC_OK);
-        
-        IndexesRepresentationFactory.sendHal(
-                exchange, 
-                context, 
-                indexes, 
-                indexes.size());
-        
+
+        context.setResponseContent(
+                IndexesRepresentationFactory
+                .getRepresentation(
+                        exchange,
+                        context,
+                        indexes,
+                        indexes.size())
+                .asBsonDocument());
+
+        context.setResponseContentType(Representation.HAL_JSON_MEDIA_TYPE);
+        context.setResponseStatusCode(HttpStatus.SC_OK);
+
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }
-        
-        exchange.endExchange();
     }
 }

@@ -18,7 +18,6 @@
 package org.restheart.hal.metadata.singletons;
 
 import io.undertow.server.HttpServerExchange;
-import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 
@@ -33,6 +32,9 @@ import org.restheart.handlers.RequestContext;
  */
 public interface Transformer {
     /**
+     * contentToTransform can be directly manipulated or
+     * RequestContext.setResponseContent(BsonValue value) for response phase and
+     * RequestContext.setContent(BsonValue value) for request phase can be used
      *
      * @param exchange the server exchange
      * @param context the request context
@@ -40,9 +42,9 @@ public interface Transformer {
      * @param args the args sepcified in the collection metadata via args
      * property
      */
-    void tranform(
+    void transform(
             final HttpServerExchange exchange,
             final RequestContext context,
-            BsonDocument contentToTransform,
+            BsonValue contentToTransform,
             final BsonValue args);
 }

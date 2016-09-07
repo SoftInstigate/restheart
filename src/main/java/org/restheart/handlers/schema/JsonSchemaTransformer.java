@@ -43,16 +43,19 @@ public class JsonSchemaTransformer implements Transformer {
             = new BsonString("http://json-schema.org/draft-04/schema#");
 
     @Override
-    public void tranform(HttpServerExchange exchange,
+    public void transform(HttpServerExchange exchange,
             RequestContext context,
-            final BsonDocument contentToTransform,
+            final BsonValue contentToTransform,
             BsonValue args) {
-        
-        BsonDocument content = context.getContent().asDocument();
-        
+        BsonDocument content
+                = context.getContent().asDocument();
+
+        BsonDocument _contentToTransform
+                = contentToTransform.asDocument();
+
         if (context.getType() == RequestContext.TYPE.SCHEMA) {
             if (context.getMethod() == RequestContext.METHOD.GET) {
-                unescapeSchema(context.getResponseContent());
+                unescapeSchema(_contentToTransform);
             } else if (context.getMethod() == RequestContext.METHOD.PUT
                     || context.getMethod() == RequestContext.METHOD.PATCH) {
 
@@ -64,10 +67,10 @@ public class JsonSchemaTransformer implements Transformer {
                 content.put("id", new BsonString(uri.toString()));
 
                 // escape all $ prefixed keys
-                escapeSchema(contentToTransform);
+                escapeSchema(_contentToTransform);
 
                 // add (overwrite) $schema field
-                contentToTransform.put("_$schema", $SCHEMA);
+                _contentToTransform.put("_$schema", $SCHEMA);
             }
         } else if (context.getType() == RequestContext.TYPE.SCHEMA_STORE) {
             if (context.getMethod() == RequestContext.METHOD.POST) {
@@ -90,17 +93,16 @@ public class JsonSchemaTransformer implements Transformer {
                 content.put("id", new BsonString(uri.toString()));
 
                 // escape all $ prefixed keys
-                escapeSchema(contentToTransform);
+                escapeSchema(_contentToTransform);
 
                 // add (overwrite) $schema field
-                contentToTransform.put("_$schema", $SCHEMA);
+                _contentToTransform.put("_$schema", $SCHEMA);
             } else if (context.getMethod() == RequestContext.METHOD.GET) {
                 // apply transformation on embedded schemas
 
-                if (context.getResponseContent().containsKey("_embedded")) {
+                if (_contentToTransform.containsKey("_embedded")) {
 
-                    BsonValue _embedded = context
-                            .getResponseContent()
+                    BsonValue _embedded = _contentToTransform
                             .get("_embedded");
 
                     if (_embedded.isDocument()

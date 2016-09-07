@@ -50,10 +50,10 @@ public class Representation {
         embedded = new BsonDocument();
         links = new BsonDocument();
 
-        properties.append("_links", links);
-
-        if (href != null) links.put("self", new BsonDocument("href", new BsonString(href)));
+        if (href != null) {
+            links.put("self", new BsonDocument("href", new BsonString(href)));
         }
+    }
 
     /**
      *
@@ -65,7 +65,7 @@ public class Representation {
     public RequestContext.TYPE getType() {
         if (properties == null) {
             return null;
-    }
+        }
 
         Object _type = properties.get("_type");
 
@@ -89,6 +89,10 @@ public class Representation {
             properties.append("_links", links);
         }
 
+        if (links != null && !links.isEmpty()) {
+            properties.append("_links", links);
+        }
+
         return properties;
     }
 
@@ -109,7 +113,7 @@ public class Representation {
         if (!links.containsKey(linkArrayRef)) {
             links.append(linkArrayRef, new BsonArray());
         }
-        
+
         BsonArray linkArray = links.getArray(linkArrayRef);
 
         return linkArray;
@@ -158,7 +162,7 @@ public class Representation {
         if (!embedded.containsKey(rel)) {
             embedded.append(rel, new BsonArray());
         }
-        
+
         BsonArray repArray = embedded.getArray(rel);
 
         repArray.add(rep.asBsonDocument());

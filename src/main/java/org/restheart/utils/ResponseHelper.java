@@ -81,8 +81,7 @@ public class ResponseHelper {
 
         String httpStatusText = HttpStatus.getStatusText(code);
 
-        exchange.getResponseHeaders().put(
-                Headers.CONTENT_TYPE,
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
                 Representation.HAL_JSON_MEDIA_TYPE);
 
         exchange.getResponseSender().send(

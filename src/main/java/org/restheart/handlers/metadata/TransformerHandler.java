@@ -21,6 +21,7 @@ import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import java.util.List;
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.singletons.Transformer;
 import org.restheart.handlers.PipedHttpHandler;
@@ -88,7 +89,7 @@ public class TransformerHandler extends PipedHttpHandler {
                                     .name());
         }
 
-        BsonDocument data;
+        BsonValue data;
 
         if (context.getMethod() == GET) {
             data = context.getResponseContent();
@@ -97,6 +98,6 @@ public class TransformerHandler extends PipedHttpHandler {
         }
 
         transformers.stream().forEachOrdered(
-                t -> t.tranform(exchange, context, data, null));
+                t -> t.transform(exchange, context, data, null));
     }
 }

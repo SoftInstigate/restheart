@@ -131,23 +131,23 @@ public class GetAggregationHandler extends PipedHttpHandler {
             for (BsonDocument obj : mrOutput) {
                 data.add(obj);
             }
-            
+
             size = data.size();
         } else if (query.getType()
                 == AbstractAggregationOperation.TYPE.AGGREGATION_PIPELINE) {
             AggregateIterable<BsonDocument> agrOutput;
-            
+
             AggregationPipeline pipeline = (AggregationPipeline) query;
 
             try {
                 agrOutput = getDatabase()
                         .getCollection(
-                                context.getDBName(), 
+                                context.getDBName(),
                                 context.getCollectionName())
                         .aggregate(
                                 pipeline
                                 .getResolvedStagesAsList(
-                                        context.getAggreationVars()));                       
+                                        context.getAggreationVars()));
             } catch (MongoCommandException | InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
@@ -190,25 +190,21 @@ public class GetAggregationHandler extends PipedHttpHandler {
         }
 
         try {
-            AggregationResultRepresentationFactory crp
-                    = new AggregationResultRepresentationFactory();
+            context.setResponseContent(new AggregationResultRepresentationFactory()
+                    .getRepresentation(
+                            exchange,
+                            context,
+                            applyPagination(data, context),
+                            size)
+                    .asBsonDocument());
 
-            // create representation applying pagination
-            Representation rep = crp.getRepresentation(exchange,
-                    context, applyPagination(data, context), size);
+            context.setResponseContentType(Representation.HAL_JSON_MEDIA_TYPE);
+            context.setResponseStatusCode(HttpStatus.SC_OK);
 
-            exchange.setStatusCode(HttpStatus.SC_OK);
-
-            // call the ResponseTranformerMetadataHandler if piped in
+            // call the ResponseTransformerMetadataHandler if piped in
             if (getNext() != null) {
-                BsonDocument responseContent = rep.asBsonDocument();
-                context.setResponseContent(responseContent);
-
                 getNext().handleRequest(exchange, context);
             }
-
-            crp.sendRepresentation(exchange, context, rep);
-            exchange.endExchange();
         } catch (IllegalQueryParamenterException ex) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
@@ -218,7 +214,7 @@ public class GetAggregationHandler extends PipedHttpHandler {
     }
 
     private List<BsonDocument> applyPagination(
-            List<BsonDocument> data, 
+            List<BsonDocument> data,
             RequestContext context) {
         if (data == null) {
             return data;

@@ -49,11 +49,23 @@ public class FilterTransformer implements Transformer {
      * "prop2"]
      */
     @Override
-    public void tranform(
+    public void transform(
             final HttpServerExchange exchange, 
             final RequestContext context, 
-            BsonDocument contentToTransform, 
+            BsonValue contentToTransform, 
             final BsonValue args) {
+        if (contentToTransform == null) {
+            // nothing to do
+            return;
+        }
+        
+        if (!contentToTransform.isDocument()) {
+            throw new IllegalStateException(
+                    "content to transform is not a document");
+        }
+        
+        BsonDocument _contentToTransform = contentToTransform.asDocument();
+        
         if (args.isArray()) {
             BsonArray toremove = args.asArray();
 
@@ -61,7 +73,7 @@ public class FilterTransformer implements Transformer {
                 if (_prop.isString()) {
                     String prop = (String) _prop.asString().getValue();
 
-                    contentToTransform.remove(prop);
+                    _contentToTransform.remove(prop);
                 } else {
                     context.addWarning("property in the args list "
                             + "is not a string: " + _prop);

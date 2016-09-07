@@ -262,7 +262,7 @@ public class CollectionRepresentationFactory
                 } else {
                     nrep = new DocumentRepresentationFactory()
                             .getRepresentation(
-                                    requestPath + "/" + _id.toString(),
+                                    URLUtils.getReferenceLink(requestPath, _id),
                                     exchange,
                                     context,
                                     d);

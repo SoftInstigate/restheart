@@ -74,11 +74,23 @@ public class RequestPropsInjecterTransformer implements Transformer {
      * @param args properties to add
      */
     @Override
-    public void tranform(
+    public void transform(
             final HttpServerExchange exchange,
             final RequestContext context,
-            BsonDocument contentToTransform,
+            BsonValue contentToTransform,
             final BsonValue args) {
+        if (contentToTransform == null) {
+            // nothing to do
+            return;
+        }
+
+        if (!contentToTransform.isDocument()) {
+            throw new IllegalStateException(
+                    "content to transform is not a document");
+        }
+
+        BsonDocument _contentToTransform = contentToTransform.asDocument();
+
         BsonDocument injected = new BsonDocument();
 
         if (args.isDocument()) {
@@ -113,7 +125,7 @@ public class RequestPropsInjecterTransformer implements Transformer {
                     }
                 });
 
-                contentToTransform.put(firstKey, injected);
+                _contentToTransform.put(firstKey, injected);
             } else {
                 context.addWarning("transformer wrong definition: "
                         + "args must be an object with a array containing "
@@ -142,7 +154,7 @@ public class RequestPropsInjecterTransformer implements Transformer {
                 }
             });
 
-            contentToTransform.putAll(injected);
+            _contentToTransform.putAll(injected);
         } else {
             context.addWarning("transformer wrong definition: "
                     + "args must be an object with a array containing "

@@ -117,7 +117,7 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
 
         bprf.sendRepresentation(exchange, context,
                 bprf.getRepresentation(exchange, context, result));
-
+        
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }

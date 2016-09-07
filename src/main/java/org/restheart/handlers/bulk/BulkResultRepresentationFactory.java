@@ -182,7 +182,6 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
      * @param context
      * @param rep
      */
-    @Override
     public void sendRepresentation(HttpServerExchange exchange, RequestContext context, Representation rep) {
         if (context != null
                 && context.getWarnings() != null) {
