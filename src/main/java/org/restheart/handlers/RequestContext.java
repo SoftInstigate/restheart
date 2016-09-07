@@ -162,7 +162,11 @@ public class RequestContext {
 
     private Path filePath;
 
-    private BsonDocument responseContent;
+    private BsonValue responseContent;
+
+    private int responseStatusCode;
+
+    private String responseContentType;
 
     private final List<String> warnings = new ArrayList<>();
 
@@ -758,6 +762,12 @@ public class RequestContext {
      * @param content the content to set
      */
     public void setContent(BsonValue content) {
+        if (content != null
+                && !(content.isDocument()
+                || content.isArray())) {
+            throw new IllegalArgumentException("content must be "
+                    + "either an object or an array");
+        }
         this.content = content;
     }
 
@@ -852,15 +862,50 @@ public class RequestContext {
     /**
      * @return the responseContent
      */
-    public BsonDocument getResponseContent() {
+    public BsonValue getResponseContent() {
         return responseContent;
     }
 
     /**
      * @param responseContent the responseContent to set
      */
-    public void setResponseContent(BsonDocument responseContent) {
+    public void setResponseContent(BsonValue responseContent) {
+        if (responseContent != null
+                && !(responseContent.isDocument()
+                || responseContent.isArray())) {
+            throw new IllegalArgumentException("response content must be "
+                    + "either an object or an array");
+        }
+
         this.responseContent = responseContent;
+    }
+
+    /**
+     * @return the responseStatusCode
+     */
+    public int getResponseStatusCode() {
+        return responseStatusCode;
+    }
+
+    /**
+     * @param responseStatusCode the responseStatusCode to set
+     */
+    public void setResponseStatusCode(int responseStatusCode) {
+        this.responseStatusCode = responseStatusCode;
+    }
+
+    /**
+     * @return the responseContentType
+     */
+    public String getResponseContentType() {
+        return responseContentType;
+    }
+
+    /**
+     * @param responseContentType the responseContentType to set
+     */
+    public void setResponseContentType(String responseContentType) {
+        this.responseContentType = responseContentType;
     }
 
     /**

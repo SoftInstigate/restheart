@@ -21,6 +21,7 @@ import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,18 +51,18 @@ public class SnooperHook implements Hook {
                     .getDbOperationResult()
                     .getOldData();
 
-            LOGGER.info("**** New data ****\n{}", 
+            LOGGER.info("**** New data ****\n{}",
                     newData == null ? null : newData.toJson());
-            
-            LOGGER.info("**** Old data ****\n{}", 
+
+            LOGGER.info("**** Old data ****\n{}",
                     oldData == null ? null : oldData.toJson());
         }
 
-        BsonDocument responseContent = context.getResponseContent();
+        BsonValue responseContent = context.getResponseContent();
 
         if (responseContent != null) {
             LOGGER.info("*** Response content ****\n{}",
-                    responseContent.toJson());
+                    JsonUtils.toJson(responseContent));
         }
 
         return true;

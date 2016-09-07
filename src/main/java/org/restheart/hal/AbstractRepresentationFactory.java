@@ -38,26 +38,6 @@ public abstract class AbstractRepresentationFactory {
      *
      * @param exchange
      * @param context
-     * @param rep
-     */
-    public void sendRepresentation(
-            HttpServerExchange exchange,
-            RequestContext context,
-            Representation rep) {
-        if (context.getWarnings() != null) {
-            context.getWarnings().forEach(w -> rep.addWarning(w));
-        }
-
-        exchange.getResponseHeaders().put(
-                Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
-        
-        exchange.getResponseSender().send(rep.toString());
-    }
-
-    /**
-     *
-     * @param exchange
-     * @param context
      * @param embeddedData
      * @param size
      * @return the resource HAL representation

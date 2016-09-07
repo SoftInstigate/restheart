@@ -26,6 +26,7 @@ import org.bson.BsonDocument;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.hal.Representation;
+import org.restheart.handlers.root.RootRepresentationFactory;
 import org.restheart.utils.ResponseHelper;
 
 /**
@@ -57,8 +58,8 @@ public class GetDBHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(
-            HttpServerExchange exchange, 
-            RequestContext context) 
+            HttpServerExchange exchange,
+            RequestContext context)
             throws Exception {
         List<String> colls = getDatabase()
                 .getCollectionNames(context.getDBName());
@@ -73,24 +74,23 @@ public class GetDBHandler extends PipedHttpHandler {
                     context.getPagesize());
         }
 
-        DBRepresentationFactory repf = new DBRepresentationFactory();
-        Representation rep = repf.getRepresentation(
-                exchange, context, data, getDatabase().getDBSize(colls));
+        context.setResponseContent(new DBRepresentationFactory()
+                .getRepresentation(
+                        exchange,
+                        context,
+                        data,
+                        getDatabase()
+                        .getDBSize(colls))
+                .asBsonDocument());
+
+        context.setResponseContentType(Representation.HAL_JSON_MEDIA_TYPE);
+        context.setResponseStatusCode(HttpStatus.SC_OK);
 
         ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
 
-        exchange.setStatusCode(HttpStatus.SC_OK);
-
         // call the next handler if existing
         if (getNext() != null) {
-            BsonDocument responseContent = rep.asBsonDocument();
-            context.setResponseContent(responseContent);
-
             getNext().handleRequest(exchange, context);
         }
-
-        repf.sendRepresentation(exchange, context, rep);
-
-        exchange.endExchange();
     }
 }

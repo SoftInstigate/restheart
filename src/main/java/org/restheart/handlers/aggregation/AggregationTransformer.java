@@ -41,17 +41,25 @@ public class AggregationTransformer implements Transformer {
             .getLogger(AggregationTransformer.class);
 
     @Override
-    public void tranform(HttpServerExchange exchange,
+    public void transform(
+            HttpServerExchange exchange,
             RequestContext context,
-            final BsonDocument contentToTransform, BsonValue args) {
-
+            final BsonValue contentToTransform,
+            BsonValue args) {
         if (contentToTransform == null) {
             // nothing to do
             return;
         }
 
+        if (!contentToTransform.isDocument()) {
+            throw new IllegalStateException(
+                    "content to transform is not a document");
+        }
+
+        BsonDocument _contentToTransform = contentToTransform.asDocument();
+
         if (context.getType() == RequestContext.TYPE.COLLECTION) {
-            BsonArray aggrs = getAggregationMetadata(contentToTransform);
+            BsonArray aggrs = getAggregationMetadata(_contentToTransform);
 
             if (aggrs == null) {
                 // nothing to do
@@ -60,18 +68,18 @@ public class AggregationTransformer implements Transformer {
 
             if (context.getMethod() == RequestContext.METHOD.PUT
                     || context.getMethod() == RequestContext.METHOD.PATCH) {
-                contentToTransform.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
+                _contentToTransform.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
                         JsonUtils.escapeKeys(aggrs, true));
             } else if (context.getMethod() == RequestContext.METHOD.GET) {
-                contentToTransform.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
+                _contentToTransform.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
                         JsonUtils.unescapeKeys(aggrs));
             }
         } else if ((context.getType() == RequestContext.TYPE.DB)
                 && context.getMethod() == RequestContext.METHOD.GET) {
             // apply transformation on embedded schemas
 
-            if (contentToTransform.containsKey("_embedded")) {
-                BsonValue _embedded = contentToTransform.get("_embedded");
+            if (_contentToTransform.containsKey("_embedded")) {
+                BsonValue _embedded = _contentToTransform.get("_embedded");
 
                 if (_embedded.isDocument()
                         && _embedded.asDocument().containsKey("rh:coll")

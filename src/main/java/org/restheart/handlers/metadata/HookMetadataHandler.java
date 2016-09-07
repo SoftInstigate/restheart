@@ -40,14 +40,14 @@ public class HookMetadataHandler extends PipedHttpHandler {
             LoggerFactory.getLogger(HookMetadataHandler.class);
     
     /**
-     * Creates a new instance of ResponseTranformerMetadataHandler
+     * Creates a new instance of HookMetadataHandler
      */
     public HookMetadataHandler() {
         super(null);
     }
 
     /**
-     * Creates a new instance of ResponseTranformerMetadataHandler
+     * Creates a new instance of HookMetadataHandler
      *
      * @param next
      */

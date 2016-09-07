@@ -18,7 +18,6 @@
 package org.restheart.handlers.indexes;
 
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 import static java.lang.Math.toIntExact;
 import java.util.List;
 import org.bson.BsonDocument;
@@ -28,7 +27,6 @@ import org.bson.BsonValue;
 import org.restheart.Configuration;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
-import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.URLUtils;
@@ -52,7 +50,7 @@ public class IndexesRepresentationFactory {
      * @param size
      * @throws IllegalQueryParamenterException
      */
-    static public void sendHal(
+    static public Representation getRepresentation(
             HttpServerExchange exchange,
             RequestContext context,
             List<BsonDocument> embeddedData,
@@ -60,20 +58,20 @@ public class IndexesRepresentationFactory {
             throws IllegalQueryParamenterException {
         String requestPath = URLUtils.removeTrailingSlashes(
                 context.getUnmappedRequestUri());
-        
+
         String queryString = exchange.getQueryString() == null
                 || exchange.getQueryString().isEmpty()
                         ? ""
                         : "?" + URLUtils.decodeQueryString(exchange.getQueryString());
 
         Representation rep;
-        
+
         if (context.isFullHalMode()) {
             rep = new Representation(requestPath + queryString);
         } else {
             rep = new Representation();
         }
-        
+
         if (size >= 0) {
             rep.addProperty("_size", new BsonInt32(toIntExact(size)));
         }
@@ -121,8 +119,7 @@ public class IndexesRepresentationFactory {
                     + "/{rel}.html", true), true);
         }
 
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
-        exchange.getResponseSender().send(rep.toString());
+        return rep;
     }
 
     private static void embeddedDocuments(
@@ -133,7 +130,7 @@ public class IndexesRepresentationFactory {
         embeddedData.stream().forEach((d) -> {
             BsonValue _id = d.get("_id");
 
-            if (_id != null 
+            if (_id != null
                     && (_id.isString()
                     || _id.isObjectId())) {
                 Representation nrep = new Representation();
@@ -155,7 +152,7 @@ public class IndexesRepresentationFactory {
                                 + _id.getBsonType().name())
                         + "filtered out. Indexes can only "
                         + "have ids of type String");
-                
+
                 LOGGER.debug("index missing string _id field", d);
             }
         });

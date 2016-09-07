@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.restheart.db.Database;
+import org.restheart.hal.Representation;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
@@ -95,17 +96,15 @@ public class GetRootHandler extends PipedHttpHandler {
             }
         }
 
-        exchange.setStatusCode(HttpStatus.SC_OK);
-        RootRepresentationFactory rf = new RootRepresentationFactory();
-
-        rf.sendRepresentation(exchange,
-                context,
-                rf.getRepresentation(exchange, context, data, size));
+        context.setResponseContent(new RootRepresentationFactory().
+                getRepresentation(exchange, context, data, size)
+                .asBsonDocument());
+        
+        context.setResponseContentType(Representation.HAL_JSON_MEDIA_TYPE);
+        context.setResponseStatusCode(HttpStatus.SC_OK);
 
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }
-
-        exchange.endExchange();
     }
 }

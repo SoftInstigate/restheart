@@ -39,6 +39,7 @@ import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import java.util.HashMap;
 import java.util.Map;
+import org.restheart.hal.metadata.singletons.PlainJsonTransformer;
 import org.restheart.handlers.schema.JsonMetaSchemaChecker;
 import static org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.TYPE;
@@ -49,7 +50,7 @@ import org.restheart.handlers.files.GetFileBinaryHandler;
 import org.restheart.handlers.files.GetFileHandler;
 import org.restheart.handlers.files.PostBucketHandler;
 import org.restheart.handlers.files.PutBucketHandler;
-import org.restheart.handlers.metadata.ResponseTranformerMetadataHandler;
+import org.restheart.handlers.metadata.ResponseTransformerMetadataHandler;
 import org.restheart.handlers.metadata.BeforeWriteCheckMetadataHandler;
 import org.restheart.handlers.metadata.RequestTransformerMetadataHandler;
 import org.restheart.handlers.aggregation.GetAggregationHandler;
@@ -104,14 +105,21 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         // *** ROOT handlers
         putPipedHttpHandler(TYPE.ROOT, METHOD.GET,
-                new GetRootHandler());
+                new GetRootHandler(
+                        new TransformerHandler(
+                                new ResponseSenderHandler(null),
+                                new PlainJsonTransformer())));
 
         // *** DB handlers
         putPipedHttpHandler(TYPE.DB, METHOD.GET,
                 new GetDBHandler(
-                        new ResponseTranformerMetadataHandler(
-                                new TransformerHandler(null,
-                                        new AggregationTransformer()))));
+                        new TransformerHandler(
+                                new ResponseTransformerMetadataHandler(
+                                        new TransformerHandler(
+                                                new ResponseSenderHandler(null)
+                                        )),
+                                new AggregationTransformer(),
+                                new PlainJsonTransformer())));
 
         putPipedHttpHandler(TYPE.DB, METHOD.PUT,
                 new RequestTransformerMetadataHandler(
@@ -127,11 +135,12 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         // *** COLLECTION handlers
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.GET,
                 new GetCollectionHandler(
-                        new ResponseTranformerMetadataHandler(
-                                new TransformerHandler(
-                                        new HookMetadataHandler(),
-                                        new AggregationTransformer())
-                        )));
+                        new TransformerHandler(
+                                new ResponseTransformerMetadataHandler(
+                                        new ResponseSenderHandler(
+                                                new HookMetadataHandler())),
+                                new AggregationTransformer(),
+                                new PlainJsonTransformer())));
 
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST,
                 new NormalOrBulkDispatcherHandler(
@@ -163,8 +172,9 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         // *** DOCUMENT handlers
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.GET,
                 new GetDocumentHandler(
-                        new ResponseTranformerMetadataHandler(
-                                new HookMetadataHandler())));
+                        new ResponseTransformerMetadataHandler(
+                                new ResponseSenderHandler(
+                                        new HookMetadataHandler()))));
 
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PUT,
                 new RequestTransformerMetadataHandler(
@@ -197,7 +207,10 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         // *** COLLECTION_INDEXES handlers
         putPipedHttpHandler(TYPE.COLLECTION_INDEXES, METHOD.GET,
-                new GetIndexesHandler());
+                new GetIndexesHandler(
+                        new TransformerHandler(
+                                new ResponseSenderHandler(null),
+                                new PlainJsonTransformer())));
 
         // *** INDEX handlers
         putPipedHttpHandler(TYPE.INDEX, METHOD.PUT,
@@ -209,8 +222,11 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         // *** FILES_BUCKET and FILE handlers
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.GET,
                 new GetCollectionHandler(
-                        new ResponseTranformerMetadataHandler(
-                                new HookMetadataHandler())));
+                        new TransformerHandler(
+                                new ResponseTransformerMetadataHandler(
+                                        new ResponseSenderHandler(
+                                                new HookMetadataHandler())),
+                                new PlainJsonTransformer())));
 
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.POST,
                 new RequestTransformerMetadataHandler(
@@ -227,8 +243,9 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         putPipedHttpHandler(TYPE.FILE, METHOD.GET,
                 new GetFileHandler(
-                        new ResponseTranformerMetadataHandler(
-                                new HookMetadataHandler())));
+                        new ResponseTransformerMetadataHandler(
+                                new ResponseSenderHandler(
+                                        new HookMetadataHandler()))));
 
         putPipedHttpHandler(TYPE.FILE_BINARY, METHOD.GET,
                 new GetFileBinaryHandler(
@@ -241,16 +258,21 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         // *** AGGREGATION handler
         putPipedHttpHandler(TYPE.AGGREGATION, METHOD.GET,
                 new GetAggregationHandler(
-                        new ResponseTranformerMetadataHandler(
-                                new HookMetadataHandler())));
+                        new TransformerHandler(
+                                new ResponseTransformerMetadataHandler(
+                                        new ResponseSenderHandler(
+                                                new HookMetadataHandler())),
+                                new PlainJsonTransformer())));
 
         // *** SCHEMA handlers
         putPipedHttpHandler(TYPE.SCHEMA_STORE, METHOD.GET,
                 new GetCollectionHandler(
                         new TransformerHandler(
-                                new ResponseTranformerMetadataHandler(
-                                        new HookMetadataHandler()),
-                                new JsonSchemaTransformer())));
+                                new ResponseTransformerMetadataHandler(
+                                        new ResponseSenderHandler(
+                                                new HookMetadataHandler())),
+                                new JsonSchemaTransformer(),
+                                new PlainJsonTransformer())));
 
         putPipedHttpHandler(TYPE.SCHEMA_STORE, METHOD.PUT,
                 new RequestTransformerMetadataHandler(
@@ -269,8 +291,9 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         putPipedHttpHandler(TYPE.SCHEMA, METHOD.GET,
                 new GetDocumentHandler(
                         new TransformerHandler(
-                                new ResponseTranformerMetadataHandler(
-                                        new HookMetadataHandler()),
+                                new ResponseTransformerMetadataHandler(
+                                        new ResponseSenderHandler(
+                                                new HookMetadataHandler())),
                                 new JsonSchemaTransformer())));
 
         putPipedHttpHandler(TYPE.SCHEMA, METHOD.PUT,
@@ -357,7 +380,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
     public final void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getType() == TYPE.INVALID) {
             LOGGER.debug(
-                    "This is a bad request: returning a <{}> HTTP code", 
+                    "This is a bad request: returning a <{}> HTTP code",
                     HttpStatus.SC_BAD_REQUEST);
             ResponseHelper.endExchange(exchange, HttpStatus.SC_BAD_REQUEST);
             return;
@@ -365,7 +388,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         if (context.getMethod() == METHOD.OTHER) {
             LOGGER.debug(
-                    "This method is not allowed: returning a <{}> HTTP code", 
+                    "This method is not allowed: returning a <{}> HTTP code",
                     HttpStatus.SC_METHOD_NOT_ALLOWED);
             ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
             return;
@@ -373,18 +396,18 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         if (context.isReservedResource()) {
             LOGGER.debug(
-                    "The resource is reserved: returning a <{}> HTTP code", 
+                    "The resource is reserved: returning a <{}> HTTP code",
                     HttpStatus.SC_FORBIDDEN);
             ResponseHelper.endExchangeWithMessage(
-                    exchange, 
-                    context, 
-                    HttpStatus.SC_FORBIDDEN, 
+                    exchange,
+                    context,
+                    HttpStatus.SC_FORBIDDEN,
                     "reserved resource");
             return;
         }
 
-        final PipedHttpHandler httpHandler = 
-                getPipedHttpHandler(context.getType(), context.getMethod());
+        final PipedHttpHandler httpHandler
+                = getPipedHttpHandler(context.getType(), context.getMethod());
 
         if (httpHandler != null) {
             before(exchange, context);
@@ -392,7 +415,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
             after(exchange, context);
         } else {
             LOGGER.error(
-                    "Can't find PipedHttpHandler({}, {})", 
+                    "Can't find PipedHttpHandler({}, {})",
                     context.getType(), context.getMethod());
             ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
         }

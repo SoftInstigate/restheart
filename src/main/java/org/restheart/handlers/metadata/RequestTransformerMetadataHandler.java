@@ -114,13 +114,13 @@ public class RequestTransformerMetadataHandler
             if (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST) {
                 if (rt.getScope() == RepresentationTransformer.SCOPE.THIS 
                         && requestType == RequestContext.TYPE.DB) {
-                    t.tranform(
+                    t.transform(
                             exchange,
                             context,
                             context.getContent().asDocument(),
                             rt.getArgs());
                 } else {
-                    t.tranform(
+                    t.transform(
                             exchange,
                             context,
                             context.getContent().asDocument(),
@@ -215,21 +215,21 @@ public class RequestTransformerMetadataHandler
                 || requestMethod == RequestContext.METHOD.PATCH)
                 && scope == RepresentationTransformer.SCOPE.THIS
                 && requestType == RequestContext.TYPE.COLLECTION) {
-            t.tranform(exchange, context, data, args);
+            t.transform(exchange, context, data, args);
         } else if ((requestMethod == RequestContext.METHOD.PUT
                 || requestMethod == RequestContext.METHOD.PATCH)
                 && scope == RepresentationTransformer.SCOPE.CHILDREN
                 && (requestType == RequestContext.TYPE.DOCUMENT
                 || requestType == RequestContext.TYPE.FILE)) {
-            t.tranform(exchange, context, data, args);
+            t.transform(exchange, context, data, args);
         } else if (requestMethod == RequestContext.METHOD.POST
                 && scope == RepresentationTransformer.SCOPE.CHILDREN
                 && requestType == RequestContext.TYPE.COLLECTION) {
-            t.tranform(exchange, context, data, args);
+            t.transform(exchange, context, data, args);
         } else if (requestMethod == RequestContext.METHOD.POST
                 && scope == RepresentationTransformer.SCOPE.CHILDREN
                 && requestType == RequestContext.TYPE.FILES_BUCKET) {
-            t.tranform(exchange, context, data, args);
+            t.transform(exchange, context, data, args);
         }
     }
 }

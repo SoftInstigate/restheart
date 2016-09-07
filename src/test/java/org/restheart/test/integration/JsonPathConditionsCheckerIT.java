@@ -31,6 +31,9 @@ import static org.restheart.test.integration.HttpClientAbstactIT.collectionTmpUr
 import static org.restheart.test.integration.HttpClientAbstactIT.dbTmpUri;
 import static org.restheart.test.integration.HttpClientAbstactIT.halCT;
 import static org.restheart.test.integration.HttpClientAbstactIT.buildURI;
+import static org.restheart.test.integration.HttpClientAbstactIT.buildURI;
+import static org.restheart.test.integration.HttpClientAbstactIT.buildURI;
+import static org.restheart.test.integration.HttpClientAbstactIT.buildURI;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}

@@ -31,8 +31,8 @@ import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 import org.restheart.utils.JsonUtils;
-import static com.mongodb.client.model.Filters.and;
 import org.restheart.handlers.RequestContext.TYPE;
+import static com.mongodb.client.model.Filters.and;
 
 /**
  *
@@ -151,28 +151,22 @@ public class GetDocumentHandler extends PipedHttpHandler {
         String requestPath = URLUtils.removeTrailingSlashes(
                 exchange.getRequestPath());
 
+        context.setResponseContent(new DocumentRepresentationFactory()
+                .getRepresentation(
+                        requestPath,
+                        exchange,
+                        context,
+                        document)
+                .asBsonDocument());
+
+        context.setResponseContentType(Representation.HAL_JSON_MEDIA_TYPE);
+        context.setResponseStatusCode(HttpStatus.SC_OK);
+
         ResponseHelper.injectEtagHeader(exchange, etag);
-        exchange.setStatusCode(HttpStatus.SC_OK);
 
-        DocumentRepresentationFactory drp = new DocumentRepresentationFactory();
-
-        Representation rep = drp.getRepresentation(
-                requestPath,
-                exchange,
-                context,
-                document);
-
-        exchange.setStatusCode(HttpStatus.SC_OK);
-
-        // call the ResponseTranformerMetadataHandler if piped in
+        // call the ResponseTransformerMetadataHandler if piped in
         if (getNext() != null) {
-            BsonDocument responseContent = rep.asBsonDocument();
-            context.setResponseContent(responseContent);
-
             getNext().handleRequest(exchange, context);
         }
-
-        drp.sendRepresentation(exchange, context, rep);
-        exchange.endExchange();
     }
 }

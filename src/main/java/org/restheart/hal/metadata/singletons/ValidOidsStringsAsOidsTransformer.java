@@ -46,15 +46,28 @@ public class ValidOidsStringsAsOidsTransformer implements Transformer {
      * @param exchange
      * @param context
      * @param contentToTransform
-     * @param args names of properties to tranform eventually (if value is valid
-     * ObjectId) as an array of strings (["_id", "prop2"]
+     * @param args names of properties to transform eventually (if value is valid
+ ObjectId) as an array of strings (["_id", "prop2"]
      */
     @Override
-    public void tranform(
+    public void transform(
             final HttpServerExchange exchange,
             final RequestContext context,
-            BsonDocument contentToTransform,
+            BsonValue contentToTransform,
             final BsonValue args) {
+        if (contentToTransform == null) {
+            // nothing to do
+            return;
+        }
+
+        if (!contentToTransform.isDocument()) {
+            throw new IllegalStateException(
+                    "content to transform is not a document");
+        }
+        
+        BsonDocument _contentToTransform = contentToTransform.asDocument();
+        
+        
         // this set contains the names of the properties to transform eventually
         Set<String> propertiesToTransform = new HashSet<>();
 
@@ -80,7 +93,7 @@ public class ValidOidsStringsAsOidsTransformer implements Transformer {
                     + "of string (properties names).");
         }
 
-        _transform(contentToTransform, propertiesToTransform);
+        _transform(_contentToTransform, propertiesToTransform);
     }
 
     private void _transform(BsonDocument data, Set<String> propertiesNames) {
@@ -109,8 +122,8 @@ public class ValidOidsStringsAsOidsTransformer implements Transformer {
     /**
      * @param key the name of the property to transform (in case of patch can
      * also use the dot notation)
-     * @param propertiesToTransform the set of properties names to tranform if
-     * their value is a valid ObjectId
+     * @param propertiesToTransform the set of properties names to transform if
+ their value is a valid ObjectId
      * @return true if the property should be transformed
      */
     private boolean shouldTransform(String key, 

@@ -452,11 +452,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             final HeaderValues contentTypes) {
         return contentTypes == null
                 || contentTypes.isEmpty()
-                || contentTypes.stream().noneMatch(
-                        ct -> ct.startsWith(
-                                Representation.HAL_JSON_MEDIA_TYPE)
-                        || ct.startsWith(
-                                Representation.JSON_MEDIA_TYPE));
+                || contentTypes.stream().noneMatch(ct -> ct.startsWith(Representation.HAL_JSON_MEDIA_TYPE)
+                        || ct.startsWith(Representation.JSON_MEDIA_TYPE));
     }
 
     /**
@@ -469,11 +466,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             final HeaderValues contentTypes) {
         return contentTypes == null
                 || contentTypes.isEmpty()
-                || contentTypes.stream().noneMatch(
-                        ct -> ct.startsWith(
-                                Representation.APP_FORM_URLENCODED_TYPE)
-                        || ct.startsWith(
-                                Representation.MULTIPART_FORM_DATA_TYPE));
+                || contentTypes.stream().noneMatch(ct -> ct.startsWith(Representation.APP_FORM_URLENCODED_TYPE)
+                        || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE));
     }
 
     /**

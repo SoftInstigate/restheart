@@ -42,12 +42,24 @@ public class OidsAsStringsTransformer implements Transformer {
      * @param args
      */
     @Override
-    public void tranform(
+    public void transform(
             final HttpServerExchange exchange, 
             final RequestContext context, 
-            BsonDocument contentToTransform, 
+            BsonValue contentToTransform, 
             final BsonValue args) {
-        _transform(contentToTransform);
+        if (contentToTransform == null) {
+            // nothing to do
+            return;
+        }
+
+        if (!contentToTransform.isDocument()) {
+            throw new IllegalStateException(
+                    "content to transform is not a document");
+        }
+        
+        BsonDocument _contentToTransform = contentToTransform.asDocument();
+        
+        _transform(_contentToTransform);
     }
     
     private void _transform(BsonDocument data) {
