@@ -107,7 +107,7 @@ public class LoadGetPT extends AbstractPT {
         final Database dbsDAO = new DbsDAO();
         MongoCollection dbcoll = dbsDAO.getCollection(db, coll);
 
-        ArrayList<DBObject> data;
+        ArrayList<BsonDocument> data;
         
         try {
             data = new DbsDAO().getCollectionData(dbcoll, 
