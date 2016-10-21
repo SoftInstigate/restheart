@@ -156,7 +156,7 @@ public class RequestTransformerMetadataHandler
                             + " in singleton group transformers");
                 }
 
-                BsonDocument content = context.getContent().asDocument();
+                BsonValue content = context.getContent();
 
                 // content can be an array for bulk POST
                 if (content == null) {
@@ -179,7 +179,7 @@ public class RequestTransformerMetadataHandler
                             rt.getScope(),
                             content.asDocument(),
                             rt.getArgs());
-                } else {
+                } else if (content.isArray()) {
                     BsonArray arrayContent = content.asArray();
 
                     arrayContent.stream().forEach(obj -> {
