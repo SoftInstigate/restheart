@@ -37,10 +37,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.mongodb.client.model.Filters.and;
 import com.mongodb.client.model.ReplaceOneModel;
+import com.mongodb.client.model.UpdateOneModel;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
+import org.bson.BsonValue;
 
 /**
  *
@@ -52,19 +55,19 @@ public class DAOUtils {
 
     public final static FindOneAndUpdateOptions FAU_UPSERT_OPS
             = new FindOneAndUpdateOptions()
-            .upsert(true);
+                    .upsert(true);
 
     public final static FindOneAndUpdateOptions FAU_AFTER_UPSERT_OPS
             = new FindOneAndUpdateOptions()
-            .upsert(true).returnDocument(ReturnDocument.AFTER);
+                    .upsert(true).returnDocument(ReturnDocument.AFTER);
 
     public final static UpdateOptions U_UPSERT_OPS
             = new UpdateOptions()
-            .upsert(true);
+                    .upsert(true);
 
     public final static UpdateOptions U_NOT_UPSERT_OPS
             = new UpdateOptions()
-            .upsert(false);
+                    .upsert(false);
 
     private DAOUtils() {
     }
@@ -95,15 +98,15 @@ public class DAOUtils {
             BsonDocument data,
             boolean replace) {
         return updateDocument(
-                coll, 
-                documentId, 
-                shardKeys, 
-                data, 
-                replace, 
+                coll,
+                documentId,
+                shardKeys,
+                data,
+                replace,
                 false);
     }
 
-    private static final Bson IMPOSSIBLE_CONDITION 
+    private static final Bson IMPOSSIBLE_CONDITION
             = eq("_etag", new ObjectId());
 
     /**
@@ -158,22 +161,22 @@ public class DAOUtils {
             }
 
             BsonDocument newDocument = coll.findOneAndUpdate(
-                    query, 
-                    document, 
+                    query,
+                    document,
                     FAU_AFTER_UPSERT_OPS);
 
             return new OperationResult(-1, oldDocument, newDocument);
         } else if (returnNew) {
             BsonDocument newDocument = coll.findOneAndUpdate(
-                    query, 
-                    document, 
+                    query,
+                    document,
                     FAU_AFTER_UPSERT_OPS);
 
             return new OperationResult(-1, null, newDocument);
         } else {
             BsonDocument oldDocument = coll.findOneAndUpdate(
-                    query, 
-                    document, 
+                    query,
+                    document,
                     FAU_UPSERT_OPS);
 
             return new OperationResult(-1, oldDocument, null);
@@ -220,6 +223,18 @@ public class DAOUtils {
 
         ObjectId newEtag = new ObjectId();
 
+        // wipe out old properties from matching document
+        // this is needed to set POST the correct behaviour, wihtout
+        // this step it would have PATCH behaviour
+        // ReplaceOneModel does not allow to use update operators
+        List<WriteModel<BsonDocument>> wpwm = getWipePropsWriteModel(
+                coll,
+                documents,
+                shardKeys,
+                newEtag);
+        
+        coll.bulkWrite(wpwm);
+        
         List<WriteModel<BsonDocument>> wm = getBulkWriteModel(
                 coll,
                 documents,
@@ -242,29 +257,82 @@ public class DAOUtils {
         List<WriteModel<BsonDocument>> updates = new ArrayList<>();
 
         documents.stream().filter(_document -> _document.isDocument())
-                .forEach(_document -> {
-                    BsonDocument document = _document.asDocument();
+                .forEach(new Consumer<BsonValue>() {
+                    @Override
+                    public void accept(BsonValue _document) {
+                        BsonDocument document = _document.asDocument();
 
-                    // generate new id if missing, will be an insert
-                    if (!document.containsKey("_id")) {
-                        document
-                                .put("_id", new BsonObjectId(new ObjectId()));
+                        // generate new id if missing, will be an insert
+                        if (!document.containsKey("_id")) {
+                            document
+                                    .put("_id", new BsonObjectId(new ObjectId()));
+                        }
+
+                        // add the _etag
+                        document.put("_etag", new BsonObjectId(etag));
+
+                        Bson filter = eq("_id", document.get("_id"));
+
+                        if (shardKeys != null) {
+                            filter = and(filter, shardKeys);
+                        }
+
+                        updates.add(new UpdateOneModel<>(
+                                filter,
+                                getUpdateDocument(document),
+                                new UpdateOptions().upsert(true)
+                        ));
                     }
+                });
 
-                    // add the _etag
-                    document.put("_etag", new BsonObjectId(etag));
+        return updates;
+    }
 
-                    Bson filter = eq("_id", document.get("_id"));
+    /**
+     * wipes out document properties from matching document; this is needed to
+     * set the correct behaviour for bulk POST, wihtout it POST would have PATCH
+     * behaviour (ReplaceOneModel does not allow to use update operators)
+     *
+     * @param mcoll
+     * @param documents
+     * @param shardKeys
+     * @param etag
+     * @return
+     */
+    private static List<WriteModel<BsonDocument>> getWipePropsWriteModel(
+            final MongoCollection<BsonDocument> mcoll,
+            final BsonArray documents,
+            BsonDocument shardKeys,
+            final ObjectId etag) {
+        Objects.requireNonNull(mcoll);
+        Objects.requireNonNull(documents);
 
-                    if (shardKeys != null) {
-                        filter = and(filter, shardKeys);
+        List<WriteModel<BsonDocument>> updates = new ArrayList<>();
+
+        final BsonDocument emptyDoc = new BsonDocument();
+
+        documents.stream().filter(_document -> _document.isDocument())
+                .forEach(new Consumer<BsonValue>() {
+                    @Override
+                    public void accept(BsonValue _document) {
+                        BsonDocument document = _document.asDocument();
+
+                        // generate new id if missing, will be an insert
+                        if (document.containsKey("_id")) {
+
+                            Bson filter = eq("_id", document.get("_id"));
+
+                            if (shardKeys != null) {
+                                filter = and(filter, shardKeys);
+                            }
+
+                            updates.add(new ReplaceOneModel<>(
+                                    filter,
+                                    emptyDoc,
+                                    new UpdateOptions().upsert(true)
+                            ));
+                        }
                     }
-
-                    updates.add(new ReplaceOneModel<>(
-                            filter,
-                            getUpdateDocument(document),
-                            new UpdateOptions().upsert(true)
-                    ));
                 });
 
         return updates;
