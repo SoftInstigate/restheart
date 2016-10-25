@@ -213,10 +213,11 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                             && !content.isDocument()
                             && !content.isArray()) {
                         throw new IllegalArgumentException(
-                                "data must be either a json object or array, got "
-                                + content == null
+                                "request data must be either a json object "
+                                        + "or an array"
+                                        + ", got " + (content == null
                                         ? " no data"
-                                        : content.getBsonType().name());
+                                        : "" + content.getBsonType().name()));
                     }
                 } catch (JsonParseException | IllegalArgumentException ex) {
                     ResponseHelper.endExchangeWithMessage(
@@ -235,6 +236,19 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         if (content == null) {
             content = new BsonDocument();
         } else if (content.isArray()) {
+            if (context.getType() != RequestContext.TYPE.COLLECTION
+                    || (context.getMethod() != RequestContext.METHOD.POST)) {
+
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "request data can be an array only "
+                                + "for POST to collection resources "
+                                + "(bulk post)");
+                return;
+            }
+
             content.asArray().stream().forEach(_doc -> {
                 if (_doc.isDocument()) {
                     BsonValue _id = _doc.asDocument().get(_ID);
@@ -242,7 +256,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                     try {
                         checkIdType(_doc.asDocument());
                     } catch (UnsupportedDocumentIdException udie) {
-                        String errMsg = "the type of _id in content body"
+                        String errMsg = "the type of _id in request data"
                                 + " is not supported: "
                                 + (_id == null
                                         ? ""
@@ -260,7 +274,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
                     filterJsonContent(_doc.asDocument(), context);
                 } else {
-                    String errMsg = "the content must be either "
+                    String errMsg = "request data must be either "
                             + "an json object or an array of objects";
 
                     ResponseHelper.endExchangeWithMessage(
@@ -278,7 +292,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             try {
                 checkIdType(_content);
             } catch (UnsupportedDocumentIdException udie) {
-                String errMsg = "the type of _id in content body "
+                String errMsg = "the type of _id in request data "
                         + "is not supported: "
                         + (_id == null
                                 ? ""
@@ -453,7 +467,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         return contentTypes == null
                 || contentTypes.isEmpty()
                 || contentTypes.stream().noneMatch(ct -> ct.startsWith(Representation.HAL_JSON_MEDIA_TYPE)
-                        || ct.startsWith(Representation.JSON_MEDIA_TYPE));
+                || ct.startsWith(Representation.JSON_MEDIA_TYPE));
     }
 
     /**
@@ -467,7 +481,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         return contentTypes == null
                 || contentTypes.isEmpty()
                 || contentTypes.stream().noneMatch(ct -> ct.startsWith(Representation.APP_FORM_URLENCODED_TYPE)
-                        || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE));
+                || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE));
     }
 
     /**
