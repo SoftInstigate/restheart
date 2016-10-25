@@ -143,13 +143,13 @@ public class NamedSingletonsFactory {
         Optional op = CACHE.get(group + SEPARATOR + name);
 
         if (op == null) {
-            throw new IllegalArgumentException("no singleton configured with name : " + name);
+            throw new IllegalArgumentException("no singleton configured with name: " + name);
         }
         
         if (op.isPresent()) {
             return op.get();
         } else {
-            throw new IllegalArgumentException("no singleton configured with name : " + name);
+            throw new IllegalArgumentException("no singleton configured with name: " + name);
         }
     }
 }

@@ -141,7 +141,7 @@ public class ResponseTransformerMetadataHandler
                                             t.transform(
                                                     exchange,
                                                     context,
-                                                    coll.asDocument(),
+                                                    coll,
                                                     rt.getArgs());
                                         });
                             }
@@ -219,7 +219,7 @@ public class ResponseTransformerMetadataHandler
                                 t.transform(
                                         exchange,
                                         context,
-                                        doc.asDocument(),
+                                        doc,
                                         rt.getArgs());
                             });
                         }
@@ -239,7 +239,7 @@ public class ResponseTransformerMetadataHandler
                                     t.transform(
                                             exchange,
                                             context,
-                                            file.asDocument(),
+                                            file,
                                             rt.getArgs());
                                 });
                             }

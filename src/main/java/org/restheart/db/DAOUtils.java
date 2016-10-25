@@ -22,7 +22,6 @@ import com.mongodb.client.MongoCollection;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
-import com.mongodb.client.model.UpdateOneModel;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
 import com.mongodb.client.result.UpdateResult;
@@ -37,6 +36,7 @@ import static org.restheart.utils.RequestHelper.UPDATE_OPERATORS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.mongodb.client.model.Filters.and;
+import com.mongodb.client.model.ReplaceOneModel;
 import java.util.Optional;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -260,7 +260,7 @@ public class DAOUtils {
                         filter = and(filter, shardKeys);
                     }
 
-                    updates.add(new UpdateOneModel<>(
+                    updates.add(new ReplaceOneModel<>(
                             filter,
                             getUpdateDocument(document),
                             new UpdateOptions().upsert(true)
