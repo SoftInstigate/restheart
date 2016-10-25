@@ -117,13 +117,13 @@ public class RequestTransformerMetadataHandler
                     t.transform(
                             exchange,
                             context,
-                            context.getContent().asDocument(),
+                            context.getContent(),
                             rt.getArgs());
                 } else {
                     t.transform(
                             exchange,
                             context,
-                            context.getContent().asDocument(),
+                            context.getContent(),
                             rt.getArgs());
                 }
             }
