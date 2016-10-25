@@ -20,7 +20,6 @@ package org.restheart.handlers.metadata;
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import java.util.List;
-import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.hal.metadata.InvalidMetadataException;
 import org.restheart.hal.metadata.singletons.Transformer;
@@ -79,22 +78,12 @@ public class TransformerHandler extends PipedHttpHandler {
             HttpServerExchange exchange, 
             RequestContext context) 
             throws InvalidMetadataException {
-        if (context.getContent() != null
-                && !(context.getContent().isDocument())) {
-            throw new RuntimeException(
-                    "this hanlder only supports content of type json object; "
-                            + "content type: " + context
-                                    .getContent()
-                                    .getBsonType()
-                                    .name());
-        }
-
         BsonValue data;
 
         if (context.getMethod() == GET) {
             data = context.getResponseContent();
         } else {
-            data = context.getContent().asDocument();
+            data = context.getContent();
         }
 
         transformers.stream().forEachOrdered(
