@@ -28,6 +28,10 @@ ajp-port: 8009
 
 instance-name: integration-test
 
+#### default representation format (PLAIN_JSON or HAL)
+
+default-representation-format: HAL
+
 #### SSL Configuration
 
 # Configure the keystore to enable the https listener.

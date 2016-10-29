@@ -35,31 +35,53 @@ public class PlainJsonTransformer implements Transformer {
             RequestContext context,
             BsonValue contentToTransform,
             BsonValue args) {
-        if (!exchange.getQueryParameters().containsKey("pj")) {
+        if (context.getRepresentationFormat()
+                != RequestContext.REPRESENTATION_FORMAT.PJ
+                && context.getRepresentationFormat()
+                != RequestContext.REPRESENTATION_FORMAT.PLAIN_JSON) {
             return;
         }
+
+        BsonValue root;
 
         context.setResponseContentType(Representation.JSON_MEDIA_TYPE);
 
         if (contentToTransform == null) {
             context.setResponseContent(new BsonArray());
-        } else if (contentToTransform.isDocument()
+        } else if (contentToTransform != null
+                && contentToTransform.isDocument()
                 && contentToTransform.asDocument().containsKey("_embedded")) {
             BsonDocument embedded = contentToTransform
                     .asDocument()
                     .get("_embedded")
                     .asDocument();
 
-            BsonArray elements = new BsonArray();
+            BsonArray _embedded = new BsonArray();
 
-            addElements(elements, embedded, "rh:doc");
-            addElements(elements, embedded, "rh:file");
-            addElements(elements, embedded, "rh:bucket");
-            addElements(elements, embedded, "rh:db");
-            addElements(elements, embedded, "rh:coll");
-            addElements(elements, embedded, "rh:index");
+            addElements(_embedded, embedded, "rh:doc");
+            addElements(_embedded, embedded, "rh:file");
+            addElements(_embedded, embedded, "rh:bucket");
+            addElements(_embedded, embedded, "rh:db");
+            addElements(_embedded, embedded, "rh:coll");
+            addElements(_embedded, embedded, "rh:index");
 
-            context.setResponseContent(elements);
+            if (context.isNoProps()) {
+                context.setResponseContent(_embedded);
+            } else {
+                BsonDocument responseContent = new BsonDocument();
+                
+                contentToTransform.asDocument().keySet().stream()
+                        .filter(key -> !"_embedded".equals(key)
+                        && !"_links".equals(key))
+                        .forEach(key -> responseContent
+                        .append(key, contentToTransform.asDocument()
+                                .get(key)));
+
+                responseContent.append("_embedded", _embedded);
+                
+                context.setResponseContent(responseContent);
+            }
+
         } else {
             context.setResponseContent(new BsonArray());
         }
@@ -69,8 +91,8 @@ public class PlainJsonTransformer implements Transformer {
         if (embedded.containsKey(ns)) {
             elements.addAll(
                     embedded
-                    .get(ns)
-                    .asArray());
+                            .get(ns)
+                            .asArray());
         }
     }
 }

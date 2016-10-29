@@ -28,6 +28,10 @@ ajp-port: 8009
 
 instance-name: default
 
+#### default representation format (PLAIN_JSON or HAL)
+
+default-representation-format: PLAIN_JSON
+
 #### SSL Configuration
 
 # Configure the keystore to enable the https listener.

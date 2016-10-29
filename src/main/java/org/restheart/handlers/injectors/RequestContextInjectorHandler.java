@@ -25,6 +25,7 @@ import java.util.Optional;
 import org.bson.BSONObject;
 import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
+import org.restheart.Bootstrapper;
 import org.restheart.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.hal.metadata.AggregationPipeline;
@@ -44,6 +45,7 @@ import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
 import org.restheart.handlers.RequestContext.METHOD;
+import org.restheart.handlers.RequestContext.REPRESENTATION_FORMAT;
 import org.restheart.handlers.RequestContext.TYPE;
 import static org.restheart.handlers.RequestContext.SHARDKEY_QPARAM_KEY;
 
@@ -135,7 +137,8 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             return;
         }
 
-        Deque<String> __pagesize = exchange.getQueryParameters().get(PAGESIZE_QPARAM_KEY);
+        Deque<String> __pagesize = exchange.getQueryParameters()
+                .get(PAGESIZE_QPARAM_KEY);
 
         int page = 1; // default page
         int pagesize = 100; // default pagesize
@@ -164,7 +167,8 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             rcontext.setPagesize(pagesize);
         }
 
-        Deque<String> __page = exchange.getQueryParameters().get(PAGE_QPARAM_KEY);
+        Deque<String> __page = exchange.getQueryParameters()
+                .get(PAGE_QPARAM_KEY);
 
         if (__page != null && !(__page.isEmpty())) {
             try {
@@ -327,11 +331,11 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             return;
         }
 
-        // get and check qarvs parameter
-        Deque<String> dqvars = exchange.getQueryParameters().get(RequestContext.AGGREGATION_VARIABLES_QPARAM_KEY);
+        // get and check avars parameter
+        Deque<String> avars = exchange.getQueryParameters().get(RequestContext.AGGREGATION_VARIABLES_QPARAM_KEY);
 
-        if (dqvars != null) {
-            Optional<String> _qvars = dqvars.stream().findFirst();
+        if (avars != null) {
+            Optional<String> _qvars = avars.stream().findFirst();
 
             if (!_qvars.isPresent()) {
                 ResponseHelper.endExchangeWithMessage(
@@ -373,6 +377,35 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             }
         }
 
+        // get and check rep parameter (representation format)
+        Deque<String> __rep = exchange
+                .getQueryParameters()
+                .get(RequestContext.REPRESENTATION_FORMAT_KEY);
+        
+        // default value
+        REPRESENTATION_FORMAT rep = Bootstrapper
+                .getConfiguration()
+                .getDefaultRepresentationFormat();
+
+        if (__rep != null && !__rep.isEmpty()) {
+            String _rep = __rep.getFirst();
+
+            if (_rep != null && !_rep.isEmpty()) {
+                try {
+                    rep = REPRESENTATION_FORMAT.valueOf(_rep.trim().toUpperCase());
+                } catch (IllegalArgumentException iae) {
+                    ResponseHelper.endExchangeWithMessage(
+                            exchange,
+                            context,
+                            HttpStatus.SC_BAD_REQUEST,
+                            "illegal rep paramenter (must be PLAIN_JSON, PJ or HAL)");
+                    return;
+                }
+            }
+        }
+        
+        rcontext.setRepresentationFormat(rep);
+        
         // get and check eager parameter
         Deque<String> __eager = exchange.getQueryParameters().get(EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY);
 
