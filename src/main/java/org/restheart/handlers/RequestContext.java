@@ -89,6 +89,12 @@ public class RequestContext {
         BOOLEAN     // boolean
     }
 
+    public enum REPRESENTATION_FORMAT {
+        PLAIN_JSON, // Plain Json
+        PJ, // Alias for plain json
+        HAL // Hypertext Application Language
+    }
+
     public enum HAL_MODE {
         FULL, // full mode
         F, // alias for full
@@ -116,6 +122,7 @@ public class RequestContext {
     public static final String ETAG_CHECK_QPARAM_KEY = "checkEtag";
     public static final String SHARDKEY_QPARAM_KEY = "shardkey";
     public static final String NO_PROPS_KEY = "np";
+    public static final String REPRESENTATION_FORMAT_KEY = "rep";
 
     // matadata
     public static final String ETAG_DOC_POLICY_METADATA_KEY = "etagDocPolicy";
@@ -179,6 +186,9 @@ public class RequestContext {
     private Deque<String> keys = null;
     private Deque<String> sortBy = null;
     private DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OID;
+
+    private REPRESENTATION_FORMAT representationFormat;
+
     private BsonValue documentId;
 
     private String mappedUri = null;
@@ -594,6 +604,21 @@ public class RequestContext {
      */
     public void setPagesize(int pagesize) {
         this.pagesize = pagesize;
+    }
+    
+    /**
+     * @return the representationFormat
+     */
+    public REPRESENTATION_FORMAT getRepresentationFormat() {
+        return representationFormat;
+    }
+
+    /**
+     *  sets representationFormat
+     */
+    public void setRepresentationFormat(
+            REPRESENTATION_FORMAT representationFormat) {
+        this.representationFormat = representationFormat;
     }
 
     /**
@@ -1095,7 +1120,7 @@ public class RequestContext {
                 try {
                     policy = ETAG_CHECK_POLICY.valueOf(
                             _policy.asString().getValue()
-                            .toUpperCase());
+                                    .toUpperCase());
                 } catch (IllegalArgumentException iae) {
                     policy = null;
                 }
@@ -1135,7 +1160,7 @@ public class RequestContext {
                 try {
                     policy = ETAG_CHECK_POLICY.valueOf(
                             _policy.asString().getValue()
-                            .toUpperCase());
+                                    .toUpperCase());
                 } catch (IllegalArgumentException iae) {
                     policy = null;
                 }
