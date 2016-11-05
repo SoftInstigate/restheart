@@ -96,7 +96,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
             String errMsg = context.getDocumentId() == null
                     ? " does not exist"
                     : " ".concat(JsonUtils.getIdAsString(
-                            context.getDocumentId()))
+                            context.getDocumentId(), true))
                     .concat(" does not exist");
 
             if (null != context.getType()) {

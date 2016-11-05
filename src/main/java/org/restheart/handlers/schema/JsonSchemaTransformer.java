@@ -47,9 +47,6 @@ public class JsonSchemaTransformer implements Transformer {
             RequestContext context,
             final BsonValue contentToTransform,
             BsonValue args) {
-        BsonDocument content
-                = context.getContent().asDocument();
-
         BsonDocument _contentToTransform
                 = contentToTransform.asDocument();
 
@@ -58,6 +55,13 @@ public class JsonSchemaTransformer implements Transformer {
                 unescapeSchema(_contentToTransform);
             } else if (context.getMethod() == RequestContext.METHOD.PUT
                     || context.getMethod() == RequestContext.METHOD.PATCH) {
+                BsonDocument content;
+
+                if (context.getContent() != null) {
+                    content = context.getContent().asDocument();
+                } else {
+                    content = new BsonDocument();
+                }
 
                 // generate id as specs mandates
                 SchemaStoreURL uri = new SchemaStoreURL(
@@ -74,6 +78,14 @@ public class JsonSchemaTransformer implements Transformer {
             }
         } else if (context.getType() == RequestContext.TYPE.SCHEMA_STORE) {
             if (context.getMethod() == RequestContext.METHOD.POST) {
+                BsonDocument content;
+
+                if (context.getContent() != null) {
+                    content = context.getContent().asDocument();
+                } else {
+                    content = new BsonDocument();
+                }
+                
                 // generate id as specs mandates
                 BsonValue schemaId;
 
@@ -107,7 +119,7 @@ public class JsonSchemaTransformer implements Transformer {
 
                     if (_embedded.isDocument()
                             && _embedded.asDocument()
-                            .containsKey("rh:schema")) {
+                                    .containsKey("rh:schema")) {
 
                         // execute the logic on children documents
                         BsonValue docs = _embedded
