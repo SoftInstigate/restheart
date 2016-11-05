@@ -257,7 +257,7 @@ public class JsonUtils {
                             + " path tokens cannot be empty strings");
                 }
             }
-        } else if (json.isNull()){
+        } else if (json.isNull()) {
             // if value is null return an empty optional
             ArrayList<Optional<BsonValue>> ret = new ArrayList<>();
             ret.add(Optional.empty());
@@ -563,7 +563,7 @@ public class JsonUtils {
             // get next (c) and next-next character (cc)
 
             char c = jsonString.charAt(i);
-            String cc = jsonString.substring(i, 
+            String cc = jsonString.substring(i,
                     Math.min(i + 2, jsonString.length()));
 
             // big switch is by what mode we're in (in_string etc.)
@@ -587,19 +587,19 @@ public class JsonUtils {
                     ++i;
                 }
             } else // we're outside of the special modes, so look for mode openers (comment start, string start)
-             if (cc.equals("/*")) {
-                    in_multiline_comment = true;
-                    ++i;
-                } else if (cc.equals("//")) {
-                    in_singleline_comment = true;
-                    ++i;
-                } else if (c == '"' || c == '\'') {
-                    in_string = true;
-                    string_opener = c;
-                    out.append(c);
-                } else if (!Character.isWhitespace(c)) {
-                    out.append(c);
-                }
+            if (cc.equals("/*")) {
+                in_multiline_comment = true;
+                ++i;
+            } else if (cc.equals("//")) {
+                in_singleline_comment = true;
+                ++i;
+            } else if (c == '"' || c == '\'') {
+                in_string = true;
+                string_opener = c;
+                out.append(c);
+            } else if (!Character.isWhitespace(c)) {
+                out.append(c);
+            }
         }
         return out.toString();
     }
@@ -681,26 +681,33 @@ public class JsonUtils {
             return json;
         } else {
             BsonDocument doc = new BsonDocument("x", bson);
-            
+
             String ret = doc.toJson();
-            
+
             ret = ret.replaceFirst("\\{", "");
             ret = ret.replaceFirst("\"x\"", "");
             ret = ret.replaceFirst(":", "");
             int index = ret.lastIndexOf("}");
             ret = ret.substring(0, index);
-            
+
             return ret;
         }
     }
-    
-    public static String getIdAsString(BsonValue id)
-            throws UnsupportedDocumentIdException {
+
+    /**
+     *
+     * @param id
+     * @param quote
+     * @return the String representation of the id
+     */
+    public static String getIdAsString(BsonValue id, boolean quote) {
         if (id == null) {
             return null;
         } else if (id.isString()) {
-            return "'" + id.asString().getValue() + "'";
-        }  else if (id.isObjectId()) {
+            return quote
+                    ? "'" + id.asString().getValue() + "'"
+                    : id.asString().getValue();
+        } else if (id.isObjectId()) {
             return id.asObjectId().getValue().toString();
         } else {
             return JsonUtils.minify(JsonUtils.toJson(id)

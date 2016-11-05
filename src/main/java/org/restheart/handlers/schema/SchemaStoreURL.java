@@ -20,14 +20,12 @@ package org.restheart.handlers.schema;
 import java.util.Objects;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.utils.JsonUtils;
 
 /**
  *
- * if the id of the schema is a valid SchemaStoreURLm the schema can be loaded
- * from the restheart schema store (querying mongodb with caching and avoiding
- * the http overhead)
+ * if the id of the schema is a valid SchemaStoreURL it can be loaded from the
+ * schema store (querying mongodb with caching and avoiding the http overhead)
  *
  * the format is:
  *
@@ -85,11 +83,7 @@ public class SchemaStoreURL {
     public String toString() {
         String sid;
 
-        try {
-            sid = JsonUtils.getIdAsString(schemaId);
-        } catch (UnsupportedDocumentIdException uide) {
-            sid = schemaId.toString();
-        }
+        sid = JsonUtils.getIdAsString(schemaId, false);
 
         return SCHEMA_STORE_URL_PREFIX
                 .concat(schemaDb)

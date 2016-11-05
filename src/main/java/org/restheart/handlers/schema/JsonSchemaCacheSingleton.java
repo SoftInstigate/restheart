@@ -135,11 +135,7 @@ public class JsonSchemaCacheSingleton {
         if (Objects.isNull(document)) {
             String sid;
 
-            try {
-                sid = JsonUtils.getIdAsString(schemaId);
-            } catch(UnsupportedDocumentIdException uide) {
-                sid = schemaId.toString();
-            }
+            sid = JsonUtils.getIdAsString(schemaId, false);
 
             throw new JsonSchemaNotFoundException(
                     "schema not found "
