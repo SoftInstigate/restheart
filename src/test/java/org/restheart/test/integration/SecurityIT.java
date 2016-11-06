@@ -78,7 +78,7 @@ public class SecurityIT extends HttpClientAbstactIT {
 
         // *** GET root with silent authorization (no auth challenge must be sent)
         resp = unauthExecutor.execute(Request.Get(rootUri).addHeader(SecurityHandlerDispacher.SILENT_HEADER_KEY, ""));
-        check("check get root unauthorized", resp, HttpStatus.SC_FORBIDDEN);
+        check("check get root unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
 
         resp = unauthExecutor.execute(Request.Get(rootUri).addHeader(SecurityHandlerDispacher.SILENT_HEADER_KEY, ""));
         HttpResponse httpResp = resp.returnResponse();
