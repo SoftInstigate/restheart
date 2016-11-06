@@ -49,12 +49,6 @@ public class SilentBasicAuthenticationMechanism extends BasicAuthenticationMecha
 
     @Override
     public ChallengeResult sendChallenge(HttpServerExchange exchange, SecurityContext securityContext) {
-        String authHeader = exchange.getRequestHeaders().getFirst(AUTHORIZATION);
-
-        if (authHeader == null) {
-            return new ChallengeResult(false); // --> FORBIDDEN
-        } else {
-            return new ChallengeResult(true, UNAUTHORIZED);
-        }
+        return new ChallengeResult(true, UNAUTHORIZED);
     }
 }
