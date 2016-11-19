@@ -137,10 +137,11 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                 new GetCollectionHandler(
                         new TransformerHandler(
                                 new ResponseTransformerMetadataHandler(
-                                        new ResponseSenderHandler(
-                                                new HookMetadataHandler())),
-                                new AggregationTransformer(),
-                                new PlainJsonTransformer())));
+                                        new TransformerHandler(
+                                                new ResponseSenderHandler(
+                                                        new HookMetadataHandler()),
+                                                new PlainJsonTransformer())),
+                                new AggregationTransformer())));
 
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST,
                 new NormalOrBulkDispatcherHandler(
@@ -222,11 +223,11 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         // *** FILES_BUCKET and FILE handlers
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.GET,
                 new GetCollectionHandler(
-                        new TransformerHandler(
-                                new ResponseTransformerMetadataHandler(
+                        new ResponseTransformerMetadataHandler(
+                                new TransformerHandler(
                                         new ResponseSenderHandler(
-                                                new HookMetadataHandler())),
-                                new PlainJsonTransformer())));
+                                                new HookMetadataHandler()),
+                                        new PlainJsonTransformer()))));
 
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.POST,
                 new RequestTransformerMetadataHandler(
@@ -258,21 +259,22 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
         // *** AGGREGATION handler
         putPipedHttpHandler(TYPE.AGGREGATION, METHOD.GET,
                 new GetAggregationHandler(
-                        new TransformerHandler(
                                 new ResponseTransformerMetadataHandler(
+                                        new TransformerHandler(
                                         new ResponseSenderHandler(
-                                                new HookMetadataHandler())),
-                                new PlainJsonTransformer())));
+                                                new HookMetadataHandler()), 
+                                                new PlainJsonTransformer()))));
 
         // *** SCHEMA handlers
         putPipedHttpHandler(TYPE.SCHEMA_STORE, METHOD.GET,
                 new GetCollectionHandler(
                         new TransformerHandler(
                                 new ResponseTransformerMetadataHandler(
+                                        new TransformerHandler(
                                         new ResponseSenderHandler(
-                                                new HookMetadataHandler())),
-                                new JsonSchemaTransformer(),
-                                new PlainJsonTransformer())));
+                                                new HookMetadataHandler()),
+                                        new PlainJsonTransformer())), 
+                                new JsonSchemaTransformer())));
 
         putPipedHttpHandler(TYPE.SCHEMA_STORE, METHOD.PUT,
                 new RequestTransformerMetadataHandler(

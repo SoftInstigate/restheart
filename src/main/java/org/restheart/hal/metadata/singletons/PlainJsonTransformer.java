@@ -42,8 +42,6 @@ public class PlainJsonTransformer implements Transformer {
             return;
         }
 
-        BsonValue root;
-
         context.setResponseContentType(Representation.JSON_MEDIA_TYPE);
 
         if (contentToTransform == null) {
