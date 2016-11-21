@@ -26,7 +26,6 @@ import org.bson.BsonDocument;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.hal.Representation;
-import org.restheart.handlers.root.RootRepresentationFactory;
 import org.restheart.utils.ResponseHelper;
 
 /**
@@ -61,6 +60,11 @@ public class GetDBHandler extends PipedHttpHandler {
             HttpServerExchange exchange,
             RequestContext context)
             throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         List<String> colls = getDatabase()
                 .getCollectionNames(context.getDBName());
 
@@ -88,9 +92,6 @@ public class GetDBHandler extends PipedHttpHandler {
 
         ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
 
-        // call the next handler if existing
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
+        next(exchange, context);
     }
 }

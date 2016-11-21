@@ -34,8 +34,8 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ErrorHandler implements HttpHandler {
-
-    private final HttpHandler next;
+    private HttpHandler next;
+    private ResponseSenderHandler sender = new ResponseSenderHandler(null);
 
     private final Logger LOGGER = LoggerFactory.getLogger(ErrorHandler.class);
 
@@ -48,58 +48,81 @@ public class ErrorHandler implements HttpHandler {
         this.next = next;
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
+    public void handleRequest(
+            HttpServerExchange exchange)
+            throws Exception {
         try {
             next.handleRequest(exchange);
         } catch (MongoTimeoutException nte) {
+            RequestContext errorContext = new RequestContext(exchange, "/", "_error");
+            
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    null,
+                    errorContext,
                     HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "Timeout connecting to MongoDB, is it running?", nte);
+            
+            sender.handleRequest(exchange, errorContext);
         } catch (MongoBulkWriteException mce) {
             MongoBulkWriteException bmce = (MongoBulkWriteException) mce;
 
             BulkResultRepresentationFactory rf = new BulkResultRepresentationFactory();
 
             Representation rep = rf.getRepresentation(exchange, bmce);
+            
+            RequestContext errorContext = new RequestContext(exchange, "/", "_error");
 
-            exchange.setStatusCode(HttpStatus.SC_MULTI_STATUS);
+            ResponseHelper.endExchangeWithRepresentation(
+                    exchange,
+                    errorContext,
+                    HttpStatus.SC_MULTI_STATUS,
+                    rep);
 
-            rf.sendRepresentation(exchange, null, rep);
-
-            exchange.endExchange();
+            sender.handleRequest(exchange, errorContext);
         } catch (MongoException mce) {
             int httpCode = ResponseHelper.getHttpStatusFromErrorCode(mce.getCode());
 
             LOGGER.error("Error handling the request", mce);
 
+            RequestContext errorContext = new RequestContext(exchange, "/", "_error");
+            
             if (httpCode >= 500
                     && mce.getMessage() != null
                     && !mce.getMessage().trim().isEmpty()) {
 
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        null,
+                        errorContext,
                         httpCode,
                         mce.getMessage());
+
             } else {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        null,
+                        errorContext,
                         httpCode,
                         ResponseHelper.getMessageFromErrorCode(mce.getCode()));
             }
 
+            sender.handleRequest(exchange, errorContext);
         } catch (Throwable t) {
             LOGGER.error("Error handling the request", t);
+            
+            RequestContext errorContext = new RequestContext(exchange, "/", "_error");
 
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    null,
+                    errorContext,
                     HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "Error handling the request, see log for more information", t);
+            sender.handleRequest(exchange, errorContext);
         }
     }
 }

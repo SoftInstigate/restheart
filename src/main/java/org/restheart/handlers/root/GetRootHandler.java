@@ -103,8 +103,6 @@ public class GetRootHandler extends PipedHttpHandler {
         context.setResponseContentType(Representation.HAL_JSON_MEDIA_TYPE);
         context.setResponseStatusCode(HttpStatus.SC_OK);
 
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
+        next(exchange, context);
     }
 }

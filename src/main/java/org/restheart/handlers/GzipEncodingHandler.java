@@ -33,6 +33,7 @@ import java.util.Arrays;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GzipEncodingHandler extends EncodingHandler {
+    private ResponseSenderHandler sender = new ResponseSenderHandler(null);
 
     private boolean forceCompression = false;
 
@@ -60,11 +61,15 @@ public class GzipEncodingHandler extends EncodingHandler {
                 }
             }
 
+            RequestContext errorContext = new RequestContext(exchange, "/", "_error");
+            
             ResponseHelper.endExchangeWithMessage(
                     exchange, 
-                    null,
+                    errorContext,
                     HttpStatus.SC_BAD_REQUEST, 
                     "Accept-Encoding header must include gzip");
+            
+            sender.handleRequest(exchange, errorContext);
         } else {
             super.handleRequest(exchange);
         }

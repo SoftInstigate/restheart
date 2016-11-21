@@ -24,7 +24,6 @@ import org.restheart.hal.Representation;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
@@ -32,7 +31,6 @@ import org.bson.BsonString;
 import org.restheart.db.BulkOperationResult;
 import org.restheart.hal.AbstractRepresentationFactory;
 import org.restheart.hal.Link;
-import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 
@@ -174,21 +172,5 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
     @Override
     public Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<BsonDocument> embeddedData, long size) throws IllegalQueryParamenterException {
         throw new UnsupportedOperationException("Not supported."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    /**
-     *
-     * @param exchange
-     * @param context
-     * @param rep
-     */
-    public void sendRepresentation(HttpServerExchange exchange, RequestContext context, Representation rep) {
-        if (context != null
-                && context.getWarnings() != null) {
-            context.getWarnings().forEach(w -> rep.addWarning(w));
-        }
-
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
-        exchange.getResponseSender().send(rep.toString());
     }
 }

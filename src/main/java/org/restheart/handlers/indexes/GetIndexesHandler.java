@@ -58,6 +58,11 @@ public class GetIndexesHandler extends PipedHttpHandler {
             HttpServerExchange exchange,
             RequestContext context)
             throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         List<BsonDocument> indexes = getDatabase()
                 .getCollectionIndexes(
                         context.getDBName(),
@@ -75,8 +80,6 @@ public class GetIndexesHandler extends PipedHttpHandler {
         context.setResponseContentType(Representation.HAL_JSON_MEDIA_TYPE);
         context.setResponseStatusCode(HttpStatus.SC_OK);
 
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
+        next(exchange, context);
     }
 }

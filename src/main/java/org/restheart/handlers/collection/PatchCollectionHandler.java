@@ -62,12 +62,18 @@ public class PatchCollectionHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         if (context.getDBName().isEmpty()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "wrong request, db name cannot be empty");
+            next(exchange, context);
             return;
         }
 
@@ -79,6 +85,7 @@ public class PatchCollectionHandler extends PipedHttpHandler {
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "wrong request, collection name cannot be "
                     + "empty or start with _");
+            next(exchange, context);
             return;
         }
 
@@ -90,6 +97,7 @@ public class PatchCollectionHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
+            next(exchange, context);
             return;
         }
 
@@ -100,6 +108,7 @@ public class PatchCollectionHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
+            next(exchange, context);
             return;
         }
 
@@ -109,6 +118,7 @@ public class PatchCollectionHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
+            next(exchange, context);
             return;
         }
 
@@ -125,6 +135,7 @@ public class PatchCollectionHandler extends PipedHttpHandler {
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong relationships definition. "
                         + ex.getMessage(), ex);
+                next(exchange, context);
                 return;
             }
         }
@@ -140,6 +151,7 @@ public class PatchCollectionHandler extends PipedHttpHandler {
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong representation transformer definition. "
                         + ex.getMessage(), ex);
+                next(exchange, context);
                 return;
             }
         }
@@ -155,6 +167,7 @@ public class PatchCollectionHandler extends PipedHttpHandler {
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong schema checker definition. "
                         + ex.getMessage(), ex);
+                next(exchange, context);
                 return;
             }
         }
@@ -182,26 +195,17 @@ public class PatchCollectionHandler extends PipedHttpHandler {
                     HttpStatus.SC_CONFLICT,
                     "The collection's ETag must be provided using the '"
                     + Headers.IF_MATCH + "' header.");
+            next(exchange, context);
             return;
         }
 
-        // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings() != null
-                && !context.getWarnings().isEmpty()) {
-            sendWarnings(result.getHttpCode(), exchange, context);
-        } else {
-            exchange.setStatusCode(result.getHttpCode());
-        }
+        context.setResponseStatusCode(result.getHttpCode());
 
         LocalCachesSingleton.getInstance()
                 .invalidateCollection(
                         context.getDBName(),
                         context.getCollectionName());
 
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
-
-        exchange.endExchange();
+        next(exchange, context);
     }
 }

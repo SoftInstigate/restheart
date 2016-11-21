@@ -47,7 +47,7 @@ public class SecurityHandler extends PipedHttpHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        getNext().handleRequest(exchange, context);
+        next(exchange, context);
     }
 
     private static PipedHttpHandler getSecurityHandlerChain(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager, final boolean challenging) {

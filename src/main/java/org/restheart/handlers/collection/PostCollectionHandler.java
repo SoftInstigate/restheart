@@ -71,6 +71,11 @@ public class PostCollectionHandler extends PipedHttpHandler {
     public void handleRequest(
             HttpServerExchange exchange,
             RequestContext context) throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         BsonValue _content = context.getContent();
 
         if (_content == null) {
@@ -84,6 +89,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
+            next(exchange, context);
             return;
         }
         
@@ -99,7 +105,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_FORBIDDEN,
                     "reserved resource");
-
+            next(exchange, context);
             return;
         }
 
@@ -115,6 +121,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
                         "_id in content body is mandatory "
                         + "for documents with id type "
                         + context.getDocIdType().name());
+                next(exchange, context);
                 return;
             }
         }
@@ -143,20 +150,11 @@ public class PostCollectionHandler extends PipedHttpHandler {
                     + Headers.IF_MATCH
                     + "' header.");
 
+            next(exchange, context);
             return;
         }
-
-        // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings() != null
-                && !context.getWarnings().isEmpty()) {
-            sendWarnings(result.getHttpCode(), exchange, context);
-        } else {
-            exchange.setStatusCode(result.getHttpCode());
-        }
-
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
+        
+        context.setResponseStatusCode(result.getHttpCode());
 
         // insert the Location handler for new documents
         // note, next handlers might change the status code
@@ -169,6 +167,6 @@ public class PostCollectionHandler extends PipedHttpHandler {
                                     result.getNewData().get("_id")));
         }
 
-        exchange.endExchange();
+        next(exchange, context);
     }
 }

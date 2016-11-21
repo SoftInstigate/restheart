@@ -82,7 +82,7 @@ public class SecurityInitialHandler extends PipedHttpHandler {
                         programaticMechName);
         
         setSecurityContext(exchange, newContext);
-        getNext().handleRequest(exchange, context);
+        next(exchange, context);
     }
 
     static void setSecurityContext(final HttpServerExchange exchange, final SecurityContext securityContext) {

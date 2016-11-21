@@ -85,7 +85,7 @@ public class CORSHandler extends PipedHttpHandler {
         if (noPipedNext != null) {
             noPipedNext.handleRequest(exchange);
         } else {
-            getNext().handleRequest(exchange, context);
+            next(exchange, context);
         }
     }
     

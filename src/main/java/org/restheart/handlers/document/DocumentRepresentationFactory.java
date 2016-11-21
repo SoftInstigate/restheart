@@ -159,21 +159,6 @@ public class DocumentRepresentationFactory {
         }
     }
 
-    /**
-     *
-     * @param exchange
-     * @param context
-     * @param rep
-     */
-    public void sendRepresentation(HttpServerExchange exchange, RequestContext context, Representation rep) {
-        if (context.getWarnings() != null) {
-            context.getWarnings().forEach(w -> rep.addWarning(w));
-        }
-
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, HAL_JSON_MEDIA_TYPE);
-        exchange.getResponseSender().send(rep.toString());
-    }
-
     private static void addRelationshipsLinks(Representation rep, RequestContext context, BsonDocument data) {
         List<Relationship> rels = null;
 

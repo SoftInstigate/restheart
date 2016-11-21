@@ -73,6 +73,11 @@ public class PutDocumentHandler extends PipedHttpHandler {
             HttpServerExchange exchange,
             RequestContext context)
             throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         BsonValue _content = context.getContent();
 
         if (_content == null) {
@@ -86,6 +91,7 @@ public class PutDocumentHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a josn object");
+            next(exchange, context);
             return;
         }
 
@@ -101,6 +107,7 @@ public class PutDocumentHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "_id in content body is different than id in URL");
+            next(exchange, context);
             return;
         }
 
@@ -131,21 +138,12 @@ public class PutDocumentHandler extends PipedHttpHandler {
                     "The document's ETag must be provided using the '"
                     + Headers.IF_MATCH
                     + "' header");
+            next(exchange, context);
             return;
         }
 
-        // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings() != null
-                && !context.getWarnings().isEmpty()) {
-            sendWarnings(result.getHttpCode(), exchange, context);
-        } else {
-            exchange.setStatusCode(result.getHttpCode());
-        }
+        context.setResponseStatusCode(result.getHttpCode());
 
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
-
-        exchange.endExchange();
+        next(exchange, context);
     }
 }

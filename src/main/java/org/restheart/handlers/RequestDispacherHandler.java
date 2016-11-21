@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.restheart.hal.metadata.singletons.PlainJsonTransformer;
 import org.restheart.handlers.schema.JsonMetaSchemaChecker;
+import static org.restheart.hal.metadata.RepresentationTransformer.PHASE;
 import static org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.aggregation.AggregationTransformer;
@@ -105,43 +106,51 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
         // *** ROOT handlers
         putPipedHttpHandler(TYPE.ROOT, METHOD.GET,
-                new GetRootHandler(
-                        new TransformerHandler(
-                                new ResponseSenderHandler(null),
-                                new PlainJsonTransformer())));
+                new RequestTransformerMetadataHandler(
+                        new GetRootHandler(
+                                new TransformerHandler(
+                                        new ResponseSenderHandler(null),
+                                        PHASE.RESPONSE,
+                                        new PlainJsonTransformer()))));
 
         // *** DB handlers
         putPipedHttpHandler(TYPE.DB, METHOD.GET,
-                new GetDBHandler(
-                        new TransformerHandler(
-                                new ResponseTransformerMetadataHandler(
-                                        new TransformerHandler(
-                                                new ResponseSenderHandler(null)
-                                        )),
-                                new AggregationTransformer(),
-                                new PlainJsonTransformer())));
+                new RequestTransformerMetadataHandler(
+                        new GetDBHandler(
+                                new TransformerHandler(
+                                        new ResponseTransformerMetadataHandler(
+                                                new ResponseSenderHandler(null)),
+                                        PHASE.RESPONSE,
+                                        new AggregationTransformer(),
+                                        new PlainJsonTransformer()))));
 
         putPipedHttpHandler(TYPE.DB, METHOD.PUT,
                 new RequestTransformerMetadataHandler(
-                        new PutDBHandler()));
+                        new RequestTransformerMetadataHandler(
+                                new PutDBHandler(
+                                        respTransformers()))));
 
         putPipedHttpHandler(TYPE.DB, METHOD.DELETE,
-                new DeleteDBHandler());
+                new RequestTransformerMetadataHandler(
+                        new DeleteDBHandler(
+                                respTransformers())));
 
         putPipedHttpHandler(TYPE.DB, METHOD.PATCH,
                 new RequestTransformerMetadataHandler(
-                        new PatchDBHandler()));
+                        new PatchDBHandler(
+                                respTransformers())));
 
         // *** COLLECTION handlers
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.GET,
-                new GetCollectionHandler(
-                        new TransformerHandler(
+                new RequestTransformerMetadataHandler(
+                        new GetCollectionHandler(
                                 new ResponseTransformerMetadataHandler(
                                         new TransformerHandler(
                                                 new ResponseSenderHandler(
                                                         new HookMetadataHandler()),
-                                                new PlainJsonTransformer())),
-                                new AggregationTransformer())));
+                                                PHASE.RESPONSE,
+                                                new PlainJsonTransformer(),
+                                                new AggregationTransformer())))));
 
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST,
                 new NormalOrBulkDispatcherHandler(
@@ -149,167 +158,189 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                                 new BeforeWriteCheckMetadataHandler(
                                         new PostCollectionHandler(
                                                 new AfterWriteCheckMetadataHandler(
-                                                        new HookMetadataHandler())))),
+                                                        respTransformers())))),
                         new RequestTransformerMetadataHandler(
                                 new BeforeWriteCheckMetadataHandler(
                                         new BulkPostCollectionHandler(
-                                                new HookMetadataHandler())))));
+                                                respTransformers())))));
 
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.PUT,
                 new RequestTransformerMetadataHandler(
-                        new TransformerHandler(new PutCollectionHandler(),
-                                new AggregationTransformer())
-                )
-        );
+                        new TransformerHandler(
+                                new PutCollectionHandler(
+                                        respTransformers()),
+                                PHASE.REQUEST,
+                                new AggregationTransformer())));
 
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.DELETE,
-                new DeleteCollectionHandler());
+                new RequestTransformerMetadataHandler(
+                        new DeleteCollectionHandler(
+                                respTransformers())));
 
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.PATCH,
                 new RequestTransformerMetadataHandler(
-                        new TransformerHandler(new PatchCollectionHandler(),
+                        new TransformerHandler(
+                                new PatchCollectionHandler(
+                                        respTransformers()),
+                                PHASE.REQUEST,
                                 new AggregationTransformer())));
 
         // *** DOCUMENT handlers
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.GET,
-                new GetDocumentHandler(
-                        new ResponseTransformerMetadataHandler(
-                                new ResponseSenderHandler(
-                                        new HookMetadataHandler()))));
+                new RequestTransformerMetadataHandler(
+                        new GetDocumentHandler(
+                                respTransformers())));
 
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PUT,
                 new RequestTransformerMetadataHandler(
                         new BeforeWriteCheckMetadataHandler(
                                 new PutDocumentHandler(
                                         new AfterWriteCheckMetadataHandler(
-                                                new HookMetadataHandler())))));
+                                                respTransformers())))));
 
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.DELETE,
-                new DeleteDocumentHandler(
-                        new HookMetadataHandler()));
+                new RequestTransformerMetadataHandler(
+                        new DeleteDocumentHandler(
+                                respTransformers())));
 
         putPipedHttpHandler(TYPE.DOCUMENT, METHOD.PATCH,
                 new RequestTransformerMetadataHandler(
                         new BeforeWriteCheckMetadataHandler(
                                 new PatchDocumentHandler(
                                         new AfterWriteCheckMetadataHandler(
-                                                new HookMetadataHandler())))));
+                                                respTransformers())))));
 
         // *** BULK_DOCUMENTS handlers, i.e. bulk operations
         putPipedHttpHandler(TYPE.BULK_DOCUMENTS, METHOD.DELETE,
-                new BulkDeleteDocumentsHandler(
-                        new HookMetadataHandler()));
+                new RequestTransformerMetadataHandler(
+                        new BulkDeleteDocumentsHandler(
+                                respTransformers())));
 
         putPipedHttpHandler(TYPE.BULK_DOCUMENTS, METHOD.PATCH,
                 new RequestTransformerMetadataHandler(
                         new BeforeWriteCheckMetadataHandler(
                                 new BulkPatchDocumentsHandler(
-                                        new HookMetadataHandler()))));
+                                        respTransformers()))));
 
         // *** COLLECTION_INDEXES handlers
         putPipedHttpHandler(TYPE.COLLECTION_INDEXES, METHOD.GET,
-                new GetIndexesHandler(
-                        new TransformerHandler(
-                                new ResponseSenderHandler(null),
-                                new PlainJsonTransformer())));
+                new RequestTransformerMetadataHandler(
+                        new GetIndexesHandler(
+                                respTransformers())));
 
         // *** INDEX handlers
         putPipedHttpHandler(TYPE.INDEX, METHOD.PUT,
-                new PutIndexHandler());
+                new RequestTransformerMetadataHandler(
+                        new PutIndexHandler(
+                                respTransformers())));
 
         putPipedHttpHandler(TYPE.INDEX, METHOD.DELETE,
-                new DeleteIndexHandler());
+                new RequestTransformerMetadataHandler(
+                        new DeleteIndexHandler(
+                                respTransformers())));
 
         // *** FILES_BUCKET and FILE handlers
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.GET,
-                new GetCollectionHandler(
-                        new ResponseTransformerMetadataHandler(
-                                new TransformerHandler(
-                                        new ResponseSenderHandler(
-                                                new HookMetadataHandler()),
-                                        new PlainJsonTransformer()))));
+                new RequestTransformerMetadataHandler(
+                        new GetCollectionHandler(
+                                respTransformers())));
 
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.POST,
                 new RequestTransformerMetadataHandler(
                         new BeforeWriteCheckMetadataHandler(
                                 new PostBucketHandler(
-                                        new HookMetadataHandler()))));
+                                        respTransformers()))));
 
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.PUT,
                 new RequestTransformerMetadataHandler(
-                        new PutBucketHandler()));
+                        new PutBucketHandler(
+                                respTransformers())));
 
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.DELETE,
-                new DeleteBucketHandler());
+                new RequestTransformerMetadataHandler(
+                        new DeleteBucketHandler(
+                                respTransformers())));
 
         putPipedHttpHandler(TYPE.FILE, METHOD.GET,
-                new GetFileHandler(
-                        new ResponseTransformerMetadataHandler(
-                                new ResponseSenderHandler(
-                                        new HookMetadataHandler()))));
+                new RequestTransformerMetadataHandler(
+                        new GetFileHandler(
+                                respTransformers())));
 
         putPipedHttpHandler(TYPE.FILE_BINARY, METHOD.GET,
                 new GetFileBinaryHandler(
                         new HookMetadataHandler()));
 
         putPipedHttpHandler(TYPE.FILE, METHOD.DELETE,
-                new DeleteFileHandler(
-                        new HookMetadataHandler()));
+                new RequestTransformerMetadataHandler(
+                        new DeleteFileHandler(
+                                respTransformers())));
 
         // *** AGGREGATION handler
         putPipedHttpHandler(TYPE.AGGREGATION, METHOD.GET,
-                new GetAggregationHandler(
-                                new ResponseTransformerMetadataHandler(
-                                        new TransformerHandler(
-                                        new ResponseSenderHandler(
-                                                new HookMetadataHandler()), 
-                                                new PlainJsonTransformer()))));
+                new RequestTransformerMetadataHandler(
+                        new GetAggregationHandler(
+                                respTransformers())));
 
         // *** SCHEMA handlers
         putPipedHttpHandler(TYPE.SCHEMA_STORE, METHOD.GET,
-                new GetCollectionHandler(
-                        new TransformerHandler(
-                                new ResponseTransformerMetadataHandler(
-                                        new TransformerHandler(
-                                        new ResponseSenderHandler(
-                                                new HookMetadataHandler()),
-                                        new PlainJsonTransformer())), 
-                                new JsonSchemaTransformer())));
+                new RequestTransformerMetadataHandler(
+                        new GetCollectionHandler(
+                                new TransformerHandler(
+                                        respTransformers(),
+                                        PHASE.REQUEST,
+                                        new JsonSchemaTransformer()))));
 
         putPipedHttpHandler(TYPE.SCHEMA_STORE, METHOD.PUT,
                 new RequestTransformerMetadataHandler(
-                        new PutCollectionHandler()));
+                        new PutCollectionHandler(
+                                respTransformers())));
 
         putPipedHttpHandler(TYPE.SCHEMA_STORE, METHOD.POST,
-                new CheckHandler(new TransformerHandler(
-                        new PostCollectionHandler(
-                                new HookMetadataHandler()),
-                        new JsonSchemaTransformer()),
-                        new JsonMetaSchemaChecker()));
+                new RequestTransformerMetadataHandler(
+                        new CheckHandler(
+                                new TransformerHandler(
+                                        new PostCollectionHandler(
+                                                respTransformers()),
+                                        PHASE.REQUEST,
+                                        new JsonSchemaTransformer()),
+                                new JsonMetaSchemaChecker())));
 
         putPipedHttpHandler(TYPE.SCHEMA_STORE, METHOD.DELETE,
-                new DeleteCollectionHandler());
+                new RequestTransformerMetadataHandler(
+                        new DeleteCollectionHandler(
+                                respTransformers())));
 
         putPipedHttpHandler(TYPE.SCHEMA, METHOD.GET,
-                new GetDocumentHandler(
-                        new TransformerHandler(
-                                new ResponseTransformerMetadataHandler(
-                                        new ResponseSenderHandler(
-                                                new HookMetadataHandler())),
-                                new JsonSchemaTransformer())));
+                new RequestTransformerMetadataHandler(
+                        new GetDocumentHandler(
+                                new TransformerHandler(
+                                        respTransformers(),
+                                        PHASE.REQUEST,
+                                        new JsonSchemaTransformer()))));
 
         putPipedHttpHandler(TYPE.SCHEMA, METHOD.PUT,
-                new CheckHandler(
-                        new TransformerHandler(
-                                new RequestTransformerMetadataHandler(
+                new RequestTransformerMetadataHandler(
+                        new CheckHandler(
+                                new TransformerHandler(
                                         new PutDocumentHandler(
-                                                new HookMetadataHandler())),
-                                new JsonSchemaTransformer()),
-                        new JsonMetaSchemaChecker()));
+                                                respTransformers()),
+                                        PHASE.REQUEST,
+                                        new JsonSchemaTransformer()),
+                                new JsonMetaSchemaChecker())));
 
         putPipedHttpHandler(TYPE.SCHEMA, METHOD.DELETE,
-                new DeleteDocumentHandler(
-                        new HookMetadataHandler()));
+                new RequestTransformerMetadataHandler(
+                        new DeleteDocumentHandler(
+                                respTransformers())));
+    }
+
+    private PipedHttpHandler respTransformers() {
+        return new ResponseTransformerMetadataHandler(
+                new TransformerHandler(
+                        new ResponseSenderHandler(
+                                new HookMetadataHandler()),
+                        PHASE.RESPONSE,
+                        new PlainJsonTransformer()));
     }
 
     /**
@@ -384,7 +415,8 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
             LOGGER.debug(
                     "This is a bad request: returning a <{}> HTTP code",
                     HttpStatus.SC_BAD_REQUEST);
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_BAD_REQUEST);
+            exchange.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+            exchange.endExchange();
             return;
         }
 
@@ -392,7 +424,8 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
             LOGGER.debug(
                     "This method is not allowed: returning a <{}> HTTP code",
                     HttpStatus.SC_METHOD_NOT_ALLOWED);
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
+            exchange.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            exchange.endExchange();
             return;
         }
 
@@ -405,6 +438,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_FORBIDDEN,
                     "reserved resource");
+            next(exchange, context);
             return;
         }
 
@@ -419,7 +453,8 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
             LOGGER.error(
                     "Can't find PipedHttpHandler({}, {})",
                     context.getType(), context.getMethod());
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
+            exchange.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            exchange.endExchange();
         }
     }
 }

@@ -67,6 +67,11 @@ public class BulkDeleteDocumentsHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         BulkOperationResult result = this.documentDAO
                 .bulkDeleteDocuments(
                         context.getDBName(),
@@ -76,21 +81,14 @@ public class BulkDeleteDocumentsHandler extends PipedHttpHandler {
 
         context.setDbOperationResult(result);
 
-        if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            //sendWarnings(result.getHttpCode(), exchange, context);
-        } else {
-            exchange.setStatusCode(result.getHttpCode());
-        }
+        context.setResponseStatusCode(result.getHttpCode());
 
         BulkResultRepresentationFactory bprf = new BulkResultRepresentationFactory();
 
-        bprf.sendRepresentation(exchange, context,
-                bprf.getRepresentation(exchange, context, result));
+        context.setResponseContent(bprf.getRepresentation(
+                exchange, context, result)
+                .asBsonDocument());
 
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
-
-        exchange.endExchange();
+        next(exchange, context);
     }
 }

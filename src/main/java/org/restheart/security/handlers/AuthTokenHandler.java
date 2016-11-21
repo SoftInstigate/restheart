@@ -60,7 +60,8 @@ public class AuthTokenHandler extends PipedHttpHandler {
                     .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, DELETE")
                     .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
 
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_OK);
+            exchange.setStatusCode(HttpStatus.SC_OK);
+            exchange.endExchange();
             return;
         }
 
@@ -69,7 +70,8 @@ public class AuthTokenHandler extends PipedHttpHandler {
                 || exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null
                 || !("/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName())
                 .equals(exchange.getRequestURI())) {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_FORBIDDEN);
+            exchange.setStatusCode(HttpStatus.SC_FORBIDDEN);
+            exchange.endExchange();
             return;
         }
 
@@ -93,9 +95,11 @@ public class AuthTokenHandler extends PipedHttpHandler {
             AuthTokenIdentityManager.getInstance().getCachedAccounts()
                     .invalidate(exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
             removeAuthTokens(exchange);
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NO_CONTENT);
+            exchange.setStatusCode(HttpStatus.SC_NO_CONTENT);
+            exchange.endExchange();
         } else {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_METHOD_NOT_ALLOWED);
+            exchange.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            exchange.endExchange();
         }
     }
 

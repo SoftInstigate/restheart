@@ -53,7 +53,8 @@ public class RequestTransformerMetadataHandler
 
     @Override
     boolean canCollRepresentationTransformersAppy(RequestContext context) {
-        return ((context.getMethod() == RequestContext.METHOD.PUT
+        return (!context.isInError()
+                && (context.getMethod() == RequestContext.METHOD.PUT
                 || context.getMethod() == RequestContext.METHOD.PATCH
                 || context.getMethod() == RequestContext.METHOD.POST)
                 && (context.getType() == RequestContext.TYPE.DOCUMENT
@@ -64,13 +65,14 @@ public class RequestTransformerMetadataHandler
                 || context.getType() == RequestContext.TYPE.SCHEMA)
                 && context.getCollectionProps() != null
                 && context.getCollectionProps()
-                .containsKey(
-                        RepresentationTransformer.RTS_ELEMENT_NAME));
+                        .containsKey(
+                                RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
     boolean canDBRepresentationTransformersAppy(RequestContext context) {
-        return ((context.getMethod() == RequestContext.METHOD.PUT
+        return (!context.isInError()
+                && (context.getMethod() == RequestContext.METHOD.PUT
                 || context.getMethod() == RequestContext.METHOD.PATCH)
                 && (context.getType() == RequestContext.TYPE.DB
                 || context.getType() == RequestContext.TYPE.COLLECTION
@@ -78,14 +80,14 @@ public class RequestTransformerMetadataHandler
                 || context.getType() == RequestContext.TYPE.SCHEMA_STORE)
                 && context.getDbProps() != null
                 && context.getDbProps()
-                .containsKey(
-                        RepresentationTransformer.RTS_ELEMENT_NAME));
+                        .containsKey(
+                                RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
     void enforceDbRepresentationTransformLogic(
-            HttpServerExchange exchange, 
-            RequestContext context) 
+            HttpServerExchange exchange,
+            RequestContext context)
             throws InvalidMetadataException {
         List<RepresentationTransformer> dbRts
                 = RepresentationTransformer.getFromJson(context.getDbProps());
@@ -112,7 +114,7 @@ public class RequestTransformerMetadataHandler
             }
 
             if (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST) {
-                if (rt.getScope() == RepresentationTransformer.SCOPE.THIS 
+                if (rt.getScope() == RepresentationTransformer.SCOPE.THIS
                         && requestType == RequestContext.TYPE.DB) {
                     t.transform(
                             exchange,

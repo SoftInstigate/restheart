@@ -64,6 +64,11 @@ public class PatchDBHandler extends PipedHttpHandler {
             HttpServerExchange exchange,
             RequestContext context)
             throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         if (context.getDBName().isEmpty()
                 || context.getDBName().startsWith("_")) {
             ResponseHelper.endExchangeWithMessage(
@@ -71,6 +76,7 @@ public class PatchDBHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "wrong request, db name cannot be empty or start with _");
+            next(exchange, context);
             return;
         }
 
@@ -82,6 +88,7 @@ public class PatchDBHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
+            next(exchange, context);
             return;
         }
 
@@ -92,6 +99,7 @@ public class PatchDBHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
+            next(exchange, context);
             return;
         }
 
@@ -109,6 +117,7 @@ public class PatchDBHandler extends PipedHttpHandler {
                         "wrong representation transform logic definition. "
                         + ex.getMessage(),
                         ex);
+                next(exchange, context);
                 return;
             }
         }
@@ -136,23 +145,14 @@ public class PatchDBHandler extends PipedHttpHandler {
                     "The database's ETag must be provided using the '"
                     + Headers.IF_MATCH
                     + "' header.");
+            next(exchange, context);
             return;
         }
 
-        // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings() != null
-                && !context.getWarnings().isEmpty()) {
-            sendWarnings(result.getHttpCode(), exchange, context);
-        } else {
-            exchange.setStatusCode(result.getHttpCode());
-        }
+        context.setResponseStatusCode(result.getHttpCode());
 
         LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());
 
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
-
-        exchange.endExchange();
+        next(exchange, context);
     }
 }

@@ -69,11 +69,16 @@ public class GetAggregationHandler extends PipedHttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange,
             RequestContext context) throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+
         String queryUri = context.getAggregationOperation();
 
         List<AbstractAggregationOperation> aggregations
                 = AbstractAggregationOperation
-                .getFromJson(context.getCollectionProps());
+                        .getFromJson(context.getCollectionProps());
 
         Optional<AbstractAggregationOperation> _query
                 = aggregations.stream().filter(q
@@ -84,6 +89,7 @@ public class GetAggregationHandler extends PipedHttpHandler {
                     exchange,
                     context,
                     HttpStatus.SC_NOT_FOUND, "query does not exist");
+            next(exchange, context);
             return;
         }
 
@@ -111,6 +117,7 @@ public class GetAggregationHandler extends PipedHttpHandler {
                         context,
                         HttpStatus.SC_INTERNAL_SERVER_ERROR,
                         "error executing mapReduce", ex);
+                next(exchange, context);
                 return;
             } catch (QueryVariableNotBoundException qvnbe) {
                 ResponseHelper.endExchangeWithMessage(
@@ -119,11 +126,12 @@ public class GetAggregationHandler extends PipedHttpHandler {
                         HttpStatus.SC_BAD_REQUEST,
                         "error executing mapReduce: "
                         + qvnbe.getMessage());
+                next(exchange, context);
                 return;
             }
 
             if (mrOutput == null) {
-                ResponseHelper.endExchange(exchange, HttpStatus.SC_NO_CONTENT);
+                next(exchange, context);
                 return;
             }
 
@@ -146,14 +154,15 @@ public class GetAggregationHandler extends PipedHttpHandler {
                                 context.getCollectionName())
                         .aggregate(
                                 pipeline
-                                .getResolvedStagesAsList(
-                                        context.getAggreationVars()));
+                                        .getResolvedStagesAsList(
+                                                context.getAggreationVars()));
             } catch (MongoCommandException | InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
                         context,
                         HttpStatus.SC_INTERNAL_SERVER_ERROR,
                         "error executing aggreation pipeline", ex);
+                next(exchange, context);
                 return;
             } catch (QueryVariableNotBoundException qvnbe) {
                 ResponseHelper.endExchangeWithMessage(
@@ -162,11 +171,12 @@ public class GetAggregationHandler extends PipedHttpHandler {
                         HttpStatus.SC_BAD_REQUEST,
                         "error executing aggreation pipeline: "
                         + qvnbe.getMessage());
+                next(exchange, context);
                 return;
             }
 
             if (agrOutput == null) {
-                ResponseHelper.endExchange(exchange, HttpStatus.SC_NO_CONTENT);
+                next(exchange, context);
                 return;
             }
 
@@ -181,6 +191,7 @@ public class GetAggregationHandler extends PipedHttpHandler {
                     exchange,
                     context,
                     HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
+            next(exchange, context);
             return;
         }
 
@@ -202,14 +213,13 @@ public class GetAggregationHandler extends PipedHttpHandler {
             context.setResponseStatusCode(HttpStatus.SC_OK);
 
             // call the ResponseTransformerMetadataHandler if piped in
-            if (getNext() != null) {
-                getNext().handleRequest(exchange, context);
-            }
+            next(exchange, context);
         } catch (IllegalQueryParamenterException ex) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     context,
                     HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
+            next(exchange, context);
         }
     }
 

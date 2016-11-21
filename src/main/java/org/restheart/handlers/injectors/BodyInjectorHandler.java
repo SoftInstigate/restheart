@@ -98,10 +98,15 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             final HttpServerExchange exchange,
             final RequestContext context)
             throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         if (context.getMethod() == RequestContext.METHOD.GET
                 || context.getMethod() == RequestContext.METHOD.OPTIONS
                 || context.getMethod() == RequestContext.METHOD.DELETE) {
-            getNext().handleRequest(exchange, context);
+            next(exchange, context);
             return;
         }
 
@@ -119,6 +124,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                         context,
                         HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
                         ERROR_INVALID_CONTENTTYPE_FILE);
+                next(exchange, context);
                 return;
             }
 
@@ -134,6 +140,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                         context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg);
+                next(exchange, context);
                 return;
             }
 
@@ -151,6 +158,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg,
                         ioe);
+                next(exchange, context);
                 return;
             }
 
@@ -166,7 +174,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg,
                         ex);
-
+                next(exchange, context);
                 return;
             }
 
@@ -180,6 +188,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                         context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg);
+                next(exchange, context);
                 return;
             }
 
@@ -203,6 +212,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                             context,
                             HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
                             ERROR_INVALID_CONTENTTYPE);
+                    next(exchange, context);
                     return;
                 }
 
@@ -226,6 +236,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                             HttpStatus.SC_NOT_ACCEPTABLE,
                             "Invalid JSON",
                             ex);
+                    next(exchange, context);
                     return;
                 }
             } else {
@@ -246,10 +257,11 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                         "request data can be an array only "
                                 + "for POST to collection resources "
                                 + "(bulk post)");
+                next(exchange, context);
                 return;
             }
 
-            content.asArray().stream().forEach(_doc -> {
+            if (!content.asArray().stream().anyMatch(_doc -> {
                 if (_doc.isDocument()) {
                     BsonValue _id = _doc.asDocument().get(_ID);
 
@@ -268,11 +280,12 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                                 HttpStatus.SC_NOT_ACCEPTABLE,
                                 errMsg,
                                 udie);
-
-                        return;
+                         
+                        return false;
                     }
 
                     filterJsonContent(_doc.asDocument(), context);
+                    return true;
                 } else {
                     String errMsg = "request data must be either "
                             + "an json object or an array of objects";
@@ -282,8 +295,13 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                             context,
                             HttpStatus.SC_NOT_ACCEPTABLE,
                             errMsg);
+                    return false;
                 }
-            });
+            })) {
+                // an error occurred
+                next(exchange, context);
+                return;
+            }
         } else if (content.isDocument()) {
             BsonDocument _content = content.asDocument();
 
@@ -304,6 +322,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg,
                         udie);
+                next(exchange, context);
                 return;
             }
 
@@ -312,8 +331,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
         context.setContent(content);
 
-        getNext()
-                .handleRequest(exchange, context);
+        next(exchange, context);
     }
 
     private BsonValue checkIdType(BsonDocument doc)

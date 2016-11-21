@@ -19,7 +19,6 @@ package org.restheart.handlers.collection;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.db.Database;
@@ -76,6 +75,11 @@ public class PutCollectionHandler extends PipedHttpHandler {
     public void handleRequest(
             HttpServerExchange exchange,
             RequestContext context) throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         BsonValue _content = context.getContent();
 
         if (_content == null) {
@@ -89,6 +93,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
+            next(exchange, context);
             return;
         }
 
@@ -105,6 +110,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong relationships definition. " + ex.getMessage()
                         , ex);
+                next(exchange, context);
                 return;
             }
         }
@@ -121,6 +127,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
                         "wrong representation transformer definition. "
                         + ex.getMessage(),
                         ex);
+                next(exchange, context);
                 return;
             }
         }
@@ -137,6 +144,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
                         "wrong schema checker definition. "
                         + ex.getMessage(),
                         ex);
+                next(exchange, context);
                 return;
             }
         }
@@ -171,21 +179,12 @@ public class PutCollectionHandler extends PipedHttpHandler {
                     "The collection's ETag must be provided using the '"
                     + Headers.IF_MATCH
                     + "' header.");
+            next(exchange, context);
             return;
         }
 
-        // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings() != null
-                && !context.getWarnings().isEmpty()) {
-            sendWarnings(result.getHttpCode(), exchange, context);
-        } else {
-            exchange.setStatusCode(result.getHttpCode());
-        }
+        context.setResponseStatusCode(result.getHttpCode());
 
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
-
-        exchange.endExchange();
+        next(exchange, context);
     }
 }

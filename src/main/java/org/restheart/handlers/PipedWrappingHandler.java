@@ -48,12 +48,12 @@ public class PipedWrappingHandler extends PipedHttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (wrapped == null) {
-            getNext().handleRequest(exchange, context);
+            next(exchange, context);
         } else {
             wrapped.handleRequest(exchange);
 
             if (!exchange.isResponseComplete() && getNext() != null) {
-                getNext().handleRequest(exchange, context);
+                next(exchange, context);
             }
         }
     }

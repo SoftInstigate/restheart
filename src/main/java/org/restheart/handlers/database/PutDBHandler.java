@@ -63,6 +63,11 @@ public class PutDBHandler extends PipedHttpHandler {
             HttpServerExchange exchange,
             RequestContext context)
             throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         if (context.getDBName().isEmpty()
                 || context.getDBName().startsWith("_")) {
             ResponseHelper.endExchangeWithMessage(
@@ -70,6 +75,7 @@ public class PutDBHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "db name cannot be empty or start with _");
+            next(exchange, context);
             return;
         }
 
@@ -86,6 +92,7 @@ public class PutDBHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
+            next(exchange, context);
             return;
         }
 
@@ -103,6 +110,7 @@ public class PutDBHandler extends PipedHttpHandler {
                         "wrong representation transform logic definition. "
                         + ex.getMessage(),
                         ex);
+                next(exchange, context);
                 return;
             }
         }
@@ -132,24 +140,15 @@ public class PutDBHandler extends PipedHttpHandler {
                     "The database's ETag must be provided using the '"
                     + Headers.IF_MATCH
                     + "' header.");
+            next(exchange, context);
             return;
         }
 
         // invalidate the cache db item
         LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());
 
-        // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings() != null
-                && !context.getWarnings().isEmpty()) {
-            sendWarnings(result.getHttpCode(), exchange, context);
-        } else {
-            exchange.setStatusCode(result.getHttpCode());
-        }
+        context.setResponseStatusCode(result.getHttpCode());
 
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
-
-        exchange.endExchange();
+        next(exchange, context);
     }
 }

@@ -62,6 +62,11 @@ public class GetCollectionHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         MongoCollection<BsonDocument> coll = getDatabase().getCollection(context.getDBName(), context.getCollectionName());
 
         long size = -1;
@@ -93,6 +98,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
                         HttpStatus.SC_BAD_REQUEST,
                         "wrong request, filter expression is invalid",
                         jpe);
+                next(exchange, context);
                 return;
             } catch (MongoException me) {
                 if (me.getMessage().matches(".*Can't canonicalize query.*")) {
@@ -108,6 +114,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
                             HttpStatus.SC_BAD_REQUEST,
                             "wrong request, filter expression is invalid",
                             me);
+                    next(exchange, context);
                     return;
                 } else {
                     throw me;
@@ -131,9 +138,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
             ResponseHelper.injectEtagHeader(exchange, context.getCollectionProps());
 
             // call the ResponseTransformerMetadataHandler if piped in
-            if (getNext() != null) {
-                getNext().handleRequest(exchange, context);
-            }
+            next(exchange, context);
         } catch (IllegalQueryParamenterException ex) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
@@ -141,6 +146,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
                     HttpStatus.SC_BAD_REQUEST,
                     ex.getMessage(),
                     ex);
+            next(exchange, context);
         }
     }
 }

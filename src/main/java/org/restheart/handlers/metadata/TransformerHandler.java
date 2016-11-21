@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.bson.BsonValue;
 import org.restheart.hal.metadata.InvalidMetadataException;
+import org.restheart.hal.metadata.RepresentationTransformer;
 import org.restheart.hal.metadata.singletons.Transformer;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -40,6 +41,8 @@ public class TransformerHandler extends PipedHttpHandler {
             LoggerFactory.getLogger(TransformerHandler.class);
 
     private final List<Transformer> transformers;
+    private final RepresentationTransformer.PHASE phase;
+
 
     /**
      * Creates a new instance of TransformerHandler
@@ -48,10 +51,12 @@ public class TransformerHandler extends PipedHttpHandler {
      * @param transformers
      */
     public TransformerHandler(
-            PipedHttpHandler next, 
+            PipedHttpHandler next,
+            RepresentationTransformer.PHASE phase,
             Transformer... transformers) {
         super(next);
 
+        this.phase = phase;
         this.transformers = Arrays.asList(transformers);
     }
 
@@ -64,9 +69,7 @@ public class TransformerHandler extends PipedHttpHandler {
             transform(exchange, context);
         }
 
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
+        next(exchange, context);
     }
 
     private boolean doesTransformerAppy() {
@@ -80,10 +83,10 @@ public class TransformerHandler extends PipedHttpHandler {
             throws InvalidMetadataException {
         BsonValue data;
 
-        if (context.getMethod() == GET) {
-            data = context.getResponseContent();
-        } else {
+        if (this.phase == RepresentationTransformer.PHASE.REQUEST) {
             data = context.getContent();
+        } else {
+            data = context.getResponseContent();
         }
 
         transformers.stream().forEachOrdered(

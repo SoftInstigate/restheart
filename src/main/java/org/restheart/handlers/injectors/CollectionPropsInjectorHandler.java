@@ -61,6 +61,11 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         String dbName = context.getDBName();
         String collName = context.getCollectionName();
 
@@ -102,7 +107,7 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
                 && context.getType() != RequestContext.TYPE.DB;
     }
 
-    protected void doesNotExists(RequestContext context, HttpServerExchange exchange) {
+    protected void doesNotExists(RequestContext context, HttpServerExchange exchange) throws Exception {
         final String errMsg;
         final String resourceName = context.getCollectionName();
         
@@ -122,5 +127,6 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
                 context, 
                 HttpStatus.SC_NOT_FOUND, 
                 errMsg);
+        next(exchange, context);
     }
 }

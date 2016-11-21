@@ -67,6 +67,11 @@ public class GetDocumentHandler extends PipedHttpHandler {
             HttpServerExchange exchange,
             RequestContext context)
             throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         Bson query = eq("_id", context.getDocumentId());
 
         if (context.getShardKey() != null) {
@@ -121,6 +126,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_FOUND,
                     errMsg);
+            next(exchange, context);
             return;
         }
 
@@ -144,7 +150,8 @@ public class GetDocumentHandler extends PipedHttpHandler {
         // in case the request contains the IF_NONE_MATCH header with the current etag value,
         // just return 304 NOT_MODIFIED code
         if (RequestHelper.checkReadEtag(exchange, (BsonObjectId) etag)) {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_NOT_MODIFIED);
+            context.setResponseStatusCode(HttpStatus.SC_NOT_MODIFIED);
+            next(exchange, context);
             return;
         }
 
@@ -164,9 +171,6 @@ public class GetDocumentHandler extends PipedHttpHandler {
 
         ResponseHelper.injectEtagHeader(exchange, etag);
 
-        // call the ResponseTransformerMetadataHandler if piped in
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
+        next(exchange, context);
     }
 }

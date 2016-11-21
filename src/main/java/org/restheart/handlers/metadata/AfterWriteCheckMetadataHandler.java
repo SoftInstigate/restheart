@@ -54,7 +54,8 @@ public class AfterWriteCheckMetadataHandler
     protected boolean doesCheckerApply(
             RequestContext context,
             Checker checker) {
-        return checker.getPhase(context) == Checker.PHASE.AFTER_WRITE;
+        return !context.isInError()
+                && checker.getPhase(context) == Checker.PHASE.AFTER_WRITE;
     }
 
     @Override
@@ -108,15 +109,15 @@ public class AfterWriteCheckMetadataHandler
                     if (oldData.get("$set") != null
                             && oldData.get("$set").isDocument()
                             && oldData.get("$set")
-                            .asDocument()
-                            .get("_etag") != null) {
+                                    .asDocument()
+                                    .get("_etag") != null) {
                         exchange.getResponseHeaders().put(Headers.ETAG,
                                 oldData.get("$set")
-                                .asDocument()
-                                .get("_etag")
-                                .asObjectId()
-                                .getValue()
-                                .toString());
+                                        .asDocument()
+                                        .get("_etag")
+                                        .asObjectId()
+                                        .getValue()
+                                        .toString());
                     } else {
                         exchange.getResponseHeaders().remove(Headers.ETAG);
                     }
@@ -130,16 +131,16 @@ public class AfterWriteCheckMetadataHandler
                 }
 
                 ResponseHelper.endExchangeWithMessage(
-                        exchange, 
+                        exchange,
                         context,
-                        HttpStatus.SC_BAD_REQUEST, 
+                        HttpStatus.SC_BAD_REQUEST,
                         sb.toString());
+                next(exchange, context);
+                return;
             }
         }
 
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
+        next(exchange, context);
     }
 
     private boolean doesCheckerAppy(RequestContext context) {
@@ -155,6 +156,7 @@ public class AfterWriteCheckMetadataHandler
                 || context.getType() == RequestContext.TYPE.SCHEMA_STORE))
                 && context.getCollectionProps()
                         .containsKey(RequestChecker.ROOT_KEY)
-                && context.getDbOperationResult().getHttpCode() < 300;
+                && (context.getDbOperationResult() != null
+                && context.getDbOperationResult().getHttpCode() < 300);
     }
 }

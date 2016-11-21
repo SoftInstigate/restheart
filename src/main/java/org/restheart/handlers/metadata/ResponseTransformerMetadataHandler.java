@@ -62,23 +62,33 @@ public class ResponseTransformerMetadataHandler
 
     @Override
     boolean canCollRepresentationTransformersAppy(RequestContext context) {
-        return (context.getMethod() == RequestContext.METHOD.GET
+        return (!context.isInError()
                 && (context.getType() == RequestContext.TYPE.DOCUMENT
+                || context.getType() == RequestContext.TYPE.BULK_DOCUMENTS
                 || context.getType() == RequestContext.TYPE.COLLECTION
+                || context.getType() == RequestContext.TYPE.AGGREGATION
+                || context.getType() == RequestContext.TYPE.FILE
+                || context.getType() == RequestContext.TYPE.FILES_BUCKET
+                || context.getType() == RequestContext.TYPE.INDEX
+                || context.getType() == RequestContext.TYPE.COLLECTION_INDEXES
                 || context.getType() == RequestContext.TYPE.SCHEMA_STORE
                 || context.getType() == RequestContext.TYPE.SCHEMA)
+                && context.getCollectionProps() != null
                 && context.getCollectionProps()
-                .containsKey(RepresentationTransformer.RTS_ELEMENT_NAME));
+                        .containsKey(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
     boolean canDBRepresentationTransformersAppy(RequestContext context) {
-        return (context.getMethod() == RequestContext.METHOD.GET
+        return (!context.isInError()
                 && (context.getType() == RequestContext.TYPE.DB
                 || context.getType() == RequestContext.TYPE.COLLECTION
+                || context.getType() == RequestContext.TYPE.FILES_BUCKET
+                || context.getType() == RequestContext.TYPE.COLLECTION_INDEXES
                 || context.getType() == RequestContext.TYPE.SCHEMA_STORE)
+                && context.getDbProps() != null
                 && context.getDbProps()
-                .containsKey(RepresentationTransformer.RTS_ELEMENT_NAME));
+                        .containsKey(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
@@ -88,7 +98,7 @@ public class ResponseTransformerMetadataHandler
             throws InvalidMetadataException {
         List<RepresentationTransformer> dbRts
                 = RepresentationTransformer
-                .getFromJson(context.getDbProps());
+                        .getFromJson(context.getDbProps());
 
         RequestContext.TYPE requestType = context.getType(); // DB or COLLECTION
 
@@ -118,9 +128,9 @@ public class ResponseTransformerMetadataHandler
                             .getResponseContent()
                             .isDocument()
                             && context
-                            .getResponseContent()
-                            .asDocument()
-                            .containsKey("_embedded")) {
+                                    .getResponseContent()
+                                    .asDocument()
+                                    .containsKey("_embedded")) {
                         BsonValue _embedded = context
                                 .getResponseContent()
                                 .asDocument()
@@ -128,8 +138,8 @@ public class ResponseTransformerMetadataHandler
 
                         if (_embedded.isDocument()
                                 && _embedded
-                                .asDocument()
-                                .containsKey("_embedded")) {
+                                        .asDocument()
+                                        .containsKey("_embedded")) {
                             // execute the logic on children documents
                             BsonArray colls = _embedded.asDocument()
                                     .get("rh:coll")
@@ -184,7 +194,7 @@ public class ResponseTransformerMetadataHandler
 
                 if (rt.getScope() == RepresentationTransformer.SCOPE.THIS
                         && requestType == RequestContext.TYPE.COLLECTION) {
-                    // evaluate the script on collection
+                    // transform the collection
                     t.transform(
                             exchange,
                             context,
@@ -192,13 +202,19 @@ public class ResponseTransformerMetadataHandler
                             rt.getArgs());
                 } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN
                         && requestType == RequestContext.TYPE.COLLECTION) {
-                    if (context
-                            .getResponseContent()
-                            .isDocument()
+                    if (context.getResponseContent() == null) {
+                        // transform null content
+                        t.transform(
+                                exchange,
+                                context,
+                                null,
+                                rt.getArgs());
+                    } else if (context
+                            .getResponseContent().isDocument()
                             && context
-                            .getResponseContent()
-                            .asDocument()
-                            .containsKey("_embedded")) {
+                                    .getResponseContent()
+                                    .asDocument()
+                                    .containsKey("_embedded")) {
                         BsonValue _embedded = context
                                 .getResponseContent()
                                 .asDocument()
@@ -206,8 +222,8 @@ public class ResponseTransformerMetadataHandler
 
                         if (_embedded.isDocument()
                                 && _embedded
-                                .asDocument()
-                                .containsKey("rh:doc")) {
+                                        .asDocument()
+                                        .containsKey("rh:doc")) {
 
                             // execute the logic on children documents
                             BsonArray docs = _embedded
@@ -226,8 +242,8 @@ public class ResponseTransformerMetadataHandler
 
                         if (_embedded.isDocument()
                                 && _embedded
-                                .asDocument().
-                                containsKey("rh:file")) {
+                                        .asDocument().
+                                        containsKey("rh:file")) {
                             // execute the logic on children files
                             BsonArray files = _embedded
                                     .asDocument()

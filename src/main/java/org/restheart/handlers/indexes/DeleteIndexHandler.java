@@ -53,6 +53,11 @@ public class DeleteIndexHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         String dbName = context.getDBName();
         String collectionName = context.getCollectionName();
 
@@ -64,22 +69,13 @@ public class DeleteIndexHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_UNAUTHORIZED, 
                     indexId + " is a default index and cannot be deleted");
+            next(exchange, context);
             return;
         }
 
         int httpCode = getDatabase().deleteIndex(dbName, collectionName, indexId);
-
-        // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(httpCode, exchange, context);
-        } else {
-            exchange.setStatusCode(httpCode);
-        }
+        context.setResponseStatusCode(httpCode);
         
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
-
-        exchange.endExchange();
+        next(exchange, context);
     }
 }
