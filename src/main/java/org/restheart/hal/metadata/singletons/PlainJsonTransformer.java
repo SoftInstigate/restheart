@@ -42,10 +42,12 @@ public class PlainJsonTransformer implements Transformer {
             return;
         }
 
+        BsonDocument responseContent = new BsonDocument();
+
         context.setResponseContentType(Representation.JSON_MEDIA_TYPE);
 
         if (contentToTransform == null) {
-            context.setResponseContent(new BsonArray());
+            context.setResponseContent(responseContent);
         } else if (contentToTransform != null
                 && contentToTransform.isDocument()
                 && contentToTransform.asDocument().containsKey("_embedded")) {
@@ -63,26 +65,21 @@ public class PlainJsonTransformer implements Transformer {
             addElements(_embedded, embedded, "rh:coll");
             addElements(_embedded, embedded, "rh:index");
 
-            if (context.isNoProps()) {
-                context.setResponseContent(_embedded);
-            } else {
-                BsonDocument responseContent = new BsonDocument();
-                
-                contentToTransform.asDocument().keySet().stream()
-                        .filter(key -> !"_embedded".equals(key)
-                        && !"_links".equals(key))
-                        .forEach(key -> responseContent
-                        .append(key, contentToTransform.asDocument()
-                                .get(key)));
-
-                responseContent.append("_embedded", _embedded);
-                
-                context.setResponseContent(responseContent);
-            }
-
+            responseContent.append("_embedded", _embedded);
         } else {
             context.setResponseContent(new BsonArray());
         }
+
+        if (!context.isNoProps()) {
+            contentToTransform.asDocument().keySet().stream()
+                    .filter(key -> !"_embedded".equals(key)
+                    && !"_links".equals(key))
+                    .forEach(key -> responseContent
+                    .append(key, contentToTransform.asDocument()
+                            .get(key)));
+        }
+
+        context.setResponseContent(responseContent);
     }
 
     private void addElements(BsonArray elements, BsonDocument embedded, String ns) {
