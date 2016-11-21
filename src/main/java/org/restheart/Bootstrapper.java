@@ -86,6 +86,7 @@ import org.restheart.handlers.RequestLoggerHandler;
 import java.nio.file.Paths;
 import static io.undertow.Handlers.path;
 import static org.fusesource.jansi.Ansi.ansi;
+import org.restheart.handlers.ResponseSenderHandler;
 
 /**
  *

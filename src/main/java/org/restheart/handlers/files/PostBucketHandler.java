@@ -59,6 +59,11 @@ public class PostBucketHandler extends PipedHttpHandler {
             HttpServerExchange exchange,
             RequestContext context)
             throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         final BsonValue _metadata = context.getContent();
 
         // must be an object
@@ -68,6 +73,7 @@ public class PostBucketHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data cannot be an array");
+            next(exchange, context);
             return;
         }
 
@@ -95,6 +101,7 @@ public class PostBucketHandler extends PipedHttpHandler {
                         context,
                         HttpStatus.SC_NOT_IMPLEMENTED,
                         errMsg);
+                next(exchange, context);
                 return;
             }
 
@@ -110,12 +117,8 @@ public class PostBucketHandler extends PipedHttpHandler {
                                 context,
                                 exchange.getRequestURL(), result.getNewId()));
 
-        exchange.setStatusCode(result.getHttpCode());
+        context.setResponseStatusCode(result.getHttpCode());
 
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
-
-        exchange.endExchange();
+        next(exchange, context);
     }
 }

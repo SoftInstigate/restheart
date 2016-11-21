@@ -56,6 +56,11 @@ public class DeleteCollectionHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         OperationResult result = getDatabase().deleteCollection(context.getDBName(), context.getCollectionName(),
                 context.getETag(), context.isETagCheckRequired());
 
@@ -74,23 +79,15 @@ public class DeleteCollectionHandler extends PipedHttpHandler {
                     "The collection's ETag must be provided using the '"
                     + Headers.IF_MATCH
                     + "' header.");
+            next(exchange, context);
             return;
         }
 
-        // send the warnings if any (and in case no_content change the return code to ok
-        if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(result.getHttpCode(), exchange, context);
-        } else {
-            exchange.setStatusCode(result.getHttpCode());
-        }
+        context.setResponseStatusCode(result.getHttpCode());
 
         LocalCachesSingleton.getInstance()
                 .invalidateCollection(context.getDBName(), context.getCollectionName());
 
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
-
-        exchange.endExchange();
+        next(exchange, context);
     }
 }

@@ -57,7 +57,8 @@ public class AuthenticationMechanismsHandler extends PipedHttpHandler {
                 sc.addAuthenticationMechanism(mechanism);
             }
         }
-        getNext().handleRequest(exchange, context);
+        
+        next(exchange, context);
     }
 }
 

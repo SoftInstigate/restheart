@@ -205,6 +205,8 @@ public class RequestContext {
     private BsonDocument shardKey = null;
 
     private boolean noProps = false;
+    
+    private boolean inError = false;
 
     /**
      * the HAL mode
@@ -1252,5 +1254,19 @@ public class RequestContext {
      */
     public boolean isNoProps() {
         return noProps;
+    }
+
+    /**
+     * @return the inError
+     */
+    public boolean isInError() {
+        return inError;
+    }
+
+    /**
+     * @param inError the inError to set
+     */
+    public void setInError(boolean inError) {
+        this.inError = inError;
     }
 }

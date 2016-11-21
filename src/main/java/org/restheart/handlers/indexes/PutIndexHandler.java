@@ -59,6 +59,11 @@ public class PutIndexHandler extends PipedHttpHandler {
             HttpServerExchange exchange, 
             RequestContext context) 
             throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         final String db = context.getDBName();
         final String co = context.getCollectionName();
         final String id = context.getIndexId();
@@ -69,6 +74,7 @@ public class PutIndexHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "index name cannot start with _");
+            next(exchange, context);
             return;
         }
 
@@ -81,6 +87,7 @@ public class PutIndexHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data cannot be an array");
+            next(exchange, context);
             return;
         }
         
@@ -96,6 +103,7 @@ public class PutIndexHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "keys must be a json object");
+            next(exchange, context);
             return;
         }
         
@@ -106,6 +114,7 @@ public class PutIndexHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "ops must be a json object");
+            next(exchange, context);
             return;
         }
         
@@ -118,6 +127,7 @@ public class PutIndexHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "wrong request, content must include 'keys' object", null);
+            next(exchange, context);
             return;
         }
 
@@ -136,28 +146,12 @@ public class PutIndexHandler extends PipedHttpHandler {
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "error creating the index", 
                     t);
+            next(exchange, context);
             return;
         }
 
-        exchange.setStatusCode(HttpStatus.SC_CREATED);
-
-        // send the warnings if any
-        if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            DocumentRepresentationFactory rf = new DocumentRepresentationFactory();
-            
-            rf.sendRepresentation(
-                    exchange, 
-                    context, 
-                    rf.getRepresentation(exchange.getRequestPath(),
-                    exchange, 
-                    context, 
-                    new BsonDocument()));
-        }
+        context.setResponseStatusCode(HttpStatus.SC_CREATED);
         
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
-
-        exchange.endExchange();
+        next(exchange, context);
     }
 }

@@ -52,11 +52,10 @@ public class AccessManagerHandler extends PipedHttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (accessManager.isAllowed(exchange, context)) {
-            if (getNext() != null) {
-                getNext().handleRequest(exchange, context);
-            }
+            next(exchange, context);
         } else {
-            ResponseHelper.endExchange(exchange, HttpStatus.SC_FORBIDDEN);
+            exchange.setStatusCode(HttpStatus.SC_FORBIDDEN);
+            exchange.endExchange();
         }
     }
 }

@@ -37,21 +37,10 @@ import org.restheart.handlers.RequestContext;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ResponseHelper {
-
     /**
      *
      * @param exchange
-     * @param code
-     */
-    public static void endExchange(HttpServerExchange exchange, int code) {
-        exchange.setStatusCode(code);
-        exchange.endExchange();
-    }
-
-    /**
-     *
-     * @param exchange
-     * @param context might be null
+     * @param context
      * @param code
      * @param message
      */
@@ -77,25 +66,43 @@ public class ResponseHelper {
             int code,
             String message,
             Throwable t) {
-        exchange.setStatusCode(code);
+        context.setResponseStatusCode(code);
 
         String httpStatusText = HttpStatus.getStatusText(code);
 
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
-                Representation.HAL_JSON_MEDIA_TYPE);
-
-        exchange.getResponseSender().send(
-                getErrorJsonDocument(exchange.getRequestPath(),
+        context.setInError(true);
+        
+        context.setResponseContent(
+                getErrorJsonDocument(
+                        exchange.getRequestPath(),
                         code,
                         context,
                         httpStatusText,
                         message,
-                        t, false));
-
-        exchange.endExchange();
+                        t, false)
+                        .asBsonDocument());
     }
 
-    private static String getErrorJsonDocument(String href,
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param code
+     * @param rep
+     * @param t
+     */
+    public static void endExchangeWithRepresentation(
+            HttpServerExchange exchange,
+            RequestContext context,
+            int code,
+            Representation rep) {
+        context.setResponseStatusCode(code);
+
+        context.setInError(true);
+        context.setResponseContent(rep.asBsonDocument());
+    }
+
+    private static Representation getErrorJsonDocument(String href,
             int code,
             RequestContext context,
             String httpStatusText,
@@ -150,7 +157,7 @@ public class ResponseHelper {
             context.getWarnings().forEach(w -> rep.addWarning(w));
         }
 
-        return rep.toString();
+        return rep;
     }
 
     private static BsonArray getStackTraceJson(Throwable t) {
@@ -178,15 +185,15 @@ public class ResponseHelper {
         return s == null
                 ? null
                 : s
-                .replaceAll("\"", "'")
-                .replaceAll("\t", "  ");
+                        .replaceAll("\"", "'")
+                        .replaceAll("\t", "  ");
     }
 
     /**
      * Set the ETag in the response's header
-     * 
+     *
      * @param exchange
-     * @param etag 
+     * @param etag
      */
     protected static void setETagHeader(final HttpServerExchange exchange, final String etag) {
         exchange.getResponseHeaders().put(Headers.ETAG, etag);

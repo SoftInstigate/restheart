@@ -72,12 +72,17 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
             HttpServerExchange exchange,
             RequestContext context)
             throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         LOGGER.trace("GET " + exchange.getRequestURL());
         final String bucket = extractBucketName(context.getCollectionName());
 
         GridFSBucket gridFSBucket = GridFSBuckets.create(
                 MongoDBClientSingleton.getInstance().getClient()
-                .getDatabase(context.getDBName()),
+                        .getDatabase(context.getDBName()),
                 bucket);
 
         GridFSFile dbsfile = gridFSBucket
@@ -90,16 +95,14 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
             sendBinaryContent(gridFSBucket, dbsfile, exchange);
         }
 
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
+        next(exchange, context);
     }
 
     private boolean checkEtag(HttpServerExchange exchange, GridFSFile dbsfile) {
         if (dbsfile != null) {
             Object etag;
-            
-            if (dbsfile.getMetadata() != null 
+
+            if (dbsfile.getMetadata() != null
                     && dbsfile.getMetadata().containsKey("_etag")) {
                 etag = dbsfile.getMetadata().get("_etag");
             } else {
@@ -114,9 +117,8 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
                 // in case the request contains the IF_NONE_MATCH header with the current etag value,
                 // just return 304 NOT_MODIFIED code
                 if (RequestHelper.checkReadEtag(exchange, __etag)) {
-                    ResponseHelper.endExchange(
-                            exchange,
-                            HttpStatus.SC_NOT_MODIFIED);
+                    exchange.setStatusCode(HttpStatus.SC_NOT_MODIFIED);
+                    exchange.endExchange();
                     return true;
                 }
             }
@@ -127,7 +129,7 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
 
     private void fileNotFound(
             RequestContext context,
-            HttpServerExchange exchange) {
+            HttpServerExchange exchange) throws Exception {
         final String errMsg = String.format(
                 "File with ID <%s> not found", context.getDocumentId());
         LOGGER.trace(errMsg);
@@ -136,6 +138,7 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
                 context,
                 HttpStatus.SC_NOT_FOUND,
                 errMsg);
+        next(exchange, context);
     }
 
     private void sendBinaryContent(
@@ -150,7 +153,7 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
                 && file.getMetadata().get("contentType") != null) {
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
                     file.getMetadata().get("contentType").toString());
-        } else if (file.getExtraElements()!= null
+        } else if (file.getExtraElements() != null
                 && file.getExtraElements().get("contentType") != null) {
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
                     file.getExtraElements().get("contentType").toString());

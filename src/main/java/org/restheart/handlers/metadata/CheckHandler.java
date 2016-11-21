@@ -58,7 +58,7 @@ public class CheckHandler extends PipedHttpHandler {
             throws Exception {
         if (doesCheckerAppy()) {
             if (check(exchange, context)) {
-                getNext().handleRequest(exchange, context);
+                next(exchange, context);
             } else {
                 StringBuilder sb = new StringBuilder();
                 sb.append("schema check failed");
@@ -76,9 +76,11 @@ public class CheckHandler extends PipedHttpHandler {
                         context,
                         HttpStatus.SC_BAD_REQUEST, 
                         sb.toString());
+                next(exchange, context);
+                return;
             }
         } else {
-            getNext().handleRequest(exchange, context);
+            next(exchange, context);
         }
     }
 

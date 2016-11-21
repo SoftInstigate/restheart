@@ -101,8 +101,6 @@ public class HookMetadataHandler extends PipedHttpHandler {
             }
         }
 
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
+        next(exchange, context);
     }
 }

@@ -35,10 +35,11 @@ public class PlainJsonTransformer implements Transformer {
             RequestContext context,
             BsonValue contentToTransform,
             BsonValue args) {
-        if (context.getRepresentationFormat()
+        if (contentToTransform == null 
+                || (context.getRepresentationFormat()
                 != RequestContext.REPRESENTATION_FORMAT.PJ
                 && context.getRepresentationFormat()
-                != RequestContext.REPRESENTATION_FORMAT.PLAIN_JSON) {
+                != RequestContext.REPRESENTATION_FORMAT.PLAIN_JSON)) {
             return;
         }
 
@@ -46,10 +47,7 @@ public class PlainJsonTransformer implements Transformer {
 
         context.setResponseContentType(Representation.JSON_MEDIA_TYPE);
 
-        if (contentToTransform == null) {
-            context.setResponseContent(responseContent);
-        } else if (contentToTransform != null
-                && contentToTransform.isDocument()
+        if (!context.isInError() && contentToTransform.isDocument()
                 && contentToTransform.asDocument().containsKey("_embedded")) {
             BsonDocument embedded = contentToTransform
                     .asDocument()
@@ -66,9 +64,7 @@ public class PlainJsonTransformer implements Transformer {
             addElements(_embedded, embedded, "rh:index");
 
             responseContent.append("_embedded", _embedded);
-        } else {
-            context.setResponseContent(new BsonArray());
-        }
+        } 
 
         if (!context.isNoProps()) {
             contentToTransform.asDocument().keySet().stream()

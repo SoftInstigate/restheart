@@ -52,6 +52,6 @@ public class AuthenticationConstraintHandler extends PipedHttpHandler {
             scontext.setAuthenticationRequired();
         }
 
-        getNext().handleRequest(exchange, context);
+        next(exchange, context);
     }
 }

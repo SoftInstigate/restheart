@@ -59,7 +59,7 @@ public class CacheInvalidator extends ApplicationLogicHandler {
                     context,
                     HttpStatus.SC_NOT_MODIFIED, 
                     "caching is off");
-            exchange.endExchange();
+            next(exchange, context);
             return;
         }
 
@@ -73,6 +73,8 @@ public class CacheInvalidator extends ApplicationLogicHandler {
                         context,
                         HttpStatus.SC_BAD_REQUEST, 
                         "the db query paramter is mandatory");
+                next(exchange, context);
+                return;
             } else {
                 String db = _db.getFirst();
 

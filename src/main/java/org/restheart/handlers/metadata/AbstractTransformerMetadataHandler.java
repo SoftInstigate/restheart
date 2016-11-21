@@ -60,9 +60,7 @@ public abstract class AbstractTransformerMetadataHandler extends PipedHttpHandle
             }
         }
 
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
+        next(exchange, context);
     }
 
     abstract boolean canCollRepresentationTransformersAppy(RequestContext context);

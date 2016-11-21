@@ -80,6 +80,11 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         BsonValue content = context.getContent();
 
         // expects an an array
@@ -107,25 +112,18 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
             ResponseHelper.injectEtagHeader(exchange, result.getEtag());
         }
 
-        if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            //sendWarnings(result.getHttpCode(), exchange, context);
-        } else {
-            exchange.setStatusCode(result.getHttpCode());
-        }
+        context.setResponseStatusCode(result.getHttpCode());
 
         BulkResultRepresentationFactory bprf = new BulkResultRepresentationFactory();
 
-        bprf.sendRepresentation(exchange, context,
-                bprf.getRepresentation(exchange, context, result));
-        
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
+        context.setResponseContent(bprf.getRepresentation(
+                exchange, context, result)
+                .asBsonDocument());
 
-        exchange.endExchange();
+        next(exchange, context);
     }
 
-    private boolean checkIds(HttpServerExchange exchange, RequestContext context, BsonArray documents) {
+    private boolean checkIds(HttpServerExchange exchange, RequestContext context, BsonArray documents) throws Exception {
         boolean ret = true;
 
         for (BsonValue document : documents) {
@@ -138,20 +136,21 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
         return ret;
     }
 
-    private boolean checkId(HttpServerExchange exchange, RequestContext context, BsonValue document) {
+    private boolean checkId(HttpServerExchange exchange, RequestContext context, BsonValue document) throws Exception {
         if (document.isDocument()
                 && document.asDocument().containsKey("_id")
                 && document.asDocument().get("_id").isString()
                 && RequestContext.isReservedResourceDocument(
                         context.getType(),
                         document.asDocument()
-                        .get("_id").asString().getValue())) {
+                                .get("_id").asString().getValue())) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     context,
                     HttpStatus.SC_FORBIDDEN,
                     "id is reserved: " + document.asDocument()
-                    .get("_id").asString().getValue());
+                            .get("_id").asString().getValue());
+            next(exchange, context);
             return false;
         }
 
@@ -164,6 +163,7 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
                         context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "_id in content body is mandatory for documents with id type " + context.getDocIdType().name());
+                next(exchange, context);
                 return false;
             }
         }

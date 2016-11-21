@@ -51,7 +51,7 @@ public class AuthenticationCallHandler extends PipedHttpHandler {
         SecurityContext rcontext = exchange.getSecurityContext();
         if (rcontext.authenticate()) {
             if(!exchange.isComplete()) {
-               getNext().handleRequest(exchange, context);
+               next(exchange, context);
             }
         } else {
             exchange.endExchange();

@@ -72,6 +72,11 @@ public class DeleteFileHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         BsonValue id = context.getDocumentId();
 
         if (!id.isObjectId()) {
@@ -80,6 +85,8 @@ public class DeleteFileHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "The file _id must be an ObjectId");
+            next(exchange, context);
+            return;
         }
 
         OperationResult result = this.gridFsDAO
@@ -90,19 +97,12 @@ public class DeleteFileHandler extends PipedHttpHandler {
 
         context.setDbOperationResult(result);
 
-        // send the warnings if any (and in case no_content change the return code to ok)
-        if (context.getWarnings() != null && !context.getWarnings().isEmpty()) {
-            sendWarnings(result.getHttpCode(), exchange, context);
-        }
-
         // inject the etag
         if (result.getEtag() != null) {
             ResponseHelper.injectEtagHeader(exchange, result.getEtag());
         }
 
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
+        next(exchange, context);
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
             ResponseHelper.endExchangeWithMessage(
@@ -112,8 +112,10 @@ public class DeleteFileHandler extends PipedHttpHandler {
                     "The file's ETag must be provided using the '"
                     + Headers.IF_MATCH
                     + "' header");
-        } else {
-            ResponseHelper.endExchange(exchange, result.getHttpCode());
-        }
+            next(exchange, context);
+            return;
+        } 
+        
+        next(exchange, context);
     }
 }

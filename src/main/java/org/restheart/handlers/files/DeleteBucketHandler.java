@@ -53,6 +53,11 @@ public class DeleteBucketHandler extends DeleteCollectionHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         try {
             gridFsDAO.deleteChunksCollection(getDatabase(), context.getDBName(), context.getCollectionName());
         } catch (Throwable t) {

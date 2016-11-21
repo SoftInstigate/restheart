@@ -65,9 +65,7 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
             throws Exception {
         if (doesCheckerAppy(context)) {
             if (check(exchange, context)) {
-                if (getNext() != null) {
-                    getNext().handleRequest(exchange, context);
-                }
+                next(exchange, context);
             } else {
                 StringBuilder sb = new StringBuilder();
                 sb.append("schema check failed");
@@ -85,9 +83,11 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                         context,
                         HttpStatus.SC_BAD_REQUEST,
                         sb.toString());
+                next(exchange, context);
+                return;
             }
-        } else if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
+        } else { 
+            next(exchange, context);
         }
     }
 

@@ -80,36 +80,13 @@ public abstract class PipedHttpHandler implements HttpHandler {
      * @throws Exception
      */
     public abstract void handleRequest(
-            HttpServerExchange exchange, 
-            RequestContext context) 
+            HttpServerExchange exchange,
+            RequestContext context)
             throws Exception;
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         handleRequest(exchange, null);
-    }
-
-    protected static void sendWarnings(
-            int SC, 
-            HttpServerExchange exchange, 
-            RequestContext context) 
-            throws IllegalQueryParamenterException, URISyntaxException {
-        if (SC == HttpStatus.SC_NO_CONTENT) {
-            exchange.setStatusCode(HttpStatus.SC_OK);
-        } else {
-            exchange.setStatusCode(SC);
-        }
-
-        DocumentRepresentationFactory rf 
-                = new DocumentRepresentationFactory();
-        rf.sendRepresentation(
-                exchange, 
-                context, 
-                rf.getRepresentation(
-                        exchange.getRequestPath(), 
-                        exchange, 
-                        context, 
-                        new BsonDocument()));
     }
 
     /**
@@ -125,14 +102,14 @@ public abstract class PipedHttpHandler implements HttpHandler {
     protected PipedHttpHandler getNext() {
         return next;
     }
-    
+
     protected static PipedHttpHandler buildSecurityHandlerChain(
-            PipedHttpHandler next, 
-            final AccessManager accessManager, 
-            final IdentityManager identityManager, 
+            PipedHttpHandler next,
+            final AccessManager accessManager,
+            final IdentityManager identityManager,
             final List<AuthenticationMechanism> mechanisms) {
         PipedHttpHandler handler;
-        
+
         if (accessManager == null) {
             throw new IllegalArgumentException("Error, accessManager cannot "
                     + "be null. "
@@ -142,15 +119,21 @@ public abstract class PipedHttpHandler implements HttpHandler {
 
         handler = new AuthTokenInjecterHandler(
                 new AccessManagerHandler(accessManager, next));
-        
+
         handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE,
                 identityManager,
                 new AuthenticationMechanismsHandler(
                         new AuthenticationConstraintHandler(
-                                new AuthenticationCallHandler(handler), 
-                                accessManager), 
+                                new AuthenticationCallHandler(handler),
+                                accessManager),
                         mechanisms));
-        
+
         return handler;
+    }
+
+    protected void next(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (getNext() != null) {
+            getNext().handleRequest(exchange, context);
+        }
     }
 }

@@ -51,6 +51,11 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         String dbName = context.getDBName();
 
         if (dbName != null) {
@@ -73,6 +78,7 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
                                 context,
                                 HttpStatus.SC_NOT_FOUND,
                                 "Db '" + dbName + "' does not exist");
+                next(exchange, context);
                 return;
             }
 
@@ -83,6 +89,6 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
             context.setDbProps(dbProps);
         }
 
-        getNext().handleRequest(exchange, context);
+        next(exchange, context);
     }
 }

@@ -67,9 +67,7 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
             }
         }
 
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
-        }
+        next(exchange, context);
     }
 
     private void injectTokenHeaders(HttpServerExchange exchange, HeadersManager headers, char[] token) {
