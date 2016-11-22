@@ -86,7 +86,7 @@ import org.restheart.handlers.RequestLoggerHandler;
 import java.nio.file.Paths;
 import static io.undertow.Handlers.path;
 import static org.fusesource.jansi.Ansi.ansi;
-import org.restheart.handlers.ResponseSenderHandler;
+import org.restheart.handlers.injectors.AccountInjectorHandler;
 
 /**
  *
@@ -138,8 +138,8 @@ public final class Bootstrapper {
                 String instanceName = configuration == null
                         ? "undefined"
                         : configuration.getInstanceName() == null
-                                ? "undefined"
-                                : configuration.getInstanceName();
+                        ? "undefined"
+                        : configuration.getInstanceName();
 
                 LOGGER.info("Starting "
                         + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
@@ -184,8 +184,8 @@ public final class Bootstrapper {
                     String instanceName = configuration == null
                             ? "undefined"
                             : configuration.getInstanceName() == null
-                                    ? "undefined"
-                                    : configuration.getInstanceName();
+                            ? "undefined"
+                            : configuration.getInstanceName();
 
                     LOGGER.info("Starting "
                             + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
@@ -337,8 +337,8 @@ public final class Bootstrapper {
         String instanceName = configuration == null
                 ? "undefined"
                 : configuration.getInstanceName() == null
-                        ? "undefined"
-                        : configuration.getInstanceName();
+                ? "undefined"
+                : configuration.getInstanceName();
 
         LOGGER.info("Starting "
                 + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
@@ -560,7 +560,7 @@ public final class Bootstrapper {
         if (configuration.isLocalCacheEnabled()) {
             LOGGER.info("Local cache for db and collection properties enabled with TTL {} msecs",
                     configuration.getLocalCacheTtl() < 0 ? "∞"
-                            : configuration.getLocalCacheTtl());
+                    : configuration.getLocalCacheTtl());
         } else {
             LOGGER.info("Local cache for db and collection properties not enabled");
         }
@@ -568,7 +568,7 @@ public final class Bootstrapper {
         if (configuration.isSchemaCacheEnabled()) {
             LOGGER.info("Local cache for schema stores enabled  with TTL {} msecs",
                     configuration.getSchemaCacheTtl() < 0 ? "∞"
-                            : configuration.getSchemaCacheTtl());
+                    : configuration.getSchemaCacheTtl());
         } else {
             LOGGER.info("Local cache for schema stores not enabled");
         }
@@ -675,10 +675,11 @@ public final class Bootstrapper {
      */
     private static GracefulShutdownHandler getHandlersPipe(final IdentityManager identityManager, final AccessManager accessManager) {
         PipedHttpHandler coreHandlerChain
-                = new DbPropsInjectorHandler(
-                        new CollectionPropsInjectorHandler(
-                                new RequestDispacherHandler()
-                        ));
+                = new AccountInjectorHandler(
+                        new DbPropsInjectorHandler(
+                                new CollectionPropsInjectorHandler(
+                                        new RequestDispacherHandler()
+                                )));
 
         PathHandler paths = path();
 
@@ -823,8 +824,8 @@ public final class Bootstrapper {
 
                         Path _path = Paths.get(
                                 locationFile.getParent()
-                                .concat(File.separator)
-                                .concat(path));
+                                        .concat(File.separator)
+                                        .concat(path));
 
                         // normalize addresses https://issues.jboss.org/browse/UNDERTOW-742
                         file = _path.normalize().toFile();
