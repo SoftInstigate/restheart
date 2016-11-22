@@ -35,7 +35,7 @@ public class PlainJsonTransformer implements Transformer {
             RequestContext context,
             BsonValue contentToTransform,
             BsonValue args) {
-        if (contentToTransform == null 
+        if (contentToTransform == null
                 || (context.getRepresentationFormat()
                 != RequestContext.REPRESENTATION_FORMAT.PJ
                 && context.getRepresentationFormat()
@@ -55,6 +55,8 @@ public class PlainJsonTransformer implements Transformer {
                     .asDocument();
 
             BsonArray _embedded = new BsonArray();
+            BsonArray _results = new BsonArray();
+            BsonArray _errors = new BsonArray();
 
             addElements(_embedded, embedded, "rh:doc");
             addElements(_embedded, embedded, "rh:file");
@@ -63,8 +65,18 @@ public class PlainJsonTransformer implements Transformer {
             addElements(_embedded, embedded, "rh:coll");
             addElements(_embedded, embedded, "rh:index");
 
-            responseContent.append("_embedded", _embedded);
-        } 
+            addElements(_results, embedded, "rh:result");
+            
+            if (!_results.isEmpty()) {
+                contentToTransform.asDocument().append("_results", _results);
+            }
+            
+            addElements(_errors, embedded, "rh:error");
+            
+            if (!_errors.isEmpty()) {
+                contentToTransform.asDocument().append("_errors", _errors);
+            }
+        }
 
         if (!context.isNoProps()) {
             contentToTransform.asDocument().keySet().stream()
