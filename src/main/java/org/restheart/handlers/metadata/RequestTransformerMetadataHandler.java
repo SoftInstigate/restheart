@@ -54,34 +54,32 @@ public class RequestTransformerMetadataHandler
     @Override
     boolean canCollRepresentationTransformersAppy(RequestContext context) {
         return (!context.isInError()
-                && (context.getMethod() == RequestContext.METHOD.PUT
-                || context.getMethod() == RequestContext.METHOD.PATCH
-                || context.getMethod() == RequestContext.METHOD.POST)
                 && (context.getType() == RequestContext.TYPE.DOCUMENT
+                || context.getType() == RequestContext.TYPE.BULK_DOCUMENTS
                 || context.getType() == RequestContext.TYPE.COLLECTION
+                || context.getType() == RequestContext.TYPE.AGGREGATION
                 || context.getType() == RequestContext.TYPE.FILE
                 || context.getType() == RequestContext.TYPE.FILES_BUCKET
+                || context.getType() == RequestContext.TYPE.INDEX
+                || context.getType() == RequestContext.TYPE.COLLECTION_INDEXES
                 || context.getType() == RequestContext.TYPE.SCHEMA_STORE
                 || context.getType() == RequestContext.TYPE.SCHEMA)
                 && context.getCollectionProps() != null
                 && context.getCollectionProps()
-                        .containsKey(
-                                RepresentationTransformer.RTS_ELEMENT_NAME));
+                        .containsKey(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
     boolean canDBRepresentationTransformersAppy(RequestContext context) {
         return (!context.isInError()
-                && (context.getMethod() == RequestContext.METHOD.PUT
-                || context.getMethod() == RequestContext.METHOD.PATCH)
                 && (context.getType() == RequestContext.TYPE.DB
                 || context.getType() == RequestContext.TYPE.COLLECTION
                 || context.getType() == RequestContext.TYPE.FILES_BUCKET
+                || context.getType() == RequestContext.TYPE.COLLECTION_INDEXES
                 || context.getType() == RequestContext.TYPE.SCHEMA_STORE)
                 && context.getDbProps() != null
                 && context.getDbProps()
-                        .containsKey(
-                                RepresentationTransformer.RTS_ELEMENT_NAME));
+                        .containsKey(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
@@ -140,12 +138,6 @@ public class RequestTransformerMetadataHandler
         List<RepresentationTransformer> collRts = RepresentationTransformer
                 .getFromJson(context.getCollectionProps());
 
-        // DOCUMENT, FILE, COLLECTION or FILES_BUCKET
-        RequestContext.TYPE requestType = context.getType();
-
-        // PUT, PATCH or POST
-        RequestContext.METHOD requestMethod = context.getMethod();
-
         for (RepresentationTransformer rt : collRts) {
             if (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST) {
                 Transformer t = (Transformer) NamedSingletonsFactory
@@ -162,23 +154,15 @@ public class RequestTransformerMetadataHandler
 
                 // content can be an array for bulk POST
                 if (content == null) {
-                    appyTransformationOnObject(
-                            t,
-                            exchange,
-                            context,
-                            requestMethod,
-                            requestType,
-                            rt.getScope(),
-                            new BsonDocument(),
+                    t.transform(
+                            exchange, 
+                            context, 
+                            new BsonDocument(), 
                             rt.getArgs());
                 } else if (content.isDocument()) {
-                    appyTransformationOnObject(
-                            t,
-                            exchange,
-                            context,
-                            requestMethod,
-                            requestType,
-                            rt.getScope(),
+                    t.transform(
+                            exchange, 
+                            context, 
                             content.asDocument(),
                             rt.getArgs());
                 } else if (content.isArray()) {
@@ -186,15 +170,11 @@ public class RequestTransformerMetadataHandler
 
                     arrayContent.stream().forEach(obj -> {
                         if (obj.isDocument()) {
-                            appyTransformationOnObject(
-                                    t,
-                                    exchange,
-                                    context,
-                                    requestMethod,
-                                    requestType,
-                                    rt.getScope(),
-                                    obj.asDocument(),
-                                    rt.getArgs());
+                            t.transform(
+                            exchange, 
+                            context, 
+                            obj.asDocument(),
+                            rt.getArgs());
                         } else {
                             LOGGER.warn("an element of content array "
                                     + "is not an object");
@@ -202,36 +182,6 @@ public class RequestTransformerMetadataHandler
                     });
                 }
             }
-        }
-    }
-
-    private void appyTransformationOnObject(Transformer t,
-            HttpServerExchange exchange,
-            RequestContext context,
-            RequestContext.METHOD requestMethod,
-            RequestContext.TYPE requestType,
-            RepresentationTransformer.SCOPE scope,
-            BsonDocument data,
-            BsonValue args) {
-        if ((requestMethod == RequestContext.METHOD.PUT
-                || requestMethod == RequestContext.METHOD.PATCH)
-                && scope == RepresentationTransformer.SCOPE.THIS
-                && requestType == RequestContext.TYPE.COLLECTION) {
-            t.transform(exchange, context, data, args);
-        } else if ((requestMethod == RequestContext.METHOD.PUT
-                || requestMethod == RequestContext.METHOD.PATCH)
-                && scope == RepresentationTransformer.SCOPE.CHILDREN
-                && (requestType == RequestContext.TYPE.DOCUMENT
-                || requestType == RequestContext.TYPE.FILE)) {
-            t.transform(exchange, context, data, args);
-        } else if (requestMethod == RequestContext.METHOD.POST
-                && scope == RepresentationTransformer.SCOPE.CHILDREN
-                && requestType == RequestContext.TYPE.COLLECTION) {
-            t.transform(exchange, context, data, args);
-        } else if (requestMethod == RequestContext.METHOD.POST
-                && scope == RepresentationTransformer.SCOPE.CHILDREN
-                && requestType == RequestContext.TYPE.FILES_BUCKET) {
-            t.transform(exchange, context, data, args);
         }
     }
 }
