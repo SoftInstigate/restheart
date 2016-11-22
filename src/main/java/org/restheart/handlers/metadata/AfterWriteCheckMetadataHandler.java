@@ -81,7 +81,7 @@ public class AfterWriteCheckMetadataHandler
 
                 // send error response
                 StringBuilder sb = new StringBuilder();
-                sb.append("schema check failed");
+                sb.append("request check failed");
 
                 List<String> warnings = context.getWarnings();
 

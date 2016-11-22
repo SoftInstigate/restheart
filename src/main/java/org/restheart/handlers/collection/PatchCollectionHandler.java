@@ -165,7 +165,7 @@ public class PatchCollectionHandler extends PipedHttpHandler {
                         exchange,
                         context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong schema checker definition. "
+                        "wrong checker definition. "
                         + ex.getMessage(), ex);
                 next(exchange, context);
                 return;
