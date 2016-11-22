@@ -67,26 +67,15 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
             if (check(exchange, context)) {
                 next(exchange, context);
             } else {
-                StringBuilder sb = new StringBuilder();
-                sb.append("request check failed");
-
-                List<String> warnings = context.getWarnings();
-
-                if (warnings != null && !warnings.isEmpty()) {
-                    warnings.stream().forEach(w -> {
-                        sb.append(", ").append(w);
-                    });
-                }
-
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
                         context,
                         HttpStatus.SC_BAD_REQUEST,
-                        sb.toString());
+                        "request check failed");
                 next(exchange, context);
                 return;
             }
-        } else { 
+        } else {
             next(exchange, context);
         }
     }
@@ -128,8 +117,8 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                                     + " does not support this request. "
                                     + "check will "
                                     + (checker.skipNotSupported()
-                                            ? "not fail"
-                                            : "fail"));
+                                    ? "not fail"
+                                    : "fail"));
 
                             String noteMsg = "";
 
@@ -144,15 +133,15 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                                 noteMsg = noteMsg.isEmpty()
                                         ? "uses update operators"
                                         : noteMsg
-                                        .concat(" and update operators");
+                                                .concat(" and update operators");
                             }
 
                             if (CheckersUtils.isBulkRequest(context)) {
                                 noteMsg = noteMsg.isEmpty()
                                         ? "is a bulk operation"
                                         : noteMsg
-                                        .concat(" and it is a "
-                                                + "bulk operation");
+                                                .concat(" and it is a "
+                                                        + "bulk operation");
                             }
 
                             context.addWarning("the checker "

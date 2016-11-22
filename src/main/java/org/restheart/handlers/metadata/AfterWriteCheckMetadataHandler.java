@@ -79,18 +79,6 @@ public class AfterWriteCheckMetadataHandler
                                 context.getCollectionName(),
                                 BsonDocument.class);
 
-                // send error response
-                StringBuilder sb = new StringBuilder();
-                sb.append("request check failed");
-
-                List<String> warnings = context.getWarnings();
-
-                if (warnings != null && !warnings.isEmpty()) {
-                    warnings.stream().forEach(w -> {
-                        sb.append(", ").append(w);
-                    });
-                }
-
                 BsonDocument oldData = context
                         .getDbOperationResult()
                         .getOldData();
@@ -134,7 +122,7 @@ public class AfterWriteCheckMetadataHandler
                         exchange,
                         context,
                         HttpStatus.SC_BAD_REQUEST,
-                        sb.toString());
+                        "request check failed");
                 next(exchange, context);
                 return;
             }

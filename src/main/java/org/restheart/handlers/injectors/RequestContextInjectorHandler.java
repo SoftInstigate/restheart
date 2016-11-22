@@ -124,7 +124,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         }
 
         rcontext.setRepresentationFormat(rep);
-
+        
         // check database name to be a valid mongodb name
         if (rcontext.getDBName() != null
                 && rcontext.isDbNameInvalid()) {
@@ -548,6 +548,13 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 }
 
                 return;
+            }
+            
+            // if representation has not been set explicitly, set it to HAL
+            if (exchange
+                    .getQueryParameters()
+                    .get(RequestContext.REPRESENTATION_FORMAT_KEY) == null) {
+                rcontext.setRepresentationFormat(REPRESENTATION_FORMAT.HAL);
             }
         }
 

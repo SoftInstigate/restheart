@@ -53,29 +53,18 @@ public class CheckHandler extends PipedHttpHandler {
 
     @Override
     public void handleRequest(
-            HttpServerExchange exchange, 
-            RequestContext context) 
+            HttpServerExchange exchange,
+            RequestContext context)
             throws Exception {
         if (doesCheckerAppy()) {
             if (check(exchange, context)) {
                 next(exchange, context);
             } else {
-                StringBuilder sb = new StringBuilder();
-                sb.append("request check failed");
-
-                List<String> warnings = context.getWarnings();
-
-                if (warnings != null && !warnings.isEmpty()) {
-                    warnings.stream().forEach(w -> {
-                        sb.append(", ").append(w);
-                    });
-                }
-
                 ResponseHelper.endExchangeWithMessage(
-                        exchange, 
+                        exchange,
                         context,
-                        HttpStatus.SC_BAD_REQUEST, 
-                        sb.toString());
+                        HttpStatus.SC_BAD_REQUEST,
+                        "request check failed");
                 next(exchange, context);
                 return;
             }
@@ -90,22 +79,22 @@ public class CheckHandler extends PipedHttpHandler {
     }
 
     private boolean check(
-            HttpServerExchange exchange, 
-            RequestContext context) 
+            HttpServerExchange exchange,
+            RequestContext context)
             throws InvalidMetadataException {
         if (context.getContent() != null
                 && !context.getContent().isDocument()) {
             throw new RuntimeException(
                     "this hanlder only supports content of type json object; "
-                            + "content type: " + context
-                                    .getContent()
-                                    .getBsonType()
-                                    .name());
+                    + "content type: " + context
+                            .getContent()
+                            .getBsonType()
+                            .name());
         }
 
-        return checkers.stream().allMatch(checker -> 
-                checker.check(exchange,
-                        context, 
+        return checkers.stream().allMatch(checker
+                -> checker.check(exchange,
+                        context,
                         context.getContent().asDocument(),
                         null));
     }
