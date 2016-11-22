@@ -68,7 +68,7 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                 next(exchange, context);
             } else {
                 StringBuilder sb = new StringBuilder();
-                sb.append("schema check failed");
+                sb.append("request check failed");
 
                 List<String> warnings = context.getWarnings();
 

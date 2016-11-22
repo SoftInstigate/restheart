@@ -128,6 +128,7 @@ public class RequestChecker {
 
         // args is optional
         if (_args != null
+                && !_args.isNull()
                 && !(_args.isArray()
                 || _args.isDocument())) {
             throw new InvalidMetadataException(

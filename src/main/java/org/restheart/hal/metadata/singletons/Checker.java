@@ -62,8 +62,6 @@ import org.restheart.handlers.RequestContext;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface Checker {
-    public static final String FAIL_IF_NOT_SUPPORTED_PROPERTY = "failIfNotSupported";
-    
     enum PHASE {
         BEFORE_WRITE,
         AFTER_WRITE // for optimistic checks, i.e. document is inserted and in case rolled back
@@ -81,7 +79,7 @@ public interface Checker {
      * operators); with AFTER_WRITE the data is optimistically written to the db
      * and rolled back eventually. Note that AFTER_WRITE helps checking data
      * with dot notation and update operators since the data to check is
-     * retrived from the db normalized.
+     * retrieved normalized from the db.
      *
      * @param context
      * @return BEFORE_WRITE or AFTER_WRITE
