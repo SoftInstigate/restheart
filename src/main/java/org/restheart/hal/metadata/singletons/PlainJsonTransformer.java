@@ -54,9 +54,8 @@ public class PlainJsonTransformer implements Transformer {
                     .get("_embedded")
                     .asDocument();
 
+            // add _embedded data
             BsonArray _embedded = new BsonArray();
-            BsonArray _results = new BsonArray();
-            BsonArray _errors = new BsonArray();
 
             addElements(_embedded, embedded, "rh:doc");
             addElements(_embedded, embedded, "rh:file");
@@ -65,16 +64,24 @@ public class PlainJsonTransformer implements Transformer {
             addElements(_embedded, embedded, "rh:coll");
             addElements(_embedded, embedded, "rh:index");
 
-            addElements(_results, embedded, "rh:result");
-            
-            if (!_results.isEmpty()) {
-                contentToTransform.asDocument().append("_results", _results);
+            if (!_embedded.isEmpty()) {
+                responseContent.append("_embedded", _embedded);
             }
-            
+
+            // add _results (for bulk operations)
+            BsonArray _results = new BsonArray();
+            addElements(_results, embedded, "rh:result");
+
+            if (!_results.isEmpty()) {
+                responseContent.append("_results", _results);
+            }
+
+            // add _errors if any
+            BsonArray _errors = new BsonArray();
             addElements(_errors, embedded, "rh:error");
-            
+
             if (!_errors.isEmpty()) {
-                contentToTransform.asDocument().append("_errors", _errors);
+                responseContent.append("_errors", _errors);
             }
         }
 
