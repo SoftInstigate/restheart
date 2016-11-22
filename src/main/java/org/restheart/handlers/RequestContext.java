@@ -17,6 +17,7 @@
  */
 package org.restheart.handlers;
 
+import io.undertow.security.idm.Account;
 import org.restheart.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
@@ -207,6 +208,8 @@ public class RequestContext {
     private boolean noProps = false;
     
     private boolean inError = false;
+    
+    private Account authenticatedAccount = null;
 
     /**
      * the HAL mode
@@ -259,7 +262,7 @@ public class RequestContext {
         this.type = selectRequestType(pathTokens);
 
         this.method = selectRequestMethod(exchange.getRequestMethod());
-
+        
         // etag
         HeaderValues etagHvs = exchange.getRequestHeaders() == null
                 ? null : exchange.getRequestHeaders().get(Headers.IF_MATCH);
@@ -1268,5 +1271,19 @@ public class RequestContext {
      */
     public void setInError(boolean inError) {
         this.inError = inError;
+    }
+
+    /**
+     * @return the authenticatedAccount
+     */
+    public Account getAuthenticatedAccount() {
+        return authenticatedAccount;
+    }
+
+    /**
+     * @param authenticatedAccount the authenticatedAccount to set
+     */
+    public void setAuthenticatedAccount(Account authenticatedAccount) {
+        this.authenticatedAccount = authenticatedAccount;
     }
 }
