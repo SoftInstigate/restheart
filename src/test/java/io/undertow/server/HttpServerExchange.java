@@ -17,6 +17,7 @@
  */
 package io.undertow.server;
 
+import io.undertow.security.api.SecurityContext;
 import io.undertow.util.AbstractAttachable;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
@@ -138,6 +139,10 @@ public class HttpServerExchange extends AbstractAttachable {
     }
     
     public HeaderMap getRequestHeaders() {
+        return null;
+    }
+    
+    public SecurityContext getSecurityContext() {
         return null;
     }
 }
