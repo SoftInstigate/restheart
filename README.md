@@ -139,12 +139,10 @@ If you want to embed RESTHeart in your project, add the dependency to your POM f
     <dependency>
         <groupId>org.restheart</groupId>
         <artifactId>restheart</artifactId>
-        <version>1.1.4</version>
+        <version>2.0.2</version>
     </dependency>
 </dependencies>
 ```
-
-> Note that RESTHeart v 1.1.4 is the first release officially available on Maven Central.
 
 Snapshot builds
 ----
@@ -175,7 +173,7 @@ Then include the SNAPSHOT dependency in your POM:
     <dependency>
         <groupId>org.restheart</groupId>
         <artifactId>restheart</artifactId>
-        <version>1.2.0-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
     </dependency>
 </dependencies>
 ```
@@ -184,25 +182,27 @@ Development releases are continually deployed to Maven Central by [Travis-CI](ht
 
 ## Project data
 
-     391 text files.
-     355 unique files.                                          
-      86 files ignored.
+     429 text files.
+     383 unique files.                                          
+     104 files ignored.
 
-	https://github.com/AlDanial/cloc v 1.66  T=3.65 s (84.1 files/s, 16382.3 lines/s)
-	-------------------------------------------------------------------------------
-	Language                     files          blank        comment           code
-	-------------------------------------------------------------------------------
-	Java                           218           4634           8798          18037
-	JavaScript                      28           2672           2573          10913
-	CSS                              3            988             26           6331
-	XML                             39             59            135           2346
-	Maven                            1             43              4            479
-	YAML                             6            229            434            436
-	JSON                             9              1              0            429
-	HTML                             1             30              0            226
-	Bourne Shell                     2              4              0              9
-	-------------------------------------------------------------------------------
-	SUM:                           307           8660          11970          39206
+        github.com/AlDanial/cloc v 1.70  T=4.88 s (67.7 files/s, 13506.0 lines/s)
+        -------------------------------------------------------------------------------
+        Language                     files          blank        comment           code
+        -------------------------------------------------------------------------------
+        Java                           229           5195           9130          22224
+        JavaScript                      28           2672           2573          10913
+        CSS                              3            988             26           6331
+        XML                             44             56            118           2597
+        YAML                             7            289            538            495
+        Maven                            1             43              4            485
+        JSON                             9              2              0            466
+        HTML                             1             30              0            226
+        Bourne Shell                     7             96              0            154
+        Markdown                         1             63              0            146
+        -------------------------------------------------------------------------------
+        SUM:                           330           9434          12389          44037
+        -------------------------------------------------------------------------------
 
 <hr></hr>
 
