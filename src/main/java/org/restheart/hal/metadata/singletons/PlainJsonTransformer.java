@@ -21,6 +21,7 @@ import io.undertow.server.HttpServerExchange;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.Bootstrapper;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.RequestContext;
 
@@ -35,10 +36,17 @@ public class PlainJsonTransformer implements Transformer {
             RequestContext context,
             BsonValue contentToTransform,
             BsonValue args) {
+        RequestContext.REPRESENTATION_FORMAT rf = context.getRepresentationFormat();
+
+        // can be null if an error occurs before RequestContextInjectorHandler.handle()
+        if (rf == null) {
+            rf = Bootstrapper.getConfiguration().getDefaultRepresentationFormat();
+        }
+
         if (contentToTransform == null
-                || (context.getRepresentationFormat()
+                || (rf
                 != RequestContext.REPRESENTATION_FORMAT.PJ
-                && context.getRepresentationFormat()
+                && rf
                 != RequestContext.REPRESENTATION_FORMAT.PLAIN_JSON)) {
             return;
         }

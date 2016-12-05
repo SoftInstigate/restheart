@@ -25,7 +25,10 @@ import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.hal.Representation;
+import org.restheart.hal.metadata.RepresentationTransformer.PHASE;
+import org.restheart.hal.metadata.singletons.PlainJsonTransformer;
 import org.restheart.handlers.bulk.BulkResultRepresentationFactory;
+import org.restheart.handlers.metadata.TransformerHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +38,12 @@ import org.slf4j.LoggerFactory;
  */
 public class ErrorHandler implements HttpHandler {
     private HttpHandler next;
-    private ResponseSenderHandler sender = new ResponseSenderHandler(null);
-
+    
+    private PipedHttpHandler sender = new TransformerHandler(
+            new ResponseSenderHandler(null),
+            PHASE.RESPONSE,
+                        new PlainJsonTransformer());
+    
     private final Logger LOGGER = LoggerFactory.getLogger(ErrorHandler.class);
 
     /**
