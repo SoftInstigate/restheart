@@ -717,13 +717,13 @@ public class Configuration {
 
         instanceName = getAsStringOrDefault(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
 
-        String _defaultRepresentationFromat = getAsStringOrDefault(conf,
+        String _representationFormat = getAsStringOrDefault(conf,
                 REPRESENTATION_FORMAT_KEY, DEFAULT_REPRESENTATION_FORMAT.name());
 
         REPRESENTATION_FORMAT rf = REPRESENTATION_FORMAT.PLAIN_JSON;;
         
         try {
-            rf = REPRESENTATION_FORMAT.valueOf(_defaultRepresentationFromat);
+            rf = REPRESENTATION_FORMAT.valueOf(_representationFormat);
         } catch (IllegalArgumentException iar) {
             LOGGER.warn("wrong value for {}. allowed values are {}; "
                     + "setting it to {}",

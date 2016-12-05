@@ -23,7 +23,6 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.document.DocumentRepresentationFactory;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -96,8 +95,8 @@ public class PutIndexHandler extends PipedHttpHandler {
         BsonValue _keys = content.get("keys");
         BsonValue _ops = content.get("ops");
         
-        // must be an object
-        if (!_keys.isDocument()) {
+        // must be an object, mandatory
+        if (_keys == null || !_keys.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     context,
@@ -107,8 +106,8 @@ public class PutIndexHandler extends PipedHttpHandler {
             return;
         }
         
-        // must be an object
-        if (!_ops.isDocument()) {
+        // must be an object, optional
+        if (_ops != null && !_ops.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     context,
@@ -119,7 +118,7 @@ public class PutIndexHandler extends PipedHttpHandler {
         }
         
         BsonDocument keys = _keys.asDocument();
-        BsonDocument ops = _ops.asDocument();
+        BsonDocument ops = _ops == null ? null : _ops.asDocument();
 
         if (keys == null) {
             ResponseHelper.endExchangeWithMessage(
