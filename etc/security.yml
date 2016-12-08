@@ -19,9 +19,12 @@ users:
       roles: [users, admins]
 
 ## Configuration for db based Identity Manager
+## bcrypt-hashed-password: true to authenticate against bcrypt hashed passwords
+## https://github.com/svenkubiak/jBCrypt
 dbim:
     - db: userbase
       coll: accounts
+      bcrypt-hashed-password: false
       cache-enabled: false
       cache-size: 1000
       cache-ttl: 60000

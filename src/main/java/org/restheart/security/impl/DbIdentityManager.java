@@ -38,6 +38,7 @@ import java.util.function.Consumer;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
+import org.mindrot.jbcrypt.BCrypt;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
@@ -49,17 +50,22 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public final class DbIdentityManager extends AbstractSimpleSecurityManager implements IdentityManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DbIdentityManager.class);
+public final class DbIdentityManager
+        extends AbstractSimpleSecurityManager
+        implements IdentityManager {
+    private static final Logger LOGGER
+            = LoggerFactory.getLogger(DbIdentityManager.class);
 
     private MongoCollection<BsonDocument> mongoColl;
 
     private String db;
     private String coll;
+    private Boolean bcryptHashedPassword = false;
     private Boolean cacheEnabled = false;
     private Long cacheSize = 1_000l; // 1000 entries
     private Long cacheTTL = 60 * 1_000l; // 1 minute
-    private Cache.EXPIRE_POLICY cacheExpirePolicy = Cache.EXPIRE_POLICY.AFTER_WRITE;
+    private Cache.EXPIRE_POLICY cacheExpirePolicy
+            = Cache.EXPIRE_POLICY.AFTER_WRITE;
 
     private LoadingCache<String, SimpleAccount> cache = null;
 
@@ -68,23 +74,30 @@ public final class DbIdentityManager extends AbstractSimpleSecurityManager imple
      * @param arguments
      * @throws java.io.FileNotFoundException
      */
-    public DbIdentityManager(Map<String, Object> arguments) throws FileNotFoundException {
+    public DbIdentityManager(Map<String, Object> arguments)
+            throws FileNotFoundException {
         init(arguments, "dbim");
 
         if (this.cacheEnabled) {
-            this.cache = CacheFactory.createLocalLoadingCache(this.cacheSize, this.cacheExpirePolicy, this.cacheTTL, (String key) -> {
-                return this.findAccount(key);
-            });
+            this.cache = CacheFactory.createLocalLoadingCache(
+                    this.cacheSize,
+                    this.cacheExpirePolicy,
+                    this.cacheTTL, (String key) -> {
+                        return this.findAccount(key);
+                    });
         }
 
-        MongoClient mongoClient = MongoDBClientSingleton.getInstance().getClient();
+        MongoClient mongoClient = MongoDBClientSingleton
+                .getInstance().getClient();
 
         ArrayList<String> dbNames = new ArrayList<>();
 
         mongoClient.listDatabaseNames().into(dbNames);
 
         if (!dbNames.contains(this.db)) {
-            throw new IllegalArgumentException("error configuring the DbIdentityManager. The specified db does not exist: " + db);
+            throw new IllegalArgumentException(
+                    "error configuring the DbIdentityManager. "
+                    + "The specified db does not exist: " + db);
         }
 
         MongoDatabase mongoDb = mongoClient.getDatabase(this.db);
@@ -92,9 +105,11 @@ public final class DbIdentityManager extends AbstractSimpleSecurityManager imple
         ArrayList<String> collectionNames = new ArrayList<>();
 
         mongoDb.listCollectionNames().into(collectionNames);
-        
+
         if (!collectionNames.contains(this.coll)) {
-            throw new IllegalArgumentException("error configuring the DbIdentityManager. The specified collection does not exist: " + coll);
+            throw new IllegalArgumentException(
+                    "error configuring the DbIdentityManager. "
+                    + "The specified collection does not exist: " + coll);
         }
 
         this.mongoColl = mongoDb.getCollection(coll, BsonDocument.class);
@@ -110,29 +125,55 @@ public final class DbIdentityManager extends AbstractSimpleSecurityManager imple
             Object _cacheSize = ci.get("cache-size");
             Object _cacheTTL = ci.get("cache-ttl");
             Object _cacheExpirePolicy = ci.get("cache-expire-policy");
+            Object _bcryptHashedPassword = ci.get("bcrypt-hashed-password");
 
             if (_db == null || !(_db instanceof String)) {
-                throw new IllegalArgumentException("wrong configuration file format. missing db property");
+                throw new IllegalArgumentException(
+                        "wrong configuration file format. "
+                        + "missing db property");
             }
 
             if (_coll == null || !(_coll instanceof String)) {
-                throw new IllegalArgumentException("wrong configuration file format. missing coll property");
+                throw new IllegalArgumentException(
+                        "wrong configuration file format. "
+                        + "missing coll property");
             }
 
             if (_cacheEnabled != null && !(_cacheEnabled instanceof Boolean)) {
-                throw new IllegalArgumentException("wrong configuration file format. cache-enabled must be a boolean");
+                throw new IllegalArgumentException(
+                        "wrong configuration file format. "
+                        + "cache-enabled must be a boolean");
             }
 
-            if (_cacheSize != null && !(_cacheSize instanceof Long || _cacheSize instanceof Integer)) {
-                throw new IllegalArgumentException("wrong configuration file format. cache-size must be a number");
+            if (_cacheSize != null
+                    && !(_cacheSize instanceof Long
+                    || _cacheSize instanceof Integer)) {
+                throw new IllegalArgumentException(
+                        "wrong configuration file format. "
+                        + "cache-size must be a number");
             }
 
-            if (_cacheTTL != null && !(_cacheTTL instanceof Long || _cacheTTL instanceof Integer)) {
-                throw new IllegalArgumentException("wrong configuration file format. cache-ttl must be a number (of milliseconds)");
+            if (_cacheTTL != null
+                    && !(_cacheTTL instanceof Long
+                    || _cacheTTL instanceof Integer)) {
+                throw new IllegalArgumentException(
+                        "wrong configuration file format. "
+                        + "cache-ttl must be a number (of milliseconds)");
             }
 
-            if (_cacheExpirePolicy != null && !(_cacheExpirePolicy instanceof String)) {
-                throw new IllegalArgumentException("wrong configuration file format. cache-expire-policy valid values are " + Arrays.toString(Cache.EXPIRE_POLICY.values()));
+            if (_cacheExpirePolicy != null
+                    && !(_cacheExpirePolicy instanceof String)) {
+                throw new IllegalArgumentException(
+                        "wrong configuration file format. "
+                        + "cache-expire-policy valid values are "
+                        + Arrays.toString(Cache.EXPIRE_POLICY.values()));
+            }
+
+            if (_bcryptHashedPassword != null
+                    && !(_bcryptHashedPassword instanceof Boolean)) {
+                throw new IllegalArgumentException(
+                        "wrong configuration file format. "
+                        + "bcrypt-hashed-password must be a boolean");
             }
 
             this.db = (String) _db;
@@ -160,10 +201,18 @@ public final class DbIdentityManager extends AbstractSimpleSecurityManager imple
 
             if (_cacheExpirePolicy != null) {
                 try {
-                    this.cacheExpirePolicy = Cache.EXPIRE_POLICY.valueOf((String) _cacheExpirePolicy);
+                    this.cacheExpirePolicy = Cache.EXPIRE_POLICY
+                            .valueOf((String) _cacheExpirePolicy);
                 } catch (IllegalArgumentException iae) {
-                    throw new IllegalArgumentException("wrong configuration file format. cache-expire-policy valid values are " + Arrays.toString(Cache.EXPIRE_POLICY.values()));
+                    throw new IllegalArgumentException(
+                            "wrong configuration file format. "
+                            + "cache-expire-policy valid values are "
+                            + Arrays.toString(Cache.EXPIRE_POLICY.values()));
                 }
+            }
+
+            if (_bcryptHashedPassword != null) {
+                this.bcryptHashedPassword = (Boolean) _bcryptHashedPassword;
             }
         };
     }
@@ -176,7 +225,8 @@ public final class DbIdentityManager extends AbstractSimpleSecurityManager imple
     @Override
     public Account verify(String id, Credential credential) {
         final Account account = getAccount(id);
-        return account != null && verifyCredential(account, credential) ? account : null;
+        return account != null
+                && verifyCredential(account, credential) ? account : null;
     }
 
     @Override
@@ -193,13 +243,31 @@ public final class DbIdentityManager extends AbstractSimpleSecurityManager imple
             return false;
         }
 
-        if (credential instanceof PasswordCredential && account instanceof SimpleAccount) {
+        if (credential instanceof PasswordCredential
+                && account instanceof SimpleAccount) {
             char[] password = ((PasswordCredential) credential).getPassword();
-            char[] expectedPassword = ourAccount.getCredentials().getPassword();
+            char[] expected = ourAccount.getCredentials().getPassword();
 
-            return Arrays.equals(password, expectedPassword);
+            return checkPassword(
+                    this.bcryptHashedPassword,
+                    password,
+                    expected);
         }
         return false;
+    }
+
+    static boolean checkPassword(boolean hashed, char[] password, char[] expected) {
+        if (hashed) {
+            try {
+                return BCrypt.checkpw(
+                        new String(password),
+                        new String(expected));
+            } catch (Throwable t) {
+                return false;
+            }
+        } else {
+            return Arrays.equals(password, expected);
+        }
     }
 
     private SimpleAccount getAccount(String id) {
@@ -222,49 +290,59 @@ public final class DbIdentityManager extends AbstractSimpleSecurityManager imple
         FindIterable<BsonDocument> result = mongoColl
                 .find(query)
                 .limit(1);
-        
-        if (result == null || ! result.iterator().hasNext()) {
+
+        if (result == null || !result.iterator().hasNext()) {
             LOGGER.debug("no account found with _id: {}", _id);
             return null;
         }
-        
+
         BsonDocument _account = result.iterator().next();
 
         if (!_account.containsKey("password")) {
-            LOGGER.error("account with _id: {} does not have password property", _id);
+            LOGGER.error("account with _id: {} does not have password property",
+                    _id);
             return null;
         }
-        
+
         BsonValue _password = _account.get("password");
 
         if (_password == null || !_password.isString()) {
-            LOGGER.debug("account with _id: {} has an invalid password (not string): {}", _id, _password);
+            LOGGER.debug(
+                    "account with _id: {} "
+                    + "has an invalid password (not string): {}",
+                    _id, _password);
             return null;
         }
-        
+
         String password = _password.asString().getValue();
 
         if (!_account.containsKey("roles")) {
-            LOGGER.error("account with _id: {} does not have password property", _id);
+            LOGGER.error("account with _id: {} does not have roles property",
+                    _id);
             return null;
         }
-        
+
         BsonValue _roles = _account.get("roles");
-        
+
         if (_roles == null || !_roles.isArray()) {
-            LOGGER.debug("account with _id: {} has an invalid roles (not array): {}", _id, _roles);
+            LOGGER.debug(
+                    "account with _id: {} has an invalid roles (not array): {}",
+                    _id, _roles);
             return null;
         }
-        
+
         Set<String> roles = new HashSet<>();
-        
+
         List<BsonValue> __roles = _roles.asArray().getValues();
-        
+
         __roles.forEach(el -> {
             if (el != null && el.isString()) {
                 roles.add(el.asString().getValue());
             } else {
-                LOGGER.debug("account with _id: {} has a not string role: {} ; ignoring it", _id, el);
+                LOGGER.debug(
+                        "account with _id: {} "
+                        + "has a not string role: {} ; ignoring it",
+                        _id, el);
             }
         });
 
