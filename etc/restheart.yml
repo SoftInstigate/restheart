@@ -146,6 +146,8 @@ metadata-named-singletons:
           class: org.restheart.hal.metadata.singletons.OidsAsStringsTransformer
         - name: writeResult
           class: org.restheart.hal.metadata.singletons.WriteResultTransformer
+        - name: hashProperties
+          class: org.restheart.hal.metadata.singletons.HashTransformer
     
     # Hook group used by handler:
     # org.restheart.handlers.metadata.HookHandler
