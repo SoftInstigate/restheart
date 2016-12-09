@@ -79,19 +79,9 @@ public class DeleteFileHandler extends PipedHttpHandler {
         
         BsonValue id = context.getDocumentId();
 
-        if (!id.isObjectId()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "The file _id must be an ObjectId");
-            next(exchange, context);
-            return;
-        }
-
         OperationResult result = this.gridFsDAO
                 .deleteFile(getDatabase(), context.getDBName(),
-                        context.getCollectionName(), id.asObjectId(),
+                        context.getCollectionName(), id,
                         context.getETag(),
                         context.isETagCheckRequired());
 
@@ -101,8 +91,6 @@ public class DeleteFileHandler extends PipedHttpHandler {
         if (result.getEtag() != null) {
             ResponseHelper.injectEtagHeader(exchange, result.getEtag());
         }
-
-        next(exchange, context);
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
             ResponseHelper.endExchangeWithMessage(
@@ -115,6 +103,8 @@ public class DeleteFileHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         } 
+        
+        context.setResponseStatusCode(result.getHttpCode());
         
         next(exchange, context);
     }
