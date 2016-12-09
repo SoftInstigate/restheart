@@ -35,7 +35,7 @@ import org.restheart.handlers.RequestContext;
  * the RESPONSE phase, it hides stored properties.
  *
  * <br>Example that removes the property 'password' from the response:
- * <br>rtl:=[{name:"filterProperties", "phase":"RESPONSE", "scope":"CHILDREN",
+ * <br>rts:=[{name:"filterProperties", "phase":"RESPONSE", "scope":"CHILDREN",
  * args:["password"]}]
  *
  */
