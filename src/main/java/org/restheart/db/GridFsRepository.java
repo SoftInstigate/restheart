@@ -21,7 +21,7 @@ import com.mongodb.DuplicateKeyException;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.bson.BsonDocument;
-import org.bson.BsonObjectId;
+import org.bson.BsonValue;
 
 /**
  *
@@ -41,7 +41,7 @@ public interface GridFsRepository {
             Database db, 
             String dbName, 
             String bucketName, 
-            BsonObjectId fileId, 
+            BsonValue fileId, 
             String requestEtag, 
             final boolean checkEtag);
 

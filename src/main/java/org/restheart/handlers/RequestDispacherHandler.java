@@ -58,6 +58,7 @@ import org.restheart.handlers.aggregation.GetAggregationHandler;
 import org.restheart.handlers.bulk.BulkDeleteDocumentsHandler;
 import org.restheart.handlers.bulk.BulkPatchDocumentsHandler;
 import org.restheart.handlers.bulk.BulkPostCollectionHandler;
+import org.restheart.handlers.files.PutFileHandler;
 import org.restheart.handlers.metadata.AfterWriteCheckMetadataHandler;
 import org.restheart.handlers.schema.JsonSchemaTransformer;
 import org.restheart.handlers.metadata.TransformerHandler;
@@ -249,6 +250,12 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                 new RequestTransformerMetadataHandler(
                         new BeforeWriteCheckMetadataHandler(
                                 new PostBucketHandler(
+                                        respTransformers()))));
+        
+        putPipedHttpHandler(TYPE.FILE, METHOD.PUT,
+                new RequestTransformerMetadataHandler(
+                        new BeforeWriteCheckMetadataHandler(
+                                new PutFileHandler(
                                         respTransformers()))));
 
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.PUT,

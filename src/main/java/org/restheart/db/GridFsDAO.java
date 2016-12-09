@@ -72,19 +72,36 @@ public class GridFsDAO implements GridFsRepository {
         ObjectId etag = new ObjectId();
         metadata.put("_etag", new BsonObjectId(etag));
 
-        GridFSUploadOptions options = new GridFSUploadOptions()
-                .metadata(Document.parse(metadata.toJson()));
-
         InputStream sourceStream = new FileInputStream(filePath.toFile());
-        
-        ObjectId _id = gridFSBucket.uploadFromStream(
-                filename, 
-                sourceStream, 
-                options);
 
-        return new OperationResult(HttpStatus.SC_CREATED,
-                new BsonObjectId(etag),
-                new BsonObjectId(_id));
+        if (metadata.get("_id") == null) {
+            GridFSUploadOptions options = new GridFSUploadOptions()
+                    .metadata(Document.parse(metadata.toJson()));
+
+            ObjectId _id = gridFSBucket.uploadFromStream(
+                    filename,
+                    sourceStream,
+                    options);
+
+            return new OperationResult(HttpStatus.SC_CREATED,
+                    new BsonObjectId(etag),
+                    new BsonObjectId(_id));
+        } else {
+            BsonValue _id = metadata.remove("_id");
+
+            GridFSUploadOptions options = new GridFSUploadOptions()
+                    .metadata(Document.parse(metadata.toJson()));
+
+            gridFSBucket.uploadFromStream(
+                    _id,
+                    filename,
+                    sourceStream,
+                    options);
+
+            return new OperationResult(HttpStatus.SC_CREATED,
+                    new BsonObjectId(etag),
+                    _id);
+        }
     }
 
     private String extractFilenameFromProperties(
@@ -111,19 +128,19 @@ public class GridFsDAO implements GridFsRepository {
             final Database db,
             final String dbName,
             final String bucketName,
-            final BsonObjectId fileId,
+            final BsonValue fileId,
             final String requestEtag,
             final boolean checkEtag) {
         final String bucket = extractBucketName(bucketName);
-        
+
         GridFSBucket gridFSBucket = GridFSBuckets.create(
                 db.getDatabase(dbName),
                 bucket);
-        
+
         GridFSFile file = gridFSBucket
                 .find(eq("_id", fileId))
                 .limit(1).iterator().tryNext();
-        
+
         if (file == null) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
         } else if (checkEtag) {
@@ -139,8 +156,8 @@ public class GridFsDAO implements GridFsRepository {
             }
         }
 
-        gridFSBucket.delete(fileId.asObjectId().getValue());
-        
+        gridFSBucket.delete(fileId);
+
         return new OperationResult(HttpStatus.SC_NO_CONTENT);
     }
 
