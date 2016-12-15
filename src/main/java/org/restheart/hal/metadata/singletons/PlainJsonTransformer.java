@@ -24,6 +24,9 @@ import org.bson.BsonValue;
 import org.restheart.Bootstrapper;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.RequestContext.METHOD;
+import org.restheart.handlers.RequestContext.TYPE;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
@@ -36,6 +39,13 @@ public class PlainJsonTransformer implements Transformer {
             RequestContext context,
             BsonValue contentToTransform,
             BsonValue args) {
+        if (!context.isInError()
+                && (context.getType() == TYPE.DOCUMENT
+                || context.getType() == TYPE.FILE
+                || context.getType() == TYPE.INDEX)) {
+            return;
+        }
+
         RequestContext.REPRESENTATION_FORMAT rf = context.getRepresentationFormat();
 
         // can be null if an error occurs before RequestContextInjectorHandler.handle()
@@ -55,60 +65,103 @@ public class PlainJsonTransformer implements Transformer {
 
         context.setResponseContentType(Representation.JSON_MEDIA_TYPE);
 
-        if (!context.isInError() && contentToTransform.isDocument()
-                && contentToTransform.asDocument().containsKey("_embedded")) {
-            BsonDocument embedded = contentToTransform
+        if (contentToTransform.isDocument()) {
+            BsonValue _embedded = contentToTransform
                     .asDocument()
-                    .get("_embedded")
-                    .asDocument();
+                    .get("_embedded");
 
-            // add _embedded data
-            BsonArray _embedded = new BsonArray();
+            if (_embedded != null) {
+                BsonDocument embedded = _embedded.asDocument();
 
-            addElements(_embedded, embedded, "rh:doc");
-            addElements(_embedded, embedded, "rh:file");
-            addElements(_embedded, embedded, "rh:bucket");
-            addElements(_embedded, embedded, "rh:db");
-            addElements(_embedded, embedded, "rh:coll");
-            addElements(_embedded, embedded, "rh:index");
+                // add _items data
+                BsonArray __embedded = new BsonArray();
 
-            if (!_embedded.isEmpty()) {
-                responseContent.append("_embedded", _embedded);
-            }
+                addItems(__embedded, embedded, "rh:doc");
+                addItems(__embedded, embedded, "rh:file");
+                addItems(__embedded, embedded, "rh:bucket");
+                addItems(__embedded, embedded, "rh:db");
+                addItems(__embedded, embedded, "rh:coll");
+                addItems(__embedded, embedded, "rh:index");
 
-            // add _results (for bulk operations)
-            BsonArray _results = new BsonArray();
-            addElements(_results, embedded, "rh:result");
+                // add _items if not in error
+                if (context.getMethod() == METHOD.GET
+                        && context.getResponseStatusCode()
+                        == HttpStatus.SC_OK) {
+                    responseContent.append("_embedded", __embedded);
+                }
 
-            if (!_results.isEmpty()) {
-                responseContent.append("_results", _results);
-            }
+                // add _results (for bulk operations)
+                BsonArray _results = new BsonArray();
+                addItems(_results, embedded, "rh:result");
 
-            // add _errors if any
-            BsonArray _errors = new BsonArray();
-            addElements(_errors, embedded, "rh:error");
+                if (!_results.isEmpty()) {
+                    responseContent.append("_results", _results);
+                }
 
-            if (!_errors.isEmpty()) {
-                responseContent.append("_errors", _errors);
+                // add _errors if any
+                BsonArray _errors = new BsonArray();
+                addItems(_errors, embedded, "rh:error");
+
+                if (!_errors.isEmpty()) {
+                    responseContent.append("_errors", _errors);
+                }
+
+                // add _exception if any
+                BsonArray _exception = new BsonArray();
+                addItems(_exception, embedded, "rh:exception");
+
+                if (!_exception.isEmpty()) {
+                    responseContent.append("_exceptions", _exception);
+                }
+
+                // add _warnings if any
+                BsonArray _warnings = new BsonArray();
+                addItems(_warnings, embedded, "rh:warnings");
+
+                if (!_warnings.isEmpty()) {
+                    responseContent.append("_warnings", _warnings);
+                }
+            } else if (context.getMethod() == METHOD.GET
+                    && context.getResponseStatusCode()
+                    == HttpStatus.SC_OK) {
+                responseContent.append("_embedded", new BsonArray());
             }
         }
 
-        if (!context.isNoProps()) {
+        if (!context.isNoProps() || context.isInError()) {
             contentToTransform.asDocument().keySet().stream()
                     .filter(key -> !"_embedded".equals(key)
                     && !"_links".equals(key))
                     .forEach(key -> responseContent
                     .append(key, contentToTransform.asDocument()
                             .get(key)));
-        }
 
-        context.setResponseContent(responseContent);
+            context.setResponseContent(responseContent);
+        } else if (!context.isInError()) {
+            // np specified, just return the most appropriate array
+            if (responseContent.get("_errors") != null
+                    && !responseContent.get("_errors").asArray().isEmpty()) {
+                context.setResponseContent(responseContent.get("_errors"));
+            } else if (responseContent.get("_results") != null
+                    && !responseContent.get("_results").asArray().isEmpty()) {
+                context.setResponseContent(responseContent.get("_results"));
+            } else if (responseContent.get("_embedded") != null) {
+                context.setResponseContent(responseContent.get("_embedded"));
+            } else if (responseContent.get("_exception") != null
+                    && !responseContent.get("_exception").asArray().isEmpty()) {
+                context.setResponseContent(responseContent.get("_exception"));
+            } else {
+                context.setResponseContent(null);
+            }
+        } else {
+            context.setResponseContent(responseContent);
+        }
     }
 
-    private void addElements(BsonArray elements, BsonDocument embedded, String ns) {
-        if (embedded.containsKey(ns)) {
+    private void addItems(BsonArray elements, BsonDocument items, String ns) {
+        if (items.containsKey(ns)) {
             elements.addAll(
-                    embedded
+                    items
                             .get(ns)
                             .asArray());
         }
