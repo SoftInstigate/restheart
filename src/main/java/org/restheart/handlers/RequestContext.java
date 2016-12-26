@@ -114,6 +114,7 @@ public class RequestContext {
     public static final String PAGESIZE_QPARAM_KEY = "pagesize";
     public static final String COUNT_QPARAM_KEY = "count";
     public static final String SORT_BY_QPARAM_KEY = "sort_by";
+    public static final String SORT_QPARAM_KEY = "sort";
     public static final String FILTER_QPARAM_KEY = "filter";
     public static final String AGGREGATION_VARIABLES_QPARAM_KEY = "avars";
     public static final String KEYS_QPARAM_KEY = "keys";
@@ -683,7 +684,7 @@ public class RequestContext {
     public BsonDocument getSortByDocument() throws JsonParseException {
         BsonDocument sort = new BsonDocument();
 
-        if (sortBy == null || sortBy.isEmpty()) {
+        if (sortBy == null) {
             sort.put("_id", new BsonInt32(-1));
         } else {
             sortBy.stream().forEach((s) -> {
