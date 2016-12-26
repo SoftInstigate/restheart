@@ -48,6 +48,7 @@ import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.handlers.RequestContext.REPRESENTATION_FORMAT;
 import org.restheart.handlers.RequestContext.TYPE;
 import static org.restheart.handlers.RequestContext.SHARDKEY_QPARAM_KEY;
+import static org.restheart.handlers.RequestContext.SORT_QPARAM_KEY;
 
 /**
  *
@@ -92,7 +93,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         RequestContext rcontext = new RequestContext(exchange, whereUri, whatUri);
-        
+
         // skip parameters injection if method is OPTIONS
         // this makes sure OPTIONS works even on wrong paramenter
         // e.g. OPTIONS 127.0.0.1:8080?page=a
@@ -100,7 +101,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             next(exchange, rcontext);
             return;
         }
-        
+
         // get and check rep parameter (representation format)
         Deque<String> __rep = exchange
                 .getQueryParameters()
@@ -124,7 +125,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         }
 
         rcontext.setRepresentationFormat(rep);
-        
+
         // check database name to be a valid mongodb name
         if (rcontext.getDBName() != null
                 && rcontext.isDbNameInvalid()) {
@@ -153,7 +154,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         // check collection name to be a valid mongodb name
         if (rcontext.isReservedResource()) {
             ResponseHelper.endExchangeWithMessage(
-                    exchange, 
+                    exchange,
                     rcontext,
                     HttpStatus.SC_FORBIDDEN,
                     "reserved resource");
@@ -228,7 +229,14 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             rcontext.setCount(true);
         }
         // get and check sort_by parameter
-        Deque<String> sort_by = exchange.getQueryParameters().get("sort_by");
+        Deque<String> sort_by = null;
+
+        if (exchange.getQueryParameters().containsKey(SORT_BY_QPARAM_KEY)) {
+            sort_by = exchange.getQueryParameters().get(SORT_BY_QPARAM_KEY);
+
+        } else if (exchange.getQueryParameters().containsKey(SORT_QPARAM_KEY)) {
+            sort_by = exchange.getQueryParameters().get(SORT_QPARAM_KEY);
+        }
 
         if (sort_by != null) {
             if (sort_by.stream().anyMatch(s -> s == null || s.isEmpty())) {
@@ -241,15 +249,25 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 return;
             }
 
-            if (sort_by.stream().anyMatch(s -> s.trim().equals("_last_updated_on") || s.trim().equals("+_last_updated_on") || s.trim().equals("-_last_updated_on"))) {
-                rcontext.addWarning("unexepecting sorting; the _last_updated_on timestamp is generated from the _etag property if present");
+            if (sort_by.stream()
+                    .anyMatch(s -> s.trim().equals("_last_updated_on") 
+                            || s.trim().equals("+_last_updated_on") 
+                            || s.trim().equals("-_last_updated_on"))) {
+                rcontext.addWarning("unexepecting sorting; "
+                        + "the _last_updated_on timestamp is generated "
+                        + "from the _etag property if present");
             }
 
-            if (sort_by.stream().anyMatch(s -> s.trim().equals("_created_on") || s.trim().equals("_created_on") || s.trim().equals("_created_on"))) {
-                rcontext.addWarning("unexepecting sorting; the _created_on timestamp is generated from the _id property if it is an ObjectId");
+            if (sort_by.stream()
+                    .anyMatch(s -> s.trim().equals("_created_on") 
+                            || s.trim().equals("_created_on") 
+                            || s.trim().equals("_created_on"))) {
+                rcontext.addWarning("unexepecting sorting; "
+                        + "the _created_on timestamp is generated "
+                        + "from the _id property if it is an ObjectId");
             }
 
-            rcontext.setSortBy(exchange.getQueryParameters().get(SORT_BY_QPARAM_KEY));
+            rcontext.setSortBy(sort_by);
         }
 
         Deque<String> keys = exchange.getQueryParameters().get(KEYS_QPARAM_KEY);
@@ -283,7 +301,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                             exchange,
                             rcontext,
                             HttpStatus.SC_BAD_REQUEST,
-                            "illegal keys paramenter: " + f, t);                    
+                            "illegal keys paramenter: " + f, t);
                     return true;
                 }
 
@@ -305,7 +323,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                             exchange,
                             rcontext,
                             HttpStatus.SC_BAD_REQUEST,
-                            "illegal filter paramenter (empty)");                    
+                            "illegal filter paramenter (empty)");
                     return true;
                 }
 
@@ -549,7 +567,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
                 return;
             }
-            
+
             // if representation has not been set explicitly, set it to HAL
             if (exchange
                     .getQueryParameters()

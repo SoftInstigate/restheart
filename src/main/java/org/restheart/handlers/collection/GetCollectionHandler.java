@@ -40,7 +40,8 @@ import org.slf4j.LoggerFactory;
  */
 public class GetCollectionHandler extends PipedHttpHandler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(GetCollectionHandler.class);
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(GetCollectionHandler.class);
 
     public GetCollectionHandler() {
         super();
@@ -61,18 +62,25 @@ public class GetCollectionHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(
+            HttpServerExchange exchange,
+            RequestContext context)
+            throws Exception {
         if (context.isInError()) {
             next(exchange, context);
             return;
         }
-        
-        MongoCollection<BsonDocument> coll = getDatabase().getCollection(context.getDBName(), context.getCollectionName());
+
+        MongoCollection<BsonDocument> coll = getDatabase()
+                .getCollection(
+                        context.getDBName(),
+                        context.getCollectionName());
 
         long size = -1;
 
         if (context.isCount()) {
-            size = getDatabase().getCollectionSize(coll, context.getFiltersDocument());
+            size = getDatabase()
+                    .getCollectionSize(coll, context.getFiltersDocument());
         }
 
         // ***** get data
@@ -91,7 +99,8 @@ public class GetCollectionHandler extends PipedHttpHandler {
                         context.getCursorAllocationPolicy());
             } catch (JSONParseException jpe) {
                 // the filter expression is not a valid json string
-                LOGGER.debug("invalid filter expression {}", context.getFilter(), jpe);
+                LOGGER.debug("invalid filter expression {}",
+                        context.getFilter(), jpe);
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
                         context,
@@ -135,7 +144,8 @@ public class GetCollectionHandler extends PipedHttpHandler {
             context.setResponseContentType(Representation.HAL_JSON_MEDIA_TYPE);
             context.setResponseStatusCode(HttpStatus.SC_OK);
 
-            ResponseHelper.injectEtagHeader(exchange, context.getCollectionProps());
+            ResponseHelper
+                    .injectEtagHeader(exchange, context.getCollectionProps());
 
             // call the ResponseTransformerMetadataHandler if piped in
             next(exchange, context);
