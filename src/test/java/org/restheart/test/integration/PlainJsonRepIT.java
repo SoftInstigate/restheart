@@ -81,19 +81,19 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertEquals(HttpStatus.SC_OK, resp.getStatus());
 
         String _body = resp.getBody();
-        
+
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
         BsonValue body = JsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
-        
+
         Assert.assertNotNull(body.asDocument().get("_returned"));
         Assert.assertTrue(body.asDocument().get("_returned").isNumber());
-        
+
         Assert.assertNotNull(body.asDocument().get("_size"));
         Assert.assertTrue(body.asDocument().get("_size").isNumber());
-        
+
         Assert.assertNotNull(body.asDocument().get("_total_pages"));
         Assert.assertTrue(body.asDocument().get("_total_pages").isNumber());
 
@@ -101,15 +101,15 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(body.asDocument().get("_embedded").isArray());
 
-        Assert.assertTrue(body.asDocument().get("_embedded").asArray().size() == 
-                body.asDocument().get("_returned").asNumber().intValue());
+        Assert.assertTrue(body.asDocument().get("_embedded").asArray().size()
+                == body.asDocument().get("_returned").asNumber().intValue());
 
         body.asDocument().get("_embedded").asArray().forEach(db -> {
             Assert.assertNotNull(db);
             Assert.assertNotNull(db.isDocument());
         });
     }
-    
+
     @Test
     public void testGetRootNp() throws Exception {
         resp = Unirest.get(BASE_URL)
@@ -121,13 +121,13 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertEquals(HttpStatus.SC_OK, resp.getStatus());
 
         String _body = resp.getBody();
-        
+
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
         BsonValue body = JsonUtils.parse(_body);
 
         Assert.assertTrue(body.isArray());
-        
+
         Assert.assertTrue(body.asArray().size() > 0);
 
         body.asArray().forEach(db -> {
@@ -135,7 +135,7 @@ public class PlainJsonRepIT extends AbstactIT {
             Assert.assertNotNull(db.isDocument());
         });
     }
-    
+
     @Test
     public void testGetDb() throws Exception {
         resp = Unirest.get(url(DB))
@@ -146,19 +146,19 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertEquals(HttpStatus.SC_OK, resp.getStatus());
 
         String _body = resp.getBody();
-        
+
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
         BsonValue body = JsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
-        
+
         Assert.assertNotNull(body.asDocument().get("_returned"));
         Assert.assertTrue(body.asDocument().get("_returned").isNumber());
-        
+
         Assert.assertNotNull(body.asDocument().get("_size"));
         Assert.assertTrue(body.asDocument().get("_size").isNumber());
-        
+
         Assert.assertNotNull(body.asDocument().get("_total_pages"));
         Assert.assertTrue(body.asDocument().get("_total_pages").isNumber());
 
@@ -166,18 +166,18 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(body.asDocument().get("_embedded").isArray());
 
-        Assert.assertTrue(body.asDocument().get("_embedded").asArray().size() == 
-                body.asDocument().get("_returned").asNumber().intValue());
+        Assert.assertTrue(body.asDocument().get("_embedded").asArray().size()
+                == body.asDocument().get("_returned").asNumber().intValue());
 
         body.asDocument().get("_embedded").asArray().forEach(coll -> {
             Assert.assertNotNull(coll);
             Assert.assertNotNull(coll.isDocument());
         });
     }
-    
+
     @Test
     public void testGetDbNp() throws Exception {
-         resp = Unirest.get(url(DB))
+        resp = Unirest.get(url(DB))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .queryString("rep", "pj")
                 .queryString("np", "true")
@@ -186,13 +186,13 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertEquals(HttpStatus.SC_OK, resp.getStatus());
 
         String _body = resp.getBody();
-        
+
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
         BsonValue body = JsonUtils.parse(_body);
 
         Assert.assertTrue(body.isArray());
-        
+
         Assert.assertTrue(body.asArray().size() > 0);
 
         body.asArray().forEach(coll -> {
@@ -200,7 +200,7 @@ public class PlainJsonRepIT extends AbstactIT {
             Assert.assertNotNull(coll.isDocument());
         });
     }
-    
+
     @Test
     public void testGetColl() throws Exception {
         resp = Unirest.get(url(DB, COLL))
@@ -212,22 +212,22 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertEquals(HttpStatus.SC_OK, resp.getStatus());
 
         String _body = resp.getBody();
-        
+
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
         BsonValue body = JsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
-        
+
         Assert.assertNotNull(body.asDocument().get("_returned"));
         Assert.assertTrue(body.asDocument().get("_returned").isNumber());
-        
-        Assert.assertTrue(10 == 
-                body.asDocument().get("_returned").asNumber().intValue());
-        
+
+        Assert.assertTrue(10
+                == body.asDocument().get("_returned").asNumber().intValue());
+
         Assert.assertNotNull(body.asDocument().get("_size"));
         Assert.assertTrue(body.asDocument().get("_size").isNumber());
-        
+
         Assert.assertNotNull(body.asDocument().get("_total_pages"));
         Assert.assertTrue(body.asDocument().get("_total_pages").isNumber());
 
@@ -235,38 +235,38 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(body.asDocument().get("_embedded").isArray());
 
-        Assert.assertTrue(10 ==
-                body.asDocument().get("_embedded").asArray().size());
-                
+        Assert.assertTrue(10
+                == body.asDocument().get("_embedded").asArray().size());
+
         body.asDocument().get("_embedded").asArray().forEach(doc -> {
             Assert.assertNotNull(doc);
             Assert.assertNotNull(doc.isDocument());
         });
     }
-    
+
     @Test
     public void testGetCollEmptyResultSet() throws Exception {
-         resp = Unirest.get(url(DB, COLL))
+        resp = Unirest.get(url(DB, COLL))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .queryString("rep", "pj")
-                 .queryString("page", "2")
+                .queryString("page", "2")
                 .asString();
 
         Assert.assertEquals(HttpStatus.SC_OK, resp.getStatus());
 
         String _body = resp.getBody();
-        
+
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
         BsonValue body = JsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
-        
+
         Assert.assertNotNull(body.asDocument().get("_returned"));
         Assert.assertTrue(body.asDocument().get("_returned").isNumber());
-        
-        Assert.assertTrue(0 == 
-                body.asDocument().get("_returned").asNumber().intValue());
+
+        Assert.assertTrue(0
+                == body.asDocument().get("_returned").asNumber().intValue());
 
         Assert.assertNotNull(body.asDocument().get("_embedded"));
 
@@ -274,26 +274,26 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(body.asDocument().get("_embedded").asArray().isEmpty());
     }
-    
+
     @Test
     public void testGetCollNpEmptyResultSet() throws Exception {
-         resp = Unirest.get(url(DB, COLL))
+        resp = Unirest.get(url(DB, COLL))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .queryString("rep", "pj")
                 .queryString("np", "true")
-                 .queryString("page", "2")
+                .queryString("page", "2")
                 .asString();
 
         Assert.assertEquals(HttpStatus.SC_OK, resp.getStatus());
 
         String _body = resp.getBody();
-        
+
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
         BsonValue body = JsonUtils.parse(_body);
 
         Assert.assertTrue(body.isArray());
-        
+
         Assert.assertTrue(body.asArray().size() == 0);
 
         body.asArray().forEach(doc -> {
@@ -301,7 +301,7 @@ public class PlainJsonRepIT extends AbstactIT {
             Assert.assertNotNull(doc.isDocument());
         });
     }
-    
+
     @Test
     public void testGetIndexes() throws Exception {
         resp = Unirest.get(url(DB, COLL, "_indexes"))
@@ -312,16 +312,16 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertEquals(HttpStatus.SC_OK, resp.getStatus());
 
         String _body = resp.getBody();
-        
+
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
         BsonValue body = JsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
-        
+
         Assert.assertNotNull(body.asDocument().get("_returned"));
         Assert.assertTrue(body.asDocument().get("_returned").isNumber());
-        
+
         Assert.assertNotNull(body.asDocument().get("_size"));
         Assert.assertTrue(body.asDocument().get("_size").isNumber());
 
@@ -329,15 +329,15 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(body.asDocument().get("_embedded").isArray());
 
-        Assert.assertTrue(body.asDocument().get("_embedded").asArray().size() == 
-                body.asDocument().get("_returned").asNumber().intValue());
+        Assert.assertTrue(body.asDocument().get("_embedded").asArray().size()
+                == body.asDocument().get("_returned").asNumber().intValue());
 
         body.asDocument().get("_embedded").asArray().forEach(index -> {
             Assert.assertNotNull(index);
             Assert.assertNotNull(index.isDocument());
         });
     }
-    
+
     @Test
     public void testGetDoc() throws Exception {
         resp = Unirest.get(url(DB, COLL, "1"))
@@ -348,16 +348,16 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertEquals(HttpStatus.SC_OK, resp.getStatus());
 
         String _body = resp.getBody();
-        
+
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
         BsonValue body = JsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
-        
+
         Assert.assertTrue(body.asDocument().keySet().size() == 3);
     }
-    
+
     @Test
     public void testGetDocNp() throws Exception {
         resp = Unirest.get(url(DB, COLL, "1"))
@@ -369,16 +369,16 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertEquals(HttpStatus.SC_OK, resp.getStatus());
 
         String _body = resp.getBody();
-        
+
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
         BsonValue body = JsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
-        
+
         Assert.assertTrue(body.asDocument().keySet().size() == 3);
     }
-    
+
     @Test
     public void testGetError() throws Exception {
         resp = Unirest.get(url(DB, COLL))
@@ -390,23 +390,23 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, resp.getStatus());
 
         String _body = resp.getBody();
-        
+
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
         BsonValue body = JsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
-        
+
         Assert.assertNull(body.asDocument().get("_embedded"));
-        
+
         Assert.assertNotNull(body.asDocument().get("_exceptions"));
-        
+
         Assert.assertTrue(body.asDocument().get("_exceptions").isArray());
-        
+
         Assert.assertNotNull(body.asDocument().get("message"));
     }
-    
-     @Test
+
+    @Test
     public void testGetDocError() throws Exception {
         resp = Unirest.get(url(DB, COLL, "1"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
@@ -417,22 +417,22 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, resp.getStatus());
 
         String _body = resp.getBody();
-        
+
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
         BsonValue body = JsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
-        
+
         Assert.assertNull(body.asDocument().get("_embedded"));
-        
+
         Assert.assertNotNull(body.asDocument().get("_exceptions"));
-        
+
         Assert.assertTrue(body.asDocument().get("_exceptions").isArray());
-        
+
         Assert.assertNotNull(body.asDocument().get("message"));
     }
-    
+
     @Test
     public void testGetErrorNp() throws Exception {
         resp = Unirest.get(url(DB, COLL))
@@ -445,20 +445,242 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, resp.getStatus());
 
         String _body = resp.getBody();
-        
+
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
         BsonValue body = JsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
-        
+
         Assert.assertNull(body.asDocument().get("_embedded"));
-        
+
         Assert.assertNotNull(body.asDocument().get("_exceptions"));
-        
+
         Assert.assertTrue(body.asDocument().get("_exceptions").isArray());
-        
+
         // event if np, in case of error return the props
         Assert.assertNotNull(body.asDocument().get("message"));
+    }
+
+    @Test
+    public void testAggregation() throws Exception {
+        final String _aggrs = "{ \"aggrs\" : [ "
+                + "      { "
+                + "      \"stages\" : [ "
+                + "        { \"$match\" : { \"n\" : { \"$gt\" : 4 } } }"
+                + "      ],\n"
+                + "      \"type\" : \"pipeline\","
+                + "      \"uri\" : \"test\""
+                + "      }"
+                + "    ]"
+                + "}";
+
+        // create aggregation
+        resp = Unirest.patch(url(DB, COLL))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body(_aggrs)
+                .asString();
+
+        Assert.assertEquals(HttpStatus.SC_OK, resp.getStatus());
+
+        resp = Unirest.get(url(DB, COLL, "_aggrs", "test"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("rep", "pj")
+                .asString();
+
+        Assert.assertEquals(HttpStatus.SC_OK, resp.getStatus());
+
+        String _body = resp.getBody();
+
+        Assert.assertTrue(_body != null && !_body.isEmpty());
+
+        BsonValue body = JsonUtils.parse(_body);
+
+        Assert.assertTrue(body.isDocument());
+
+        Assert.assertNotNull(body.asDocument().get("_returned"));
+
+        Assert.assertTrue(body.asDocument().get("_returned").isNumber());
+
+        Assert.assertTrue(body.asDocument().get("_returned").asNumber().intValue() == 5);
+
+        Assert.assertNotNull(body.asDocument().get("_embedded"));
+
+        Assert.assertTrue(body.asDocument().get("_embedded").isArray());
+
+        Assert.assertTrue(body.asDocument().get("_embedded").asArray().size() == 5);
+
+        final String _aggrs2 = "{ \"aggrs\" : [ "
+                + "      { "
+                + "      \"stages\" : [ "
+                + "        { \"$match\" : { \"n\" : { \"$gt\" : 1000 } } }"
+                + "      ],\n"
+                + "      \"type\" : \"pipeline\","
+                + "      \"uri\" : \"test\""
+                + "      }"
+                + "    ]"
+                + "}";
+
+        // update aggregation
+        resp = Unirest.patch(url(DB, COLL))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body(_aggrs2)
+                .asString();
+
+        Assert.assertEquals(HttpStatus.SC_OK, resp.getStatus());
+
+        resp = Unirest.get(url(DB, COLL, "_aggrs", "test"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("rep", "pj")
+                .asString();
+
+        Assert.assertEquals(HttpStatus.SC_OK, resp.getStatus());
+
+        _body = resp.getBody();
+
+        Assert.assertTrue(_body != null && !_body.isEmpty());
+
+        body = JsonUtils.parse(_body);
+
+        Assert.assertTrue(body.isDocument());
+
+        Assert.assertNotNull(body.asDocument().get("_returned"));
+
+        Assert.assertTrue(body.asDocument().get("_returned").isNumber());
+
+        Assert.assertTrue(body.asDocument().get("_returned").asNumber().intValue() == 0);
+
+        Assert.assertNotNull(body.asDocument().get("_embedded"));
+
+        Assert.assertTrue(body.asDocument().get("_embedded").isArray());
+
+        Assert.assertTrue(body.asDocument().get("_embedded").asArray().size() == 0);
+    }
+
+    @Test
+    public void testAggregationEmpty() throws Exception {
+        final String _aggrs2 = "{ \"aggrs\" : [ "
+                + "      { "
+                + "      \"stages\" : [ "
+                + "        { \"$match\" : { \"n\" : { \"$gt\" : 1000 } } }"
+                + "      ],\n"
+                + "      \"type\" : \"pipeline\","
+                + "      \"uri\" : \"test\""
+                + "      }"
+                + "    ]"
+                + "}";
+
+        // update aggregation
+        resp = Unirest.patch(url(DB, COLL))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body(_aggrs2)
+                .asString();
+
+        Assert.assertEquals(HttpStatus.SC_OK, resp.getStatus());
+
+        resp = Unirest.get(url(DB, COLL, "_aggrs", "test"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("rep", "pj")
+                .asString();
+
+        Assert.assertEquals(HttpStatus.SC_OK, resp.getStatus());
+
+        String _body = resp.getBody();
+
+        Assert.assertTrue(_body != null && !_body.isEmpty());
+
+        BsonValue body = JsonUtils.parse(_body);
+
+        Assert.assertTrue(body.isDocument());
+
+        Assert.assertNotNull(body.asDocument().get("_returned"));
+
+        Assert.assertTrue(body.asDocument().get("_returned").isNumber());
+
+        Assert.assertTrue(body.asDocument().get("_returned").asNumber().intValue() == 0);
+
+        Assert.assertNotNull(body.asDocument().get("_embedded"));
+
+        Assert.assertTrue(body.asDocument().get("_embedded").isArray());
+
+        Assert.assertTrue(body.asDocument().get("_embedded").asArray().size() == 0);
+    }
+
+    @Test
+    public void testBulkPost() throws Exception {
+        resp = Unirest.post(url(DB, COLL))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("rep", "pj")
+                .header("content-type", "application/json")
+                .body("[{'a':1},{'a':2}]")
+                .asString();
+
+        Assert.assertEquals(HttpStatus.SC_OK, resp.getStatus());
+
+        String _body = resp.getBody();
+
+        Assert.assertTrue(_body != null && !_body.isEmpty());
+
+        BsonValue body = JsonUtils.parse(_body);
+
+        Assert.assertTrue(body.isDocument());
+
+        Assert.assertNotNull(body.asDocument().get("inserted"));
+
+        Assert.assertTrue(body.asDocument().get("inserted").isNumber());
+
+        Assert.assertTrue(body.asDocument().get("inserted").asNumber().intValue() == 2);
+
+        Assert.assertNotNull(body.asDocument().get("_links"));
+
+        Assert.assertTrue(body.asDocument().get("_links").isArray());
+
+        Assert.assertTrue(body.asDocument().get("_links").asArray().size() == 2);
+
+        Assert.assertTrue(body.asDocument().keySet().size() == 5);
+    }
+
+    @Test
+    public void testBulkPatch() throws Exception {
+        resp = Unirest.patch(url(DB, COLL, "*"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("rep", "pj")
+                .queryString("filter", "{'n': {'$gt':5}}")
+                .header("content-type", "application/json")
+                .body("{'b': 1}]")
+                .asString();
+
+        Assert.assertEquals(HttpStatus.SC_OK, resp.getStatus());
+
+        String _body = resp.getBody();
+
+        Assert.assertTrue(_body != null && !_body.isEmpty());
+
+        BsonValue body = JsonUtils.parse(_body);
+
+        Assert.assertTrue(body.isDocument());
+
+        Assert.assertNotNull(body.asDocument().get("inserted"));
+
+        Assert.assertTrue(body.asDocument().get("inserted").isNumber());
+
+        Assert.assertTrue(body.asDocument().get("inserted").asNumber().intValue() == 0);
+
+        Assert.assertNotNull(body.asDocument().get("matched"));
+
+        Assert.assertTrue(body.asDocument().get("matched").isNumber());
+
+        Assert.assertTrue(body.asDocument().get("matched").asNumber().intValue() == 4);
+
+        Assert.assertNotNull(body.asDocument().get("modified"));
+
+        Assert.assertTrue(body.asDocument().get("modified").isNumber());
+
+        Assert.assertTrue(body.asDocument().get("modified").asNumber().intValue() == 4);
+
+        Assert.assertNull(body.asDocument().get("_links"));
     }
 }

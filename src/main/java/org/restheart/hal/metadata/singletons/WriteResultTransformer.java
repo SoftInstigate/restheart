@@ -53,7 +53,11 @@ public class WriteResultTransformer implements Transformer {
                         == null
                                 ? new BsonNull()
                                 : context.getDbOperationResult().getOldData());
-                resp.append("newData", context.getDbOperationResult().getNewData());
+                
+                resp.append("newData", context.getDbOperationResult().getNewData()
+                        == null
+                                ? new BsonNull()
+                                : context.getDbOperationResult().getNewData());
             }
         }
     }

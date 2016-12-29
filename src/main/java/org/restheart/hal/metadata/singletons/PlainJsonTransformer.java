@@ -61,9 +61,94 @@ public class PlainJsonTransformer implements Transformer {
             return;
         }
 
+        context.setResponseContentType(Representation.JSON_MEDIA_TYPE);
+
         BsonDocument responseContent = new BsonDocument();
 
-        context.setResponseContentType(Representation.JSON_MEDIA_TYPE);
+        transformError(contentToTransform, responseContent);
+
+        if (context.isInError()) {
+            contentToTransform.asDocument().keySet().stream()
+                    .filter(
+                            key -> !"_embedded".equals(key)
+                            && !"_links".equals(key))
+                    .forEach(key -> responseContent
+                    .append(key, contentToTransform
+                            .asDocument()
+                            .get(key)));
+            
+            context.setResponseContent(responseContent);
+        } else if (context.getMethod() == METHOD.GET) {
+            transformRead(context, contentToTransform, responseContent);
+
+            // add resource props if np is not specified
+            if (!context.isNoProps()) {
+                contentToTransform.asDocument().keySet().stream()
+                        .filter(key -> !"_embedded".equals(key)
+                        && !"_links".equals(key))
+                        .forEach(key -> responseContent
+                        .append(key, contentToTransform.asDocument()
+                                .get(key)));
+
+                context.setResponseContent(responseContent);
+            } else {
+                // np specified, just return _embedded
+                if (responseContent.get("_embedded") != null) {
+                    context.setResponseContent(responseContent.get("_embedded"));
+                } else {
+                    context.setResponseContent(null);
+                }
+            }
+        } else {
+            transformWrite(contentToTransform, responseContent);
+
+            context.setResponseContent(responseContent);
+        }
+    }
+
+    private void transformError(
+            BsonValue contentToTransform,
+            BsonDocument responseContent) {
+
+        if (contentToTransform.isDocument()) {
+            BsonValue _embedded = contentToTransform
+                    .asDocument()
+                    .get("_embedded");
+
+            if (_embedded != null) {
+                BsonDocument embedded = _embedded.asDocument();
+
+                // add _warnings if any
+                BsonArray _warnings = new BsonArray();
+                addItems(_warnings, embedded, "rh:warnings");
+
+                if (!_warnings.isEmpty()) {
+                    responseContent.append("_warnings", _warnings);
+                }
+
+                // add _errors if any
+                BsonArray _errors = new BsonArray();
+                addItems(_errors, embedded, "rh:error");
+
+                if (!_errors.isEmpty()) {
+                    responseContent.append("_errors", _errors);
+                }
+
+                // add _exception if any
+                BsonArray _exception = new BsonArray();
+                addItems(_exception, embedded, "rh:exception");
+
+                if (!_exception.isEmpty()) {
+                    responseContent.append("_exceptions", _exception);
+                }
+            }
+        }
+    }
+
+    private void transformRead(
+            RequestContext context,
+            BsonValue contentToTransform,
+            BsonDocument responseContent) {
 
         if (contentToTransform.isDocument()) {
             BsonValue _embedded = contentToTransform
@@ -95,31 +180,9 @@ public class PlainJsonTransformer implements Transformer {
                 addItems(_results, embedded, "rh:result");
 
                 if (!_results.isEmpty()) {
-                    responseContent.append("_results", _results);
-                }
-
-                // add _errors if any
-                BsonArray _errors = new BsonArray();
-                addItems(_errors, embedded, "rh:error");
-
-                if (!_errors.isEmpty()) {
-                    responseContent.append("_errors", _errors);
-                }
-
-                // add _exception if any
-                BsonArray _exception = new BsonArray();
-                addItems(_exception, embedded, "rh:exception");
-
-                if (!_exception.isEmpty()) {
-                    responseContent.append("_exceptions", _exception);
-                }
-
-                // add _warnings if any
-                BsonArray _warnings = new BsonArray();
-                addItems(_warnings, embedded, "rh:warnings");
-
-                if (!_warnings.isEmpty()) {
-                    responseContent.append("_warnings", _warnings);
+                    responseContent.append("_embedded", _results);
+                } else if (_results.size() > 0) {
+                    responseContent = _results.get(0).asDocument();
                 }
             } else if (context.getMethod() == METHOD.GET
                     && context.getResponseStatusCode()
@@ -127,34 +190,51 @@ public class PlainJsonTransformer implements Transformer {
                 responseContent.append("_embedded", new BsonArray());
             }
         }
+    }
 
-        if (!context.isNoProps() || context.isInError()) {
-            contentToTransform.asDocument().keySet().stream()
-                    .filter(key -> !"_embedded".equals(key)
-                    && !"_links".equals(key))
-                    .forEach(key -> responseContent
-                    .append(key, contentToTransform.asDocument()
-                            .get(key)));
+    private void transformWrite(
+            BsonValue contentToTransform,
+            final BsonDocument responseContent) {
 
-            context.setResponseContent(responseContent);
-        } else if (!context.isInError()) {
-            // np specified, just return the most appropriate array
-            if (responseContent.get("_errors") != null
-                    && !responseContent.get("_errors").asArray().isEmpty()) {
-                context.setResponseContent(responseContent.get("_errors"));
-            } else if (responseContent.get("_results") != null
-                    && !responseContent.get("_results").asArray().isEmpty()) {
-                context.setResponseContent(responseContent.get("_results"));
-            } else if (responseContent.get("_embedded") != null) {
-                context.setResponseContent(responseContent.get("_embedded"));
-            } else if (responseContent.get("_exception") != null
-                    && !responseContent.get("_exception").asArray().isEmpty()) {
-                context.setResponseContent(responseContent.get("_exception"));
-            } else {
-                context.setResponseContent(null);
+        if (contentToTransform.isDocument()) {
+            if (contentToTransform.asDocument().containsKey("_embedded")
+                    && contentToTransform.asDocument().get("_embedded")
+                            .isDocument()
+                    && contentToTransform.asDocument().get("_embedded")
+                            .asDocument().containsKey("rh:result")
+                    && contentToTransform.asDocument().get("_embedded")
+                            .asDocument().get("rh:result").isArray()) {
+                BsonArray bulkResp = contentToTransform.asDocument()
+                        .get("_embedded").asDocument().get("rh:result")
+                        .asArray();
+
+                if (bulkResp.size() > 0) {
+                    BsonValue el = bulkResp.get(0);
+
+                    if (el.isDocument()) {
+                        BsonDocument doc = el.asDocument();
+
+                        doc
+                                .keySet()
+                                .stream()
+                                .filter(key -> !"_links".equals(key))
+                                .forEach(key
+                                        -> responseContent
+                                        .append(key, doc.get(key)));
+
+                        if (doc.containsKey("_links")
+                                && doc.get("_links").isDocument()
+                                && doc.get("_links").asDocument()
+                                        .containsKey("rh:newdoc")
+                                && doc.get("_links").asDocument()
+                                        .get("rh:newdoc").isArray()) {
+                            responseContent.append("_links",
+                                    doc.get("_links").asDocument()
+                                            .get("rh:newdoc"));
+                        }
+                    }
+                }
             }
-        } else {
-            context.setResponseContent(responseContent);
         }
     }
 
