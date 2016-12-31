@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -57,7 +57,7 @@ public class Configuration {
     /**
      * URL pointing to the online documentation specific for this version.
      */
-    public static final String RESTHEART_ONLINE_DOC_URL = "http://restheart.org/curies/2.0";
+    public static final String RESTHEART_ONLINE_DOC_URL = "http://restheart.org/curies/3.0";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
 
@@ -721,7 +721,7 @@ public class Configuration {
                 REPRESENTATION_FORMAT_KEY, DEFAULT_REPRESENTATION_FORMAT.name());
 
         REPRESENTATION_FORMAT rf = REPRESENTATION_FORMAT.PLAIN_JSON;;
-        
+
         try {
             rf = REPRESENTATION_FORMAT.valueOf(_representationFormat);
         } catch (IllegalArgumentException iar) {
