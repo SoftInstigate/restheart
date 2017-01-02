@@ -17,7 +17,7 @@ Table of contents
 - [How to run it](#how-to-run-it)
 - [How to build it](#how-to-build-it)
 - [Integration Tests](#integration-tests)
-- [Maven Dependencies](#maven-dependecies)
+- [Maven Dependencies](#maven-dependencies)
 - [Snapshot builds](#snapshot-builds)
 
 Summary
