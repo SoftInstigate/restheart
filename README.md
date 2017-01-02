@@ -8,16 +8,16 @@ The leading REST API Server for MongoDB.
 
 Table of contents
 --
-- [Summary](summary)
+- [Summary](#summary)
 - [Test with Docker](#test-with-docker)
-- [Documentation references](#documentation-references)
+- [Documentation References](#documentation-references)
 - [Starter Guide](http://restheart.org/quick-start.html)
 - [An Example](#an-example)
 - [Manual Installation](#manual-installation)
 - [How to run it](#how-to-run-it)
 - [How to build it](#how-to-build-it)
 - [Integration Tests](#integration-tests)
-- [Maven dependencies](#maven-dependecies)
+- [Maven Dependencies](#maven-dependecies)
 - [Snapshot builds](#snapshot-builds)
 
 Summary
@@ -165,7 +165,7 @@ Optionally you can run the integration test suite. Make sure __mongod is running
 
     $ mvn verify -DskipITs=false
 
-Maven dependencies
+Maven Dependencies
 --
 
 RESTHeart's releases are available on [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22org.restheart%22).
