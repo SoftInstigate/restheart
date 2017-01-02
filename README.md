@@ -6,54 +6,98 @@ The leading REST API Server for MongoDB.
 [![Build Status](https://travis-ci.org/SoftInstigate/restheart.svg?branch=develop)](https://travis-ci.org/SoftInstigate/restheart)
 [![Join the chat at https://gitter.im/SoftInstigate/restheart](https://badges.gitter.im/SoftInstigate/restheart.svg)](https://gitter.im/SoftInstigate/restheart?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**RESTHeart** connects to **MongoDB** and opens data to the Web: Mobile and JavaScript applications can use the database via **RESTful HTTP API** calls.
-
-For an example, check our **AngularJs** [Notes Example Application](https://github.com/softinstigate/restheart-notes-example).
-
-> **Note**: RESTHeart has been tested against MongoDB v **2.6**, **3.0** and now is mainly tested with **3.2**.
-
-Built on strong foundations
-----
-* The API strictly follows the **RESTful** paradigm.
-* Resources are represented with the [HAL+json](https://softinstigate.atlassian.net/wiki/x/UICM) format.
-* Built on top of [Undertow](http://undertow.io) web server.
-* Makes use of few, best of breed libraries, check the [pom.xml](https://github.com/SoftInstigate/restheart/blob/master/pom.xml)!
-
-Rapid Development
-----
-* **No server side development is required** in most of the cases for your web and mobile applications.
-* The **Setup** is simple with convention over configuration approach; **Docker Container** and **Vagrant Box** are available.
-* **Access Control** and **Schema Check** are provided out of the box.
-
-Production ready
-----
-* High quality **Documentation** and active development **community**.
-* Severe **Unit** and **Integration** test suite, **Code Check** and **Continuous Integration** process.
-* **Commercial Support** available from [SoftInstigate](http://www.softinstigate.com), the company behind RESTHeart.
-
-Fast & Light
-----
-
-* **High throughput** check the [performance tests](https://softinstigate.atlassian.net/wiki/x/gICM).
-* **Lightweight** ~10Mb footprint, low RAM usage, starts in ~1 sec.
-* **Horizontally Scalable** with **Stateless Architecture** and full support for MongoDB **replica sets** and **shards**.
-* **µService**: it does one thing and it does it well.
-
 Table of contents
----
-
+--
+- [Summary](summary)
+- [Test with Docker](#test-with-docker)
 - [Documentation references](#documentation-references)
 - [Starter Guide](http://restheart.org/quick-start.html)
 - [An Example](#an-example)
-- [Installation](#installation)
+- [Manual Installation](#manual-installation)
 - [How to run it](#how-to-run-it)
 - [How to build it](#how-to-build-it)
 - [Integration Tests](#integration-tests)
 - [Maven dependencies](#maven-dependecies)
 - [Snapshot builds](#snapshot-builds)
 
+Summary
+--
+
+**RESTHeart** connects to **MongoDB** and opens data to the Web: Mobile and JavaScript applications can use the database via **RESTful HTTP API** calls.
+
+For an example, check our **AngularJs** [Notes Example Application](https://github.com/softinstigate/restheart-notes-example).
+
+> **Note**: RESTHeart has been tested against MongoDB v **2.6**, **3.0** and now is mainly tested with **3.2** and **3.4**.
+
+Built on strong foundations
+---
+* The API strictly follows the **RESTful** paradigm.
+* Resources are represented with the [HAL+json](https://softinstigate.atlassian.net/wiki/x/UICM) format.
+* Built on top of [Undertow](http://undertow.io) web server.
+* Makes use of few, best of breed libraries, check the [pom.xml](https://github.com/SoftInstigate/restheart/blob/master/pom.xml)!
+
+Rapid Development
+---
+* **No server side development is required** in most of the cases for your web and mobile applications.
+* The **Setup** is simple with convention over configuration approach; **Docker Container** and **Vagrant Box** are available.
+* **Access Control** and **Schema Check** are provided out of the box.
+
+Production ready
+---
+* High quality **Documentation** and active development **community**.
+* Severe **Unit** and **Integration** test suite, **Code Check** and **Continuous Integration** process.
+* **Commercial Support** available from [SoftInstigate](http://www.softinstigate.com), the company behind RESTHeart.
+
+Fast & Light
+---
+
+* **High throughput** check the [performance tests](https://softinstigate.atlassian.net/wiki/x/gICM).
+* **Lightweight** ~10Mb footprint, low RAM usage, starts in ~1 sec.
+* **Horizontally Scalable** with **Stateless Architecture** and full support for MongoDB **replica sets** and **shards**.
+* **µService**: it does one thing and it does it well.
+
+Test with Docker
+--
+
+If you have a Docker service running locally, you can be up and running with RESTHeart and MongoDB in few minutes. The POM includes a build configuration with the [docker-maven-plugin](https://github.com/spotify/docker-maven-plugin) and there's a `docker` folder with a `Dockerfile` and a `docker-compose.yml` file.
+
+> by default the MongoDB instance started by docker-compose does not use any named storage, please read carefully all comments within the `docker-compose.yml` file to enable a named data volume. Read [Manage data in containers](https://docs.docker.com/engine/tutorials/dockervolumes/) for more.
+
+Steps:
+```
+$ mvn clean package docker:build
+$ cd Docker
+$ docker-compose up -d && docker-compose logs -f
+```
+
+The above steps will:
+1. Package the RESTHeart's JAR and invoke the docker plugin build process, which uses the included Dockerfile
+1. Start both RESTHeart and MongoDB as dockerized instances
+1. Tail the logs
+
+Then you can open the HAL Browser at http://localhost:8080/browser
+
+If you have cloned from master branch, you should notice that RESTHeart's running version is the same as the POM's version (e.g. `3.1.0-SNAPSHOT`).
+
+**Properties**
+```
+{
+  "_size": 0,
+  "_total_pages": 0,
+  "_returned": 0,
+  "_restheart_version": "3.1.0-SNAPSHOT",
+  "_type": "ROOT"
+}
+```
+This allow for a quick test cycle of new releases. Remember to cleanup things and remove all containers before exiting:
+
+```
+$ docker-compose stop
+$ docker-compose rm
+```
+
 Documentation References
-----
+--
 
 * Web site: [http://restheart.org](http://restheart.org)
 
@@ -62,7 +106,7 @@ Documentation References
 * Documentation: [https://softinstigate.atlassian.net/wiki/display/RH/Documentation](https://softinstigate.atlassian.net/wiki/x/l4CM)
 
 An Example
-----
+--
 
 > RESTHeart enables clients to access MongoDB via a HTTP RESTful API
 
@@ -72,8 +116,8 @@ In the following example, a web client sends an HTTP GET request to the /blog/po
 
 > For more examples, check the [API tutorial](https://softinstigate.atlassian.net/wiki/x/GICM)
 
-Installation
----
+Manual Installation
+--
 
 RESTHeart can be installed on any OS supporting Java.
 
@@ -83,7 +127,7 @@ Complete instruction at [Installation and Setup](https://softinstigate.atlassian
 
 
 How to run it
----
+--
 
 > Running RESTHeart requires [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 
@@ -102,7 +146,7 @@ You might also want to specify a configuration file:
 * Security [documentation](https://softinstigate.atlassian.net/wiki/x/W4CM)
 
 How to build it
----
+--
 
 > Building RESTHeart requires [Maven](http://www.oracle.com/technetwork/java/javase/downloads/index.html).
 
@@ -115,14 +159,14 @@ Build the project with Maven:
     $ mvn clean package
 
 Integration tests
----
+--
 
 Optionally you can run the integration test suite. Make sure __mongod is running__ on localhost on default port 27017 without authentication enabled, i.e. no `--auth` option is specified.
 
     $ mvn verify -DskipITs=false
 
 Maven dependencies
----
+--
 
 RESTHeart's releases are available on [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22org.restheart%22).
 
@@ -143,7 +187,7 @@ If you want to embed RESTHeart in your project, add the dependency to your POM f
 ```
 
 Snapshot builds
-----
+---
 
 Snapshots are available at:
 
@@ -177,30 +221,6 @@ Then include the SNAPSHOT dependency in your POM:
 ```
 
 Development releases are continually deployed to Maven Central by [Travis-CI](https://travis-ci.org/SoftInstigate/restheart).
-
-## Project data
-
-     429 text files.
-     383 unique files.                                          
-     104 files ignored.
-
-        github.com/AlDanial/cloc v 1.70  T=4.88 s (67.7 files/s, 13506.0 lines/s)
-        -------------------------------------------------------------------------------
-        Language                     files          blank        comment           code
-        -------------------------------------------------------------------------------
-        Java                           229           5195           9130          22224
-        JavaScript                      28           2672           2573          10913
-        CSS                              3            988             26           6331
-        XML                             44             56            118           2597
-        YAML                             7            289            538            495
-        Maven                            1             43              4            485
-        JSON                             9              2              0            466
-        HTML                             1             30              0            226
-        Bourne Shell                     7             96              0            154
-        Markdown                         1             63              0            146
-        -------------------------------------------------------------------------------
-        SUM:                           330           9434          12389          44037
-        -------------------------------------------------------------------------------
 
 <hr></hr>
 
