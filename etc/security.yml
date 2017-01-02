@@ -31,9 +31,9 @@ dbim:
       cache-expire-policy: AFTER_WRITE
 
 ## Config for AD Identity Manager
-adim:
-    - domainControllers: ldap://eastdc.example.com
-      principalNameSuffixes: corp.example.com,example.com
+#adim:
+#    - domainControllers: ldap://eastdc.example.com
+#      principalNameSuffixes: corp.example.com,example.com
 
 ## Configuration for file based Access Manager
 
