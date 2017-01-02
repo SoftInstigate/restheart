@@ -24,6 +24,7 @@ import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
+import org.restheart.utils.JsonUtils;
 
 /**
  *
@@ -53,12 +54,14 @@ public class PingHandler extends ApplicationLogicHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getMethod() == METHOD.GET) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange, 
-                    context,
-                    HttpStatus.SC_OK, msg);
+            exchange.setStatusCode(HttpStatus.SC_OK);
+            exchange.getResponseSender().send(msg);
+            exchange.endExchange();
         } else {
-            exchange.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            exchange.setStatusCode(HttpStatus.SC_OK);
+            if (context.getContent() != null) {
+                exchange.getResponseSender().send(context.getContent().toString());
+            }
             exchange.endExchange();
         }
     }

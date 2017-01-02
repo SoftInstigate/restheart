@@ -904,7 +904,11 @@ public final class Bootstrapper {
                     if (o instanceof ApplicationLogicHandler) {
                         ApplicationLogicHandler alHandler = (ApplicationLogicHandler) o;
 
-                        PipedHttpHandler handler = new RequestContextInjectorHandler("/_logic", "*", alHandler);
+                        PipedHttpHandler handler
+                                = new RequestContextInjectorHandler(
+                                        "/_logic",
+                                        "*",
+                                        new BodyInjectorHandler(alHandler));
 
                         if (alSecured) {
                             paths.addPrefixPath("/_logic" + alWhere, new RequestLoggerHandler(
