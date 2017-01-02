@@ -71,6 +71,7 @@ $ docker-compose up -d && docker-compose logs -f
 ```
 
 The above steps will:
+
 1. Package the RESTHeart's JAR and invoke the docker plugin build process, which uses the included Dockerfile
 1. Start both RESTHeart and MongoDB as dockerized instances
 1. Tail the logs
