@@ -27,6 +27,7 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.rolling.FixedWindowRollingPolicy;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
+import ch.qos.logback.core.util.FileSize;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -81,7 +82,7 @@ public class LoggingInitializer {
         fwRollingPolicy.start();
 
         SizeBasedTriggeringPolicy<ILoggingEvent> triggeringPolicy = new SizeBasedTriggeringPolicy<>();
-        triggeringPolicy.setMaxFileSize("5MB");
+        triggeringPolicy.setMaxFileSize(FileSize.valueOf("5 mb"));
         triggeringPolicy.start();
 
         PatternLayoutEncoder encoder = new PatternLayoutEncoder();
