@@ -80,7 +80,7 @@ public class HashTransformer implements Transformer {
 
             if (_tohash == null || !_tohash.isArray()) {
                 context.addWarning("transformer wrong definition: "
-                        + "args must be an object as {'props': [ 'password'], "
+                        + "args must be an object as {'props': [ 'password' ], "
                         + "'complexity': 12 }");
             }
 
@@ -90,7 +90,7 @@ public class HashTransformer implements Transformer {
 
             if (_complexity != null && !_complexity.isNumber()) {
                 context.addWarning("transformer wrong definition: "
-                        + "args must be an object as {'props': [ 'password'], "
+                        + "args must be an object as {'props': [ 'password' ], "
                         + "'complexity': 12 }");
             }
 

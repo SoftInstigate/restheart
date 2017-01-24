@@ -60,6 +60,9 @@ public final class DbIdentityManager
 
     private String db;
     private String coll;
+    private String propertyNameId = "_id";
+    private String propertyNamePassword = "password";
+    private String propertyNameRoles = "roles";
     private Boolean bcryptHashedPassword = false;
     private Boolean cacheEnabled = false;
     private Long cacheSize = 1_000l; // 1000 entries
@@ -126,7 +129,11 @@ public final class DbIdentityManager
             Object _cacheTTL = ci.get("cache-ttl");
             Object _cacheExpirePolicy = ci.get("cache-expire-policy");
             Object _bcryptHashedPassword = ci.get("bcrypt-hashed-password");
-
+            
+            Object _propertyNameId = ci.get("prop-name-id");
+            Object _propertyNamePassword = ci.get("prop-name-password");
+            Object _propertyNameRoles = ci.get("prop-name-roles");
+            
             if (_db == null || !(_db instanceof String)) {
                 throw new IllegalArgumentException(
                         "wrong configuration file format. "
@@ -175,6 +182,27 @@ public final class DbIdentityManager
                         "wrong configuration file format. "
                         + "bcrypt-hashed-password must be a boolean");
             }
+            
+            if (_propertyNameId != null
+                    && !(_propertyNameId instanceof String)) {
+                throw new IllegalArgumentException(
+                        "wrong configuration file format. "
+                        + "prop-name-id must be a string");
+            }
+            
+            if (_propertyNamePassword != null
+                    && !(_propertyNamePassword instanceof String)) {
+                throw new IllegalArgumentException(
+                        "wrong configuration file format. "
+                        + "prop-name-password must be a string");
+            }
+            
+            if (_propertyNameRoles != null
+                    && !(_propertyNameRoles instanceof String)) {
+                throw new IllegalArgumentException(
+                        "wrong configuration file format. "
+                        + "prop-name-roles must be a string");
+            }
 
             this.db = (String) _db;
             this.coll = (String) _coll;
@@ -213,6 +241,18 @@ public final class DbIdentityManager
 
             if (_bcryptHashedPassword != null) {
                 this.bcryptHashedPassword = (Boolean) _bcryptHashedPassword;
+            }
+            
+            if (_propertyNameId != null) {
+                this.propertyNameId = (String) _propertyNameId;
+            }
+            
+            if (_propertyNamePassword != null) {
+                this.propertyNamePassword = (String) _propertyNamePassword;
+            }
+            
+            if (_propertyNameRoles != null) {
+                this.propertyNameRoles = (String) _propertyNameRoles;
             }
         };
     }
@@ -284,50 +324,52 @@ public final class DbIdentityManager
         }
     }
 
-    private SimpleAccount findAccount(String _id) {
-        Bson query = eq("_id", _id);
+    private SimpleAccount findAccount(String id) {
+        Bson query = eq(this.propertyNameId, id);
 
         FindIterable<BsonDocument> result = mongoColl
                 .find(query)
                 .limit(1);
 
         if (result == null || !result.iterator().hasNext()) {
-            LOGGER.debug("no account found with _id: {}", _id);
+            LOGGER.debug("no account found with id: {}", id);
             return null;
         }
 
         BsonDocument _account = result.iterator().next();
 
-        if (!_account.containsKey("password")) {
-            LOGGER.error("account with _id: {} does not have password property",
-                    _id);
+        if (!_account.containsKey(this.propertyNamePassword)) {
+            LOGGER.error("account with id: {} does not have password {}",
+                    id,
+                    this.propertyNamePassword);
             return null;
         }
 
-        BsonValue _password = _account.get("password");
+        BsonValue _password = _account.get(this.propertyNamePassword);
 
         if (_password == null || !_password.isString()) {
             LOGGER.debug(
-                    "account with _id: {} "
+                    "account with id: {} "
                     + "has an invalid password (not string): {}",
-                    _id, _password);
+                    id, _password);
             return null;
         }
 
         String password = _password.asString().getValue();
 
-        if (!_account.containsKey("roles")) {
-            LOGGER.error("account with _id: {} does not have roles property",
-                    _id);
+        if (!_account.containsKey(this.propertyNameRoles)) {
+            LOGGER.error("account with id: {} does not have {} property",
+                    id,
+                    this.propertyNameRoles);
             return null;
         }
 
-        BsonValue _roles = _account.get("roles");
+        BsonValue _roles = _account.get(this.propertyNameRoles);
 
         if (_roles == null || !_roles.isArray()) {
             LOGGER.debug(
-                    "account with _id: {} has an invalid roles (not array): {}",
-                    _id, _roles);
+                    "account with id: {} has an invalid roles (not array): {}",
+                    id, _roles);
             return null;
         }
 
@@ -340,12 +382,12 @@ public final class DbIdentityManager
                 roles.add(el.asString().getValue());
             } else {
                 LOGGER.debug(
-                        "account with _id: {} "
+                        "account with _d: {} "
                         + "has a not string role: {} ; ignoring it",
-                        _id, el);
+                        id, el);
             }
         });
 
-        return new SimpleAccount(_id, password.toCharArray(), roles);
+        return new SimpleAccount(id, password.toCharArray(), roles);
     }
 }
