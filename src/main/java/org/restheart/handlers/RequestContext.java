@@ -207,9 +207,9 @@ public class RequestContext {
     private BsonDocument shardKey = null;
 
     private boolean noProps = false;
-    
+
     private boolean inError = false;
-    
+
     private Account authenticatedAccount = null;
 
     /**
@@ -263,7 +263,7 @@ public class RequestContext {
         this.type = selectRequestType(pathTokens);
 
         this.method = selectRequestMethod(exchange.getRequestMethod());
-        
+
         // etag
         HeaderValues etagHvs = exchange.getRequestHeaders() == null
                 ? null : exchange.getRequestHeaders().get(Headers.IF_MATCH);
@@ -611,7 +611,7 @@ public class RequestContext {
     public void setPagesize(int pagesize) {
         this.pagesize = pagesize;
     }
-    
+
     /**
      * @return the representationFormat
      */
@@ -620,7 +620,7 @@ public class RequestContext {
     }
 
     /**
-     *  sets representationFormat
+     * sets representationFormat
      */
     public void setRepresentationFormat(
             REPRESENTATION_FORMAT representationFormat) {
@@ -1286,5 +1286,138 @@ public class RequestContext {
      */
     public void setAuthenticatedAccount(Account authenticatedAccount) {
         this.authenticatedAccount = authenticatedAccount;
+    }
+
+    /**
+     * helper method to check request resource type
+     */
+    public boolean isAggregation() {
+        return this.type == TYPE.AGGREGATION;
+    }
+
+    /**
+     * helper method to check request resource type
+     */
+    public boolean isBulkDocuments() {
+        return this.type == TYPE.BULK_DOCUMENTS;
+    }
+
+    /**
+     * helper method to check request resource type
+     */
+    public boolean isCollection() {
+        return this.type == TYPE.COLLECTION;
+    }
+
+    /**
+     * helper method to check request resource type
+     */
+    public boolean isCollectionIndexes() {
+        return this.type == TYPE.COLLECTION_INDEXES;
+    }
+
+    /**
+     * helper method to check request resource type
+     */
+    public boolean isDb() {
+        return this.type == TYPE.DB;
+    }
+
+    /**
+     * helper method to check request resource type
+     */
+    public boolean isDocument() {
+        return this.type == TYPE.DOCUMENT;
+    }
+
+    /**
+     * helper method to check request resource type
+     */
+    public boolean isFile() {
+        return this.type == TYPE.FILE;
+    }
+
+    /**
+     * helper method to check request resource type
+     */
+    public boolean isFileBucket() {
+        return this.type == TYPE.FILES_BUCKET;
+    }
+
+    /**
+     * helper method to check request resource type
+     */
+    public boolean isFileBinary() {
+        return this.type == TYPE.FILE_BINARY;
+    }
+
+    /**
+     * helper method to check request resource type
+     */
+    public boolean isIndex() {
+        return this.type == TYPE.INDEX;
+    }
+
+    /**
+     * helper method to check request resource type
+     */
+    public boolean isRoot() {
+        return this.type == TYPE.ROOT;
+    }
+
+    /**
+     * helper method to check request resource type
+     */
+    public boolean isSchema() {
+        return this.type == TYPE.SCHEMA;
+    }
+
+    /**
+     * helper method to check request resource type
+     */
+    public boolean isSchemaStore() {
+        return this.type == TYPE.SCHEMA_STORE;
+    }
+
+    /**
+     * helper method to check request method
+     */
+    public boolean isDelete() {
+        return this.method == METHOD.DELETE;
+    }
+
+    /**
+     * helper method to check request method
+     */
+    public boolean isGet() {
+        return this.method == METHOD.GET;
+    }
+
+    /**
+     * helper method to check request method
+     */
+    public boolean isOptions() {
+        return this.method == METHOD.OPTIONS;
+    }
+
+    /**
+     * helper method to check request method
+     */
+    public boolean isPatch() {
+        return this.method == METHOD.PATCH;
+    }
+
+    /**
+     * helper method to check request method
+     */
+    public boolean isPost() {
+        return this.method == METHOD.POST;
+    }
+
+    /**
+     * helper method to check request method
+     */
+    public boolean isPut() {
+        return this.method == METHOD.PUT;
     }
 }
