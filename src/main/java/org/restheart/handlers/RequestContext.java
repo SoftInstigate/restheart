@@ -1290,6 +1290,8 @@ public class RequestContext {
 
     /**
      * helper method to check request resource type
+     *
+     * @return true if type is TYPE.AGGREGATION
      */
     public boolean isAggregation() {
         return this.type == TYPE.AGGREGATION;
@@ -1297,6 +1299,8 @@ public class RequestContext {
 
     /**
      * helper method to check request resource type
+     *
+     * @return true if type is TYPE.BULK_DOCUMENTS
      */
     public boolean isBulkDocuments() {
         return this.type == TYPE.BULK_DOCUMENTS;
@@ -1304,6 +1308,8 @@ public class RequestContext {
 
     /**
      * helper method to check request resource type
+     *
+     * @return true if type is TYPE.COLLECTION
      */
     public boolean isCollection() {
         return this.type == TYPE.COLLECTION;
@@ -1311,6 +1317,8 @@ public class RequestContext {
 
     /**
      * helper method to check request resource type
+     *
+     * @return true if type is TYPE.COLLECTION_INDEXES
      */
     public boolean isCollectionIndexes() {
         return this.type == TYPE.COLLECTION_INDEXES;
@@ -1318,6 +1326,8 @@ public class RequestContext {
 
     /**
      * helper method to check request resource type
+     *
+     * @return true if type is TYPE.DB
      */
     public boolean isDb() {
         return this.type == TYPE.DB;
@@ -1325,6 +1335,8 @@ public class RequestContext {
 
     /**
      * helper method to check request resource type
+     *
+     * @return true if type is TYPE.DOCUMENT
      */
     public boolean isDocument() {
         return this.type == TYPE.DOCUMENT;
@@ -1332,20 +1344,27 @@ public class RequestContext {
 
     /**
      * helper method to check request resource type
+     *
+     * @return true if type is TYPE.FILE
      */
     public boolean isFile() {
+
         return this.type == TYPE.FILE;
     }
 
     /**
      * helper method to check request resource type
+     *
+     * @return true if type is TYPE.FILES_BUCKET
      */
-    public boolean isFileBucket() {
+    public boolean isFilesBucket() {
         return this.type == TYPE.FILES_BUCKET;
     }
 
     /**
      * helper method to check request resource type
+     *
+     * @return true if type is TYPE.FILE_BINARY
      */
     public boolean isFileBinary() {
         return this.type == TYPE.FILE_BINARY;
@@ -1353,6 +1372,8 @@ public class RequestContext {
 
     /**
      * helper method to check request resource type
+     *
+     * @return true if type is TYPE.INDEX
      */
     public boolean isIndex() {
         return this.type == TYPE.INDEX;
@@ -1360,6 +1381,8 @@ public class RequestContext {
 
     /**
      * helper method to check request resource type
+     *
+     * @return true if type is TYPE.ROOT
      */
     public boolean isRoot() {
         return this.type == TYPE.ROOT;
@@ -1367,6 +1390,8 @@ public class RequestContext {
 
     /**
      * helper method to check request resource type
+     *
+     * @return true if type is TYPE.SCHEMA
      */
     public boolean isSchema() {
         return this.type == TYPE.SCHEMA;
@@ -1374,6 +1399,8 @@ public class RequestContext {
 
     /**
      * helper method to check request resource type
+     *
+     * @return true if type is TYPE.SCHEMA_STORE
      */
     public boolean isSchemaStore() {
         return this.type == TYPE.SCHEMA_STORE;
@@ -1381,6 +1408,8 @@ public class RequestContext {
 
     /**
      * helper method to check request method
+     *
+     * @return true if method is METHOD.DELETE
      */
     public boolean isDelete() {
         return this.method == METHOD.DELETE;
@@ -1388,6 +1417,8 @@ public class RequestContext {
 
     /**
      * helper method to check request method
+     *
+     * @return true if method is METHOD.GET
      */
     public boolean isGet() {
         return this.method == METHOD.GET;
@@ -1395,6 +1426,8 @@ public class RequestContext {
 
     /**
      * helper method to check request method
+     *
+     * @return true if method is METHOD.OPTIONS
      */
     public boolean isOptions() {
         return this.method == METHOD.OPTIONS;
@@ -1402,6 +1435,8 @@ public class RequestContext {
 
     /**
      * helper method to check request method
+     *
+     * @return true if method is METHOD.PATCH
      */
     public boolean isPatch() {
         return this.method == METHOD.PATCH;
@@ -1409,6 +1444,8 @@ public class RequestContext {
 
     /**
      * helper method to check request method
+     *
+     * @return true if method is METHOD.POST
      */
     public boolean isPost() {
         return this.method == METHOD.POST;
@@ -1416,6 +1453,8 @@ public class RequestContext {
 
     /**
      * helper method to check request method
+     *
+     * @return true if method is METHOD.PUT
      */
     public boolean isPut() {
         return this.method == METHOD.PUT;
