@@ -18,6 +18,9 @@ users:
 dbim:
     - db: userbase
       coll: accounts
+      prop-name-id: _id
+      prop-name-password: password
+      prop-name-roles: roles
       cache-enabled: false
       cache-size: 1000
       cache-ttl: 60000
