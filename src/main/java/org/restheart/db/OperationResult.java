@@ -18,7 +18,6 @@
 package org.restheart.db;
 
 import org.bson.BsonDocument;
-import org.bson.BsonObjectId;
 import org.bson.BsonValue;
 
 /**
