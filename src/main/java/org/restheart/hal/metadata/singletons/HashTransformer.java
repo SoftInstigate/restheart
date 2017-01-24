@@ -127,11 +127,15 @@ public class HashTransformer implements Transformer {
     }
 
     private boolean doesApply(RequestContext context) {
-        return ((context.getType() == TYPE.DOCUMENT
-                || context.getType() == TYPE.BULK_DOCUMENTS)
+        return ( // PUT|PATCH /db/coll/docid
+                (context.getType() == TYPE.DOCUMENT
                 && (context.getMethod() == RequestContext.METHOD.PATCH
                 || context.getMethod() == RequestContext.METHOD.PUT))
-                || (context.getType() == TYPE.COLLECTION)
-                && (context.getMethod() == RequestContext.METHOD.POST);
+                // POST /db/coll { <doc> } and POST /db/coll [ { <doc> }, { <doc> } ]
+                || ((context.getType() == TYPE.COLLECTION)
+                && (context.getMethod() == RequestContext.METHOD.POST))
+                // PATCH /db/coll/*
+                || ((context.getType() == TYPE.BULK_DOCUMENTS)
+                && context.getMethod() == RequestContext.METHOD.PATCH));
     }
 }
