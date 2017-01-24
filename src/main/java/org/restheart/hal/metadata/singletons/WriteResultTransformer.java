@@ -18,11 +18,9 @@
 package org.restheart.hal.metadata.singletons;
 
 import io.undertow.server.HttpServerExchange;
-import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.bson.BsonValue;
-import org.restheart.hal.Representation;
 import org.restheart.handlers.RequestContext;
 
 /**
