@@ -169,7 +169,7 @@ metadata-named-singletons:
 # conf-file paths are either absolute (starting with /) or relative to the restheart.jar directory
 
 idm:
-    implementation-class: org.restheart.security.impl.SimpleFileIdentityManagerg
+    implementation-class: org.restheart.security.impl.SimpleFileIdentityManager
     conf-file: ../etc/security.yml
 access-manager:
     implementation-class: org.restheart.security.impl.SimpleAccessManager
