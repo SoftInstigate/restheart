@@ -632,13 +632,21 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(body.asDocument().get("inserted").isNumber());
 
-        Assert.assertTrue(body.asDocument().get("inserted").asNumber().intValue() == 2);
+        Assert.assertTrue(body.asDocument().get("inserted")
+                .asNumber().intValue() == 2);
 
         Assert.assertNotNull(body.asDocument().get("_links"));
 
-        Assert.assertTrue(body.asDocument().get("_links").isArray());
+        Assert.assertTrue(body.asDocument().get("_links").isDocument());
+        
+        Assert.assertNotNull(body.asDocument().get("_links")
+                .asDocument().get("rh:newdoc"));
+        
+        Assert.assertTrue(body.asDocument().get("_links")
+                .asDocument().get("rh:newdoc").isArray());
 
-        Assert.assertTrue(body.asDocument().get("_links").asArray().size() == 2);
+        Assert.assertTrue(body.asDocument().get("_links")
+                .asDocument().get("rh:newdoc").asArray().size() == 2);
 
         Assert.assertTrue(body.asDocument().keySet().size() == 5);
     }
