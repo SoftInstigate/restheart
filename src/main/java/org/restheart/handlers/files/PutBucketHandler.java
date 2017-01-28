@@ -41,5 +41,4 @@ public class PutBucketHandler extends PutCollectionHandler {
     public PutBucketHandler(PipedHttpHandler next) {
         super(next);
     }
-
 }
