@@ -181,7 +181,7 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
         exchange.setStatusCode(HttpStatus.SC_OK);
 
         gridFSBucket.downloadToStream(
-                file.getId().asObjectId().getValue(),
+                file.getId(),
                 exchange.getOutputStream());
 
         exchange.endExchange();
