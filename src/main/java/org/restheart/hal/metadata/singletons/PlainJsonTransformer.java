@@ -40,9 +40,9 @@ public class PlainJsonTransformer implements Transformer {
             BsonValue contentToTransform,
             BsonValue args) {
         if (!context.isInError()
-                && (context.getType() == TYPE.DOCUMENT
-                || context.getType() == TYPE.FILE
-                || context.getType() == TYPE.INDEX)) {
+                && (context.isDocument()
+                || context.isFile()
+                || context.isIndex())) {
             return;
         }
 
@@ -76,25 +76,26 @@ public class PlainJsonTransformer implements Transformer {
                     .append(key, contentToTransform
                             .asDocument()
                             .get(key)));
-            
+
             context.setResponseContent(responseContent);
-        } else if (context.getMethod() == METHOD.GET) {
+        } else if (context.isGet()) {
             transformRead(context, contentToTransform, responseContent);
 
             // add resource props if np is not specified
             if (!context.isNoProps()) {
                 contentToTransform.asDocument().keySet().stream()
-                        .filter(key -> !"_embedded".equals(key)
-                        && !"_links".equals(key))
-                        .forEach(key -> responseContent
-                        .append(key, contentToTransform.asDocument()
-                                .get(key)));
+                        .filter(key -> !"_embedded".equals(key))
+                        .forEach(key
+                                -> responseContent
+                                .append(key, contentToTransform.asDocument()
+                                        .get(key)));
 
                 context.setResponseContent(responseContent);
             } else {
                 // np specified, just return _embedded
                 if (responseContent.get("_embedded") != null) {
-                    context.setResponseContent(responseContent.get("_embedded"));
+                    context.setResponseContent(
+                            responseContent.get("_embedded"));
                 } else {
                     context.setResponseContent(null);
                 }
@@ -167,25 +168,14 @@ public class PlainJsonTransformer implements Transformer {
                 addItems(__embedded, embedded, "rh:db");
                 addItems(__embedded, embedded, "rh:coll");
                 addItems(__embedded, embedded, "rh:index");
+                addItems(__embedded, embedded, "rh:result");
 
                 // add _items if not in error
-                if (context.getMethod() == METHOD.GET
-                        && context.getResponseStatusCode()
+                if (context.getResponseStatusCode()
                         == HttpStatus.SC_OK) {
                     responseContent.append("_embedded", __embedded);
                 }
-
-                // add _results (for bulk operations)
-                BsonArray _results = new BsonArray();
-                addItems(_results, embedded, "rh:result");
-
-                if (!_results.isEmpty()) {
-                    responseContent.append("_embedded", _results);
-                } else if (_results.size() > 0) {
-                    responseContent = _results.get(0).asDocument();
-                }
-            } else if (context.getMethod() == METHOD.GET
-                    && context.getResponseStatusCode()
+            } else if (context.getResponseStatusCode()
                     == HttpStatus.SC_OK) {
                 responseContent.append("_embedded", new BsonArray());
             }
@@ -217,22 +207,11 @@ public class PlainJsonTransformer implements Transformer {
                         doc
                                 .keySet()
                                 .stream()
-                                .filter(key -> !"_links".equals(key))
                                 .forEach(key
                                         -> responseContent
                                         .append(key, doc.get(key)));
-
-                        if (doc.containsKey("_links")
-                                && doc.get("_links").isDocument()
-                                && doc.get("_links").asDocument()
-                                        .containsKey("rh:newdoc")
-                                && doc.get("_links").asDocument()
-                                        .get("rh:newdoc").isArray()) {
-                            responseContent.append("_links",
-                                    doc.get("_links").asDocument()
-                                            .get("rh:newdoc"));
-                        }
                     }
+
                 }
             }
         }
