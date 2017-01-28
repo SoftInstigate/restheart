@@ -18,6 +18,7 @@
 package org.restheart.handlers.files;
 
 import com.mongodb.DuplicateKeyException;
+import com.mongodb.MongoWriteException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.io.IOException;
@@ -108,7 +109,8 @@ public class PutFileHandler extends PipedHttpHandler {
                 throw new RuntimeException("error. file data is null");
             }
         } catch (IOException | RuntimeException t) {
-            if (t instanceof DuplicateKeyException) {
+            if (t instanceof MongoWriteException 
+                    && ((MongoWriteException)t).getCode() == 11000) {
                 // update not supported
                 String errMsg = "file resource update is not yet implemented";
                 ResponseHelper.endExchangeWithMessage(
@@ -124,13 +126,6 @@ public class PutFileHandler extends PipedHttpHandler {
         }
 
         context.setDbOperationResult(result);
-
-        // insert the Location handler
-        exchange.getResponseHeaders()
-                .add(HttpString.tryFromString("Location"),
-                        getReferenceLink(
-                                context,
-                                exchange.getRequestURL(), result.getNewId()));
 
         context.setResponseStatusCode(result.getHttpCode());
 
