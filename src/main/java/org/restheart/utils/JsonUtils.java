@@ -545,13 +545,17 @@ public class JsonUtils {
         }
     }
 
+    private static Minify minifier = new Minify();
+
     /**
-     * @author Stefan Reich http://tinybrain.de/
-     * @see http://tinybrain.de:8080/jsonminify/
      * @param jsonString
-     * @return
+     * @return minified json string
      */
     public static String minify(String jsonString) {
+        if (true) {
+            return minifier.minify(jsonString);
+        }
+
         boolean in_string = false;
         boolean in_multiline_comment = false;
         boolean in_singleline_comment = false;
