@@ -610,8 +610,6 @@ public class JsonUtilsTest {
     
     @Test
     public void testParseFloat() {
-        ObjectId id = new ObjectId();
-
         BsonValue parsed = JsonUtils.parse("3.1415");
         
         Assert.assertTrue(parsed.isNumber());
