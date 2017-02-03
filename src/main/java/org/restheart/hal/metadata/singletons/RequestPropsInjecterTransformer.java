@@ -192,8 +192,8 @@ public class RequestPropsInjecterTransformer implements Transformer {
 
         // dateTime
         properties.put("epochTimeStamp",
-                new BsonDateTime(Instant.now().getEpochSecond()));
-
+                new BsonDateTime(Instant.now().getEpochSecond() * 1000));
+        
         // dateTime
         properties.put("dateTime", new BsonString(
                 ExchangeAttributes.dateTime().readAttribute(exchange)));
