@@ -147,7 +147,7 @@
     <dependency>
       <groupId>org.everit.json</groupId>
       <artifactId>org.everit.json.schema</artifactId>
-      <version>1.4.1</version>
+      <version>1.5.0</version>
     </dependency>
 
     <dependency>
@@ -370,7 +370,6 @@
       <id>report</id>
       <build>
         <plugins>
-
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-project-info-reports-plugin</artifactId>
