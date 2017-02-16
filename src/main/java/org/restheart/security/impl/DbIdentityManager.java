@@ -42,6 +42,7 @@ import org.mindrot.jbcrypt.BCrypt;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
+import org.restheart.db.DbsDAO;
 import org.restheart.db.MongoDBClientSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,27 +94,7 @@ public final class DbIdentityManager
         MongoClient mongoClient = MongoDBClientSingleton
                 .getInstance().getClient();
 
-        ArrayList<String> dbNames = new ArrayList<>();
-
-        mongoClient.listDatabaseNames().into(dbNames);
-
-        if (!dbNames.contains(this.db)) {
-            throw new IllegalArgumentException(
-                    "error configuring the DbIdentityManager. "
-                    + "The specified db does not exist: " + db);
-        }
-
         MongoDatabase mongoDb = mongoClient.getDatabase(this.db);
-
-        ArrayList<String> collectionNames = new ArrayList<>();
-
-        mongoDb.listCollectionNames().into(collectionNames);
-
-        if (!collectionNames.contains(this.coll)) {
-            throw new IllegalArgumentException(
-                    "error configuring the DbIdentityManager. "
-                    + "The specified collection does not exist: " + coll);
-        }
 
         this.mongoColl = mongoDb.getCollection(coll, BsonDocument.class);
     }
