@@ -545,13 +545,15 @@ public class JsonUtils {
         }
     }
 
-    private static Minify minifier = new Minify();
-
     /**
      * @param jsonString
      * @return minified json string
      */
     public static String minify(String jsonString) {
+        // Minify is not thread safe. don to declare as static object
+        // see https://softinstigate.atlassian.net/browse/RH-233
+        Minify minifier = new Minify();
+        
         if (true) {
             return minifier.minify(jsonString);
         }
