@@ -128,7 +128,6 @@ public class Minify {
         try {
             minify(in, out);
         } catch (Exception e) {
-            e.printStackTrace();
             return null;
         }
 
