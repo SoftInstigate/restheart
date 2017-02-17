@@ -31,7 +31,6 @@ import org.restheart.utils.JsonUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ResponseSenderHandler extends PipedHttpHandler {
-
     /**
      * @param next
      */
@@ -95,7 +94,7 @@ public class ResponseSenderHandler extends PipedHttpHandler {
             }
         }
 
-        if (context.getRepresentationFormat() 
+        if (context.getRepresentationFormat()
                 == RequestContext.REPRESENTATION_FORMAT.HAL) {
             exchange.getResponseHeaders().put(
                     Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
