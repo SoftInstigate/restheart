@@ -28,6 +28,8 @@ dbim:
       prop-name-password: password
       prop-name-roles: roles
       bcrypt-hashed-password: false
+      create-user: false
+      create-user-document: '{"_id": "admin", "password": "secret", "roles": ["admins"]}'
       cache-enabled: false
       cache-size: 1000
       cache-ttl: 60000

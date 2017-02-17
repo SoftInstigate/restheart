@@ -27,7 +27,6 @@ import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -42,7 +41,6 @@ import org.mindrot.jbcrypt.BCrypt;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
-import org.restheart.db.DbsDAO;
 import org.restheart.db.MongoDBClientSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +63,8 @@ public final class DbIdentityManager
     private String propertyNamePassword = "password";
     private String propertyNameRoles = "roles";
     private Boolean bcryptHashedPassword = false;
+    private Boolean createUser = false;
+    private BsonDocument createUserDocument = null;
     private Boolean cacheEnabled = false;
     private Long cacheSize = 1_000l; // 1000 entries
     private Long cacheTTL = 60 * 1_000l; // 1 minute
@@ -90,13 +90,23 @@ public final class DbIdentityManager
                         return this.findAccount(key);
                     });
         }
-
+        
         MongoClient mongoClient = MongoDBClientSingleton
                 .getInstance().getClient();
 
         MongoDatabase mongoDb = mongoClient.getDatabase(this.db);
 
         this.mongoColl = mongoDb.getCollection(coll, BsonDocument.class);
+        
+        if (this.createUser) {
+            LOGGER.trace("create user option enabled");
+            if (this.mongoColl.count() < 1) {         
+                this.mongoColl.insertOne(this.createUserDocument);
+                LOGGER.info("no user found. created default user with _id {}", this.createUserDocument.get("_id"));
+            } else {
+                LOGGER.trace("not creating default user since users exist");
+            }
+        }
     }
 
     @Override
@@ -110,11 +120,13 @@ public final class DbIdentityManager
             Object _cacheTTL = ci.get("cache-ttl");
             Object _cacheExpirePolicy = ci.get("cache-expire-policy");
             Object _bcryptHashedPassword = ci.get("bcrypt-hashed-password");
-            
+            Object _createUser = ci.get("create-user");
+            Object _createUserDocument = ci.get("create-user-document");
+
             Object _propertyNameId = ci.get("prop-name-id");
             Object _propertyNamePassword = ci.get("prop-name-password");
             Object _propertyNameRoles = ci.get("prop-name-roles");
-            
+
             if (_db == null || !(_db instanceof String)) {
                 throw new IllegalArgumentException(
                         "wrong configuration file format. "
@@ -163,21 +175,35 @@ public final class DbIdentityManager
                         "wrong configuration file format. "
                         + "bcrypt-hashed-password must be a boolean");
             }
-            
+
+            if (_createUser != null
+                    && !(_createUser instanceof Boolean)) {
+                throw new IllegalArgumentException(
+                        "wrong configuration file format. "
+                        + "create-user must be a boolean");
+            }
+
+            if (_createUserDocument != null
+                    && !(_createUserDocument instanceof String)) {
+                throw new IllegalArgumentException(
+                        "wrong configuration file format. "
+                        + "create-user-document must be a json document");
+            }
+
             if (_propertyNameId != null
                     && !(_propertyNameId instanceof String)) {
                 throw new IllegalArgumentException(
                         "wrong configuration file format. "
                         + "prop-name-id must be a string");
             }
-            
+
             if (_propertyNamePassword != null
                     && !(_propertyNamePassword instanceof String)) {
                 throw new IllegalArgumentException(
                         "wrong configuration file format. "
                         + "prop-name-password must be a string");
             }
-            
+
             if (_propertyNameRoles != null
                     && !(_propertyNameRoles instanceof String)) {
                 throw new IllegalArgumentException(
@@ -223,15 +249,30 @@ public final class DbIdentityManager
             if (_bcryptHashedPassword != null) {
                 this.bcryptHashedPassword = (Boolean) _bcryptHashedPassword;
             }
-            
+
+            if (_createUser != null) {
+                this.createUser = (Boolean) _createUser;
+            }
+
+            if (this.createUser && _createUserDocument != null) {
+                try {
+                    this.createUserDocument
+                            = BsonDocument.parse((String) _createUserDocument);
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException(
+                            "wrong configuration file format. "
+                            + "create-user-document must be a json document", ex);
+                }
+            }
+
             if (_propertyNameId != null) {
                 this.propertyNameId = (String) _propertyNameId;
             }
-            
+
             if (_propertyNamePassword != null) {
                 this.propertyNamePassword = (String) _propertyNamePassword;
             }
-            
+
             if (_propertyNameRoles != null) {
                 this.propertyNameRoles = (String) _propertyNameRoles;
             }
