@@ -31,7 +31,6 @@ import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_HEADER;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_VALID_HEADER;
 import org.restheart.security.impl.AuthTokenIdentityManager;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.ResponseHelper;
 
 /**
  *

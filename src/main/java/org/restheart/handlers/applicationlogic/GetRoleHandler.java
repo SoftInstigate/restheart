@@ -77,12 +77,12 @@ public class GetRoleHandler extends ApplicationLogicHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         Representation rep;
         
-        if (context.getMethod() == METHOD.OPTIONS) {
+        if (context.isOptions()) {
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET");
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge, " + AUTH_TOKEN_HEADER + ", " + AUTH_TOKEN_VALID_HEADER + ", " + AUTH_TOKEN_LOCATION_HEADER);
             exchange.setStatusCode(HttpStatus.SC_OK);
             exchange.endExchange();
-        } else if (context.getMethod() == METHOD.GET) {
+        } else if (context.isGet()) {
             if ((exchange.getSecurityContext() == null
                     || exchange.getSecurityContext().getAuthenticatedAccount() == null
                     || exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null)

@@ -90,17 +90,17 @@ public final class DbIdentityManager
                         return this.findAccount(key);
                     });
         }
-        
+
         MongoClient mongoClient = MongoDBClientSingleton
                 .getInstance().getClient();
 
         MongoDatabase mongoDb = mongoClient.getDatabase(this.db);
 
         this.mongoColl = mongoDb.getCollection(coll, BsonDocument.class);
-        
+
         if (this.createUser) {
             LOGGER.trace("create user option enabled");
-            if (this.mongoColl.count() < 1) {         
+            if (this.mongoColl.count() < 1) {
                 this.mongoColl.insertOne(this.createUserDocument);
                 LOGGER.info("no user found. created default user with _id {}", this.createUserDocument.get("_id"));
             } else {
@@ -286,14 +286,51 @@ public final class DbIdentityManager
 
     @Override
     public Account verify(String id, Credential credential) {
-        final Account account = getAccount(id);
-        return account != null
-                && verifyCredential(account, credential) ? account : null;
+        final SimpleAccount account = getAccount(id);
+
+        if (account != null && verifyCredential(account, credential)) {
+            updateAuthTokenCache(account);
+            return account;
+        } else {
+            return null;
+        }
     }
 
     @Override
     public Account verify(Credential credential) {
         return null;
+    }
+
+    /**
+     * if client authenticates with the DbIdentityManager passing the real
+     * credentials update the account in the auth-token cache, otherwise the
+     * client authenticating with the auth-token will not see roles updates
+     * until the cache expires (by default TTL is 15 minutes after last request)
+     *
+     * @param account
+     */
+    private void updateAuthTokenCache(SimpleAccount account) {
+        Cache<String, SimpleAccount> authTokenCache
+                = AuthTokenIdentityManager.getInstance().getCachedAccounts();
+
+        String id = account.getPrincipal().getName();
+
+        Optional<SimpleAccount> _authTokenAccount
+                = authTokenCache.get(id);
+
+        if (_authTokenAccount != null && _authTokenAccount.isPresent()) {
+            SimpleAccount authTokenAccount = _authTokenAccount.get();
+
+            SimpleAccount updatedAuthTokenAccount
+                    = new SimpleAccount(
+                            id,
+                            authTokenAccount.getCredentials().getPassword(),
+                            account.getRoles());
+
+            authTokenCache.put(id, updatedAuthTokenAccount);
+
+            LOGGER.debug("***** updated auth token cache");
+        }
     }
 
     private boolean verifyCredential(Account account, Credential credential) {
