@@ -24,8 +24,6 @@ import org.bson.BsonValue;
 import org.restheart.Bootstrapper;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.METHOD;
-import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -169,6 +167,7 @@ public class PlainJsonTransformer implements Transformer {
                 addItems(__embedded, embedded, "rh:coll");
                 addItems(__embedded, embedded, "rh:index");
                 addItems(__embedded, embedded, "rh:result");
+                addItems(__embedded, embedded, "rh:schema");
 
                 // add _items if not in error
                 if (context.getResponseStatusCode()
