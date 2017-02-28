@@ -48,13 +48,14 @@ public class JsonSchemaTransformer implements Transformer {
             final BsonValue contentToTransform,
             BsonValue args) {
         BsonDocument _contentToTransform
-                = contentToTransform.asDocument();
+                = contentToTransform == null
+                        ? null
+                        : contentToTransform.asDocument();
 
-        if (context.getType() == RequestContext.TYPE.SCHEMA) {
-            if (context.getMethod() == RequestContext.METHOD.GET) {
+        if (context.isSchema()) {
+            if (context.isGet()) {
                 unescapeSchema(_contentToTransform);
-            } else if (context.getMethod() == RequestContext.METHOD.PUT
-                    || context.getMethod() == RequestContext.METHOD.PATCH) {
+            } else if (context.isPut() || context.isPatch()) {
                 BsonDocument content;
 
                 if (context.getContent() != null) {
@@ -85,7 +86,7 @@ public class JsonSchemaTransformer implements Transformer {
                 } else {
                     content = new BsonDocument();
                 }
-                
+
                 // generate id as specs mandates
                 BsonValue schemaId;
 
@@ -109,7 +110,7 @@ public class JsonSchemaTransformer implements Transformer {
 
                 // add (overwrite) $schema field
                 _contentToTransform.put("_$schema", $SCHEMA);
-            } else if (context.getMethod() == RequestContext.METHOD.GET) {
+            } else if (context.isGet()) {
                 // apply transformation on embedded schemas
 
                 if (_contentToTransform.containsKey("_embedded")) {

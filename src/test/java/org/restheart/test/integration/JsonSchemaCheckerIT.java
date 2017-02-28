@@ -17,6 +17,8 @@
  */
 package org.restheart.test.integration;
 
+import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonValue;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
@@ -35,7 +37,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
     private final String COLL_BASIC = "coll_basic";
     private final String COLL_CHILD = "coll_child";
     private final String SCHEMA_STORE = "_schemas";
-    
+
     HttpResponse resp;
 
     public JsonSchemaCheckerIT() throws URISyntaxException {
@@ -99,6 +101,37 @@ public class JsonSchemaCheckerIT extends AbstactIT {
                 .asString();
 
         Assert.assertEquals("create collection " + DB.concat("/").concat(COLL_CHILD), HttpStatus.SC_CREATED, resp.getStatus());
+    }
+
+    @Test
+    public void testGetSchamaStore() throws Exception {
+        resp = Unirest.get(url(DB, SCHEMA_STORE))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .asString();
+
+        Assert.assertEquals("test get schema store", HttpStatus.SC_OK, resp.getStatus());
+
+        JsonValue rbody = Json.parse(resp.getBody().toString());
+
+        Assert.assertTrue("response body is a document", rbody != null && rbody.isObject());
+
+        Assert.assertTrue("schema store contains 3 schemas",
+                rbody.asObject().get("_returned") != null
+                && rbody.asObject().get("_returned").isNumber()
+                && rbody.asObject().get("_returned").asInt() == 3);
+    }
+    
+    @Test
+    public void testGetSchama() throws Exception {
+        resp = Unirest.get(url(DB, SCHEMA_STORE, "basic"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .asString();
+
+        Assert.assertEquals("test get schema", HttpStatus.SC_OK, resp.getStatus());
+
+        JsonValue rbody = Json.parse(resp.getBody().toString());
+
+        Assert.assertTrue("response body is a document", rbody != null && rbody.isObject());
     }
 
     @Test
@@ -252,7 +285,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
     @Test
     public void testPatchData() throws Exception {
         String id = new ObjectId().toString();
-        
+
         // create valid data
         resp = Unirest.put(url(DB, COLL_BASIC, id))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
@@ -261,19 +294,17 @@ public class JsonSchemaCheckerIT extends AbstactIT {
                 .asString();
 
         Assert.assertEquals("test create valid data with dot notation", HttpStatus.SC_CREATED, resp.getStatus());
-        
+
         // *** test patch valid data with dot notation
-        
         resp = Unirest.patch(url(DB, COLL_BASIC, id))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .body("{'obj.s': 'new string' }")
                 .asString();
-        
+
         Assert.assertEquals("test create valid data with dot notation", HttpStatus.SC_OK, resp.getStatus());
-        
+
         // *** test patch invalid key
-        
         resp = Unirest.patch(url(DB, COLL_BASIC, id))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
@@ -281,9 +312,8 @@ public class JsonSchemaCheckerIT extends AbstactIT {
                 .asString();
 
         Assert.assertEquals("test create valid data with dot notation", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
-        
+
         // *** test patch wrong type object data
-        
         resp = Unirest.patch(url(DB, COLL_BASIC, id))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
@@ -301,23 +331,22 @@ public class JsonSchemaCheckerIT extends AbstactIT {
     @Test
     public void testPatchIncompleteObject() throws Exception {
         String id = new ObjectId().toString();
-        
+
         // *** test create valid data
-        
         resp = Unirest.put(url(DB, COLL_BASIC, id))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .body("{'n': 1, 's': 'string', 'obj.s': 'string' }")
                 .asString();
-        
+
         Assert.assertEquals("test create valid data with dot notation", HttpStatus.SC_CREATED, resp.getStatus());
-        
+
         resp = Unirest.patch(url(DB, COLL_BASIC, id))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .body("{'$unset': {'obj.s': true} }")
                 .asString();
-        
+
         Assert.assertEquals("test patch invalid data", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
     }
 }
