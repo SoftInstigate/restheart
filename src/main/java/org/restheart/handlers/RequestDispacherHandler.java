@@ -294,7 +294,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                         new GetCollectionHandler(
                                 new TransformerHandler(
                                         respTransformers(),
-                                        PHASE.REQUEST,
+                                        PHASE.RESPONSE,
                                         new JsonSchemaTransformer()))));
 
         putPipedHttpHandler(TYPE.SCHEMA_STORE, METHOD.PUT,
@@ -322,7 +322,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                         new GetDocumentHandler(
                                 new TransformerHandler(
                                         respTransformers(),
-                                        PHASE.REQUEST,
+                                        PHASE.RESPONSE,
                                         new JsonSchemaTransformer()))));
 
         putPipedHttpHandler(TYPE.SCHEMA, METHOD.PUT,
