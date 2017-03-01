@@ -31,6 +31,9 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.restheart.Bootstrapper;
+import org.restheart.Configuration;
+import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.handlers.collection.GetCollectionHandler;
 import org.restheart.handlers.collection.PutCollectionHandler;
 import org.restheart.handlers.database.GetDBHandler;
@@ -70,6 +73,7 @@ public class RequestDispacherHandlerTest {
 
     @Before
     public void setUp() {
+        MongoDBClientSingleton.init(new Configuration());
         dispacher = new RequestDispacherHandler(false);
     }
 
