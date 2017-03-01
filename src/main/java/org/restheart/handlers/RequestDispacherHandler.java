@@ -77,6 +77,9 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
 
     private final Map<TYPE, Map<METHOD, PipedHttpHandler>> handlersMultimap;
 
+    private final ResponseSenderHandler responseSenderHandler
+            = new ResponseSenderHandler(null);
+
     /**
      * Creates a new instance of RequestDispacherHandler
      */
@@ -251,7 +254,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                         new BeforeWriteCheckMetadataHandler(
                                 new PostBucketHandler(
                                         respTransformers()))));
-        
+
         putPipedHttpHandler(TYPE.FILE, METHOD.PUT,
                 new RequestTransformerMetadataHandler(
                         new BeforeWriteCheckMetadataHandler(
@@ -422,8 +425,12 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
             LOGGER.debug(
                     "This is a bad request: returning a <{}> HTTP code",
                     HttpStatus.SC_BAD_REQUEST);
-            exchange.setStatusCode(HttpStatus.SC_BAD_REQUEST);
-            exchange.endExchange();
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_BAD_REQUEST,
+                    "bad request");
+            responseSenderHandler.handleRequest(exchange, context);
             return;
         }
 
@@ -431,8 +438,12 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
             LOGGER.debug(
                     "This method is not allowed: returning a <{}> HTTP code",
                     HttpStatus.SC_METHOD_NOT_ALLOWED);
-            exchange.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
-            exchange.endExchange();
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_METHOD_NOT_ALLOWED,
+                    "mentod " + context.getMethod().name() + " not allowed");
+            responseSenderHandler.handleRequest(exchange, context);
             return;
         }
 
@@ -445,7 +456,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_FORBIDDEN,
                     "reserved resource");
-            next(exchange, context);
+            responseSenderHandler.handleRequest(exchange, context);
             return;
         }
 
@@ -460,8 +471,12 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
             LOGGER.error(
                     "Can't find PipedHttpHandler({}, {})",
                     context.getType(), context.getMethod());
-            exchange.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
-            exchange.endExchange();
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_METHOD_NOT_ALLOWED,
+                    "mentod " + context.getMethod().name() + " not allowed");
+            responseSenderHandler.handleRequest(exchange, context);
         }
     }
 }
