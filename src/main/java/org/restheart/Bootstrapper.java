@@ -85,6 +85,7 @@ import org.slf4j.LoggerFactory;
 import org.restheart.handlers.RequestLoggerHandler;
 import java.nio.file.Paths;
 import static io.undertow.Handlers.path;
+import javax.net.ssl.TrustManagerFactory;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.handlers.injectors.AccountInjectorHandler;
 
@@ -469,7 +470,9 @@ public final class Bootstrapper {
             }
         });
 
-        undertowServer.stop();
+        if (undertowServer != null) {
+            undertowServer.stop();
+        }
 
         if (!silent) {
             LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart stopped").reset().toString());
@@ -501,8 +504,12 @@ public final class Bootstrapper {
         SSLContext sslContext = null;
 
         try {
-            KeyManagerFactory kmf;
-            KeyStore ks;
+            sslContext = SSLContext.getInstance("TLS");
+
+            KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+
+            KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
 
             if (getConfiguration().isUseEmbeddedKeystore()) {
                 char[] storepass = "restheart".toCharArray();
@@ -510,26 +517,20 @@ public final class Bootstrapper {
 
                 String storename = "rakeystore.jks";
 
-                sslContext = SSLContext.getInstance("TLS");
-                kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-                ks = KeyStore.getInstance("JKS");
                 ks.load(Bootstrapper.class.getClassLoader().getResourceAsStream(storename), storepass);
-
                 kmf.init(ks, keypass);
-
-                sslContext.init(kmf.getKeyManagers(), null, null);
             } else {
-                sslContext = SSLContext.getInstance("TLS");
-                kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-                ks = KeyStore.getInstance("JKS");
-
                 try (FileInputStream fis = new FileInputStream(new File(configuration.getKeystoreFile()))) {
                     ks.load(fis, configuration.getKeystorePassword().toCharArray());
-
                     kmf.init(ks, configuration.getCertPassword().toCharArray());
-                    sslContext.init(kmf.getKeyManagers(), null, null);
                 }
             }
+
+            
+            tmf.init(ks);
+
+            LOGGER.debug("ciao {}", tmf.getTrustManagers());
+            sslContext.init(kmf.getKeyManagers(), null, null);
         } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException ex) {
             logErrorAndExit("Couldn't start RESTHeart, error with specified keystore. exiting..", ex, false, -1);
         } catch (FileNotFoundException ex) {
