@@ -36,6 +36,7 @@ import org.bson.BsonDouble;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -55,7 +56,7 @@ public class LoadPutPT extends AbstractPT {
                 .body("{'nanostamp': " + System.nanoTime() + "}")
                 .asString();
 
-        assertEquals("check status code", 
+        assertEquals("check status code",
                 HttpStatus.SC_CREATED, resp.getStatus());
     }
 
@@ -69,51 +70,72 @@ public class LoadPutPT extends AbstractPT {
 
         resp = req
                 .header("content-type", "application/json")
-                .body("{'_id': {'$oid': '" 
-                        + new ObjectId().toString() 
-                        + "'}, 'nanostamp': " 
+                .body("{'_id': {'$oid': '"
+                        + new ObjectId().toString()
+                        + "'}, 'nanostamp': "
                         + System.nanoTime() + "}")
                 .asString();
 
         assertEquals(
-                "check status code", 
-                HttpStatus.SC_CREATED, 
+                "check status code",
+                HttpStatus.SC_CREATED,
                 resp.getStatus());
     }
 
     public void put() throws Exception {
         String _url = url + "/" + new ObjectId().toString();
-        
+
         HttpRequestWithBody req = Unirest.put(_url);
         HttpResponse resp;
 
         if (id != null && pwd != null) {
             req.basicAuth(id, pwd);
         }
-                
+
         resp = req
                 .header("content-type", "application/json")
                 .body("{'nanostamp': " + System.nanoTime() + "}")
                 .asString();
 
         assertEquals(
-                "check status code", 
-                HttpStatus.SC_CREATED, 
+                "check status code",
+                HttpStatus.SC_CREATED,
                 resp.getStatus());
     }
 
+    public void putUrl() throws Exception {
+        String _url = this.url;
+
+        HttpRequestWithBody req = Unirest.put(_url);
+        HttpResponse resp;
+
+        if (id != null && pwd != null) {
+            req.basicAuth(id, pwd);
+        }
+
+        resp = req
+                .header("content-type", "application/json")
+                .body("{'nanostamp': " + System.nanoTime() + "}")
+                .asString();
+
+        assertTrue(
+                "check status code",
+                resp.getStatus() == HttpStatus.SC_CREATED
+                || resp.getStatus() == HttpStatus.SC_OK);
+    }
+
     public void dbdirect() throws IOException {
-        BsonDocument content = new BsonDocument("random"
-                , new BsonDouble(Math.random()));
+        BsonDocument content = new BsonDocument("random",
+                new BsonDouble(Math.random()));
 
         new DocumentDAO().upsertDocument(
-                db, 
-                coll, 
-                null, 
-                null, 
-                content, 
-                null, 
-                false, 
+                db,
+                coll,
+                null,
+                null,
+                content,
+                null,
+                false,
                 false);
     }
 }
