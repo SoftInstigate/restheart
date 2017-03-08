@@ -526,10 +526,9 @@ public final class Bootstrapper {
                 }
             }
 
-            
             tmf.init(ks);
 
-            sslContext.init(kmf.getKeyManagers(), null, null);
+            sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
         } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException ex) {
             logErrorAndExit("Couldn't start RESTHeart, error with specified keystore. exiting..", ex, false, -1);
         } catch (FileNotFoundException ex) {
