@@ -47,6 +47,11 @@ after_success:
    - cd Docker && cp ../target/restheart.jar .
    - docker build -t softinstigate/restheart:$RHVERSION .
    - docker push softinstigate/restheart:$RHVERSION
+   - if [ "$TRAVIS_TAG" == "$RHVERSION" ]; then
+     echo "Tagging image softinstigate/restheart:$RHVERSION also as latest";
+     docker tag softinstigate/restheart:$RHVERSION softinstigate/restheart:latest;
+     docker push softinstigate/restheart:latest;
+     fi
 
 env:
   global:
