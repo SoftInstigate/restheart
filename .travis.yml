@@ -28,6 +28,7 @@ cache:
 
 services:
    - mongodb
+   - docker
 
 install: true
 
