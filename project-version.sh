@@ -1,5 +1,5 @@
 #!/bin/sh
-export MVN_VERSION=$(mvn -q \
+export MVN_VERSION=$(mvn --quiet \
     -Dexec.executable="echo" \
     -Dexec.args='${project.version}' \
     --non-recursive \
