@@ -140,3 +140,12 @@ pom.xml.versionsBackup
 pom.xml.next
 release.properties
 /nbproject/
+
+### VisualStudioCode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.classpath
+.project
