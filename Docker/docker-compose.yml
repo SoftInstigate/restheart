@@ -16,9 +16,9 @@ networks:
 services:
    restheart:
       ### Change the tag below to run a different version of RESTHeart
-      image: restheart-snapshot
+      image: restheart
       ### Uncomment to name the container explicitly
-      container_name: restheart
+      container_name: restheart-dev
       depends_on:
          - mongodb
       networks:
@@ -32,9 +32,9 @@ services:
 
    mongodb:
       # select a MongoDB 3.x version
-      image: mongo:3.4
+      image: mongo:3.2
       ### Name the container explicitly
-      container_name: restheart-mongo
+      container_name: restheart-dev-mongo
       ### Uncomment to use the permanent data volume
       #volumes:
       #   - datavolume:/data/db
