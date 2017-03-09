@@ -45,7 +45,7 @@ after_success:
    - export RHVERSION=$(./project-version.sh 2>/dev/null)
    - echo "Building Docker image for RESTHeart Version "$RHVERSION
    - cd Docker && cp ../target/restheart.jar .
-   - docker build -t softinstigate/restheart$RHVERSION .
+   - docker build -t softinstigate/restheart:$RHVERSION .
    - docker push softinstigate/restheart:$RHVERSION
 
 env:
