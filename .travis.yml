@@ -40,6 +40,12 @@ script:
 after_success:
    - wget https://gist.githubusercontent.com/mkjsix/98debbbbfcf310b6a33f/raw/4be0460cec34e09d106e13b3f773937cb2a4ff36/settings.xml
    - mvn deploy --settings settings.xml -DskipTests=true
+   - docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"
+   - export RHVERSION=$(./project-version.sh)
+   - echo "Building Docker image for RESTHeart Version "$RHVERSION
+   - cd Docker && cp ../target/restheart.jar .
+   - docker build -t softinstigate/restheart$RHVERSION .
+   - docker push softinstigate/restheart:$RHVERSION
 
 env:
   global:
