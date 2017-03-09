@@ -65,8 +65,8 @@ If you have a Docker service running locally, you can be up and running with RES
 
 Steps:
 ```
-$ mvn clean package docker:build
 $ cd Docker
+$ ./build.sh
 $ docker-compose up -d && docker-compose logs -f
 ```
 
