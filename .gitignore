@@ -149,3 +149,5 @@ release.properties
 !.vscode/extensions.json
 .classpath
 .project
+
+Docker/restheart.jar
