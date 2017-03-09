@@ -59,9 +59,7 @@ Fast & Light
 Test with Docker
 --
 
-If you have a Docker service running locally, you can be up and running with RESTHeart and MongoDB in few minutes. The POM includes a build configuration with the [docker-maven-plugin](https://github.com/spotify/docker-maven-plugin) and there's a `docker` folder with a `Dockerfile` and a `docker-compose.yml` file.
-
-> by default the MongoDB instance started by docker-compose does not use any named storage, please read carefully all comments within the `docker-compose.yml` file to enable a named data volume. Read [Manage data in containers](https://docs.docker.com/engine/tutorials/dockervolumes/) for more.
+If you have a Docker service running locally, you can be up and running with RESTHeart and MongoDB in few minutes. There's a `Docker` folder with `Dockerfile` and `docker-compose.yml` files, plus a specific `restheart.yml` configuration in the `Docker/etc` folder. The `build.sh` bash script compiles the source code and builds the Docker image.
 
 Steps:
 ```
@@ -69,16 +67,11 @@ $ cd Docker
 $ ./build.sh
 $ docker-compose up -d && docker-compose logs -f
 ```
+Finally, point your browser to [http://localhost:8080/browser/](http://localhost:8080/browser/)
 
-The above steps will:
+> by default the MongoDB instance started by docker-compose does not use any named storage, so if you remove the container you might loose all data. Please read the comments within the `docker-compose.yml` file to enable a named data volume and carefully read [Manage data in containers](https://docs.docker.com/engine/tutorials/dockervolumes/) for more.
 
-1. Package the RESTHeart's JAR and invoke the docker plugin build process, which uses the included Dockerfile
-1. Start both RESTHeart and MongoDB as dockerized instances
-1. Tail the logs
-
-Then you can open the HAL Browser at http://localhost:8080/browser
-
-If you have cloned from master branch, you should notice that RESTHeart's running version is the same as the POM's version (e.g. `3.1.0-SNAPSHOT`).
+If you have cloned from master branch, you should notice from the logs that RESTHeart's running version is the same as the POM's version (e.g. `3.1.0-SNAPSHOT`).
 
 **Properties**
 ```
