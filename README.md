@@ -67,7 +67,7 @@ $ cd Docker
 $ ./build.sh
 $ docker-compose up -d && docker-compose logs -f
 ```
-Finally, point your browser to [http://localhost:8080/browser/](http://localhost:8080/browser/)
+Finally, point your browser to [http://localhost:8080/browser/](http://localhost:8080/browser/), using id `admin` and password `changeit` when promped for authentication.
 
 > by default the MongoDB instance started by docker-compose does not use any named storage, so if you remove the container you might loose all data. Please read the comments within the `docker-compose.yml` file to enable a named data volume and carefully read [Manage data in containers](https://docs.docker.com/engine/tutorials/dockervolumes/) for more.
 
