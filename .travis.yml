@@ -39,12 +39,13 @@ script:
    - mvn clean install -DskipITs=false
 
 after_success:
-   - wget https://gist.githubusercontent.com/mkjsix/98debbbbfcf310b6a33f/raw/4be0460cec34e09d106e13b3f773937cb2a4ff36/settings.xml
-   - mvn deploy --settings settings.xml -DskipTests=true
-   - docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"
-   - export RESTHEART_VERSION=$(./project-version.sh 2>/dev/null)
-   - cd Docker && cp ../target/restheart.jar .
-   - ./push.sh
+   - if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
+     mvn deploy --settings deploy-settings.xml -DskipTests=true;
+     docker login -u="$DOCKER_USER" -p="$DOCKER_PASS";
+     export RESTHEART_VERSION=$(./project-version.sh 2>/dev/null);
+     cd Docker && cp ../target/restheart.jar . ;
+     ./push.sh;
+     fi
 
 env:
   global:
