@@ -121,6 +121,9 @@ application-logic-mounts:
     - what: org.restheart.handlers.applicationlogic.CacheInvalidator
       where: /ic
       secured: true
+    - what: org.restheart.handlers.applicationlogic.CsvLoaderHandler
+      where: /csv
+      secured: true
 
 ### Metadata Named Singletons
 

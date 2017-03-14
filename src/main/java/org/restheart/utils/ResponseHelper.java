@@ -102,7 +102,7 @@ public class ResponseHelper {
         context.setResponseContent(rep.asBsonDocument());
     }
 
-    private static Representation getErrorJsonDocument(String href,
+    public static Representation getErrorJsonDocument(String href,
             int code,
             RequestContext context,
             String httpStatusText,
