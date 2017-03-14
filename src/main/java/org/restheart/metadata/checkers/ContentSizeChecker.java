@@ -15,12 +15,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.hal.metadata.singletons;
+package org.restheart.metadata.checkers;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.hal.metadata.singletons.Checker.PHASE;
+import org.restheart.metadata.checkers.Checker.PHASE;
 import org.restheart.handlers.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

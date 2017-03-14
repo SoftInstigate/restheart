@@ -15,10 +15,37 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.restheart.metadata.hooks;
+
+import org.restheart.hal.InvalidHalException;
+
 /**
- * Classes to deal with HAL documents properties that have a special semantic in
- * RESTHeart and thus are called metadata
- * 
-* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ *
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-package org.restheart.hal.metadata;
+public class InvalidMetadataException extends InvalidHalException {
+
+    /**
+     *
+     */
+    public InvalidMetadataException() {
+        super();
+    }
+
+    /**
+     *
+     * @param message
+     */
+    public InvalidMetadataException(String message) {
+        super(message);
+    }
+
+    /**
+     *
+     * @param message
+     * @param cause
+     */
+    public InvalidMetadataException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}

@@ -19,14 +19,14 @@ package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
-import org.restheart.hal.metadata.InvalidMetadataException;
-import org.restheart.hal.metadata.HookMetadata;
-import org.restheart.hal.metadata.singletons.NamedSingletonsFactory;
+import org.restheart.metadata.hooks.InvalidMetadataException;
+import org.restheart.metadata.hooks.HookMetadata;
+import org.restheart.metadata.NamedSingletonsFactory;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.restheart.hal.metadata.singletons.Hook;
+import org.restheart.metadata.hooks.Hook;
 
 /**
  *

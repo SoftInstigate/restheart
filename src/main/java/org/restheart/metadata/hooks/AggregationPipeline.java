@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.hal.metadata;
+package org.restheart.metadata.hooks;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +56,7 @@ public class AggregationPipeline extends AbstractAggregationOperation {
      *     ]
      * }]
      * </code>
-     * @throws org.restheart.hal.metadata.InvalidMetadataException
+     * @throws org.restheart.metadata.hooks.InvalidMetadataException
      */
     public AggregationPipeline(BsonDocument properties)
             throws InvalidMetadataException {
@@ -93,8 +93,8 @@ public class AggregationPipeline extends AbstractAggregationOperation {
     /**
      * @param vars RequestContext.getAggregationVars()
      * @return the stages, with unescaped operators and bound variables
-     * @throws org.restheart.hal.metadata.InvalidMetadataException
-     * @throws org.restheart.hal.metadata.QueryVariableNotBoundException
+     * @throws org.restheart.metadata.hooks.InvalidMetadataException
+     * @throws org.restheart.metadata.hooks.QueryVariableNotBoundException
      */
     public List<BsonDocument> getResolvedStagesAsList(BsonDocument vars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
