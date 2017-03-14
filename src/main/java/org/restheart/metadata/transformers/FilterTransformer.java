@@ -15,11 +15,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.hal.metadata.singletons;
+package org.restheart.metadata.transformers;
 
 import io.undertow.server.HttpServerExchange;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
-import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 
@@ -27,19 +27,26 @@ import org.restheart.handlers.RequestContext;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
- * On RESPONSE phase this transformer replaces ObjectId with strings.
+ * This transformer filters out the properties from the resource representation.
+ * the properties to filter out are passed in the args argumenet as an array of
+ * strings.
  *
- * <br>Example, document { "_id": {"$oid": "553f59d2e4b041ceaac64e33" }, a: 1 } 
- * <br>GET -> { "_id": "553f59d2e4b041ceaac64e33", a:1 } 
+ * If added to the REQUEST phase, it avoids properties to be stored, if added to
+ * the RESPONSE phase, it hides stored properties.
+ *
+ * <br>Example that removes the property 'password' from the response:
+ * <br>rts:=[{name:"filterProperties", "phase":"RESPONSE", "scope":"CHILDREN",
+ * args:["password"]}]
  *
  */
-public class OidsAsStringsTransformer implements Transformer {
+public class FilterTransformer implements Transformer {
     /**
      *
      * @param exchange
      * @param context
      * @param contentToTransform
-     * @param args
+     * @param args properties to filter out as an array of strings (["prop1",
+     * "prop2"]
      */
     @Override
     public void transform(
@@ -51,7 +58,7 @@ public class OidsAsStringsTransformer implements Transformer {
             // nothing to do
             return;
         }
-
+        
         if (!contentToTransform.isDocument()) {
             throw new IllegalStateException(
                     "content to transform is not a document");
@@ -59,22 +66,24 @@ public class OidsAsStringsTransformer implements Transformer {
         
         BsonDocument _contentToTransform = contentToTransform.asDocument();
         
-        _transform(_contentToTransform);
-    }
-    
-    private void _transform(BsonDocument data) {
-        data.keySet().stream().forEach(key -> {
-            BsonValue value = data.get(key);
-            
-            if (value.isDocument()) {
-                _transform(value.asDocument());
-            } else if (value.isObjectId()) {
-                data.put(key, 
-                        new BsonString(value
-                                .asObjectId()
-                                .getValue()
-                                .toString()));
-            }
-        });
+        if (args.isArray()) {
+            BsonArray toremove = args.asArray();
+
+            toremove.forEach(_prop -> {
+                if (_prop.isString()) {
+                    String prop = (String) _prop.asString().getValue();
+
+                    _contentToTransform.remove(prop);
+                } else {
+                    context.addWarning("property in the args list "
+                            + "is not a string: " + _prop);
+                }
+            });
+
+        } else {
+            context.addWarning("transformer wrong definition: "
+                    + "args property must be an arrary "
+                    + "of string property names.");
+        }
     }
 }
