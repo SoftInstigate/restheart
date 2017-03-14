@@ -201,6 +201,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             // get and parse the content
             final String contentString
                     = ChannelReader.read(exchange.getRequestChannel());
+            
+            context.setRawContent(contentString);
 
             if (contentString != null
                     && !contentString.isEmpty()) { // check content type

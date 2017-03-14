@@ -20,7 +20,6 @@ package org.restheart.handlers.applicationlogic;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;

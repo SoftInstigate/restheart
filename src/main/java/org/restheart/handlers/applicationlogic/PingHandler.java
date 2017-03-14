@@ -21,10 +21,8 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
-import org.restheart.utils.JsonUtils;
 
 /**
  *
