@@ -23,6 +23,7 @@ import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
@@ -60,18 +61,25 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
     private static final String SEPARATOR_QPARAM_NAME = "sep";
     private static final String DB_QPARAM_NAME = "db";
     private static final String COLL_QPARAM_NAME = "coll";
+    private static final String PROP_KEYS_NAME = "props";
+    private static final String PROP_VALUES_NAME = "values";
 
     private int idIdx = -1;
     private String db;
     private String coll;
     private String sep = ",";
 
+    private Deque<String> props = null;
+    private Deque<String> values = null;
+
     private static final BsonString ERROR_QPARAM = new BsonString(
             "query parameters: "
             + "db=<db_name> *required, "
             + "coll=<collection_name> *required, "
             + "id=<id_column_index> optional (default: no _id column, each row will get an new ObjectId), "
-            + "sep=<column_separator> optional (default: ,)");
+            + "sep=<column_separator> optional (default: ,), "
+            + "props=<props> optional (default: no props) additional props to add to each row, "
+            + "values=<values> optional (default: no values) values of additional props to add to each row");
 
     private static final BsonString ERROR_CONTENT_TYPE = new BsonString(
             "Content-Type request header must be 'text/csv'");
@@ -226,6 +234,9 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
                     }
                 }
 
+                // add props specified via keys and values qparams
+                addProps(doc);
+
                 ret.add(doc);
             }
 
@@ -233,6 +244,17 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
         }
 
         return ret;
+    }
+
+    private void addProps(BsonDocument doc) {
+        if (props != null && values != null) {
+            Deque<String> _props = new ArrayDeque(props);
+            Deque<String> _values = new ArrayDeque(values);
+
+            while (!_props.isEmpty() && !_values.isEmpty()) {
+                doc.append(_props.pop(), getBsonValue(_values.poll()));
+            }
+        }
     }
 
     private BsonValue getBsonValue(String raw) {
@@ -248,6 +270,9 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
         Deque<String> _coll = exchange.getQueryParameters().get(COLL_QPARAM_NAME);
         Deque<String> _sep = exchange.getQueryParameters().get(SEPARATOR_QPARAM_NAME);
         Deque<String> _id = exchange.getQueryParameters().get(ID_IDX_QPARAM_NAME);
+
+        this.props = exchange.getQueryParameters().get(PROP_KEYS_NAME);
+        this.values = exchange.getQueryParameters().get(PROP_VALUES_NAME);
 
         db = _db != null ? _db.size() > 0 ? _db.getFirst() : null : null;
         coll = _coll != null ? _coll.size() > 0 ? _coll.getFirst() : null : null;
