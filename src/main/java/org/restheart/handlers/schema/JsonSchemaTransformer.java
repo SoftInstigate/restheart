@@ -157,7 +157,7 @@ public class JsonSchemaTransformer implements Transformer {
     public static void unescapeSchema(BsonDocument schema) {
         BsonValue unescaped = JsonUtils.unescapeKeys(schema);
 
-        if (unescaped.isDocument()) {
+        if (unescaped != null && unescaped.isDocument()) {
             List<String> keys = Lists.newArrayList(schema.keySet().iterator());
 
             keys.stream().forEach(f -> schema.remove(f));
