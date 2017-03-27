@@ -296,6 +296,11 @@ public final class Bootstrapper {
      * @param fork
      */
     private static void logLoggingConfiguration(boolean fork) {
+        String logbackConfigurationFile = System.getProperty("logback.configurationFile");
+        boolean usesLogback = logbackConfigurationFile != null && !logbackConfigurationFile.equals("");
+        
+        if(usesLogback) return;
+        
         if (configuration.isLogToFile()) {
             LOGGER.info("Logging to file {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
         }
