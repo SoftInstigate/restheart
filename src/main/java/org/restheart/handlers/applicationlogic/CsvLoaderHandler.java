@@ -208,7 +208,10 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
         while (scanner.hasNext()) {
             String line = scanner.nextLine();
 
-            List<String> vals = Arrays.asList(line.split(sep));
+            // split on the separator only if that comma has zero, 
+            // or an even number of quotes ahead of it.
+            List<String> vals = Arrays.asList(line.
+                    split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1));
 
             if (isHeader) {
                 cols = vals;
