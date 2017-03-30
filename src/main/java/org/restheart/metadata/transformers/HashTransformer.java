@@ -34,9 +34,6 @@ import org.restheart.handlers.RequestContext.TYPE;
  * write requests using the bcrypt hash function the properties to hash out are
  * passed in the args argument as an array of strings. the bcrypt
  *
- * If added to the REQUEST phase, it avoids properties to be stored, if added to
- * the RESPONSE phase, it hides stored properties.
- *
  * <br>Example that hashes the property 'password' from the response:
  * <br>{ rts: [{"name": "hashProperties", "phase":"REQUEST", "scope":"CHILDREN",
  * "args": { "props": ["password"], "complexity": 12 }}] }
