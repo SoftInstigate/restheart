@@ -1329,7 +1329,7 @@ public class Configuration {
     }
 
     /**
-     * @return the mongoMountsDefault
+     * @return the mongoMounts
      */
     public final List<Map<String, Object>> getMongoMounts() {
         return mongoMounts;

@@ -26,7 +26,7 @@ import io.undertow.util.Headers;
 import java.util.List;
 import org.restheart.db.DAOUtils;
 import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.metadata.hooks.RequestChecker;
+import org.restheart.metadata.checkers.RequestChecker;
 import org.restheart.metadata.checkers.Checker;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;

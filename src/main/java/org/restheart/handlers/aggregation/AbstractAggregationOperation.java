@@ -15,8 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.metadata.hooks;
+package org.restheart.handlers.aggregation;
 
+import org.restheart.handlers.aggregation.AggregationPipeline;
+import org.restheart.handlers.aggregation.MapReduce;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +26,7 @@ import java.util.Set;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.handlers.metadata.InvalidMetadataException;
 
 /**
  *
@@ -55,7 +58,7 @@ public abstract class AbstractAggregationOperation {
     /**
      *
      * @param properties
-     * @throws org.restheart.metadata.hooks.InvalidMetadataException
+     * @throws org.restheart.handlers.metadata.InvalidMetadataException
      */
     public AbstractAggregationOperation(BsonDocument properties)
             throws InvalidMetadataException {
@@ -193,7 +196,7 @@ public abstract class AbstractAggregationOperation {
      * @param aVars RequestContext.getAggregationVars()
      * @return the json object where the variables ({"_$var": "var") are
      * replaced with the values defined in the avars URL query parameter
-     * @throws org.restheart.metadata.hooks.InvalidMetadataException
+     * @throws org.restheart.handlers.metadata.InvalidMetadataException
      * @throws org.restheart.metadata.hooks.QueryVariableNotBoundException
      */
     protected BsonValue bindAggregationVariables(

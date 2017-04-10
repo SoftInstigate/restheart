@@ -15,9 +15,37 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.restheart.handlers.metadata;
+
+import org.restheart.hal.InvalidHalException;
+
 /**
- * Request hooks
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-package org.restheart.metadata.hooks;
+public class InvalidMetadataException extends InvalidHalException {
+
+    /**
+     *
+     */
+    public InvalidMetadataException() {
+        super();
+    }
+
+    /**
+     *
+     * @param message
+     */
+    public InvalidMetadataException(String message) {
+        super(message);
+    }
+
+    /**
+     *
+     * @param message
+     * @param cause
+     */
+    public InvalidMetadataException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}

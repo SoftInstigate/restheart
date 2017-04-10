@@ -34,6 +34,13 @@ public class ResponseSenderHandler extends PipedHttpHandler {
     /**
      * @param next
      */
+    public ResponseSenderHandler() {
+        super(null);
+    }
+    
+    /**
+     * @param next
+     */
     public ResponseSenderHandler(PipedHttpHandler next) {
         super(next);
     }

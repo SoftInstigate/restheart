@@ -15,37 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.metadata.hooks;
-
-import org.restheart.hal.InvalidHalException;
-
 /**
- *
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * Request checkers
+ * 
+* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class QueryVariableNotBoundException extends InvalidHalException {
-
-    /**
-     *
-     */
-    public QueryVariableNotBoundException() {
-        super();
-    }
-
-    /**
-     *
-     * @param message
-     */
-    public QueryVariableNotBoundException(String message) {
-        super(message);
-    }
-
-    /**
-     *
-     * @param message
-     * @param cause
-     */
-    public QueryVariableNotBoundException(String message, Throwable cause) {
-        super(message, cause);
-    }
-}
+package org.restheart.metadata.checkers;

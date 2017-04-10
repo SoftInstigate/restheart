@@ -22,12 +22,14 @@ import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.metadata.hooks.InvalidMetadataException;
-import org.restheart.metadata.hooks.RepresentationTransformer;
+import org.restheart.metadata.transformers.RepresentationTransformer;
 import org.restheart.metadata.NamedSingletonsFactory;
 import org.restheart.metadata.transformers.Transformer;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.metadata.AbstractTransformerMetadataHandler;
+import org.restheart.handlers.metadata.InvalidMetadataException;
+import org.restheart.metadata.transformers.Transformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

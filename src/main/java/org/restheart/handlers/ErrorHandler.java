@@ -25,7 +25,7 @@ import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.hal.Representation;
-import org.restheart.metadata.hooks.RepresentationTransformer.PHASE;
+import org.restheart.metadata.transformers.RepresentationTransformer.PHASE;
 import org.restheart.metadata.transformers.PlainJsonTransformer;
 import org.restheart.handlers.bulk.BulkResultRepresentationFactory;
 import org.restheart.handlers.metadata.TransformerHandler;

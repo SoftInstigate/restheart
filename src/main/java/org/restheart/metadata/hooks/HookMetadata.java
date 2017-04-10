@@ -17,6 +17,7 @@
  */
 package org.restheart.metadata.hooks;
 
+import org.restheart.handlers.metadata.InvalidMetadataException;
 import java.util.ArrayList;
 import java.util.List;
 import org.bson.BsonArray;
