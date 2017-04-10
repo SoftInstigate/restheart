@@ -39,9 +39,9 @@ import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import java.util.HashMap;
 import java.util.Map;
+import org.restheart.hal.metadata.RepresentationTransformer.PHASE;
 import org.restheart.hal.metadata.singletons.PlainJsonTransformer;
 import org.restheart.handlers.schema.JsonMetaSchemaChecker;
-import static org.restheart.hal.metadata.RepresentationTransformer.PHASE;
 import static org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.aggregation.AggregationTransformer;
@@ -150,8 +150,8 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                         new GetCollectionHandler(
                                 new ResponseTransformerMetadataHandler(
                                         new TransformerHandler(
-                                                new ResponseSenderHandler(
-                                                        new HookMetadataHandler()),
+                                                new HookMetadataHandler(
+                                                        new ResponseSenderHandler()),
                                                 PHASE.RESPONSE,
                                                 new PlainJsonTransformer(),
                                                 new AggregationTransformer())))));
@@ -347,8 +347,8 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
     private PipedHttpHandler respTransformers() {
         return new ResponseTransformerMetadataHandler(
                 new TransformerHandler(
-                        new ResponseSenderHandler(
-                                new HookMetadataHandler()),
+                        new HookMetadataHandler(
+                                new ResponseSenderHandler()),
                         PHASE.RESPONSE,
                         new PlainJsonTransformer()));
     }
