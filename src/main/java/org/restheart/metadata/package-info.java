@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
- * Request hooks
- *
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * Base package for classes concerning metadata properties
+ * 
+* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-package org.restheart.metadata.hooks;
+package org.restheart.metadata;

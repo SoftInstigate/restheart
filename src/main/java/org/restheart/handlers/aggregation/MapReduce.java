@@ -15,11 +15,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.metadata.hooks;
+package org.restheart.handlers.aggregation;
 
 import java.util.regex.Matcher;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.utils.JsonUtils;
 
 /**
@@ -62,7 +63,7 @@ public class MapReduce extends AbstractAggregationOperation {
      *   "query": {"name":{"_$exists":true}}
      * }]
      * </code>
-     * @throws org.restheart.metadata.hooks.InvalidMetadataException
+     * @throws org.restheart.handlers.metadata.InvalidMetadataException
      */
     public MapReduce(BsonDocument properties)
             throws InvalidMetadataException {
@@ -122,7 +123,7 @@ public class MapReduce extends AbstractAggregationOperation {
     /**
      * @param aVars RequestContext.getAggregationVars()
      * @return the query with unescaped operators and bound variables
-     * @throws org.restheart.metadata.hooks.InvalidMetadataException
+     * @throws org.restheart.handlers.metadata.InvalidMetadataException
      * @throws org.restheart.metadata.hooks.QueryVariableNotBoundException
      */
     public BsonDocument getResolvedQuery(BsonDocument aVars)

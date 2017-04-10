@@ -20,7 +20,6 @@ package org.restheart.handlers.metadata;
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import java.util.List;
-import org.restheart.metadata.hooks.InvalidMetadataException;
 import org.restheart.metadata.checkers.Checker;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;

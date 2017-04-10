@@ -23,7 +23,6 @@ import java.util.Optional;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.metadata.hooks.AbstractAggregationOperation;
 import org.restheart.metadata.transformers.Transformer;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.JsonUtils;

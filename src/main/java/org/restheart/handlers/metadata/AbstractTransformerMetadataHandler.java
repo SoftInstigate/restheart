@@ -18,7 +18,6 @@
 package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
-import org.restheart.metadata.hooks.InvalidMetadataException;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 
