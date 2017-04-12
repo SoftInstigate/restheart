@@ -9,6 +9,8 @@ COPY etc/* /opt/restheart/etc/
 COPY entrypoint.sh /opt/restheart/
 COPY restheart.jar /opt/restheart/
 
+RUN chmod +x /opt/restheart/entrypoint.sh
+
 ENTRYPOINT ["./entrypoint.sh"]
 CMD ["etc/restheart.yml"]
 EXPOSE 8080 4443
