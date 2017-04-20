@@ -39,6 +39,8 @@ import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.metadata.NamedSingletonsFactory;
+import org.restheart.metadata.transformers.Transformer;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_HEADER;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_VALID_HEADER;
@@ -48,6 +50,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * application logic handler to upload a csv file in a collection query
+ * parameters:<br>
+ * - db=&lt;db_name&gt; *required<br>
+ * - coll=&lt;collection_name&gt; *required<br>
+ * - id=&lt;id_column_index&gt; optional (default: no _id column, each row will
+ * get an new ObjectId)<br>
+ * - sep=&lt;column_separator&gt; optional (default: ,)<br>
+ * - props=&lt;props&gt; optional (default: no props) additional props to add to
+ * each row<br>
+ * - values=&lt;values&gt; optional (default: no values) values of additional
+ * props to add to each row<br>
+ * - transformer=&lt;tname&gt; optional (default: no transformer). name (as
+ * defined in conf file) of a tranformer to apply to imported data
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
@@ -61,6 +76,7 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
     private static final String SEPARATOR_QPARAM_NAME = "sep";
     private static final String DB_QPARAM_NAME = "db";
     private static final String COLL_QPARAM_NAME = "coll";
+    private static final String TRANFORMER_QPARAM_NAME = "transformer";
     private static final String PROP_KEYS_NAME = "props";
     private static final String PROP_VALUES_NAME = "values";
 
@@ -68,6 +84,7 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
     private String db;
     private String coll;
     private String sep = ",";
+    private Transformer transformer = null;
 
     private Deque<String> props = null;
     private Deque<String> values = null;
@@ -79,7 +96,8 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
             + "id=<id_column_index> optional (default: no _id column, each row will get an new ObjectId), "
             + "sep=<column_separator> optional (default: ,), "
             + "props=<props> optional (default: no props) additional props to add to each row, "
-            + "values=<values> optional (default: no values) values of additional props to add to each row");
+            + "values=<values> optional (default: no values) values of additional props to add to each row, "
+            + "transformer=<tname> optional (default: no transformer). name (as defined in conf file) of a tranformer to apply to imported data");
 
     private static final BsonString ERROR_CONTENT_TYPE = new BsonString(
             "Content-Type request header must be 'text/csv'");
@@ -129,7 +147,9 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
                 if (checkContentType(exchange)) {
                     if (checkQueryParameters(exchange)) {
                         try {
-                            List<BsonDocument> documents = parseCsv(context.getRawContent());
+                            List<BsonDocument> documents = parseCsv(exchange,
+                                    context,
+                                    context.getRawContent());
 
                             if (documents != null && documents.size() > 0) {
                                 MongoCollection<BsonDocument> mcoll = MongoDBClientSingleton
@@ -195,7 +215,8 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
         return JsonUtils.toJson(error);
     }
 
-    private List<BsonDocument> parseCsv(String rawContent)
+    private List<BsonDocument> parseCsv(HttpServerExchange exchange, 
+            RequestContext context, String rawContent)
             throws IOException {
         List<BsonDocument> ret = new ArrayList<BsonDocument>();
 
@@ -211,7 +232,7 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
             // split on the separator only if that comma has zero, 
             // or an even number of quotes ahead of it.
             List<String> vals = Arrays.asList(line.
-                    split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1));
+                    split(sep + "(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1));
 
             if (isHeader) {
                 cols = vals;
@@ -240,6 +261,11 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
                 // add props specified via keys and values qparams
                 addProps(doc);
 
+                // apply transformer if defined
+                if (transformer != null) {
+                    transformer.transform(exchange, context, doc, null);
+                }
+                
                 ret.add(doc);
             }
 
@@ -273,6 +299,7 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
         Deque<String> _coll = exchange.getQueryParameters().get(COLL_QPARAM_NAME);
         Deque<String> _sep = exchange.getQueryParameters().get(SEPARATOR_QPARAM_NAME);
         Deque<String> _id = exchange.getQueryParameters().get(ID_IDX_QPARAM_NAME);
+        Deque<String> _tranformer = exchange.getQueryParameters().get(TRANFORMER_QPARAM_NAME);
 
         this.props = exchange.getQueryParameters().get(PROP_KEYS_NAME);
         this.values = exchange.getQueryParameters().get(PROP_VALUES_NAME);
@@ -286,6 +313,17 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
             idIdx = Integer.parseInt(_idIdx);
         } catch (NumberFormatException nfe) {
             return false;
+        }
+
+        String transformerName = _tranformer != null ? _tranformer.size() > 0 ? _tranformer.getFirst() : null : null;
+
+        if (transformerName != null) {
+            try {
+                transformer = (Transformer) NamedSingletonsFactory.getInstance()
+                        .get("transformers", transformerName);
+            } catch (Throwable t) {
+                return false;
+            }
         }
 
         return db != null && coll != null;
