@@ -73,23 +73,6 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(CsvLoaderHandler.class);
 
-    private static final String ID_IDX_QPARAM_NAME = "id";
-    private static final String SEPARATOR_QPARAM_NAME = "sep";
-    private static final String DB_QPARAM_NAME = "db";
-    private static final String COLL_QPARAM_NAME = "coll";
-    private static final String TRANFORMER_QPARAM_NAME = "transformer";
-    private static final String PROP_KEYS_NAME = "props";
-    private static final String PROP_VALUES_NAME = "values";
-
-    private int idIdx = -1;
-    private String db;
-    private String coll;
-    private String sep = ",";
-    private Transformer transformer = null;
-
-    private Deque<String> props = null;
-    private Deque<String> values = null;
-
     private static final BsonString ERROR_QPARAM = new BsonString(
             "query parameters: "
             + "db=<db_name> *required, "
@@ -146,9 +129,12 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
                     Headers.CONTENT_TYPE, Representation.JSON_MEDIA_TYPE);
             if (doesApply(context)) {
                 if (checkContentType(exchange)) {
-                    if (checkQueryParameters(exchange)) {
+                    try {
+                        CsvRequestParams params = new CsvRequestParams(exchange);
+
                         try {
                             List<BsonDocument> documents = parseCsv(exchange,
+                                    params,
                                     context,
                                     context.getRawContent());
 
@@ -156,8 +142,8 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
                                 MongoCollection<BsonDocument> mcoll = MongoDBClientSingleton
                                         .getInstance()
                                         .getClient()
-                                        .getDatabase(db)
-                                        .getCollection(coll, BsonDocument.class);
+                                        .getDatabase(params.db)
+                                        .getCollection(params.coll, BsonDocument.class);
 
                                 mcoll.insertMany(documents);
                                 exchange.setStatusCode(HttpStatus.SC_OK);
@@ -172,7 +158,7 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
                                             HttpStatus.SC_INTERNAL_SERVER_ERROR,
                                             ERROR_PARSING_DATA));
                         }
-                    } else {
+                    } catch (IllegalArgumentException iae) {
                         exchange.setStatusCode(HttpStatus.SC_BAD_REQUEST);
                         exchange.getResponseSender()
                                 .send(getError(
@@ -217,6 +203,7 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
     }
 
     private List<BsonDocument> parseCsv(HttpServerExchange exchange, 
+            CsvRequestParams params,
             RequestContext context, String rawContent)
             throws IOException {
         List<BsonDocument> ret = new ArrayList<BsonDocument>();
@@ -233,7 +220,7 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
             // split on the separator only if that comma has zero, 
             // or an even number of quotes ahead of it.
             List<String> vals = Arrays.asList(line.
-                    split(sep + "(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1));
+                    split(params.sep + "(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1));
 
             if (isHeader) {
                 cols = vals;
@@ -243,8 +230,8 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
                 int unnamedProps = 0;
 
                 for (int idx = 0; idx < vals.size(); idx++) {
-                    if (idx == idIdx) {
-                        doc.append("_id", getBsonValue(vals.get(idIdx)));
+                    if (idx == params.idIdx) {
+                        doc.append("_id", getBsonValue(vals.get(params.idIdx)));
                     } else {
                         String propname;
 
@@ -260,13 +247,13 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
                 }
 
                 // add props specified via keys and values qparams
-                addProps(doc);
+                addProps(params, doc);
 
                 // apply transformer if defined
-                if (transformer != null) {
-                    transformer.transform(exchange, context, doc, null);
+                if (params.transformer != null) {
+                    params.transformer.transform(exchange, context, doc, null);
                 }
-                
+
                 ret.add(doc);
             }
 
@@ -276,10 +263,10 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
         return ret;
     }
 
-    private void addProps(BsonDocument doc) {
-        if (props != null && values != null) {
-            Deque<String> _props = new ArrayDeque(props);
-            Deque<String> _values = new ArrayDeque(values);
+    private void addProps(CsvRequestParams params, BsonDocument doc) {
+        if (params.props != null && params.values != null) {
+            Deque<String> _props = new ArrayDeque(params.props);
+            Deque<String> _values = new ArrayDeque(params.values);
 
             while (!_props.isEmpty() && !_values.isEmpty()) {
                 doc.append(_props.pop(), getBsonValue(_values.poll()));
@@ -295,7 +282,38 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
         }
     }
 
-    private boolean checkQueryParameters(HttpServerExchange exchange) {
+    private boolean doesApply(RequestContext context) {
+        return context.isPost();
+    }
+
+    private boolean checkContentType(HttpServerExchange exchange) {
+        HeaderValues contentType = exchange
+                .getRequestHeaders()
+                .get(Headers.CONTENT_TYPE);
+
+        return contentType != null && contentType.contains(CVS_CONTENT_TYPE);
+    }
+}
+
+class CsvRequestParams {
+    private static final String ID_IDX_QPARAM_NAME = "id";
+    private static final String SEPARATOR_QPARAM_NAME = "sep";
+    private static final String DB_QPARAM_NAME = "db";
+    private static final String COLL_QPARAM_NAME = "coll";
+    private static final String TRANFORMER_QPARAM_NAME = "transformer";
+    private static final String PROP_KEYS_NAME = "props";
+    private static final String PROP_VALUES_NAME = "values";
+
+    public final int idIdx;
+    public final String db;
+    public final String coll;
+    public final String sep;
+    public final Transformer transformer;
+
+    public final Deque<String> props;
+    public final Deque<String> values;
+
+    public CsvRequestParams(HttpServerExchange exchange) {
         Deque<String> _db = exchange.getQueryParameters().get(DB_QPARAM_NAME);
         Deque<String> _coll = exchange.getQueryParameters().get(COLL_QPARAM_NAME);
         Deque<String> _sep = exchange.getQueryParameters().get(SEPARATOR_QPARAM_NAME);
@@ -307,13 +325,22 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
 
         db = _db != null ? _db.size() > 0 ? _db.getFirst() : null : null;
         coll = _coll != null ? _coll.size() > 0 ? _coll.getFirst() : null : null;
+
+        if (db == null) {
+            throw new IllegalArgumentException("db qparam is mandatory");
+        }
+
+        if (coll == null) {
+            throw new IllegalArgumentException("db qparam is mandatory");
+        }
+
         sep = _sep != null ? _sep.size() > 0 ? _sep.getFirst() : "," : ",";
         String _idIdx = _id != null ? _id.size() > 0 ? _id.getFirst() : "-1" : "-1";
 
         try {
             idIdx = Integer.parseInt(_idIdx);
         } catch (NumberFormatException nfe) {
-            return false;
+            throw new IllegalArgumentException(nfe);
         }
 
         String transformerName = _tranformer != null ? _tranformer.size() > 0 ? _tranformer.getFirst() : null : null;
@@ -323,22 +350,10 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
                 transformer = (Transformer) NamedSingletonsFactory.getInstance()
                         .get("transformers", transformerName);
             } catch (Throwable t) {
-                return false;
+                throw new IllegalArgumentException("wrong transformer", t);
             }
+        } else {
+            transformer = null;
         }
-
-        return db != null && coll != null;
-    }
-
-    private boolean doesApply(RequestContext context) {
-        return context.isPost();
-    }
-
-    private boolean checkContentType(HttpServerExchange exchange) {
-        HeaderValues contentType = exchange
-                .getRequestHeaders()
-                .get(Headers.CONTENT_TYPE);
-
-        return contentType != null && contentType.contains(CVS_CONTENT_TYPE);
     }
 }
