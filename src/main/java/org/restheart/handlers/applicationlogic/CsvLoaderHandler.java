@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Scanner;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
+import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
@@ -237,7 +238,7 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
             if (isHeader) {
                 cols = vals;
             } else {
-                BsonDocument doc = new BsonDocument();
+                BsonDocument doc = new BsonDocument("_etag", new BsonObjectId());
 
                 int unnamedProps = 0;
 
