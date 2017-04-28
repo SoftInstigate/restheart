@@ -46,15 +46,15 @@ public abstract class AbstractTransformerMetadataHandler extends PipedHttpHandle
         if (canCollRepresentationTransformersAppy(context)) {
             try {
                 enforceCollRepresentationTransformLogic(exchange, context);
-            } catch (InvalidMetadataException e) {
+            } catch (Throwable e) {
                 context.addWarning("error enforcing representation transformation logic: " + e.getMessage());
-            }
+            } 
         }
 
         if (canDBRepresentationTransformersAppy(context)) {
             try {
                 enforceDbRepresentationTransformLogic(exchange, context);
-            } catch (InvalidMetadataException e) {
+            } catch (Throwable e) {
                 context.addWarning("error enforcing representation transformation logic: " + e.getMessage());
             }
         }

@@ -20,9 +20,11 @@ package org.restheart.metadata.hooks;
 import org.restheart.handlers.metadata.InvalidMetadataException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.Bootstrapper;
 
 /**
  *
@@ -31,6 +33,7 @@ import org.bson.BsonValue;
 public class HookMetadata {
     public final static String ROOT_KEY = "hooks";
     public final static String NAME_KEY = "name";
+    public final static String CONF_ARGS_KEY = "args";
     public final static String ARGS_KEY = "args";
 
     private final String name;
@@ -38,12 +41,18 @@ public class HookMetadata {
 
     /**
      *
-     * @param checker
+     * @param name
      * @param args
      */
-    public HookMetadata(String checker, BsonValue args) {
-        this.name = checker;
+    public HookMetadata(String name, BsonValue args) {
+        this.name = name;
         this.args = args;
+        
+        List<Map<String,Object>> singletons = 
+                Bootstrapper.getConfiguration().getMetadataNamedSingletons();
+        
+        
+        
     }
 
     /**

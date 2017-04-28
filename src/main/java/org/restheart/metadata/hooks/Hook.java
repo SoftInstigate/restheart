@@ -18,6 +18,7 @@
 package org.restheart.metadata.hooks;
 
 import io.undertow.server.HttpServerExchange;
+import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 
@@ -59,16 +60,35 @@ import org.restheart.handlers.RequestContext;
  */
 public interface Hook {
     /**
-     * 
-     * @param exchange
-     * @param context
-     * @param args
+     *
+     * @param exchange the server exchange
+     * @param context the request context
+     * @param args the args sepcified in the collection metadata via args property
      * @return true if completed successfully
      */
-    boolean hook(
+    default boolean hook(
             HttpServerExchange exchange,
             RequestContext context,
-            BsonValue args);
+            BsonValue args) {
+        return hook(exchange, context, args, null);
+    }
+        
+
+    /**
+     *
+     * @param exchange the server exchange
+     * @param context the request context
+     * @param args the args sepcified in the collection metadata via args property
+     * @param confArgs args specified in the configuration file via args property
+     * @return true if completed successfully
+     */
+    default boolean hook(
+            HttpServerExchange exchange,
+            RequestContext context,
+            BsonValue args,
+            BsonDocument confArgs) {
+        return hook(exchange, context, args);
+    }
 
     /**
      *
