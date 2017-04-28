@@ -19,6 +19,7 @@ package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
+import org.bson.BsonDocument;
 import org.restheart.metadata.hooks.HookMetadata;
 import org.restheart.metadata.NamedSingletonsFactory;
 import org.restheart.handlers.PipedHttpHandler;
@@ -35,9 +36,9 @@ import org.restheart.metadata.hooks.Hook;
  */
 public class HookMetadataHandler extends PipedHttpHandler {
 
-    static final Logger LOGGER =
-            LoggerFactory.getLogger(HookMetadataHandler.class);
-    
+    static final Logger LOGGER
+            = LoggerFactory.getLogger(HookMetadataHandler.class);
+
     /**
      * Creates a new instance of HookMetadataHandler
      */
@@ -56,12 +57,12 @@ public class HookMetadataHandler extends PipedHttpHandler {
 
     @Override
     public void handleRequest(
-            HttpServerExchange exchange, 
-            RequestContext context) 
+            HttpServerExchange exchange,
+            RequestContext context)
             throws Exception {
         if (context.getCollectionProps() != null
                 && context.getCollectionProps()
-                .containsKey(HookMetadata.ROOT_KEY)) {
+                        .containsKey(HookMetadata.ROOT_KEY)) {
 
             List<HookMetadata> mdHooks = null;
 
@@ -75,26 +76,26 @@ public class HookMetadataHandler extends PipedHttpHandler {
             if (mdHooks != null) {
                 for (HookMetadata mdHook : mdHooks) {
                     Hook wh;
+                    BsonDocument confArgs;
 
                     try {
-                        wh = (Hook) NamedSingletonsFactory
-                                .getInstance()
+                        NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
+
+                        wh = (Hook) nsf
                                 .get("hooks", mdHook.getName());
-                    } catch (IllegalArgumentException ex) {
-                        context.addWarning("error applying hook: " 
+
+                        confArgs
+                                = nsf.getArgs("hooks", mdHook.getName());
+                    } catch (Throwable ex) {
+                        context.addWarning("error applying hook: "
                                 + ex.getMessage());
-                        return;
+                        
+                        wh = null;
+                        confArgs = null;
                     }
 
-                    if (wh == null) {
-                        throw new IllegalArgumentException(
-                                "cannot find singleton " 
-                                        + mdHook.getName() 
-                                        + " in singleton group hook");
-                    }
-
-                    if (wh.doesSupportRequests(context)) {
-                        wh.hook(exchange, context, mdHook.getArgs());
+                    if (wh != null && wh.doesSupportRequests(context)) {
+                        wh.hook(exchange, context, mdHook.getArgs(), confArgs);
                     }
                 }
             }

@@ -17,9 +17,11 @@
  */
 package org.restheart.utils;
 
+import com.mongodb.MongoClient;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import org.bson.BsonArray;
@@ -30,6 +32,7 @@ import org.bson.BsonMaxKey;
 import org.bson.BsonMinKey;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.bson.Document;
 import org.bson.codecs.BsonArrayCodec;
 import org.bson.codecs.BsonValueCodecProvider;
 import org.bson.codecs.DecoderContext;
@@ -718,5 +721,12 @@ public class JsonUtils {
             return JsonUtils.minify(JsonUtils.toJson(id)
                     .replace("\"", "'"));
         }
+    }
+    
+    public static BsonDocument toBsonDocument(Map<String, Object> map) {
+        Document d = new Document(map);
+        
+        return d.toBsonDocument(BsonDocument.class, 
+                MongoClient.getDefaultCodecRegistry());
     }
 }

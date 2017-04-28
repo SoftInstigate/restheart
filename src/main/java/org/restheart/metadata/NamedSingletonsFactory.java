@@ -21,10 +21,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,24 +44,26 @@ public class NamedSingletonsFactory {
 
     public static final String SINGLETON_NAME_KEY = "name";
     public static final String SINGLETON_CLASS_KEY = "class";
+    public static final String SINGLETON_ARGS_KEY = "args";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NamedSingletonsFactory.class);
 
-    private static final Cache<String, Object> CACHE = CacheFactory.createLocalCache(Integer.MAX_VALUE, Cache.EXPIRE_POLICY.NEVER, -1);
-    
+    private static final Cache<String, Object> SINGLETONS_CACHE = CacheFactory.createLocalCache(Integer.MAX_VALUE, Cache.EXPIRE_POLICY.NEVER, -1);
+    private static final Cache<String, BsonDocument> ARGS_CACHE = CacheFactory.createLocalCache(Integer.MAX_VALUE, Cache.EXPIRE_POLICY.NEVER, -1);
+
     private static NamedSingletonsFactory HOLDER;
-    
+
     public static NamedSingletonsFactory getInstance() {
         if (HOLDER == null) {
             HOLDER = new NamedSingletonsFactory();
         }
-        
+
         return HOLDER;
     }
 
     @SuppressWarnings("unchecked")
     private NamedSingletonsFactory() {
-        List<Map<String, Object>> mdNS = Bootstrapper.getConfiguration().getMetadaNamedSingletons();
+        List<Map<String, Object>> mdNS = Bootstrapper.getConfiguration().getMetadataNamedSingletons();
 
         mdNS.forEach(group -> {
             Object _gname = group.get(GROUP_KEY);
@@ -92,7 +97,7 @@ public class NamedSingletonsFactory {
             if (!interfazeClass.isInterface()) {
                 throw new IllegalArgumentException("wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; interface class " + INTERFACE_KEY + " is not an interface");
             }
-            
+
             singletons.forEach(_entry -> {
                 if (!(_entry instanceof Map)) {
                     throw new IllegalArgumentException("wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; the property " + SINGLETONS_KEY + " is not a List of Maps");
@@ -114,13 +119,12 @@ public class NamedSingletonsFactory {
                 String sName = (String) _sName;
                 String sClazz = (String) _sClazz;
 
-                
                 Class singletonClass;
                 Object singleton;
 
                 try {
                     singletonClass = Class.forName(sClazz);
-                    
+
                     singleton = singletonClass
                             .getConstructor()
                             .newInstance();
@@ -131,25 +135,45 @@ public class NamedSingletonsFactory {
                 if (!interfazeClass.isAssignableFrom(singletonClass)) {
                     throw new IllegalArgumentException("wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; the singleton of class " + sClazz + " does not implements the group interface " + ginterfaze);
                 }
-                
+
                 LOGGER.debug("added singleton {} of class {} to group {}", sName, sClazz, gName);
-                CACHE.put(gName + SEPARATOR + sName, singleton);
+                SINGLETONS_CACHE.put(gName + SEPARATOR + sName, singleton);
+
+                Object _args = entry.get(SINGLETON_ARGS_KEY);
+
+                BsonDocument args = null;
+
+                if (_args != null && _args instanceof Map) {
+                    args = JsonUtils.toBsonDocument((Map)_args);
+                }
+
+                ARGS_CACHE.put(gName + SEPARATOR + sName, args);
             });
 
         });
     }
 
     public Object get(String group, String name) throws IllegalArgumentException {
-        Optional op = CACHE.get(group + SEPARATOR + name);
+        Optional op = SINGLETONS_CACHE.get(group + SEPARATOR + name);
 
         if (op == null) {
             throw new IllegalArgumentException("no singleton configured with name: " + name);
         }
-        
+
         if (op.isPresent()) {
             return op.get();
         } else {
             throw new IllegalArgumentException("no singleton configured with name: " + name);
         }
+    }
+
+    public BsonDocument getArgs(String group, String name) {
+        Optional<BsonDocument> op = ARGS_CACHE.get(group + SEPARATOR + name);
+
+        if (op == null || !op.isPresent()) {
+            return null;
+        }
+
+        return op.get();
     }
 }

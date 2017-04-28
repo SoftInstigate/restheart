@@ -39,7 +39,7 @@ public interface Transformer {
      * @param exchange the server exchange
      * @param context the request context
      * @param contentToTransform the content data to transform
-     * @param args the args sepcified in the collection metadata via args
+     * @param args the args sepcified in the collection metadata via args property
      * property
      */
     void transform(
@@ -47,4 +47,22 @@ public interface Transformer {
             final RequestContext context,
             BsonValue contentToTransform,
             final BsonValue args);
+    
+    /**
+     * 
+     * @param exchange the server exchange
+     * @param context the request context
+     * @param contentToTransform the content data to transform
+     * @param args the args sepcified in the collection metadata via args property
+     * @param confArgs the args specified in the configuration file via args property
+     * @return true if completed successfully
+     */
+    default void transform(
+            HttpServerExchange exchange,
+            RequestContext context,
+            BsonValue contentToTransform,
+            final BsonValue args,
+            BsonValue confArgs) {
+        transform(exchange, context, contentToTransform, args);
+    }
 }

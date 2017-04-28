@@ -37,11 +37,18 @@ public class SnooperHook implements Hook {
     public boolean hook(
             HttpServerExchange exchange,
             RequestContext context,
-            BsonValue args) {
+            BsonValue args,
+            BsonDocument confArgs) {
         LOGGER.info("Request {} {} {}",
                 context.getMethod(),
                 exchange.getRequestURI(), exchange.getStatusCode());
+        
+        LOGGER.info("Metadata args {}",
+                JsonUtils.toJson(args));
 
+        LOGGER.info("Configuration args {}",
+                JsonUtils.toJson(confArgs));
+        
         if (context.getDbOperationResult() != null) {
             BsonDocument newData = context
                     .getDbOperationResult()

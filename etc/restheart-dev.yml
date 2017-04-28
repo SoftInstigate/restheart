@@ -160,6 +160,9 @@ metadata-named-singletons:
       singletons:
         - name: snooper
           class: org.restheart.metadata.hooks.SnooperHook
+          args: 
+            string: foo
+            number: 1 
 
 ### Security
 

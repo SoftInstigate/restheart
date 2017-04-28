@@ -25,7 +25,6 @@ import org.restheart.metadata.transformers.RepresentationTransformer;
 import org.restheart.metadata.transformers.Transformer;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import static org.restheart.handlers.RequestContext.METHOD.GET;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

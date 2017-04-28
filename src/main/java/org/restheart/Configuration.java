@@ -1373,7 +1373,7 @@ public class Configuration {
     /**
      * @return the metadataNamedSingletons
      */
-    public final List<Map<String, Object>> getMetadaNamedSingletons() {
+    public final List<Map<String, Object>> getMetadataNamedSingletons() {
         return metadataNamedSingletons;
     }
 

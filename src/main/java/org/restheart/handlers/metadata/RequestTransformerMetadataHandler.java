@@ -24,11 +24,8 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.metadata.transformers.RepresentationTransformer;
 import org.restheart.metadata.NamedSingletonsFactory;
-import org.restheart.metadata.transformers.Transformer;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.metadata.AbstractTransformerMetadataHandler;
-import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.metadata.transformers.Transformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,11 +93,16 @@ public class RequestTransformerMetadataHandler
 
         for (RepresentationTransformer rt : dbRts) {
             Transformer t;
+            BsonDocument confArgs;
 
             try {
-                t = (Transformer) NamedSingletonsFactory
-                        .getInstance()
+                NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
+                
+                t = (Transformer) nsf
                         .get("transformers", rt.getName());
+
+                confArgs
+                        = nsf.getArgs("transformers", rt.getName());
             } catch (IllegalArgumentException ex) {
                 context.addWarning("error applying transformer: "
                         + ex.getMessage());
@@ -120,13 +122,15 @@ public class RequestTransformerMetadataHandler
                             exchange,
                             context,
                             context.getContent(),
-                            rt.getArgs());
+                            rt.getArgs(),
+                            confArgs);
                 } else {
                     t.transform(
                             exchange,
                             context,
                             context.getContent(),
-                            rt.getArgs());
+                            rt.getArgs(),
+                            confArgs);
                 }
             }
         }
@@ -142,9 +146,13 @@ public class RequestTransformerMetadataHandler
 
         for (RepresentationTransformer rt : collRts) {
             if (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST) {
-                Transformer t = (Transformer) NamedSingletonsFactory
-                        .getInstance()
+                NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
+                
+                Transformer t = (Transformer) nsf
                         .get("transformers", rt.getName());
+
+                BsonDocument confArgs
+                        = nsf.getArgs("transformers", rt.getName());
 
                 if (t == null) {
                     throw new IllegalArgumentException("cannot find singleton "
@@ -160,13 +168,15 @@ public class RequestTransformerMetadataHandler
                             exchange, 
                             context, 
                             new BsonDocument(), 
-                            rt.getArgs());
+                            rt.getArgs(),
+                            confArgs);
                 } else if (content.isDocument()) {
                     t.transform(
                             exchange, 
                             context, 
                             content.asDocument(),
-                            rt.getArgs());
+                            rt.getArgs(),
+                            confArgs);
                 } else if (content.isArray()) {
                     BsonArray arrayContent = content.asArray();
 
@@ -176,7 +186,8 @@ public class RequestTransformerMetadataHandler
                             exchange, 
                             context, 
                             obj.asDocument(),
-                            rt.getArgs());
+                            rt.getArgs(),
+                            confArgs);
                         } else {
                             LOGGER.warn("an element of content array "
                                     + "is not an object");

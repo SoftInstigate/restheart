@@ -21,6 +21,7 @@ import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import java.util.Objects;
 import org.bson.BsonArray;
+import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.metadata.checkers.RequestChecker;
 import org.restheart.metadata.checkers.Checker;
@@ -94,9 +95,14 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
         return checkers != null
                 && checkers.stream().allMatch(checker -> {
                     try {
-                        Checker _checker = (Checker) NamedSingletonsFactory
-                                .getInstance()
+                        NamedSingletonsFactory nsf = NamedSingletonsFactory
+                                .getInstance();
+                        
+                        Checker _checker = (Checker) nsf
                                 .get(ROOT_KEY, checker.getName());
+                        
+                        BsonDocument confArgs
+                                = nsf.getArgs(ROOT_KEY, checker.getName());
 
                         if (_checker == null) {
                             throw new IllegalArgumentException(
@@ -176,7 +182,8 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                                         exchange,
                                         context,
                                         _data.asDocument(),
-                                        checker.getArgs());
+                                        checker.getArgs(),
+                                        confArgs);
                             } else if (content.isArray()) {
                                 // content can be an array of bulk POST
 
@@ -189,7 +196,8 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                                                         exchange,
                                                         context,
                                                         obj.asDocument(),
-                                                        checker.getArgs());
+                                                        checker.getArgs(),
+                                                        confArgs);
                                     } else {
                                         LOGGER.warn(
                                                 "element of content array "

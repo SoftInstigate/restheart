@@ -67,11 +67,36 @@ public interface Checker {
         AFTER_WRITE // for optimistic checks, i.e. document is inserted and in case rolled back
     };
 
+    /**
+     *
+     * @param exchange the server exchange
+     * @param context the request context
+     * @param contentToCheck the contet to check
+     * @param args the args sepcified in the collection metadata via args
+     * @return true if check completes successfully
+     */
     boolean check(
             HttpServerExchange exchange,
             RequestContext context,
             BsonDocument contentToCheck,
             BsonValue args);
+
+    /**
+     *
+     * @param exchange the server exchange
+     * @param context the request context
+     * @param args the args sepcified in the collection metadata via args property
+     * @param confArgs the args specified in the configuration file via args property
+     * @return true if check completes successfully
+     */
+    default boolean check(
+            HttpServerExchange exchange,
+            RequestContext context,
+            BsonDocument contentToCheck,
+            BsonValue args,
+            BsonValue confArgs) {
+        return check(exchange, context, contentToCheck, args);
+    }
 
     /**
      * Specify when the checker should be performed: with BEFORE_WRITE the

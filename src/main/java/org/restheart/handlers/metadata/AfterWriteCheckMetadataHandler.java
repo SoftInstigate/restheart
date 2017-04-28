@@ -23,7 +23,6 @@ import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import java.util.List;
 import org.restheart.db.DAOUtils;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.metadata.checkers.RequestChecker;

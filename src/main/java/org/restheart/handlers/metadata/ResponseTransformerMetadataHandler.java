@@ -20,14 +20,12 @@ package org.restheart.handlers.metadata;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.BsonArray;
+import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.metadata.transformers.RepresentationTransformer;
 import org.restheart.metadata.NamedSingletonsFactory;
-import org.restheart.metadata.transformers.Transformer;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.metadata.AbstractTransformerMetadataHandler;
-import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.metadata.transformers.Transformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,9 +104,12 @@ public class ResponseTransformerMetadataHandler
 
         for (RepresentationTransformer rt : dbRts) {
             if (rt.getPhase() == RepresentationTransformer.PHASE.RESPONSE) {
-                Transformer t = (Transformer) NamedSingletonsFactory
-                        .getInstance()
+                NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
+                Transformer t = (Transformer) nsf
                         .get("transformers", rt.getName());
+
+                BsonDocument confArgs
+                        = nsf.getArgs("transformers", rt.getName());
 
                 if (t == null) {
                     throw new IllegalArgumentException("cannot find singleton "
@@ -122,7 +123,8 @@ public class ResponseTransformerMetadataHandler
                             exchange,
                             context,
                             context.getResponseContent(),
-                            rt.getArgs());
+                            rt.getArgs(),
+                            confArgs);
                 } else if (rt.getScope()
                         == RepresentationTransformer.SCOPE.CHILDREN
                         && requestType == RequestContext.TYPE.COLLECTION) {
@@ -154,7 +156,8 @@ public class ResponseTransformerMetadataHandler
                                                     exchange,
                                                     context,
                                                     coll,
-                                                    rt.getArgs());
+                                                    rt.getArgs(),
+                                                    confArgs);
                                         });
                             }
                         }
@@ -177,11 +180,15 @@ public class ResponseTransformerMetadataHandler
         for (RepresentationTransformer rt : dbRts) {
             if (rt.getPhase() == RepresentationTransformer.PHASE.RESPONSE) {
                 Transformer t;
+                BsonDocument confArgs;
 
                 try {
-                    t = (Transformer) NamedSingletonsFactory
-                            .getInstance()
+                    NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
+                    t = (Transformer) nsf
                             .get("transformers", rt.getName());
+
+                    confArgs
+                            = nsf.getArgs("transformers", rt.getName());
                 } catch (IllegalArgumentException ex) {
                     context.addWarning("error applying transformer: "
                             + ex.getMessage());
@@ -201,7 +208,8 @@ public class ResponseTransformerMetadataHandler
                             exchange,
                             context,
                             context.getResponseContent(),
-                            rt.getArgs());
+                            rt.getArgs(),
+                            confArgs);
                 } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN
                         && requestType == RequestContext.TYPE.COLLECTION) {
                     if (context.getResponseContent() == null) {
@@ -210,7 +218,8 @@ public class ResponseTransformerMetadataHandler
                                 exchange,
                                 context,
                                 null,
-                                rt.getArgs());
+                                rt.getArgs(),
+                                confArgs);
                     } else if (context
                             .getResponseContent().isDocument()
                             && context
@@ -238,7 +247,8 @@ public class ResponseTransformerMetadataHandler
                                         exchange,
                                         context,
                                         doc,
-                                        rt.getArgs());
+                                        rt.getArgs(),
+                                         confArgs);
                             });
                         }
 
@@ -258,7 +268,8 @@ public class ResponseTransformerMetadataHandler
                                             exchange,
                                             context,
                                             file,
-                                            rt.getArgs());
+                                            rt.getArgs(),
+                                            confArgs);
                                 });
                             }
                         }
@@ -270,7 +281,8 @@ public class ResponseTransformerMetadataHandler
                     t.transform(exchange,
                             context,
                             context.getResponseContent(),
-                            rt.getArgs());
+                            rt.getArgs(),
+                            confArgs);
                 }
             }
         }
