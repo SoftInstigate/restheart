@@ -1,3 +1,5 @@
+dist: trusty
+sudo: false
 language: java
 jdk:
    - oraclejdk8
@@ -16,7 +18,7 @@ addons:
   apt:
     sources:
       - mongodb-upstart
-      - mongodb-3.4-trusty
+      - mongodb-3.2-trusty
     packages:
       - mongodb-org-server
       - mongodb-org-shell
