@@ -263,8 +263,9 @@ public final class Bootstrapper {
 
     /**
      * Shutdown the RESTHeart server
+     * @param args command line arguments
      */
-    public static void shutdown() {
+    public static void shutdown(final String[] args) {
         stopServer(false);
     }
 
