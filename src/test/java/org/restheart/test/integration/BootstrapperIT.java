@@ -9,15 +9,15 @@ public class BootstrapperIT {
     @Ignore @Test
     public void testSingleStartStop() {
         Bootstrapper.startup((String) null);
-        Bootstrapper.shutdown();
+        Bootstrapper.shutdown(null);
     }
 
     @Ignore @Test
     public void testMultipleStartStop() {
         Bootstrapper.startup((String) null);
-        Bootstrapper.shutdown();
+        Bootstrapper.shutdown(null);
         Bootstrapper.startup((String) null);
-        Bootstrapper.shutdown();
+        Bootstrapper.shutdown(null);
     }
 
 }
