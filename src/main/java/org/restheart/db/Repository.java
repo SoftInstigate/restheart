@@ -27,17 +27,17 @@ import org.bson.Document;
  */
 public interface Repository {
     
-    OperationResult upsertDocument(String dbName, String collName, Object documentId, BsonDocument shardedKeys, BsonDocument content, String requestEtag, boolean patching, final boolean checkEtag);
+    OperationResult upsertDocument(final String dbName, final String collName, final Object documentId, final BsonDocument filter, final BsonDocument shardedKeys, final BsonDocument content, final String requestEtag, boolean patching, final boolean checkEtag);
     
-    OperationResult upsertDocumentPost(String dbName, String collName, BsonDocument shardedKeys, BsonDocument content, String requestEtag, final boolean checkEtag);
+    OperationResult upsertDocumentPost(final String dbName, final String collName, final BsonDocument filter, final BsonDocument shardedKeys, final BsonDocument content, final String requestEtag, final boolean checkEtag);
     
-    OperationResult deleteDocument(String dbName, String collName, Object documentId, BsonDocument shardedKeys, String requestEtag, final boolean checkEtag);
+    OperationResult deleteDocument(final String dbName, String collName, Object documentId, final BsonDocument filter, final BsonDocument shardedKeys, final String requestEtag, final boolean checkEtag);
     
-    BulkOperationResult bulkUpsertDocumentsPost(String dbName, String collName, BsonArray documents, BsonDocument shardKeys);
+    BulkOperationResult bulkUpsertDocumentsPost(final String dbName, final String collName, final BsonArray documents, final BsonDocument filter, final BsonDocument shardKeys);
     
-    BulkOperationResult bulkPatchDocuments(String dbName, String collName, BsonDocument filter, BsonDocument shardKeys, BsonDocument data);
+    BulkOperationResult bulkPatchDocuments(final String dbName, final String collName, final BsonDocument filter, final BsonDocument shardKeys, final BsonDocument data);
     
-    BulkOperationResult bulkDeleteDocuments(String dbName, String collName, BsonDocument filter, BsonDocument shardKeys);
+    BulkOperationResult bulkDeleteDocuments(final String dbName, final String collName, final BsonDocument filter, final BsonDocument shardKeys);
     
     /**
      * returns the ETag of the document

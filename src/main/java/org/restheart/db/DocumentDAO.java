@@ -90,6 +90,7 @@ public class DocumentDAO implements Repository {
             final String dbName,
             final String collName,
             final Object documentId,
+            final BsonDocument filter,
             final BsonDocument shardKeys,
             final BsonDocument newContent,
             final String requestEtag,
@@ -109,6 +110,7 @@ public class DocumentDAO implements Repository {
         OperationResult updateResult = DAOUtils.updateDocument(
                 mcoll,
                 documentId,
+                filter,
                 shardKeys,
                 content,
                 !patching);
@@ -132,8 +134,9 @@ public class DocumentDAO implements Repository {
                 BsonDocument newDocument = mcoll.find(
                         eq("_id", documentId)).first();
 
-                return new OperationResult(
-                        HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
+                return new OperationResult(updateResult.getHttpCode() > 0
+                        ? updateResult.getHttpCode()
+                        : HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
             }
         } else if (oldDocument != null && checkEtag) { // upsertDocument
             // check the old etag (in case restore the old document)
@@ -150,13 +153,17 @@ public class DocumentDAO implements Repository {
                     eq("_id", documentId)).first();
 
             return new OperationResult(
-                    HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
+                    updateResult.getHttpCode() > 0
+                    ? updateResult.getHttpCode()
+                    : HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
         } else {
             BsonDocument newDocument = mcoll.find(
                     eq("_id", documentId)).first();
 
             return new OperationResult(
-                    HttpStatus.SC_CREATED, newEtag, null, newDocument);
+                    updateResult.getHttpCode() > 0
+                    ? updateResult.getHttpCode()
+                    : HttpStatus.SC_CREATED, newEtag, null, newDocument);
         }
     }
 
@@ -174,7 +181,8 @@ public class DocumentDAO implements Repository {
     public OperationResult upsertDocumentPost(
             final String dbName,
             final String collName,
-            BsonDocument shardKeys,
+            final BsonDocument filter,
+            final BsonDocument shardKeys,
             final BsonDocument newContent,
             final String requestEtag,
             final boolean checkEtag) {
@@ -200,6 +208,7 @@ public class DocumentDAO implements Repository {
         OperationResult updateResult = DAOUtils.updateDocument(
                 mcoll,
                 documentId,
+                filter,
                 shardKeys,
                 content,
                 true);
@@ -209,7 +218,9 @@ public class DocumentDAO implements Repository {
 
         if (oldDocument == null) {
             return new OperationResult(
-                    HttpStatus.SC_CREATED,
+                    updateResult.getHttpCode() > 0
+                    ? updateResult.getHttpCode()
+                    : HttpStatus.SC_CREATED,
                     newEtag,
                     null,
                     newDocument);
@@ -224,8 +235,10 @@ public class DocumentDAO implements Repository {
                     HttpStatus.SC_OK,
                     false);
         } else {
-            return new OperationResult(
-                    HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
+            return new OperationResult(updateResult.getHttpCode() > 0
+                    ? updateResult.getHttpCode()
+                    : HttpStatus.SC_OK,
+                    newEtag, oldDocument, newDocument);
         }
     }
 
@@ -242,7 +255,8 @@ public class DocumentDAO implements Repository {
             final String dbName,
             final String collName,
             final BsonArray documents,
-            BsonDocument shardKeys) {
+            final BsonDocument filter,
+            final BsonDocument shardKeys) {
         Objects.requireNonNull(documents);
 
         MongoDatabase mdb = client.getDatabase(dbName);
@@ -263,6 +277,7 @@ public class DocumentDAO implements Repository {
         return DAOUtils.bulkUpsertDocuments(
                 mcoll,
                 documents,
+                filter,
                 shardKeys);
     }
 
@@ -280,6 +295,7 @@ public class DocumentDAO implements Repository {
             final String dbName,
             final String collName,
             final Object documentId,
+            final BsonDocument filter,
             final BsonDocument shardedKeys,
             final String requestEtag,
             final boolean checkEtag
@@ -289,7 +305,7 @@ public class DocumentDAO implements Repository {
                 = mdb.getCollection(collName, BsonDocument.class);
 
         BsonDocument oldDocument = mcoll.findOneAndDelete(
-                getIdFilter(documentId, shardedKeys));
+                getIdFilter(documentId, filter, shardedKeys));
 
         if (oldDocument == null) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
@@ -307,13 +323,18 @@ public class DocumentDAO implements Repository {
         }
     }
 
-    private Bson getIdFilter(Object documentId, BsonDocument shardedKeys) {
+    private Bson getIdFilter(Object documentId, BsonDocument filter, BsonDocument shardedKeys) {
+        Bson q = eq("_id", documentId);
+
         if (shardedKeys != null) {
-            return and(eq("_id", documentId), shardedKeys);
-        } else {
-            return eq("_id", documentId);
+            q = and(q, shardedKeys);
         }
 
+        if (filter != null) {
+            q = and(q, filter);
+        }
+
+        return q;
     }
 
     @Override
@@ -376,7 +397,7 @@ public class DocumentDAO implements Repository {
 
     private OperationResult optimisticCheckEtag(
             final MongoCollection<BsonDocument> coll,
-            BsonDocument shardKeys,
+            final BsonDocument shardKeys,
             final BsonDocument oldDocument,
             final Object newEtag,
             final String requestEtag,
@@ -393,6 +414,7 @@ public class DocumentDAO implements Repository {
                 DAOUtils.updateDocument(
                         coll,
                         oldDocument.get("_id"),
+                        null,
                         shardKeys,
                         oldDocument,
                         true);
@@ -433,6 +455,7 @@ public class DocumentDAO implements Repository {
                         coll,
                         oldDocument.get("_id"),
                         shardKeys,
+                        null,
                         oldDocument,
                         true);
             } else {

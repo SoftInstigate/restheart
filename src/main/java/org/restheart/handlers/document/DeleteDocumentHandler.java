@@ -88,6 +88,7 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
                 .deleteDocument(context.getDBName(),
                         context.getCollectionName(),
                         context.getDocumentId(),
+                        context.getFiltersDocument(),
                         context.getShardKey(),
                         context.getETag(),
                         context.isETagCheckRequired());

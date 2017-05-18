@@ -145,7 +145,7 @@ public class DbsDAO implements Database {
         // filter out reserved resources
         List<String> _colls = colls.stream()
                 .filter(coll -> !RequestContext
-                        .isReservedResourceCollection(coll))
+                .isReservedResourceCollection(coll))
                 .collect(Collectors.toList());
 
         return _colls.size();
@@ -191,7 +191,7 @@ public class DbsDAO implements Database {
         // filter out reserved resources
         List<String> _colls = colls.stream()
                 .filter(coll -> !RequestContext
-                        .isReservedResourceCollection(coll))
+                .isReservedResourceCollection(coll))
                 .collect(Collectors.toList());
 
         int size = _colls.size();
@@ -218,8 +218,8 @@ public class DbsDAO implements Database {
                 .subList(
                         (page - 1) * pagesize,
                         (page - 1) * pagesize + pagesize > _colls.size()
-                                ? _colls.size()
-                                : (page - 1) * pagesize + pagesize);
+                        ? _colls.size()
+                        : (page - 1) * pagesize + pagesize);
 
         List<BsonDocument> data = new ArrayList<>();
 
@@ -232,7 +232,7 @@ public class DbsDAO implements Database {
 
                     if (LocalCachesSingleton.isEnabled()) {
                         collProperties = LocalCachesSingleton.getInstance()
-                        .getCollectionProperties(dbName, collName);
+                                .getCollectionProperties(dbName, collName);
                     } else {
                         collProperties = collectionDAO.getCollectionProps(
                                 dbName,
@@ -298,7 +298,7 @@ public class DbsDAO implements Database {
                 }
 
                 BsonValue _requestEtag;
-                
+
                 if (ObjectId.isValid(requestEtag)) {
                     _requestEtag = new BsonObjectId(new ObjectId(requestEtag));
                 } else {
@@ -306,7 +306,7 @@ public class DbsDAO implements Database {
                     // strings as well
                     _requestEtag = new BsonString(requestEtag);
                 }
-                
+
                 if (Objects.equals(_requestEtag, oldEtag)) {
                     return doDbPropsUpdate(
                             patching,
@@ -345,29 +345,38 @@ public class DbsDAO implements Database {
             BsonDocument dcontent,
             ObjectId newEtag) {
         if (patching) {
-            DAOUtils.updateDocument(
+            OperationResult ret = DAOUtils.updateDocument(
                     mcoll,
                     "_properties",
                     null,
+                    null,
                     dcontent,
                     false);
-            return new OperationResult(HttpStatus.SC_OK, newEtag);
+            return new OperationResult(ret.getHttpCode() > 0
+                    ? ret.getHttpCode()
+                    : HttpStatus.SC_OK, newEtag);
         } else if (updating) {
-            DAOUtils.updateDocument(
+            OperationResult ret = DAOUtils.updateDocument(
                     mcoll,
                     "_properties",
+                    null,
                     null,
                     dcontent,
                     true);
-            return new OperationResult(HttpStatus.SC_OK, newEtag);
+            return new OperationResult(ret.getHttpCode() > 0
+                    ? ret.getHttpCode()
+                    : HttpStatus.SC_OK, newEtag);
         } else {
-            DAOUtils.updateDocument(
+            OperationResult ret = DAOUtils.updateDocument(
                     mcoll,
                     "_properties",
                     null,
+                    null,
                     dcontent,
                     false);
-            return new OperationResult(HttpStatus.SC_CREATED, newEtag);
+            return new OperationResult(ret.getHttpCode() > 0
+                    ? ret.getHttpCode()
+                    : HttpStatus.SC_CREATED, newEtag);
         }
     }
 

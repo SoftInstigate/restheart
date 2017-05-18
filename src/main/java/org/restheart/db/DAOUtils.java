@@ -17,6 +17,7 @@
  */
 package org.restheart.db;
 
+import com.mongodb.MongoCommandException;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.MongoCollection;
 import static com.mongodb.client.model.Filters.eq;
@@ -36,7 +37,6 @@ import static org.restheart.utils.RequestHelper.UPDATE_OPERATORS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.mongodb.client.model.Filters.and;
-import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.UpdateOneModel;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -94,12 +94,14 @@ public class DAOUtils {
     public static OperationResult updateDocument(
             MongoCollection<BsonDocument> coll,
             Object documentId,
+            BsonDocument filter,
             BsonDocument shardKeys,
             BsonDocument data,
             boolean replace) {
         return updateDocument(
                 coll,
                 documentId,
+                filter,
                 shardKeys,
                 data,
                 replace,
@@ -123,6 +125,7 @@ public class DAOUtils {
     public static OperationResult updateDocument(
             MongoCollection<BsonDocument> coll,
             Object documentId,
+            BsonDocument filter,
             BsonDocument shardKeys,
             BsonDocument data,
             boolean replace,
@@ -148,6 +151,10 @@ public class DAOUtils {
             query = and(query, shardKeys);
         }
 
+        if (filter != null) {
+            query = and(query, filter);
+        }
+
         if (replace) {
             // here we cannot use the atomic findOneAndReplace because it does
             // not support update operators.
@@ -160,10 +167,23 @@ public class DAOUtils {
                 oldDocument = null;
             }
 
-            BsonDocument newDocument = coll.findOneAndUpdate(
-                    query,
-                    document,
-                    FAU_AFTER_UPSERT_OPS);
+            BsonDocument newDocument;
+
+            try {
+                newDocument = coll.findOneAndUpdate(
+                        query,
+                        document,
+                        FAU_AFTER_UPSERT_OPS);
+            } catch (MongoCommandException mce) {
+                if (mce.getErrorCode() == 11000 && filter != null) {
+                    // DuplicateKey error
+                    // this happens if the filter parameter didn't match 
+                    // the existing document
+                    return new OperationResult(HttpStatus.SC_NOT_FOUND);
+                } else {
+                    throw mce;
+                }
+            }
 
             return new OperationResult(-1, oldDocument, newDocument);
         } else if (returnNew) {
@@ -215,9 +235,10 @@ public class DAOUtils {
     }
 
     public static BulkOperationResult bulkUpsertDocuments(
-            MongoCollection<BsonDocument> coll,
+            final MongoCollection<BsonDocument> coll,
             final BsonArray documents,
-            BsonDocument shardKeys) {
+            final BsonDocument filter,
+            final BsonDocument shardKeys) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(documents);
 
@@ -226,6 +247,7 @@ public class DAOUtils {
         List<WriteModel<BsonDocument>> wm = getBulkWriteModel(
                 coll,
                 documents,
+                filter,
                 shardKeys,
                 newEtag);
 
@@ -237,7 +259,8 @@ public class DAOUtils {
     private static List<WriteModel<BsonDocument>> getBulkWriteModel(
             final MongoCollection<BsonDocument> mcoll,
             final BsonArray documents,
-            BsonDocument shardKeys,
+            final BsonDocument filter,
+            final BsonDocument shardKeys,
             final ObjectId etag) {
         Objects.requireNonNull(mcoll);
         Objects.requireNonNull(documents);
@@ -259,14 +282,18 @@ public class DAOUtils {
                         // add the _etag
                         document.put("_etag", new BsonObjectId(etag));
 
-                        Bson filter = eq("_id", document.get("_id"));
+                        Bson _filter = eq("_id", document.get("_id"));
 
                         if (shardKeys != null) {
-                            filter = and(filter, shardKeys);
+                            _filter = and(_filter, shardKeys);
+                        }
+
+                        if (filter != null) {
+                            _filter = and(_filter, filter);
                         }
 
                         updates.add(new UpdateOneModel<>(
-                                filter,
+                                _filter,
                                 getUpdateDocument(document),
                                 new UpdateOptions().upsert(true)
                         ));

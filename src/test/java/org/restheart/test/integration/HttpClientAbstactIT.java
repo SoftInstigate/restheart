@@ -217,11 +217,11 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
         }
 
         final DocumentDAO documentDAO = new DocumentDAO();
-        documentDAO.upsertDocument(dbName, collection1Name, document1Id, null, document1Props, new ObjectId().toString(), false, false);
-        documentDAO.upsertDocument(dbName, collection2Name, document2Id, null, document2Props, new ObjectId().toString(), false, false);
+        documentDAO.upsertDocument(dbName, collection1Name, document1Id, null, null, document1Props, new ObjectId().toString(), false, false);
+        documentDAO.upsertDocument(dbName, collection2Name, document2Id, null, null, document2Props, new ObjectId().toString(), false, false);
 
         for (String doc : docsPropsStrings) {
-            documentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), null, BsonDocument.parse(doc), new ObjectId().toString(), false, false);
+            documentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), null, null, BsonDocument.parse(doc), new ObjectId().toString(), false, false);
         }
         LOG.debug("test data created");
     }
