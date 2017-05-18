@@ -117,6 +117,7 @@ public class PutDocumentHandler extends PipedHttpHandler {
                 context.getDBName(),
                 context.getCollectionName(),
                 context.getDocumentId(),
+                context.getFiltersDocument(),
                 context.getShardKey(),
                 content,
                 etag,

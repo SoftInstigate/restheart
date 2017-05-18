@@ -337,7 +337,7 @@ class CollectionDAO {
         if (checkEtag && updating) {
             BsonDocument oldProperties
                     = mcoll.find(eq("_id", "_properties.".concat(collName)))
-                    .projection(FIELDS_TO_RETURN).first();
+                            .projection(FIELDS_TO_RETURN).first();
 
             if (oldProperties != null) {
                 BsonValue oldEtag = oldProperties.get("_etag");
@@ -399,29 +399,38 @@ class CollectionDAO {
             BsonDocument dcontent,
             ObjectId newEtag) {
         if (patching) {
-            DAOUtils.updateDocument(
+            OperationResult ret = DAOUtils.updateDocument(
                     mcoll,
                     "_properties.".concat(collName),
                     null,
+                    null,
                     dcontent,
                     false);
-            return new OperationResult(HttpStatus.SC_OK, newEtag);
+            return new OperationResult(ret.getHttpCode() > 0
+                    ? ret.getHttpCode()
+                    : HttpStatus.SC_OK, newEtag);
         } else if (updating) {
-            DAOUtils.updateDocument(
+            OperationResult ret = DAOUtils.updateDocument(
                     mcoll,
                     "_properties.".concat(collName),
+                    null,
                     null,
                     dcontent,
                     true);
-            return new OperationResult(HttpStatus.SC_OK, newEtag);
+            return new OperationResult(ret.getHttpCode() > 0
+                    ? ret.getHttpCode()
+                    : HttpStatus.SC_OK, newEtag);
         } else {
-            DAOUtils.updateDocument(
+            OperationResult ret = DAOUtils.updateDocument(
                     mcoll,
                     "_properties.".concat(collName),
                     null,
+                    null,
                     dcontent,
                     false);
-            return new OperationResult(HttpStatus.SC_CREATED, newEtag);
+            return new OperationResult(ret.getHttpCode() > 0
+                    ? ret.getHttpCode()
+                    : HttpStatus.SC_CREATED, newEtag);
         }
     }
 

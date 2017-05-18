@@ -103,6 +103,7 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
                 .bulkUpsertDocumentsPost(context.getDBName(),
                         context.getCollectionName(),
                         documents,
+                        context.getFiltersDocument(),
                         context.getShardKey());
 
         context.setDbOperationResult(result);
