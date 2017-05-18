@@ -187,17 +187,42 @@ public class DAOUtils {
 
             return new OperationResult(-1, oldDocument, newDocument);
         } else if (returnNew) {
-            BsonDocument newDocument = coll.findOneAndUpdate(
+            BsonDocument newDocument;
+            try {
+             newDocument = coll.findOneAndUpdate(
                     query,
                     document,
                     FAU_AFTER_UPSERT_OPS);
+            } catch (MongoCommandException mce) {
+                if (mce.getErrorCode() == 11000 && filter != null) {
+                    // DuplicateKey error
+                    // this happens if the filter parameter didn't match 
+                    // the existing document
+                    return new OperationResult(HttpStatus.SC_NOT_FOUND);
+                } else {
+                    throw mce;
+                }
+            }
 
             return new OperationResult(-1, null, newDocument);
         } else {
-            BsonDocument oldDocument = coll.findOneAndUpdate(
+            BsonDocument oldDocument;
+            
+            try {
+             oldDocument = coll.findOneAndUpdate(
                     query,
                     document,
                     FAU_UPSERT_OPS);
+            } catch (MongoCommandException mce) {
+                if (mce.getErrorCode() == 11000 && filter != null) {
+                    // DuplicateKey error
+                    // this happens if the filter parameter didn't match 
+                    // the existing document
+                    return new OperationResult(HttpStatus.SC_NOT_FOUND);
+                } else {
+                    throw mce;
+                }
+            }
 
             return new OperationResult(-1, oldDocument, null);
         }
