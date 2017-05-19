@@ -202,7 +202,7 @@ public class ResponseTransformerMetadataHandler
                 }
 
                 if (rt.getScope() == RepresentationTransformer.SCOPE.THIS
-                        && requestType == RequestContext.TYPE.COLLECTION) {
+                        && (requestType == RequestContext.TYPE.COLLECTION)) {
                     // transform the collection
                     t.transform(
                             exchange,
@@ -248,7 +248,7 @@ public class ResponseTransformerMetadataHandler
                                         context,
                                         doc,
                                         rt.getArgs(),
-                                         confArgs);
+                                        confArgs);
                             });
                         }
 
@@ -275,9 +275,11 @@ public class ResponseTransformerMetadataHandler
                         }
                     }
 
-                } else if (rt.getScope()
+                } else if ((rt.getScope()
                         == RepresentationTransformer.SCOPE.CHILDREN
-                        && requestType == RequestContext.TYPE.DOCUMENT) {
+                        || rt.getScope()
+                        == RepresentationTransformer.SCOPE.THIS)
+                        && requestType == RequestContext.TYPE.DOCUMENT)  {
                     t.transform(exchange,
                             context,
                             context.getResponseContent(),
