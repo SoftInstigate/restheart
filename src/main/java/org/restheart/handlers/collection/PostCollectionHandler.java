@@ -155,6 +155,20 @@ public class PostCollectionHandler extends PipedHttpHandler {
             return;
         }
         
+        // handle the case of duplicate key error
+        if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_CONFLICT,
+                    "A duplicate key error occurred. "
+                            + "The posted data does not fulfill "
+                            + "an unique index constraint");
+
+            next(exchange, context);
+            return;
+        }
+        
         context.setResponseStatusCode(result.getHttpCode());
 
         // insert the Location handler for new documents

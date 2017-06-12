@@ -142,6 +142,20 @@ public class PutDocumentHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
+        
+        // handle the case of duplicate key error
+        if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_CONFLICT,
+                    "A duplicate key error occurred. "
+                            + "The put document does not fulfill "
+                            + "an unique index constraint");
+
+            next(exchange, context);
+            return;
+        }
 
         context.setResponseStatusCode(result.getHttpCode());
 

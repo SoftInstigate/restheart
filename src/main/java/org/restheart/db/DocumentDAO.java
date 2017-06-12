@@ -119,7 +119,7 @@ public class DocumentDAO implements Repository {
 
         if (patching) {
             if (oldDocument == null) {
-                return new OperationResult(HttpStatus.SC_NOT_FOUND);
+                return updateResult;
             } else if (checkEtag) {
                 // check the old etag (in case restore the old document version)
                 return optimisticCheckEtag(
@@ -330,7 +330,7 @@ public class DocumentDAO implements Repository {
             q = and(q, shardedKeys);
         }
 
-        if (filter != null) {
+        if (filter != null  && !filter.isEmpty()) {
             q = and(q, filter);
         }
 
