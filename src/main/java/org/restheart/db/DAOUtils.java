@@ -151,7 +151,7 @@ public class DAOUtils {
             query = and(query, shardKeys);
         }
 
-        if (filter != null) {
+        if (filter != null && !filter.isEmpty()) {
             query = and(query, filter);
         }
 
@@ -179,7 +179,7 @@ public class DAOUtils {
                     // DuplicateKey error
                     // this happens if the filter parameter didn't match 
                     // the existing document
-                    return new OperationResult(HttpStatus.SC_NOT_FOUND);
+                    return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED, oldDocument, oldDocument);
                 } else {
                     throw mce;
                 }
@@ -198,7 +198,7 @@ public class DAOUtils {
                     // DuplicateKey error
                     // this happens if the filter parameter didn't match 
                     // the existing document
-                    return new OperationResult(HttpStatus.SC_NOT_FOUND);
+                    return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED);
                 } else {
                     throw mce;
                 }
@@ -218,7 +218,7 @@ public class DAOUtils {
                     // DuplicateKey error
                     // this happens if the filter parameter didn't match 
                     // the existing document
-                    return new OperationResult(HttpStatus.SC_NOT_FOUND);
+                    return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED);
                 } else {
                     throw mce;
                 }
@@ -313,7 +313,7 @@ public class DAOUtils {
                             _filter = and(_filter, shardKeys);
                         }
 
-                        if (filter != null) {
+                        if (filter != null && !filter.isEmpty()) {
                             _filter = and(_filter, filter);
                         }
 
