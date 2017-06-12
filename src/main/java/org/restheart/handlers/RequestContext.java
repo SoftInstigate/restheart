@@ -168,7 +168,7 @@ public class RequestContext {
     private BsonDocument collectionProps;
 
     private BsonValue content;
-    
+
     private String rawContent;
 
     private Path filePath;
@@ -676,7 +676,7 @@ public class RequestContext {
             } else if (filter.size() == 1) {
                 filterQuery.putAll(BsonDocument.parse(filter.getFirst()));  // this can throw JsonParseException for invalid filter parameters
             } else {
-                return null;
+                return filterQuery;
             }
         }
 
@@ -803,14 +803,14 @@ public class RequestContext {
         }
         this.content = content;
     }
-    
+
     /**
      * @return the rawContent
      */
     public String getRawContent() {
         return rawContent;
     }
-    
+
     /**
      * @param rawContent the rawContent to set
      */
