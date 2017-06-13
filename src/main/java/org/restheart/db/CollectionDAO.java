@@ -147,7 +147,8 @@ class CollectionDAO {
 
         return coll.find(filters)
                 .projection(keys)
-                .sort(sortBy);
+                .sort(sortBy)
+                .batchSize(1000);
     }
 
     ArrayList<BsonDocument> getCollectionData(
@@ -214,10 +215,12 @@ class CollectionDAO {
 
             MongoCursor<BsonDocument> mc = cursor.iterator();
 
-            while (toskip > alreadySkipped && mc.hasNext()) {
-                mc.next();
+            BsonDocument doc = null;
+
+            do {
+                doc = mc.next();
                 alreadySkipped++;
-            }
+            } while (toskip > alreadySkipped && doc != null);
 
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("skipping {} times took {} msecs",
