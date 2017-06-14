@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+
 export RESTHEART_VERSION=$(../bin/project-version.sh 2>/dev/null);
 
 if [[ $RESTHEART_VERSION ]]; then
