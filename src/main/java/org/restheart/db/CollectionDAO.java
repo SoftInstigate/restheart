@@ -51,12 +51,11 @@ import org.slf4j.LoggerFactory;
  */
 class CollectionDAO {
 
-    private final MongoClient client;
-
-    private static final Logger LOGGER
-            = LoggerFactory.getLogger(CollectionDAO.class);
-
+    public static final int BATCH_SIZE = 1000;
+    private static final Logger LOGGER = LoggerFactory.getLogger(CollectionDAO.class);
     private static final BsonDocument FIELDS_TO_RETURN;
+
+    private final MongoClient client;
 
     CollectionDAO(MongoClient client) {
         this.client = client;
@@ -148,7 +147,7 @@ class CollectionDAO {
         return coll.find(filters)
                 .projection(keys)
                 .sort(sortBy)
-                .batchSize(1000);
+                .batchSize(BATCH_SIZE);
     }
 
     ArrayList<BsonDocument> getCollectionData(
