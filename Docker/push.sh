@@ -13,4 +13,5 @@ if [[ $RESTHEART_VERSION ]]; then
     fi
 else
     echo "ERROR! Variable RESTHEART_VERSION is undefined";
+    exit 1;
 fi
