@@ -43,9 +43,23 @@ script:
 after_success:
    - if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
         mvn deploy --settings deploy-settings.xml -DskipTests=true;
-        docker login -u="$DOCKER_USER" -p="$DOCKER_PASS";
-        cd Docker && cp ../target/restheart.jar . ;
-        ./push.sh;
+        export RESTHEART_VERSION=$(./bin/project-version.sh 2>/dev/null);
+        if [[ $RESTHEART_VERSION ]]; then
+            echo "Building Docker image for RESTHeart $RESTHEART_VERSION";
+            docker login -u="$DOCKER_USER" -p="$DOCKER_PASS";
+            cd Docker && cp ../target/restheart.jar . ;
+            docker build -t softinstigate/restheart:$RESTHEART_VERSION . ;
+            docker push softinstigate/restheart:$RESTHEART_VERSION;
+            echo "Branch is $TRAVIS_BRANCH";
+            if [ "$TRAVIS_BRANCH" == "master" ]; then
+                echo "On master branch. Tagging image softinstigate/restheart:$RESTHEART_VERSION as latest";
+                docker tag softinstigate/restheart:$RESTHEART_VERSION softinstigate/restheart:latest;
+                docker push softinstigate/restheart:latest;
+            fi
+        else
+            echo "ERROR! Variable RESTHEART_VERSION is undefined";
+            exit 1;
+        fi
      fi
 
 env:
