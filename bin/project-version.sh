@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 PRESENT_DIR="$PWD";
 cd "$(dirname ${BASH_SOURCE[0]})"/..
 export MVN_VERSION=$(mvn --quiet \
