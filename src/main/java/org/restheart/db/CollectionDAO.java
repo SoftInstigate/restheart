@@ -215,12 +215,10 @@ class CollectionDAO {
 
             MongoCursor<BsonDocument> mc = cursor.iterator();
 
-            BsonDocument doc = null;
-
-            do {
-                doc = mc.next();
+            while (toskip > alreadySkipped && mc.hasNext()) {
+                mc.next();
                 alreadySkipped++;
-            } while (toskip > alreadySkipped && doc != null);
+            }
 
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("skipping {} times took {} msecs",
