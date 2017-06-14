@@ -1,3 +1,6 @@
+#!/bin/bash
+export RESTHEART_VERSION=$(../bin/project-version.sh 2>/dev/null);
+
 if [[ $RESTHEART_VERSION ]]; then
     echo "Building Docker image for RESTHeart $RESTHEART_VERSION";
     docker build -t softinstigate/restheart:$RESTHEART_VERSION . ;
@@ -9,5 +12,5 @@ if [[ $RESTHEART_VERSION ]]; then
         docker push softinstigate/restheart:latest;
     fi
 else
-    echo "Variable RESTHEART_VERSION undefined";
+    echo "ERROR! Variable RESTHEART_VERSION is undefined";
 fi
