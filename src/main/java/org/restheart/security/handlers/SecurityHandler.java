@@ -15,18 +15,21 @@
  */
 package org.restheart.security.handlers;
 
-import io.undertow.security.api.AuthenticationMechanism;
-import io.undertow.security.idm.IdentityManager;
-import io.undertow.security.impl.BasicAuthenticationMechanism;
-import io.undertow.server.HttpServerExchange;
+import static org.restheart.security.RestheartIdentityManager.RESTHEART_REALM;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.security.AccessManager;
 import org.restheart.security.AuthTokenAuthenticationMechanism;
-import static org.restheart.security.RestheartIdentityManager.RESTHEART_REALM;
 import org.restheart.security.SilentBasicAuthenticationMechanism;
+
+import io.undertow.security.api.AuthenticationMechanism;
+import io.undertow.security.idm.IdentityManager;
+import io.undertow.security.impl.BasicAuthenticationMechanism;
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -36,13 +39,14 @@ public class SecurityHandler extends PipedHttpHandler {
     /**
      *
      * @param next
+     * @param authenticationMechanism 
      * @param identityManager
      * @param accessManager
      * @param challenging false if never challenge for authentication (don't
      * sent the WWW-Authenticate response header)
      */
-    public SecurityHandler(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager, final boolean challenging) {
-        super(getSecurityHandlerChain(next, identityManager, accessManager, challenging));
+    public SecurityHandler(final PipedHttpHandler next, AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager, final AccessManager accessManager, final boolean challenging) {
+        super(getSecurityHandlerChain(next, authenticationMechanism, identityManager, accessManager, challenging));
     }
 
     @Override
@@ -50,10 +54,14 @@ public class SecurityHandler extends PipedHttpHandler {
         next(exchange, context);
     }
 
-    private static PipedHttpHandler getSecurityHandlerChain(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager, final boolean challenging) {
+    private static PipedHttpHandler getSecurityHandlerChain(final PipedHttpHandler next, AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager, final AccessManager accessManager, final boolean challenging) {
         if (identityManager != null) {
             final List<AuthenticationMechanism> mechanisms = new ArrayList<>();
 
+            if(authenticationMechanism != null){
+            	mechanisms.add(authenticationMechanism);
+            }
+            
             mechanisms.add(new AuthTokenAuthenticationMechanism(RESTHEART_REALM));
 
             if (challenging) {

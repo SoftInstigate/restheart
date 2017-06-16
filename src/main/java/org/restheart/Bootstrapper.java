@@ -17,77 +17,82 @@
  */
 package org.restheart;
 
-import org.restheart.utils.RHDaemon;
-import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
+import static io.undertow.Handlers.path;
+import static io.undertow.Handlers.resource;
+import static org.fusesource.jansi.Ansi.ansi;
+import static org.fusesource.jansi.Ansi.Color.GREEN;
+import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.restheart.Configuration.RESTHEART_VERSION;
-import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.handlers.ErrorHandler;
-import org.restheart.handlers.GzipEncodingHandler;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestDispacherHandler;
-import org.restheart.handlers.injectors.RequestContextInjectorHandler;
-import org.restheart.handlers.injectors.CollectionPropsInjectorHandler;
-import org.restheart.handlers.injectors.DbPropsInjectorHandler;
-import org.restheart.handlers.injectors.LocalCachesSingleton;
-import org.restheart.security.AccessManager;
-import org.restheart.utils.ResourcesExtractor;
-import org.restheart.utils.LoggingInitializer;
-import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.applicationlogic.ApplicationLogicHandler;
-import org.restheart.handlers.OptionsHandler;
-import org.restheart.handlers.PipedWrappingHandler;
-import org.restheart.handlers.injectors.BodyInjectorHandler;
-import org.restheart.security.handlers.SecurityHandlerDispacher;
-import org.restheart.security.handlers.CORSHandler;
-import org.restheart.utils.FileUtils;
-import org.restheart.utils.OSChecker;
-import io.undertow.Undertow;
-import io.undertow.security.idm.IdentityManager;
-import io.undertow.server.handlers.HttpContinueAcceptingHandler;
-import io.undertow.server.handlers.resource.FileResourceManager;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 
-import static io.undertow.Handlers.resource;
+import org.restheart.db.MongoDBClientSingleton;
+import org.restheart.handlers.ErrorHandler;
+import org.restheart.handlers.GzipEncodingHandler;
+import org.restheart.handlers.OptionsHandler;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipedWrappingHandler;
+import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.RequestDispacherHandler;
+import org.restheart.handlers.RequestLoggerHandler;
+import org.restheart.handlers.applicationlogic.ApplicationLogicHandler;
+import org.restheart.handlers.injectors.AccountInjectorHandler;
+import org.restheart.handlers.injectors.BodyInjectorHandler;
+import org.restheart.handlers.injectors.CollectionPropsInjectorHandler;
+import org.restheart.handlers.injectors.DbPropsInjectorHandler;
+import org.restheart.handlers.injectors.LocalCachesSingleton;
+import org.restheart.handlers.injectors.RequestContextInjectorHandler;
+import org.restheart.security.AccessManager;
+import org.restheart.security.FullAccessManager;
+import org.restheart.security.handlers.AuthTokenHandler;
+import org.restheart.security.handlers.CORSHandler;
+import org.restheart.security.handlers.SecurityHandlerDispacher;
+import org.restheart.utils.FileUtils;
+import org.restheart.utils.LoggingInitializer;
+import org.restheart.utils.OSChecker;
+import org.restheart.utils.RHDaemon;
+import org.restheart.utils.ResourcesExtractor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.mongodb.MongoClient;
+
+import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
+import io.undertow.security.api.AuthenticationMechanism;
+import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.handlers.AllowedMethodsHandler;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
+import io.undertow.server.handlers.HttpContinueAcceptingHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.RequestLimit;
 import io.undertow.server.handlers.RequestLimitingHandler;
+import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.util.HttpString;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-import static org.fusesource.jansi.Ansi.Color.GREEN;
-import static org.fusesource.jansi.Ansi.Color.RED;
-import org.restheart.security.FullAccessManager;
-import org.restheart.security.handlers.AuthTokenHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.restheart.handlers.RequestLoggerHandler;
-import java.nio.file.Paths;
-import static io.undertow.Handlers.path;
-import javax.net.ssl.TrustManagerFactory;
-import static org.fusesource.jansi.Ansi.ansi;
-import org.restheart.handlers.injectors.AccountInjectorHandler;
 
 /**
  *
@@ -119,7 +124,7 @@ public final class Bootstrapper {
             // read configuration silently, to avoid logging before initializing the logger
             configuration = FileUtils.getConfiguration(args, true);
         } catch (ConfigurationException ex) {
-            LOGGER.info("Starting "
+            LOGGER.info("Starting (Modified) "
                     + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
                     + " instance "
                     + ansi().fg(RED).bold().a("undefined").reset().toString());
@@ -347,7 +352,7 @@ public final class Bootstrapper {
                 ? "undefined"
                 : configuration.getInstanceName();
 
-        LOGGER.info("Starting "
+        LOGGER.info("Starting  (Modified) "
                 + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
                 + " instance "
                 + ansi().fg(RED).bold().a(instanceName).reset().toString());
@@ -500,6 +505,8 @@ public final class Bootstrapper {
         }
 
         final IdentityManager identityManager = loadIdentityManager();
+        
+        final AuthenticationMechanism authenticationMechanism = loadAuthenticationMechanism(identityManager); 
 
         final AccessManager accessManager = loadAccessManager();
 
@@ -578,7 +585,7 @@ public final class Bootstrapper {
             LOGGER.info("Local cache for schema stores not enabled");
         }
 
-        shutdownHandler = getHandlersPipe(identityManager, accessManager);
+        shutdownHandler = getHandlersPipe(authenticationMechanism, identityManager, accessManager);
 
         builder = builder
                 .setIoThreads(configuration.getIoThreads())
@@ -594,6 +601,29 @@ public final class Bootstrapper {
         undertowServer.start();
     }
 
+    /**
+     * loadAuthenticationMechanism
+     *
+     * @return the IdentityManager
+     */
+    private static AuthenticationMechanism loadAuthenticationMechanism(final IdentityManager identityManager) {
+    	AuthenticationMechanism authMechanism = null;
+        if (configuration.getAuthMechanism() == null) {
+            LOGGER.info("***** No AuthenticationMechanism specified. Default will be used.");
+        } else {
+            try {
+                Object idm = Class.forName(configuration.getAuthMechanism())
+                        .getConstructor(Map.class, IdentityManager.class)
+                        .newInstance(configuration.getAuthMechanismArgs(), identityManager);
+                authMechanism = (AuthenticationMechanism) idm;
+                LOGGER.debug("AuthenticationMechanism set to : {}", configuration.getAuthMechanism());
+            } catch (Exception ex) {
+                logErrorAndExit("Error configuring AuthenticationMechanism implementation " + configuration.getAuthMechanism(), ex, false, -3);
+            }
+        }
+        return authMechanism;
+    }
+    
     /**
      * loadIdentityManager
      *
@@ -678,7 +708,7 @@ public final class Bootstrapper {
      * @param accessManager
      * @return a GracefulShutdownHandler
      */
-    private static GracefulShutdownHandler getHandlersPipe(final IdentityManager identityManager, final AccessManager accessManager) {
+    private static GracefulShutdownHandler getHandlersPipe(final AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager, final AccessManager accessManager) {
         PipedHttpHandler coreHandlerChain
                 = new AccountInjectorHandler(
                         new DbPropsInjectorHandler(
@@ -700,6 +730,7 @@ public final class Bootstrapper {
                                                     new BodyInjectorHandler(
                                                             new SecurityHandlerDispacher(
                                                                     coreHandlerChain,
+                                                                    authenticationMechanism,
                                                                     identityManager,
                                                                     accessManager))))
                             )));
@@ -707,9 +738,9 @@ public final class Bootstrapper {
             LOGGER.info("URL {} bound to MongoDB resource {}", url, db);
         });
 
-        pipeStaticResourcesHandlers(configuration, paths, identityManager, accessManager);
+        pipeStaticResourcesHandlers(configuration, paths, authenticationMechanism, identityManager, accessManager);
 
-        pipeApplicationLogicHandlers(configuration, paths, identityManager, accessManager);
+        pipeApplicationLogicHandlers(configuration, paths, authenticationMechanism, identityManager, accessManager);
 
         // pipe the auth tokens invalidation handler
         paths.addPrefixPath("/_authtokens",
@@ -717,6 +748,7 @@ public final class Bootstrapper {
                         new CORSHandler(
                                 new SecurityHandlerDispacher(
                                         new AuthTokenHandler(),
+                                        authenticationMechanism,
                                         identityManager,
                                         new FullAccessManager()))));
 
@@ -758,13 +790,14 @@ public final class Bootstrapper {
      *
      * @param conf
      * @param paths
+     * @param authenticationMechanism 
      * @param identityManager
      * @param accessManager
      */
     private static void pipeStaticResourcesHandlers(
             final Configuration conf,
             final PathHandler paths,
-            final IdentityManager identityManager,
+            AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager,
             final AccessManager accessManager) {
         if (conf.getStaticResourcesMounts() != null) {
             conf.getStaticResourcesMounts().stream().forEach(sr -> {
@@ -849,6 +882,7 @@ public final class Bootstrapper {
                             ph = new RequestLoggerHandler(
                                     new SecurityHandlerDispacher(
                                             new PipedWrappingHandler(null, handler),
+                                            authenticationMechanism,
                                             identityManager,
                                             accessManager));
                         } else {
@@ -874,13 +908,14 @@ public final class Bootstrapper {
      *
      * @param conf
      * @param paths
+     * @param authenticationMechanism 
      * @param identityManager
      * @param accessManager
      */
     private static void pipeApplicationLogicHandlers(
             final Configuration conf,
             final PathHandler paths,
-            final IdentityManager identityManager,
+            AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager,
             final AccessManager accessManager) {
         if (conf.getApplicationLogicMounts() != null) {
             conf.getApplicationLogicMounts().stream().forEach(al -> {
@@ -920,6 +955,7 @@ public final class Bootstrapper {
                                     new CORSHandler(
                                             new SecurityHandlerDispacher(
                                                     handler,
+                                                    authenticationMechanism,
                                                     identityManager,
                                                     accessManager))));
                         } else {
@@ -928,6 +964,7 @@ public final class Bootstrapper {
                                             new CORSHandler(
                                                     new SecurityHandlerDispacher(
                                                             handler,
+                                                            authenticationMechanism,
                                                             identityManager,
                                                             new FullAccessManager()))));
                         }

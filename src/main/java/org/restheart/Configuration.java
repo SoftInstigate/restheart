@@ -17,13 +17,6 @@
  */
 package org.restheart;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.LoggerContext;
-
-import com.google.common.collect.Maps;
-
-import com.mongodb.MongoClientURI;
-import org.restheart.utils.URLUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -34,12 +27,20 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.RequestContext.ETAG_CHECK_POLICY;
+import org.restheart.handlers.RequestContext.REPRESENTATION_FORMAT;
+import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
-import org.restheart.handlers.RequestContext.ETAG_CHECK_POLICY;
-import org.restheart.handlers.RequestContext.REPRESENTATION_FORMAT;
+
+import com.google.common.collect.Maps;
+import com.mongodb.MongoClientURI;
+
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
 
 /**
  * Utility class to help dealing with the restheart configuration file.
@@ -99,6 +100,8 @@ public class Configuration {
 
     private final String idmImpl;
     private final Map<String, Object> idmArgs;
+    private final String authMechanismImpl;
+    private final Map<String, Object> authMechanismArgs;
     private final String amImpl;
     private final Map<String, Object> amArgs;
 
@@ -196,6 +199,11 @@ public class Configuration {
      * default idm implementation class.
      */
     public static final String DEFAULT_IDM_IMPLEMENTATION_CLASS = null;
+    
+    /**
+     * default authMechanism implementation class.
+     */
+    public static final String DEFAULT_AUTH_MECHANISM_IMPLEMENTATION_CLASS = null;
 
     /**
      * default db etag check policy
@@ -304,6 +312,11 @@ public class Configuration {
      * the key for the idm property.
      */
     public static final String IDM_KEY = "idm";
+    
+    /**
+     * the key for the auth Mechanism.
+     */
+    public static final String AUTH_Mechanism_KEY = "auth-mechanism";
 
     /**
      * the key for the mongo-uri property.
@@ -600,6 +613,9 @@ public class Configuration {
 
         idmImpl = null;
         idmArgs = null;
+        
+        authMechanismImpl = null;
+        authMechanismArgs = null;
 
         amImpl = null;
         amArgs = null;
@@ -763,11 +779,15 @@ public class Configuration {
         metadataNamedSingletons = getAsListOfMaps(conf, METADATA_NAMED_SINGLETONS_KEY, new ArrayList<>());
 
         Map<String, Object> idm = getAsMap(conf, IDM_KEY);
+        Map<String, Object> authMech = getAsMap(conf, AUTH_Mechanism_KEY);
         Map<String, Object> am = getAsMap(conf, ACCESS_MANAGER_KEY);
 
         idmImpl = getAsStringOrDefault(idm, IMPLEMENTATION_CLASS_KEY, DEFAULT_IDM_IMPLEMENTATION_CLASS);
         idmArgs = idm;
-
+        
+        authMechanismImpl = getAsStringOrDefault(authMech, IMPLEMENTATION_CLASS_KEY, DEFAULT_AUTH_MECHANISM_IMPLEMENTATION_CLASS);
+        authMechanismArgs = authMech;
+        
         amImpl = getAsStringOrDefault(am, IMPLEMENTATION_CLASS_KEY, DEFAULT_AM_IMPLEMENTATION_CLASS);
         amArgs = am;
 
@@ -1307,6 +1327,22 @@ public class Configuration {
         return idmArgs;
     }
 
+    /**
+     * @return the authentication Mechanism
+     */
+    public final String getAuthMechanism() {
+        return authMechanismImpl;
+    }
+
+    /**
+     * @return the idmArgs
+     */
+    public final Map<String, Object> getAuthMechanismArgs() {
+        return authMechanismArgs;
+    }
+
+    
+    
     /**
      * @return the amImpl
      */
