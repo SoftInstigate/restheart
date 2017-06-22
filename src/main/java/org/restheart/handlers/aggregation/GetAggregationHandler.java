@@ -25,7 +25,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+
 import org.bson.BsonDocument;
+import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.handlers.IllegalQueryParamenterException;
@@ -106,7 +109,8 @@ public class GetAggregationHandler extends PipedHttpHandler {
                                 mapReduce.getResolvedMap(context.getAggreationVars()),
                                 mapReduce.getResolvedReduce(context.getAggreationVars()))
                         .filter(
-                                mapReduce.getResolvedQuery(context.getAggreationVars()));
+                                mapReduce.getResolvedQuery(context.getAggreationVars()))
+                        .maxTime(MongoDBClientSingleton.getTimeLimit(), TimeUnit.MILLISECONDS);
             } catch (MongoCommandException | InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
@@ -151,7 +155,8 @@ public class GetAggregationHandler extends PipedHttpHandler {
                         .aggregate(
                                 pipeline
                                         .getResolvedStagesAsList(
-                                                context.getAggreationVars()));
+                                                context.getAggreationVars()))
+                        .maxTime(MongoDBClientSingleton.getTimeLimit(), TimeUnit.MILLISECONDS);
             } catch (MongoCommandException | InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
