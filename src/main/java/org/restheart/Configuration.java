@@ -114,6 +114,7 @@ public class Configuration {
     private final long schemaCacheTtl;
 
     private final int requestsLimit;
+    private final long timeLimit;
 
     private final int ioThreads;
     private final int workerThreads;
@@ -269,6 +270,11 @@ public class Configuration {
      * the key for the requests-limit property.
      */
     public static final String REQUESTS_LIMIT_KEY = "requests-limit";
+
+    /**
+     * the key for the time-limit property.
+     */
+    public static final String TIME_LIMIT_KEY = "time-limit";
 
     /**
      * the key for the enable-log-file property.
@@ -617,6 +623,8 @@ public class Configuration {
         schemaCacheTtl = 1000;
 
         requestsLimit = 100;
+        timeLimit = (long) 10000;
+
         ioThreads = 2;
         workerThreads = 32;
         bufferSize = 16384;
@@ -792,6 +800,7 @@ public class Configuration {
         logLevel = level;
 
         requestsLimit = getAsIntegerOrDefault(conf, REQUESTS_LIMIT_KEY, 100);
+        timeLimit = getAsLongOrDefault(conf, TIME_LIMIT_KEY, (long) 10000);
 
         localCacheEnabled = getAsBooleanOrDefault(conf, LOCAL_CACHE_ENABLED_KEY, true);
         localCacheTtl = getAsLongOrDefault(conf, LOCAL_CACHE_TTL_KEY, (long) 1000);
@@ -1354,6 +1363,10 @@ public class Configuration {
      */
     public final int getRequestsLimit() {
         return requestsLimit;
+    }
+
+    public final long getTimeLimit() {
+        return timeLimit;
     }
 
     /**

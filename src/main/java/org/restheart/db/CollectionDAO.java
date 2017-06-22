@@ -18,6 +18,7 @@
 package org.restheart.db;
 
 import com.mongodb.DBCollection;
+import com.mongodb.Mongo;
 import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -30,6 +31,7 @@ import org.restheart.utils.HttpStatus;
 
 import java.util.ArrayList;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
@@ -147,7 +149,8 @@ class CollectionDAO {
         return coll.find(filters)
                 .projection(keys)
                 .sort(sortBy)
-                .batchSize(BATCH_SIZE);
+                .batchSize(BATCH_SIZE)
+                .maxTime(MongoDBClientSingleton.getTimeLimit(), TimeUnit.MILLISECONDS);
     }
 
     ArrayList<BsonDocument> getCollectionData(
