@@ -27,6 +27,7 @@ import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.util.JSONParseException;
 
+import org.restheart.Bootstrapper;
 import org.restheart.utils.HttpStatus;
 
 import java.util.ArrayList;
@@ -150,7 +151,7 @@ class CollectionDAO {
                 .projection(keys)
                 .sort(sortBy)
                 .batchSize(BATCH_SIZE)
-                .maxTime(MongoDBClientSingleton.getTimeLimit(), TimeUnit.MILLISECONDS);
+                .maxTime(Bootstrapper.getConfiguration().getTimeLimit(), TimeUnit.MILLISECONDS);
     }
 
     ArrayList<BsonDocument> getCollectionData(
