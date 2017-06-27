@@ -38,8 +38,6 @@ public class MongoDBClientSingleton {
 
     private static String serverVersion;
 
-    private static long timeLimit;
-
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoDBClientSingleton.class);
 
     private MongoDBClientSingleton() {
@@ -62,7 +60,6 @@ public class MongoDBClientSingleton {
      */
     public static void init(Configuration conf) {
         mongoUri = conf.getMongoUri();
-        timeLimit = conf.getTimeLimit();
         initialized = true;
     }
 
@@ -124,9 +121,5 @@ public class MongoDBClientSingleton {
      */
     public static String getServerVersion() {
         return serverVersion;
-    }
-
-    public static long getTimeLimit() {
-        return timeLimit;
     }
 }
