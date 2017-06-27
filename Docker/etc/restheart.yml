@@ -245,6 +245,9 @@ schema-cache-ttl: 60000
 # Limit for the maximum number of concurrent requests being served
 requests-limit: 1000
 
+# Time limit in milliseconds for processing a query on the server (without network latency). 0 means no time limit
+time-limit: 0
+
 # Number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
 io-threads: 2
 
