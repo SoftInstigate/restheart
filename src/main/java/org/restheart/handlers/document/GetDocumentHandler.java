@@ -24,7 +24,6 @@ import java.util.Deque;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.conversions.Bson;
-import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -35,7 +34,6 @@ import org.restheart.utils.URLUtils;
 import org.restheart.utils.JsonUtils;
 import org.restheart.handlers.RequestContext.TYPE;
 import java.util.HashSet;
-import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -113,7 +111,6 @@ public class GetDocumentHandler extends PipedHttpHandler {
                 context.getCollectionName())
                 .find(query)
                 .projection(fieldsToReturn)
-                .maxTime(MongoDBClientSingleton.getTimeLimit(), TimeUnit.MILLISECONDS)
                 .first();
 
         if (document == null) {
