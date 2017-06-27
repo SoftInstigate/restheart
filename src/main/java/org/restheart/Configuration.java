@@ -623,7 +623,7 @@ public class Configuration {
         schemaCacheTtl = 1000;
 
         requestsLimit = 100;
-        timeLimit = (long) 10000;
+        timeLimit = (long) 0;
 
         ioThreads = 2;
         workerThreads = 32;
@@ -800,7 +800,7 @@ public class Configuration {
         logLevel = level;
 
         requestsLimit = getAsIntegerOrDefault(conf, REQUESTS_LIMIT_KEY, 100);
-        timeLimit = getAsLongOrDefault(conf, TIME_LIMIT_KEY, (long) 10000);
+        timeLimit = getAsLongOrDefault(conf, TIME_LIMIT_KEY, (long) 0);
 
         localCacheEnabled = getAsBooleanOrDefault(conf, LOCAL_CACHE_ENABLED_KEY, true);
         localCacheTtl = getAsLongOrDefault(conf, LOCAL_CACHE_TTL_KEY, (long) 1000);
