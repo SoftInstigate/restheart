@@ -110,7 +110,7 @@ public class GetAggregationHandler extends PipedHttpHandler {
                                 mapReduce.getResolvedReduce(context.getAggreationVars()))
                         .filter(
                                 mapReduce.getResolvedQuery(context.getAggreationVars()))
-                        .maxTime(Bootstrapper.getConfiguration().getTimeLimit(), TimeUnit.MILLISECONDS);
+                        .maxTime(Bootstrapper.getConfiguration().getAggregationTimeLimit(), TimeUnit.MILLISECONDS);
             } catch (MongoCommandException | InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
@@ -156,7 +156,7 @@ public class GetAggregationHandler extends PipedHttpHandler {
                                 pipeline
                                         .getResolvedStagesAsList(
                                                 context.getAggreationVars()))
-                        .maxTime(Bootstrapper.getConfiguration().getTimeLimit(), TimeUnit.MILLISECONDS);
+                        .maxTime(Bootstrapper.getConfiguration().getAggregationTimeLimit(), TimeUnit.MILLISECONDS);
             } catch (MongoCommandException | InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
