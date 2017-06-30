@@ -27,7 +27,6 @@ import com.mongodb.util.JSONParseException;
 import java.util.ArrayList;
 import java.util.List;
 import org.bson.BsonDocument;
-import org.bson.BsonString;
 
 import org.restheart.handlers.IllegalQueryParamenterException;
 
@@ -36,8 +35,6 @@ import org.restheart.handlers.IllegalQueryParamenterException;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public interface Database {
-    BsonDocument METADATA_QUERY
-            = new BsonDocument("_id", new BsonString("_properties"));
 
     /**
      *
