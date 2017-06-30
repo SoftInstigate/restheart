@@ -22,14 +22,15 @@ package org.restheart;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ConfigurationException extends Exception {
+
     public ConfigurationException() {
         super();
     }
-    
+
     public ConfigurationException(String message) {
         super(message);
     }
-    
+
     public ConfigurationException(String message, Throwable cause) {
         super(message, cause);
     }

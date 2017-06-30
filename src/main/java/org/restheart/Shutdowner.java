@@ -18,9 +18,9 @@
 package org.restheart;
 
 import com.sun.akuma.CLibrary;
+import java.nio.file.Path;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.OSChecker;
-import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,10 +29,8 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class Shutdowner {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Shutdowner.class);
 
-    private Shutdowner() {
-    }
+    private static final Logger LOGGER = LoggerFactory.getLogger(Shutdowner.class);
 
     public static void main(final String[] args) {
         if (askingForHelp(args)) {
@@ -48,19 +46,19 @@ public class Shutdowner {
             LOGGER.error("shutdown is not supported on windows.");
             System.exit(-5);
         }
-        
+
         shutdown(args);
     }
-    
+
     protected static void shutdown(final String[] args) {
         if (FileUtils.getConfigurationFilePath(args) == null) {
             LOGGER.info("Shutting down the RESTHeart instance run without configuration file");
         } else {
             LOGGER.info("Shutting down the RESTHeart instance run with configuration file {}", FileUtils.getConfigurationFilePath(args).toString());
         }
-        
+
         Path pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsoultePathHash(FileUtils.getConfigurationFilePath(args)));
-            
+
         int pid = FileUtils.getPidFromFile(pidFilePath);
 
         if (pid < 0) {
@@ -70,13 +68,13 @@ public class Shutdowner {
         } else {
             LOGGER.info("Pid file {}", pidFilePath);
         }
-        
+
         CLibrary.LIBC.kill(pid, 15); // 15 is SIGTERM
-        
+
         LOGGER.info("SIGTERM signal sent to RESTHeart instance with pid {} ", pid);
-        
+
         Configuration conf;
-        
+
         try {
             conf = FileUtils.getConfiguration(args, true);
             LOGGER.info("Check log file {}", conf.getLogFilePath());
@@ -93,5 +91,8 @@ public class Shutdowner {
         }
 
         return false;
+    }
+
+    private Shutdowner() {
     }
 }
