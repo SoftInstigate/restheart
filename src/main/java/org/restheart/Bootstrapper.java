@@ -103,6 +103,13 @@ public class Bootstrapper {
     private static Configuration configuration;
     private static Undertow undertowServer;
 
+    private static final String EXITING = ", exiting...";
+    private static final String INSTANCE = " instance ";
+    private static final String STARTING = "Starting ";
+    private static final String UNDEFINED = "undefined";
+    private static final String RESTHEART = "RESTHeart";
+    private static final String VERSION = "version {}";
+
     /**
      * main method
      *
@@ -115,16 +122,16 @@ public class Bootstrapper {
             // read configuration silently, to avoid logging before initializing the logger
             configuration = FileUtils.getConfiguration(args, true);
         } catch (ConfigurationException ex) {
-            LOGGER.info("Starting "
-                    + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
-                    + " instance "
-                    + ansi().fg(RED).bold().a("undefined").reset().toString());
+            LOGGER.info(STARTING
+                    + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
+                    + INSTANCE
+                    + ansi().fg(RED).bold().a(UNDEFINED).reset().toString());
 
             if (RESTHEART_VERSION != null) {
-                LOGGER.info("version {}", RESTHEART_VERSION);
+                LOGGER.info(VERSION, RESTHEART_VERSION);
             }
 
-            logErrorAndExit(ex.getMessage() + ", exiting...", ex, false, -1);
+            logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
         }
 
         if (!hasForkOption(args)) {
@@ -132,19 +139,15 @@ public class Bootstrapper {
             startServer(false);
         } else {
             if (OSChecker.isWindows()) {
-                String instanceName = configuration == null
-                        ? "undefined"
-                        : configuration.getInstanceName() == null
-                        ? "undefined"
-                        : configuration.getInstanceName();
+                String instanceName = getInstanceName();
 
-                LOGGER.info("Starting "
-                        + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
-                        + " instance "
+                LOGGER.info(STARTING
+                        + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
+                        + INSTANCE
                         + ansi().fg(RED).bold().a(instanceName).reset().toString());
 
                 if (RESTHEART_VERSION != null) {
-                    LOGGER.info("version {}", RESTHEART_VERSION);
+                    LOGGER.info(VERSION, RESTHEART_VERSION);
                 }
 
                 LOGGER.error("Fork is not supported on Windows");
@@ -178,19 +181,15 @@ public class Bootstrapper {
                 initLogging(args, d);
 
                 try {
-                    String instanceName = configuration == null
-                            ? "undefined"
-                            : configuration.getInstanceName() == null
-                            ? "undefined"
-                            : configuration.getInstanceName();
+                    String instanceName = getInstanceName();
 
-                    LOGGER.info("Starting "
-                            + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
-                            + " instance "
+                    LOGGER.info(STARTING
+                            + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
+                            + INSTANCE
                             + ansi().fg(RED).bold().a(instanceName).reset().toString());
 
                     if (RESTHEART_VERSION != null) {
-                        LOGGER.info("version {}", RESTHEART_VERSION);
+                        LOGGER.info(VERSION, RESTHEART_VERSION);
                     }
 
                     logLoggingConfiguration(true);
@@ -248,10 +247,10 @@ public class Bootstrapper {
             configuration = FileUtils.getConfiguration(confFilePath, false);
         } catch (ConfigurationException ex) {
             if (RESTHEART_VERSION != null) {
-                LOGGER.info(ansi().fg(RED).bold().a("RESTHeart").reset().toString() + " version {}", RESTHEART_VERSION);
+                LOGGER.info(ansi().fg(RED).bold().a(RESTHEART).reset().toString() + " version {}", RESTHEART_VERSION);
             }
 
-            logErrorAndExit(ex.getMessage() + ", exiting...", ex, false, -1);
+            logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
         }
 
         startServer(false);
@@ -340,19 +339,15 @@ public class Bootstrapper {
      * @param fork
      */
     private static void startServer(boolean fork) {
-        String instanceName = configuration == null
-                ? "undefined"
-                : configuration.getInstanceName() == null
-                ? "undefined"
-                : configuration.getInstanceName();
+        String instanceName = getInstanceName();
 
-        LOGGER.info("Starting "
-                + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
-                + " instance "
+        LOGGER.info(STARTING
+                + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
+                + INSTANCE
                 + ansi().fg(RED).bold().a(instanceName).reset().toString());
 
         if (RESTHEART_VERSION != null) {
-            LOGGER.info("version {}", RESTHEART_VERSION);
+            LOGGER.info(VERSION, RESTHEART_VERSION);
         }
 
         Path pidFilePath = FileUtils.getPidFilePath(
@@ -402,6 +397,15 @@ public class Bootstrapper {
         }
 
         LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart started").reset().toString());
+    }
+
+    private static String getInstanceName() {
+        String instanceName = configuration == null
+                ? UNDEFINED
+                : configuration.getInstanceName() == null
+                ? UNDEFINED
+                : configuration.getInstanceName();
+        return instanceName;
     }
 
     /**
@@ -773,10 +777,14 @@ public class Bootstrapper {
                     String welcomeFile = (String) sr.get(Configuration.STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY);
 
                     Boolean embedded = (Boolean) sr.get(Configuration.STATIC_RESOURCES_MOUNT_EMBEDDED_KEY);
-                    embedded = embedded == null ? false : embedded; // makes embedded optional with default to false
+                    if (embedded == null) {
+                        embedded = false;
+                    }
 
                     Boolean secured = (Boolean) sr.get(Configuration.STATIC_RESOURCES_MOUNT_SECURED_KEY);
-                    secured = secured == null ? false : secured; // makes secured optional with default to false
+                    if (secured == null) {
+                        secured = false;
+                    }
 
                     if (where == null || !where.startsWith("/")) {
                         LOGGER.error("Cannot bind static resources to {}. parameter 'where' must start with /", where);
