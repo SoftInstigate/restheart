@@ -19,9 +19,7 @@ package org.restheart.db;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoCursor;
 import static java.lang.Thread.MIN_PRIORITY;
-import org.restheart.Bootstrapper;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
@@ -37,15 +35,13 @@ import org.bson.BsonDocument;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.Color.YELLOW;
+import static org.fusesource.jansi.Ansi.ansi;
+import org.restheart.Bootstrapper;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static org.fusesource.jansi.Ansi.ansi;
-import static org.fusesource.jansi.Ansi.ansi;
-import static org.fusesource.jansi.Ansi.ansi;
-import static org.fusesource.jansi.Ansi.ansi;
 
 /**
  *
@@ -55,8 +51,6 @@ public class CursorPool {
 
     private static final Logger LOGGER
             = LoggerFactory.getLogger(CursorPool.class);
-
-    private final DbsDAO dbsDAO;
 
     /**
      * Cursor in the pool won't be used if<br>REQUESTED_SKIPS - POOL_SKIPS &gt;
@@ -68,6 +62,26 @@ public class CursorPool {
      * REQUESTED_SKIPS times.
      */
     public static final double MIN_SKIP_DISTANCE_PERCENTAGE = 10 / 100f; // 10%
+    // MUST BE < 10 since this 10 the TTL of the default cursor in mongodb
+    private static final long TTL = 8 * 60 * 1000;
+    private static final long POOL_SIZE
+            = Bootstrapper.getConfiguration().getEagerPoolSize();
+    private static final ThreadPoolExecutor POOL_POPULATOR
+            = new ThreadPoolExecutor(
+                    1, 2,
+                    1, TimeUnit.MINUTES,
+                    new ArrayBlockingQueue(1),
+                    new ThreadFactoryBuilder()
+                            .setDaemon(true)
+                            .setNameFormat("cursor-pool-populator-%d")
+                            .setPriority(MIN_PRIORITY)
+                            .build()
+            );
+
+    public static CursorPool getInstance() {
+        return DBCursorPoolSingletonHolder.INSTANCE;
+    }
+    private final DbsDAO dbsDAO;
 
     private final int SKIP_SLICE_LINEAR_DELTA
             = Bootstrapper.getConfiguration().getEagerLinearSliceDelta();
@@ -84,36 +98,8 @@ public class CursorPool {
     private final int SKIP_SLICE_RND_MAX_CURSORS
             = Bootstrapper.getConfiguration().getEagerRndMaxCursors();
 
-    public enum EAGER_CURSOR_ALLOCATION_POLICY {
-        LINEAR,
-        RANDOM,
-        NONE
-    };
-
     private final Cache<CursorPoolEntryKey, FindIterable<BsonDocument>> cache;
     private final LoadingCache<CursorPoolEntryKey, Long> collSizes;
-
-    // MUST BE < 10 since this 10 the TTL of the default cursor in mongodb
-    private static final long TTL = 8 * 60 * 1000;
-
-    private static final long POOL_SIZE
-            = Bootstrapper.getConfiguration().getEagerPoolSize();
-
-    private static final ThreadPoolExecutor POOL_POPULATOR
-            = new ThreadPoolExecutor(
-                    1, 2,
-                    1, TimeUnit.MINUTES,
-                    new ArrayBlockingQueue(1),
-                    new ThreadFactoryBuilder()
-                    .setDaemon(true)
-                    .setNameFormat("cursor-pool-populator-%d")
-                    .setPriority(MIN_PRIORITY)
-                    .build()
-            );
-
-    public static CursorPool getInstance() {
-        return DBCursorPoolSingletonHolder.INSTANCE;
-    }
 
     private CursorPool(DbsDAO dbsDAO) {
         this.dbsDAO = dbsDAO;
@@ -171,7 +157,7 @@ public class CursorPool {
             Optional<FindIterable<BsonDocument>> _dbcur
                     = cache.get(_bestKey.get());
 
-            if (_dbcur != null && _dbcur.isPresent()) {
+            if (_dbcur.isPresent()) {
                 ret = new SkippedFindIterable(
                         _dbcur.get(),
                         _bestKey.get().getSkipped());
@@ -264,7 +250,7 @@ public class CursorPool {
 
                         LOGGER.debug("{} cursor in pool: {}",
                                 ansi().fg(YELLOW).bold().a("new").reset()
-                                .toString(),
+                                        .toString(),
                                 newkey);
                     }
 
@@ -309,7 +295,7 @@ public class CursorPool {
 
                     LOGGER.debug("{} cursor in pool: {}",
                             ansi().fg(YELLOW).bold().a("new").reset()
-                            .toString(),
+                                    .toString(),
                             sliceKey);
 
                     long existing = getSliceHeight(sliceKey);
@@ -337,7 +323,7 @@ public class CursorPool {
 
                         LOGGER.debug("{} cursor in pool (copied): {}",
                                 ansi().fg(YELLOW).bold().a("new").reset()
-                                .toString(),
+                                        .toString(),
                                 sliceKey);
                     }
                 }
@@ -404,7 +390,17 @@ public class CursorPool {
     }
 
     private static class DBCursorPoolSingletonHolder {
+
         private static final CursorPool INSTANCE
                 = new CursorPool(new DbsDAO());
+
+        private DBCursorPoolSingletonHolder() {
+        }
     };
+
+    public enum EAGER_CURSOR_ALLOCATION_POLICY {
+        LINEAR,
+        RANDOM,
+        NONE
+    }
 }
