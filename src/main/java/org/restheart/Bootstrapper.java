@@ -400,12 +400,11 @@ public class Bootstrapper {
     }
 
     private static String getInstanceName() {
-        String instanceName = configuration == null
+        return configuration == null
                 ? UNDEFINED
                 : configuration.getInstanceName() == null
                 ? UNDEFINED
                 : configuration.getInstanceName();
-        return instanceName;
     }
 
     /**
