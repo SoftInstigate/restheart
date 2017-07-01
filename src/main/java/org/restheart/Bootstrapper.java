@@ -437,6 +437,7 @@ public class Bootstrapper {
                 shutdownHandler.awaitShutdown(60 * 1000); // up to 1 minute
             } catch (InterruptedException ie) {
                 LOGGER.error("Error while waiting for pending request to complete", ie);
+                Thread.currentThread().interrupt();
             }
         }
 
