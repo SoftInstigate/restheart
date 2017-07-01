@@ -21,6 +21,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.bson.BsonObjectId;
 import org.bson.types.ObjectId;
@@ -39,7 +40,7 @@ public class RequestHelper {
     };
 
     public static final List<String> UPDATE_OPERATORS
-            = Arrays.asList(_UPDATE_OPERATORS);
+            = Collections.unmodifiableList(Arrays.asList(_UPDATE_OPERATORS));
 
     /**
      *

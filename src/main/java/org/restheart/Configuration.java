@@ -67,11 +67,12 @@ public class Configuration {
      * default mongo uri mongodb://127.0.0.1
      */
     public static final String DEFAULT_MONGO_URI = "mongodb://127.0.0.1";
+    public static final String DEFAULT_ROUTE = "0.0.0.0";
 
     /**
      * default ajp host 0.0.0.0.
      */
-    public static final String DEFAULT_AJP_HOST = "0.0.0.0";
+    public static final String DEFAULT_AJP_HOST = DEFAULT_ROUTE;
 
     /**
      * default ajp port 8009.
@@ -81,7 +82,7 @@ public class Configuration {
     /**
      * default http host 0.0.0.0.
      */
-    public static final String DEFAULT_HTTP_HOST = "0.0.0.0";
+    public static final String DEFAULT_HTTP_HOST = DEFAULT_ROUTE;
 
     /**
      * default http port 8080.
@@ -91,7 +92,7 @@ public class Configuration {
     /**
      * default https host 0.0.0.0.
      */
-    public static final String DEFAULT_HTTPS_HOST = "0.0.0.0";
+    public static final String DEFAULT_HTTPS_HOST = DEFAULT_ROUTE;
 
     /**
      * default https port 4443.
