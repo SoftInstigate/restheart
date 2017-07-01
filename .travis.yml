@@ -24,7 +24,7 @@ addons:
       - mongodb-org-shell
       - oracle-java8-installer
   sonarcloud:
-    organization: "Softinstigate"
+    organization: "softinstigate"
     token:
       secure: "IMY8Ove0KKHwrNFJ+C3kkK12lIENnEtlhNzzANaaS71bls+VA80t5Ri6wti0p3VDnFzXBNC7il1KWGBit5G5t5RpKi53hfwjrzUF3lFjF03P8OPpiMh9pt0sB7vuVvKMON80e4bWTCN0nw0eBlvLNqB+6vW/8KIfwBKo+Abya/g="
 
