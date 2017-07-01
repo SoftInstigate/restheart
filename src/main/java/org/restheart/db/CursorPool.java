@@ -157,7 +157,7 @@ public class CursorPool {
             Optional<FindIterable<BsonDocument>> _dbcur
                     = cache.get(_bestKey.get());
 
-            if (_dbcur.isPresent()) {
+            if (_dbcur != null && _dbcur.isPresent()) {
                 ret = new SkippedFindIterable(
                         _dbcur.get(),
                         _bestKey.get().getSkipped());
