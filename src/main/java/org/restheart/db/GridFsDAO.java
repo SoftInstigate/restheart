@@ -44,6 +44,10 @@ public class GridFsDAO implements GridFsRepository {
 
     private static final String FILENAME = "filename";
 
+    private static String extractBucketName(final String collectionName) {
+        return collectionName.split("\\.")[0];
+    }
+
     private final MongoClient client;
 
     public GridFsDAO() {
@@ -170,7 +174,4 @@ public class GridFsDAO implements GridFsRepository {
         client.getDatabase(dbName).getCollection(chunksCollName).drop();
     }
 
-    private static String extractBucketName(final String collectionName) {
-        return collectionName.split("\\.")[0];
-    }
 }

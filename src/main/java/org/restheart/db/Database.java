@@ -23,11 +23,9 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.util.JSONParseException;
-
 import java.util.ArrayList;
 import java.util.List;
 import org.bson.BsonDocument;
-
 import org.restheart.handlers.IllegalQueryParamenterException;
 
 /**
