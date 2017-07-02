@@ -71,7 +71,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestDispacherHandler extends PipedHttpHandler {
+public final class RequestDispacherHandler extends PipedHttpHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestDispacherHandler.class);
 
