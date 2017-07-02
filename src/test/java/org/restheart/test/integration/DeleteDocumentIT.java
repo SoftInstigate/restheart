@@ -18,13 +18,13 @@
 package org.restheart.test.integration;
 
 import com.eclipsesource.json.JsonObject;
-import org.restheart.hal.Representation;
-import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
-import org.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.junit.Test;
+import org.restheart.hal.Representation;
+import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
@@ -54,11 +54,11 @@ public class DeleteDocumentIT extends HttpClientAbstactIT {
         // try to delete without etag forcing checkEtag
         resp = adminExecutor.execute(Request.Delete(addCheckEtag(documentTmpUri)));
         check("check delete tmp doc without etag forcing checkEtag", resp, HttpStatus.SC_CONFLICT);
-        
+
         // try to delete without etag
         resp = adminExecutor.execute(Request.Delete(documentTmpUri));
         check("check delete tmp doc without etag", resp, HttpStatus.SC_NO_CONTENT);
-        
+
         // *** PUT tmpdoc (recreating delete document)
         resp = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check put tmp doc", resp, HttpStatus.SC_CREATED);

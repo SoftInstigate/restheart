@@ -7,9 +7,9 @@ package org.restheart.db;
 
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class DAOUtilsTest {
+
     private static final Logger LOG = LoggerFactory.getLogger(DAOUtilsTest.class);
 
     @Rule
@@ -30,7 +31,7 @@ public class DAOUtilsTest {
             LOG.info("executing test {}", description.toString());
         }
     };
-    
+
     public DAOUtilsTest() {
     }
 
@@ -49,9 +50,9 @@ public class DAOUtilsTest {
         BsonDocument dbo = DAOUtils.validContent(null);
         assertNotNull(dbo);
         assertTrue(dbo.isDocument());
-        
+
         dbo = new BsonDocument("name", new BsonString("test"));
         assertEquals(DAOUtils.validContent(dbo), dbo);
     }
-    
+
 }

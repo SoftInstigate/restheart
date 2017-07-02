@@ -21,9 +21,6 @@ import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
 import com.mashape.unirest.http.Unirest;
-import org.restheart.hal.Representation;
-import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
-import org.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
 import java.net.URI;
 import org.apache.http.Header;
@@ -34,12 +31,16 @@ import org.junit.Assert;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
+import org.restheart.hal.Representation;
+import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PostCollectionIT extends HttpClientAbstactIT {
+
     private final String DB = "test-post-collection-db";
     private final String COLL = "coll";
 
@@ -91,7 +92,7 @@ public class PostCollectionIT extends HttpClientAbstactIT {
         // try to post with _id without etag  forcing checkEtag
         response = adminExecutor.execute(Request.Post(addCheckEtag(collectionTmpUri)).bodyString("{_id:{\"$oid\":\"" + _id + "\"}, a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check post created doc without etag forcing checkEtag", response, HttpStatus.SC_CONFLICT);
-        
+
         // try to post with wrong etag
         response = adminExecutor.execute(Request.Post(collectionTmpUri).bodyString("{_id:{\"$oid\":\"" + _id + "\"}, a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
         check("check put created doc with wrong etag", response, HttpStatus.SC_PRECONDITION_FAILED);
@@ -99,12 +100,12 @@ public class PostCollectionIT extends HttpClientAbstactIT {
         // try to post with correct etag
         response = adminExecutor.execute(Request.Post(collectionTmpUri).bodyString("{_id:{\"$oid\":\"" + _id + "\"}, a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, _etag));
         check("check post created doc with correct etag", response, HttpStatus.SC_OK);
-        
+
         // try to post with _id without etag
         response = adminExecutor.execute(Request.Post(collectionTmpUri).bodyString("{_id:{\"$oid\":\"" + _id + "\"}, a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check post created doc without etag", response, HttpStatus.SC_OK);
     }
-    
+
     @Before
     public void createTestData() throws Exception {
         // create test db
@@ -195,20 +196,20 @@ public class PostCollectionIT extends HttpClientAbstactIT {
                 && element.asString().equals("a"));
 
         JsonValue count = rbody.asObject().get("count");
-        
+
         Assert.assertTrue("check count property to be 100",
                 count != null
                 && count.isNumber()
                 && count.asInt() == 100);
-        
+
         JsonValue timestamp = rbody.asObject().get("timestamp");
-        
+
         Assert.assertTrue("check timestamp to be an object",
                 timestamp != null
                 && timestamp.isObject());
-        
+
         JsonValue $date = timestamp.asObject().get("$date");
-        
+
         Assert.assertTrue("check $date to be numeric",
                 $date != null
                 && $date.isNumber());

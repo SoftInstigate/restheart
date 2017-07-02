@@ -17,7 +17,6 @@
  */
 package org.restheart.utils;
 
-import org.restheart.hal.UnsupportedDocumentIdException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import org.bson.BsonDouble;
@@ -28,14 +27,15 @@ import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.junit.After;
 import org.junit.AfterClass;
+import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Test;
-import static org.junit.Assert.*;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.handlers.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,8 +45,16 @@ import org.slf4j.LoggerFactory;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class URLUtilsTest {
+
     private static final Logger LOG = LoggerFactory.getLogger(URLUtilsTest.class);
 
+    @BeforeClass
+    public static void setUpClass() {
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+    }
     @Rule
     public TestRule watcher = new TestWatcher() {
         @Override
@@ -56,14 +64,6 @@ public class URLUtilsTest {
     };
 
     public URLUtilsTest() {
-    }
-
-    @BeforeClass
-    public static void setUpClass() {
-    }
-
-    @AfterClass
-    public static void tearDownClass() {
     }
 
     @Before
@@ -178,7 +178,7 @@ public class URLUtilsTest {
             new BsonInt32(1),
             new BsonDouble(20.0d),
             new BsonString("id")};
-        
+
         RequestContext context = prepareRequestContext();
         String expResult = "/dbName/collName?filter={'_id':{'$in':[1,20.0,'id']}}";
         String result;

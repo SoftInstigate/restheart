@@ -21,8 +21,6 @@ import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import com.mongodb.MongoClient;
-import org.restheart.Configuration;
-import org.restheart.db.MongoDBClientSingleton;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -39,6 +37,8 @@ import org.junit.Rule;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.restheart.Configuration;
+import org.restheart.db.MongoDBClientSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public abstract class AbstactIT {
+
     protected static final Logger LOG = LoggerFactory.getLogger(AbstactIT.class);
 
     protected static final String MONGO_HOST = System.getenv("MONGO_HOST") == null ? "127.0.0.1" : System.getenv("MONGO_HOST");
@@ -66,14 +67,6 @@ public abstract class AbstactIT {
 
     protected static String BASE_URL;
 
-    @Rule
-    public TestRule watcher = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            LOG.info("executing test {}", description.toString());
-        }
-    };
-
     @BeforeClass
     public static void setUpClass() throws Exception {
         conf = new Configuration(CONF_FILE_PATH);
@@ -87,9 +80,6 @@ public abstract class AbstactIT {
 
     @AfterClass
     public static void tearDownClass() {
-    }
-
-    public AbstactIT() {
     }
 
     protected static String getResourceFile(String resourcePath) throws IOException, URISyntaxException {
@@ -110,6 +100,44 @@ public abstract class AbstactIT {
         });
 
         return result.toString();
+    }
+
+    /**
+     * returns the url composed of the parts note the db anem will be prefixed
+     * with TEST_DB_PREFIX and thus deleted after test execution
+     *
+     * @param dbname
+     * @param parts
+     * @return
+     */
+    protected static String url(String dbname, String... parts) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(BASE_URL);
+
+        if (dbname != null) {
+            sb.append("/")
+                    .append(TEST_DB_PREFIX)
+                    .append(dbname);
+
+            if (parts != null) {
+                for (String part : parts) {
+                    sb.append("/").append(part);
+                }
+            }
+        }
+
+        return sb.toString();
+    }
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+        @Override
+        protected void starting(Description description) {
+            LOG.info("executing test {}", description.toString());
+        }
+    };
+
+    public AbstactIT() {
     }
 
     @After
@@ -155,31 +183,4 @@ public abstract class AbstactIT {
         }
     }
 
-    /**
-     * returns the url composed of the parts note the db anem will be prefixed
-     * with TEST_DB_PREFIX and thus deleted after test execution
-     *
-     * @param dbname
-     * @param parts
-     * @return
-     */
-    protected static String url(String dbname, String... parts) {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(BASE_URL);
-
-        if (dbname != null) {
-            sb.append("/")
-                    .append(TEST_DB_PREFIX)
-                    .append(dbname);
-
-            if (parts != null) {
-                for (String part : parts) {
-                    sb.append("/").append(part);
-                }
-            }
-        }
-
-        return sb.toString();
-    }
 }

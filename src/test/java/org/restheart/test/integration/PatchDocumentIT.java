@@ -22,9 +22,6 @@ import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
-import org.restheart.hal.Representation;
-import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
-import org.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
@@ -32,15 +29,19 @@ import org.junit.Assert;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
+import org.restheart.hal.Representation;
+import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PatchDocumentIT extends HttpClientAbstactIT {
+
     private final String DB = "test-patch-document-db";
     private final String COLL = "coll";
-    
+
     private HttpResponse resp;
 
     public PatchDocumentIT() {
@@ -73,7 +74,7 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
         // try to patch without etag no checkEtag
         resp = adminExecutor.execute(Request.Patch(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check patch tmp doc without etag", resp, HttpStatus.SC_OK);
-        
+
         // try to patch with wrong etag
         resp = adminExecutor.execute(Request.Patch(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
         check("check patch tmp doc with wrong etag", resp, HttpStatus.SC_PRECONDITION_FAILED);
@@ -95,7 +96,7 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
         assertNotNull("check patched content", content.get("b"));
         assertTrue("check patched content", content.get("a").asInt() == 1 && content.get("b").asInt() == 2);
     }
-    
+
     @Before
     public void createTestData() throws Exception {
         // create test db
@@ -112,7 +113,7 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
 
         Assert.assertEquals("create collection " + DB.concat("/").concat(COLL), org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
     }
-    
+
     @Test
     public void testPatchDocumentDotNotation() throws Exception {
         resp = Unirest.put(url(DB, COLL, "docid1"))
@@ -130,21 +131,21 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
                 .asString();
 
         Assert.assertEquals("check response status of update test data", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
-        
+
         resp = Unirest.get(url(DB, COLL, "docid1"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
         Assert.assertEquals("check response status of get test data", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
-        
+
         JsonValue rbody = Json.parse(resp.getBody().toString());
 
         Assert.assertTrue("check data to be a json object",
                 rbody != null
                 && rbody.isObject());
-        
+
         JsonValue doc = rbody.asObject().get("doc");
-        
+
         Assert.assertTrue("check data to have the 'doc' json object",
                 doc != null
                 && doc.isObject());
@@ -155,7 +156,7 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
                 number != null
                 && number.isNumber()
                 && number.asInt() == 1);
-        
+
         JsonValue array = rbody.asObject().get("array");
 
         Assert.assertTrue("check data to have the 'array' json array",
@@ -167,15 +168,15 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
         Assert.assertTrue("check array to have an object element",
                 element != null
                 && element.isObject());
-        
+
         JsonValue string = element.asObject().get("string");
-        
+
         Assert.assertTrue("check the array element to have the 'string' property",
                 string != null
                 && string.isString()
-                        && string.asString().equals("ciao"));
+                && string.asString().equals("ciao"));
     }
-    
+
     @Test
     public void testPatchDocumentOperators() throws Exception {
         resp = Unirest.put(url(DB, COLL, "docid2"))
@@ -183,9 +184,9 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
                 .header("content-type", "application/json")
                 .body("{ }")
                 .asString();
-        
+
         Assert.assertEquals("check response status of create test data", org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
-        
+
         resp = Unirest.patch(url(DB, COLL, "docid2"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
@@ -221,20 +222,20 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
                 && element.asString().equals("a"));
 
         JsonValue count = rbody.asObject().get("count");
-        
+
         Assert.assertTrue("check count property to be 100",
                 count != null
                 && count.isNumber()
                 && count.asInt() == 100);
-        
+
         JsonValue timestamp = rbody.asObject().get("timestamp");
-        
+
         Assert.assertTrue("check timestamp to be an object",
                 timestamp != null
                 && timestamp.isObject());
-        
+
         JsonValue $date = timestamp.asObject().get("$date");
-        
+
         Assert.assertTrue("check $date to be numeric",
                 $date != null
                 && $date.isNumber());

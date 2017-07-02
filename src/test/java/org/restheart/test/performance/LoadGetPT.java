@@ -31,8 +31,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.client.MongoCollection;
-import org.restheart.db.CursorPool;
-import org.restheart.utils.HttpStatus;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -55,8 +53,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import org.restheart.db.CursorPool;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
@@ -71,15 +71,12 @@ public class LoadGetPT extends AbstractPT {
     private int pagesize = 5;
     private String eager;
 
-
-    private final ConcurrentHashMap<Long, Integer> threadPages 
+    private final ConcurrentHashMap<Long, Integer> threadPages
             = new ConcurrentHashMap<>();
 
     /**
      *
-     * arguments passed via 
-     * *
-     * @throws IOException
+     * arguments passed via * @throws IOException
      */
     public void get() throws IOException {
         URLConnection connection = new URL(url).openConnection();
@@ -92,7 +89,6 @@ public class LoadGetPT extends AbstractPT {
 
             while (data != null) {
                 if (printData) {
-                    System.out.println(data);
                 }
 
                 data = in.readLine();
@@ -108,35 +104,33 @@ public class LoadGetPT extends AbstractPT {
         MongoCollection dbcoll = dbsDAO.getCollection(db, coll);
 
         ArrayList<BsonDocument> data;
-        
+
         try {
-            data = new DbsDAO().getCollectionData(dbcoll, 
-                    page, 
-                    pagesize, 
-                    null, 
-                    BsonDocument.parse(filter), 
-                    null, 
+            data = new DbsDAO().getCollectionData(dbcoll,
+                    page,
+                    pagesize,
+                    null,
+                    BsonDocument.parse(filter),
+                    null,
                     CursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE);
-        } catch(Exception e) {
-            System.out.println("error: " + e.getMessage());
+        } catch (Exception e) {
             return;
         }
-        
+
         assertNotNull(data);
         assertFalse(data.isEmpty());
 
         if (printData) {
-            System.out.println(data);
         }
     }
-    
-     /**
+
+    /**
      *
      */
     public void dbdirectdoc() {
         final Database dbDao = new DbsDAO();
         DBCollection dbcoll = dbDao.getCollectionLegacy(db, coll);
-        
+
         ObjectId oid;
         String sid;
 
@@ -158,18 +152,16 @@ public class LoadGetPT extends AbstractPT {
         }
 
         DBObject data;
-        
+
         try {
             data = dbcoll.findOne(query);
-        } catch(Exception e) {
-            System.out.println("error: " + e.getMessage());
+        } catch (Exception e) {
             return;
         }
-        
+
         assertNotNull(data);
 
         if (printData) {
-            System.out.println(data);
         }
     }
 
@@ -182,13 +174,13 @@ public class LoadGetPT extends AbstractPT {
         }
 
         String pagedUrl;
-        
+
         if (url.contains("?")) {
             pagedUrl = url + "&page=" + (_page);
         } else {
             pagedUrl = url + "?page=" + (_page);
         }
-        
+
         if (getEager() != null) {
             pagedUrl = pagedUrl + "&eager=" + getEager();
         }
@@ -197,7 +189,6 @@ public class LoadGetPT extends AbstractPT {
         threadPages.put(Thread.currentThread().getId(), _page);
 
         if (printData) {
-            System.out.println(Thread.currentThread().getId() + " -> " + pagedUrl);
         }
 
         Response resp = httpExecutor.execute(Request.Get(new URI(pagedUrl)));
@@ -210,7 +201,7 @@ public class LoadGetPT extends AbstractPT {
         assertNotNull(statusLine);
 
         assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
-        
+
         String content = EntityUtils.toString(entity);
 
         assertNotNull("", content);
@@ -225,19 +216,11 @@ public class LoadGetPT extends AbstractPT {
 
         assertNotNull("check json not null", json);
         assertNotNull("check not null _returned property", json.get("_returned"));
-        
-        System.out.println(
-                Thread.currentThread()
-                        .getId() 
-                        + " -> " 
-                        + _page 
-                        + " -> " 
-                        + json.get("_returned").asInt());
-        
+
         if (json.get("_returned").asInt() == 0) {
             System.exit(-1);
         }
-        
+
         //assertTrue("check _size > 0", json.get("_returned").asInt() > 0);
     }
 
@@ -246,7 +229,7 @@ public class LoadGetPT extends AbstractPT {
         long rpage = Math.round(Math.random() * 10000);
 
         String pagedUrl;
-        
+
         if (url.contains("?")) {
             pagedUrl = url + "&page=" + (rpage);
         } else {
@@ -264,12 +247,10 @@ public class LoadGetPT extends AbstractPT {
         assertNotNull(statusLine);
 
         assertEquals(
-                "check status code", 
-                HttpStatus.SC_OK, 
+                "check status code",
+                HttpStatus.SC_OK,
                 statusLine.getStatusCode());
     }
-
-    
 
     /**
      * @param printData the printData to set
@@ -327,3 +308,12 @@ public class LoadGetPT extends AbstractPT {
         this.eager = eager;
     }
 }
+/**
+ * install ldt from https://github.com/bazhenov/load-test-tool run it from
+ * target/class directory (current directory is added to classpath) as follows:
+ * <PATH_TO_ldt-assembly-1.1>/bin/ldt.sh -z
+ * org.restheart.test.performance.LoadGetPT#get -c 20 -n 500 -w 5 -p
+ * "url=http://127.0.0.1:8080/testdb/testcoll?page=10&pagesize=5,id=a,pwd=a"
+ *
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ */
