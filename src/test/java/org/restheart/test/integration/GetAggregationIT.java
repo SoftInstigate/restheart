@@ -21,10 +21,7 @@ import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import io.undertow.util.Headers;
 import java.io.IOException;
-import org.restheart.hal.Representation;
-import org.restheart.utils.HttpStatus;
 import java.net.URI;
-import static org.junit.Assert.*;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -33,14 +30,18 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
+import static org.junit.Assert.*;
 import org.junit.Test;
+import org.restheart.hal.Representation;
 import org.restheart.handlers.RequestContext;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
+import org.restheart.utils.HttpStatus;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GetAggregationIT extends HttpClientAbstactIT {
+
     public GetAggregationIT() {
     }
 
@@ -59,12 +60,12 @@ public class GetAggregationIT extends HttpClientAbstactIT {
                 + "{\"_id\": \"$name\", \"value\": {\"$avg\": \"$age\"} }}"
                 + "]"
                 + "}]}";
-        
+
         createTmpCollection();
         createMetadataAndTestData(aggregationsMetadata);
         _testGetAggregation(uri);
     }
-    
+
     @Test
     public void testGetAggregationPipelineDotNotation() throws Exception {
         String uri = "avg_ages";
@@ -98,7 +99,7 @@ public class GetAggregationIT extends HttpClientAbstactIT {
                 + "\"reduce\":\"function(key, values) { return Array.avg(values); }\"" + ","
                 + "\"query\":{\"name\":{\"$exists\":true}}"
                 + "}]}";
-        
+
         createTmpCollection();
         createMetadataAndTestData(aggregationsMetadata);
         _testGetAggregation(uri);
@@ -300,7 +301,7 @@ public class GetAggregationIT extends HttpClientAbstactIT {
         } catch (Throwable t) {
             fail("parsing received json");
         }
-        
+
         assertNotNull("check not null json response", json);
         assertNotNull("check not null _embedded", json.get("_embedded"));
         assertTrue("check _embedded", json.get("_embedded").isObject());

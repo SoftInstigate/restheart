@@ -19,26 +19,27 @@ package org.restheart.test.integration;
 
 import com.eclipsesource.json.JsonObject;
 import io.undertow.util.Headers;
-import org.restheart.hal.Representation;
-import org.restheart.utils.HttpStatus;
 import java.net.URI;
 import org.apache.http.Header;
-import static org.junit.Assert.*;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.message.BasicNameValuePair;
+import static org.junit.Assert.*;
 import org.junit.Test;
+import org.restheart.hal.Representation;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
+import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import static org.restheart.test.integration.HttpClientAbstactIT.collectionTmpUri;
-import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
+import org.restheart.utils.HttpStatus;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class DocIdTypeIT extends HttpClientAbstactIT {
+
     public DocIdTypeIT() {
         super();
     }
@@ -77,7 +78,7 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         String location = locationH.getValue();
 
         assertTrue("check location header value", location.endsWith("/100?id_type=NUMBER"));
-        
+
         URI createdDocUri = URI.create(location);
 
         Response resp4 = adminExecutor.execute(Request.Get(createdDocUri)

@@ -18,14 +18,14 @@
 package org.restheart.test.integration;
 
 import com.eclipsesource.json.JsonObject;
-import org.restheart.hal.Representation;
-import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
-import org.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import static org.junit.Assert.*;
 import org.junit.Test;
+import org.restheart.hal.Representation;
+import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
@@ -51,7 +51,7 @@ public class PatchDBIT extends HttpClientAbstactIT {
         // try to patch without etag
         resp = adminExecutor.execute(Request.Patch(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check patch tmp db without etag", resp, HttpStatus.SC_OK);
-        
+
         // try to patch with wrong etag
         resp = adminExecutor.execute(Request.Patch(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
         check("check patch tmp db with wrong etag", resp, HttpStatus.SC_PRECONDITION_FAILED);

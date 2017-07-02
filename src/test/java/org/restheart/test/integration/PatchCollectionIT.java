@@ -18,14 +18,14 @@
 package org.restheart.test.integration;
 
 import com.eclipsesource.json.JsonObject;
-import org.restheart.hal.Representation;
-import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
-import org.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import static org.junit.Assert.*;
 import org.junit.Test;
+import org.restheart.hal.Representation;
+import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
@@ -55,7 +55,7 @@ public class PatchCollectionIT extends HttpClientAbstactIT {
         // try to patch without etag forcing etag check
         resp = adminExecutor.execute(Request.Patch(addCheckEtag(collectionTmpUri)).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check patch tmp doc without etag forcing checkEtag", resp, HttpStatus.SC_CONFLICT);
-        
+
         // try to patch without etag without etag check
         resp = adminExecutor.execute(Request.Patch(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check patch tmp doc without etag", resp, HttpStatus.SC_OK);
@@ -86,6 +86,6 @@ public class PatchCollectionIT extends HttpClientAbstactIT {
         resp = adminExecutor.execute(Request.Patch(collectionTmpUri).bodyString("{'_embedded':'a', 'a': 1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
         content = JsonObject.readFrom(resp.returnContent().asString());
         assertNotNull("check patched content", content.get("_embedded").asObject().get("rh:warnings").asArray());
-        
+
     }
 }

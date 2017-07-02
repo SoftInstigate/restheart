@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class CollectionPropsInjectorHandlerTest {
+
     private static final Logger LOG = LoggerFactory.getLogger(CollectionPropsInjectorHandlerTest.class);
 
     @Rule

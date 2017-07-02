@@ -17,12 +17,10 @@
  */
 package org.restheart.test.integration;
 
-import org.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPInputStream;
-import static org.junit.Assert.*;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -33,8 +31,10 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
@@ -44,12 +44,12 @@ public class ContentEncodingIT extends HttpClientAbstactIT {
 
     protected static Executor notDecompressingExecutor = null;
 
-    public ContentEncodingIT() {
-    }
-
     @BeforeClass
     public static void init() throws Exception {
         notDecompressingExecutor = Executor.newInstance(HttpClients.custom().disableContentCompression().build()).authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "admin", "changeit");
+    }
+
+    public ContentEncodingIT() {
     }
 
     @Test

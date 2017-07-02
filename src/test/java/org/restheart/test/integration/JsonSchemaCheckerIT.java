@@ -33,6 +33,7 @@ import org.junit.Test;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class JsonSchemaCheckerIT extends AbstactIT {
+
     private final String DB = "test-jsonschema-db";
     private final String COLL_BASIC = "coll_basic";
     private final String COLL_CHILD = "coll_child";
@@ -120,7 +121,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
                 && rbody.asObject().get("_returned").isNumber()
                 && rbody.asObject().get("_returned").asInt() == 3);
     }
-    
+
     @Test
     public void testGetSchama() throws Exception {
         resp = Unirest.get(url(DB, SCHEMA_STORE, "basic"))

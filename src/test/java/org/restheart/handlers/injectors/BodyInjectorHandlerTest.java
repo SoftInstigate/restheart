@@ -19,8 +19,8 @@ package org.restheart.handlers.injectors;
 
 import io.undertow.server.handlers.form.FormData;
 import org.bson.BsonDocument;
-import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Test;
 
 /**
  *

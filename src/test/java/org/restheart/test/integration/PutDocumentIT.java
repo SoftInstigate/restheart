@@ -22,9 +22,6 @@ import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
-import org.restheart.hal.Representation;
-import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
-import org.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
@@ -32,17 +29,21 @@ import org.junit.Assert;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
+import org.restheart.hal.Representation;
+import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PutDocumentIT extends HttpClientAbstactIT {
+
     private final String DB = "test-put-document-db";
     private final String COLL = "coll";
 
     private HttpResponse resp;
-    
+
     public PutDocumentIT() {
     }
 
@@ -182,20 +183,20 @@ public class PutDocumentIT extends HttpClientAbstactIT {
                 && element.asString().equals("a"));
 
         JsonValue count = rbody.asObject().get("count");
-        
+
         Assert.assertTrue("check count property to be 100",
                 count != null
                 && count.isNumber()
                 && count.asInt() == 100);
-        
+
         JsonValue timestamp = rbody.asObject().get("timestamp");
-        
+
         Assert.assertTrue("check timestamp to be an object",
                 timestamp != null
                 && timestamp.isObject());
-        
+
         JsonValue $date = timestamp.asObject().get("$date");
-        
+
         Assert.assertTrue("check $date to be numeric",
                 $date != null
                 && $date.isNumber());

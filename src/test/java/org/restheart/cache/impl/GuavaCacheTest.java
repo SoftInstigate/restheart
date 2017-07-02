@@ -18,8 +18,8 @@
 package org.restheart.cache.impl;
 
 import java.util.Optional;
-import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Test;
 import org.restheart.cache.Cache;
 
 /**
@@ -33,7 +33,6 @@ public class GuavaCacheTest {
 
     @Test
     public void testGet() {
-        System.out.println("get");
         Object key = "A";
         GuavaCache instance = new GuavaCache(100, Cache.EXPIRE_POLICY.AFTER_WRITE, 10000);
         instance.put(key, 1);
@@ -44,7 +43,6 @@ public class GuavaCacheTest {
 
     @Test
     public void getNonExistent() {
-        System.out.println("getNonExistent");
         GuavaCache instance = new GuavaCache(100, Cache.EXPIRE_POLICY.AFTER_WRITE, 10000);
         Optional<Integer> result = instance.get("A");
         assertNull(result);
@@ -52,7 +50,6 @@ public class GuavaCacheTest {
 
     @Test
     public void testPutNull() {
-        System.out.println("putNull");
         String key = "B";
         Object value = null;
         GuavaCache instance = new GuavaCache(100, Cache.EXPIRE_POLICY.AFTER_WRITE, 10000);
