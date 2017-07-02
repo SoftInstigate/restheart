@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public final class DbIdentityManager
+public class DbIdentityManager
         extends AbstractSimpleSecurityManager
         implements IdentityManager {
 

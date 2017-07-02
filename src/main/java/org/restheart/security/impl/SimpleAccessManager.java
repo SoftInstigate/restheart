@@ -37,7 +37,7 @@ import org.restheart.security.AccessManager;
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public final class SimpleAccessManager extends AbstractSimpleSecurityManager implements AccessManager {
+public class SimpleAccessManager extends AbstractSimpleSecurityManager implements AccessManager {
 
     private final HashMap<String, Set<Predicate>> acl = new HashMap<>();
 

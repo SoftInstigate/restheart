@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public final class RequestContext {
+public class RequestContext {
 
     private static final Logger LOGGER
             = LoggerFactory.getLogger(RequestContext.class);
@@ -101,7 +101,7 @@ public final class RequestContext {
     public static final String UNDERSCORE = "_";
     private static final String NUL = Character.toString('\0');
 
-    protected static METHOD selectRequestMethod(HttpString _method) {
+    static METHOD selectRequestMethod(HttpString _method) {
         METHOD method;
         if (Methods.GET.equals(_method)) {
             method = METHOD.GET;
@@ -121,7 +121,7 @@ public final class RequestContext {
         return method;
     }
 
-    protected static TYPE selectRequestType(String[] pathTokens) {
+    static TYPE selectRequestType(String[] pathTokens) {
         TYPE type;
         if (pathTokens.length < 2) {
             type = TYPE.ROOT;

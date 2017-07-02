@@ -30,7 +30,7 @@ import org.restheart.utils.JsonUtils;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public final class AggregationPipeline extends AbstractAggregationOperation {
+public class AggregationPipeline extends AbstractAggregationOperation {
 
     public static final String STAGES_ELEMENT_NAME = "stages";
     private final BsonArray stages;

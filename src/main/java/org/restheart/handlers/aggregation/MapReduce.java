@@ -28,7 +28,7 @@ import org.restheart.utils.JsonUtils;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public final class MapReduce extends AbstractAggregationOperation {
+public class MapReduce extends AbstractAggregationOperation {
 
     public static final String MAP_ELEMENT_NAME = "map";
     public static final String REDUCE_ELEMENT_NAME = "reduce";
