@@ -32,25 +32,13 @@ import org.restheart.db.DbsDAO;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class LocalCachesSingleton {
+
     private static final String SEPARATOR = "_@_@_";
     private static boolean initialized = false;
-
-    private final Database dbsDAO;
-
-    private LoadingCache<String, BsonDocument> dbPropsCache = null;
-    private LoadingCache<String, BsonDocument> collectionPropsCache = null;
 
     private static long ttl = 1_000;
     private static boolean enabled = false;
     private static final long MAX_CACHE_SIZE = 1_000;
-
-    /**
-     * Default ctor
-     */
-    private LocalCachesSingleton(DbsDAO dbsDAO) {
-        this.dbsDAO = dbsDAO;
-        setup();
-    }
 
     /**
      *
@@ -60,6 +48,32 @@ public class LocalCachesSingleton {
         ttl = conf.getLocalCacheTtl();
         enabled = conf.isLocalCacheEnabled();
         initialized = true;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public static LocalCachesSingleton getInstance() {
+        return LocalCachesSingletonHolder.INSTANCE;
+    }
+
+    /**
+     * @return the enabled
+     */
+    public static boolean isEnabled() {
+        return enabled;
+    }
+    private final Database dbsDAO;
+    private LoadingCache<String, BsonDocument> dbPropsCache = null;
+    private LoadingCache<String, BsonDocument> collectionPropsCache = null;
+
+    /**
+     * Default ctor
+     */
+    private LocalCachesSingleton(DbsDAO dbsDAO) {
+        this.dbsDAO = dbsDAO;
+        setup();
     }
 
     private void setup() {
@@ -81,22 +95,6 @@ public class LocalCachesSingleton {
                                         dbNameAndCollectionName[0],
                                         dbNameAndCollectionName[1]);
                     });
-        }
-    }
-
-    /**
-     *
-     * @return
-     */
-    public static LocalCachesSingleton getInstance() {
-        return LocalCachesSingletonHolder.INSTANCE;
-    }
-
-    private static class LocalCachesSingletonHolder {
-
-        private static final LocalCachesSingleton INSTANCE = new LocalCachesSingleton(new DbsDAO());
-
-        private LocalCachesSingletonHolder() {
         }
     }
 
@@ -197,10 +195,11 @@ public class LocalCachesSingleton {
         }
     }
 
-    /**
-     * @return the enabled
-     */
-    public static boolean isEnabled() {
-        return enabled;
+    private static class LocalCachesSingletonHolder {
+
+        private static final LocalCachesSingleton INSTANCE = new LocalCachesSingleton(new DbsDAO());
+
+        private LocalCachesSingletonHolder() {
+        }
     }
 }
