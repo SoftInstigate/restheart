@@ -20,30 +20,30 @@ package org.restheart.db;
 import com.mongodb.MongoCommandException;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.MongoCollection;
+import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
+import com.mongodb.client.model.UpdateOneModel;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
 import com.mongodb.client.result.UpdateResult;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonObjectId;
+import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
 import static org.restheart.utils.RequestHelper.UPDATE_OPERATORS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static com.mongodb.client.model.Filters.and;
-import com.mongodb.client.model.UpdateOneModel;
-import java.util.Optional;
-import java.util.function.Consumer;
-import org.bson.BsonArray;
-import org.bson.BsonDocument;
-import org.bson.BsonObjectId;
-import org.bson.BsonValue;
 
 /**
  *
@@ -69,8 +69,8 @@ public class DAOUtils {
             = new UpdateOptions()
                     .upsert(false);
 
-    private DAOUtils() {
-    }
+    private static final Bson IMPOSSIBLE_CONDITION
+            = eq("_etag", new ObjectId());
 
     /**
      *
@@ -107,9 +107,6 @@ public class DAOUtils {
                 replace,
                 false);
     }
-
-    private static final Bson IMPOSSIBLE_CONDITION
-            = eq("_etag", new ObjectId());
 
     /**
      *
@@ -189,10 +186,10 @@ public class DAOUtils {
         } else if (returnNew) {
             BsonDocument newDocument;
             try {
-             newDocument = coll.findOneAndUpdate(
-                    query,
-                    document,
-                    FAU_AFTER_UPSERT_OPS);
+                newDocument = coll.findOneAndUpdate(
+                        query,
+                        document,
+                        FAU_AFTER_UPSERT_OPS);
             } catch (MongoCommandException mce) {
                 if (mce.getErrorCode() == 11000 && filter != null) {
                     // DuplicateKey error
@@ -207,12 +204,12 @@ public class DAOUtils {
             return new OperationResult(-1, null, newDocument);
         } else {
             BsonDocument oldDocument;
-            
+
             try {
-             oldDocument = coll.findOneAndUpdate(
-                    query,
-                    document,
-                    FAU_UPSERT_OPS);
+                oldDocument = coll.findOneAndUpdate(
+                        query,
+                        document,
+                        FAU_UPSERT_OPS);
             } catch (MongoCommandException mce) {
                 if (mce.getErrorCode() == 11000 && filter != null) {
                     // DuplicateKey error
@@ -372,5 +369,8 @@ public class DAOUtils {
         }
 
         return ret;
+    }
+
+    private DAOUtils() {
     }
 }
