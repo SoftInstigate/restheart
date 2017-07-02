@@ -21,47 +21,64 @@ import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import java.io.*;
+import java.util.*;
+import java.util.function.Consumer;
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.*;
 import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
-import java.io.*;
-import java.util.*;
-import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Jason Brown
  *
- * I don't know how well this will work in other environments, I built it specifically for mine.
- * The principal name isn't consistent across different users within our DC, so I added support for
- * multiple suffixes to be added to the username.  In addition, we have 3 domain controllers.  I
- * added support to list them so I don't have to wait for changes to propogate across all DCs before
- * the new user can log in.  Simply add the "adim" section to security.yml and switch then change
- * restheart.yml to use org.restheart.security.impl.ADIdentityManager instead of DBIdentityManager
- * or SimpleFileIdentityManager.  This still uses the file based access manager, so you'll need to
- * choose which AD roles you want to map to Admin and/or other users.  The code will use the each
- * DC listed, in order (so list your most stable or closest DC first).  It will use each suffix in
- * the principalNameSuffixes list in order as well, so list your most common one first.  It will
- * try all suffixes at one DC, before moving on to try all suffixes at the next DC.
- * <code>
-## Config for AD Identity Manager
-adim:
-    - domainControllers: ldap://eastdc.example.com
-      principalNameSuffixes: corp.example.com,example.com
-
+ * I don't know how well this will work in other environments, I built it
+ * specifically for mine. The principal name isn't consistent across different
+ * users within our DC, so I added support for multiple suffixes to be added to
+ * the username. In addition, we have 3 domain controllers. I added support to
+ * list them so I don't have to wait for changes to propogate across all DCs
+ * before the new user can log in. Simply add the "adim" section to security.yml
+ * and switch then change restheart.yml to use
+ * org.restheart.security.impl.ADIdentityManager instead of DBIdentityManager or
+ * SimpleFileIdentityManager. This still uses the file based access manager, so
+ * you'll need to choose which AD roles you want to map to Admin and/or other
+ * users. The code will use the each DC listed, in order (so list your most
+ * stable or closest DC first). It will use each suffix in the
+ * principalNameSuffixes list in order as well, so list your most common one
+ * first. It will try all suffixes at one DC, before moving on to try all
+ * suffixes at the next DC. * <code>
+ * ## Config for AD Identity Manager
+ * adim:
+ * - domainControllers: ldap://eastdc.example.com
+ * principalNameSuffixes: corp.example.com,example.com
+ *
  * </code>
  */
 public final class ADIdentityManager extends AbstractSimpleSecurityManager implements IdentityManager {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ADIdentityManager.class);
+
+    private static String toDCList(String domainName) {
+        StringBuilder sb = new StringBuilder();
+        for (String p : domainName.split("\\.")) {
+            if (p.length() > 0) {
+                if (sb.length() > 0) {
+                    sb.append(",");
+                }
+                sb.append("DC=").append(p);
+            }
+        }
+        return sb.toString();
+    }
 
     private String[] ldapURLs = null;
     private String[] principalNameSuffixes = null;
+
     /**
      *
      * @param arguments
@@ -101,7 +118,7 @@ public final class ADIdentityManager extends AbstractSimpleSecurityManager imple
 
     @Override
     public Account verify(String username, Credential credential) {
-        if (username == null || credential == null || !(credential instanceof PasswordCredential)){
+        if (username == null || credential == null || !(credential instanceof PasswordCredential)) {
             return null;
         }
         PasswordCredential pwc = (PasswordCredential) credential;
@@ -117,7 +134,7 @@ public final class ADIdentityManager extends AbstractSimpleSecurityManager imple
     }
 
     private Set<String> getRoles(String username, String password) throws NamingException {
-        if (password == null || password.trim().length() == 0 || username == null || username.trim().length() == 0){
+        if (password == null || password.trim().length() == 0 || username == null || username.trim().length() == 0) {
             return null;
         }
 
@@ -130,7 +147,6 @@ public final class ADIdentityManager extends AbstractSimpleSecurityManager imple
                 Hashtable props = new Hashtable();
                 props.put(Context.SECURITY_PRINCIPAL, principalName);
                 props.put(Context.SECURITY_CREDENTIALS, password);
-
 
                 props.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
                 props.put(Context.PROVIDER_URL, ldapURL);
@@ -149,26 +165,24 @@ public final class ADIdentityManager extends AbstractSimpleSecurityManager imple
         throw new NamingException("Failed to connect to any specified DC with any user/suffix combination");
     }
 
-    private Set<String> getRoles(LdapContext ldc, String principalName, String principalNameSuffix){
+    private Set<String> getRoles(LdapContext ldc, String principalName, String principalNameSuffix) {
         SearchControls sc = new SearchControls();
         sc.setSearchScope(SearchControls.SUBTREE_SCOPE);
         sc.setReturningAttributes(new String[]{"memberOf"});
         String searchString = "(&(objectClass=user)(userPrincipalName=" + principalName + "))";
-        try{
+        try {
             Set<String> roles = new HashSet<>();
             NamingEnumeration<SearchResult> results = ldc.search(toDCList(principalNameSuffix), searchString, sc);
-            if (results.hasMore()){
+            if (results.hasMore()) {
                 SearchResult res = results.next();
-                System.out.println("res.getName = " + res.getName());
                 Attributes attrs = res.getAttributes();
-                if (attrs != null){
+                if (attrs != null) {
                     NamingEnumeration attrEnum = attrs.getAll();
-                    while (attrEnum.hasMore()){
-                        Attribute attr = (Attribute)attrEnum.next();
-                        System.out.println("Attribute : " + attr.getID());
+                    while (attrEnum.hasMore()) {
+                        Attribute attr = (Attribute) attrEnum.next();
                         NamingEnumeration sa = attr.getAll();
-                        while (sa.hasMore()){
-                            String[] parts = ((String)sa.next()).split(",");
+                        while (sa.hasMore()) {
+                            String[] parts = ((String) sa.next()).split(",");
                             String[] kv = parts[0].split("=");
                             roles.add(kv[1]);
                         }
@@ -176,25 +190,10 @@ public final class ADIdentityManager extends AbstractSimpleSecurityManager imple
                 }
             }
             return roles;
-        }
-        catch(NamingException e){
+        } catch (NamingException e) {
             LOGGER.error("Failed to lookup groups for user " + principalName);
         }
         return null;
     }
 
-    private static String toDCList(String domainName)
-    {
-        StringBuilder sb = new StringBuilder();
-        for (String p : domainName.split("\\."))
-        {
-            if (p.length() > 0) {
-                if (sb.length() > 0) {
-                    sb.append(",");
-                }
-                sb.append("DC=").append(p);
-            }
-        }
-        return sb.toString();
-    }
 }

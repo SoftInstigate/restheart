@@ -43,7 +43,7 @@ abstract class AbstractSimpleSecurityManager {
     abstract Consumer<? super Map<String, Object>> consumeConfiguration();
 
     @SuppressWarnings("unchecked")
-    final void init(Map<String, Object> arguments, String type) throws FileNotFoundException {
+    void init(Map<String, Object> arguments, String type) throws FileNotFoundException {
         InputStream is = null;
         try {
             final String confFilePath = extractConfigFilePath(arguments);
@@ -51,7 +51,7 @@ abstract class AbstractSimpleSecurityManager {
             final Map<String, Object> conf = (Map<String, Object>) new Yaml().load(is);
             List<Map<String, Object>> confItems = extractConfItems(conf, type);
             confItems.stream().forEach(consumeConfiguration());
-        } catch(FileNotFoundException fnfe) {
+        } catch (FileNotFoundException fnfe) {
             LOGGER.error("*** cannot find the file {} specified in the configuration.", extractConfigFilePath(arguments));
             LOGGER.error("*** note that the path must be either absolute or relative to the directory containing the RESTHeart jar file.");
             throw fnfe;
@@ -66,7 +66,7 @@ abstract class AbstractSimpleSecurityManager {
         }
     }
 
-    final String extractConfigFilePath(Map<String, Object> arguments) throws IllegalArgumentException {
+    String extractConfigFilePath(Map<String, Object> arguments) throws IllegalArgumentException {
         if (arguments == null) {
             throw new IllegalArgumentException("missing required arguments conf-file");
         }
@@ -85,7 +85,7 @@ abstract class AbstractSimpleSecurityManager {
     }
 
     @SuppressWarnings("unchecked")
-    final List<Map<String, Object>> extractConfItems(final Map<String, Object> conf, String type) throws IllegalArgumentException {
+    List<Map<String, Object>> extractConfItems(final Map<String, Object> conf, String type) throws IllegalArgumentException {
         Object _users = conf.get(type);
         if (_users == null || !(_users instanceof List)) {
             throw new IllegalArgumentException("wrong configuration file format. missing mandatory '" + type + "' section.");
