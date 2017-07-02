@@ -54,7 +54,6 @@ public class SkipTimeTest {
 
     //@Test
     public void testSkip() {
-        System.out.println("skipping cursor " + N + " times by " + REQUESTED_SKIPS + " documents");
 
         final Database dbsDAO = new DbsDAO();
         DBCollection coll = dbsDAO.getCollectionLegacy("test", "huge");
@@ -76,7 +75,6 @@ public class SkipTimeTest {
 
     //@Test
     public void testTwoSkips() {
-        System.out.println("skipping cursor that has been pre-skipped by " + POOL_SKIPS + " documents, " + N + " times by " + (REQUESTED_SKIPS - POOL_SKIPS) + " documents");
 
         final Database dbsDAO = new DbsDAO();
         DBCollection coll = dbsDAO.getCollectionLegacy("test", "huge");
@@ -89,7 +87,6 @@ public class SkipTimeTest {
             DBCursor cursor;
 
             if (REQUESTED_SKIPS - POOL_SKIPS <= Math.round(MIN_SKIP_DISTANCE_PERCENTAGE * REQUESTED_SKIPS)) {
-                System.out.print("\tpreskipping ");
                 cursor = coll.find().sort(new BasicDBObject("_id", -1)).skip(POOL_SKIPS);
                 cursor.hasNext(); // force skips
                 ACTUAL_POOL_SKIPS = POOL_SKIPS;
@@ -100,18 +97,13 @@ public class SkipTimeTest {
 
             long start = System.nanoTime();
 
-            System.out.print("\tskipping data with next() ");
-
             for (int cont2 = 0; cont2 < REQUESTED_SKIPS - ACTUAL_POOL_SKIPS; cont2++) {
                 cursor.next();
             }
 
             DBObject data = cursor.next();
-
             long end = System.nanoTime();
-
             tot = tot + end - start;
-
         }
 
     }
