@@ -30,10 +30,10 @@ import org.restheart.utils.JsonUtils;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class AggregationPipeline extends AbstractAggregationOperation {
-    private final BsonArray stages;
+public final class AggregationPipeline extends AbstractAggregationOperation {
 
     public static final String STAGES_ELEMENT_NAME = "stages";
+    private final BsonArray stages;
 
     /**
      * @param properties the json properties object. It must include the
@@ -95,7 +95,7 @@ public class AggregationPipeline extends AbstractAggregationOperation {
      * @param vars RequestContext.getAggregationVars()
      * @return the stages, with unescaped operators and bound variables
      * @throws org.restheart.handlers.metadata.InvalidMetadataException
-     * @throws org.restheart.metadata.hooks.QueryVariableNotBoundException
+     * @throws org.restheart.handlers.aggregation.QueryVariableNotBoundException
      */
     public List<BsonDocument> getResolvedStagesAsList(BsonDocument vars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
