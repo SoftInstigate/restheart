@@ -75,7 +75,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-        
+
         BsonValue _content = context.getContent();
 
         if (_content == null) {
@@ -92,7 +92,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-        
+
         BsonDocument content = _content.asDocument();
 
         if (content.containsKey("_id")
@@ -154,7 +154,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-        
+
         // handle the case of duplicate key error
         if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
             ResponseHelper.endExchangeWithMessage(
@@ -162,13 +162,13 @@ public class PostCollectionHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_CONFLICT,
                     "A duplicate key error occurred. "
-                            + "The posted data does not fulfill "
-                            + "an unique index constraint");
+                    + "The posted data does not fulfill "
+                    + "an unique index constraint");
 
             next(exchange, context);
             return;
         }
-        
+
         context.setResponseStatusCode(result.getHttpCode());
 
         // insert the Location handler for new documents
