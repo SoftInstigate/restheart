@@ -128,10 +128,9 @@ public abstract class AbstractAggregationOperation {
                 }
             });
         } else if (aVars.isArray()) {
-            aVars.asArray().getValues().stream().filter((el) -> (el.isDocument()
-                    || el.isArray())).forEachOrdered((el) -> {
-                checkAggregationVariables(el);
-            });
+            aVars.asArray().getValues().stream()
+                    .filter(el -> (el.isDocument() || el.isArray()))
+                    .forEachOrdered(AbstractAggregationOperation::checkAggregationVariables);
         }
     }
 
@@ -206,7 +205,7 @@ public abstract class AbstractAggregationOperation {
      * @return the json object where the variables ({"_$var": "var") are
      * replaced with the values defined in the avars URL query parameter
      * @throws org.restheart.handlers.metadata.InvalidMetadataException
-     * @throws org.restheart.metadata.hooks.QueryVariableNotBoundException
+     * @throws org.restheart.handlers.aggregation.QueryVariableNotBoundException
      */
     protected BsonValue bindAggregationVariables(
             BsonValue obj,
