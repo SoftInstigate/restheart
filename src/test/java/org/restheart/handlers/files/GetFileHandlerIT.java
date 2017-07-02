@@ -17,16 +17,16 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.util.EntityUtils;
 import org.bson.types.ObjectId;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.restheart.test.integration.HttpClientAbstactIT;
-import org.restheart.hal.Representation;
-import org.restheart.utils.HttpStatus;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.restheart.hal.Representation;
+import org.restheart.test.integration.HttpClientAbstactIT;
+import org.restheart.utils.HttpStatus;
 
 /**
  *

@@ -18,9 +18,6 @@
 package org.restheart.test.integration;
 
 import com.eclipsesource.json.JsonObject;
-import org.restheart.hal.Representation;
-import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
-import org.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -28,10 +25,13 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
-import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import org.junit.Test;
+import org.restheart.hal.Representation;
+import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
