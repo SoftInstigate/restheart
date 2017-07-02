@@ -17,20 +17,17 @@
  */
 package org.restheart.hal;
 
+import io.undertow.server.HttpServerExchange;
+import java.util.TreeMap;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.URLUtils;
-import io.undertow.server.HttpServerExchange;
-import java.util.TreeMap;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class HALUtils {
-
-    private HALUtils() {
-    }
 
     /**
      *
@@ -106,5 +103,8 @@ public class HALUtils {
         }
 
         return links;
+    }
+
+    private HALUtils() {
     }
 }
