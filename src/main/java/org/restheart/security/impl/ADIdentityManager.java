@@ -59,7 +59,7 @@ import org.slf4j.LoggerFactory;
  *
  * </code>
  */
-public final class ADIdentityManager extends AbstractSimpleSecurityManager implements IdentityManager {
+public class ADIdentityManager extends AbstractSimpleSecurityManager implements IdentityManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ADIdentityManager.class);
 
