@@ -34,24 +34,30 @@ import org.restheart.security.impl.AuthTokenIdentityManager;
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
-
- this extends the undertow BasicAuthenticationMechanism and authenticate the
- request using the AuthTokenIdentityManager.
- 
- if user already authenticated via a different mechanism, that a token is
- generated so that later calls can be use the token instead of the actual 
- password
+ *
+ * this extends the undertow BasicAuthenticationMechanism and authenticate the
+ * request using the AuthTokenIdentityManager.
+ *
+ * if user already authenticated via a different mechanism, that a token is
+ * generated so that later calls can be use the token instead of the actual
+ * password
  *
  */
 public class AuthTokenAuthenticationMechanism extends BasicAuthenticationMechanism {
-    private static final Charset UTF_8 = Charset.forName("UTF-8");
 
-    private final String mechanismName = "TOKEN";
+    private static final Charset UTF_8 = Charset.forName("UTF-8");
 
     private static final String BASIC_PREFIX = BASIC + " ";
     private static final int PREFIX_LENGTH = BASIC_PREFIX.length();
     private static final String COLON = ":";
-    
+
+    private static void clear(final char[] array) {
+        for (int i = 0; i < array.length; i++) {
+            array[i] = 0x00;
+        }
+    }
+    private final String mechanismName = "TOKEN";
+
     /**
      *
      * @param realmName
@@ -81,7 +87,7 @@ public class AuthTokenAuthenticationMechanism extends BasicAuthenticationMechani
 
                         // this is where the token cache comes into play
                         IdentityManager idm = AuthTokenIdentityManager.getInstance();
-                        
+
                         PasswordCredential credential = new PasswordCredential(password);
                         try {
                             final AuthenticationMechanismOutcome result;
@@ -105,7 +111,7 @@ public class AuthTokenAuthenticationMechanism extends BasicAuthenticationMechani
 
         return AuthenticationMechanismOutcome.NOT_ATTEMPTED;
     }
-    
+
     @Override
     public ChallengeResult sendChallenge(HttpServerExchange exchange, SecurityContext securityContext) {
         String authHeader = exchange.getRequestHeaders().getFirst(AUTHORIZATION);
@@ -116,10 +122,5 @@ public class AuthTokenAuthenticationMechanism extends BasicAuthenticationMechani
             return new ChallengeResult(true, UNAUTHORIZED);
         }
     }
-    
-    private static void clear(final char[] array) {
-        for (int i = 0; i < array.length; i++) {
-            array[i] = 0x00;
-        }
-    }
+
 }
