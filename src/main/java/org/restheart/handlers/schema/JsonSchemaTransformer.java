@@ -158,9 +158,7 @@ public class JsonSchemaTransformer implements Transformer {
 
                         if (docs.isArray()) {
                             docs.asArray().stream()
-                                    .filter(doc -> {
-                                        return doc.isDocument();
-                                    })
+                                    .filter(BsonValue::isDocument)
                                     .forEach((doc) -> {
                                         unescapeSchema(doc.asDocument());
                                     });

@@ -24,53 +24,55 @@ import org.bson.BsonValue;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.everit.json.schema.loader.SchemaLoader;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
+import org.restheart.handlers.RequestContext;
 import org.restheart.metadata.checkers.Checker;
 import org.restheart.metadata.checkers.CheckersUtils;
-import org.restheart.handlers.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  *
  * checks the schema of the schemas using json metaschema
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class JsonMetaSchemaChecker implements Checker {
+
     static final String JSON_METASCHEMA_FILENAME = "json-schema-draft-v4.json";
-    
-    static final Logger LOGGER =
-            LoggerFactory.getLogger(JsonMetaSchemaChecker.class);
+
+    static final Logger LOGGER
+            = LoggerFactory.getLogger(JsonMetaSchemaChecker.class);
 
     private static Schema schema;
 
     static {
-        try  {
+        try {
             InputStream jsonMetaschemaIS = JsonMetaSchemaChecker.class
                     .getClassLoader()
                     .getResourceAsStream(JSON_METASCHEMA_FILENAME);
 
-            JSONObject rawSchema = 
-                    new JSONObject(new JSONTokener(jsonMetaschemaIS));
-            
+            JSONObject rawSchema
+                    = new JSONObject(new JSONTokener(jsonMetaschemaIS));
+
             schema = SchemaLoader.load(rawSchema);
-        } catch (Throwable ex) {
+        } catch (JSONException ex) {
             LOGGER.error("error initializing", ex);
         }
     }
 
     @Override
     public boolean check(
-            HttpServerExchange exchange, 
-            RequestContext context, 
-            BsonDocument contentToCheck, 
+            HttpServerExchange exchange,
+            RequestContext context,
+            BsonDocument contentToCheck,
             BsonValue args) {
         if (contentToCheck == null) {
             return false;
         }
-        
+
         try {
             schema.validate(new JSONObject(contentToCheck.toString()));
         } catch (ValidationException ve) {
