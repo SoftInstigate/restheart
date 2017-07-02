@@ -43,6 +43,14 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
     private static final String FILE_BUCKET_DOES_NOT_EXIST = "File Bucket '%s' does not exist";
     private static final String SCHEMA_STORE_DOES_NOT_EXIST = "Schema Store does not exist";
 
+    public static boolean checkCollection(RequestContext context) {
+        return !(context.getType() == RequestContext.TYPE.COLLECTION && context.getMethod() == RequestContext.METHOD.PUT)
+                && !(context.getType() == RequestContext.TYPE.FILES_BUCKET && context.getMethod() == RequestContext.METHOD.PUT)
+                && !(context.getType() == RequestContext.TYPE.SCHEMA_STORE && context.getMethod() == RequestContext.METHOD.PUT)
+                && context.getType() != RequestContext.TYPE.ROOT
+                && context.getType() != RequestContext.TYPE.DB;
+    }
+
     /**
      * Creates a new instance of MetadataInjecterHandler
      *
@@ -64,7 +72,7 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-        
+
         String dbName = context.getDBName();
         String collName = context.getCollectionName();
 
@@ -98,18 +106,10 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
                 .handleRequest(exchange, context);
     }
 
-    public static boolean checkCollection(RequestContext context) {
-        return !(context.getType() == RequestContext.TYPE.COLLECTION && context.getMethod() == RequestContext.METHOD.PUT)
-                && !(context.getType() == RequestContext.TYPE.FILES_BUCKET && context.getMethod() == RequestContext.METHOD.PUT)
-                && !(context.getType() == RequestContext.TYPE.SCHEMA_STORE && context.getMethod() == RequestContext.METHOD.PUT)
-                && context.getType() != RequestContext.TYPE.ROOT
-                && context.getType() != RequestContext.TYPE.DB;
-    }
-
     protected void doesNotExists(RequestContext context, HttpServerExchange exchange) throws Exception {
         final String errMsg;
         final String resourceName = context.getCollectionName();
-        
+
         if (resourceName == null) {
             errMsg = RESOURCE_DOES_NOT_EXIST;
         } else if (resourceName.endsWith(RequestContext.FS_FILES_SUFFIX)) {
@@ -119,12 +119,12 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
         } else {
             errMsg = String.format(COLLECTION_DOES_NOT_EXIST, context.getCollectionName(), context.getMethod());
         }
-        
+
         LOGGER.debug(errMsg);
         ResponseHelper.endExchangeWithMessage(
-                exchange, 
-                context, 
-                HttpStatus.SC_NOT_FOUND, 
+                exchange,
+                context,
+                HttpStatus.SC_NOT_FOUND,
                 errMsg);
         next(exchange, context);
     }

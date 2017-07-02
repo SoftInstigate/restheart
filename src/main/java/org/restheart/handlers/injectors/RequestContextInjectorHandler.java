@@ -28,27 +28,27 @@ import org.bson.json.JsonParseException;
 import org.restheart.Bootstrapper;
 import org.restheart.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.hal.UnsupportedDocumentIdException;
-import org.restheart.handlers.aggregation.AggregationPipeline;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
+import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.FILTER_QPARAM_KEY;
+import org.restheart.handlers.RequestContext.HAL_MODE;
+import static org.restheart.handlers.RequestContext.HAL_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.KEYS_QPARAM_KEY;
+import org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.PAGESIZE_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.PAGE_QPARAM_KEY;
+import org.restheart.handlers.RequestContext.REPRESENTATION_FORMAT;
+import static org.restheart.handlers.RequestContext.SHARDKEY_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.SORT_BY_QPARAM_KEY;
-import static org.restheart.handlers.RequestContext.HAL_QPARAM_KEY;
-import static org.restheart.handlers.RequestContext.HAL_MODE;
+import static org.restheart.handlers.RequestContext.SORT_QPARAM_KEY;
+import org.restheart.handlers.RequestContext.TYPE;
+import org.restheart.handlers.aggregation.AggregationPipeline;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
-import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
-import org.restheart.handlers.RequestContext.METHOD;
-import org.restheart.handlers.RequestContext.REPRESENTATION_FORMAT;
-import org.restheart.handlers.RequestContext.TYPE;
-import static org.restheart.handlers.RequestContext.SHARDKEY_QPARAM_KEY;
-import static org.restheart.handlers.RequestContext.SORT_QPARAM_KEY;
 
 /**
  *
@@ -250,18 +250,18 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             }
 
             if (sort_by.stream()
-                    .anyMatch(s -> s.trim().equals("_last_updated_on") 
-                            || s.trim().equals("+_last_updated_on") 
-                            || s.trim().equals("-_last_updated_on"))) {
+                    .anyMatch(s -> s.trim().equals("_last_updated_on")
+                    || s.trim().equals("+_last_updated_on")
+                    || s.trim().equals("-_last_updated_on"))) {
                 rcontext.addWarning("unexepecting sorting; "
                         + "the _last_updated_on timestamp is generated "
                         + "from the _etag property if present");
             }
 
             if (sort_by.stream()
-                    .anyMatch(s -> s.trim().equals("_created_on") 
-                            || s.trim().equals("_created_on") 
-                            || s.trim().equals("_created_on"))) {
+                    .anyMatch(s -> s.trim().equals("_created_on")
+                    || s.trim().equals("_created_on")
+                    || s.trim().equals("_created_on"))) {
                 rcontext.addWarning("unexepecting sorting; "
                         + "the _created_on timestamp is generated "
                         + "from the _id property if it is an ObjectId");
@@ -429,7 +429,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 AggregationPipeline.checkAggregationVariables(qvars);
 
                 rcontext.setAggregationVars(qvars);
-            } catch (Throwable t) {
+            } catch (SecurityException t) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
                         rcontext,
