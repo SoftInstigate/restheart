@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestContext {
+public final class RequestContext {
 
     private static final Logger LOGGER
             = LoggerFactory.getLogger(RequestContext.class);
