@@ -23,13 +23,13 @@ import java.util.Objects;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.metadata.checkers.RequestChecker;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.RequestContext;
+import org.restheart.metadata.NamedSingletonsFactory;
 import org.restheart.metadata.checkers.Checker;
 import org.restheart.metadata.checkers.Checker.PHASE;
 import org.restheart.metadata.checkers.CheckersUtils;
-import org.restheart.metadata.NamedSingletonsFactory;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.metadata.checkers.RequestChecker;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
+
     static final Logger LOGGER
             = LoggerFactory.getLogger(BeforeWriteCheckMetadataHandler.class);
 
@@ -73,7 +74,6 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                         HttpStatus.SC_BAD_REQUEST,
                         "request check failed");
                 next(exchange, context);
-                return;
             }
         } else {
             next(exchange, context);
@@ -97,10 +97,10 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                     try {
                         NamedSingletonsFactory nsf = NamedSingletonsFactory
                                 .getInstance();
-                        
+
                         Checker _checker = (Checker) nsf
                                 .get(ROOT_KEY, checker.getName());
-                        
+
                         BsonDocument confArgs
                                 = nsf.getArgs(ROOT_KEY, checker.getName());
 

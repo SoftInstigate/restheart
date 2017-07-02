@@ -20,13 +20,13 @@ package org.restheart.handlers.metadata;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.BsonDocument;
-import org.restheart.metadata.hooks.HookMetadata;
-import org.restheart.metadata.NamedSingletonsFactory;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.metadata.NamedSingletonsFactory;
+import org.restheart.metadata.hooks.Hook;
+import org.restheart.metadata.hooks.HookMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.restheart.metadata.hooks.Hook;
 
 /**
  *
@@ -86,10 +86,10 @@ public class HookMetadataHandler extends PipedHttpHandler {
 
                         confArgs
                                 = nsf.getArgs("hooks", mdHook.getName());
-                    } catch (Throwable ex) {
+                    } catch (IllegalArgumentException ex) {
                         context.addWarning("error applying hook: "
                                 + ex.getMessage());
-                        
+
                         wh = null;
                         confArgs = null;
                     }
