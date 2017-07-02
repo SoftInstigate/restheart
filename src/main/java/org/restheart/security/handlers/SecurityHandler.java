@@ -33,22 +33,6 @@ import org.restheart.security.SilentBasicAuthenticationMechanism;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SecurityHandler extends PipedHttpHandler {
-    /**
-     *
-     * @param next
-     * @param identityManager
-     * @param accessManager
-     * @param challenging false if never challenge for authentication (don't
-     * sent the WWW-Authenticate response header)
-     */
-    public SecurityHandler(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager, final boolean challenging) {
-        super(getSecurityHandlerChain(next, identityManager, accessManager, challenging));
-    }
-
-    @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        next(exchange, context);
-    }
 
     private static PipedHttpHandler getSecurityHandlerChain(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager, final boolean challenging) {
         if (identityManager != null) {
@@ -67,4 +51,22 @@ public class SecurityHandler extends PipedHttpHandler {
             return next;
         }
     }
+
+    /**
+     *
+     * @param next
+     * @param identityManager
+     * @param accessManager
+     * @param challenging false if never challenge for authentication (don't
+     * sent the WWW-Authenticate response header)
+     */
+    public SecurityHandler(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager, final boolean challenging) {
+        super(getSecurityHandlerChain(next, identityManager, accessManager, challenging));
+    }
+
+    @Override
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        next(exchange, context);
+    }
+
 }
