@@ -20,9 +20,6 @@ package org.restheart.handlers.bulk;
 import com.mongodb.MongoBulkWriteException;
 import com.mongodb.bulk.BulkWriteError;
 import com.mongodb.bulk.BulkWriteResult;
-import org.restheart.hal.Representation;
-import org.restheart.handlers.IllegalQueryParamenterException;
-import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.BsonDocument;
@@ -31,6 +28,9 @@ import org.bson.BsonString;
 import org.restheart.db.BulkOperationResult;
 import org.restheart.hal.AbstractRepresentationFactory;
 import org.restheart.hal.Link;
+import org.restheart.hal.Representation;
+import org.restheart.handlers.IllegalQueryParamenterException;
+import org.restheart.handlers.RequestContext;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 
@@ -39,6 +39,7 @@ import org.restheart.utils.URLUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BulkResultRepresentationFactory extends AbstractRepresentationFactory {
+
     public BulkResultRepresentationFactory() {
     }
 
@@ -75,7 +76,7 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
 
         if (wr.wasAcknowledged()) {
             if (wr.getUpserts() != null) {
-                nrep.addProperty("inserted", 
+                nrep.addProperty("inserted",
                         new BsonInt32(wr.getUpserts().size()));
 
                 // add links to new, upserted documents
@@ -84,23 +85,23 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
                             nrep.addLink(
                                     new Link("rh:newdoc",
                                             URLUtils
-                                            .getReferenceLink(
-                                                    context,
-                                                    requestPath,
-                                                    update.getId())),
+                                                    .getReferenceLink(
+                                                            context,
+                                                            requestPath,
+                                                            update.getId())),
                                     true);
                         });
             }
 
-            nrep.addProperty("deleted", 
+            nrep.addProperty("deleted",
                     new BsonInt32(wr.getDeletedCount()));
 
             if (wr.isModifiedCountAvailable()) {
-                nrep.addProperty("modified", 
+                nrep.addProperty("modified",
                         new BsonInt32(wr.getModifiedCount()));
             }
 
-            nrep.addProperty("matched", 
+            nrep.addProperty("matched",
                     new BsonInt32(wr.getMatchedCount()));
 
             rep.addRepresentation("rh:result", nrep);
@@ -115,7 +116,7 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
 
         if (wr.wasAcknowledged()) {
             if (wr.getUpserts() != null) {
-                nrep.addProperty("inserted", 
+                nrep.addProperty("inserted",
                         new BsonInt32(wr.getUpserts().size()));
 
                 // add links to new, upserted documents
@@ -124,22 +125,22 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
                             nrep.addLink(
                                     new Link("rh:newdoc",
                                             URLUtils
-                                            .getReferenceLink(
-                                                    requestPath,
-                                                    update.getId())),
+                                                    .getReferenceLink(
+                                                            requestPath,
+                                                            update.getId())),
                                     true);
                         });
             }
 
-            nrep.addProperty("deleted", 
+            nrep.addProperty("deleted",
                     new BsonInt32(wr.getDeletedCount()));
 
             if (wr.isModifiedCountAvailable()) {
-                nrep.addProperty("modified", 
+                nrep.addProperty("modified",
                         new BsonInt32(wr.getModifiedCount()));
             }
 
-            nrep.addProperty("matched", 
+            nrep.addProperty("matched",
                     new BsonInt32(wr.getMatchedCount()));
 
             rep.addRepresentation("rh:result", nrep);
