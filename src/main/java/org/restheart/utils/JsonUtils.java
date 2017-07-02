@@ -569,7 +569,7 @@ public class JsonUtils {
         boolean in_singleline_comment = false;
         char string_opener = 'x'; // unused value, just something that makes compiler happy
 
-        StringBuilder out = new StringBuilder();
+        final StringBuilder out = new StringBuilder();
         for (int i = 0; i < jsonString.length(); i++) {
             // get next (c) and next-next character (cc)
 

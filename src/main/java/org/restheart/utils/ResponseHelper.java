@@ -37,6 +37,7 @@ import org.restheart.handlers.RequestContext;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ResponseHelper {
+
     /**
      *
      * @param exchange
@@ -71,7 +72,7 @@ public class ResponseHelper {
         String httpStatusText = HttpStatus.getStatusText(code);
 
         context.setInError(true);
-        
+
         context.setResponseContent(
                 getErrorJsonDocument(
                         exchange.getRequestPath(),

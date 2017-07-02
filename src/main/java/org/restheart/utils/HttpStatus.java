@@ -52,45 +52,6 @@ public class HttpStatus {
         new String[8]
     };
 
-    // --------------------------------------------------------- Public Methods
-    /**
-     * Get the reason phrase for a particular status code.
-     *
-     * This method always returns the English text as specified in the relevent
-     * RFCs and is not internationalized.
-     *
-     * @param statusCode the numeric status code
-     * @return the reason phrase associated with the given status code or null
-     * if the status code is not recognized.
-     *
-     * TODO: getStatusText should be called getReasonPhrase to match RFC
-     */
-    public static String getStatusText(int statusCode) {
-
-        if (statusCode < 0) {
-            throw new IllegalArgumentException("status code may not be negative");
-        }
-        int classIndex = statusCode / 100;
-        int codeIndex = statusCode - classIndex * 100;
-        if (classIndex < 1 || classIndex > (REASON_PHRASES.length - 1)
-                || codeIndex < 0 || codeIndex > (REASON_PHRASES[classIndex].length - 1)) {
-            return null;
-        }
-        return REASON_PHRASES[classIndex][codeIndex];
-    }
-
-    // -------------------------------------------------------- Private Methods
-    /**
-     * Store the given reason phrase, by status code.
-     *
-     * @param statusCode The status code to lookup
-     * @param reasonPhrase The reason phrase for this status code
-     */
-    private static void addStatusCodeMap(int statusCode, String reasonPhrase) {
-        int classIndex = statusCode / 100;
-        REASON_PHRASES[classIndex][statusCode - classIndex * 100] = reasonPhrase;
-    }
-
     // -------------------------------------------------------------- Constants
     // --- 1xx Informational ---
     /**
@@ -379,6 +340,45 @@ public class HttpStatus {
         addStatusCodeMap(SC_LOCKED, "Locked");
         addStatusCodeMap(SC_INSUFFICIENT_STORAGE, "Insufficient Storage");
         addStatusCodeMap(SC_FAILED_DEPENDENCY, "Failed Dependency");
+    }
+
+    // --------------------------------------------------------- Public Methods
+    /**
+     * Get the reason phrase for a particular status code.
+     *
+     * This method always returns the English text as specified in the relevent
+     * RFCs and is not internationalized.
+     *
+     * @param statusCode the numeric status code
+     * @return the reason phrase associated with the given status code or null
+     * if the status code is not recognized.
+     *
+     * TODO: getStatusText should be called getReasonPhrase to match RFC
+     */
+    public static String getStatusText(int statusCode) {
+
+        if (statusCode < 0) {
+            throw new IllegalArgumentException("status code may not be negative");
+        }
+        int classIndex = statusCode / 100;
+        int codeIndex = statusCode - classIndex * 100;
+        if (classIndex < 1 || classIndex > (REASON_PHRASES.length - 1)
+                || codeIndex < 0 || codeIndex > (REASON_PHRASES[classIndex].length - 1)) {
+            return null;
+        }
+        return REASON_PHRASES[classIndex][codeIndex];
+    }
+
+    // -------------------------------------------------------- Private Methods
+    /**
+     * Store the given reason phrase, by status code.
+     *
+     * @param statusCode The status code to lookup
+     * @param reasonPhrase The reason phrase for this status code
+     */
+    private static void addStatusCodeMap(int statusCode, String reasonPhrase) {
+        int classIndex = statusCode / 100;
+        REASON_PHRASES[classIndex][statusCode - classIndex * 100] = reasonPhrase;
     }
 
     private HttpStatus() {

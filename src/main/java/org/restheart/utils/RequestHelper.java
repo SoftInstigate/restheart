@@ -31,6 +31,7 @@ import org.bson.types.ObjectId;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestHelper {
+
     private static final String _UPDATE_OPERATORS[] = {
         "$inc", "$mul", "$rename", "$setOnInsert", "$set", "$unset", // Field Update Operators
         "$min", "$max", "$currentDate",
