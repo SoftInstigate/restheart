@@ -31,38 +31,45 @@ import org.restheart.cache.CacheFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public final class AuthTokenIdentityManager implements IdentityManager {
-    private final Cache<String, SimpleAccount> cachedAccounts;
-    
+public class AuthTokenIdentityManager implements IdentityManager {
+
     private static final long TTL = Bootstrapper.getConfiguration().getAuthTokenTtl();
-    private static final boolean enabled = Bootstrapper.getConfiguration().isAuthTokenEnabled();
-    
+    private static final boolean ENABLED = Bootstrapper.getConfiguration().isAuthTokenEnabled();
+
+    /**
+     *
+     * @return
+     */
+    public static AuthTokenIdentityManager getInstance() {
+        return SessionTokenIdentityManagerHolder.INSTANCE;
+    }
+    private final Cache<String, SimpleAccount> cachedAccounts;
+
     /**
      *
      * @param next
      */
     private AuthTokenIdentityManager() {
-        this.cachedAccounts = CacheFactory.createLocalCache(Long.MAX_VALUE, Cache.EXPIRE_POLICY.AFTER_READ, TTL*60*1_000);
+        this.cachedAccounts = CacheFactory.createLocalCache(Long.MAX_VALUE, Cache.EXPIRE_POLICY.AFTER_READ, TTL * 60 * 1_000);
     }
-
 
     @Override
     public Account verify(Account account) {
-        if (!enabled) {
+        if (!ENABLED) {
             return null;
         }
-        
+
         return account;
     }
 
     @Override
     public Account verify(String id, Credential credential) {
-         if (!enabled) {
-             return null;
+        if (!ENABLED) {
+            return null;
         }
-        
+
         final Optional<SimpleAccount> _account = cachedAccounts.get(id);
-        
+
         return _account != null && _account.isPresent() && verifyToken(_account.get(), credential) ? _account.get() : null;
     }
 
@@ -80,20 +87,13 @@ public final class AuthTokenIdentityManager implements IdentityManager {
         }
         return false;
     }
-    
+
     public Cache<String, SimpleAccount> getCachedAccounts() {
         return cachedAccounts;
     }
-    
-    /**
-     *
-     * @return
-     */
-    public static AuthTokenIdentityManager getInstance() {
-        return SessionTokenIdentityManagerHolder.INSTANCE;
-    }
 
     private static class SessionTokenIdentityManagerHolder {
+
         private static final AuthTokenIdentityManager INSTANCE = new AuthTokenIdentityManager();
 
         private SessionTokenIdentityManagerHolder() {

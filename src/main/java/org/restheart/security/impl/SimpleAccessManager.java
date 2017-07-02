@@ -38,6 +38,7 @@ import org.restheart.security.AccessManager;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public final class SimpleAccessManager extends AbstractSimpleSecurityManager implements AccessManager {
+
     private final HashMap<String, Set<Predicate>> acl = new HashMap<>();
 
     /**
@@ -90,18 +91,18 @@ public final class SimpleAccessManager extends AbstractSimpleSecurityManager imp
         // this fixes undertow bug 377
         // https://issues.jboss.org/browse/UNDERTOW-377
         if (exchange.getAttachment(PREDICATE_CONTEXT) == null) {
-            exchange.putAttachment(PREDICATE_CONTEXT, new TreeMap<String, Object>());
+            exchange.putAttachment(PREDICATE_CONTEXT, new TreeMap<>());
         }
-        
+
         return roles(exchange).anyMatch(role -> aclForRole(role).stream().anyMatch(p -> p.resolve(exchange)));
     }
-    
+
     @Override
     public boolean isAuthenticationRequired(final HttpServerExchange exchange) {
         if (getAcl() == null) {
             return true;
         }
-        
+
         Set<Predicate> ps = getAcl().get("$unauthenticated");
         return ps == null ? true : !ps.stream().anyMatch(p -> p.resolve(exchange));
     }

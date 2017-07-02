@@ -52,8 +52,23 @@ import org.slf4j.LoggerFactory;
 public final class DbIdentityManager
         extends AbstractSimpleSecurityManager
         implements IdentityManager {
+
     private static final Logger LOGGER
             = LoggerFactory.getLogger(DbIdentityManager.class);
+
+    static boolean checkPassword(boolean hashed, char[] password, char[] expected) {
+        if (hashed) {
+            try {
+                return BCrypt.checkpw(
+                        new String(password),
+                        new String(expected));
+            } catch (Throwable t) {
+                return false;
+            }
+        } else {
+            return Arrays.equals(password, expected);
+        }
+    }
 
     private MongoCollection<BsonDocument> mongoColl;
 
@@ -220,7 +235,7 @@ public final class DbIdentityManager
 
             if (_cacheSize != null) {
                 if (_cacheSize instanceof Integer) {
-                    this.cacheSize = ((Integer) _cacheSize).longValue();
+                    this.cacheSize = ((Number) _cacheSize).longValue();
                 } else {
                     this.cacheSize = (Long) _cacheSize;
                 }
@@ -228,7 +243,7 @@ public final class DbIdentityManager
 
             if (_cacheTTL != null) {
                 if (_cacheTTL instanceof Integer) {
-                    this.cacheTTL = ((Integer) _cacheTTL).longValue();
+                    this.cacheTTL = ((Number) _cacheTTL).longValue();
                 } else {
                     this.cacheTTL = (Long) _cacheTTL;
                 }
@@ -353,20 +368,6 @@ public final class DbIdentityManager
                     expected);
         }
         return false;
-    }
-
-    static boolean checkPassword(boolean hashed, char[] password, char[] expected) {
-        if (hashed) {
-            try {
-                return BCrypt.checkpw(
-                        new String(password),
-                        new String(expected));
-            } catch (Throwable t) {
-                return false;
-            }
-        } else {
-            return Arrays.equals(password, expected);
-        }
     }
 
     private SimpleAccount getAccount(String id) {
