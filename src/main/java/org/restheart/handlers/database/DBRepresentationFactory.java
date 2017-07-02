@@ -17,12 +17,6 @@
  */
 package org.restheart.handlers.database;
 
-import org.restheart.Configuration;
-import org.restheart.hal.Link;
-import org.restheart.hal.Representation;
-import org.restheart.handlers.IllegalQueryParamenterException;
-import org.restheart.handlers.RequestContext;
-import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import java.util.List;
@@ -31,11 +25,17 @@ import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
+import org.restheart.Configuration;
 import org.restheart.hal.AbstractRepresentationFactory;
+import org.restheart.hal.Link;
+import org.restheart.hal.Representation;
+import org.restheart.handlers.IllegalQueryParamenterException;
+import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.collection.CollectionRepresentationFactory;
-import org.slf4j.LoggerFactory;
+import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -43,17 +43,35 @@ import org.slf4j.Logger;
  */
 public class DBRepresentationFactory extends AbstractRepresentationFactory {
 
-    private static final Logger LOGGER = 
-            LoggerFactory.getLogger(DBRepresentationFactory.class);
+    private static final Logger LOGGER
+            = LoggerFactory.getLogger(DBRepresentationFactory.class);
+
+    public static void addSpecialProperties(
+            final Representation rep,
+            RequestContext.TYPE type,
+            BsonDocument data) {
+        rep.addProperty("_type", new BsonString(type.name()));
+
+        Object etag = data.get("_etag");
+
+        if (etag != null && etag instanceof ObjectId) {
+            if (data.get("_lastupdated_on") == null) {
+                // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
+                rep.addProperty("_lastupdated_on",
+                        new BsonString(Instant.ofEpochSecond(((ObjectId) etag)
+                                .getTimestamp()).toString()));
+            }
+        }
+    }
 
     public DBRepresentationFactory() {
     }
 
     @Override
     public Representation getRepresentation(
-            HttpServerExchange exchange, 
-            RequestContext context, 
-            List<BsonDocument> embeddedData, 
+            HttpServerExchange exchange,
+            RequestContext context,
+            List<BsonDocument> embeddedData,
             long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
@@ -82,7 +100,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
             addLinkTemplates(context, rep, requestPath);
 
             // curies
-            rep.addLink(new Link("rh", "curies", 
+            rep.addLink(new Link("rh", "curies",
                     Configuration.RESTHEART_ONLINE_DOC_URL
                     + "/{rel}.html", true), true);
         }
@@ -91,29 +109,11 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     private void addProperties(
-            final Representation rep, 
+            final Representation rep,
             RequestContext context) {
         final BsonDocument dbProps = context.getDbProps();
 
         rep.addProperties(dbProps);
-    }
-
-    public static void addSpecialProperties(
-            final Representation rep, 
-            RequestContext.TYPE type, 
-            BsonDocument data) {
-        rep.addProperty("_type", new BsonString(type.name()));
-
-        Object etag = data.get("_etag");
-
-        if (etag != null && etag instanceof ObjectId) {
-            if (data.get("_lastupdated_on") == null) {
-                // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
-                rep.addProperty("_lastupdated_on", 
-                        new BsonString(Instant.ofEpochSecond(((ObjectId) etag)
-                                .getTimestamp()).toString()));
-            }
-        }
     }
 
     private void addEmbeddedData(
@@ -153,14 +153,14 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
         }
 
         rep.addLink(new Link("rh:coll", requestPath + "/{collname}", true));
-        rep.addLink(new Link("rh:bucket", requestPath 
-                + "/{bucketname}" 
+        rep.addLink(new Link("rh:bucket", requestPath
+                + "/{bucketname}"
                 + RequestContext.FS_FILES_SUFFIX, true));
 
-        rep.addLink(new Link("rh:paging", requestPath 
+        rep.addLink(new Link("rh:paging", requestPath
                 + "{?page}{&pagesize}", true));
 
-        rep.addLink(new Link("rh", "curies", 
+        rep.addLink(new Link("rh", "curies",
                 Configuration.RESTHEART_ONLINE_DOC_URL
                 + "/{rel}.html", true), true);
     }

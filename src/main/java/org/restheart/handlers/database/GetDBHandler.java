@@ -17,15 +17,15 @@
  */
 package org.restheart.handlers.database;
 
-import org.restheart.utils.HttpStatus;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.hal.Representation;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.RequestContext;
+import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
 /**
@@ -64,7 +64,7 @@ public class GetDBHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-        
+
         List<String> colls = getDatabase()
                 .getCollectionNames(context.getDBName());
 
@@ -84,7 +84,7 @@ public class GetDBHandler extends PipedHttpHandler {
                         context,
                         data,
                         getDatabase()
-                        .getDBSize(colls))
+                                .getDBSize(colls))
                 .asBsonDocument());
 
         context.setResponseContentType(Representation.HAL_JSON_MEDIA_TYPE);
