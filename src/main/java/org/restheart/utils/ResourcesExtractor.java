@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ResourcesExtractor {
 
-    private static final Logger logger = LoggerFactory.getLogger(ResourcesExtractor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResourcesExtractor.class);
 
     /**
      *
@@ -81,7 +81,7 @@ public class ResourcesExtractor {
         //File jarFile = new File(ResourcesExtractor.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 
         if (Bootstrapper.class.getClassLoader().getResource(resourcePath) == null) {
-            logger.warn("no resource to extract from path  {}", resourcePath);
+            LOG.warn("no resource to extract from path  {}", resourcePath);
             throw new IllegalStateException("no resource to extract from path " + resourcePath);
         }
 
@@ -146,7 +146,7 @@ public class ResourcesExtractor {
                 boolean deleted = file.delete();
 
                 if (!deleted) {
-                    logger.warn("failted to delete directory " + file.getPath());
+                    LOG.warn("failted to delete directory " + file.getPath());
                 }
             } else {
                 //list all the directory contents
@@ -165,7 +165,7 @@ public class ResourcesExtractor {
                     boolean deleted = file.delete();
 
                     if (!deleted) {
-                        logger.warn("failted to delete file " + file.getPath());
+                        LOG.warn("failted to delete file " + file.getPath());
                     }
                 }
             }
@@ -175,7 +175,7 @@ public class ResourcesExtractor {
             boolean deleted = file.delete();
 
             if (!deleted) {
-                logger.warn("failted to delete file " + file.getPath());
+                LOG.warn("failted to delete file " + file.getPath());
             }
         }
     }

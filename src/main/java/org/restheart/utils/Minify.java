@@ -87,7 +87,6 @@ import java.nio.charset.StandardCharsets;
  * @see
  * <a href="http://www.crockford.com/javascript/jsmin.c">http://www.crockford.com/javascript/jsmin.c</a>
  */
-
 public class Minify {
 
     private static final int EOF = -1;
@@ -98,10 +97,6 @@ public class Minify {
     private int nextChar;
     private int line;
     private int column;
-
-    public static enum Action {
-        OUTPUT_CURR, DELETE_CURR, DELETE_NEXT
-    }
 
     public Minify() {
         this.in = null;
@@ -122,16 +117,19 @@ public class Minify {
      * string
      */
     public String minify(String json) {
-        InputStream in = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        InputStream ins = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
 
         try {
-            minify(in, out);
-        } catch (Exception e) {
+            minify(ins, bout);
+        } catch (IOException
+                | UnterminatedCommentException
+                | UnterminatedRegExpLiteralException
+                | UnterminatedStringLiteralException e) {
             return null;
         }
 
-        return out.toString().trim();
+        return bout.toString().trim();
     }
 
     /**
@@ -416,10 +414,15 @@ public class Minify {
         return c;
     }
 
+    public static enum Action {
+        OUTPUT_CURR, DELETE_CURR, DELETE_NEXT
+    }
+
     /**
      * Exception to be thrown when an unterminated comment appears in the input.
      */
     public static class UnterminatedCommentException extends Exception {
+
         public UnterminatedCommentException(int line, int column) {
             super("Unterminated comment at line " + line + " and column " + column);
         }
@@ -430,6 +433,7 @@ public class Minify {
      * input.
      */
     public static class UnterminatedStringLiteralException extends Exception {
+
         public UnterminatedStringLiteralException(int line, int column) {
             super("Unterminated string literal at line " + line + " and column " + column);
         }
@@ -440,6 +444,7 @@ public class Minify {
      * appears in the input.
      */
     public static class UnterminatedRegExpLiteralException extends Exception {
+
         public UnterminatedRegExpLiteralException(int line, int column) {
             super("Unterminated regular expression at line " + line + " and column " + column);
         }
