@@ -36,11 +36,21 @@ import org.restheart.utils.JsonUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SchemaStoreURL {
-    private final String schemaDb;
-    private final BsonValue schemaId;
 
     public static final String SCHEMA_STORE_URL_PREFIX
             = "http://schema-store/";
+
+    public static boolean isValid(String url) {
+        return url != null
+                && url.startsWith(SCHEMA_STORE_URL_PREFIX)
+                && count(url, "/") == 4;
+    }
+
+    private static int count(String s, String c) {
+        return s.length() - s.replace(c, "").length();
+    }
+    private final String schemaDb;
+    private final BsonValue schemaId;
 
     public SchemaStoreURL(String schemaDb, BsonValue schemaId) {
         Objects.requireNonNull(schemaDb);
@@ -92,13 +102,4 @@ public class SchemaStoreURL {
                 .concat("#");
     }
 
-    public static boolean isValid(String url) {
-        return url != null
-                && url.startsWith(SCHEMA_STORE_URL_PREFIX)
-                && count(url, "/") == 4;
-    }
-
-    private static int count(String s, String c) {
-        return s.length() - s.replace(c, "").length();
-    }
 }
