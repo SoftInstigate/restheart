@@ -22,10 +22,10 @@ import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.metadata.transformers.RepresentationTransformer;
-import org.restheart.metadata.NamedSingletonsFactory;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.metadata.NamedSingletonsFactory;
+import org.restheart.metadata.transformers.RepresentationTransformer;
 import org.restheart.metadata.transformers.Transformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
  */
 public class RequestTransformerMetadataHandler
         extends AbstractTransformerMetadataHandler {
+
     static final Logger LOGGER
             = LoggerFactory.getLogger(RequestTransformerMetadataHandler.class);
 
@@ -97,7 +98,7 @@ public class RequestTransformerMetadataHandler
 
             try {
                 NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
-                
+
                 t = (Transformer) nsf
                         .get("transformers", rt.getName());
 
@@ -144,57 +145,56 @@ public class RequestTransformerMetadataHandler
         List<RepresentationTransformer> collRts = RepresentationTransformer
                 .getFromJson(context.getCollectionProps());
 
-        for (RepresentationTransformer rt : collRts) {
-            if (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST) {
-                NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
-                
-                Transformer t = (Transformer) nsf
-                        .get("transformers", rt.getName());
+        collRts.stream().filter((rt) -> (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST))
+                .forEachOrdered((rt) -> {
+                    NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
 
-                BsonDocument confArgs
-                        = nsf.getArgs("transformers", rt.getName());
+                    Transformer t = (Transformer) nsf
+                            .get("transformers", rt.getName());
 
-                if (t == null) {
-                    throw new IllegalArgumentException("cannot find singleton "
-                            + rt.getName()
-                            + " in singleton group transformers");
-                }
+                    BsonDocument confArgs
+                            = nsf.getArgs("transformers", rt.getName());
 
-                BsonValue content = context.getContent();
+                    if (t == null) {
+                        throw new IllegalArgumentException("cannot find singleton "
+                                + rt.getName()
+                                + " in singleton group transformers");
+                    }
 
-                // content can be an array for bulk POST
-                if (content == null) {
-                    t.transform(
-                            exchange, 
-                            context, 
-                            new BsonDocument(), 
-                            rt.getArgs(),
-                            confArgs);
-                } else if (content.isDocument()) {
-                    t.transform(
-                            exchange, 
-                            context, 
-                            content.asDocument(),
-                            rt.getArgs(),
-                            confArgs);
-                } else if (content.isArray()) {
-                    BsonArray arrayContent = content.asArray();
+                    BsonValue content = context.getContent();
 
-                    arrayContent.stream().forEach(obj -> {
-                        if (obj.isDocument()) {
-                            t.transform(
-                            exchange, 
-                            context, 
-                            obj.asDocument(),
-                            rt.getArgs(),
-                            confArgs);
-                        } else {
-                            LOGGER.warn("an element of content array "
-                                    + "is not an object");
-                        }
-                    });
-                }
-            }
-        }
+                    // content can be an array for bulk POST
+                    if (content == null) {
+                        t.transform(
+                                exchange,
+                                context,
+                                new BsonDocument(),
+                                rt.getArgs(),
+                                confArgs);
+                    } else if (content.isDocument()) {
+                        t.transform(
+                                exchange,
+                                context,
+                                content.asDocument(),
+                                rt.getArgs(),
+                                confArgs);
+                    } else if (content.isArray()) {
+                        BsonArray arrayContent = content.asArray();
+
+                        arrayContent.stream().forEach(obj -> {
+                            if (obj.isDocument()) {
+                                t.transform(
+                                        exchange,
+                                        context,
+                                        obj.asDocument(),
+                                        rt.getArgs(),
+                                        confArgs);
+                            } else {
+                                LOGGER.warn("an element of content array "
+                                        + "is not an object");
+                            }
+                        });
+                    }
+                });
     }
 }
