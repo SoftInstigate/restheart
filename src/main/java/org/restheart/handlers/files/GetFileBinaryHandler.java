@@ -50,6 +50,10 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(GetFileBinaryHandler.class);
 
+    static String extractBucketName(final String collectionName) {
+        return collectionName.split("\\.")[0];
+    }
+
     /**
      * Creates a new instance of GetFileBinaryHandler
      *
@@ -67,6 +71,10 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
         super(next);
     }
 
+    GetFileBinaryHandler(Object object, Object object0) {
+        super(null, null);
+    }
+
     @Override
     public void handleRequest(
             HttpServerExchange exchange,
@@ -76,7 +84,7 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-        
+
         LOGGER.trace("GET " + exchange.getRequestURL());
         final String bucket = extractBucketName(context.getCollectionName());
 
@@ -193,11 +201,4 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
                 : dbsfile.getId().toString();
     }
 
-    static String extractBucketName(final String collectionName) {
-        return collectionName.split("\\.")[0];
-    }
-
-    GetFileBinaryHandler(Object object, Object object0) {
-        super(null, null);
-    }
 }
