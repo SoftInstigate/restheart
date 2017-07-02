@@ -29,9 +29,6 @@ import static org.restheart.utils.RequestHelper.UPDATE_OPERATORS;
  */
 public class CheckersUtils {
 
-    private CheckersUtils() {
-    }
-
     public static boolean isBulkRequest(RequestContext context) {
         return context.getType() == RequestContext.TYPE.BULK_DOCUMENTS
                 || context.getContent().isArray();
@@ -40,13 +37,13 @@ public class CheckersUtils {
     public static boolean doesRequestUsesUpdateOperators(BsonValue content) {
         if (content.isDocument()) {
             BsonDocument obj = content.asDocument();
-            
+
             return obj.keySet().stream().anyMatch(key -> {
                 return UPDATE_OPERATORS.contains(key);
             });
         } else if (content.isArray()) {
             BsonArray objs = content.asArray();
-            
+
             return objs.stream().allMatch(obj -> {
                 if (obj.isDocument()) {
                     return doesRequestUsesUpdateOperators(obj);
@@ -62,13 +59,13 @@ public class CheckersUtils {
     public static boolean doesRequestUsesDotNotation(BsonValue content) {
         if (content.isDocument()) {
             BsonDocument obj = content.asDocument();
-            
+
             return obj.keySet().stream().anyMatch(key -> {
                 return key.contains(".");
             });
         } else if (content.isArray()) {
             BsonArray objs = content.asArray();
-            
+
             return objs.stream().anyMatch(obj -> {
                 if (obj.isDocument()) {
                     return doesRequestUsesDotNotation(obj);
@@ -79,5 +76,8 @@ public class CheckersUtils {
         } else {
             return true;
         }
+    }
+
+    private CheckersUtils() {
     }
 }
