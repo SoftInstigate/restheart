@@ -38,6 +38,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystems;
@@ -172,7 +173,7 @@ public class Bootstrapper {
                     d.init();
                     LOGGER.info("Forked process: {}", LIBC.getpid());
                     initLogging(args, d);
-                } catch (Throwable t) {
+                } catch (Exception t) {
                     logErrorAndExit("Error staring forked process", t, false, false, -1);
                 }
 
@@ -538,7 +539,11 @@ public class Bootstrapper {
             tmf.init(ks);
 
             sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-        } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException ex) {
+        } catch (KeyManagementException
+                | NoSuchAlgorithmException
+                | KeyStoreException
+                | CertificateException
+                | UnrecoverableKeyException ex) {
             logErrorAndExit("Couldn't start RESTHeart, error with specified keystore. exiting..", ex, false, -1);
         } catch (FileNotFoundException ex) {
             logErrorAndExit("Couldn't start RESTHeart, keystore file not found. exiting..", ex, false, -1);
@@ -612,7 +617,13 @@ public class Bootstrapper {
                         .getConstructor(Map.class)
                         .newInstance(configuration.getIdmArgs());
                 identityManager = (IdentityManager) idm;
-            } catch (Exception ex) {
+            } catch (ClassNotFoundException
+                    | IllegalAccessException
+                    | IllegalArgumentException
+                    | InstantiationException
+                    | NoSuchMethodException
+                    | SecurityException
+                    | InvocationTargetException ex) {
                 logErrorAndExit("Error configuring Identity Manager implementation " + configuration.getIdmImpl(), ex, false, -3);
             }
         }
@@ -636,7 +647,13 @@ public class Bootstrapper {
                         .getConstructor(Map.class)
                         .newInstance(configuration.getAmArgs());
                 accessManager = (AccessManager) am;
-            } catch (Exception ex) {
+            } catch (ClassNotFoundException
+                    | IllegalAccessException
+                    | IllegalArgumentException
+                    | InstantiationException
+                    | NoSuchMethodException
+                    | SecurityException
+                    | InvocationTargetException ex) {
                 logErrorAndExit("Error configuring acess manager implementation " + configuration.getAmImpl(), ex, false, -3);
             }
         }
@@ -681,7 +698,9 @@ public class Bootstrapper {
      * @param accessManager
      * @return a GracefulShutdownHandler
      */
-    private static GracefulShutdownHandler getHandlersPipe(final IdentityManager identityManager, final AccessManager accessManager) {
+    private static GracefulShutdownHandler getHandlersPipe(
+            final IdentityManager identityManager,
+            final AccessManager accessManager) {
         PipedHttpHandler coreHandlerChain
                 = new AccountInjectorHandler(
                         new DbPropsInjectorHandler(
@@ -890,7 +909,7 @@ public class Bootstrapper {
             final IdentityManager identityManager,
             final AccessManager accessManager) {
         if (conf.getApplicationLogicMounts() != null) {
-            conf.getApplicationLogicMounts().stream().forEach(al -> {
+            conf.getApplicationLogicMounts().stream().forEach((Map<String, Object> al) -> {
                 try {
                     String alClazz = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHAT_KEY);
                     String alWhere = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE_KEY);
@@ -946,7 +965,13 @@ public class Bootstrapper {
                                 + " Class {} does not extend ApplicationLogicHandler", alWhere, alClazz);
                     }
 
-                } catch (Throwable t) {
+                } catch (ClassNotFoundException
+                        | IllegalAccessException
+                        | IllegalArgumentException
+                        | InstantiationException
+                        | NoSuchMethodException
+                        | SecurityException
+                        | InvocationTargetException t) {
                     LOGGER.error("Cannot pipe application logic handler {}",
                             al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE_KEY), t);
                 }
