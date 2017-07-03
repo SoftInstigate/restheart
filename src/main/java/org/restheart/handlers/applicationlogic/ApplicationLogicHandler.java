@@ -17,8 +17,8 @@
  */
 package org.restheart.handlers.applicationlogic;
 
-import org.restheart.handlers.PipedHttpHandler;
 import java.util.Map;
+import org.restheart.handlers.PipedHttpHandler;
 
 /**
  *

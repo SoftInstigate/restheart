@@ -39,8 +39,16 @@ import org.slf4j.LoggerFactory;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class RequestContextTest {
+
     private static final Logger LOG = LoggerFactory.getLogger(RequestContextTest.class);
 
+    @BeforeClass
+    public static void setUpClass() {
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+    }
     @Rule
     public TestRule watcher = new TestWatcher() {
         @Override
@@ -50,14 +58,6 @@ public class RequestContextTest {
     };
 
     public RequestContextTest() {
-    }
-
-    @BeforeClass
-    public static void setUpClass() {
-    }
-
-    @AfterClass
-    public static void tearDownClass() {
     }
 
     @Before
@@ -99,7 +99,7 @@ public class RequestContextTest {
 
         pathTokens = "/db/collection/_indexes/123".split("/");
         assertEquals(RequestContext.TYPE.INDEX, RequestContext.selectRequestType(pathTokens));
-        
+
         pathTokens = "/db/collection/_aggrs/test".split("/");
         assertEquals(RequestContext.TYPE.AGGREGATION, RequestContext.selectRequestType(pathTokens));
     }
@@ -114,7 +114,7 @@ public class RequestContextTest {
     public void test_FILE_selectRequestType() {
         String[] pathTokens = "/db/mybucket.files/123".split("/");
         assertEquals(RequestContext.TYPE.FILE, RequestContext.selectRequestType(pathTokens));
-        
+
         pathTokens = "/db/mybucket.files/123/binary".split("/");
         assertEquals(RequestContext.TYPE.FILE_BINARY, RequestContext.selectRequestType(pathTokens));
 
@@ -139,72 +139,71 @@ public class RequestContextTest {
 
         context = new RequestContext(ex, whereUri, whatUri);
         assertEquals("/", context.getUnmappedRequestUri());
-        
+
         whatUri = "*";
         whereUri = "/data";
 
         context = new RequestContext(ex, whereUri, whatUri);
         assertEquals("/", context.getUnmappedRequestUri());
-        
+
         whatUri = "/data";
         whereUri = "/";
-        
+
         context = new RequestContext(ex, whereUri, whatUri);
         assertEquals("/data", context.getUnmappedRequestUri());
-        
+
         whatUri = "/db/coll";
         whereUri = "/";
-        
+
         context = new RequestContext(ex, whereUri, whatUri);
         assertEquals("/db/coll", context.getUnmappedRequestUri());
-        
+
         whatUri = "/db/coll/doc";
         whereUri = "/";
-        
+
         context = new RequestContext(ex, whereUri, whatUri);
         assertEquals("/db/coll/doc", context.getUnmappedRequestUri());
-        
+
         whatUri = "/db/coll/";
         whereUri = "/";
-        
+
         context = new RequestContext(ex, whereUri, whatUri);
         assertEquals("/db/coll", context.getUnmappedRequestUri());
-        
-        
+
         whatUri = "/db/coll////";
         whereUri = "/";
-        
+
         context = new RequestContext(ex, whereUri, whatUri);
         assertEquals("/db/coll", context.getUnmappedRequestUri());
     }
-    
+
     @Test
     public void testGetMappedRequestUri2() {
         HttpServerExchange ex = mock(HttpServerExchange.class);
         when(ex.getRequestPath()).thenReturn("/x");
         when(ex.getRequestMethod()).thenReturn(HttpString.EMPTY);
-        
+
         String whatUri = "/db/mycollection";
         String whereUri = "/";
 
         RequestContext context = new RequestContext(ex, whereUri, whatUri);
         assertEquals("/db/mycollection/x", context.getUnmappedRequestUri());
-        
+
         whatUri = "*";
         whereUri = "/";
 
         context = new RequestContext(ex, whereUri, whatUri);
         assertEquals("/x", context.getUnmappedRequestUri());
-        
+
         whatUri = "db";
         whereUri = "/";
-        
+
         context = new RequestContext(ex, whereUri, whatUri);
         assertEquals("/db/x", context.getUnmappedRequestUri());
-        
+
         whatUri = "db/coll";
         whereUri = "/";
-        
+
         context = new RequestContext(ex, whereUri, whatUri);
         assertEquals("/db/coll/x", context.getUnmappedRequestUri());
     }

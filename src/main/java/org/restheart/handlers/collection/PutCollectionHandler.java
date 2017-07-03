@@ -23,13 +23,13 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.db.Database;
 import org.restheart.db.OperationResult;
-import org.restheart.handlers.metadata.InvalidMetadataException;
-import org.restheart.metadata.Relationship;
-import org.restheart.metadata.transformers.RepresentationTransformer;
-import org.restheart.metadata.checkers.RequestChecker;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
+import org.restheart.handlers.metadata.InvalidMetadataException;
+import org.restheart.metadata.Relationship;
+import org.restheart.metadata.checkers.RequestChecker;
+import org.restheart.metadata.transformers.RepresentationTransformer;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -79,7 +79,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-        
+
         BsonValue _content = context.getContent();
 
         if (_content == null) {
@@ -108,8 +108,8 @@ public class PutCollectionHandler extends PipedHttpHandler {
                         exchange,
                         context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong relationships definition. " + ex.getMessage()
-                        , ex);
+                        "wrong relationships definition. " + ex.getMessage(),
+                         ex);
                 next(exchange, context);
                 return;
             }
@@ -135,7 +135,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
         // check SC metadata
         if (content.containsKey(RequestChecker.ROOT_KEY)) {
             try {
-                RequestChecker.getFromJson((BsonDocument)content);
+                RequestChecker.getFromJson(content);
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,

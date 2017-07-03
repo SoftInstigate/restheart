@@ -20,8 +20,8 @@ package org.restheart.db;
 import com.mongodb.CommandResult;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
-import org.restheart.Configuration;
 import java.net.UnknownHostException;
+import org.restheart.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,15 +30,46 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class MongoDBClientSingleton {
+
     private static boolean initialized = false;
 
     private static MongoClientURI mongoUri;
 
-    private MongoClient mongoClient;
-
     private static String serverVersion;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoDBClientSingleton.class);
+
+    /**
+     *
+     * @param conf
+     */
+    public static void init(Configuration conf) {
+        mongoUri = conf.getMongoUri();
+        initialized = true;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public static MongoDBClientSingleton getInstance() {
+        return MongoDBClientSingletonHolder.INSTANCE;
+    }
+
+    /**
+     * @return the initialized
+     */
+    public static boolean isInitialized() {
+        return initialized;
+    }
+
+    /**
+     * @return the serverVersion
+     */
+    public static String getServerVersion() {
+        return serverVersion;
+    }
+    private MongoClient mongoClient;
 
     private MongoDBClientSingleton() {
         if (!initialized) {
@@ -52,15 +83,6 @@ public class MongoDBClientSingleton {
         } catch (Throwable tr) {
             LOGGER.error("error initializing mongodb client", tr);
         }
-    }
-
-    /**
-     *
-     * @param conf
-     */
-    public static void init(Configuration conf) {
-        mongoUri = conf.getMongoUri();
-        initialized = true;
     }
 
     private void setup() throws UnknownHostException {
@@ -88,19 +110,6 @@ public class MongoDBClientSingleton {
      *
      * @return
      */
-    public static MongoDBClientSingleton getInstance() {
-        return MongoDBClientSingletonHolder.INSTANCE;
-    }
-
-    private static class MongoDBClientSingletonHolder {
-
-        private static final MongoDBClientSingleton INSTANCE = new MongoDBClientSingleton();
-    }
-
-    /**
-     *
-     * @return
-     */
     public MongoClient getClient() {
         if (this.mongoClient == null) {
             throw new IllegalStateException("mongo client not initialized");
@@ -109,17 +118,11 @@ public class MongoDBClientSingleton {
         return this.mongoClient;
     }
 
-    /**
-     * @return the initialized
-     */
-    public static boolean isInitialized() {
-        return initialized;
-    }
+    private static class MongoDBClientSingletonHolder {
 
-    /**
-     * @return the serverVersion
-     */
-    public static String getServerVersion() {
-        return serverVersion;
+        private static final MongoDBClientSingleton INSTANCE = new MongoDBClientSingleton();
+
+        private MongoDBClientSingletonHolder() {
+        }
     }
 }

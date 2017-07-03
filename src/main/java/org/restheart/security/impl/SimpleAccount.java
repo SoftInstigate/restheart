@@ -21,6 +21,7 @@ import com.google.common.collect.Sets;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.PasswordCredential;
 import java.security.Principal;
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -28,6 +29,7 @@ import java.util.Set;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SimpleAccount implements Account {
+
     final private Principal principal;
     final private PasswordCredential credential;
     final private Set<String> roles;
@@ -75,6 +77,6 @@ public class SimpleAccount implements Account {
 
     @Override
     public Set<String> getRoles() {
-        return roles;
+        return Collections.unmodifiableSet(roles);
     }
 }

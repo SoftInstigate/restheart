@@ -23,10 +23,15 @@ addons:
       - mongodb-org-server
       - mongodb-org-shell
       - oracle-java8-installer
+  sonarcloud:
+    organization: "softinstigate"
+    token:
+      secure: "IMY8Ove0KKHwrNFJ+C3kkK12lIENnEtlhNzzANaaS71bls+VA80t5Ri6wti0p3VDnFzXBNC7il1KWGBit5G5t5RpKi53hfwjrzUF3lFjF03P8OPpiMh9pt0sB7vuVvKMON80e4bWTCN0nw0eBlvLNqB+6vW/8KIfwBKo+Abya/g="
 
 cache:
   directories:
-     - $HOME/.m2
+     - '$HOME/.m2'
+     - '$HOME/.sonar/cache'
 
 services:
    - mongodb
@@ -42,6 +47,7 @@ script:
 
 after_success:
    - if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
+        mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent package sonar:sonar
         mvn deploy --settings deploy-settings.xml -DskipTests=true;
         export RESTHEART_VERSION=$(./bin/project-version.sh 2>/dev/null);
         if [[ $RESTHEART_VERSION ]]; then

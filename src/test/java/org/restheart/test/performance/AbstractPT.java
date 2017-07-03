@@ -36,6 +36,7 @@ import org.yaml.snakeyaml.Yaml;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public abstract class AbstractPT {
+
     protected String url;
 
     protected String mongoUri;
@@ -44,9 +45,9 @@ public abstract class AbstractPT {
     protected String pwd;
     protected String db;
     protected String coll;
-    
+
     protected Executor httpExecutor;
-    
+
     public void prepare() {
         Authenticator.setDefault(new Authenticator() {
             @Override
@@ -70,7 +71,6 @@ public abstract class AbstractPT {
         try {
             MongoDBClientSingleton.init(new Configuration(configuration, true));
         } catch (ConfigurationException ex) {
-            System.out.println(ex.getMessage() + ", exiting...");
             System.exit(-1);
         }
 
@@ -137,5 +137,5 @@ public abstract class AbstractPT {
     public void setColl(String coll) {
         this.coll = coll;
     }
-    
+
 }

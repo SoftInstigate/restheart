@@ -40,6 +40,7 @@ import org.restheart.handlers.RequestContext.TYPE;
  *
  */
 public class HashTransformer implements Transformer {
+
     /**
      *
      * @param exchange
@@ -81,7 +82,10 @@ public class HashTransformer implements Transformer {
                         + "'complexity': 12 }");
             }
 
-            BsonArray tohash = _tohash.asArray();
+            BsonArray tohash = null;
+            if (null != _tohash) {
+                tohash = _tohash.asArray();
+            }
 
             BsonValue _complexity = args.asDocument().get("complexity");
 
@@ -95,26 +99,28 @@ public class HashTransformer implements Transformer {
                     ? 12
                     : _complexity.asNumber().intValue();
 
-            tohash.forEach(_prop -> {
-                if (_prop.isString()) {
-                    String prop = (String) _prop.asString().getValue();
+            if (null != tohash) {
+                tohash.forEach(_prop -> {
+                    if (_prop.isString()) {
+                        String prop = _prop.asString().getValue();
 
-                    BsonValue _value = _contentToTransform.get(prop);
+                        BsonValue _value = _contentToTransform.get(prop);
 
-                    if (_value != null && _value.isString()) {
-                        String value = _value.asString().getValue();
+                        if (_value != null && _value.isString()) {
+                            String value = _value.asString().getValue();
 
-                        _contentToTransform.replace(prop,
-                                new BsonString(
-                                        BCrypt.hashpw(value,
-                                                BCrypt.gensalt(complexity))));
+                            _contentToTransform.replace(prop,
+                                    new BsonString(
+                                            BCrypt.hashpw(value,
+                                                    BCrypt.gensalt(complexity))));
 
+                        }
+                    } else {
+                        context.addWarning("property in the args list "
+                                + "is not a string: " + _prop);
                     }
-                } else {
-                    context.addWarning("property in the args list "
-                            + "is not a string: " + _prop);
-                }
-            });
+                });
+            }
 
         } else {
             context.addWarning("transformer wrong definition: "

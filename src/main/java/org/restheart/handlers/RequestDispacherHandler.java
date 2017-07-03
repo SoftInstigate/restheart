@@ -17,8 +17,16 @@
  */
 package org.restheart.handlers;
 
-import org.restheart.handlers.metadata.CheckHandler;
-import org.restheart.handlers.root.GetRootHandler;
+import io.undertow.server.HttpServerExchange;
+import java.util.HashMap;
+import java.util.Map;
+import org.restheart.handlers.RequestContext.METHOD;
+import org.restheart.handlers.RequestContext.TYPE;
+import org.restheart.handlers.aggregation.AggregationTransformer;
+import org.restheart.handlers.aggregation.GetAggregationHandler;
+import org.restheart.handlers.bulk.BulkDeleteDocumentsHandler;
+import org.restheart.handlers.bulk.BulkPatchDocumentsHandler;
+import org.restheart.handlers.bulk.BulkPostCollectionHandler;
 import org.restheart.handlers.collection.DeleteCollectionHandler;
 import org.restheart.handlers.collection.GetCollectionHandler;
 import org.restheart.handlers.collection.PatchCollectionHandler;
@@ -32,37 +40,29 @@ import org.restheart.handlers.document.DeleteDocumentHandler;
 import org.restheart.handlers.document.GetDocumentHandler;
 import org.restheart.handlers.document.PatchDocumentHandler;
 import org.restheart.handlers.document.PutDocumentHandler;
-import org.restheart.handlers.indexes.DeleteIndexHandler;
-import org.restheart.handlers.indexes.GetIndexesHandler;
-import org.restheart.handlers.indexes.PutIndexHandler;
-import org.restheart.utils.HttpStatus;
-import io.undertow.server.HttpServerExchange;
-import java.util.HashMap;
-import java.util.Map;
-import org.restheart.metadata.transformers.PlainJsonTransformer;
-import org.restheart.handlers.schema.JsonMetaSchemaChecker;
-import static org.restheart.metadata.transformers.RepresentationTransformer.PHASE;
-import static org.restheart.handlers.RequestContext.METHOD;
-import static org.restheart.handlers.RequestContext.TYPE;
-import org.restheart.handlers.aggregation.AggregationTransformer;
 import org.restheart.handlers.files.DeleteBucketHandler;
 import org.restheart.handlers.files.DeleteFileHandler;
 import org.restheart.handlers.files.GetFileBinaryHandler;
 import org.restheart.handlers.files.GetFileHandler;
 import org.restheart.handlers.files.PostBucketHandler;
 import org.restheart.handlers.files.PutBucketHandler;
-import org.restheart.handlers.metadata.ResponseTransformerMetadataHandler;
-import org.restheart.handlers.metadata.BeforeWriteCheckMetadataHandler;
-import org.restheart.handlers.metadata.RequestTransformerMetadataHandler;
-import org.restheart.handlers.aggregation.GetAggregationHandler;
-import org.restheart.handlers.bulk.BulkDeleteDocumentsHandler;
-import org.restheart.handlers.bulk.BulkPatchDocumentsHandler;
-import org.restheart.handlers.bulk.BulkPostCollectionHandler;
 import org.restheart.handlers.files.PutFileHandler;
+import org.restheart.handlers.indexes.DeleteIndexHandler;
+import org.restheart.handlers.indexes.GetIndexesHandler;
+import org.restheart.handlers.indexes.PutIndexHandler;
 import org.restheart.handlers.metadata.AfterWriteCheckMetadataHandler;
-import org.restheart.handlers.schema.JsonSchemaTransformer;
-import org.restheart.handlers.metadata.TransformerHandler;
+import org.restheart.handlers.metadata.BeforeWriteCheckMetadataHandler;
+import org.restheart.handlers.metadata.CheckHandler;
 import org.restheart.handlers.metadata.HookMetadataHandler;
+import org.restheart.handlers.metadata.RequestTransformerMetadataHandler;
+import org.restheart.handlers.metadata.ResponseTransformerMetadataHandler;
+import org.restheart.handlers.metadata.TransformerHandler;
+import org.restheart.handlers.root.GetRootHandler;
+import org.restheart.handlers.schema.JsonMetaSchemaChecker;
+import org.restheart.handlers.schema.JsonSchemaTransformer;
+import org.restheart.metadata.transformers.PlainJsonTransformer;
+import org.restheart.metadata.transformers.RepresentationTransformer.PHASE;
+import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,7 +105,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * Put into handlersMultimap all the default combinations of types, methods
      * and PipedHttpHandler objects
      */
-    protected void defaultInit() {
+    void defaultInit() {
         LOGGER.trace("Initialize default HTTP handlers:");
 
         // *** ROOT handlers
@@ -400,7 +400,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * @param exchange the HttpServerExchange
      * @param context the RequestContext
      */
-    protected void before(HttpServerExchange exchange, RequestContext context) {
+    void before(HttpServerExchange exchange, RequestContext context) {
     }
 
     /**
@@ -409,7 +409,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * @param exchange the HttpServerExchange
      * @param context the RequestContext
      */
-    protected void after(HttpServerExchange exchange, RequestContext context) {
+    void after(HttpServerExchange exchange, RequestContext context) {
     }
 
     /**
@@ -420,7 +420,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public final void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.getType() == TYPE.INVALID) {
             LOGGER.debug(
                     "This is a bad request: returning a <{}> HTTP code",

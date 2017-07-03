@@ -18,7 +18,6 @@ package org.restheart.security;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpServerExchange;
-import static io.undertow.util.Headers.AUTHORIZATION;
 import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 
 /**

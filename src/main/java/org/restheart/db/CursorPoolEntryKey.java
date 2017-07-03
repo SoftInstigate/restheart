@@ -142,13 +142,14 @@ public class CursorPoolEntryKey {
     }
 
     String getCacheStatsGroup() {
-        Formatter f = new Formatter();
+        try (Formatter f = new Formatter()) {
 
-        return (filter == null ? "no filter" : filter.toString())
-                + " - "
-                + (sort == null ? "no sort_by" : sort.toString())
-                + " - "
-                + f.format("%10d", getSkipped());
+            return (filter == null ? "no filter" : filter.toString())
+                    + " - "
+                    + (sort == null ? "no sort_by" : sort.toString())
+                    + " - "
+                    + f.format("%10d", getSkipped());
+        }
     }
 
 }

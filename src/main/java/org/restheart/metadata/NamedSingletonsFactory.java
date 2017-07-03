@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.bson.BsonDocument;
-import org.bson.BsonString;
 import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
 import org.restheart.cache.Cache;
@@ -36,6 +35,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class NamedSingletonsFactory {
+
     private static final String SEPARATOR = "_@_@_";
 
     public static final String GROUP_KEY = "group";
@@ -144,7 +144,7 @@ public class NamedSingletonsFactory {
                 BsonDocument args = null;
 
                 if (_args != null && _args instanceof Map) {
-                    args = JsonUtils.toBsonDocument((Map)_args);
+                    args = JsonUtils.toBsonDocument((Map) _args);
                 }
 
                 ARGS_CACHE.put(gName + SEPARATOR + sName, args);

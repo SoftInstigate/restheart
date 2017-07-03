@@ -24,6 +24,7 @@ import io.undertow.util.HttpString;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.Map;
 import java.util.TreeMap;
@@ -59,7 +60,7 @@ public class HttpServerExchange extends AbstractAttachable {
         if (queryParameters == null) {
             queryParameters = new TreeMap<>();
         }
-        return queryParameters;
+        return Collections.unmodifiableMap(queryParameters);
     }
 
     public HttpServerExchange addQueryParam(final String name, final String param) {
@@ -133,15 +134,15 @@ public class HttpServerExchange extends AbstractAttachable {
     public void setRequestMethod(HttpString requestMethod) {
         this.requestMethod = requestMethod;
     }
-    
+
     public InputStream getInputStream() {
         return new ByteArrayInputStream("FAKE_STREAM".getBytes());
     }
-    
+
     public HeaderMap getRequestHeaders() {
         return null;
     }
-    
+
     public SecurityContext getSecurityContext() {
         return null;
     }

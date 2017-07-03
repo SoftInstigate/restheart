@@ -23,7 +23,7 @@ import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
 import java.io.FileNotFoundException;
 import java.util.Arrays;
-
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -35,7 +35,7 @@ import java.util.function.Consumer;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public final class SimpleFileIdentityManager extends AbstractSimpleSecurityManager implements IdentityManager {
+public class SimpleFileIdentityManager extends AbstractSimpleSecurityManager implements IdentityManager {
 
     private final Map<String, SimpleAccount> accounts = new HashMap<>();
 
@@ -75,11 +75,11 @@ public final class SimpleFileIdentityManager extends AbstractSimpleSecurityManag
             String userid = (String) _userid;
             char[] password = ((String) _password).toCharArray();
 
-            if (((List) _roles).stream().anyMatch(i -> !(i instanceof String))) {
+            if (((Collection) _roles).stream().anyMatch(i -> !(i instanceof String))) {
                 throw new IllegalArgumentException("wrong configuration file format. a roles entry is wrong. they all must be strings");
             }
 
-            Set<String> roles = new HashSet<>((List) _roles);
+            Set<String> roles = new HashSet<>((Collection) _roles);
 
             SimpleAccount a = new SimpleAccount(userid, password, roles);
 

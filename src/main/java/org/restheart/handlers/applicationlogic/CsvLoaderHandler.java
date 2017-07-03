@@ -68,6 +68,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class CsvLoaderHandler extends ApplicationLogicHandler {
+
     public static final String CVS_CONTENT_TYPE = "text/csv";
 
     private static final Logger LOGGER
@@ -97,7 +98,6 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
      *
      * @param next
      * @param args
-     * @throws Exception
      */
     public CsvLoaderHandler(PipedHttpHandler next, Map<String, Object> args) {
         super(next, args);
@@ -202,11 +202,11 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
         return JsonUtils.toJson(error);
     }
 
-    private List<BsonDocument> parseCsv(HttpServerExchange exchange, 
+    private List<BsonDocument> parseCsv(HttpServerExchange exchange,
             CsvRequestParams params,
             RequestContext context, String rawContent)
             throws IOException {
-        List<BsonDocument> ret = new ArrayList<BsonDocument>();
+        List<BsonDocument> ret = new ArrayList<>();
 
         Scanner scanner = new Scanner(rawContent);
 
@@ -296,6 +296,7 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
 }
 
 class CsvRequestParams {
+
     private static final String ID_IDX_QPARAM_NAME = "id";
     private static final String SEPARATOR_QPARAM_NAME = "sep";
     private static final String DB_QPARAM_NAME = "db";
@@ -313,7 +314,7 @@ class CsvRequestParams {
     public final Deque<String> props;
     public final Deque<String> values;
 
-    public CsvRequestParams(HttpServerExchange exchange) {
+    CsvRequestParams(HttpServerExchange exchange) {
         Deque<String> _db = exchange.getQueryParameters().get(DB_QPARAM_NAME);
         Deque<String> _coll = exchange.getQueryParameters().get(COLL_QPARAM_NAME);
         Deque<String> _sep = exchange.getQueryParameters().get(SEPARATOR_QPARAM_NAME);
@@ -346,12 +347,7 @@ class CsvRequestParams {
         String transformerName = _tranformer != null ? _tranformer.size() > 0 ? _tranformer.getFirst() : null : null;
 
         if (transformerName != null) {
-            try {
-                transformer = (Transformer) NamedSingletonsFactory.getInstance()
-                        .get("transformers", transformerName);
-            } catch (Throwable t) {
-                throw new IllegalArgumentException("wrong transformer", t);
-            }
+            transformer = (Transformer) NamedSingletonsFactory.getInstance().get("transformers", transformerName);
         } else {
             transformer = null;
         }

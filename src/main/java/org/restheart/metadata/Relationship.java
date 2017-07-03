@@ -17,9 +17,6 @@
  */
 package org.restheart.metadata;
 
-import org.restheart.handlers.metadata.InvalidMetadataException;
-import org.restheart.handlers.RequestContext;
-import org.restheart.utils.URLUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -28,7 +25,10 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.hal.UnsupportedDocumentIdException;
+import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.utils.JsonUtils;
+import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,18 +40,6 @@ public class Relationship {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Relationship.class);
 
-    public enum TYPE {
-        ONE_TO_ONE,
-        ONE_TO_MANY,
-        MANY_TO_ONE,
-        MANY_TO_MANY
-    };
-
-    public enum ROLE {
-        OWNING,
-        INVERSE
-    };
-
     public static final String RELATIONSHIPS_ELEMENT_NAME = "rels";
     public static final String REL_ELEMENT_NAME = "rel";
     public static final String TYPE_ELEMENT_NAME = "type";
@@ -59,84 +47,6 @@ public class Relationship {
     public static final String TARGET_DB_ELEMENT_NAME = "target-db";
     public static final String TARGET_COLLECTION_ELEMENT_NAME = "target-coll";
     public static final String REF_ELEMENT_NAME = "ref-field";
-
-    private final String rel;
-    private final TYPE type;
-    private final ROLE role;
-    private final String targetDb;
-    private final String targetCollection;
-    private final String referenceField;
-
-    /**
-     *
-     * @param rel
-     * @param type
-     * @param role
-     * @param targetDb
-     * @param targetCollection
-     * @param referenceField
-     */
-    public Relationship(
-            String rel,
-            TYPE type,
-            ROLE role,
-            String targetDb,
-            String targetCollection,
-            String referenceField) {
-        this.rel = rel;
-        this.type = type;
-        this.role = role;
-        this.targetDb = targetDb;
-        this.targetCollection = targetCollection;
-        this.referenceField = referenceField;
-    }
-
-    /**
-     *
-     * @param rel
-     * @param type
-     * @param role
-     * @param targetDb
-     * @param targetCollection
-     * @param referenceField
-     * @throws InvalidMetadataException
-     */
-    public Relationship(
-            String rel,
-            String type,
-            String role,
-            String targetDb,
-            String targetCollection,
-            String referenceField)
-            throws InvalidMetadataException {
-        this.rel = rel;
-
-        try {
-            this.type = TYPE.valueOf(type);
-        } catch (IllegalArgumentException iae) {
-            throw new InvalidMetadataException(
-                    "invalid type value: "
-                    + type
-                    + ". valid values are "
-                    + Arrays.toString(TYPE.values()),
-                    iae);
-        }
-
-        try {
-            this.role = ROLE.valueOf(role);
-        } catch (IllegalArgumentException iae) {
-            throw new InvalidMetadataException(
-                    "invalid role value "
-                    + role
-                    + ". valid values are "
-                    + Arrays.toString(ROLE.values()),
-                    iae);
-        }
-
-        this.targetDb = targetDb;
-        this.targetCollection = targetCollection;
-        this.referenceField = referenceField;
-    }
 
     /**
      *
@@ -254,6 +164,84 @@ public class Relationship {
                 referenceField);
     }
 
+    private final String rel;
+    private final TYPE type;
+    private final ROLE role;
+    private final String targetDb;
+    private final String targetCollection;
+    private final String referenceField;
+
+    /**
+     *
+     * @param rel
+     * @param type
+     * @param role
+     * @param targetDb
+     * @param targetCollection
+     * @param referenceField
+     */
+    public Relationship(
+            String rel,
+            TYPE type,
+            ROLE role,
+            String targetDb,
+            String targetCollection,
+            String referenceField) {
+        this.rel = rel;
+        this.type = type;
+        this.role = role;
+        this.targetDb = targetDb;
+        this.targetCollection = targetCollection;
+        this.referenceField = referenceField;
+    }
+
+    /**
+     *
+     * @param rel
+     * @param type
+     * @param role
+     * @param targetDb
+     * @param targetCollection
+     * @param referenceField
+     * @throws InvalidMetadataException
+     */
+    public Relationship(
+            String rel,
+            String type,
+            String role,
+            String targetDb,
+            String targetCollection,
+            String referenceField)
+            throws InvalidMetadataException {
+        this.rel = rel;
+
+        try {
+            this.type = TYPE.valueOf(type);
+        } catch (IllegalArgumentException iae) {
+            throw new InvalidMetadataException(
+                    "invalid type value: "
+                    + type
+                    + ". valid values are "
+                    + Arrays.toString(TYPE.values()),
+                    iae);
+        }
+
+        try {
+            this.role = ROLE.valueOf(role);
+        } catch (IllegalArgumentException iae) {
+            throw new InvalidMetadataException(
+                    "invalid role value "
+                    + role
+                    + ". valid values are "
+                    + Arrays.toString(ROLE.values()),
+                    iae);
+        }
+
+        this.targetDb = targetDb;
+        this.targetCollection = targetCollection;
+        this.referenceField = referenceField;
+    }
+
     /**
      *
      * @param context
@@ -311,7 +299,7 @@ public class Relationship {
                         .asArray()
                         .getValues()
                         .toArray(new BsonValue[0]);
-                
+
                 return URLUtils.getUriWithFilterMany(context, db, targetCollection, ids);
             }
         } else {
@@ -320,17 +308,17 @@ public class Relationship {
 
             if (type == TYPE.ONE_TO_ONE || type == TYPE.ONE_TO_MANY) {
                 return URLUtils.getUriWithFilterOne(
-                        context, 
-                        db, 
-                        targetCollection, 
-                        referenceField, 
+                        context,
+                        db,
+                        targetCollection,
+                        referenceField,
                         id);
             } else if (type == TYPE.MANY_TO_ONE || type == TYPE.MANY_TO_MANY) {
                 return URLUtils.getUriWithFilterManyInverse(
-                        context, 
-                        db, 
-                        targetCollection, 
-                        referenceField, 
+                        context,
+                        db,
+                        targetCollection,
+                        referenceField,
                         id);
             }
         }
@@ -428,5 +416,17 @@ public class Relationship {
      */
     public String getReferenceField() {
         return referenceField;
+    }
+
+    public enum TYPE {
+        ONE_TO_ONE,
+        ONE_TO_MANY,
+        MANY_TO_ONE,
+        MANY_TO_MANY
+    }
+
+    public enum ROLE {
+        OWNING,
+        INVERSE
     }
 }

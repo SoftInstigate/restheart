@@ -40,6 +40,7 @@ import org.restheart.handlers.RequestContext;
  *
  */
 public class FilterTransformer implements Transformer {
+
     /**
      *
      * @param exchange
@@ -50,28 +51,28 @@ public class FilterTransformer implements Transformer {
      */
     @Override
     public void transform(
-            final HttpServerExchange exchange, 
-            final RequestContext context, 
-            BsonValue contentToTransform, 
+            final HttpServerExchange exchange,
+            final RequestContext context,
+            BsonValue contentToTransform,
             final BsonValue args) {
         if (contentToTransform == null) {
             // nothing to do
             return;
         }
-        
+
         if (!contentToTransform.isDocument()) {
             throw new IllegalStateException(
                     "content to transform is not a document");
         }
-        
+
         BsonDocument _contentToTransform = contentToTransform.asDocument();
-        
+
         if (args.isArray()) {
             BsonArray toremove = args.asArray();
 
             toremove.forEach(_prop -> {
                 if (_prop.isString()) {
-                    String prop = (String) _prop.asString().getValue();
+                    String prop = _prop.asString().getValue();
 
                     _contentToTransform.remove(prop);
                 } else {

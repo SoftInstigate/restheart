@@ -55,8 +55,9 @@ public class JsonUtils {
             CodecRegistries.fromProviders(
                     new BsonValueCodecProvider()));
 
-    private static final String ESCAPED_$ = "_$";
+    private static final String ESCAPED_DOLLAR = "_$";
     private static final String ESCAPED_DOT = "::";
+    private static final String DOLLAR = "$";
 
     /**
      * replaces the underscore prefixed keys (eg _$exists) with the
@@ -80,7 +81,9 @@ public class JsonUtils {
             BsonDocument ret = new BsonDocument();
 
             json.asDocument().keySet().stream().forEach(k -> {
-                String newKey = k.startsWith(ESCAPED_$) ? k.substring(1) : k;
+                String newKey = k.startsWith(ESCAPED_DOLLAR)
+                        ? k.substring(1)
+                        : k;
                 newKey = newKey.replaceAll(ESCAPED_DOT, ".");
 
                 BsonValue value = json.asDocument().get(k);
@@ -124,7 +127,7 @@ public class JsonUtils {
 
             return ret;
         } else if (json.isString()) {
-            return json.asString().getValue().startsWith(ESCAPED_$)
+            return json.asString().getValue().startsWith(ESCAPED_DOLLAR)
                     ? new BsonString(json.asString().getValue().substring(1))
                     : json;
         } else {
@@ -152,7 +155,7 @@ public class JsonUtils {
             BsonDocument ret = new BsonDocument();
 
             json.asDocument().keySet().stream().forEach(k -> {
-                String newKey = k.startsWith("$") ? "_" + k : k;
+                String newKey = k.startsWith(DOLLAR) ? "_" + k : k;
 
                 if (escapeDots) {
                     newKey = newKey.replaceAll("\\.", ESCAPED_DOT);
@@ -199,7 +202,7 @@ public class JsonUtils {
 
             return ret;
         } else if (json.isString()) {
-            return json.asString().getValue().startsWith("$")
+            return json.asString().getValue().startsWith(DOLLAR)
                     ? new BsonString("_" + json.asString().getValue())
                     : json;
         } else {
@@ -225,7 +228,7 @@ public class JsonUtils {
 
         if (pathTokens == null
                 || pathTokens.length == 0
-                || !pathTokens[0].equals("$")) {
+                || !pathTokens[0].equals(DOLLAR)) {
             throw new IllegalArgumentException(
                     "wrong path. it must use the . notation and start with $");
         } else if (!(root instanceof BsonDocument)) {
@@ -273,7 +276,7 @@ public class JsonUtils {
         List<Optional<BsonValue>> nested;
 
         switch (pathToken) {
-            case "$":
+            case DOLLAR:
                 if (!(json.isDocument())) {
                     throw new IllegalArgumentException("wrong path "
                             + Arrays.toString(pathTokens)
@@ -411,10 +414,10 @@ public class JsonUtils {
      *
      */
     public static boolean isAncestorPath(final String left, final String right) {
-        if (left == null || !left.startsWith("$")) {
+        if (left == null || !left.startsWith(DOLLAR)) {
             throw new IllegalArgumentException("wrong left path: " + left);
         }
-        if (right == null || !right.startsWith("$")) {
+        if (right == null || !right.startsWith(DOLLAR)) {
             throw new IllegalArgumentException("wrong right path: " + right);
         }
 
@@ -556,7 +559,7 @@ public class JsonUtils {
         // Minify is not thread safe. don to declare as static object
         // see https://softinstigate.atlassian.net/browse/RH-233
         Minify minifier = new Minify();
-        
+
         if (true) {
             return minifier.minify(jsonString);
         }
@@ -566,7 +569,7 @@ public class JsonUtils {
         boolean in_singleline_comment = false;
         char string_opener = 'x'; // unused value, just something that makes compiler happy
 
-        StringBuilder out = new StringBuilder();
+        final StringBuilder out = new StringBuilder();
         for (int i = 0; i < jsonString.length(); i++) {
             // get next (c) and next-next character (cc)
 
@@ -695,7 +698,7 @@ public class JsonUtils {
             ret = ret.replaceFirst("\\{", "");
             ret = ret.replaceFirst("\"x\"", "");
             ret = ret.replaceFirst(":", "");
-            int index = ret.lastIndexOf("}");
+            int index = ret.lastIndexOf('}');
             ret = ret.substring(0, index);
 
             return ret;
@@ -722,11 +725,14 @@ public class JsonUtils {
                     .replace("\"", "'"));
         }
     }
-    
+
     public static BsonDocument toBsonDocument(Map<String, Object> map) {
         Document d = new Document(map);
-        
-        return d.toBsonDocument(BsonDocument.class, 
+
+        return d.toBsonDocument(BsonDocument.class,
                 MongoClient.getDefaultCodecRegistry());
+    }
+
+    private JsonUtils() {
     }
 }

@@ -22,7 +22,6 @@ import com.mongodb.client.ListIndexesIterable;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.IndexOptions;
 import java.util.ArrayList;
-import org.restheart.utils.HttpStatus;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.bson.BsonDocument;
@@ -30,6 +29,7 @@ import org.bson.BsonInt32;
 import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
@@ -37,9 +37,7 @@ import org.bson.conversions.Bson;
  */
 class IndexDAO {
 
-    private final MongoClient client;
-
-    public static final Bson METADATA_QUERY 
+    public static final Bson METADATA_QUERY
             = eq("_id", "_properties");
 
     private static final BsonDocument FIELDS_TO_RETURN_INDEXES;
@@ -49,6 +47,7 @@ class IndexDAO {
         FIELDS_TO_RETURN_INDEXES.put("key", new BsonInt32(1));
         FIELDS_TO_RETURN_INDEXES.put("name", new BsonInt32(1));
     }
+    private final MongoClient client;
 
     IndexDAO(MongoClient client) {
         this.client = client;

@@ -17,9 +17,9 @@
  */
 package org.restheart.handlers.files;
 
-import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class GetFileHandlerTest {
+
     private static final Logger LOG = LoggerFactory.getLogger(GetFileHandlerTest.class);
 
     @Rule
@@ -40,7 +41,7 @@ public class GetFileHandlerTest {
             LOG.info("executing test {}", description.toString());
         }
     };
-    
+
     public GetFileHandlerTest() {
     }
 

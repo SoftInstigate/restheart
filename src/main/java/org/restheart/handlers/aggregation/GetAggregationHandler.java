@@ -30,10 +30,10 @@ import java.util.concurrent.TimeUnit;
 import org.bson.BsonDocument;
 import org.restheart.Bootstrapper;
 import org.restheart.hal.Representation;
-import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -97,103 +97,103 @@ public class GetAggregationHandler extends PipedHttpHandler {
 
         AbstractAggregationOperation query = _query.get();
 
-        if (query.getType() == AbstractAggregationOperation.TYPE.MAP_REDUCE) {
-            MapReduceIterable<BsonDocument> mrOutput;
-
-            MapReduce mapReduce = (MapReduce) query;
-            try {
-                mrOutput = getDatabase()
-                        .getCollection(context.getDBName(),
-                                context.getCollectionName())
-                        .mapReduce(
-                                mapReduce.getResolvedMap(context.getAggreationVars()),
-                                mapReduce.getResolvedReduce(context.getAggreationVars()))
-                        .filter(
-                                mapReduce.getResolvedQuery(context.getAggreationVars()))
-                        .maxTime(Bootstrapper.getConfiguration().getAggregationTimeLimit(), TimeUnit.MILLISECONDS);
-            } catch (MongoCommandException | InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        context,
-                        HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                        "error executing mapReduce", ex);
-                next(exchange, context);
-                return;
-            } catch (QueryVariableNotBoundException qvnbe) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        context,
-                        HttpStatus.SC_BAD_REQUEST,
-                        "error executing mapReduce: "
-                        + qvnbe.getMessage());
-                next(exchange, context);
-                return;
-            }
-
-            if (mrOutput == null) {
-                next(exchange, context);
-                return;
-            }
-
-            // ***** get data
-            for (BsonDocument obj : mrOutput) {
-                data.add(obj);
-            }
-
-            size = data.size();
-        } else if (query.getType()
-                == AbstractAggregationOperation.TYPE.AGGREGATION_PIPELINE) {
-            AggregateIterable<BsonDocument> agrOutput;
-
-            AggregationPipeline pipeline = (AggregationPipeline) query;
-
-            try {
-                agrOutput = getDatabase()
-                        .getCollection(
-                                context.getDBName(),
-                                context.getCollectionName())
-                        .aggregate(
-                                pipeline
-                                        .getResolvedStagesAsList(
-                                                context.getAggreationVars()))
-                        .maxTime(Bootstrapper.getConfiguration().getAggregationTimeLimit(), TimeUnit.MILLISECONDS);
-            } catch (MongoCommandException | InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        context,
-                        HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                        "error executing aggreation pipeline", ex);
-                next(exchange, context);
-                return;
-            } catch (QueryVariableNotBoundException qvnbe) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        context,
-                        HttpStatus.SC_BAD_REQUEST,
-                        "error executing aggreation pipeline: "
-                        + qvnbe.getMessage());
-                next(exchange, context);
-                return;
-            }
-
-            if (agrOutput == null) {
-                next(exchange, context);
-                return;
-            }
-
-            // ***** get data
-            for (BsonDocument obj : agrOutput) {
-                data.add(obj);
-            }
-
-            size = data.size();
-        } else {
+        if (null == query.getType()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     context,
                     HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
             next(exchange, context);
             return;
+        } else {
+            switch (query.getType()) {
+                case MAP_REDUCE:
+                    MapReduceIterable<BsonDocument> mrOutput;
+                    MapReduce mapReduce = (MapReduce) query;
+                    try {
+                        mrOutput = getDatabase()
+                                .getCollection(context.getDBName(),
+                                        context.getCollectionName())
+                                .mapReduce(
+                                        mapReduce.getResolvedMap(context.getAggreationVars()),
+                                        mapReduce.getResolvedReduce(context.getAggreationVars()))
+                                .filter(
+                                        mapReduce.getResolvedQuery(context.getAggreationVars()))
+                                .maxTime(Bootstrapper.getConfiguration().getAggregationTimeLimit(), TimeUnit.MILLISECONDS);;
+                    } catch (MongoCommandException | InvalidMetadataException ex) {
+                        ResponseHelper.endExchangeWithMessage(
+                                exchange,
+                                context,
+                                HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                                "error executing mapReduce", ex);
+                        next(exchange, context);
+                        return;
+                    } catch (QueryVariableNotBoundException qvnbe) {
+                        ResponseHelper.endExchangeWithMessage(
+                                exchange,
+                                context,
+                                HttpStatus.SC_BAD_REQUEST,
+                                "error executing mapReduce: "
+                                + qvnbe.getMessage());
+                        next(exchange, context);
+                        return;
+                    }
+                    if (mrOutput == null) {
+                        next(exchange, context);
+                        return;
+                    }   // ***** get data
+                    for (BsonDocument obj : mrOutput) {
+                        data.add(obj);
+                    }
+                    size = data.size();
+                    break;
+                case AGGREGATION_PIPELINE:
+                    AggregateIterable<BsonDocument> agrOutput;
+                    AggregationPipeline pipeline = (AggregationPipeline) query;
+                    try {
+                        agrOutput = getDatabase()
+                                .getCollection(
+                                        context.getDBName(),
+                                        context.getCollectionName())
+                                .aggregate(
+                                        pipeline
+                                                .getResolvedStagesAsList(
+                                                        context.getAggreationVars()))
+                                .maxTime(Bootstrapper.getConfiguration().getAggregationTimeLimit(), TimeUnit.MILLISECONDS);
+                    } catch (MongoCommandException | InvalidMetadataException ex) {
+                        ResponseHelper.endExchangeWithMessage(
+                                exchange,
+                                context,
+                                HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                                "error executing aggreation pipeline", ex);
+                        next(exchange, context);
+                        return;
+                    } catch (QueryVariableNotBoundException qvnbe) {
+                        ResponseHelper.endExchangeWithMessage(
+                                exchange,
+                                context,
+                                HttpStatus.SC_BAD_REQUEST,
+                                "error executing aggreation pipeline: "
+                                + qvnbe.getMessage());
+                        next(exchange, context);
+                        return;
+                    }
+                    if (agrOutput == null) {
+                        next(exchange, context);
+                        return;
+                    }   // ***** get data
+                    for (BsonDocument obj : agrOutput) {
+                        data.add(obj);
+                    }
+                    size = data.size();
+                    break;
+                default:
+                    ResponseHelper.endExchangeWithMessage(
+                            exchange,
+                            context,
+                            HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
+                    next(exchange, context);
+                    return;
+            }
         }
 
         if (exchange.isComplete()) {

@@ -21,7 +21,6 @@ package org.restheart.security.handlers;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
@@ -30,13 +29,14 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 
 /**
- * This is the PipedHttpHandler version of io.undertow.security.handlers.AuthenticationMechanismsHandler
- * that adds one or more authentication
- * mechanisms to the security context
+ * This is the PipedHttpHandler version of
+ * io.undertow.security.handlers.AuthenticationMechanismsHandler that adds one
+ * or more authentication mechanisms to the security context
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class AuthenticationMechanismsHandler extends PipedHttpHandler {
+
     private final List<AuthenticationMechanism> authenticationMechanisms;
 
     public AuthenticationMechanismsHandler(final PipedHttpHandler next, final List<AuthenticationMechanism> authenticationMechanisms) {
@@ -52,13 +52,12 @@ public class AuthenticationMechanismsHandler extends PipedHttpHandler {
     @SuppressWarnings("deprecation")
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         final SecurityContext sc = exchange.getSecurityContext();
-        if(sc != null) {
-            for(AuthenticationMechanism mechanism : authenticationMechanisms) {
+        if (sc != null) {
+            authenticationMechanisms.forEach((mechanism) -> {
                 sc.addAuthenticationMechanism(mechanism);
-            }
+            });
         }
-        
+
         next(exchange, context);
     }
 }
-

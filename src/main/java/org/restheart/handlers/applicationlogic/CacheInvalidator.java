@@ -17,15 +17,15 @@
  */
 package org.restheart.handlers.applicationlogic;
 
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.METHOD;
-import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 import java.util.Map;
 import org.restheart.Bootstrapper;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
+import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
 /**
@@ -33,6 +33,7 @@ import org.restheart.utils.ResponseHelper;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class CacheInvalidator extends ApplicationLogicHandler {
+
     /**
      *
      * @param next
@@ -50,14 +51,14 @@ public class CacheInvalidator extends ApplicationLogicHandler {
      */
     @Override
     public void handleRequest(
-            HttpServerExchange exchange, 
-            RequestContext context) 
+            HttpServerExchange exchange,
+            RequestContext context)
             throws Exception {
         if (!Bootstrapper.getConfiguration().isLocalCacheEnabled()) {
             ResponseHelper.endExchangeWithMessage(
-                    exchange, 
+                    exchange,
                     context,
-                    HttpStatus.SC_NOT_MODIFIED, 
+                    HttpStatus.SC_NOT_MODIFIED,
                     "caching is off");
             next(exchange, context);
             return;
@@ -69,12 +70,11 @@ public class CacheInvalidator extends ApplicationLogicHandler {
 
             if (_db == null || _db.getFirst() == null) {
                 ResponseHelper.endExchangeWithMessage(
-                        exchange, 
+                        exchange,
                         context,
-                        HttpStatus.SC_BAD_REQUEST, 
+                        HttpStatus.SC_BAD_REQUEST,
                         "the db query paramter is mandatory");
                 next(exchange, context);
-                return;
             } else {
                 String db = _db.getFirst();
 

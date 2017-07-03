@@ -31,14 +31,14 @@ import org.restheart.hal.AbstractRepresentationFactory;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
 import org.restheart.hal.UnsupportedDocumentIdException;
-import org.restheart.handlers.aggregation.AbstractAggregationOperation;
-import org.restheart.handlers.metadata.InvalidMetadataException;
-import org.restheart.metadata.checkers.RequestChecker;
-import org.restheart.metadata.checkers.JsonSchemaChecker;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.TYPE;
+import org.restheart.handlers.aggregation.AbstractAggregationOperation;
 import org.restheart.handlers.document.DocumentRepresentationFactory;
+import org.restheart.handlers.metadata.InvalidMetadataException;
+import org.restheart.metadata.checkers.JsonSchemaChecker;
+import org.restheart.metadata.checkers.RequestChecker;
 import org.restheart.utils.URLUtils;
 
 /**
@@ -47,6 +47,74 @@ import org.restheart.utils.URLUtils;
  */
 public class CollectionRepresentationFactory
         extends AbstractRepresentationFactory {
+
+    // TODO this is hardcoded, if name of checker is changed in conf file
+// method won't work. need to get the name from the configuration
+    private static final String JSON_SCHEMA_NAME = "jsonSchema";
+
+    public static void addSpecialProperties(
+            final Representation rep,
+            final RequestContext.TYPE type,
+            final BsonDocument data) {
+        rep.addProperty("_type", new BsonString(type.name()));
+
+        Object etag = data.get("_etag");
+
+        if (etag != null && etag instanceof ObjectId) {
+            if (data.get("_lastupdated_on") == null) {
+                // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
+                rep.addProperty(
+                        "_lastupdated_on",
+                        new BsonString(Instant.ofEpochSecond(
+                                ((ObjectId) etag).getTimestamp()).toString()));
+            }
+        }
+    }
+
+    private static void addSchemaLinks(
+            Representation rep,
+            RequestContext context) {
+        try {
+            List<RequestChecker> checkers
+                    = RequestChecker.getFromJson(context.getCollectionProps());
+
+            if (checkers != null) {
+                checkers
+                        .stream().filter((RequestChecker c) -> {
+                            return JSON_SCHEMA_NAME.equals(c.getName());
+                        }).forEach((RequestChecker c) -> {
+                    BsonValue schemaId = c.getArgs().asDocument()
+                            .get(JsonSchemaChecker.SCHEMA_ID_PROPERTY);
+
+                    BsonValue _schemaStoreDb = c.getArgs().asDocument()
+                            .get(JsonSchemaChecker.SCHEMA_STORE_DB_PROPERTY);
+
+                    // just in case the checker is missing the mandatory schemaId property
+                    if (schemaId == null) {
+                        return;
+                    }
+
+                    String schemaStoreDb;
+
+                    if (_schemaStoreDb == null) {
+                        schemaStoreDb = context.getDBName();
+                    } else {
+                        schemaStoreDb = _schemaStoreDb.toString();
+                    }
+
+                    try {
+                        rep.addLink(new Link("schema", URLUtils
+                                .getUriWithDocId(context,
+                                        schemaStoreDb, "_schemas", schemaId)));
+                    } catch (UnsupportedDocumentIdException ex) {
+                    }
+                });
+
+            }
+        } catch (InvalidMetadataException ime) {
+            // nothing to do
+        }
+    }
 
     public CollectionRepresentationFactory() {
     }
@@ -113,25 +181,6 @@ public class CollectionRepresentationFactory
         final BsonDocument collProps = context.getCollectionProps();
 
         rep.addProperties(collProps);
-    }
-
-    public static void addSpecialProperties(
-            final Representation rep,
-            final RequestContext.TYPE type,
-            final BsonDocument data) {
-        rep.addProperty("_type", new BsonString(type.name()));
-
-        Object etag = data.get("_etag");
-
-        if (etag != null && etag instanceof ObjectId) {
-            if (data.get("_lastupdated_on") == null) {
-                // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
-                rep.addProperty(
-                        "_lastupdated_on",
-                        new BsonString(Instant.ofEpochSecond(
-                                ((ObjectId) etag).getTimestamp()).toString()));
-            }
-        }
     }
 
     private void addEmbeddedData(
@@ -268,27 +317,7 @@ public class CollectionRepresentationFactory
                                     d);
                 }
 
-                if (context.getType() == RequestContext.TYPE.FILES_BUCKET) {
-                    if (context.isFullHalMode()) {
-                        DocumentRepresentationFactory.addSpecialProperties(
-                                nrep,
-                                TYPE.FILE,
-                                d);
-                    }
-
-                    rep.addRepresentation("rh:file", nrep);
-                } else if (context.getType()
-                        == RequestContext.TYPE.SCHEMA_STORE) {
-                    if (context.isFullHalMode()) {
-                        DocumentRepresentationFactory.addSpecialProperties(
-                                nrep,
-                                TYPE.SCHEMA,
-                                d);
-                    }
-
-                    rep.addRepresentation("rh:schema", nrep);
-
-                } else {
+                if (null == context.getType()) {
                     if (context.isFullHalMode()) {
                         DocumentRepresentationFactory.addSpecialProperties(
                                 nrep,
@@ -297,57 +326,39 @@ public class CollectionRepresentationFactory
                     }
 
                     rep.addRepresentation("rh:doc", nrep);
+                } else {
+                    switch (context.getType()) {
+                        case FILES_BUCKET:
+                            if (context.isFullHalMode()) {
+                                DocumentRepresentationFactory.addSpecialProperties(
+                                        nrep,
+                                        TYPE.FILE,
+                                        d);
+                            }
+                            rep.addRepresentation("rh:file", nrep);
+                            break;
+                        case SCHEMA_STORE:
+                            if (context.isFullHalMode()) {
+                                DocumentRepresentationFactory.addSpecialProperties(
+                                        nrep,
+                                        TYPE.SCHEMA,
+                                        d);
+                            }
+                            rep.addRepresentation("rh:schema", nrep);
+                            break;
+                        default:
+                            if (context.isFullHalMode()) {
+                                DocumentRepresentationFactory.addSpecialProperties(
+                                        nrep,
+                                        TYPE.DOCUMENT,
+                                        d);
+                            }
+                            rep.addRepresentation("rh:doc", nrep);
+                            break;
+                    }
                 }
             }
         }
     }
 
-// TODO this is hardcoded, if name of checker is changed in conf file
-// method won't work. need to get the name from the configuration
-    private static final String JSON_SCHEMA_NAME = "jsonSchema";
-
-    private static void addSchemaLinks(
-            Representation rep,
-            RequestContext context) {
-        try {
-            List<RequestChecker> checkers
-                    = RequestChecker.getFromJson(context.getCollectionProps());
-
-            if (checkers != null) {
-                checkers
-                        .stream().filter((RequestChecker c) -> {
-                            return JSON_SCHEMA_NAME.equals(c.getName());
-                        }).forEach((RequestChecker c) -> {
-                    BsonValue schemaId = c.getArgs().asDocument()
-                            .get(JsonSchemaChecker.SCHEMA_ID_PROPERTY);
-
-                    BsonValue _schemaStoreDb = c.getArgs().asDocument()
-                            .get(JsonSchemaChecker.SCHEMA_STORE_DB_PROPERTY);
-
-                    // just in case the checker is missing the mandatory schemaId property
-                    if (schemaId == null) {
-                        return;
-                    }
-
-                    String schemaStoreDb;
-
-                    if (_schemaStoreDb == null) {
-                        schemaStoreDb = context.getDBName();
-                    } else {
-                        schemaStoreDb = _schemaStoreDb.toString();
-                    }
-
-                    try {
-                        rep.addLink(new Link("schema", URLUtils
-                                .getUriWithDocId(context,
-                                        schemaStoreDb, "_schemas", schemaId)));
-                    } catch (UnsupportedDocumentIdException ex) {
-                    }
-                });
-
-            }
-        } catch (InvalidMetadataException ime) {
-            // nothing to do
-        }
-    }
 }

@@ -31,6 +31,7 @@ import org.restheart.utils.JsonUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PlainJsonRepIT extends AbstactIT {
+
     private final String DB = "test-pj-db";
     private final String COLL = "coll";
 
@@ -294,7 +295,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(body.isArray());
 
-        Assert.assertTrue(body.asArray().size() == 0);
+        Assert.assertTrue(body.asArray().isEmpty());
 
         body.asArray().forEach(doc -> {
             Assert.assertNotNull(doc);
@@ -556,7 +557,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(body.asDocument().get("_embedded").isArray());
 
-        Assert.assertTrue(body.asDocument().get("_embedded").asArray().size() == 0);
+        Assert.assertTrue(body.asDocument().get("_embedded").asArray().isEmpty());
     }
 
     @Test
@@ -606,7 +607,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(body.asDocument().get("_embedded").isArray());
 
-        Assert.assertTrue(body.asDocument().get("_embedded").asArray().size() == 0);
+        Assert.assertTrue(body.asDocument().get("_embedded").asArray().isEmpty());
     }
 
     @Test
@@ -638,10 +639,10 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertNotNull(body.asDocument().get("_links"));
 
         Assert.assertTrue(body.asDocument().get("_links").isDocument());
-        
+
         Assert.assertNotNull(body.asDocument().get("_links")
                 .asDocument().get("rh:newdoc"));
-        
+
         Assert.assertTrue(body.asDocument().get("_links")
                 .asDocument().get("rh:newdoc").isArray());
 

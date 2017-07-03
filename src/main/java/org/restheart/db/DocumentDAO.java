@@ -22,9 +22,9 @@ import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.DeleteManyModel;
 import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.UpdateManyModel;
 import com.mongodb.client.model.WriteModel;
 import java.util.ArrayList;
@@ -38,8 +38,8 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.restheart.utils.HttpStatus;
 import org.bson.types.ObjectId;
+import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -330,7 +330,7 @@ public class DocumentDAO implements Repository {
             q = and(q, shardedKeys);
         }
 
-        if (filter != null  && !filter.isEmpty()) {
+        if (filter != null && !filter.isEmpty()) {
             q = and(q, filter);
         }
 

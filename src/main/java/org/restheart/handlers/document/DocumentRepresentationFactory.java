@@ -1,24 +1,6 @@
-/*
- * RESTHeart - the Web API for MongoDB
- * Copyright (C) SoftInstigate Srl
- * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- * 
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 package org.restheart.handlers.document;
 
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 import java.time.Instant;
 import java.util.List;
 import org.bson.BsonDocument;
@@ -28,13 +10,12 @@ import org.bson.types.ObjectId;
 import org.restheart.Configuration;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
-import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import org.restheart.hal.UnsupportedDocumentIdException;
-import org.restheart.handlers.metadata.InvalidMetadataException;
-import org.restheart.metadata.Relationship;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.TYPE;
+import org.restheart.handlers.metadata.InvalidMetadataException;
+import org.restheart.metadata.Relationship;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,11 +26,64 @@ import org.slf4j.LoggerFactory;
  */
 public class DocumentRepresentationFactory {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(DocumentRepresentationFactory.class);
+
+    private static boolean isBinaryFile(BsonDocument data) {
+        return data.containsKey("filename") && data.containsKey("chunkSize");
+    }
+
+    public static void addSpecialProperties(final Representation rep, RequestContext.TYPE type, BsonDocument data) {
+        rep.addProperty("_type", new BsonString(type.name()));
+
+        Object etag = data.get("_etag");
+
+        if (etag != null && etag instanceof ObjectId) {
+            if (data.get("_lastupdated_on") == null) {
+                // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
+                rep.addProperty("_lastupdated_on",
+                        new BsonString(Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString()));
+            }
+        }
+
+        Object id = data.get("_id");
+
+        // generate the _created_on timestamp from the _id if this is an instance of ObjectId
+        if (data.get("_created_on") == null && id != null && id instanceof ObjectId) {
+            rep.addProperty("_created_on",
+                    new BsonString(Instant.ofEpochSecond(((ObjectId) id).getTimestamp()).toString()));
+        }
+    }
+
+    private static void addRelationshipsLinks(Representation rep, RequestContext context, BsonDocument data) {
+        List<Relationship> rels = null;
+
+        try {
+            rels = Relationship.getFromJson(context.getCollectionProps());
+        } catch (InvalidMetadataException ex) {
+            rep.addWarning("collection " + context.getDBName()
+                    + "/" + context.getCollectionName()
+                    + " has invalid relationships definition");
+        }
+
+        if (rels != null) {
+            for (Relationship rel : rels) {
+                try {
+                    String link = rel.getRelationshipLink(context, context.getDBName(), context.getCollectionName(), data);
+
+                    if (link != null) {
+                        rep.addLink(new Link(rel.getRel(), link));
+                    }
+                } catch (IllegalArgumentException | UnsupportedDocumentIdException ex) {
+                    rep.addWarning(ex.getMessage());
+                    LOGGER.debug(ex.getMessage());
+                }
+            }
+        }
+    }
+
     public DocumentRepresentationFactory() {
 
     }
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(DocumentRepresentationFactory.class);
 
     /**
      *
@@ -131,58 +165,5 @@ public class DocumentRepresentationFactory {
         }
 
         return rep;
-    }
-
-    private static boolean isBinaryFile(BsonDocument data) {
-        return data.containsKey("filename") && data.containsKey("chunkSize");
-    }
-
-    public static void addSpecialProperties(final Representation rep, RequestContext.TYPE type, BsonDocument data) {
-        rep.addProperty("_type", new BsonString(type.name()));
-
-        Object etag = data.get("_etag");
-
-        if (etag != null && etag instanceof ObjectId) {
-            if (data.get("_lastupdated_on") == null) {
-                // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
-                rep.addProperty("_lastupdated_on", 
-                        new BsonString(Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString()));
-            }
-        }
-
-        Object id = data.get("_id");
-
-        // generate the _created_on timestamp from the _id if this is an instance of ObjectId
-        if (data.get("_created_on") == null && id != null && id instanceof ObjectId) {
-            rep.addProperty("_created_on", 
-                    new BsonString(Instant.ofEpochSecond(((ObjectId) id).getTimestamp()).toString()));
-        }
-    }
-
-    private static void addRelationshipsLinks(Representation rep, RequestContext context, BsonDocument data) {
-        List<Relationship> rels = null;
-
-        try {
-            rels = Relationship.getFromJson(context.getCollectionProps());
-        } catch (InvalidMetadataException ex) {
-            rep.addWarning("collection " + context.getDBName()
-                    + "/" + context.getCollectionName()
-                    + " has invalid relationships definition");
-        }
-
-        if (rels != null) {
-            for (Relationship rel : rels) {
-                try {
-                    String link = rel.getRelationshipLink(context, context.getDBName(), context.getCollectionName(), data);
-
-                    if (link != null) {
-                        rep.addLink(new Link(rel.getRel(), link));
-                    }
-                } catch (IllegalArgumentException | UnsupportedDocumentIdException ex) {
-                    rep.addWarning(ex.getMessage());
-                    LOGGER.debug(ex.getMessage());
-                }
-            }
-        }
     }
 }

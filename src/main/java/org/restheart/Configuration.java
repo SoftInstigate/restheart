@@ -19,27 +19,26 @@ package org.restheart;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
-
 import com.google.common.collect.Maps;
-
 import com.mongodb.MongoClientURI;
-import org.restheart.utils.URLUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.RequestContext.ETAG_CHECK_POLICY;
+import org.restheart.handlers.RequestContext.REPRESENTATION_FORMAT;
+import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
-import org.restheart.handlers.RequestContext.ETAG_CHECK_POLICY;
-import org.restheart.handlers.RequestContext.REPRESENTATION_FORMAT;
 
 /**
  * Utility class to help dealing with the restheart configuration file.
@@ -64,94 +63,16 @@ public class Configuration {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
 
-    private boolean silent = false;
-
-    private final boolean httpsListener;
-    private final int httpsPort;
-    private final String httpsHost;
-
-    private final boolean httpListener;
-    private final int httpPort;
-    private final String httpHost;
-
-    private final boolean ajpListener;
-    private final int ajpPort;
-    private final String ajpHost;
-
-    private final String instanceName;
-
-    private final RequestContext.REPRESENTATION_FORMAT defaultRepresentationFromat;
-
-    private final boolean useEmbeddedKeystore;
-    private final String keystoreFile;
-    private final String keystorePassword;
-    private final String certPassword;
-
-    private final MongoClientURI mongoUri;
-
-    private final List<Map<String, Object>> mongoMounts;
-
-    private final List<Map<String, Object>> staticResourcesMounts;
-
-    private final List<Map<String, Object>> applicationLogicMounts;
-
-    private final List<Map<String, Object>> metadataNamedSingletons;
-
-    private final String idmImpl;
-    private final Map<String, Object> idmArgs;
-    private final String amImpl;
-    private final Map<String, Object> amArgs;
-
-    private final String logFilePath;
-    private final Level logLevel;
-    private final boolean logToConsole;
-    private final boolean logToFile;
-
-    private final boolean localCacheEnabled;
-    private final long localCacheTtl;
-
-    private final boolean schemaCacheEnabled;
-    private final long schemaCacheTtl;
-
-    private final int requestsLimit;
-    private final long queryTimeLimit;
-    private final long aggregationTimeLimit;
-
-    private final int ioThreads;
-    private final int workerThreads;
-    private final int bufferSize;
-    private final int buffersPerRegion;
-    private final boolean directBuffers;
-
-    private final boolean forceGzipEncoding;
-
-    private final int eagerPoolSize;
-    private final int eagerLinearSliceWidht;
-    private final int eagerLinearSliceDelta;
-    private final int[] eagerLinearSliceHeights;
-    private final int eagerRndSliceMinWidht;
-    private final int eagerRndMaxCursors;
-
-    private final boolean authTokenEnabled;
-    private final int authTokenTtl;
-
-    private final ETAG_CHECK_POLICY dbEtagCheckPolicy;
-    private final ETAG_CHECK_POLICY collEtagCheckPolicy;
-    private final ETAG_CHECK_POLICY docEtagCheckPolicy;
-
-    private final Map<String, Object> connectionOptions;
-
-    private final Integer logExchangeDump;
-
     /**
      * default mongo uri mongodb://127.0.0.1
      */
     public static final String DEFAULT_MONGO_URI = "mongodb://127.0.0.1";
+    public static final String DEFAULT_ROUTE = "0.0.0.0";
 
     /**
      * default ajp host 0.0.0.0.
      */
-    public static final String DEFAULT_AJP_HOST = "0.0.0.0";
+    public static final String DEFAULT_AJP_HOST = DEFAULT_ROUTE;
 
     /**
      * default ajp port 8009.
@@ -161,7 +82,7 @@ public class Configuration {
     /**
      * default http host 0.0.0.0.
      */
-    public static final String DEFAULT_HTTP_HOST = "0.0.0.0";
+    public static final String DEFAULT_HTTP_HOST = DEFAULT_ROUTE;
 
     /**
      * default http port 8080.
@@ -171,7 +92,7 @@ public class Configuration {
     /**
      * default https host 0.0.0.0.
      */
-    public static final String DEFAULT_HTTPS_HOST = "0.0.0.0";
+    public static final String DEFAULT_HTTPS_HOST = DEFAULT_ROUTE;
 
     /**
      * default https port 4443.
@@ -561,6 +482,110 @@ public class Configuration {
      */
     public static final String CONNECTION_OPTIONS_KEY = "connection-options";
 
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> getConfigurationFromFile(final Path confFilePath) throws ConfigurationException {
+        Yaml yaml = new Yaml();
+
+        Map<String, Object> conf = null;
+
+        FileInputStream fis = null;
+
+        try {
+            fis = new FileInputStream(confFilePath.toFile());
+            conf = (Map<String, Object>) yaml.load(fis);
+        } catch (FileNotFoundException fne) {
+            throw new ConfigurationException("configuration file not found", fne);
+        } catch (Throwable t) {
+            throw new ConfigurationException("error parsing the configuration file", t);
+        } finally {
+            if (fis != null) {
+                try {
+                    fis.close();
+                } catch (IOException ioe) {
+                    LOGGER.warn("Can't close the FileInputStream", ioe);
+                }
+            }
+        }
+
+        return conf;
+    }
+
+    /**
+     *
+     * @param integers
+     * @return
+     */
+    public static int[] convertListToIntArray(List integers) {
+        int[] ret = new int[integers.size()];
+        Iterator iterator = integers.iterator();
+        for (int i = 0; i < ret.length; i++) {
+            Object o = iterator.next();
+
+            if (o instanceof Integer) {
+                ret[i] = (Integer) o;
+            } else {
+                return new int[0];
+            }
+        }
+
+        return ret;
+    }
+    private boolean silent = false;
+    private final boolean httpsListener;
+    private final int httpsPort;
+    private final String httpsHost;
+    private final boolean httpListener;
+    private final int httpPort;
+    private final String httpHost;
+    private final boolean ajpListener;
+    private final int ajpPort;
+    private final String ajpHost;
+    private final String instanceName;
+    private final RequestContext.REPRESENTATION_FORMAT defaultRepresentationFromat;
+    private final boolean useEmbeddedKeystore;
+    private final String keystoreFile;
+    private final String keystorePassword;
+    private final String certPassword;
+    private final MongoClientURI mongoUri;
+    private final List<Map<String, Object>> mongoMounts;
+    private final List<Map<String, Object>> staticResourcesMounts;
+    private final List<Map<String, Object>> applicationLogicMounts;
+    private final List<Map<String, Object>> metadataNamedSingletons;
+    private final String idmImpl;
+    private final Map<String, Object> idmArgs;
+    private final String amImpl;
+    private final Map<String, Object> amArgs;
+    private final String logFilePath;
+    private final Level logLevel;
+    private final boolean logToConsole;
+    private final boolean logToFile;
+    private final boolean localCacheEnabled;
+    private final long localCacheTtl;
+    private final boolean schemaCacheEnabled;
+    private final long schemaCacheTtl;
+    private final int requestsLimit;
+    private final long queryTimeLimit;
+    private final long aggregationTimeLimit;
+    private final int ioThreads;
+    private final int workerThreads;
+    private final int bufferSize;
+    private final int buffersPerRegion;
+    private final boolean directBuffers;
+    private final boolean forceGzipEncoding;
+    private final int eagerPoolSize;
+    private final int eagerLinearSliceWidht;
+    private final int eagerLinearSliceDelta;
+    private final int[] eagerLinearSliceHeights;
+    private final int eagerRndSliceMinWidht;
+    private final int eagerRndMaxCursors;
+    private final boolean authTokenEnabled;
+    private final int authTokenTtl;
+    private final ETAG_CHECK_POLICY dbEtagCheckPolicy;
+    private final ETAG_CHECK_POLICY collEtagCheckPolicy;
+    private final ETAG_CHECK_POLICY docEtagCheckPolicy;
+    private final Map<String, Object> connectionOptions;
+    private final Integer logExchangeDump;
+
     /**
      * Creates a new instance of Configuration with defaults values.
      */
@@ -682,34 +707,6 @@ public class Configuration {
         this(getConfigurationFromFile(confFilePath), silent);
     }
 
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> getConfigurationFromFile(final Path confFilePath) throws ConfigurationException {
-        Yaml yaml = new Yaml();
-
-        Map<String, Object> conf = null;
-
-        FileInputStream fis = null;
-
-        try {
-            fis = new FileInputStream(confFilePath.toFile());
-            conf = (Map<String, Object>) yaml.load(fis);
-        } catch (FileNotFoundException fne) {
-            throw new ConfigurationException("configuration file not found", fne);
-        } catch (Throwable t) {
-            throw new ConfigurationException("error parsing the configuration file", t);
-        } finally {
-            if (fis != null) {
-                try {
-                    fis.close();
-                } catch (IOException ioe) {
-                    LOGGER.warn("Can't close the FileInputStream", ioe);
-                }
-            }
-        }
-
-        return conf;
-    }
-
     /**
      * Creates a new instance of Configuration from the configuration file For
      * any missing property the default value is used.
@@ -738,7 +735,7 @@ public class Configuration {
         String _representationFormat = getAsStringOrDefault(conf,
                 REPRESENTATION_FORMAT_KEY, DEFAULT_REPRESENTATION_FORMAT.name());
 
-        REPRESENTATION_FORMAT rf = REPRESENTATION_FORMAT.PLAIN_JSON;;
+        REPRESENTATION_FORMAT rf = REPRESENTATION_FORMAT.PLAIN_JSON;
 
         try {
             rf = REPRESENTATION_FORMAT.valueOf(_representationFormat);
@@ -1121,255 +1118,234 @@ public class Configuration {
     }
 
     /**
-     *
-     * @param integers
-     * @return
-     */
-    public static int[] convertListToIntArray(List integers) {
-        int[] ret = new int[integers.size()];
-        Iterator iterator = integers.iterator();
-        for (int i = 0; i < ret.length; i++) {
-            Object o = iterator.next();
-
-            if (o instanceof Integer) {
-                ret[i] = (Integer) o;
-            } else {
-                return new int[0];
-            }
-        }
-
-        return ret;
-    }
-
-    /**
      * @return the httpsListener
      */
-    public final boolean isHttpsListener() {
+    public boolean isHttpsListener() {
         return httpsListener;
     }
 
     /**
      * @return the httpsPort
      */
-    public final int getHttpsPort() {
+    public int getHttpsPort() {
         return httpsPort;
     }
 
     /**
      * @return the httpsHost
      */
-    public final String getHttpsHost() {
+    public String getHttpsHost() {
         return httpsHost;
     }
 
     /**
      * @return the httpListener
      */
-    public final boolean isHttpListener() {
+    public boolean isHttpListener() {
         return httpListener;
     }
 
     /**
      * @return the httpPort
      */
-    public final int getHttpPort() {
+    public int getHttpPort() {
         return httpPort;
     }
 
     /**
      * @return the httpHost
      */
-    public final String getHttpHost() {
+    public String getHttpHost() {
         return httpHost;
     }
 
     /**
      * @return the ajpListener
      */
-    public final boolean isAjpListener() {
+    public boolean isAjpListener() {
         return ajpListener;
     }
 
     /**
      * @return the ajpPort
      */
-    public final int getAjpPort() {
+    public int getAjpPort() {
         return ajpPort;
     }
 
     /**
      * @return the ajpHost
      */
-    public final String getAjpHost() {
+    public String getAjpHost() {
         return ajpHost;
     }
 
     /**
      * @return the useEmbeddedKeystore
      */
-    public final boolean isUseEmbeddedKeystore() {
+    public boolean isUseEmbeddedKeystore() {
         return useEmbeddedKeystore;
     }
 
     /**
      * @return the keystoreFile
      */
-    public final String getKeystoreFile() {
+    public String getKeystoreFile() {
         return keystoreFile;
     }
 
     /**
      * @return the keystorePassword
      */
-    public final String getKeystorePassword() {
+    public String getKeystorePassword() {
         return keystorePassword;
     }
 
     /**
      * @return the certPassword
      */
-    public final String getCertPassword() {
+    public String getCertPassword() {
         return certPassword;
     }
 
     /**
      * @return the logFilePath
      */
-    public final String getLogFilePath() {
+    public String getLogFilePath() {
         return logFilePath;
     }
 
     /**
      * @return the logLevel
      */
-    public final Level getLogLevel() {
-        
+    public Level getLogLevel() {
+
         String logbackConfigurationFile = System.getProperty("logback.configurationFile");
-        if (logbackConfigurationFile != null && !logbackConfigurationFile.equals("")) {
+        if (logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty()) {
             LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
             ch.qos.logback.classic.Logger logger = loggerContext.getLogger("org.restheart");
             return logger.getLevel();
         }
-        
+
         return logLevel;
     }
 
     /**
      * @return the logToConsole
      */
-    public final boolean isLogToConsole() {
+    public boolean isLogToConsole() {
         return logToConsole;
     }
 
     /**
      * @return the logToFile
      */
-    public final boolean isLogToFile() {
+    public boolean isLogToFile() {
         return logToFile;
     }
 
     /**
      * @return the ioThreads
      */
-    public final int getIoThreads() {
+    public int getIoThreads() {
         return ioThreads;
     }
 
     /**
      * @return the workerThreads
      */
-    public final int getWorkerThreads() {
+    public int getWorkerThreads() {
         return workerThreads;
     }
 
     /**
      * @return the bufferSize
      */
-    public final int getBufferSize() {
+    public int getBufferSize() {
         return bufferSize;
     }
 
     /**
      * @return the buffersPerRegion
      */
-    public final int getBuffersPerRegion() {
+    public int getBuffersPerRegion() {
         return buffersPerRegion;
     }
 
     /**
      * @return the directBuffers
      */
-    public final boolean isDirectBuffers() {
+    public boolean isDirectBuffers() {
         return directBuffers;
     }
 
     /**
      * @return the forceGzipEncoding
      */
-    public final boolean isForceGzipEncoding() {
+    public boolean isForceGzipEncoding() {
         return forceGzipEncoding;
     }
 
     /**
      * @return the idmImpl
      */
-    public final String getIdmImpl() {
+    public String getIdmImpl() {
         return idmImpl;
     }
 
     /**
      * @return the idmArgs
      */
-    public final Map<String, Object> getIdmArgs() {
-        return idmArgs;
+    public Map<String, Object> getIdmArgs() {
+        return Collections.unmodifiableMap(idmArgs);
     }
 
     /**
      * @return the amImpl
      */
-    public final String getAmImpl() {
+    public String getAmImpl() {
         return amImpl;
     }
 
     /**
      * @return the amArgs
      */
-    public final Map<String, Object> getAmArgs() {
-        return amArgs;
+    public Map<String, Object> getAmArgs() {
+        return Collections.unmodifiableMap(amArgs);
     }
 
     /**
      * @return the requestsLimit
      */
-    public final int getRequestLimit() {
+    public int getRequestLimit() {
         return getRequestsLimit();
     }
 
     /**
      * @return the mongoMounts
      */
-    public final List<Map<String, Object>> getMongoMounts() {
-        return mongoMounts;
+    public List<Map<String, Object>> getMongoMounts() {
+        return Collections.unmodifiableList(mongoMounts);
     }
 
     /**
      * @return the localCacheEnabled
      */
-    public final boolean isLocalCacheEnabled() {
+    public boolean isLocalCacheEnabled() {
         return localCacheEnabled;
     }
 
     /**
      * @return the localCacheTtl
      */
-    public final long getLocalCacheTtl() {
+    public long getLocalCacheTtl() {
         return localCacheTtl;
     }
 
     /**
      * @return the requestsLimit
      */
-    public final int getRequestsLimit() {
+    public int getRequestsLimit() {
         return requestsLimit;
     }
 
@@ -1390,22 +1366,22 @@ public class Configuration {
     /**
      * @return the applicationLogicMounts
      */
-    public final List<Map<String, Object>> getApplicationLogicMounts() {
-        return applicationLogicMounts;
+    public List<Map<String, Object>> getApplicationLogicMounts() {
+        return Collections.unmodifiableList(applicationLogicMounts);
     }
 
     /**
      * @return the staticResourcesMounts
      */
-    public final List<Map<String, Object>> getStaticResourcesMounts() {
-        return staticResourcesMounts;
+    public List<Map<String, Object>> getStaticResourcesMounts() {
+        return Collections.unmodifiableList(staticResourcesMounts);
     }
 
     /**
      * @return the metadataNamedSingletons
      */
-    public final List<Map<String, Object>> getMetadataNamedSingletons() {
-        return metadataNamedSingletons;
+    public List<Map<String, Object>> getMetadataNamedSingletons() {
+        return Collections.unmodifiableList(metadataNamedSingletons);
     }
 
     /**
@@ -1518,7 +1494,7 @@ public class Configuration {
      * @return the connectionOptions
      */
     public Map<String, Object> getConnectionOptions() {
-        return connectionOptions;
+        return Collections.unmodifiableMap(connectionOptions);
     }
 
     /**

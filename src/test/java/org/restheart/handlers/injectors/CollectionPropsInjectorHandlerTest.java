@@ -21,11 +21,11 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import org.junit.After;
 import org.junit.AfterClass;
+import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Test;
-import static org.junit.Assert.*;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -38,8 +38,16 @@ import org.slf4j.LoggerFactory;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class CollectionPropsInjectorHandlerTest {
+
     private static final Logger LOG = LoggerFactory.getLogger(CollectionPropsInjectorHandlerTest.class);
 
+    @BeforeClass
+    public static void setUpClass() {
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+    }
     @Rule
     public TestRule watcher = new TestWatcher() {
         @Override
@@ -49,14 +57,6 @@ public class CollectionPropsInjectorHandlerTest {
     };
 
     public CollectionPropsInjectorHandlerTest() {
-    }
-
-    @BeforeClass
-    public static void setUpClass() {
-    }
-
-    @AfterClass
-    public static void tearDownClass() {
     }
 
     @Before

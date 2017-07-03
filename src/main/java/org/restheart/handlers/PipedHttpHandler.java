@@ -1,32 +1,11 @@
-/*
- * RESTHeart - the Web API for MongoDB
- * Copyright (C) SoftInstigate Srl
- * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- * 
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 package org.restheart.handlers;
 
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.AuthenticationMode;
 import io.undertow.security.idm.IdentityManager;
-import org.restheart.handlers.document.DocumentRepresentationFactory;
-import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import java.net.URISyntaxException;
 import java.util.List;
-import org.bson.BsonDocument;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.security.AccessManager;
@@ -42,6 +21,34 @@ import org.restheart.security.handlers.SecurityInitialHandler;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public abstract class PipedHttpHandler implements HttpHandler {
+
+    protected static PipedHttpHandler buildSecurityHandlerChain(
+            PipedHttpHandler next,
+            final AccessManager accessManager,
+            final IdentityManager identityManager,
+            final List<AuthenticationMechanism> mechanisms) {
+        PipedHttpHandler handler;
+
+        if (accessManager == null) {
+            throw new IllegalArgumentException("Error, accessManager cannot "
+                    + "be null. "
+                    + "Eventually use FullAccessManager "
+                    + "that gives full access power ");
+        }
+
+        handler = new AuthTokenInjecterHandler(
+                new AccessManagerHandler(accessManager, next));
+
+        handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE,
+                identityManager,
+                new AuthenticationMechanismsHandler(
+                        new AuthenticationConstraintHandler(
+                                new AuthenticationCallHandler(handler),
+                                accessManager),
+                        mechanisms));
+
+        return handler;
+    }
 
     private final Database dbsDAO;
     private final PipedHttpHandler next;
@@ -101,34 +108,6 @@ public abstract class PipedHttpHandler implements HttpHandler {
      */
     protected PipedHttpHandler getNext() {
         return next;
-    }
-
-    protected static PipedHttpHandler buildSecurityHandlerChain(
-            PipedHttpHandler next,
-            final AccessManager accessManager,
-            final IdentityManager identityManager,
-            final List<AuthenticationMechanism> mechanisms) {
-        PipedHttpHandler handler;
-
-        if (accessManager == null) {
-            throw new IllegalArgumentException("Error, accessManager cannot "
-                    + "be null. "
-                    + "Eventually use FullAccessManager "
-                    + "that gives full access power ");
-        }
-
-        handler = new AuthTokenInjecterHandler(
-                new AccessManagerHandler(accessManager, next));
-
-        handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE,
-                identityManager,
-                new AuthenticationMechanismsHandler(
-                        new AuthenticationConstraintHandler(
-                                new AuthenticationCallHandler(handler),
-                                accessManager),
-                        mechanisms));
-
-        return handler;
     }
 
     protected void next(HttpServerExchange exchange, RequestContext context) throws Exception {

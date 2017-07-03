@@ -22,6 +22,7 @@ package org.restheart.utils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class OSChecker {
+
     private static final String OS = System.getProperty("os.name").toLowerCase();
 
     public static boolean isWindows() {

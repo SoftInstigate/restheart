@@ -18,7 +18,6 @@
 package org.restheart.hal;
 
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 import static java.lang.Math.toIntExact;
 import java.util.List;
 import java.util.TreeMap;
@@ -26,7 +25,6 @@ import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
-import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import org.restheart.utils.URLUtils;
 
 /**
@@ -34,6 +32,7 @@ import org.restheart.utils.URLUtils;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public abstract class AbstractRepresentationFactory {
+
     /**
      *
      * @param exchange
@@ -94,9 +93,9 @@ public abstract class AbstractRepresentationFactory {
         String queryString
                 = exchange.getQueryString() == null
                 || exchange.getQueryString().isEmpty()
-                        ? ""
-                        : "?" + URLUtils.decodeQueryString(
-                                exchange.getQueryString());
+                ? ""
+                : "?" + URLUtils.decodeQueryString(
+                        exchange.getQueryString());
 
         Representation rep;
 

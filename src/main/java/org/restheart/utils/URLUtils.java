@@ -44,15 +44,16 @@ import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.STRING;
+import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class URLUtils {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(URLUtils.class);
 
     public static String getReferenceLink(
@@ -138,14 +139,14 @@ public class URLUtils {
                     .concat(DOC_ID_TYPE.DATE.name());
         } else {
             String _id;
-            
+
             try {
                 _id = getIdString(docId);
-            } catch(UnsupportedDocumentIdException uie) {
+            } catch (UnsupportedDocumentIdException uie) {
                 _id = docId.toString();
             }
-            
-            context.addWarning("resource with _id: " 
+
+            context.addWarning("resource with _id: "
                     + _id + " does not have an URI "
                     + "since the _id is of type "
                     + docId.getClass().getSimpleName());
@@ -312,7 +313,7 @@ public class URLUtils {
                 throw new UnsupportedDocumentIdException(
                         "unknown _id type: "
                         + id.getClass()
-                        .getSimpleName());
+                                .getSimpleName());
         }
     }
 
