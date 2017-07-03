@@ -20,17 +20,17 @@ package org.restheart.test.integration;
 import io.undertow.util.Headers;
 import java.net.URI;
 import java.net.URISyntaxException;
-import org.restheart.hal.Representation;
-import org.restheart.utils.HttpStatus;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.junit.Before;
 import org.junit.Test;
+import org.restheart.hal.Representation;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
+import static org.restheart.test.integration.HttpClientAbstactIT.buildURI;
 import static org.restheart.test.integration.HttpClientAbstactIT.collectionTmpUri;
 import static org.restheart.test.integration.HttpClientAbstactIT.dbTmpUri;
 import static org.restheart.test.integration.HttpClientAbstactIT.halCT;
-import static org.restheart.test.integration.HttpClientAbstactIT.buildURI;
+import org.restheart.utils.HttpStatus;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -38,7 +38,7 @@ import static org.restheart.test.integration.HttpClientAbstactIT.buildURI;
 public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
     private static URI userURI;
-    
+
     public JsonPathConditionsCheckerIT() throws URISyntaxException {
         super();
         userURI = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/a@si.com");
@@ -82,9 +82,8 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
                 .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
         check("check post valid data", resp, HttpStatus.SC_CREATED);
-        
+
         // *** test update invalid data
-        
         resp = adminExecutor.execute(Request.Post(collectionTmpUri)
                 .bodyString("{_id: \"a@si.com\", a:1}", halCT)
                 .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
@@ -105,7 +104,7 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
         check("check post valid data with dot notation", resp, HttpStatus.SC_CREATED);
     }
-    
+
     @Test
     public void testPostIncompleteDataDotNotation() throws Exception {
         Response resp;
@@ -119,7 +118,7 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
         check("check post valid data with dot notation", resp, HttpStatus.SC_BAD_REQUEST);
     }
-    
+
     @Test
     public void testPutDataDotNotation() throws Exception {
         Response resp;
@@ -192,11 +191,11 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
         check("check patch invalid array data with dot notation", resp, HttpStatus.SC_BAD_REQUEST);
     }
-    
+
     /**
      * see bug https://softinstigate.atlassian.net/browse/RH-160
-     * 
-     * @throws Exception 
+     *
+     * @throws Exception
      */
     @Test
     public void testPatchIncompleteObject() throws Exception {
@@ -212,7 +211,6 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
         check("check post valid data", resp, HttpStatus.SC_CREATED);
 
         // *** test patch valid data with dot notation
-
         // an incomplete details object. address and country are nullable but mandatory
         final String INCOMPLETE_OBJ = "{\"details\": {\"city\": \"a city\"}}";
 

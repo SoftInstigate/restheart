@@ -43,8 +43,16 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class JsonUtilsTest {
+
     private static final Logger LOG = LoggerFactory.getLogger(JsonUtilsTest.class);
-    
+
+    @BeforeClass
+    public static void setUpClass() {
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+    }
     @Rule
     public TestRule watcher = new TestWatcher() {
         @Override
@@ -56,14 +64,6 @@ public class JsonUtilsTest {
     public JsonUtilsTest() {
     }
 
-    @BeforeClass
-    public static void setUpClass() {
-    }
-
-    @AfterClass
-    public static void tearDownClass() {
-    }
-
     @Before
     public void setUp() {
     }
@@ -71,12 +71,12 @@ public class JsonUtilsTest {
     @After
     public void tearDown() {
     }
-    
+
     @Test
     public void testMinify() {
         String json = "{ '_id'  :   {   '$in' : [1, 20.0, 'id']}}";
         String minified = "{'_id':{'$in':[1,20.0,'id']}}";
-        
+
         Assert.assertEquals(minified, JsonUtils.minify(json));
     }
 
@@ -189,20 +189,20 @@ public class JsonUtilsTest {
         Assert.assertTrue(checkGetPropsFromPath(json3, "$.a", "[{f: 1}]"));
         Assert.assertTrue(checkGetPropsFromPath(json3, "$.a.[*]", "{f: 1}"));
         Assert.assertTrue(checkGetPropsFromPath(json3, "$.a.[*].f", "1"));
-        
+
         Assert.assertTrue(checkGetPropsFromPath(json4, "$.a.[*].e", "1", "2", "3"));
-        
+
         Assert.assertTrue(checkGetPropsFromPath(json4, "$.a.[*].e", "1", "2", "3"));
-        
+
         Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.*", "{e: 1}", "{e: 2}", "{e: 3}"));
-        
+
         // justification of the following: even if "a! is an object, it has all numeric values
         // on mongodb you can use the dot notation on arrays and do the following on RESTHeart
         // PATCH /db/coll/doc {"a.1", {"e": 1000}} 
         // the content turns internally to {"a": {"1": {"e":1000}}}
         Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.[*]", "{e: 1}", "{e: 2}", "{e: 3}"));
     }
-    
+
     @Test
     public void testJsonObject() throws Exception {
         String _json1 = "{o: {}}";
@@ -230,7 +230,7 @@ public class JsonUtilsTest {
         Assert.assertTrue(checkGetPropsFromPath(json3, "$.o.*", "{f: 1}"));
         Assert.assertTrue(checkGetPropsFromPath(json3, "$.o.*.f", "1"));
     }
-    
+
     @Test
     public void checkCountOnComplexJson() {
         String _json = "{\n"
@@ -571,62 +571,61 @@ public class JsonUtilsTest {
             Assert.fail(ex.toString());
         }
     }
-    
-    
+
     @Test
     public void testParseToBsonObject() {
         String object = JsonUtils.minify("{\"a\" :1 }");
 
         BsonValue bson = JsonUtils.parse(object);
-        
+
         String actual = JsonUtils.toJson(bson);
 
         Assert.assertEquals(object, actual);
     }
-    
+
     @Test
     public void testParseToBsonArray() {
         String array = "[\"a\", \"b\", 2 ]";
 
         BsonValue bson = JsonUtils.parse(array);
-        
+
         String actual = JsonUtils.toJson(bson);
 
         Assert.assertEquals(JsonUtils.minify(array), actual);
     }
-    
+
     @Test
     public void testParseObjectId() {
         ObjectId id = new ObjectId();
 
         BsonValue parsed = JsonUtils.parse(
                 "{'$oid':'"
-                .concat(id.toString())
-                .concat("'}"));
-        
+                        .concat(id.toString())
+                        .concat("'}"));
+
         Assert.assertTrue(parsed.isObjectId());
         Assert.assertEquals(parsed.asObjectId().getValue(), id);
     }
-    
+
     @Test
     public void testParseFloat() {
         BsonValue parsed = JsonUtils.parse("3.1415");
-        
+
         Assert.assertTrue(parsed.isNumber());
         Assert.assertEquals(parsed.asDouble(), new BsonDouble(3.1415));
     }
-    
+
     @Test
     public void testParseToBsonArrayOfObjectets() {
         String arrayOfObjs = "[{\"a\" :1 },{\"b\" :2 }]";
 
         BsonValue bson = JsonUtils.parse(arrayOfObjs);
-        
+
         String actual = JsonUtils.toJson(bson);
 
         Assert.assertEquals(JsonUtils.minify(arrayOfObjs), actual);
     }
-    
+
     private boolean eq(List<Optional<BsonValue>> left, List<Optional<BsonValue>> right) {
         if (left == null && right != null) {
             return false;
@@ -703,7 +702,7 @@ public class JsonUtilsTest {
                 exps.add(null);
             } else {
                 BsonValue _exp = JsonUtils.parse(exp);
-                
+
                 if (_exp.isNull()) {
                     exps.add(Optional.empty());
                 } else {

@@ -17,83 +17,83 @@
  */
 package org.restheart;
 
-import org.restheart.utils.RHDaemon;
 import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
-import static org.restheart.Configuration.RESTHEART_VERSION;
-import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.handlers.ErrorHandler;
-import org.restheart.handlers.GzipEncodingHandler;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestDispacherHandler;
-import org.restheart.handlers.injectors.RequestContextInjectorHandler;
-import org.restheart.handlers.injectors.CollectionPropsInjectorHandler;
-import org.restheart.handlers.injectors.DbPropsInjectorHandler;
-import org.restheart.handlers.injectors.LocalCachesSingleton;
-import org.restheart.security.AccessManager;
-import org.restheart.utils.ResourcesExtractor;
-import org.restheart.utils.LoggingInitializer;
-import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.applicationlogic.ApplicationLogicHandler;
-import org.restheart.handlers.OptionsHandler;
-import org.restheart.handlers.PipedWrappingHandler;
-import org.restheart.handlers.injectors.BodyInjectorHandler;
-import org.restheart.security.handlers.SecurityHandlerDispacher;
-import org.restheart.security.handlers.CORSHandler;
-import org.restheart.utils.FileUtils;
-import org.restheart.utils.OSChecker;
+import static io.undertow.Handlers.path;
+import static io.undertow.Handlers.resource;
 import io.undertow.Undertow;
+import io.undertow.Undertow.Builder;
 import io.undertow.security.idm.IdentityManager;
+import io.undertow.server.handlers.AllowedMethodsHandler;
+import io.undertow.server.handlers.BlockingHandler;
+import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
+import io.undertow.server.handlers.PathHandler;
+import io.undertow.server.handlers.RequestLimit;
+import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.server.handlers.resource.FileResourceManager;
+import io.undertow.server.handlers.resource.ResourceHandler;
+import io.undertow.util.HttpString;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-
-import static io.undertow.Handlers.resource;
-import io.undertow.Undertow.Builder;
-import io.undertow.server.handlers.AllowedMethodsHandler;
-import io.undertow.server.handlers.BlockingHandler;
-import io.undertow.server.handlers.GracefulShutdownHandler;
-import io.undertow.server.handlers.PathHandler;
-import io.undertow.server.handlers.RequestLimit;
-import io.undertow.server.handlers.RequestLimitingHandler;
-import io.undertow.server.handlers.resource.ResourceHandler;
-import io.undertow.util.HttpString;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
+import static org.fusesource.jansi.Ansi.ansi;
+import static org.restheart.Configuration.RESTHEART_VERSION;
+import org.restheart.db.MongoDBClientSingleton;
+import org.restheart.handlers.ErrorHandler;
+import org.restheart.handlers.GzipEncodingHandler;
+import org.restheart.handlers.OptionsHandler;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipedWrappingHandler;
+import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.RequestDispacherHandler;
+import org.restheart.handlers.RequestLoggerHandler;
+import org.restheart.handlers.applicationlogic.ApplicationLogicHandler;
+import org.restheart.handlers.injectors.AccountInjectorHandler;
+import org.restheart.handlers.injectors.BodyInjectorHandler;
+import org.restheart.handlers.injectors.CollectionPropsInjectorHandler;
+import org.restheart.handlers.injectors.DbPropsInjectorHandler;
+import org.restheart.handlers.injectors.LocalCachesSingleton;
+import org.restheart.handlers.injectors.RequestContextInjectorHandler;
+import org.restheart.security.AccessManager;
 import org.restheart.security.FullAccessManager;
 import org.restheart.security.handlers.AuthTokenHandler;
+import org.restheart.security.handlers.CORSHandler;
+import org.restheart.security.handlers.SecurityHandlerDispacher;
+import org.restheart.utils.FileUtils;
+import org.restheart.utils.LoggingInitializer;
+import org.restheart.utils.OSChecker;
+import org.restheart.utils.RHDaemon;
+import org.restheart.utils.ResourcesExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.restheart.handlers.RequestLoggerHandler;
-import java.nio.file.Paths;
-import static io.undertow.Handlers.path;
-import javax.net.ssl.TrustManagerFactory;
-import static org.fusesource.jansi.Ansi.ansi;
-import org.restheart.handlers.injectors.AccountInjectorHandler;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public final class Bootstrapper {
+public class Bootstrapper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Bootstrapper.class);
     private static final Map<String, File> TMP_EXTRACTED_FILES = new HashMap<>();
@@ -104,8 +104,12 @@ public final class Bootstrapper {
     private static Configuration configuration;
     private static Undertow undertowServer;
 
-    private Bootstrapper() {
-    }
+    private static final String EXITING = ", exiting...";
+    private static final String INSTANCE = " instance ";
+    private static final String STARTING = "Starting ";
+    private static final String UNDEFINED = "undefined";
+    private static final String RESTHEART = "RESTHeart";
+    private static final String VERSION = "version {}";
 
     /**
      * main method
@@ -119,16 +123,16 @@ public final class Bootstrapper {
             // read configuration silently, to avoid logging before initializing the logger
             configuration = FileUtils.getConfiguration(args, true);
         } catch (ConfigurationException ex) {
-            LOGGER.info("Starting "
-                    + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
-                    + " instance "
-                    + ansi().fg(RED).bold().a("undefined").reset().toString());
+            LOGGER.info(STARTING
+                    + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
+                    + INSTANCE
+                    + ansi().fg(RED).bold().a(UNDEFINED).reset().toString());
 
             if (RESTHEART_VERSION != null) {
-                LOGGER.info("version {}", RESTHEART_VERSION);
+                LOGGER.info(VERSION, RESTHEART_VERSION);
             }
 
-            logErrorAndExit(ex.getMessage() + ", exiting...", ex, false, -1);
+            logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
         }
 
         if (!hasForkOption(args)) {
@@ -136,19 +140,15 @@ public final class Bootstrapper {
             startServer(false);
         } else {
             if (OSChecker.isWindows()) {
-                String instanceName = configuration == null
-                        ? "undefined"
-                        : configuration.getInstanceName() == null
-                        ? "undefined"
-                        : configuration.getInstanceName();
+                String instanceName = getInstanceName();
 
-                LOGGER.info("Starting "
-                        + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
-                        + " instance "
+                LOGGER.info(STARTING
+                        + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
+                        + INSTANCE
                         + ansi().fg(RED).bold().a(instanceName).reset().toString());
 
                 if (RESTHEART_VERSION != null) {
-                    LOGGER.info("version {}", RESTHEART_VERSION);
+                    LOGGER.info(VERSION, RESTHEART_VERSION);
                 }
 
                 LOGGER.error("Fork is not supported on Windows");
@@ -173,7 +173,7 @@ public final class Bootstrapper {
                     d.init();
                     LOGGER.info("Forked process: {}", LIBC.getpid());
                     initLogging(args, d);
-                } catch (Throwable t) {
+                } catch (Exception t) {
                     logErrorAndExit("Error staring forked process", t, false, false, -1);
                 }
 
@@ -182,19 +182,15 @@ public final class Bootstrapper {
                 initLogging(args, d);
 
                 try {
-                    String instanceName = configuration == null
-                            ? "undefined"
-                            : configuration.getInstanceName() == null
-                            ? "undefined"
-                            : configuration.getInstanceName();
+                    String instanceName = getInstanceName();
 
-                    LOGGER.info("Starting "
-                            + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
-                            + " instance "
+                    LOGGER.info(STARTING
+                            + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
+                            + INSTANCE
                             + ansi().fg(RED).bold().a(instanceName).reset().toString());
 
                     if (RESTHEART_VERSION != null) {
-                        LOGGER.info("version {}", RESTHEART_VERSION);
+                        LOGGER.info(VERSION, RESTHEART_VERSION);
                     }
 
                     logLoggingConfiguration(true);
@@ -252,10 +248,10 @@ public final class Bootstrapper {
             configuration = FileUtils.getConfiguration(confFilePath, false);
         } catch (ConfigurationException ex) {
             if (RESTHEART_VERSION != null) {
-                LOGGER.info(ansi().fg(RED).bold().a("RESTHeart").reset().toString() + " version {}", RESTHEART_VERSION);
+                LOGGER.info(ansi().fg(RED).bold().a(RESTHEART).reset().toString() + " version {}", RESTHEART_VERSION);
             }
 
-            logErrorAndExit(ex.getMessage() + ", exiting...", ex, false, -1);
+            logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
         }
 
         startServer(false);
@@ -263,6 +259,7 @@ public final class Bootstrapper {
 
     /**
      * Shutdown the RESTHeart server
+     *
      * @param args command line arguments
      */
     public static void shutdown(final String[] args) {
@@ -298,10 +295,12 @@ public final class Bootstrapper {
      */
     private static void logLoggingConfiguration(boolean fork) {
         String logbackConfigurationFile = System.getProperty("logback.configurationFile");
-        boolean usesLogback = logbackConfigurationFile != null && !logbackConfigurationFile.equals("");
-        
-        if(usesLogback) return;
-        
+        boolean usesLogback = logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty();
+
+        if (usesLogback) {
+            return;
+        }
+
         if (configuration.isLogToFile()) {
             LOGGER.info("Logging to file {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
         }
@@ -341,19 +340,15 @@ public final class Bootstrapper {
      * @param fork
      */
     private static void startServer(boolean fork) {
-        String instanceName = configuration == null
-                ? "undefined"
-                : configuration.getInstanceName() == null
-                ? "undefined"
-                : configuration.getInstanceName();
+        String instanceName = getInstanceName();
 
-        LOGGER.info("Starting "
-                + ansi().fg(RED).bold().a("RESTHeart").reset().toString()
-                + " instance "
+        LOGGER.info(STARTING
+                + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
+                + INSTANCE
                 + ansi().fg(RED).bold().a(instanceName).reset().toString());
 
         if (RESTHEART_VERSION != null) {
-            LOGGER.info("version {}", RESTHEART_VERSION);
+            LOGGER.info(VERSION, RESTHEART_VERSION);
         }
 
         Path pidFilePath = FileUtils.getPidFilePath(
@@ -405,6 +400,14 @@ public final class Bootstrapper {
         LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart started").reset().toString());
     }
 
+    private static String getInstanceName() {
+        return configuration == null
+                ? UNDEFINED
+                : configuration.getInstanceName() == null
+                ? UNDEFINED
+                : configuration.getInstanceName();
+    }
+
     /**
      * stopServer
      *
@@ -434,6 +437,7 @@ public final class Bootstrapper {
                 shutdownHandler.awaitShutdown(60 * 1000); // up to 1 minute
             } catch (InterruptedException ie) {
                 LOGGER.error("Error while waiting for pending request to complete", ie);
+                Thread.currentThread().interrupt();
             }
         }
 
@@ -535,7 +539,11 @@ public final class Bootstrapper {
             tmf.init(ks);
 
             sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-        } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException ex) {
+        } catch (KeyManagementException
+                | NoSuchAlgorithmException
+                | KeyStoreException
+                | CertificateException
+                | UnrecoverableKeyException ex) {
             logErrorAndExit("Couldn't start RESTHeart, error with specified keystore. exiting..", ex, false, -1);
         } catch (FileNotFoundException ex) {
             logErrorAndExit("Couldn't start RESTHeart, keystore file not found. exiting..", ex, false, -1);
@@ -609,7 +617,13 @@ public final class Bootstrapper {
                         .getConstructor(Map.class)
                         .newInstance(configuration.getIdmArgs());
                 identityManager = (IdentityManager) idm;
-            } catch (Exception ex) {
+            } catch (ClassNotFoundException
+                    | IllegalAccessException
+                    | IllegalArgumentException
+                    | InstantiationException
+                    | NoSuchMethodException
+                    | SecurityException
+                    | InvocationTargetException ex) {
                 logErrorAndExit("Error configuring Identity Manager implementation " + configuration.getIdmImpl(), ex, false, -3);
             }
         }
@@ -633,7 +647,13 @@ public final class Bootstrapper {
                         .getConstructor(Map.class)
                         .newInstance(configuration.getAmArgs());
                 accessManager = (AccessManager) am;
-            } catch (Exception ex) {
+            } catch (ClassNotFoundException
+                    | IllegalAccessException
+                    | IllegalArgumentException
+                    | InstantiationException
+                    | NoSuchMethodException
+                    | SecurityException
+                    | InvocationTargetException ex) {
                 logErrorAndExit("Error configuring acess manager implementation " + configuration.getAmImpl(), ex, false, -3);
             }
         }
@@ -678,7 +698,9 @@ public final class Bootstrapper {
      * @param accessManager
      * @return a GracefulShutdownHandler
      */
-    private static GracefulShutdownHandler getHandlersPipe(final IdentityManager identityManager, final AccessManager accessManager) {
+    private static GracefulShutdownHandler getHandlersPipe(
+            final IdentityManager identityManager,
+            final AccessManager accessManager) {
         PipedHttpHandler coreHandlerChain
                 = new AccountInjectorHandler(
                         new DbPropsInjectorHandler(
@@ -774,10 +796,14 @@ public final class Bootstrapper {
                     String welcomeFile = (String) sr.get(Configuration.STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY);
 
                     Boolean embedded = (Boolean) sr.get(Configuration.STATIC_RESOURCES_MOUNT_EMBEDDED_KEY);
-                    embedded = embedded == null ? false : embedded; // makes embedded optional with default to false
+                    if (embedded == null) {
+                        embedded = false;
+                    }
 
                     Boolean secured = (Boolean) sr.get(Configuration.STATIC_RESOURCES_MOUNT_SECURED_KEY);
-                    secured = secured == null ? false : secured; // makes secured optional with default to false
+                    if (secured == null) {
+                        secured = false;
+                    }
 
                     if (where == null || !where.startsWith("/")) {
                         LOGGER.error("Cannot bind static resources to {}. parameter 'where' must start with /", where);
@@ -883,7 +909,7 @@ public final class Bootstrapper {
             final IdentityManager identityManager,
             final AccessManager accessManager) {
         if (conf.getApplicationLogicMounts() != null) {
-            conf.getApplicationLogicMounts().stream().forEach(al -> {
+            conf.getApplicationLogicMounts().stream().forEach((Map<String, Object> al) -> {
                 try {
                     String alClazz = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHAT_KEY);
                     String alWhere = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE_KEY);
@@ -939,7 +965,13 @@ public final class Bootstrapper {
                                 + " Class {} does not extend ApplicationLogicHandler", alWhere, alClazz);
                     }
 
-                } catch (Throwable t) {
+                } catch (ClassNotFoundException
+                        | IllegalAccessException
+                        | IllegalArgumentException
+                        | InstantiationException
+                        | NoSuchMethodException
+                        | SecurityException
+                        | InvocationTargetException t) {
                     LOGGER.error("Cannot pipe application logic handler {}",
                             al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE_KEY), t);
                 }
@@ -955,5 +987,8 @@ public final class Bootstrapper {
      */
     public static Configuration getConfiguration() {
         return configuration;
+    }
+
+    private Bootstrapper() {
     }
 }

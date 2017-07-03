@@ -24,10 +24,6 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
-import org.restheart.utils.HttpStatus;
-import org.restheart.handlers.IllegalQueryParamenterException;
-import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.injectors.LocalCachesSingleton;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -39,12 +35,17 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
+import org.restheart.handlers.IllegalQueryParamenterException;
+import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.injectors.LocalCachesSingleton;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class DbsDAO implements Database {
+
     public static final Bson PROPS_QUERY = eq("_id", "_properties");
 
     private static final Document FIELDS_TO_RETURN;

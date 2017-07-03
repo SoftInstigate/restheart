@@ -1,20 +1,3 @@
-/*
- * RESTHeart - the Web API for MongoDB
- * Copyright (C) SoftInstigate Srl
- * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- * 
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 package org.restheart.handlers.schema;
 
 import static com.mongodb.client.model.Filters.eq;
@@ -29,7 +12,6 @@ import org.restheart.Bootstrapper;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.db.DbsDAO;
-import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -40,16 +22,24 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class JsonSchemaCacheSingleton {
-    private final DbsDAO dbsDAO;
 
     private static final String SEPARATOR = "_@_@_";
     private static final long MAX_CACHE_SIZE = 1_000;
+    static final Logger LOGGER
+            = LoggerFactory.getLogger(JsonSchemaCacheSingleton.class);
+
+    /**
+     *
+     * @return
+     */
+    public static JsonSchemaCacheSingleton getInstance() {
+        return CachesSingletonHolder.INSTANCE;
+
+    }
+    private final DbsDAO dbsDAO;
 
     private Cache<String, Schema> schemaCache = null;
     private Cache<String, BsonDocument> rawSchemaCache = null;
-
-    static final Logger LOGGER
-            = LoggerFactory.getLogger(JsonSchemaCacheSingleton.class);
 
     JsonSchemaCacheSingleton() {
         dbsDAO = new DbsDAO();
@@ -149,16 +139,8 @@ public class JsonSchemaCacheSingleton {
         return document;
     }
 
-    /**
-     *
-     * @return
-     */
-    public static JsonSchemaCacheSingleton getInstance() {
-        return CachesSingletonHolder.INSTANCE;
-
-    }
-
     private static class CachesSingletonHolder {
+
         private static final JsonSchemaCacheSingleton INSTANCE
                 = new JsonSchemaCacheSingleton();
 

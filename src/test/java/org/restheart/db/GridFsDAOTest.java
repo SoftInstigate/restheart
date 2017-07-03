@@ -19,9 +19,9 @@ package org.restheart.db;
 
 import java.io.InputStream;
 import org.apache.tika.Tika;
-import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -33,8 +33,10 @@ import org.slf4j.LoggerFactory;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class GridFsDAOTest {
+
     private static final Logger LOG = LoggerFactory.getLogger(GridFsDAOTest.class);
 
+    public static final String FILENAME = "RESTHeart_documentation.pdf";
     @Rule
     public TestRule watcher = new TestWatcher() {
         @Override
@@ -42,9 +44,7 @@ public class GridFsDAOTest {
             LOG.info("executing test {}", description.toString());
         }
     };
-    
-    public static final String FILENAME = "RESTHeart_documentation.pdf";
-    
+
     public GridFsDAOTest() {
     }
 
@@ -53,5 +53,5 @@ public class GridFsDAOTest {
         InputStream is = GridFsDAOTest.class.getResourceAsStream("/" + FILENAME);
         Tika tika = new Tika();
         assertEquals("application/pdf", tika.detect(is));
-    }    
+    }
 }

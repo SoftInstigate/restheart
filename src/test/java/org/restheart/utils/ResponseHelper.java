@@ -30,4 +30,7 @@ public class ResponseHelper {
         exchange.setStatusCode(code);
     }
 
+    private ResponseHelper() {
+    }
+
 }

@@ -31,14 +31,12 @@ import org.xnio.Option;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ConfigurationHelper {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
 
     private static final Set<Option> UNDERTOW_OPTIONS;
 
     private static final Set<Option> LONG_UNDERTOW_OPTIONS;
-
-    private ConfigurationHelper() {
-    }
 
     static {
         UNDERTOW_OPTIONS = Sets.newHashSet();
@@ -87,7 +85,7 @@ public class ConfigurationHelper {
         if (options == null) {
             return;
         }
-        
+
         UNDERTOW_OPTIONS.stream().forEach(option -> {
             if (options.containsKey(option.getName())) {
                 Object value = options.get(option.getName());
@@ -98,7 +96,7 @@ public class ConfigurationHelper {
                 }
             }
         });
-        
+
         LONG_UNDERTOW_OPTIONS.stream().forEach(option -> {
             if (options.containsKey(option.getName())) {
                 Object value = options.get(option.getName());
@@ -110,5 +108,8 @@ public class ConfigurationHelper {
                 }
             }
         });
+    }
+
+    private ConfigurationHelper() {
     }
 }

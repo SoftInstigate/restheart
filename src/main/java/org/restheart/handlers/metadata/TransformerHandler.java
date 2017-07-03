@@ -21,10 +21,10 @@ import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import java.util.List;
 import org.bson.BsonValue;
-import org.restheart.metadata.transformers.RepresentationTransformer;
-import org.restheart.metadata.transformers.Transformer;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.metadata.transformers.RepresentationTransformer;
+import org.restheart.metadata.transformers.Transformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,17 +35,18 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class TransformerHandler extends PipedHttpHandler {
-    static final Logger LOGGER =
-            LoggerFactory.getLogger(TransformerHandler.class);
+
+    static final Logger LOGGER
+            = LoggerFactory.getLogger(TransformerHandler.class);
 
     private final List<Transformer> transformers;
     private final RepresentationTransformer.PHASE phase;
-
 
     /**
      * Creates a new instance of TransformerHandler
      *
      * @param next
+     * @param phase
      * @param transformers
      */
     public TransformerHandler(
@@ -60,8 +61,8 @@ public class TransformerHandler extends PipedHttpHandler {
 
     @Override
     public void handleRequest(
-            HttpServerExchange exchange, 
-            RequestContext context) 
+            HttpServerExchange exchange,
+            RequestContext context)
             throws Exception {
         if (doesTransformerAppy()) {
             transform(exchange, context);
@@ -76,8 +77,8 @@ public class TransformerHandler extends PipedHttpHandler {
     }
 
     private void transform(
-            HttpServerExchange exchange, 
-            RequestContext context) 
+            HttpServerExchange exchange,
+            RequestContext context)
             throws InvalidMetadataException {
         BsonValue data;
 

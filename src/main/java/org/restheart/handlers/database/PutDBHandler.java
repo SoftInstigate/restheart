@@ -22,11 +22,11 @@ import io.undertow.util.Headers;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.db.OperationResult;
-import org.restheart.handlers.metadata.InvalidMetadataException;
-import org.restheart.metadata.transformers.RepresentationTransformer;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
+import org.restheart.handlers.metadata.InvalidMetadataException;
+import org.restheart.metadata.transformers.RepresentationTransformer;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -67,7 +67,7 @@ public class PutDBHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-        
+
         if (context.getDBName().isEmpty()
                 || context.getDBName().startsWith("_")) {
             ResponseHelper.endExchangeWithMessage(

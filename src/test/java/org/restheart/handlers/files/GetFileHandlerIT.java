@@ -1,20 +1,3 @@
-/*
- * RESTHeart - the Web API for MongoDB
- * Copyright (C) SoftInstigate Srl
- * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- * 
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 package org.restheart.handlers.files;
 
 import com.eclipsesource.json.JsonObject;
@@ -33,18 +16,17 @@ import org.apache.http.client.fluent.Response;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.util.EntityUtils;
-import org.bson.BsonString;
 import org.bson.types.ObjectId;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.restheart.test.integration.HttpClientAbstactIT;
-import org.restheart.hal.Representation;
-import org.restheart.utils.HttpStatus;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.restheart.hal.Representation;
+import org.restheart.test.integration.HttpClientAbstactIT;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
@@ -52,12 +34,11 @@ import static org.junit.Assert.fail;
  */
 public class GetFileHandlerIT extends HttpClientAbstactIT {
 
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
-
     public static final String FILENAME = "RESTHeart_documentation.pdf";
     public static final String BUCKET = "mybucket";
     public static Object ID = "myfile";
+    @Rule
+    public TemporaryFolder tempFolder = new TemporaryFolder();
 
     public GetFileHandlerIT() {
     }
@@ -175,17 +156,17 @@ public class GetFileHandlerIT extends HttpClientAbstactIT {
         assertNotNull(json.get("_embedded").asObject().get("rh:file"));
         assertTrue(json.get("_embedded").asObject().get("rh:file").isArray());
     }
-    
+
     @Test
     public void testPutFile() throws Exception {
         createBucket();
-        
+
         String id = "test";
-        
+
         createFilePut(id);
 
         // test that GET /db/bucket.files includes the file
-        String fileUrl = dbTmpUri + "/" + BUCKET + ".files/" +id;
+        String fileUrl = dbTmpUri + "/" + BUCKET + ".files/" + id;
         Response resp = adminExecutor.execute(Request.Get(fileUrl));
 
         HttpResponse httpResp = resp.returnResponse();
@@ -266,9 +247,7 @@ public class GetFileHandlerIT extends HttpClientAbstactIT {
             return null;
         } else {
             String loc = hs[0].getValue();
-
-            String id = loc.substring(loc.lastIndexOf("/") + 1);
-
+            String id = loc.substring(loc.lastIndexOf('/') + 1);
             return new ObjectId(id);
         }
     }

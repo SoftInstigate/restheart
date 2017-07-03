@@ -17,7 +17,6 @@
  */
 package org.restheart.metadata.transformers;
 
-import org.restheart.metadata.transformers.Transformer;
 import io.undertow.server.HttpServerExchange;
 import java.util.HashSet;
 import java.util.Set;
@@ -42,13 +41,14 @@ import org.restheart.handlers.RequestContext;
  *
  */
 public class ValidOidsStringsAsOidsTransformer implements Transformer {
+
     /**
      *
      * @param exchange
      * @param context
      * @param contentToTransform
-     * @param args names of properties to transform eventually (if value is valid
- ObjectId) as an array of strings (["_id", "prop2"]
+     * @param args names of properties to transform eventually (if value is
+     * valid ObjectId) as an array of strings (["_id", "prop2"]
      */
     @Override
     public void transform(
@@ -65,10 +65,9 @@ public class ValidOidsStringsAsOidsTransformer implements Transformer {
             throw new IllegalStateException(
                     "content to transform is not a document");
         }
-        
+
         BsonDocument _contentToTransform = contentToTransform.asDocument();
-        
-        
+
         // this set contains the names of the properties to transform eventually
         Set<String> propertiesToTransform = new HashSet<>();
 
@@ -79,8 +78,8 @@ public class ValidOidsStringsAsOidsTransformer implements Transformer {
                 if (propertyName.isString()) {
                     propertiesToTransform.add(
                             propertyName
-                            .asString()
-                            .getValue());
+                                    .asString()
+                                    .getValue());
 
                 } else {
                     context.addWarning("element in the args "
@@ -124,10 +123,10 @@ public class ValidOidsStringsAsOidsTransformer implements Transformer {
      * @param key the name of the property to transform (in case of patch can
      * also use the dot notation)
      * @param propertiesToTransform the set of properties names to transform if
- their value is a valid ObjectId
+     * their value is a valid ObjectId
      * @return true if the property should be transformed
      */
-    private boolean shouldTransform(String key, 
+    private boolean shouldTransform(String key,
             Set<String> propertiesToTransform) {
         if (key.contains(".")) {
             String keyTokens[] = key.split(Pattern.quote("."));

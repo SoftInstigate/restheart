@@ -32,8 +32,9 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SchemaStoreClient implements SchemaClient {
-    static final Logger LOGGER = 
-            LoggerFactory.getLogger(SchemaStoreClient.class);
+
+    static final Logger LOGGER
+            = LoggerFactory.getLogger(SchemaStoreClient.class);
 
     private static final SchemaClient WRAPPED = new DefaultSchemaClient();
 
@@ -43,7 +44,7 @@ public class SchemaStoreClient implements SchemaClient {
     @Override
     public InputStream get(String uri) {
         LOGGER.trace("@@@ loading schema {}", uri);
-        
+
         if (isLocalSchemaStore(uri)) {
             try {
                 SchemaStoreURL _uri = new SchemaStoreURL(uri);
@@ -51,7 +52,7 @@ public class SchemaStoreClient implements SchemaClient {
                 BsonDocument s = JsonSchemaCacheSingleton
                         .getInstance()
                         .getRaw(
-                                _uri.getSchemaDb(), 
+                                _uri.getSchemaDb(),
                                 _uri.getSchemaId());
 
                 return new ByteArrayInputStream(s.toString().getBytes());

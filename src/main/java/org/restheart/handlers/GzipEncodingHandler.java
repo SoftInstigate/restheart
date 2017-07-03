@@ -17,8 +17,6 @@
  */
 package org.restheart.handlers;
 
-import org.restheart.utils.HttpStatus;
-import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
@@ -27,13 +25,16 @@ import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import java.util.Arrays;
+import org.restheart.utils.HttpStatus;
+import org.restheart.utils.ResponseHelper;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GzipEncodingHandler extends EncodingHandler {
-    private ResponseSenderHandler sender = new ResponseSenderHandler(null);
+
+    private final ResponseSenderHandler sender = new ResponseSenderHandler(null);
 
     private boolean forceCompression = false;
 
@@ -62,13 +63,13 @@ public class GzipEncodingHandler extends EncodingHandler {
             }
 
             RequestContext errorContext = new RequestContext(exchange, "/", "_error");
-            
+
             ResponseHelper.endExchangeWithMessage(
-                    exchange, 
+                    exchange,
                     errorContext,
-                    HttpStatus.SC_BAD_REQUEST, 
+                    HttpStatus.SC_BAD_REQUEST,
                     "Accept-Encoding header must include gzip");
-            
+
             sender.handleRequest(exchange, errorContext);
         } else {
             super.handleRequest(exchange);

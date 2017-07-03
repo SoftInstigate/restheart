@@ -43,14 +43,25 @@ import org.restheart.handlers.RequestContext;
 @SuppressWarnings("deprecation")
 public class SecurityInitialHandler extends PipedHttpHandler {
 
+    static void setSecurityContext(final HttpServerExchange exchange, final SecurityContext securityContext) {
+        if (System.getSecurityManager() == null) {
+            exchange.setSecurityContext(securityContext);
+        } else {
+            AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
+                exchange.setSecurityContext(securityContext);
+                return null;
+            });
+        }
+    }
+
     private final AuthenticationMode authenticationMode;
     private final IdentityManager identityManager;
     private final String programaticMechName;
     private final io.undertow.security.api.SecurityContextFactory contextFactory;
 
     public SecurityInitialHandler(final AuthenticationMode authenticationMode, final IdentityManager identityManager,
-            final String programaticMechName, 
-            final io.undertow.security.api.SecurityContextFactory contextFactory, 
+            final String programaticMechName,
+            final io.undertow.security.api.SecurityContextFactory contextFactory,
             final PipedHttpHandler next) {
         super(next);
         this.authenticationMode = authenticationMode;
@@ -61,10 +72,10 @@ public class SecurityInitialHandler extends PipedHttpHandler {
 
     public SecurityInitialHandler(final AuthenticationMode authenticationMode, final IdentityManager identityManager,
             final String programaticMechName, final PipedHttpHandler next) {
-        this(authenticationMode, 
-                identityManager, 
-                programaticMechName, 
-                SecurityContextFactoryImpl.INSTANCE, 
+        this(authenticationMode,
+                identityManager,
+                programaticMechName,
+                SecurityContextFactoryImpl.INSTANCE,
                 next);
     }
 
@@ -80,20 +91,9 @@ public class SecurityInitialHandler extends PipedHttpHandler {
                         authenticationMode,
                         identityManager,
                         programaticMechName);
-        
+
         setSecurityContext(exchange, newContext);
         next(exchange, context);
-    }
-
-    static void setSecurityContext(final HttpServerExchange exchange, final SecurityContext securityContext) {
-        if (System.getSecurityManager() == null) {
-            exchange.setSecurityContext(securityContext);
-        } else {
-            AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
-                exchange.setSecurityContext(securityContext);
-                return null;
-            });
-        }
     }
 
 }

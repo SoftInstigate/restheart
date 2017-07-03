@@ -25,14 +25,10 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.util.JSONParseException;
-
 import org.restheart.Bootstrapper;
-import org.restheart.utils.HttpStatus;
-
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonObjectId;
@@ -41,6 +37,7 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
+import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,16 +54,16 @@ class CollectionDAO {
     private static final Logger LOGGER = LoggerFactory.getLogger(CollectionDAO.class);
     private static final BsonDocument FIELDS_TO_RETURN;
 
-    private final MongoClient client;
-
-    CollectionDAO(MongoClient client) {
-        this.client = client;
-    }
-
     static {
         FIELDS_TO_RETURN = new BsonDocument();
         FIELDS_TO_RETURN.put("_id", new BsonInt32(1));
         FIELDS_TO_RETURN.put("_etag", new BsonInt32(1));
+    }
+
+    private final MongoClient client;
+
+    CollectionDAO(MongoClient client) {
+        this.client = client;
     }
 
     /**

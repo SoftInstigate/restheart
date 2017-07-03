@@ -29,55 +29,11 @@ import org.restheart.handlers.metadata.InvalidMetadataException;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestChecker {
+
     public final static String ROOT_KEY = "checkers";
     public final static String NAME_KEY = "name";
     public final static String ARGS_KEY = "args";
     public final static String SKIP_NOT_SUPPORTED = "skipNotSupported";
-
-    private final String name;
-    private final BsonValue args;
-    private final boolean skipNotSupported;
-
-    /**
-     *
-     * @param checker
-     * @param args
-     */
-    public RequestChecker(String checker, BsonArray args) {
-        this.name = checker;
-        this.args = args;
-        this.skipNotSupported = false;
-    }
-
-    /**
-     *
-     * @param checker
-     * @param args
-     * @param skipNotSupported false if the checker should fail if it does not
-     * support the request
-     */
-    public RequestChecker(
-            String checker,
-            BsonValue args,
-            boolean skipNotSupported) {
-        this.name = checker;
-        this.args = args;
-        this.skipNotSupported = skipNotSupported;
-    }
-
-    /**
-     * @return the name
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * @return the args
-     */
-    public BsonValue getArgs() {
-        return args;
-    }
 
     public static BsonValue getProps(BsonDocument props) {
         return props.get(ROOT_KEY);
@@ -155,6 +111,51 @@ public class RequestChecker {
         }
 
         return new RequestChecker(name, _args, skipNotSupported);
+    }
+
+    private final String name;
+    private final BsonValue args;
+    private final boolean skipNotSupported;
+
+    /**
+     *
+     * @param checker
+     * @param args
+     */
+    public RequestChecker(String checker, BsonArray args) {
+        this.name = checker;
+        this.args = args;
+        this.skipNotSupported = false;
+    }
+
+    /**
+     *
+     * @param checker
+     * @param args
+     * @param skipNotSupported false if the checker should fail if it does not
+     * support the request
+     */
+    public RequestChecker(
+            String checker,
+            BsonValue args,
+            boolean skipNotSupported) {
+        this.name = checker;
+        this.args = args;
+        this.skipNotSupported = skipNotSupported;
+    }
+
+    /**
+     * @return the name
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * @return the args
+     */
+    public BsonValue getArgs() {
+        return args;
     }
 
     /**

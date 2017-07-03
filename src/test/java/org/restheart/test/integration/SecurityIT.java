@@ -17,16 +17,16 @@
  */
 package org.restheart.test.integration;
 
-import org.restheart.hal.Representation;
-import org.restheart.security.handlers.SecurityHandlerDispacher;
-import org.restheart.utils.HttpStatus;
 import io.undertow.util.Headers;
-import static org.junit.Assert.*;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
+import static org.junit.Assert.*;
 import org.junit.Test;
+import org.restheart.hal.Representation;
+import org.restheart.security.handlers.SecurityHandlerDispacher;
+import org.restheart.utils.HttpStatus;
 
 /**
  *

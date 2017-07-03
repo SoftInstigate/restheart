@@ -1,24 +1,5 @@
-/*
- * RESTHeart - the Web API for MongoDB
- * Copyright (C) SoftInstigate Srl
- * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- * 
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 package org.restheart.handlers.aggregation;
 
-import org.restheart.handlers.aggregation.AggregationPipeline;
-import org.restheart.handlers.aggregation.MapReduce;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,10 +14,6 @@ import org.restheart.handlers.metadata.InvalidMetadataException;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public abstract class AbstractAggregationOperation {
-    public enum TYPE {
-        MAP_REDUCE,
-        AGGREGATION_PIPELINE,
-    };
 
     private static final Set<String> MAP_REDUCE_ALIASES
             = Sets.newHashSet(new String[]{TYPE.MAP_REDUCE.name(),
@@ -51,57 +28,6 @@ public abstract class AbstractAggregationOperation {
 
     public static final String URI_ELEMENT_NAME = "uri";
     public static final String TYPE_ELEMENT_NAME = "type";
-
-    private final TYPE type;
-    private final String uri;
-
-    /**
-     *
-     * @param properties
-     * @throws org.restheart.handlers.metadata.InvalidMetadataException
-     */
-    public AbstractAggregationOperation(BsonDocument properties)
-            throws InvalidMetadataException {
-        BsonValue _uri = properties.get(URI_ELEMENT_NAME);
-
-        if (!properties.containsKey(TYPE_ELEMENT_NAME)) {
-            throw new InvalidMetadataException(
-                    "query does not have '"
-                    + TYPE_ELEMENT_NAME
-                    + "' property");
-        }
-
-        BsonValue _type = properties.get(TYPE_ELEMENT_NAME);
-
-        if (!_type.isString()) {
-            throw new InvalidMetadataException(
-                    "query property not have '"
-                    + TYPE_ELEMENT_NAME
-                    + "' is not a String: "
-                    + _type.toString());
-        }
-
-        String stype = _type.asString().getValue();
-
-        if (MAP_REDUCE_ALIASES.contains(stype)) {
-            this.type = TYPE.MAP_REDUCE;
-        } else if (AGGREGATION_PIPELINE_ALIASES.contains(stype)) {
-            this.type = TYPE.AGGREGATION_PIPELINE;
-        } else {
-            throw new InvalidMetadataException(
-                    "query has invalid '"
-                    + TYPE_ELEMENT_NAME
-                    + "' property: "
-                    + stype);
-        }
-
-        if (!properties.containsKey(URI_ELEMENT_NAME)) {
-            throw new InvalidMetadataException("query does not have '"
-                    + URI_ELEMENT_NAME + "' property");
-        }
-
-        this.uri = _uri.asString().getValue();
-    }
 
     /**
      *
@@ -178,16 +104,98 @@ public abstract class AbstractAggregationOperation {
     }
 
     /**
+     * checks if the aggregation variable start with $ this is not allowed since
+     * the client would be able to modify the aggregation stages
+     *
+     * @param aVars RequestContext.getAggregationVars()
+     */
+    public static void checkAggregationVariables(BsonValue aVars) throws SecurityException {
+        if (aVars == null) {
+            return;
+        }
+        if (aVars.isDocument()) {
+            BsonDocument _obj = aVars.asDocument();
+
+            _obj.forEach((key, value) -> {
+                if (key.startsWith("$")) {
+                    throw new SecurityException(
+                            "aggregation variables cannot include operators");
+                }
+
+                if (value.isDocument()
+                        || value.isArray()) {
+                    checkAggregationVariables(value);
+                }
+            });
+        } else if (aVars.isArray()) {
+            aVars.asArray().getValues().stream()
+                    .filter(el -> (el.isDocument() || el.isArray()))
+                    .forEachOrdered(AbstractAggregationOperation::checkAggregationVariables);
+        }
+    }
+
+    private final TYPE type;
+    private final String uri;
+
+    /**
+     *
+     * @param properties
+     * @throws org.restheart.handlers.metadata.InvalidMetadataException
+     */
+    public AbstractAggregationOperation(BsonDocument properties)
+            throws InvalidMetadataException {
+        BsonValue _uri = properties.get(URI_ELEMENT_NAME);
+
+        if (!properties.containsKey(TYPE_ELEMENT_NAME)) {
+            throw new InvalidMetadataException(
+                    "query does not have '"
+                    + TYPE_ELEMENT_NAME
+                    + "' property");
+        }
+
+        BsonValue _type = properties.get(TYPE_ELEMENT_NAME);
+
+        if (!_type.isString()) {
+            throw new InvalidMetadataException(
+                    "query property not have '"
+                    + TYPE_ELEMENT_NAME
+                    + "' is not a String: "
+                    + _type.toString());
+        }
+
+        String stype = _type.asString().getValue();
+
+        if (MAP_REDUCE_ALIASES.contains(stype)) {
+            this.type = TYPE.MAP_REDUCE;
+        } else if (AGGREGATION_PIPELINE_ALIASES.contains(stype)) {
+            this.type = TYPE.AGGREGATION_PIPELINE;
+        } else {
+            throw new InvalidMetadataException(
+                    "query has invalid '"
+                    + TYPE_ELEMENT_NAME
+                    + "' property: "
+                    + stype);
+        }
+
+        if (!properties.containsKey(URI_ELEMENT_NAME)) {
+            throw new InvalidMetadataException("query does not have '"
+                    + URI_ELEMENT_NAME + "' property");
+        }
+
+        this.uri = _uri.asString().getValue();
+    }
+
+    /**
      * @return the type
      */
-    public final TYPE getType() {
+    public TYPE getType() {
         return type;
     }
 
     /**
      * @return the uri
      */
-    public final String getUri() {
+    public String getUri() {
         return uri;
     }
 
@@ -197,7 +205,7 @@ public abstract class AbstractAggregationOperation {
      * @return the json object where the variables ({"_$var": "var") are
      * replaced with the values defined in the avars URL query parameter
      * @throws org.restheart.handlers.metadata.InvalidMetadataException
-     * @throws org.restheart.metadata.hooks.QueryVariableNotBoundException
+     * @throws org.restheart.handlers.aggregation.QueryVariableNotBoundException
      */
     protected BsonValue bindAggregationVariables(
             BsonValue obj,
@@ -256,40 +264,8 @@ public abstract class AbstractAggregationOperation {
         }
     }
 
-    /**
-     * checks if the aggregation variable start with $ this is not allowed since
-     * the client would be able to modify the aggregation stages
-     *
-     * @param aVars RequestContext.getAggregationVars()
-     */
-    public static void checkAggregationVariables(BsonValue aVars)
-            throws SecurityException {
-        if (aVars == null) {
-            return;
-        }
-
-        if (aVars.isDocument()) {
-            BsonDocument _obj = aVars.asDocument();
-
-            _obj.forEach((key, value) -> {
-                if (key.startsWith("$")) {
-                    throw new SecurityException(
-                            "aggregation variables cannot include operators");
-                }
-
-                if (value.isDocument()
-                        || value.isArray()) {
-                    checkAggregationVariables(value);
-                }
-            });
-
-        } else if (aVars.isArray()) {
-            for (BsonValue el : aVars.asArray().getValues()) {
-                if (el.isDocument()
-                        || el.isArray()) {
-                    checkAggregationVariables(el);
-                }
-            }
-        }
+    public enum TYPE {
+        MAP_REDUCE,
+        AGGREGATION_PIPELINE,
     }
 }

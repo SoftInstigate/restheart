@@ -18,8 +18,6 @@
 package org.restheart.handlers;
 
 import io.undertow.security.idm.Account;
-import org.restheart.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
-import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
@@ -30,6 +28,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import org.bson.BsonArray;
@@ -38,7 +37,9 @@ import org.bson.BsonInt32;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.Bootstrapper;
+import org.restheart.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.db.OperationResult;
+import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,68 +47,10 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestContext {
+public final class RequestContext {
 
     private static final Logger LOGGER
             = LoggerFactory.getLogger(RequestContext.class);
-
-    public enum TYPE {
-        INVALID,
-        ROOT,
-        DB,
-        COLLECTION,
-        DOCUMENT,
-        COLLECTION_INDEXES,
-        INDEX,
-        FILES_BUCKET,
-        FILE,
-        FILE_BINARY,
-        AGGREGATION,
-        SCHEMA,
-        SCHEMA_STORE,
-        BULK_DOCUMENTS
-    };
-
-    public enum METHOD {
-        GET,
-        POST,
-        PUT,
-        DELETE,
-        PATCH,
-        OPTIONS,
-        OTHER
-    };
-
-    public enum DOC_ID_TYPE {
-        OID, // ObjectId
-        STRING_OID, // String eventually converted to ObjectId in case ObjectId.isValid() is true
-        STRING, // String
-        NUMBER, // any Number (including mongodb NumberLong)
-        DATE, // Date
-        MINKEY, // org.bson.types.MinKey;
-        MAXKEY, // org.bson.types.MaxKey
-        NULL, // null
-        BOOLEAN     // boolean
-    }
-
-    public enum REPRESENTATION_FORMAT {
-        PLAIN_JSON, // Plain Json
-        PJ, // Alias for plain json
-        HAL // Hypertext Application Language
-    }
-
-    public enum HAL_MODE {
-        FULL, // full mode
-        F, // alias for full
-        COMPACT, // new compact mode
-        C           // alias for compact
-    }
-
-    public enum ETAG_CHECK_POLICY {
-        REQUIRED, // always requires the etag, return PRECONDITION FAILED if missing
-        REQUIRED_FOR_DELETE, // only requires the etag for DELETE, return PRECONDITION FAILED if missing
-        OPTIONAL                // checks the etag only if provided by client via If-Match header
-    }
 
     // query parameters
     public static final String PAGE_QPARAM_KEY = "page";
@@ -156,6 +99,143 @@ public class RequestContext {
     public static final String SLASH = "/";
     public static final String PATCH = "PATCH";
     public static final String UNDERSCORE = "_";
+    private static final String NUL = Character.toString('\0');
+
+    static METHOD selectRequestMethod(HttpString _method) {
+        METHOD method;
+        if (Methods.GET.equals(_method)) {
+            method = METHOD.GET;
+        } else if (Methods.POST.equals(_method)) {
+            method = METHOD.POST;
+        } else if (Methods.PUT.equals(_method)) {
+            method = METHOD.PUT;
+        } else if (Methods.DELETE.equals(_method)) {
+            method = METHOD.DELETE;
+        } else if (PATCH.equals(_method.toString())) {
+            method = METHOD.PATCH;
+        } else if (Methods.OPTIONS.equals(_method)) {
+            method = METHOD.OPTIONS;
+        } else {
+            method = METHOD.OTHER;
+        }
+        return method;
+    }
+
+    static TYPE selectRequestType(String[] pathTokens) {
+        TYPE type;
+        if (pathTokens.length < 2) {
+            type = TYPE.ROOT;
+        } else if (pathTokens.length < 3) {
+            type = TYPE.DB;
+        } else if (pathTokens.length >= 3
+                && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
+            if (pathTokens.length == 3) {
+                type = TYPE.FILES_BUCKET;
+            } else if (pathTokens.length == 4
+                    && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
+                type = TYPE.COLLECTION_INDEXES;
+            } else if (pathTokens.length == 4
+                    && !pathTokens[3].equalsIgnoreCase(_INDEXES)
+                    && !pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
+                type = TYPE.FILE;
+            } else if (pathTokens.length > 4
+                    && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
+                type = TYPE.INDEX;
+            } else if (pathTokens.length > 4
+                    && !pathTokens[3].equalsIgnoreCase(_INDEXES)
+                    && !pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
+                type = TYPE.FILE;
+            } else if (pathTokens.length == 5
+                    && pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
+                // URL: <host>/db/bucket.filePath/xxx/binary
+                type = TYPE.FILE_BINARY;
+            } else {
+                type = TYPE.DOCUMENT;
+            }
+        } else if (pathTokens.length >= 3
+                && pathTokens[2].endsWith(_SCHEMAS)) {
+            if (pathTokens.length == 3) {
+                type = TYPE.SCHEMA_STORE;
+            } else {
+                type = TYPE.SCHEMA;
+            }
+        } else if (pathTokens.length < 4) {
+            type = TYPE.COLLECTION;
+        } else if (pathTokens.length == 4
+                && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
+            type = TYPE.COLLECTION_INDEXES;
+        } else if (pathTokens.length == 4
+                && pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
+            type = TYPE.BULK_DOCUMENTS;
+        } else if (pathTokens.length > 4
+                && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
+            type = TYPE.INDEX;
+        } else if (pathTokens.length == 4
+                && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
+            type = TYPE.INVALID;
+        } else if (pathTokens.length > 4
+                && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
+            type = TYPE.AGGREGATION;
+        } else {
+            type = TYPE.DOCUMENT;
+        }
+
+        return type;
+    }
+
+    /**
+     *
+     * @param dbName
+     * @return true if the dbName is a reserved resource
+     */
+    public static boolean isReservedResourceDb(String dbName) {
+        return dbName.equals(ADMIN)
+                || dbName.equals(LOCAL)
+                || dbName.startsWith(SYSTEM)
+                || dbName.startsWith(UNDERSCORE)
+                || dbName.equals(RESOURCES_WILDCARD_KEY);
+    }
+
+    /**
+     *
+     * @param collectionName
+     * @return true if the collectionName is a reserved resource
+     */
+    public static boolean isReservedResourceCollection(String collectionName) {
+        return collectionName != null
+                && !collectionName.equalsIgnoreCase(_SCHEMAS)
+                && (collectionName.startsWith(SYSTEM)
+                || collectionName.startsWith(UNDERSCORE)
+                || collectionName.endsWith(FS_CHUNKS_SUFFIX)
+                || collectionName.equals(RESOURCES_WILDCARD_KEY));
+    }
+
+    /**
+     *
+     * @param type
+     * @param documentIdRaw
+     * @return true if the documentIdRaw is a reserved resource
+     */
+    public static boolean isReservedResourceDocument(
+            TYPE type,
+            String documentIdRaw) {
+        if (documentIdRaw == null) {
+            return false;
+        }
+
+        return (documentIdRaw.startsWith(UNDERSCORE)
+                || (type != TYPE.AGGREGATION
+                && _AGGREGATIONS.equalsIgnoreCase(documentIdRaw)))
+                && !documentIdRaw.equalsIgnoreCase(_INDEXES)
+                && !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID)
+                && !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID)
+                && !documentIdRaw.equalsIgnoreCase(NULL_KEY_ID)
+                && !documentIdRaw.equalsIgnoreCase(TRUE_KEY_ID)
+                && !documentIdRaw.equalsIgnoreCase(FALSE_KEY_ID)
+                && !(type == TYPE.AGGREGATION)
+                || (documentIdRaw.equals(RESOURCES_WILDCARD_KEY)
+                && !(type == TYPE.BULK_DOCUMENTS));
+    }
 
     private final String whereUri;
     private final String whatUri;
@@ -197,8 +277,6 @@ public class RequestContext {
 
     private String mappedUri = null;
     private String unmappedUri = null;
-
-    private static final String NUL = Character.toString('\0');
 
     private final String etag;
 
@@ -281,88 +359,6 @@ public class RequestContext {
         this.noProps = exchange.getQueryParameters().get(NO_PROPS_KEY) != null;
     }
 
-    protected static METHOD selectRequestMethod(HttpString _method) {
-        METHOD method;
-        if (Methods.GET.equals(_method)) {
-            method = METHOD.GET;
-        } else if (Methods.POST.equals(_method)) {
-            method = METHOD.POST;
-        } else if (Methods.PUT.equals(_method)) {
-            method = METHOD.PUT;
-        } else if (Methods.DELETE.equals(_method)) {
-            method = METHOD.DELETE;
-        } else if (PATCH.equals(_method.toString())) {
-            method = METHOD.PATCH;
-        } else if (Methods.OPTIONS.equals(_method)) {
-            method = METHOD.OPTIONS;
-        } else {
-            method = METHOD.OTHER;
-        }
-        return method;
-    }
-
-    protected static TYPE selectRequestType(String[] pathTokens) {
-        TYPE type;
-        if (pathTokens.length < 2) {
-            type = TYPE.ROOT;
-        } else if (pathTokens.length < 3) {
-            type = TYPE.DB;
-        } else if (pathTokens.length >= 3
-                && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
-            if (pathTokens.length == 3) {
-                type = TYPE.FILES_BUCKET;
-            } else if (pathTokens.length == 4
-                    && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
-                type = TYPE.COLLECTION_INDEXES;
-            } else if (pathTokens.length == 4
-                    && !pathTokens[3].equalsIgnoreCase(_INDEXES)
-                    && !pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
-                type = TYPE.FILE;
-            } else if (pathTokens.length > 4
-                    && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
-                type = TYPE.INDEX;
-            } else if (pathTokens.length > 4
-                    && !pathTokens[3].equalsIgnoreCase(_INDEXES)
-                    && !pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
-                type = TYPE.FILE;
-            } else if (pathTokens.length == 5
-                    && pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
-                // URL: <host>/db/bucket.filePath/xxx/binary
-                type = TYPE.FILE_BINARY;
-            } else {
-                type = TYPE.DOCUMENT;
-            }
-        } else if (pathTokens.length >= 3
-                && pathTokens[2].endsWith(_SCHEMAS)) {
-            if (pathTokens.length == 3) {
-                type = TYPE.SCHEMA_STORE;
-            } else {
-                type = TYPE.SCHEMA;
-            }
-        } else if (pathTokens.length < 4) {
-            type = TYPE.COLLECTION;
-        } else if (pathTokens.length == 4
-                && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
-            type = TYPE.COLLECTION_INDEXES;
-        } else if (pathTokens.length == 4
-                && pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
-            type = TYPE.BULK_DOCUMENTS;
-        } else if (pathTokens.length > 4
-                && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
-            type = TYPE.INDEX;
-        } else if (pathTokens.length == 4
-                && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
-            type = TYPE.INVALID;
-        } else if (pathTokens.length > 4
-                && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
-            type = TYPE.AGGREGATION;
-        } else {
-            type = TYPE.DOCUMENT;
-        }
-
-        return type;
-    }
-
     /**
      * given a mapped uri (/some/mapping/coll) returns the canonical uri
      * (/db/coll) URLs are mapped to mongodb resources by using the mongo-mounts
@@ -371,7 +367,7 @@ public class RequestContext {
      * @param mappedUri
      * @return
      */
-    public final String unmapUri(String mappedUri) {
+    public String unmapUri(String mappedUri) {
         String ret = URLUtils.removeTrailingSlashes(mappedUri);
 
         if (whatUri.equals("*")) {
@@ -401,7 +397,7 @@ public class RequestContext {
      * @param unmappedUri
      * @return
      */
-    public final String mapUri(String unmappedUri) {
+    public String mapUri(String unmappedUri) {
         String ret = URLUtils.removeTrailingSlashes(unmappedUri);
 
         if (whatUri.equals("*")) {
@@ -431,7 +427,7 @@ public class RequestContext {
      *
      * @return true if parent of the requested resource is accessible
      */
-    public final boolean isParentAccessible() {
+    public boolean isParentAccessible() {
         return type == TYPE.DB
                 ? mappedUri.split(SLASH).length > 1
                 : mappedUri.split(SLASH).length > 2;
@@ -506,60 +502,6 @@ public class RequestContext {
 
     /**
      *
-     * @param dbName
-     * @return true if the dbName is a reserved resource
-     */
-    public static boolean isReservedResourceDb(String dbName) {
-        return dbName.equals(ADMIN)
-                || dbName.equals(LOCAL)
-                || dbName.startsWith(SYSTEM)
-                || dbName.startsWith(UNDERSCORE)
-                || dbName.equals(RESOURCES_WILDCARD_KEY);
-    }
-
-    /**
-     *
-     * @param collectionName
-     * @return true if the collectionName is a reserved resource
-     */
-    public static boolean isReservedResourceCollection(String collectionName) {
-        return collectionName != null
-                && !collectionName.equalsIgnoreCase(_SCHEMAS)
-                && (collectionName.startsWith(SYSTEM)
-                || collectionName.startsWith(UNDERSCORE)
-                || collectionName.endsWith(FS_CHUNKS_SUFFIX)
-                || collectionName.equals(RESOURCES_WILDCARD_KEY));
-    }
-
-    /**
-     *
-     * @param type
-     * @param documentIdRaw
-     * @return true if the documentIdRaw is a reserved resource
-     */
-    public static boolean isReservedResourceDocument(
-            TYPE type,
-            String documentIdRaw) {
-        if (documentIdRaw == null) {
-            return false;
-        }
-
-        return (documentIdRaw.startsWith(UNDERSCORE)
-                || (type != TYPE.AGGREGATION
-                && _AGGREGATIONS.equalsIgnoreCase(documentIdRaw)))
-                && !documentIdRaw.equalsIgnoreCase(_INDEXES)
-                && !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID)
-                && !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID)
-                && !documentIdRaw.equalsIgnoreCase(NULL_KEY_ID)
-                && !documentIdRaw.equalsIgnoreCase(TRUE_KEY_ID)
-                && !documentIdRaw.equalsIgnoreCase(FALSE_KEY_ID)
-                && !(type == TYPE.AGGREGATION)
-                || (documentIdRaw.equals(RESOURCES_WILDCARD_KEY)
-                && !(type == TYPE.BULK_DOCUMENTS));
-    }
-
-    /**
-     *
      * @return isReservedResource
      */
     public boolean isReservedResource() {
@@ -623,6 +565,8 @@ public class RequestContext {
 
     /**
      * sets representationFormat
+     *
+     * @param representationFormat
      */
     public void setRepresentationFormat(
             REPRESENTATION_FORMAT representationFormat) {
@@ -822,7 +766,7 @@ public class RequestContext {
      * @return the warnings
      */
     public List<String> getWarnings() {
-        return warnings;
+        return Collections.unmodifiableList(warnings);
     }
 
     /**
@@ -1474,5 +1418,63 @@ public class RequestContext {
      */
     public boolean isPut() {
         return this.method == METHOD.PUT;
+    }
+
+    public enum TYPE {
+        INVALID,
+        ROOT,
+        DB,
+        COLLECTION,
+        DOCUMENT,
+        COLLECTION_INDEXES,
+        INDEX,
+        FILES_BUCKET,
+        FILE,
+        FILE_BINARY,
+        AGGREGATION,
+        SCHEMA,
+        SCHEMA_STORE,
+        BULK_DOCUMENTS
+    }
+
+    public enum METHOD {
+        GET,
+        POST,
+        PUT,
+        DELETE,
+        PATCH,
+        OPTIONS,
+        OTHER
+    }
+
+    public enum DOC_ID_TYPE {
+        OID, // ObjectId
+        STRING_OID, // String eventually converted to ObjectId in case ObjectId.isValid() is true
+        STRING, // String
+        NUMBER, // any Number (including mongodb NumberLong)
+        DATE, // Date
+        MINKEY, // org.bson.types.MinKey;
+        MAXKEY, // org.bson.types.MaxKey
+        NULL, // null
+        BOOLEAN     // boolean
+    }
+
+    public enum REPRESENTATION_FORMAT {
+        PLAIN_JSON, // Plain Json
+        PJ, // Alias for plain json
+        HAL // Hypertext Application Language
+    }
+
+    public enum HAL_MODE {
+        FULL, // full mode
+        F, // alias for full
+        COMPACT, // new compact mode
+        C           // alias for compact
+    }
+
+    public enum ETAG_CHECK_POLICY {
+        REQUIRED, // always requires the etag, return PRECONDITION FAILED if missing
+        REQUIRED_FOR_DELETE, // only requires the etag for DELETE, return PRECONDITION FAILED if missing
+        OPTIONAL                // checks the etag only if provided by client via If-Match header
     }
 }

@@ -17,10 +17,6 @@
  */
 package org.restheart.handlers.applicationlogic;
 
-import org.restheart.hal.Representation;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
-import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
@@ -30,10 +26,14 @@ import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.restheart.hal.Representation;
 import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.RequestContext;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_HEADER;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_VALID_HEADER;
+import org.restheart.utils.HttpStatus;
 import org.restheart.utils.URLUtils;
 
 /**
@@ -41,6 +41,7 @@ import org.restheart.utils.URLUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GetRoleHandler extends ApplicationLogicHandler {
+
     /**
      * the key for the url property.
      */
@@ -62,7 +63,7 @@ public class GetRoleHandler extends ApplicationLogicHandler {
             throw new IllegalArgumentException("args cannot be null");
         }
 
-        this.url = (String) ((Map<String, Object>) args).get(URL_KEY);
+        this.url = (String) args.get(URL_KEY);
     }
 
     /**
@@ -75,7 +76,7 @@ public class GetRoleHandler extends ApplicationLogicHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         Representation rep;
-        
+
         if (context.isOptions()) {
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET");
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge, " + AUTH_TOKEN_HEADER + ", " + AUTH_TOKEN_VALID_HEADER + ", " + AUTH_TOKEN_LOCATION_HEADER);
@@ -106,11 +107,11 @@ public class GetRoleHandler extends ApplicationLogicHandler {
                 Set<String> _roles = exchange.getSecurityContext().getAuthenticatedAccount().getRoles();
 
                 BsonArray roles = new BsonArray();
-                
-                for (String role: _roles) {
+
+                _roles.forEach((role) -> {
                     roles.add(new BsonString(role));
-                }
-                
+                });
+
                 root.append("authenticated", new BsonBoolean(true));
                 root.append("roles", roles);
 

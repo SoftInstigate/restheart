@@ -18,10 +18,7 @@
 package org.restheart.test.integration;
 
 import com.eclipsesource.json.JsonObject;
-import org.restheart.hal.Representation;
-import org.restheart.utils.HttpStatus;
 import java.net.URI;
-import static org.junit.Assert.*;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
@@ -29,7 +26,10 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.util.EntityUtils;
+import static org.junit.Assert.*;
 import org.junit.Test;
+import org.restheart.hal.Representation;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
@@ -88,7 +88,7 @@ public class GetDocumentIT extends HttpClientAbstactIT {
 
         assertNotNull("check json not null", json);
         assertNotNull("check not null _etag property", json.get("_etag"));
-        
+
         assertNotNull("check not null _id property", json.get("_id"));
         assertEquals("check _id value", document1Id, json.get("_id").asString());
         assertNotNull("check not null a", json.get("a"));

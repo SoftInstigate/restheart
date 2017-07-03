@@ -21,15 +21,15 @@ import com.mongodb.MongoBulkWriteException;
 import com.mongodb.MongoException;
 import com.mongodb.MongoExecutionTimeoutException;
 import com.mongodb.MongoTimeoutException;
-import org.restheart.utils.HttpStatus;
-import org.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.hal.Representation;
-import org.restheart.metadata.transformers.RepresentationTransformer.PHASE;
-import org.restheart.metadata.transformers.PlainJsonTransformer;
 import org.restheart.handlers.bulk.BulkResultRepresentationFactory;
 import org.restheart.handlers.metadata.TransformerHandler;
+import org.restheart.metadata.transformers.PlainJsonTransformer;
+import org.restheart.metadata.transformers.RepresentationTransformer.PHASE;
+import org.restheart.utils.HttpStatus;
+import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,13 +38,14 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ErrorHandler implements HttpHandler {
-    private HttpHandler next;
-    
-    private PipedHttpHandler sender = new TransformerHandler(
+
+    private final HttpHandler next;
+
+    private final PipedHttpHandler sender = new TransformerHandler(
             new ResponseSenderHandler(null),
             PHASE.RESPONSE,
-                        new PlainJsonTransformer());
-    
+            new PlainJsonTransformer());
+
     private final Logger LOGGER = LoggerFactory.getLogger(ErrorHandler.class);
 
     /**
@@ -59,7 +60,6 @@ public class ErrorHandler implements HttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
@@ -70,13 +70,13 @@ public class ErrorHandler implements HttpHandler {
             next.handleRequest(exchange);
         } catch (MongoTimeoutException nte) {
             RequestContext errorContext = new RequestContext(exchange, "/", "_error");
-            
+
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     errorContext,
                     HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "Timeout connecting to MongoDB, is it running?", nte);
-            
+
             sender.handleRequest(exchange, errorContext);
         } catch (MongoExecutionTimeoutException mete) {
             RequestContext errorContext = new RequestContext(exchange, "/", "_error");
@@ -90,12 +90,12 @@ public class ErrorHandler implements HttpHandler {
 
             sender.handleRequest(exchange, errorContext);
         } catch (MongoBulkWriteException mce) {
-            MongoBulkWriteException bmce = (MongoBulkWriteException) mce;
+            MongoBulkWriteException bmce = mce;
 
             BulkResultRepresentationFactory rf = new BulkResultRepresentationFactory();
 
             Representation rep = rf.getRepresentation(exchange, bmce);
-            
+
             RequestContext errorContext = new RequestContext(exchange, "/", "_error");
 
             ResponseHelper.endExchangeWithRepresentation(
@@ -111,7 +111,7 @@ public class ErrorHandler implements HttpHandler {
             LOGGER.error("Error handling the request", mce);
 
             RequestContext errorContext = new RequestContext(exchange, "/", "_error");
-            
+
             if (httpCode >= 500
                     && mce.getMessage() != null
                     && !mce.getMessage().trim().isEmpty()) {
@@ -131,9 +131,9 @@ public class ErrorHandler implements HttpHandler {
             }
 
             sender.handleRequest(exchange, errorContext);
-        } catch (Throwable t) {
+        } catch (Exception t) {
             LOGGER.error("Error handling the request", t);
-            
+
             RequestContext errorContext = new RequestContext(exchange, "/", "_error");
 
             ResponseHelper.endExchangeWithMessage(

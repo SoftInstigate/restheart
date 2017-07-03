@@ -20,8 +20,8 @@ package org.restheart.metadata.checkers;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.metadata.checkers.Checker.PHASE;
 import org.restheart.handlers.RequestContext;
+import org.restheart.metadata.checkers.Checker.PHASE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class ContentSizeChecker implements Checker {
+
     static final Logger LOGGER = LoggerFactory.getLogger(ContentSizeChecker.class);
 
     @Override
@@ -67,8 +68,8 @@ public class ContentSizeChecker implements Checker {
                 minSize = (Integer) _minSize;
             }
 
-            return (minSize == null 
-                    ? checkSize(exchange, -1, maxSize) 
+            return (minSize == null
+                    ? checkSize(exchange, -1, maxSize)
                     : checkSize(exchange, minSize, maxSize));
 
         } else {
@@ -85,14 +86,14 @@ public class ContentSizeChecker implements Checker {
             int maxSize) {
         long requestLenght = exchange.getRequestContentLength();
 
-        boolean ret = (minSize < 0 
-                ? requestLenght <= maxSize 
+        boolean ret = (minSize < 0
+                ? requestLenght <= maxSize
                 : requestLenght >= minSize && requestLenght <= maxSize);
 
-        LOGGER.debug("checkSize({}, {}, {}) -> {}", 
-                requestLenght, 
-                minSize, 
-                maxSize, 
+        LOGGER.debug("checkSize({}, {}, {}) -> {}",
+                requestLenght,
+                minSize,
+                maxSize,
                 ret);
 
         return ret;

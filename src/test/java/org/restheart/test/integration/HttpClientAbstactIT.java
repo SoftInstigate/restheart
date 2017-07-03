@@ -32,6 +32,8 @@ import org.apache.http.message.BasicNameValuePair;
 import org.bson.BsonDocument;
 import org.bson.types.ObjectId;
 import org.junit.AfterClass;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.restheart.Configuration;
@@ -40,8 +42,6 @@ import org.restheart.db.DbsDAO;
 import org.restheart.db.DocumentDAO;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.hal.Representation;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 /**
  *
@@ -160,15 +160,20 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
         "{ \"band\": 1 }",
         "{ \"ranking\": 1 }"
     };
-
-    private final Database dbsDAO = new DbsDAO();
+    private static final String _INDEXES = "/_indexes";
+    private static final String REMAPPEDDOC1 = "/remappeddoc1";
+    private static final String REMAPPEDALL = "/remappedall";
+    private static final String REMAPPEDDB = "/remappeddb";
+    private static final String REMAPPEDREFCOLL2 = "/remappedrefcoll2";
+    private static final String REMAPPEDDOC2 = "/remappeddoc2";
+    private static final String REMAPPEDREFCOLL1 = "/remappedrefcoll1";
 
     @BeforeClass
     public static void setUpClass() throws Exception {
         conf = new Configuration(CONF_FILE_PATH);
         MongoDBClientSingleton.init(conf);
         mongoClient = MongoDBClientSingleton.getInstance().getClient();
-        
+
         BASE_URL = "http://" + conf.getHttpHost() + ":" + conf.getHttpPort();
 
         createURIs();
@@ -183,47 +188,6 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
 
     @AfterClass
     public static void tearDownClass() {
-    }
-
-    public HttpClientAbstactIT() {
-    }
-
-    @Before
-    public void setUp() {
-        createTestData();
-    }
-
-    protected HttpResponse check(String message, Response resp, int expectedCode) throws Exception {
-        HttpResponse httpResp = resp.returnResponse();
-        assertNotNull(httpResp);
-
-        StatusLine statusLine = httpResp.getStatusLine();
-        assertNotNull(statusLine);
-
-        assertEquals(message, expectedCode, statusLine.getStatusCode());
-
-        return httpResp;
-    }
-
-    private void createTestData() {
-        dbsDAO.upsertDB(dbName, dbProps, new ObjectId().toString(), false, false, false);
-
-        dbsDAO.upsertCollection(dbName, collection1Name, coll1Props, new ObjectId().toString(), false, false, false);
-        dbsDAO.upsertCollection(dbName, collection2Name, coll2Props, new ObjectId().toString(), false, false, false);
-        dbsDAO.upsertCollection(dbName, docsCollectionName, docsCollectionProps, new ObjectId().toString(), false, false, false);
-
-        for (String index : docsCollectionIndexesStrings) {
-            dbsDAO.createIndex(dbName, docsCollectionName, BsonDocument.parse(index), null);
-        }
-
-        final DocumentDAO documentDAO = new DocumentDAO();
-        documentDAO.upsertDocument(dbName, collection1Name, document1Id, null, null, document1Props, new ObjectId().toString(), false, false);
-        documentDAO.upsertDocument(dbName, collection2Name, document2Id, null, null, document2Props, new ObjectId().toString(), false, false);
-
-        for (String doc : docsPropsStrings) {
-            documentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), null, null, BsonDocument.parse(doc), new ObjectId().toString(), false, false);
-        }
-        LOG.debug("test data created");
     }
 
     private static void createURIs() throws URISyntaxException {
@@ -291,7 +255,7 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
         collectionTmpUri = buildURI("/" + dbTmpName + "/" + collectionTmpName, new NameValuePair[]{
             new BasicNameValuePair("hal", "f")
         });
-        
+
         collectionTmpUserUri2 = buildURI("/" + dbTmpName2 + "/" + collectionTmpUserName2, new NameValuePair[]{
             new BasicNameValuePair("hal", "f")
         });
@@ -414,19 +378,53 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
                 .setPort(conf.getHttpPort())
                 .setPath(path);
     }
-    
+
     protected static URI addCheckEtag(URI uri) throws URISyntaxException {
         return createURIBuilder(uri.getPath())
                 .addParameter("checkEtag", null)
                 .addParameter("hal", "f")
                 .build();
     }
+    private final Database dbsDAO = new DbsDAO();
 
-    private static final String _INDEXES = "/_indexes";
-    private static final String REMAPPEDDOC1 = "/remappeddoc1";
-    private static final String REMAPPEDALL = "/remappedall";
-    private static final String REMAPPEDDB = "/remappeddb";
-    private static final String REMAPPEDREFCOLL2 = "/remappedrefcoll2";
-    private static final String REMAPPEDDOC2 = "/remappeddoc2";
-    private static final String REMAPPEDREFCOLL1 = "/remappedrefcoll1";
+    public HttpClientAbstactIT() {
+    }
+
+    @Before
+    public void setUp() {
+        createTestData();
+    }
+
+    protected HttpResponse check(String message, Response resp, int expectedCode) throws Exception {
+        HttpResponse httpResp = resp.returnResponse();
+        assertNotNull(httpResp);
+
+        StatusLine statusLine = httpResp.getStatusLine();
+        assertNotNull(statusLine);
+
+        assertEquals(message, expectedCode, statusLine.getStatusCode());
+
+        return httpResp;
+    }
+
+    private void createTestData() {
+        dbsDAO.upsertDB(dbName, dbProps, new ObjectId().toString(), false, false, false);
+
+        dbsDAO.upsertCollection(dbName, collection1Name, coll1Props, new ObjectId().toString(), false, false, false);
+        dbsDAO.upsertCollection(dbName, collection2Name, coll2Props, new ObjectId().toString(), false, false, false);
+        dbsDAO.upsertCollection(dbName, docsCollectionName, docsCollectionProps, new ObjectId().toString(), false, false, false);
+
+        for (String index : docsCollectionIndexesStrings) {
+            dbsDAO.createIndex(dbName, docsCollectionName, BsonDocument.parse(index), null);
+        }
+
+        final DocumentDAO documentDAO = new DocumentDAO();
+        documentDAO.upsertDocument(dbName, collection1Name, document1Id, null, null, document1Props, new ObjectId().toString(), false, false);
+        documentDAO.upsertDocument(dbName, collection2Name, document2Id, null, null, document2Props, new ObjectId().toString(), false, false);
+
+        for (String doc : docsPropsStrings) {
+            documentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), null, null, BsonDocument.parse(doc), new ObjectId().toString(), false, false);
+        }
+        LOG.debug("test data created");
+    }
 }

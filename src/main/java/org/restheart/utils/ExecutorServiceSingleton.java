@@ -26,18 +26,18 @@ import java.util.concurrent.Executors;
  */
 public class ExecutorServiceSingleton {
 
-    private final ExecutorService executorService;
-
-    private ExecutorServiceSingleton() {
-        this.executorService = Executors.newFixedThreadPool(100);
-    }
-
     /**
      *
      * @return
      */
     public static ExecutorServiceSingleton getInstance() {
         return ExecutorServiceSingletonHolder.INSTANCE;
+    }
+
+    private final ExecutorService executorService;
+
+    private ExecutorServiceSingleton() {
+        this.executorService = Executors.newFixedThreadPool(100);
     }
 
     /**

@@ -21,6 +21,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.bson.BsonObjectId;
 import org.bson.types.ObjectId;
@@ -30,6 +31,7 @@ import org.bson.types.ObjectId;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestHelper {
+
     private static final String _UPDATE_OPERATORS[] = {
         "$inc", "$mul", "$rename", "$setOnInsert", "$set", "$unset", // Field Update Operators
         "$min", "$max", "$currentDate",
@@ -39,7 +41,7 @@ public class RequestHelper {
     };
 
     public static final List<String> UPDATE_OPERATORS
-            = Arrays.asList(_UPDATE_OPERATORS);
+            = Collections.unmodifiableList(Arrays.asList(_UPDATE_OPERATORS));
 
     /**
      *

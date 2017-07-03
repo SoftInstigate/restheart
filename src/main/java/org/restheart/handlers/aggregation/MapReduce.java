@@ -29,13 +29,13 @@ import org.restheart.utils.JsonUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class MapReduce extends AbstractAggregationOperation {
-    private final String map;
-    private final String reduce;
-    private final BsonValue query;
 
     public static final String MAP_ELEMENT_NAME = "map";
     public static final String REDUCE_ELEMENT_NAME = "reduce";
     public static final String QUERY_ELEMENT_NAME = "query";
+    private final String map;
+    private final String reduce;
+    private final BsonValue query;
 
     /**
      * @param properties the json properties object. It must include the
@@ -124,7 +124,7 @@ public class MapReduce extends AbstractAggregationOperation {
      * @param aVars RequestContext.getAggregationVars()
      * @return the query with unescaped operators and bound variables
      * @throws org.restheart.handlers.metadata.InvalidMetadataException
-     * @throws org.restheart.metadata.hooks.QueryVariableNotBoundException
+     * @throws org.restheart.handlers.aggregation.QueryVariableNotBoundException
      */
     public BsonDocument getResolvedQuery(BsonDocument aVars)
             throws InvalidMetadataException, QueryVariableNotBoundException {

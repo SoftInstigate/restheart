@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class DbIdentityManagerTest {
+
     private static final Logger LOG
             = LoggerFactory.getLogger(GetFileHandlerTest.class);
 
@@ -58,7 +59,7 @@ public class DbIdentityManagerTest {
                         false,
                         plain.toCharArray(),
                         plain.toCharArray()));
-        
+
         Assert.assertFalse("check plain pwd",
                 DbIdentityManager.checkPassword(
                         false,
@@ -70,13 +71,13 @@ public class DbIdentityManagerTest {
                         true,
                         plain.toCharArray(),
                         hashed.toCharArray()));
-        
+
         Assert.assertFalse("check hashed pwd",
                 DbIdentityManager.checkPassword(
                         true,
                         "wrong".toCharArray(),
                         hashed.toCharArray()));
-        
+
         Assert.assertFalse("check hashed pwd",
                 DbIdentityManager.checkPassword(
                         true,

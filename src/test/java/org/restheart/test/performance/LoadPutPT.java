@@ -29,20 +29,21 @@ package org.restheart.test.performance;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.request.HttpRequestWithBody;
-import org.restheart.db.DocumentDAO;
 import java.io.IOException;
 import org.bson.BsonDocument;
 import org.bson.BsonDouble;
 import org.bson.types.ObjectId;
-import org.restheart.utils.HttpStatus;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import org.restheart.db.DocumentDAO;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class LoadPutPT extends AbstractPT {
+
     public void post() throws Exception {
         HttpRequestWithBody req = Unirest.post(url);
         HttpResponse resp;
