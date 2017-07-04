@@ -19,6 +19,7 @@ package org.restheart.handlers;
 
 import com.mongodb.MongoBulkWriteException;
 import com.mongodb.MongoException;
+import com.mongodb.MongoExecutionTimeoutException;
 import com.mongodb.MongoTimeoutException;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -75,6 +76,17 @@ public class ErrorHandler implements HttpHandler {
                     errorContext,
                     HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "Timeout connecting to MongoDB, is it running?", nte);
+
+            sender.handleRequest(exchange, errorContext);
+        } catch (MongoExecutionTimeoutException mete) {
+            RequestContext errorContext = new RequestContext(exchange, "/", "_error");
+
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    errorContext,
+                    HttpStatus.SC_REQUEST_TIMEOUT,
+                    "Operation exceeded time limit"
+            );
 
             sender.handleRequest(exchange, errorContext);
         } catch (MongoBulkWriteException mce) {
