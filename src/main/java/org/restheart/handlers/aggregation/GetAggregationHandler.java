@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-
 import org.bson.BsonDocument;
 import org.restheart.Bootstrapper;
 import org.restheart.hal.Representation;
@@ -118,7 +117,7 @@ public class GetAggregationHandler extends PipedHttpHandler {
                                         mapReduce.getResolvedReduce(context.getAggreationVars()))
                                 .filter(
                                         mapReduce.getResolvedQuery(context.getAggreationVars()))
-                                .maxTime(Bootstrapper.getConfiguration().getAggregationTimeLimit(), TimeUnit.MILLISECONDS);;
+                                .maxTime(Bootstrapper.getConfiguration().getAggregationTimeLimit(), TimeUnit.MILLISECONDS);
                     } catch (MongoCommandException | InvalidMetadataException ex) {
                         ResponseHelper.endExchangeWithMessage(
                                 exchange,
