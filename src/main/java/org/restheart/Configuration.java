@@ -654,8 +654,8 @@ public class Configuration {
         schemaCacheTtl = 1000;
 
         requestsLimit = 100;
-        queryTimeLimit = (long) 0;
-        aggregationTimeLimit = (long) 0;
+        queryTimeLimit = 0;
+        aggregationTimeLimit = 0;
 
         ioThreads = 2;
         workerThreads = 32;
@@ -1352,7 +1352,7 @@ public class Configuration {
     /**
      * @return the queryTimeLimit
      */
-    public final long getQueryTimeLimit() {
+    public long getQueryTimeLimit() {
         return queryTimeLimit;
     }
 
