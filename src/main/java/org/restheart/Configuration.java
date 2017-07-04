@@ -194,6 +194,16 @@ public class Configuration {
     public static final String REQUESTS_LIMIT_KEY = "requests-limit";
 
     /**
+     * the key for the query-time-limit property.
+     */
+    public static final String QUERY_TIME_LIMIT_KEY = "query-time-limit";
+
+    /**
+     * the key for the aggregation-time-limit property
+     */
+    private static final String AGGREGATION_TIME_LIMIT_KEY = "aggregation-time-limit";
+
+    /**
      * the key for the enable-log-file property.
      */
     public static final String ENABLE_LOG_FILE_KEY = "enable-log-file";
@@ -554,6 +564,8 @@ public class Configuration {
     private final boolean schemaCacheEnabled;
     private final long schemaCacheTtl;
     private final int requestsLimit;
+    private final long queryTimeLimit;
+    private final long aggregationTimeLimit;
     private final int ioThreads;
     private final int workerThreads;
     private final int bufferSize;
@@ -642,6 +654,9 @@ public class Configuration {
         schemaCacheTtl = 1000;
 
         requestsLimit = 100;
+        queryTimeLimit = (long) 0;
+        aggregationTimeLimit = (long) 0;
+
         ioThreads = 2;
         workerThreads = 32;
         bufferSize = 16384;
@@ -789,6 +804,8 @@ public class Configuration {
         logLevel = level;
 
         requestsLimit = getAsIntegerOrDefault(conf, REQUESTS_LIMIT_KEY, 100);
+        queryTimeLimit = getAsLongOrDefault(conf, QUERY_TIME_LIMIT_KEY, (long) 0);
+        aggregationTimeLimit = getAsLongOrDefault(conf, AGGREGATION_TIME_LIMIT_KEY, (long) 0);
 
         localCacheEnabled = getAsBooleanOrDefault(conf, LOCAL_CACHE_ENABLED_KEY, true);
         localCacheTtl = getAsLongOrDefault(conf, LOCAL_CACHE_TTL_KEY, (long) 1000);
@@ -1330,6 +1347,20 @@ public class Configuration {
      */
     public int getRequestsLimit() {
         return requestsLimit;
+    }
+
+    /**
+     * @return the queryTimeLimit
+     */
+    public final long getQueryTimeLimit() {
+        return queryTimeLimit;
+    }
+
+    /**
+     * @return the aggregationTimeLimit
+     */
+    public long getAggregationTimeLimit() {
+        return aggregationTimeLimit;
     }
 
     /**

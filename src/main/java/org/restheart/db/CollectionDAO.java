@@ -25,8 +25,10 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.util.JSONParseException;
+import org.restheart.Bootstrapper;
 import java.util.ArrayList;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonObjectId;
@@ -144,7 +146,8 @@ class CollectionDAO {
         return coll.find(filters)
                 .projection(keys)
                 .sort(sortBy)
-                .batchSize(BATCH_SIZE);
+                .batchSize(BATCH_SIZE)
+                .maxTime(Bootstrapper.getConfiguration().getQueryTimeLimit(), TimeUnit.MILLISECONDS);
     }
 
     ArrayList<BsonDocument> getCollectionData(

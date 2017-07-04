@@ -244,6 +244,12 @@ local-cache-ttl: 1000
 # Limit for the maximum number of concurrent requests being served
 requests-limit: 1000
 
+# Time limit in milliseconds for processing queries on the server (without network latency). 0 means no time limit
+query-time-limit: 0
+
+# Time limit in milliseconds for processing aggregations on the server (without network latency). 0 means no time limit
+aggregation-time-limit: 0
+
 # Number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
 io-threads: 2
 
