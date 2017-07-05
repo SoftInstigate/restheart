@@ -52,19 +52,38 @@ public class CollectionRepresentationFactory
 // method won't work. need to get the name from the configuration
     private static final String JSON_SCHEMA_NAME = "jsonSchema";
 
+    private static final String _ETAG = "_etag";
+    private static final String _TYPE = "_type";
+    private static final String _LASTUPDATED_ON = "_lastupdated_on";
+
+    private static final String _RETURNED = "_returned";
+
+    private static final String RHINDEXES = "rh:indexes";
+    private static final String RHPAGING = "rh:paging";
+    private static final String RHSORT = "rh:sort";
+    private static final String RHFILTER = "rh:filter";
+    private static final String RHDB = "rh:db";
+    private static final String RHBUCKET = "rh:bucket";
+    private static final String RHCOLL = "rh:coll";
+    private static final String RHDOCUMENT = "rh:document";
+
+    private static final String _ID = "_id";
+    private static final String RHFILE = "rh:file";
+    private static final String RHSCHEMA = "rh:schema";
+    private static final String RHDOC = "rh:doc";
+
     public static void addSpecialProperties(
             final Representation rep,
             final RequestContext.TYPE type,
             final BsonDocument data) {
-        rep.addProperty("_type", new BsonString(type.name()));
+        rep.addProperty(_TYPE, new BsonString(type.name()));
 
-        Object etag = data.get("_etag");
+        Object etag = data.get(_ETAG);
 
         if (etag != null && etag instanceof ObjectId) {
-            if (data.get("_lastupdated_on") == null) {
+            if (data.get(_LASTUPDATED_ON) == null) {
                 // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
-                rep.addProperty(
-                        "_lastupdated_on",
+                rep.addProperty(_LASTUPDATED_ON,
                         new BsonString(Instant.ofEpochSecond(
                                 ((ObjectId) etag).getTimestamp()).toString()));
             }
@@ -149,11 +168,8 @@ public class CollectionRepresentationFactory
         }
 
         addSizeAndTotalPagesProperties(size, context, rep);
-
         addAggregationsLinks(context, rep, requestPath);
-
         addSchemaLinks(rep, context);
-
         addEmbeddedData(embeddedData, rep, requestPath, exchange, context);
 
         if (context.isFullHalMode()) {
@@ -163,7 +179,6 @@ public class CollectionRepresentationFactory
                     context.getCollectionProps());
 
             addPaginationLinks(exchange, context, size, rep);
-
             addLinkTemplates(context, rep, requestPath);
 
             // curies
@@ -202,7 +217,7 @@ public class CollectionRepresentationFactory
                         rep);
             }
         } else {
-            rep.addProperty("_returned", new BsonInt32(0));
+            rep.addProperty(_RETURNED, new BsonInt32(0));
         }
     }
 
@@ -243,43 +258,43 @@ public class CollectionRepresentationFactory
         // link templates and curies
         if (context.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
-            rep.addLink(new Link("rh:db", URLUtils.getParentPath(requestPath)));
+            rep.addLink(new Link(RHDB, URLUtils.getParentPath(requestPath)));
         }
 
         if (TYPE.FILES_BUCKET.equals(context.getType())) {
             rep.addLink(new Link(
-                    "rh:bucket",
+                    RHBUCKET,
                     URLUtils.getParentPath(requestPath)
                     + "/{bucketname}"
                     + RequestContext.FS_FILES_SUFFIX,
                     true));
             rep.addLink(new Link(
-                    "rh:file",
+                    RHFILE,
                     requestPath + "/{fileid}{?id_type}",
                     true));
         } else if (TYPE.COLLECTION.equals(context.getType())) {
 
             rep.addLink(new Link(
-                    "rh:coll",
+                    RHCOLL,
                     URLUtils.getParentPath(requestPath) + "/{collname}",
                     true));
             rep.addLink(new Link(
-                    "rh:document",
+                    RHDOCUMENT,
                     requestPath + "/{docid}{?id_type}",
                     true));
         }
 
-        rep.addLink(new Link("rh:indexes",
+        rep.addLink(new Link(RHINDEXES,
                 requestPath
                 + "/"
                 + context.getDBName()
                 + "/" + context.getCollectionName()
                 + "/_indexes"));
 
-        rep.addLink(new Link("rh:filter", requestPath + "{?filter}", true));
-        rep.addLink(new Link("rh:sort", requestPath + "{?sort_by}", true));
-        rep.addLink(new Link("rh:paging", requestPath + "{?page}{&pagesize}", true));
-        rep.addLink(new Link("rh:indexes", requestPath + "/_indexes"));
+        rep.addLink(new Link(RHFILTER, requestPath + "{?filter}", true));
+        rep.addLink(new Link(RHSORT, requestPath + "{?sort_by}", true));
+        rep.addLink(new Link(RHPAGING, requestPath + "{?page}{&pagesize}", true));
+        rep.addLink(new Link(RHINDEXES, requestPath + "/_indexes"));
     }
 
     private void embeddedDocuments(
@@ -290,7 +305,7 @@ public class CollectionRepresentationFactory
             Representation rep)
             throws IllegalQueryParamenterException {
         for (BsonDocument d : embeddedData) {
-            BsonValue _id = d.get("_id");
+            BsonValue _id = d.get(_ID);
 
             if (_id != null
                     && RequestContext.isReservedResourceCollection(
@@ -325,7 +340,7 @@ public class CollectionRepresentationFactory
                                 d);
                     }
 
-                    rep.addRepresentation("rh:doc", nrep);
+                    rep.addRepresentation(RHDOC, nrep);
                 } else {
                     switch (context.getType()) {
                         case FILES_BUCKET:
@@ -335,7 +350,7 @@ public class CollectionRepresentationFactory
                                         TYPE.FILE,
                                         d);
                             }
-                            rep.addRepresentation("rh:file", nrep);
+                            rep.addRepresentation(RHFILE, nrep);
                             break;
                         case SCHEMA_STORE:
                             if (context.isFullHalMode()) {
@@ -344,7 +359,7 @@ public class CollectionRepresentationFactory
                                         TYPE.SCHEMA,
                                         d);
                             }
-                            rep.addRepresentation("rh:schema", nrep);
+                            rep.addRepresentation(RHSCHEMA, nrep);
                             break;
                         default:
                             if (context.isFullHalMode()) {
@@ -353,7 +368,7 @@ public class CollectionRepresentationFactory
                                         TYPE.DOCUMENT,
                                         d);
                             }
-                            rep.addRepresentation("rh:doc", nrep);
+                            rep.addRepresentation(RHDOC, nrep);
                             break;
                     }
                 }
