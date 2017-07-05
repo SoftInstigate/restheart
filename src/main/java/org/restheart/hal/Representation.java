@@ -29,6 +29,7 @@ import org.restheart.handlers.RequestContext;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class Representation {
+
     /**
      * Supported content types
      */
@@ -36,6 +37,9 @@ public class Representation {
     public static final String JSON_MEDIA_TYPE = "application/json";
     public static final String APP_FORM_URLENCODED_TYPE = "application/x-www-form-urlencoded";
     public static final String MULTIPART_FORM_DATA_TYPE = "multipart/form-data";
+    private static final String TYPE = "_type";
+    private static final String EMBEDDED = "_embedded";
+    private static final String LINKS = "_links";
 
     private final BsonDocument properties;
     private final BsonDocument embedded;
@@ -67,7 +71,7 @@ public class Representation {
             return null;
         }
 
-        Object _type = properties.get("_type");
+        Object _type = properties.get(TYPE);
 
         if (_type == null) {
             return null;
@@ -78,19 +82,19 @@ public class Representation {
 
     public BsonDocument asBsonDocument() {
         if (embedded == null || embedded.isEmpty()) {
-            properties.remove("_embedded");
+            properties.remove(EMBEDDED);
         } else {
-            properties.append("_embedded", embedded);
+            properties.append(EMBEDDED, embedded);
         }
 
         if (links == null || links.isEmpty()) {
-            properties.remove("_links");
+            properties.remove(LINKS);
         } else {
-            properties.append("_links", links);
+            properties.append(LINKS, links);
         }
 
         if (links != null && !links.isEmpty()) {
-            properties.append("_links", links);
+            properties.append(LINKS, links);
         }
 
         return properties;
