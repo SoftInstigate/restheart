@@ -16,41 +16,41 @@ Table of contents
 - [Starter Guide](http://restheart.org/quick-start.html)
 - [An Example](#an-example)
 - [Manual Installation](#manual-installation)
-- [How to run it](#how-to-run-it)
-- [How to build it](#how-to-build-it)
+- [How to Run It](#how-to-run-it)
+- [How to Build It](#how-to-build-it)
 - [Integration Tests](#integration-tests)
 - [Maven Dependencies](#maven-dependencies)
-- [Snapshot builds](#snapshot-builds)
+- [Snapshot Builds](#snapshot-builds)
 
 Summary
 --
 
 **RESTHeart** connects to **MongoDB** and opens data to the Web. Mobile and JavaScript applications can use the database via **RESTful HTTP API** calls.
 
-For an example of how RESTHeart works, check our **AngularJS** [sample notes application](https://github.com/softinstigate/restheart-notes-example).
+For an example of how RESTHeart works, check our sample **AngularJS** [notes application](https://github.com/softinstigate/restheart-notes-example).
 
-> **Note**: We've tested RESTHeart against MongoDB v. **2.6**, and **3.0**. We now test it mainly with **3.2** and **3.4**.
+> **Note**: We've tested RESTHeart against MongoDB v. **2.6** and **3.0**. We now test it mainly with **3.2** and **3.4**.
 
-Built on a Solid Foundation
+### Built on a Solid Foundation
 ---
 * The API strictly follows the **RESTful** paradigm.
 * Resources are represented with the [HAL+json](https://softinstigate.atlassian.net/wiki/x/UICM) format.
 * Built on top of the [Undertow](http://undertow.io) web server.
 * Makes use of few, best-of-breed libraries. Check the [pom.xml](https://github.com/SoftInstigate/restheart/blob/master/pom.xml)!
 
-Rapid Development
+### Rapid Development
 ---
-* RESTHeart requires **no server side development** in most of cases for your web and mobile applications.
-* The **setup** is simple, with a convention over configuration approach. We've provided a **Docker container** and **Vagrant box**.
+* RESTHeart typically requires **no server side development** for your web and mobile applications.
+* The **setup** is simple, with a convention over configuration approach. We've provided a **[Docker container](https://hub.docker.com/r/softinstigate/restheart/)** and **[Vagrant box](https://github.com/SoftInstigate/restheart-vagrant)**.
 * **Access Control** and **Schema Check** are provided out of the box.
 
-Production-Ready
+### Production-Ready
 ---
 * Comes with high-quality, updated **documentation** and an active development **community**.
 * Includes a severe **unit** and **integration** test suite, **code check** and **continuous integration** process.
 * [SoftInstigate](http://www.softinstigate.com) provides **commercial support**.
 
-Fast & Light
+### Fast & Light
 ---
 
 * **High throughput**: Check the [performance tests](https://softinstigate.atlassian.net/wiki/x/gICM).
@@ -58,7 +58,7 @@ Fast & Light
 * **Horizontally scalable** with a **stateless architecture** and full support for MongoDB **replica sets** and **shards**.
 * **µService**: It does one thing, and it does it well.
 
-Test with Docker
+### Test with Docker
 --
 
 If you have a Docker service running locally, you can be on your way with RESTHeart and MongoDB in just few minutes. We've included a `Docker` folder with `Dockerfile` and `docker-compose.yml` files, plus a specific `restheart.yml` configuration in the `Docker/etc` folder. The `build.sh` bash script compiles the source code and builds the Docker image.
@@ -116,8 +116,6 @@ Manual Installation
 --
 
 You can install RESTHeart on any OS that supports [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/index.html). Visit the [Installation and Setup](https://softinstigate.atlassian.net/wiki/x/FICM) documentation section for instructions.
-
-We've provided a [Docker container](https://hub.docker.com/r/softinstigate/restheart/) and [Vagrant box](https://github.com/SoftInstigate/restheart-vagrant).
 
 How to Run RESTHeart
 --
