@@ -11,7 +11,6 @@ Table of Contents
 --
 - [Summary](#summary)
 - [Test with Docker](#test-with-docker)
-- [Documentation References](#documentation-references)
 - [Starter Guide](http://restheart.org/quick-start.html)
 - [An Example](#an-example)
 - [Manual Installation](#manual-installation)
