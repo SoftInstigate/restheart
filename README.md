@@ -8,7 +8,7 @@ The leading REST API Server for MongoDB, created by [SoftInstigate](http://www.s
 [![Docker Build Statu](https://img.shields.io/docker/build/jrottenberg/ffmpeg.svg)](https://hub.docker.com/r/softinstigate/restheart/)
 [![Docker Stars](https://img.shields.io/docker/stars/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/) [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
 
-Table of contents
+Table of Contents
 --
 - [Summary](#summary)
 - [Test with Docker](#test-with-docker)
@@ -32,26 +32,25 @@ For an example of how RESTHeart works, check our sample **AngularJS** [notes app
 > **Note**: We've tested RESTHeart against MongoDB v. **2.6** and **3.0**. We now test it mainly with **3.2** and **3.4**.
 
 ### Built on a Solid Foundation
----
+
 * The API strictly follows the **RESTful** paradigm.
 * Resources are represented with the [HAL+json](https://softinstigate.atlassian.net/wiki/x/UICM) format.
 * Built on top of the [Undertow](http://undertow.io) web server.
 * Makes use of few, best-of-breed libraries. Check the [pom.xml](https://github.com/SoftInstigate/restheart/blob/master/pom.xml)!
 
 ### Rapid Development
----
+
 * RESTHeart typically requires **no server side development** for your web and mobile applications.
 * The **setup** is simple, with a convention over configuration approach. We've provided a **[Docker container](https://hub.docker.com/r/softinstigate/restheart/)** and **[Vagrant box](https://github.com/SoftInstigate/restheart-vagrant)**.
 * **Access Control** and **Schema Check** are provided out of the box.
 
 ### Production-Ready
----
+
 * Comes with high-quality, updated **documentation** and an active development **community**.
 * Includes a severe **unit** and **integration** test suite, **code check** and **continuous integration** process.
 * [SoftInstigate](http://www.softinstigate.com) provides **commercial support**.
 
 ### Fast & Light
----
 
 * **High throughput**: Check the [performance tests](https://softinstigate.atlassian.net/wiki/x/gICM).
 * **Lightweight**: ~10Mb footprint, low RAM usage, and starts in ~1 sec.
@@ -59,9 +58,8 @@ For an example of how RESTHeart works, check our sample **AngularJS** [notes app
 * **µService**: It does one thing, and it does it well.
 
 ### Test with Docker
---
 
-If you have a Docker service running locally, you can be on your way with RESTHeart and MongoDB in just few minutes. We've included a `Docker` folder with `Dockerfile` and `docker-compose.yml` files, plus a specific `restheart.yml` configuration in the `Docker/etc` folder. The `build.sh` bash script compiles the source code and builds the Docker image.
+If you're running a Docker service locally, you can be on your way with RESTHeart and MongoDB in just few minutes. We've included a `Docker` folder with `Dockerfile` and `docker-compose.yml` files, plus a specific `restheart.yml` configuration in the `Docker/etc` folder. The `build.sh` bash script compiles the source code and builds the Docker image.
 
 Steps:
 ```
