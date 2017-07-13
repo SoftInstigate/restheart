@@ -14,7 +14,7 @@ Table of Contents
 - [Starter Guide](http://restheart.org/quick-start.html)
 - [An Example](#an-example)
 - [Manual Installation](#manual-installation)
-- [How to Run RESTHeart](#how-to-run-RESTHeart)
+- [How to Run RESTHeart](#how-to-run-restheart)
 - [How to Build It](#how-to-build-it)
 - [Integration Tests](#integration-tests)
 - [Maven Dependencies](#maven-dependencies)
