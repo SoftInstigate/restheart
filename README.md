@@ -1,5 +1,4 @@
-RESTHeart
-=========
+## RESTHeart
 
 The leading REST API Server for MongoDB, created by [SoftInstigate](http://www.softinstigate.com).
 
@@ -16,7 +15,7 @@ Table of Contents
 - [Starter Guide](http://restheart.org/quick-start.html)
 - [An Example](#an-example)
 - [Manual Installation](#manual-installation)
-- [How to Run It](#how-to-run-it)
+- [How to Run RESTHeart](#how-to-run-it)
 - [How to Build It](#how-to-build-it)
 - [Integration Tests](#integration-tests)
 - [Maven Dependencies](#maven-dependencies)
@@ -29,7 +28,9 @@ Summary
 
 For an example of how RESTHeart works, check our sample **AngularJS** [notes application](https://github.com/softinstigate/restheart-notes-example).
 
-> **Note**: We've tested RESTHeart against MongoDB v. **2.6** and **3.0**. We now test it mainly with **3.2** and **3.4**.
+**Note**: We've tested RESTHeart against MongoDB v. **2.6** and **3.0**. We now test it mainly with **3.2** and **3.4**.
+
+For detailed information, visit RESTHeart's [website](http://restheart.org), [issues tracker](https://softinstigate.atlassian.net/projects/RH) and [detailed documentation wiki](https://softinstigate.atlassian.net/wiki/x/l4CM).
 
 ### Built on a Solid Foundation
 
@@ -89,15 +90,6 @@ This permits a quick test cycle of new releases. Remember to clean up things and
 $ docker-compose stop
 $ docker-compose rm
 ```
-
-Documentation References
---
-
-* Web site: [http://restheart.org](http://restheart.org)
-
-* Issues: [https://softinstigate.atlassian.net/projects/RH](https://softinstigate.atlassian.net/projects/RH)
-
-* Documentation: [https://softinstigate.atlassian.net/wiki/display/RH/Documentation](https://softinstigate.atlassian.net/wiki/x/l4CM)
 
 An Example
 --
