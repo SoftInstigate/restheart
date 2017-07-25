@@ -93,6 +93,13 @@
         </repository>
     </distributionManagement>
 
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+    
     <scm>
         <url>https://github.com/SoftInstigate/restheart</url>
         <connection>scm:git:git@github.com:SoftInstigate/restheart.git</connection>
@@ -147,7 +154,7 @@
         <dependency>
             <groupId>org.everit.json</groupId>
             <artifactId>org.everit.json.schema</artifactId>
-            <version>1.5.1</version>
+            <version>1.6.0</version>
         </dependency>
         
         <dependency>
