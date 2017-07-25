@@ -152,7 +152,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.everit.json</groupId>
+            <groupId>com.github.everit-org.json-schema</groupId>
             <artifactId>org.everit.json.schema</artifactId>
             <version>1.6.0</version>
         </dependency>
