@@ -15,11 +15,13 @@
  */
 package org.restheart.security.handlers;
 
-import io.undertow.security.idm.IdentityManager;
-import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.security.AccessManager;
+
+import io.undertow.security.api.AuthenticationMechanism;
+import io.undertow.security.idm.IdentityManager;
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -36,14 +38,15 @@ public class SecurityHandlerDispacher extends PipedHttpHandler {
     /**
      *
      * @param next
+     * @param authenticationMechanism 
      * @param identityManager
      * @param accessManager
      */
-    public SecurityHandlerDispacher(final PipedHttpHandler next, final IdentityManager identityManager, final AccessManager accessManager) {
+    public SecurityHandlerDispacher(final PipedHttpHandler next, final AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager, final AccessManager accessManager) {
         super(null);
         
-        silentHandler = new SecurityHandler(next, identityManager, accessManager, false);
-        challengingHandler = new SecurityHandler(next, identityManager, accessManager, true);
+        silentHandler = new SecurityHandler(next, authenticationMechanism, identityManager, accessManager, false);
+        challengingHandler = new SecurityHandler(next, authenticationMechanism, identityManager, accessManager, true);
     }
 
     /**

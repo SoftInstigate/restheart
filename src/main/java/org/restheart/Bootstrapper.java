@@ -17,12 +17,13 @@
  */
 package org.restheart;
 
-import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.undertow.Handlers.path;
 import static io.undertow.Handlers.resource;
+import com.mongodb.MongoClient;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
+import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.handlers.AllowedMethodsHandler;
 import io.undertow.server.handlers.BlockingHandler;
@@ -77,6 +78,7 @@ import org.restheart.handlers.injectors.DbPropsInjectorHandler;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.handlers.injectors.RequestContextInjectorHandler;
 import org.restheart.security.AccessManager;
+import org.restheart.security.AuthenticationMechanismFactory;
 import org.restheart.security.FullAccessManager;
 import org.restheart.security.handlers.AuthTokenHandler;
 import org.restheart.security.handlers.CORSHandler;
@@ -506,6 +508,9 @@ public class Bootstrapper {
         final IdentityManager identityManager = loadIdentityManager();
 
         final AccessManager accessManager = loadAccessManager();
+        
+        final AuthenticationMechanism authenticationMechanism = loadAuthenticationMechanism(identityManager);
+
 
         if (configuration.isAuthTokenEnabled()) {
             LOGGER.info("Token based authentication enabled with token TTL {} minutes", configuration.getAuthTokenTtl());
@@ -586,7 +591,7 @@ public class Bootstrapper {
             LOGGER.info("Local cache for schema stores not enabled");
         }
 
-        shutdownHandler = getHandlersPipe(identityManager, accessManager);
+        shutdownHandler = getHandlersPipe(authenticationMechanism, identityManager, accessManager);
 
         builder = builder
                 .setIoThreads(configuration.getIoThreads())
@@ -600,6 +605,30 @@ public class Bootstrapper {
 
         undertowServer = builder.build();
         undertowServer.start();
+    }
+
+    /**
+     * loadAuthenticationMechanism
+     *
+     * @return the AuthenticationMechanism
+     */
+    private static AuthenticationMechanism loadAuthenticationMechanism(final IdentityManager identityManager) {
+        AuthenticationMechanism authMechanism = null;
+        if (configuration.getAuthMechanism() != null) {
+            try {
+                AuthenticationMechanismFactory am = (AuthenticationMechanismFactory) Class.forName(configuration.getAuthMechanism())
+                        .getConstructor()
+                        .newInstance();
+                
+                authMechanism = am.build(configuration.getAuthMechanismArgs(), identityManager);
+                LOGGER.info("Authentication Mechanism {} enabled", configuration.getAuthMechanism());
+            } catch (Exception ex) {
+                logErrorAndExit("Error configuring Authentication Mechanism implementation " + configuration.getAuthMechanism(), ex, false, -3);
+            }
+        } else {
+            LOGGER.info("Authentication Mechanism io.undertow.security.impl.BasicAuthenticationMechanism enabled");
+        }
+        return authMechanism;
     }
 
     /**
@@ -617,6 +646,8 @@ public class Bootstrapper {
                         .getConstructor(Map.class)
                         .newInstance(configuration.getIdmArgs());
                 identityManager = (IdentityManager) idm;
+                
+                LOGGER.info("Identity Manager {} enabled", configuration.getIdmImpl());
             } catch (ClassNotFoundException
                     | IllegalAccessException
                     | IllegalArgumentException
@@ -646,6 +677,8 @@ public class Bootstrapper {
                 Object am = Class.forName(configuration.getAmImpl())
                         .getConstructor(Map.class)
                         .newInstance(configuration.getAmArgs());
+                
+                LOGGER.info("Access Manager {} enabled", configuration.getAmImpl());
                 accessManager = (AccessManager) am;
             } catch (ClassNotFoundException
                     | IllegalAccessException
@@ -654,7 +687,7 @@ public class Bootstrapper {
                     | NoSuchMethodException
                     | SecurityException
                     | InvocationTargetException ex) {
-                logErrorAndExit("Error configuring acess manager implementation " + configuration.getAmImpl(), ex, false, -3);
+                logErrorAndExit("Error configuring Access Manager implementation " + configuration.getAmImpl(), ex, false, -3);
             }
         }
         return accessManager;
@@ -698,9 +731,7 @@ public class Bootstrapper {
      * @param accessManager
      * @return a GracefulShutdownHandler
      */
-    private static GracefulShutdownHandler getHandlersPipe(
-            final IdentityManager identityManager,
-            final AccessManager accessManager) {
+    private static GracefulShutdownHandler getHandlersPipe(final AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager, final AccessManager accessManager) {
         PipedHttpHandler coreHandlerChain
                 = new AccountInjectorHandler(
                         new DbPropsInjectorHandler(
@@ -722,6 +753,7 @@ public class Bootstrapper {
                                                     new BodyInjectorHandler(
                                                             new SecurityHandlerDispacher(
                                                                     coreHandlerChain,
+                                                                    authenticationMechanism,
                                                                     identityManager,
                                                                     accessManager))))
                             )));
@@ -729,9 +761,9 @@ public class Bootstrapper {
             LOGGER.info("URL {} bound to MongoDB resource {}", url, db);
         });
 
-        pipeStaticResourcesHandlers(configuration, paths, identityManager, accessManager);
+        pipeStaticResourcesHandlers(configuration, paths, authenticationMechanism, identityManager, accessManager);
 
-        pipeApplicationLogicHandlers(configuration, paths, identityManager, accessManager);
+        pipeApplicationLogicHandlers(configuration, paths, authenticationMechanism, identityManager, accessManager);
 
         // pipe the auth tokens invalidation handler
         paths.addPrefixPath("/_authtokens",
@@ -739,6 +771,7 @@ public class Bootstrapper {
                         new CORSHandler(
                                 new SecurityHandlerDispacher(
                                         new AuthTokenHandler(),
+                                        authenticationMechanism,
                                         identityManager,
                                         new FullAccessManager()))));
 
@@ -780,13 +813,14 @@ public class Bootstrapper {
      *
      * @param conf
      * @param paths
+     * @param authenticationMechanism
      * @param identityManager
      * @param accessManager
      */
     private static void pipeStaticResourcesHandlers(
             final Configuration conf,
             final PathHandler paths,
-            final IdentityManager identityManager,
+            AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager,
             final AccessManager accessManager) {
         if (conf.getStaticResourcesMounts() != null) {
             conf.getStaticResourcesMounts().stream().forEach(sr -> {
@@ -875,6 +909,7 @@ public class Bootstrapper {
                             ph = new RequestLoggerHandler(
                                     new SecurityHandlerDispacher(
                                             new PipedWrappingHandler(null, handler),
+                                            authenticationMechanism,
                                             identityManager,
                                             accessManager));
                         } else {
@@ -900,13 +935,14 @@ public class Bootstrapper {
      *
      * @param conf
      * @param paths
+     * @param authenticationMechanism
      * @param identityManager
      * @param accessManager
      */
     private static void pipeApplicationLogicHandlers(
             final Configuration conf,
             final PathHandler paths,
-            final IdentityManager identityManager,
+            AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager,
             final AccessManager accessManager) {
         if (conf.getApplicationLogicMounts() != null) {
             conf.getApplicationLogicMounts().stream().forEach((Map<String, Object> al) -> {
@@ -946,6 +982,7 @@ public class Bootstrapper {
                                     new CORSHandler(
                                             new SecurityHandlerDispacher(
                                                     handler,
+                                                    authenticationMechanism,
                                                     identityManager,
                                                     accessManager))));
                         } else {
@@ -954,6 +991,7 @@ public class Bootstrapper {
                                             new CORSHandler(
                                                     new SecurityHandlerDispacher(
                                                             handler,
+                                                            authenticationMechanism,
                                                             identityManager,
                                                             new FullAccessManager()))));
                         }
