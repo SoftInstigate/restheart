@@ -47,7 +47,10 @@ script:
 
 after_success:
    - if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
+<<<<<<< HEAD
         mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent package sonar:sonar
+=======
+>>>>>>> 38fcf24a4c169f26ae72e9f9ba12e9a2fd3f5a4f
         mvn deploy --settings deploy-settings.xml -DskipTests=true;
         export RESTHEART_VERSION=$(./bin/project-version.sh 2>/dev/null);
         if [[ $RESTHEART_VERSION ]]; then

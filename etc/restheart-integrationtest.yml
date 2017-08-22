@@ -192,6 +192,18 @@ access-manager:
     implementation-class: org.restheart.security.impl.SimpleAccessManager
     conf-file: ../etc/security-integrationtest.yml
 
+# RESTHeart uses the BasicAuthenticationMechanism by default. 
+# A different mechanism can be specified via the auth-mechanism configuration option
+# the implementation-class must specify a factory class implementing
+# the interface org.restheart.security.AuthenticationMechanismFactory
+# See http://undertow.io/undertow-docs/undertow-docs-1.4.0/index.html#security 
+# and IdentityAuthenticationManagerFactory for an example implementation
+
+#auth-mechanism:
+#    implementation-class: org.restheart.security.impl.IdentityAuthenticationManagerFactory
+#    username: a
+#    pwd: a
+
 # Authentication Token
 
 # Note: you need to pay attention to the authentitcation token in case of multi-node deployments (horizontal scalability).
