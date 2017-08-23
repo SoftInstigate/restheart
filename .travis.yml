@@ -47,8 +47,7 @@ script:
 
 after_success:
    - if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
-        mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent package sonar:sonar
-        mvn deploy --settings deploy-settings.xml -DskipTests=true;
+        mvn deploy --settings deploy-settings.xml -Dmaven.test.skip=true
         export RESTHEART_VERSION=$(./bin/project-version.sh 2>/dev/null);
         if [[ $RESTHEART_VERSION ]]; then
             echo "Building Docker image for RESTHeart $RESTHEART_VERSION";
