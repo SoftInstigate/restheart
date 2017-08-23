@@ -28,7 +28,6 @@ import org.apache.http.client.fluent.Response;
 import org.junit.Assert;
 import static org.junit.Assert.*;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.restheart.hal.Representation;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
@@ -49,7 +48,6 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
     }
 
     @Test
-    @Ignore
     public void testPatchDocument() throws Exception {
         Response resp;
 
@@ -117,7 +115,6 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
     }
 
     @Test
-    @Ignore
     public void testPatchDocumentDotNotation() throws Exception {
         resp = Unirest.put(url(DB, COLL, "docid1"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
@@ -181,7 +178,6 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
     }
 
     @Test
-    @Ignore
     public void testPatchDocumentOperators() throws Exception {
         resp = Unirest.put(url(DB, COLL, "docid2"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
