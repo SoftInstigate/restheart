@@ -31,7 +31,7 @@ import org.junit.Test;
  */
 public class RelationshipsIT extends AbstactIT {
 
-    private final String DB = "test-pj-db";
+    private final String DB = "test-rel-db";
     private final String COLL_PARENT = "parent";
     private final String COLL_CHILDREN = "children";
 
@@ -118,10 +118,6 @@ public class RelationshipsIT extends AbstactIT {
 
         String childrenUrl = rbody.asObject().get("_links").asObject().get("children").asObject().get("href").asString();
 
-        System.out.println(childrenUrl);
-
         Assert.assertTrue("check href", childrenUrl.endsWith("filter={'_id':{'$in':[0,1,2,3,4,5,6,7,8,9]}}"));
-        
-        
     }
 }
