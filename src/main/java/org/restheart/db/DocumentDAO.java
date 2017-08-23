@@ -119,7 +119,10 @@ public class DocumentDAO implements Repository {
 
         if (patching) {
             if (oldDocument == null) {
-                return updateResult;
+                return new OperationResult(
+                    updateResult.getHttpCode() > 0
+                    ? updateResult.getHttpCode()
+                    : HttpStatus.SC_CREATED, newEtag, null, updateResult.getNewData());
             } else if (checkEtag) {
                 // check the old etag (in case restore the old document version)
                 return optimisticCheckEtag(
