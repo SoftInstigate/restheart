@@ -474,9 +474,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                 if (_doc.isDocument()) {
                     BsonValue _id = _doc.asDocument().get(_ID);
 
-                    try {
-                        checkIdType(_doc.asDocument());
-                    } catch (UnsupportedDocumentIdException udie) {
+                    if (_id != null && _id.isArray()) {
                         String errMsg = "the type of _id in request data"
                                 + " is not supported: "
                                 + (_id == null
@@ -487,12 +485,10 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                                 exchange,
                                 context,
                                 HttpStatus.SC_NOT_ACCEPTABLE,
-                                errMsg,
-                                udie);
+                                errMsg);
 
                         return false;
                     }
-
                     filterJsonContent(_doc.asDocument(), context);
                     return true;
                 } else {
@@ -516,9 +512,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
             BsonValue _id = _content.get(_ID);
 
-            try {
-                checkIdType(_content);
-            } catch (UnsupportedDocumentIdException udie) {
+            if (_id != null && _id.isArray()) {
                 String errMsg = "the type of _id in request data "
                         + "is not supported: "
                         + (_id == null
@@ -529,8 +523,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                         exchange,
                         context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
-                        errMsg,
-                        udie);
+                        errMsg);
                 next(exchange, context);
                 return;
             }
