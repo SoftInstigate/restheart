@@ -464,6 +464,11 @@ public class Configuration {
     public static final String LOG_REQUESTS_LEVEL_KEY = "requests-log-level";
 
     /**
+     * The key for enabling the Ansi console (for logging with colors)
+     */
+    public static final String ANSI_CONSOLE = "ansi-console";
+
+    /**
      * undertow connetction options
      *
      * @see
@@ -572,11 +577,14 @@ public class Configuration {
     private final ETAG_CHECK_POLICY docEtagCheckPolicy;
     private final Map<String, Object> connectionOptions;
     private final Integer logExchangeDump;
+    private final boolean ansiConsole;
 
     /**
      * Creates a new instance of Configuration with defaults values.
      */
     public Configuration() {
+        ansiConsole = true;
+
         httpsListener = true;
         httpsPort = DEFAULT_HTTPS_PORT;
         httpsHost = DEFAULT_HTTPS_HOST;
@@ -701,6 +709,8 @@ public class Configuration {
      */
     public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
         this.silent = silent;
+
+        ansiConsole = getAsBooleanOrDefault(conf, ANSI_CONSOLE, true);
 
         httpsListener = getAsBooleanOrDefault(conf, HTTPS_LISTENER, true);
         httpsPort = getAsIntegerOrDefault(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
@@ -874,6 +884,14 @@ public class Configuration {
         logExchangeDump = getAsIntegerOrDefault(conf, LOG_REQUESTS_LEVEL_KEY, 0);
 
         connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY);
+    }
+
+    /**
+     *
+     * @return true if the Ansi console is enabled
+     */
+    public boolean isAnsiConsole() {
+        return ansiConsole;
     }
 
     /**
