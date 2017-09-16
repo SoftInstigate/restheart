@@ -17,83 +17,83 @@
  */
 package org.restheart;
 
-import org.restheart.utils.RHDaemon;
 import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
-import static org.restheart.Configuration.RESTHEART_VERSION;
-import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.handlers.ErrorHandler;
-import org.restheart.handlers.GzipEncodingHandler;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestDispacherHandler;
-import org.restheart.handlers.injectors.RequestContextInjectorHandler;
-import org.restheart.handlers.injectors.CollectionPropsInjectorHandler;
-import org.restheart.handlers.injectors.DbPropsInjectorHandler;
-import org.restheart.handlers.injectors.LocalCachesSingleton;
-import org.restheart.security.AccessManager;
-import org.restheart.utils.ResourcesExtractor;
-import org.restheart.utils.LoggingInitializer;
-import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.applicationlogic.ApplicationLogicHandler;
-import org.restheart.handlers.OptionsHandler;
-import org.restheart.handlers.PipedWrappingHandler;
-import org.restheart.handlers.injectors.BodyInjectorHandler;
-import org.restheart.security.handlers.SecurityHandlerDispacher;
-import org.restheart.security.handlers.CORSHandler;
-import org.restheart.utils.FileUtils;
-import org.restheart.utils.OSChecker;
+import static io.undertow.Handlers.path;
+import static io.undertow.Handlers.resource;
 import io.undertow.Undertow;
+import io.undertow.Undertow.Builder;
 import io.undertow.security.idm.IdentityManager;
+import io.undertow.server.handlers.AllowedMethodsHandler;
+import io.undertow.server.handlers.BlockingHandler;
+import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
+import io.undertow.server.handlers.PathHandler;
+import io.undertow.server.handlers.RequestLimit;
+import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.server.handlers.resource.FileResourceManager;
+import io.undertow.server.handlers.resource.ResourceHandler;
+import io.undertow.util.HttpString;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-
-import static io.undertow.Handlers.resource;
-import io.undertow.Undertow.Builder;
-import io.undertow.server.handlers.AllowedMethodsHandler;
-import io.undertow.server.handlers.BlockingHandler;
-import io.undertow.server.handlers.GracefulShutdownHandler;
-import io.undertow.server.handlers.PathHandler;
-import io.undertow.server.handlers.RequestLimit;
-import io.undertow.server.handlers.RequestLimitingHandler;
-import io.undertow.server.handlers.resource.ResourceHandler;
-import io.undertow.util.HttpString;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
+import static org.fusesource.jansi.Ansi.ansi;
+import static org.restheart.Configuration.RESTHEART_VERSION;
+import org.restheart.db.MongoDBClientSingleton;
+import org.restheart.handlers.ErrorHandler;
+import org.restheart.handlers.GzipEncodingHandler;
+import org.restheart.handlers.OptionsHandler;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipedWrappingHandler;
+import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.RequestDispacherHandler;
+import org.restheart.handlers.RequestLoggerHandler;
+import org.restheart.handlers.applicationlogic.ApplicationLogicHandler;
+import org.restheart.handlers.injectors.AccountInjectorHandler;
+import org.restheart.handlers.injectors.BodyInjectorHandler;
+import org.restheart.handlers.injectors.CollectionPropsInjectorHandler;
+import org.restheart.handlers.injectors.DbPropsInjectorHandler;
+import org.restheart.handlers.injectors.LocalCachesSingleton;
+import org.restheart.handlers.injectors.RequestContextInjectorHandler;
+import org.restheart.security.AccessManager;
 import org.restheart.security.FullAccessManager;
 import org.restheart.security.handlers.AuthTokenHandler;
+import org.restheart.security.handlers.CORSHandler;
+import org.restheart.security.handlers.SecurityHandlerDispacher;
+import org.restheart.utils.FileUtils;
+import org.restheart.utils.LoggingInitializer;
+import org.restheart.utils.OSChecker;
+import org.restheart.utils.RHDaemon;
+import org.restheart.utils.ResourcesExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.restheart.handlers.RequestLoggerHandler;
-import java.nio.file.Paths;
-import static io.undertow.Handlers.path;
-import javax.net.ssl.TrustManagerFactory;
-import static org.fusesource.jansi.Ansi.ansi;
-import org.restheart.handlers.injectors.AccountInjectorHandler;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public final class Bootstrapper {
+public class Bootstrapper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Bootstrapper.class);
     private static final Map<String, File> TMP_EXTRACTED_FILES = new HashMap<>();
@@ -103,9 +103,6 @@ public final class Bootstrapper {
     private static GracefulShutdownHandler shutdownHandler = null;
     private static Configuration configuration;
     private static Undertow undertowServer;
-
-    private Bootstrapper() {
-    }
 
     /**
      * main method
@@ -173,7 +170,7 @@ public final class Bootstrapper {
                     d.init();
                     LOGGER.info("Forked process: {}", LIBC.getpid());
                     initLogging(args, d);
-                } catch (Throwable t) {
+                } catch (Exception t) {
                     logErrorAndExit("Error staring forked process", t, false, false, -1);
                 }
 
@@ -263,6 +260,7 @@ public final class Bootstrapper {
 
     /**
      * Shutdown the RESTHeart server
+     *
      * @param args command line arguments
      */
     public static void shutdown(final String[] args) {
@@ -298,10 +296,12 @@ public final class Bootstrapper {
      */
     private static void logLoggingConfiguration(boolean fork) {
         String logbackConfigurationFile = System.getProperty("logback.configurationFile");
-        boolean usesLogback = logbackConfigurationFile != null && !logbackConfigurationFile.equals("");
-        
-        if(usesLogback) return;
-        
+        boolean usesLogback = logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty();
+
+        if (usesLogback) {
+            return;
+        }
+
         if (configuration.isLogToFile()) {
             LOGGER.info("Logging to file {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
         }
@@ -535,7 +535,11 @@ public final class Bootstrapper {
             tmf.init(ks);
 
             sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-        } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException ex) {
+        } catch (KeyManagementException
+                | NoSuchAlgorithmException
+                | KeyStoreException
+                | CertificateException
+                | UnrecoverableKeyException ex) {
             logErrorAndExit("Couldn't start RESTHeart, error with specified keystore. exiting..", ex, false, -1);
         } catch (FileNotFoundException ex) {
             logErrorAndExit("Couldn't start RESTHeart, keystore file not found. exiting..", ex, false, -1);
@@ -609,7 +613,13 @@ public final class Bootstrapper {
                         .getConstructor(Map.class)
                         .newInstance(configuration.getIdmArgs());
                 identityManager = (IdentityManager) idm;
-            } catch (Exception ex) {
+            } catch (ClassNotFoundException
+                    | IllegalAccessException
+                    | IllegalArgumentException
+                    | InstantiationException
+                    | NoSuchMethodException
+                    | SecurityException
+                    | InvocationTargetException ex) {
                 logErrorAndExit("Error configuring Identity Manager implementation " + configuration.getIdmImpl(), ex, false, -3);
             }
         }
@@ -633,7 +643,13 @@ public final class Bootstrapper {
                         .getConstructor(Map.class)
                         .newInstance(configuration.getAmArgs());
                 accessManager = (AccessManager) am;
-            } catch (Exception ex) {
+            } catch (ClassNotFoundException
+                    | IllegalAccessException
+                    | IllegalArgumentException
+                    | InstantiationException
+                    | NoSuchMethodException
+                    | SecurityException
+                    | InvocationTargetException ex) {
                 logErrorAndExit("Error configuring acess manager implementation " + configuration.getAmImpl(), ex, false, -3);
             }
         }
@@ -939,7 +955,13 @@ public final class Bootstrapper {
                                 + " Class {} does not extend ApplicationLogicHandler", alWhere, alClazz);
                     }
 
-                } catch (Throwable t) {
+                } catch (ClassNotFoundException
+                        | IllegalAccessException
+                        | IllegalArgumentException
+                        | InstantiationException
+                        | NoSuchMethodException
+                        | SecurityException
+                        | InvocationTargetException t) {
                     LOGGER.error("Cannot pipe application logic handler {}",
                             al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE_KEY), t);
                 }
@@ -955,5 +977,8 @@ public final class Bootstrapper {
      */
     public static Configuration getConfiguration() {
         return configuration;
+    }
+
+    private Bootstrapper() {
     }
 }
