@@ -56,10 +56,10 @@ import java.util.Map;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-import org.fusesource.jansi.AnsiConsole;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
+import org.fusesource.jansi.AnsiConsole;
 import static org.restheart.Configuration.RESTHEART_VERSION;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.handlers.ErrorHandler;
@@ -116,11 +116,13 @@ public class Bootstrapper {
         try {
             // read configuration silently, to avoid logging before initializing the logger
             configuration = FileUtils.getConfiguration(args, true);
-            if (configuration.isAnsiConsole()) {
+            LOGGER.debug(configuration.toString());
+
+            if (!configuration.isAnsiConsole()) {
                 AnsiConsole.systemInstall();
-            } else {
-                AnsiConsole.systemUninstall();
             }
+            LOGGER.info("ANSI colored console: "
+                    + ansi().fg(RED).bold().a(configuration.isAnsiConsole()).reset().toString());
         } catch (ConfigurationException ex) {
             LOGGER.info("Starting "
                     + ansi().fg(RED).bold().a("RESTHeart").reset().toString()

@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Maurizio Turatti <info@maurizioturatti.com>
  */
+@Ignore
 public class RequestDispacherHandlerTest {
     private static final Logger LOG = LoggerFactory.getLogger(RequestDispacherHandlerTest.class);
 
