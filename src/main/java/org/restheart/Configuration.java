@@ -27,6 +27,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -884,6 +885,11 @@ public class Configuration {
         logExchangeDump = getAsIntegerOrDefault(conf, LOG_REQUESTS_LEVEL_KEY, 0);
 
         connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY);
+    }
+
+    @Override
+    public String toString() {
+        return "Configuration{" + "silent=" + silent + ", httpsListener=" + httpsListener + ", httpsPort=" + httpsPort + ", httpsHost=" + httpsHost + ", httpListener=" + httpListener + ", httpPort=" + httpPort + ", httpHost=" + httpHost + ", ajpListener=" + ajpListener + ", ajpPort=" + ajpPort + ", ajpHost=" + ajpHost + ", instanceName=" + instanceName + ", defaultRepresentationFromat=" + defaultRepresentationFromat + ", useEmbeddedKeystore=" + useEmbeddedKeystore + ", keystoreFile=" + keystoreFile + ", keystorePassword=" + keystorePassword + ", certPassword=" + certPassword + ", mongoUri=" + mongoUri + ", mongoMounts=" + mongoMounts + ", staticResourcesMounts=" + staticResourcesMounts + ", applicationLogicMounts=" + applicationLogicMounts + ", metadataNamedSingletons=" + metadataNamedSingletons + ", idmImpl=" + idmImpl + ", idmArgs=" + idmArgs + ", authMechanismImpl=" + authMechanismImpl + ", authMechanismArgs=" + authMechanismArgs + ", amImpl=" + amImpl + ", amArgs=" + amArgs + ", logFilePath=" + logFilePath + ", logLevel=" + logLevel + ", logToConsole=" + logToConsole + ", logToFile=" + logToFile + ", localCacheEnabled=" + localCacheEnabled + ", localCacheTtl=" + localCacheTtl + ", schemaCacheEnabled=" + schemaCacheEnabled + ", schemaCacheTtl=" + schemaCacheTtl + ", requestsLimit=" + requestsLimit + ", ioThreads=" + ioThreads + ", workerThreads=" + workerThreads + ", bufferSize=" + bufferSize + ", buffersPerRegion=" + buffersPerRegion + ", directBuffers=" + directBuffers + ", forceGzipEncoding=" + forceGzipEncoding + ", eagerPoolSize=" + eagerPoolSize + ", eagerLinearSliceWidht=" + eagerLinearSliceWidht + ", eagerLinearSliceDelta=" + eagerLinearSliceDelta + ", eagerLinearSliceHeights=" + Arrays.toString(eagerLinearSliceHeights) + ", eagerRndSliceMinWidht=" + eagerRndSliceMinWidht + ", eagerRndMaxCursors=" + eagerRndMaxCursors + ", authTokenEnabled=" + authTokenEnabled + ", authTokenTtl=" + authTokenTtl + ", dbEtagCheckPolicy=" + dbEtagCheckPolicy + ", collEtagCheckPolicy=" + collEtagCheckPolicy + ", docEtagCheckPolicy=" + docEtagCheckPolicy + ", connectionOptions=" + connectionOptions + ", logExchangeDump=" + logExchangeDump + ", queryTimeLimit=" + queryTimeLimit + ", aggregationTimeLimit=" + aggregationTimeLimit + ", ansiConsole=" + ansiConsole + '}';
     }
 
     /**
