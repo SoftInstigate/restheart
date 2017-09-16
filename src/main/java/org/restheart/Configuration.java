@@ -17,6 +17,10 @@
  */
 package org.restheart;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
+import com.google.common.collect.Maps;
+import com.mongodb.MongoClientURI;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -35,10 +39,6 @@ import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
-import com.google.common.collect.Maps;
-import com.mongodb.MongoClientURI;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.LoggerContext;
 
 /**
  * Utility class to help dealing with the restheart configuration file.
@@ -62,88 +62,6 @@ public class Configuration {
     public static final String RESTHEART_ONLINE_DOC_URL = "http://restheart.org/curies/3.0";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
-
-    private boolean silent = false;
-
-    private final boolean httpsListener;
-    private final int httpsPort;
-    private final String httpsHost;
-
-    private final boolean httpListener;
-    private final int httpPort;
-    private final String httpHost;
-
-    private final boolean ajpListener;
-    private final int ajpPort;
-    private final String ajpHost;
-
-    private final String instanceName;
-
-    private final RequestContext.REPRESENTATION_FORMAT defaultRepresentationFromat;
-
-    private final boolean useEmbeddedKeystore;
-    private final String keystoreFile;
-    private final String keystorePassword;
-    private final String certPassword;
-
-    private final MongoClientURI mongoUri;
-
-    private final List<Map<String, Object>> mongoMounts;
-
-    private final List<Map<String, Object>> staticResourcesMounts;
-
-    private final List<Map<String, Object>> applicationLogicMounts;
-
-    private final List<Map<String, Object>> metadataNamedSingletons;
-
-    private final String idmImpl;
-    private final Map<String, Object> idmArgs;
-    private final String authMechanismImpl;
-    private final Map<String, Object> authMechanismArgs;
-    private final String amImpl;
-    private final Map<String, Object> amArgs;
-
-    private final String logFilePath;
-    private final Level logLevel;
-    private final boolean logToConsole;
-    private final boolean logToFile;
-
-    private final boolean localCacheEnabled;
-    private final long localCacheTtl;
-
-    private final boolean schemaCacheEnabled;
-    private final long schemaCacheTtl;
-
-    private final int requestsLimit;
-
-    private final int ioThreads;
-    private final int workerThreads;
-    private final int bufferSize;
-    private final int buffersPerRegion;
-    private final boolean directBuffers;
-
-    private final boolean forceGzipEncoding;
-
-    private final int eagerPoolSize;
-    private final int eagerLinearSliceWidht;
-    private final int eagerLinearSliceDelta;
-    private final int[] eagerLinearSliceHeights;
-    private final int eagerRndSliceMinWidht;
-    private final int eagerRndMaxCursors;
-
-    private final boolean authTokenEnabled;
-    private final int authTokenTtl;
-
-    private final ETAG_CHECK_POLICY dbEtagCheckPolicy;
-    private final ETAG_CHECK_POLICY collEtagCheckPolicy;
-    private final ETAG_CHECK_POLICY docEtagCheckPolicy;
-
-    private final Map<String, Object> connectionOptions;
-
-    private final Integer logExchangeDump;
-    
-        private final long queryTimeLimit;
-    private final long aggregationTimeLimit;
 
     /**
      * default mongo uri mongodb://127.0.0.1
@@ -201,7 +119,7 @@ public class Configuration {
      * default idm implementation class.
      */
     public static final String DEFAULT_IDM_IMPLEMENTATION_CLASS = null;
-    
+
     /**
      * default authMechanism implementation class.
      */
@@ -324,7 +242,7 @@ public class Configuration {
      * the key for the idm property.
      */
     public static final String IDM_KEY = "idm";
-    
+
     /**
      * the key for the auth Mechanism.
      */
@@ -567,6 +485,11 @@ public class Configuration {
     public static final String LOG_REQUESTS_LEVEL_KEY = "requests-log-level";
 
     /**
+     * The key for enabling the Ansi console (for logging with colors)
+     */
+    public static final String ANSI_CONSOLE = "ansi-console";
+
+    /**
      * undertow connetction options
      *
      * @see
@@ -622,11 +545,71 @@ public class Configuration {
 
         return ret;
     }
+    private boolean silent = false;
+    private final boolean httpsListener;
+    private final int httpsPort;
+    private final String httpsHost;
+    private final boolean httpListener;
+    private final int httpPort;
+    private final String httpHost;
+    private final boolean ajpListener;
+    private final int ajpPort;
+    private final String ajpHost;
+    private final String instanceName;
+    private final RequestContext.REPRESENTATION_FORMAT defaultRepresentationFromat;
+    private final boolean useEmbeddedKeystore;
+    private final String keystoreFile;
+    private final String keystorePassword;
+    private final String certPassword;
+    private final MongoClientURI mongoUri;
+    private final List<Map<String, Object>> mongoMounts;
+    private final List<Map<String, Object>> staticResourcesMounts;
+    private final List<Map<String, Object>> applicationLogicMounts;
+    private final List<Map<String, Object>> metadataNamedSingletons;
+    private final String idmImpl;
+    private final Map<String, Object> idmArgs;
+    private final String authMechanismImpl;
+    private final Map<String, Object> authMechanismArgs;
+    private final String amImpl;
+    private final Map<String, Object> amArgs;
+    private final String logFilePath;
+    private final Level logLevel;
+    private final boolean logToConsole;
+    private final boolean logToFile;
+    private final boolean localCacheEnabled;
+    private final long localCacheTtl;
+    private final boolean schemaCacheEnabled;
+    private final long schemaCacheTtl;
+    private final int requestsLimit;
+    private final int ioThreads;
+    private final int workerThreads;
+    private final int bufferSize;
+    private final int buffersPerRegion;
+    private final boolean directBuffers;
+    private final boolean forceGzipEncoding;
+    private final int eagerPoolSize;
+    private final int eagerLinearSliceWidht;
+    private final int eagerLinearSliceDelta;
+    private final int[] eagerLinearSliceHeights;
+    private final int eagerRndSliceMinWidht;
+    private final int eagerRndMaxCursors;
+    private final boolean authTokenEnabled;
+    private final int authTokenTtl;
+    private final ETAG_CHECK_POLICY dbEtagCheckPolicy;
+    private final ETAG_CHECK_POLICY collEtagCheckPolicy;
+    private final ETAG_CHECK_POLICY docEtagCheckPolicy;
+    private final Map<String, Object> connectionOptions;
+    private final Integer logExchangeDump;
+    private final long queryTimeLimit;
+    private final long aggregationTimeLimit;
+    private final boolean ansiConsole;
 
     /**
      * Creates a new instance of Configuration with defaults values.
      */
     public Configuration() {
+        ansiConsole = true;
+
         httpsListener = true;
         httpsPort = DEFAULT_HTTPS_PORT;
         httpsHost = DEFAULT_HTTPS_HOST;
@@ -674,7 +657,7 @@ public class Configuration {
 
         idmImpl = null;
         idmArgs = null;
-        
+
         authMechanismImpl = null;
         authMechanismArgs = null;
 
@@ -694,7 +677,7 @@ public class Configuration {
         schemaCacheTtl = 1000;
 
         requestsLimit = 100;
-        
+
         queryTimeLimit = 0;
         aggregationTimeLimit = 0;
 
@@ -759,6 +742,8 @@ public class Configuration {
     public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
         this.silent = silent;
 
+        ansiConsole = getAsBooleanOrDefault(conf, ANSI_CONSOLE, true);
+
         httpsListener = getAsBooleanOrDefault(conf, HTTPS_LISTENER, true);
         httpsPort = getAsIntegerOrDefault(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
         httpsHost = getAsStringOrDefault(conf, HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
@@ -821,10 +806,10 @@ public class Configuration {
 
         idmImpl = getAsStringOrDefault(idm, IMPLEMENTATION_CLASS_KEY, DEFAULT_IDM_IMPLEMENTATION_CLASS);
         idmArgs = idm;
-        
+
         authMechanismImpl = getAsStringOrDefault(authMech, IMPLEMENTATION_CLASS_KEY, DEFAULT_AUTH_MECHANISM_IMPLEMENTATION_CLASS);
         authMechanismArgs = authMech;
-        
+
         amImpl = getAsStringOrDefault(am, IMPLEMENTATION_CLASS_KEY, DEFAULT_AM_IMPLEMENTATION_CLASS);
         amArgs = am;
 
@@ -849,7 +834,7 @@ public class Configuration {
         logLevel = level;
 
         requestsLimit = getAsIntegerOrDefault(conf, REQUESTS_LIMIT_KEY, 100);
-        
+
         queryTimeLimit = getAsLongOrDefault(conf, QUERY_TIME_LIMIT_KEY, (long) 0);
         aggregationTimeLimit = getAsLongOrDefault(conf, AGGREGATION_TIME_LIMIT_KEY, (long) 0);
 
@@ -938,6 +923,14 @@ public class Configuration {
         logExchangeDump = getAsIntegerOrDefault(conf, LOG_REQUESTS_LEVEL_KEY, 0);
 
         connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY);
+    }
+
+    /**
+     *
+     * @return true if the Ansi console is enabled
+     */
+    public boolean isAnsiConsole() {
+        return ansiConsole;
     }
 
     /**
@@ -1349,19 +1342,17 @@ public class Configuration {
     /**
      * @return the authentication Mechanism
      */
-    public final String getAuthMechanism() {
+    public String getAuthMechanism() {
         return authMechanismImpl;
     }
 
     /**
      * @return the idmArgs
      */
-    public final Map<String, Object> getAuthMechanismArgs() {
-        return authMechanismArgs;
+    public Map<String, Object> getAuthMechanismArgs() {
+        return Collections.unmodifiableMap(authMechanismArgs);
     }
 
-    
-    
     /**
      * @return the amImpl
      */

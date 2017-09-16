@@ -32,6 +32,10 @@ instance-name: docker-dev
 
 default-representation-format: PLAIN_JSON
 
+#### use Ansi console for logging. Default to 'true' if parameter missing, for backward compatibility
+
+ansi-console: true
+
 #### SSL Configuration
 
 # Configure the keystore to enable the https listener.
