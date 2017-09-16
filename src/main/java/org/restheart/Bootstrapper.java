@@ -17,10 +17,10 @@
  */
 package org.restheart;
 
+import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.undertow.Handlers.path;
 import static io.undertow.Handlers.resource;
-import com.mongodb.MongoClient;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.security.api.AuthenticationMechanism;
@@ -57,10 +57,10 @@ import java.util.Map;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-import org.fusesource.jansi.AnsiConsole;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
+import org.fusesource.jansi.AnsiConsole;
 import static org.restheart.Configuration.RESTHEART_VERSION;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.handlers.ErrorHandler;
@@ -125,11 +125,13 @@ public class Bootstrapper {
         try {
             // read configuration silently, to avoid logging before initializing the logger
             configuration = FileUtils.getConfiguration(args, true);
-            if (configuration.isAnsiConsole()) {
+            LOGGER.debug(configuration.toString());
+
+            if (!configuration.isAnsiConsole()) {
                 AnsiConsole.systemInstall();
-            } else {
-                AnsiConsole.systemUninstall();
             }
+            LOGGER.info("ANSI colored console: "
+                    + ansi().fg(RED).bold().a(configuration.isAnsiConsole()).reset().toString());
         } catch (ConfigurationException ex) {
             LOGGER.info(STARTING
                     + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
@@ -514,9 +516,8 @@ public class Bootstrapper {
         final IdentityManager identityManager = loadIdentityManager();
 
         final AccessManager accessManager = loadAccessManager();
-        
-        final AuthenticationMechanism authenticationMechanism = loadAuthenticationMechanism(identityManager);
 
+        final AuthenticationMechanism authenticationMechanism = loadAuthenticationMechanism(identityManager);
 
         if (configuration.isAuthTokenEnabled()) {
             LOGGER.info("Token based authentication enabled with token TTL {} minutes", configuration.getAuthTokenTtl());
@@ -625,10 +626,16 @@ public class Bootstrapper {
                 AuthenticationMechanismFactory am = (AuthenticationMechanismFactory) Class.forName(configuration.getAuthMechanism())
                         .getConstructor()
                         .newInstance();
-                
+
                 authMechanism = am.build(configuration.getAuthMechanismArgs(), identityManager);
                 LOGGER.info("Authentication Mechanism {} enabled", configuration.getAuthMechanism());
-            } catch (Exception ex) {
+            } catch (ClassNotFoundException
+                    | IllegalAccessException
+                    | IllegalArgumentException
+                    | InstantiationException
+                    | NoSuchMethodException
+                    | SecurityException
+                    | InvocationTargetException ex) {
                 logErrorAndExit("Error configuring Authentication Mechanism implementation " + configuration.getAuthMechanism(), ex, false, -3);
             }
         } else {
@@ -652,7 +659,7 @@ public class Bootstrapper {
                         .getConstructor(Map.class)
                         .newInstance(configuration.getIdmArgs());
                 identityManager = (IdentityManager) idm;
-                
+
                 LOGGER.info("Identity Manager {} enabled", configuration.getIdmImpl());
             } catch (ClassNotFoundException
                     | IllegalAccessException
@@ -683,7 +690,7 @@ public class Bootstrapper {
                 Object am = Class.forName(configuration.getAmImpl())
                         .getConstructor(Map.class)
                         .newInstance(configuration.getAmArgs());
-                
+
                 LOGGER.info("Access Manager {} enabled", configuration.getAmImpl());
                 accessManager = (AccessManager) am;
             } catch (ClassNotFoundException
