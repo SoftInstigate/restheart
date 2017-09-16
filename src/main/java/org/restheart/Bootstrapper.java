@@ -57,6 +57,7 @@ import java.util.Map;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
+import org.fusesource.jansi.AnsiConsole;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
@@ -124,6 +125,11 @@ public class Bootstrapper {
         try {
             // read configuration silently, to avoid logging before initializing the logger
             configuration = FileUtils.getConfiguration(args, true);
+            if (configuration.isAnsiConsole()) {
+                AnsiConsole.systemInstall();
+            } else {
+                AnsiConsole.systemUninstall();
+            }
         } catch (ConfigurationException ex) {
             LOGGER.info(STARTING
                     + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
