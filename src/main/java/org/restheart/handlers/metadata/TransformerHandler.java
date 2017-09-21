@@ -64,6 +64,11 @@ public class TransformerHandler extends PipedHttpHandler {
             HttpServerExchange exchange,
             RequestContext context)
             throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         if (doesTransformerAppy()) {
             transform(exchange, context);
         }

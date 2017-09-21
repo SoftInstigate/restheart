@@ -91,7 +91,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
                 .header("content-type", "application/json")
                 .body("{'checkers': [ { 'name': 'jsonSchema', 'args': { 'schemaId': 'basic' }, 'skipNotSupported': true } ] }")
                 .asString();
-
+        
         Assert.assertEquals("create collection " + DB.concat("/").concat(COLL_BASIC), HttpStatus.SC_CREATED, resp.getStatus());
 
         // create test child
@@ -123,7 +123,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
     }
 
     @Test
-    public void testGetSchama() throws Exception {
+    public void testGetSchema() throws Exception {
         resp = Unirest.get(url(DB, SCHEMA_STORE, "basic"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
@@ -133,6 +133,22 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         JsonValue rbody = Json.parse(resp.getBody().toString());
 
         Assert.assertTrue("response body is a document", rbody != null && rbody.isObject());
+    }
+    
+    /**
+     * @see https://github.com/SoftInstigate/restheart/issues/241
+     * @throws Exception 
+     */
+    @Test
+    public void testPutSchemaWithBsonType() throws Exception {
+        resp = Unirest.put(url(DB, SCHEMA_STORE, "SchemaWithBsonType"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body(getResourceFile("schemas/schemaWithBsonType.json"))
+                .asString();
+
+        
+        Assert.assertEquals("test create schema with dollar prefixed field", HttpStatus.SC_CREATED, resp.getStatus());
     }
 
     @Test

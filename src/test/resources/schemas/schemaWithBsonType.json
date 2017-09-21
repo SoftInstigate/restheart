@@ -1,0 +1,26 @@
+{
+  "_id": "SchemaWithBsonType",
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "_id": {
+      "type": "object",
+      "properties": {
+        "_$oid": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "_etag": {
+      "type": "object",
+      "properties": {
+        "_$oid": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -56,6 +56,11 @@ public class CheckHandler extends PipedHttpHandler {
             HttpServerExchange exchange,
             RequestContext context)
             throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+        
         if (doesCheckerAppy()) {
             if (check(exchange, context)) {
                 next(exchange, context);
