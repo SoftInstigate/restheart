@@ -40,9 +40,6 @@ import org.restheart.utils.ResponseHelper;
  */
 public class FileMetadataHandler extends PipedHttpHandler {
 
-    private static final String METADATA = "metadata";
-    private static final String FILENAME = "filename";
-
     private final FileMetadataRepository fileMetadataDAO;
 
     /**
@@ -111,20 +108,43 @@ public class FileMetadataHandler extends PipedHttpHandler {
             return;
         }
 
-        BsonDocument content = _content.asDocument();
-        if (content.get(METADATA) == null) {
-            content = new BsonDocument(METADATA, content);
+        if (context.getFilePath() != null) {
+            // PUT request with non null data will be dealt with by previous handler (PutFileHandler)
+            if (context.getMethod() == METHOD.PATCH) {
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "only metadata is allowed, not binary data");
+            }
+            next(exchange, context);
+            return;
         }
-        final BsonValue filename = content.get(METADATA).asDocument().get(FILENAME);
-        if (filename != null) {
+
+        // Ensure the passed content whether already within a metadata/properties document or just plain
+        // is wrapped in a metadata document.
+        BsonDocument content = _content.asDocument();
+        if (content.containsKey(PROPERTIES)) {
+            content = new BsonDocument(FILE_METADATA, content.get(PROPERTIES));
+        } else if (!content.containsKey(FILE_METADATA)) {
+            content = new BsonDocument(FILE_METADATA, content);
+        }
+
+        // Remove any _id field from the metadata.
+        final BsonDocument _metadata = content.get(FILE_METADATA).asDocument();
+        _metadata.remove(_ID);
+
+        // Update main document filename to match metadata
+        final BsonValue filename = _metadata.get(FILENAME);
+        if (filename != null && filename.isString()) {
             content.put(FILENAME, filename);
         }
 
         BsonValue id = context.getDocumentId();
 
-        if (content.get("_id") == null) {
-            content.put("_id", id);
-        } else if (!content.get("_id").equals(id)) {
+        if (content.get(_ID) == null) {
+            content.put(_ID, id);
+        } else if (!content.get(_ID).equals(id)) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     context,

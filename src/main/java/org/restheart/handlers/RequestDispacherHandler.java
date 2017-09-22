@@ -262,7 +262,8 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                 new RequestTransformerMetadataHandler(
                         new BeforeWriteCheckMetadataHandler(
                                 new PutFileHandler(
-                                        respTransformers()))));
+                                        new FileMetadataHandler(
+                                                respTransformers())))));
 
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.PUT,
                 new RequestTransformerMetadataHandler(

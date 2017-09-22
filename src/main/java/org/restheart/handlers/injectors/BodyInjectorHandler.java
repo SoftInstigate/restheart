@@ -56,22 +56,13 @@ import org.slf4j.LoggerFactory;
  */
 public class BodyInjectorHandler extends PipedHttpHandler {
 
-    static final Logger LOGGER
-            = LoggerFactory.getLogger(BodyInjectorHandler.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(BodyInjectorHandler.class);
 
-    static final String PROPERTIES = "properties";
-    static final String FILE_METADATA = "metadata";
-    static final String _ID = "_id";
-    static final String CONTENT_TYPE = "contentType";
-    static final String FILENAME = "filename";
-
-    private static final String ERROR_INVALID_CONTENTTYPE
-            = "Content-Type must be either: "
+    private static final String ERROR_INVALID_CONTENTTYPE = "Content-Type must be either: "
             + Representation.HAL_JSON_MEDIA_TYPE
             + " or " + Representation.JSON_MEDIA_TYPE;
 
-    private static final String ERROR_INVALID_CONTENTTYPE_FILE
-            = "Content-Type must be either: "
+    private static final String ERROR_INVALID_CONTENTTYPE_FILE = "Content-Type must be either: "
             + Representation.APP_FORM_URLENCODED_TYPE
             + " or " + Representation.MULTIPART_FORM_DATA_TYPE;
 
@@ -89,6 +80,20 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
     private static boolean isPutRequest(final RequestContext context) {
         return context.getMethod() == RequestContext.METHOD.PUT;
+    }
+
+    private static boolean isHalOrJson(final HeaderValues contentTypes) {
+        return contentTypes != null
+                && !contentTypes.isEmpty()
+                && contentTypes.stream().anyMatch(ct -> ct.startsWith(Representation.HAL_JSON_MEDIA_TYPE)
+                        || ct.startsWith(Representation.JSON_MEDIA_TYPE));
+    }
+
+    private static boolean isFormOrMultipart(final HeaderValues contentTypes) {
+        return contentTypes != null
+                && !contentTypes.isEmpty()
+                && contentTypes.stream().anyMatch(ct -> ct.startsWith(Representation.APP_FORM_URLENCODED_TYPE)
+                        || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE));
     }
 
     /**
@@ -202,40 +207,12 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     }
 
     /**
-     * true is the content-type is unsupported
-     *
-     * @param contentTypes
-     * @return
-     */
-    private static boolean unsupportedContentType(
-            final HeaderValues contentTypes) {
-        return contentTypes == null
-                || contentTypes.isEmpty()
-                || contentTypes.stream().noneMatch(ct -> ct.startsWith(Representation.HAL_JSON_MEDIA_TYPE)
-                || ct.startsWith(Representation.JSON_MEDIA_TYPE));
-    }
-
-    /**
-     * true is the content-type is unsupported
-     *
-     * @param contentTypes
-     * @return
-     */
-    private static boolean unsupportedContentTypeForFiles(
-            final HeaderValues contentTypes) {
-        return contentTypes == null
-                || contentTypes.isEmpty()
-                || contentTypes.stream().noneMatch(ct -> ct.startsWith(Representation.APP_FORM_URLENCODED_TYPE)
-                || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE));
-    }
-
-    /**
      * Search the request for a field named 'metadata' (or 'properties') which
      * must contain valid JSON
      *
      * @param formData
      * @return the parsed BsonDocument from the form data or an empty
-     * BsonDocument
+     *         BsonDocument
      */
     protected static BsonDocument extractMetadata(
             final FormData formData)
@@ -247,8 +224,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         metadataString = formData.getFirst(FILE_METADATA) != null
                 ? formData.getFirst(FILE_METADATA).getValue()
                 : formData.getFirst(PROPERTIES) != null
-                ? formData.getFirst(PROPERTIES).getValue()
-                : null;
+                        ? formData.getFirst(PROPERTIES).getValue()
+                        : null;
 
         if (metadataString != null) {
             metadata = BsonDocument.parse(metadataString);
@@ -277,13 +254,15 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     /**
      * Detect the file's mediatype
      *
-     * @param file input file
+     * @param file
+     *            input file
      * @return the content-type as a String
      * @throws IOException
      */
     public static String detectMediaType(File file) throws IOException {
         return new Tika().detect(file);
     }
+
     private final FormParserFactory formParserFactory;
 
     /**
@@ -321,13 +300,10 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
         BsonValue content;
 
-        if ((isPutRequest(context) && isFileRequest(context))
-                || (isPostRequest(context) && isFilesBucketRequest(context))) {
-
-            // check content type
-            if (unsupportedContentTypeForFiles(exchange
-                    .getRequestHeaders()
-                    .get(Headers.CONTENT_TYPE))) {
+        final HeaderValues contentType = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
+        if (isFormOrMultipart(contentType)) {
+            if (!((isPostRequest(context) && isFilesBucketRequest(context))
+                    || (isPutRequest(context) && isFileRequest(context)))) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
                         context,
@@ -336,9 +312,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                 next(exchange, context);
                 return;
             }
-
-            FormDataParser parser
-                    = this.formParserFactory.createParser(exchange);
+            FormDataParser parser = this.formParserFactory.createParser(exchange);
 
             if (parser == null) {
                 String errMsg = "There is no form parser registered "
@@ -406,26 +380,14 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             context.setFilePath(path);
 
             injectContentTypeFromFile(content.asDocument(), path.toFile());
-        } else {
+        } else if (isHalOrJson(contentType)) {
             // get and parse the content
-            final String contentString
-                    = ChannelReader.read(exchange.getRequestChannel());
+            final String contentString = ChannelReader.read(exchange.getRequestChannel());
 
             context.setRawContent(contentString);
 
             if (contentString != null
                     && !contentString.isEmpty()) { // check content type
-                if (unsupportedContentType(exchange
-                        .getRequestHeaders()
-                        .get(Headers.CONTENT_TYPE))) {
-                    ResponseHelper.endExchangeWithMessage(
-                            exchange,
-                            context,
-                            HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
-                            ERROR_INVALID_CONTENTTYPE);
-                    next(exchange, context);
-                    return;
-                }
 
                 try {
                     content = JsonUtils.parse(contentString);
@@ -435,8 +397,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                             && !content.isArray()) {
                         throw new IllegalArgumentException(
                                 "request data must be either a json object "
-                                + "or an array"
-                                + ", got " + content.getBsonType().name());
+                                        + "or an array"
+                                        + ", got " + content.getBsonType().name());
                     }
                 } catch (JsonParseException | IllegalArgumentException ex) {
                     ResponseHelper.endExchangeWithMessage(
@@ -451,6 +413,14 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             } else {
                 content = null;
             }
+        } else {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
+                    ERROR_INVALID_CONTENTTYPE);
+            next(exchange, context);
+            return;
         }
 
         if (content == null) {
@@ -464,8 +434,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                         context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "request data can be an array only "
-                        + "for POST to collection resources "
-                        + "(bulk post)");
+                                + "for POST to collection resources "
+                                + "(bulk post)");
                 next(exchange, context);
                 return;
             }
