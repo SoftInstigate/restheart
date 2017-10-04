@@ -24,6 +24,7 @@ import io.undertow.predicate.PredicateParser;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import java.io.FileNotFoundException;
+import java.io.UnsupportedEncodingException;
 import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,7 +46,7 @@ public class SimpleAccessManager extends AbstractSimpleSecurityManager implement
      * @param configuration
      * @throws java.io.FileNotFoundException
      */
-    public SimpleAccessManager(Map<String, Object> configuration) throws FileNotFoundException {
+    public SimpleAccessManager(Map<String, Object> configuration) throws FileNotFoundException, UnsupportedEncodingException {
         init(configuration, "permissions");
     }
 

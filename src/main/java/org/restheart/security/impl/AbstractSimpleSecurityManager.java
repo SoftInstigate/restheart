@@ -22,6 +22,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
@@ -43,18 +44,19 @@ abstract class AbstractSimpleSecurityManager {
     abstract Consumer<? super Map<String, Object>> consumeConfiguration();
 
     @SuppressWarnings("unchecked")
-    void init(Map<String, Object> arguments, String type) throws FileNotFoundException {
+    final void init(Map<String, Object> arguments, String type) throws FileNotFoundException, UnsupportedEncodingException {
         InputStream is = null;
         try {
             final String confFilePath = extractConfigFilePath(arguments);
-            is = new FileInputStream(new File(confFilePath));
+            is = new FileInputStream(new File(java.net.URLDecoder.decode(confFilePath, "utf-8")));
             final Map<String, Object> conf = (Map<String, Object>) new Yaml().load(is);
             List<Map<String, Object>> confItems = extractConfItems(conf, type);
             confItems.stream().forEach(consumeConfiguration());
-        } catch (FileNotFoundException fnfe) {
+        } catch (FileNotFoundException | UnsupportedEncodingException ex) {
             LOGGER.error("*** cannot find the file {} specified in the configuration.", extractConfigFilePath(arguments));
-            LOGGER.error("*** note that the path must be either absolute or relative to the directory containing the RESTHeart jar file.");
-            throw fnfe;
+            LOGGER.error("*** note that the path must be either absolute or relative"
+                    + " to the directory containing the RESTHeart jar file.");
+            throw ex;
         } finally {
             try {
                 if (is != null) {
