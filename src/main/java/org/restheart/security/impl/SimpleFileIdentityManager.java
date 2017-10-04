@@ -22,6 +22,7 @@ import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
 import java.io.FileNotFoundException;
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -44,7 +45,7 @@ public class SimpleFileIdentityManager extends AbstractSimpleSecurityManager imp
      * @param arguments
      * @throws java.io.FileNotFoundException
      */
-    public SimpleFileIdentityManager(Map<String, Object> arguments) throws FileNotFoundException {
+    public SimpleFileIdentityManager(Map<String, Object> arguments) throws FileNotFoundException, UnsupportedEncodingException {
         init(arguments, "users");
     }
 

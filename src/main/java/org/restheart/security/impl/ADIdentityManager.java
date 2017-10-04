@@ -84,7 +84,7 @@ public class ADIdentityManager extends AbstractSimpleSecurityManager implements 
      * @param arguments
      * @throws FileNotFoundException
      */
-    public ADIdentityManager(Map<String, Object> arguments) throws FileNotFoundException {
+    public ADIdentityManager(Map<String, Object> arguments) throws FileNotFoundException, UnsupportedEncodingException {
         init(arguments, "adim");
     }
 

@@ -27,6 +27,7 @@ import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
 import java.io.FileNotFoundException;
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -94,7 +95,7 @@ public class DbIdentityManager
      * @throws java.io.FileNotFoundException
      */
     public DbIdentityManager(Map<String, Object> arguments)
-            throws FileNotFoundException {
+            throws FileNotFoundException, UnsupportedEncodingException {
         init(arguments, "dbim");
 
         if (this.cacheEnabled) {
