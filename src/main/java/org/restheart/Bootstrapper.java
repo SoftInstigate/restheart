@@ -69,7 +69,7 @@ import org.restheart.handlers.OptionsHandler;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.PipedWrappingHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestDispacherHandler;
+import org.restheart.handlers.RequestDispatcherHandler;
 import org.restheart.handlers.RequestLoggerHandler;
 import org.restheart.handlers.applicationlogic.ApplicationLogicHandler;
 import org.restheart.handlers.injectors.AccountInjectorHandler;
@@ -749,7 +749,7 @@ public class Bootstrapper {
                 = new AccountInjectorHandler(
                         new DbPropsInjectorHandler(
                                 new CollectionPropsInjectorHandler(
-                                        new RequestDispacherHandler()
+                                        new RequestDispatcherHandler()
                                 )));
 
         PathHandler paths = path();
