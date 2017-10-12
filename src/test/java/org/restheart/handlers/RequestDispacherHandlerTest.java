@@ -50,7 +50,7 @@ public class RequestDispacherHandlerTest {
         }
     };
 
-    private RequestDispacherHandler dispacher;
+    private RequestDispatcherHandler dispacher;
 
     public RequestDispacherHandlerTest() {
     }
@@ -58,7 +58,7 @@ public class RequestDispacherHandlerTest {
     @Before
     public void setUp() {
         MongoDBClientSingleton.init(new Configuration());
-        dispacher = new RequestDispacherHandler(false);
+        dispacher = new RequestDispatcherHandler(false);
     }
 
     @After
