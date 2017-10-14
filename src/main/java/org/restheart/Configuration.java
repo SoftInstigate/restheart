@@ -489,7 +489,7 @@ public class Configuration {
      * The key for enabling the Ansi console (for logging with colors)
      */
     public static final String ANSI_CONSOLE = "ansi-console";
-
+    
     /**
      * undertow connetction options
      *
@@ -604,11 +604,18 @@ public class Configuration {
     private final long queryTimeLimit;
     private final long aggregationTimeLimit;
     private final boolean ansiConsole;
+    
+    /**
+     * the configuration map
+     */
+    private final Map<String, Object> configurationFileMap;
 
     /**
      * Creates a new instance of Configuration with defaults values.
      */
     public Configuration() {
+        this.configurationFileMap = null;
+        
         ansiConsole = true;
 
         httpsListener = true;
@@ -741,6 +748,8 @@ public class Configuration {
      * @throws org.restheart.ConfigurationException
      */
     public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
+        this.configurationFileMap = conf;
+        
         this.silent = silent;
 
         ansiConsole = getAsBooleanOrDefault(conf, ANSI_CONSOLE, true);
@@ -1568,5 +1577,12 @@ public class Configuration {
      */
     public REPRESENTATION_FORMAT getDefaultRepresentationFormat() {
         return defaultRepresentationFromat;
+    }
+
+    /**
+     * @return the configurationFileMap
+     */
+    public Map<String, Object> getConfigurationFileMap() {
+        return configurationFileMap;
     }
 }
