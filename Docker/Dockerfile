@@ -1,6 +1,6 @@
 FROM openjdk:8u111-jre-alpine
 
-MAINTAINER SoftInstigate <info@softinstigate.com>
+LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
 RUN apk upgrade --update && apk add --update libstdc++ curl ca-certificates bash
 
