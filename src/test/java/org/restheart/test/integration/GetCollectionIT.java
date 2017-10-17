@@ -19,6 +19,10 @@ package org.restheart.test.integration;
 
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
+import com.mashape.unirest.http.Unirest;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.client.MongoCollection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import org.apache.http.HttpEntity;
@@ -27,6 +31,7 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
+import org.bson.Document;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.restheart.hal.Representation;
@@ -411,5 +416,54 @@ public class GetCollectionIT extends HttpClientAbstactIT {
         assertNotNull("check not null _embedded.rh:doc[1]._id", rhdoc1.get("_id"));
         assertNotNull("check not null _embedded.rh:doc[1].name", rhdoc1.get("name"));
         assertEquals("check _embedded.rh:doc[1].name value to be Nick", "Nick", rhdoc1.get("name").asString());
+    }
+    
+    
+    @Test
+    public void testBinaryProperty() throws Exception {
+        byte[] data = "DqnEq7hiWZ1jHoYf/YJpNHevlGrRmT5V9NGN7daoPYetiTvgeP4C9n4j8Gu5mduhEYzWDFK2a3gO+CvzrDgM3BBFG07fF6qabHXDsGTo92m93QohjGtqn8nkNP6KVnWIcbgBbw==".getBytes();
+        
+        MongoCollection<Document> coll = mongoClient.getDatabase(dbName).getCollection(collection1Name);
+        
+        Document doc = new Document();
+        
+        doc.append("_id", "bin");
+        doc.append("data", data);
+        
+        coll.insertOne(doc);
+        
+        URI documentUri = buildURI("/" + dbName + "/" + collection1Name + "/bin");
+        
+        String url = documentUri.toString();
+        
+        com.mashape.unirest.http.HttpResponse<String> resp = Unirest.get(url)
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .asString();
+        
+        assertEquals("get document with binary property", 200, resp.getStatus());
+    }
+    
+    @Test
+    public void testBinaryPropertyLegacyDriver() throws Exception {
+        byte[] data = "DqnEq7hiWZ1jHoYf/YJpNHevlGrRmT5V9NGN7daoPYetiTvgeP4C9n4j8Gu5mduhEYzWDFK2a3gO+CvzrDgM3BBFG07fF6qabHXDsGTo92m93QohjGtqn8nkNP6KVnWIcbgBbw==".getBytes();
+        
+        DBCollection coll = mongoClient.getDB(dbName).getCollection(collection1Name);
+        
+        BasicDBObject doc = new BasicDBObject();
+        
+        doc.append("_id", "bin");
+        doc.append("data", data);
+        
+        coll.insert(doc);
+        
+        URI documentUri = buildURI("/" + dbName + "/" + collection1Name + "/bin");
+        
+        String url = documentUri.toString();
+        
+        com.mashape.unirest.http.HttpResponse<String> resp = Unirest.get(url)
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .asString();
+        
+        assertEquals("get document with binary property", 200, resp.getStatus());
     }
 }
