@@ -77,6 +77,7 @@ public final class RequestContext {
     public static final String SYSTEM = "system.";
     public static final String LOCAL = "local";
     public static final String ADMIN = "admin";
+    public static final String _METRICS = "_metrics";
 
     public static final String FS_CHUNKS_SUFFIX = ".chunks";
     public static final String FS_FILES_SUFFIX = ".files";
@@ -125,6 +126,8 @@ public final class RequestContext {
         TYPE type;
         if (pathTokens.length < 2) {
             type = TYPE.ROOT;
+        } else if (pathTokens.length < 3 && pathTokens[1].equalsIgnoreCase(_METRICS)) {
+            type = TYPE.METRICS;
         } else if (pathTokens.length < 3) {
             type = TYPE.DB;
         } else if (pathTokens.length >= 3
@@ -153,16 +156,22 @@ public final class RequestContext {
                 type = TYPE.DOCUMENT;
             }
         } else if (pathTokens.length >= 3
-                && pathTokens[2].endsWith(_SCHEMAS)) {
+                   && pathTokens[2].endsWith(_SCHEMAS)) {
             if (pathTokens.length == 3) {
                 type = TYPE.SCHEMA_STORE;
             } else {
                 type = TYPE.SCHEMA;
             }
+        } else if (pathTokens.length >= 3
+                   && pathTokens[2].equalsIgnoreCase(_METRICS)) {
+            type = TYPE.METRICS;
         } else if (pathTokens.length < 4) {
             type = TYPE.COLLECTION;
         } else if (pathTokens.length == 4
-                && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
+                   && pathTokens[3].equalsIgnoreCase(_METRICS)) {
+            type = TYPE.METRICS;
+        } else if (pathTokens.length == 4
+                   && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.COLLECTION_INDEXES;
         } else if (pathTokens.length == 4
                 && pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
@@ -189,11 +198,13 @@ public final class RequestContext {
      * @return true if the dbName is a reserved resource
      */
     public static boolean isReservedResourceDb(String dbName) {
-        return dbName.equals(ADMIN)
+        return !dbName.equalsIgnoreCase(_METRICS) && (
+                   dbName.equals(ADMIN)
                 || dbName.equals(LOCAL)
                 || dbName.startsWith(SYSTEM)
                 || dbName.startsWith(UNDERSCORE)
-                || dbName.equals(RESOURCES_WILDCARD_KEY);
+                || dbName.equals(RESOURCES_WILDCARD_KEY)
+        );
     }
 
     /**
@@ -204,6 +215,7 @@ public final class RequestContext {
     public static boolean isReservedResourceCollection(String collectionName) {
         return collectionName != null
                 && !collectionName.equalsIgnoreCase(_SCHEMAS)
+                && !collectionName.equalsIgnoreCase(_METRICS)
                 && (collectionName.startsWith(SYSTEM)
                 || collectionName.startsWith(UNDERSCORE)
                 || collectionName.endsWith(FS_CHUNKS_SUFFIX)
@@ -226,6 +238,7 @@ public final class RequestContext {
         return (documentIdRaw.startsWith(UNDERSCORE)
                 || (type != TYPE.AGGREGATION
                 && _AGGREGATIONS.equalsIgnoreCase(documentIdRaw)))
+                && !documentIdRaw.equalsIgnoreCase(_METRICS)
                 && !documentIdRaw.equalsIgnoreCase(_INDEXES)
                 && !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID)
                 && !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID)
@@ -296,6 +309,8 @@ public final class RequestContext {
      * the HAL mode
      */
     private HAL_MODE halMode = HAL_MODE.FULL;
+
+    private long requestStartTime = System.currentTimeMillis();
 
     /**
      *
@@ -953,6 +968,10 @@ public final class RequestContext {
         return isDbNameInvalid(getDBName());
     }
 
+    public long getRequestStartTime() {
+        return requestStartTime;
+    }
+
     /**
      * @param dbName
      * @see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
@@ -1434,7 +1453,8 @@ public final class RequestContext {
         AGGREGATION,
         SCHEMA,
         SCHEMA_STORE,
-        BULK_DOCUMENTS
+        BULK_DOCUMENTS,
+        METRICS
     }
 
     public enum METHOD {
