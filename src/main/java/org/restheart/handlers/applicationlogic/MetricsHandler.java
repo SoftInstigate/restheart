@@ -36,9 +36,13 @@ import org.restheart.utils.SharedMetricRegistryProxy;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -55,6 +59,10 @@ import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
 public class MetricsHandler extends PipedHttpHandler {
 
     private enum ResponseType {
+        /** dropwizard-metrics compatible JSON format, see
+         *  https://github.com/iZettle/dropwizard-metrics/blob/v3.1.2/metrics-json/src/main/java/com/codahale/metrics/json/MetricsModule.java
+         *  for how it looks like
+         */
         JSON("application/json") {
             @Override
             public String generateResponse(MetricRegistry registry) throws IOException {
@@ -68,7 +76,8 @@ public class MetricsHandler extends PipedHttpHandler {
                 return stringWriter.toString();
             }
         },
-        PROMETHEUS("text/plain") { //TODO: which content type to use for this format?
+        /**format description can be found at https://prometheus.io/docs/instrumenting/exposition_formats/ */
+        PROMETHEUS("text/plain", "version=0.0.4") { //TODO: which content type to use for this format?
             @Override
             public String generateResponse(MetricRegistry registry) throws IOException {
                 ObjectMapper mapper = new ObjectMapper();
@@ -111,15 +120,113 @@ public class MetricsHandler extends PipedHttpHandler {
             }
         };
 
+        /**The content-type that is being used for both Accept and Content-Type headers*/
         String contentType;
+        /**if any, the specialization of the content-type (after ";" in Content-Type header). null if n/a.*/
+        String specialization;
         abstract public String generateResponse(MetricRegistry registry) throws IOException;
 
         ResponseType(String contentType) {
             this.contentType = contentType;
+            this.specialization = null;
+        }
+        ResponseType(String contentType, String specialization) {
+            this.contentType = contentType;
+            this.specialization = specialization;
         }
 
+        public String getContentType() {
+            return contentType;
+        }
+        public String getOutputContentType() {
+            if (specialization == null) {
+                return contentType;
+            } else {
+                return contentType + "; " + specialization;
+            }
+        }
+
+        public boolean acceptedBy(AcceptHeaderEntry entry) {
+            return entry.contentType.equalsIgnoreCase("*/*")
+                   || entry.contentType.equalsIgnoreCase(contentType)
+                   && (entry.specialization == null || entry.specialization.equalsIgnoreCase(specialization));
+        }
+
+        public void writeTo(HttpServerExchange exchange, MetricRegistry registry) throws IOException {
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, getOutputContentType());
+            exchange.getResponseSender().send(generateResponse(registry));
+        }
+
+        static class AcceptHeaderEntry implements Comparable<AcceptHeaderEntry> {
+            String contentType;
+            String specialization;
+            double qValue = 1.0;
+
+            public AcceptHeaderEntry(String contentType, String specialization, double qValue) {
+                this.contentType = contentType;
+                this.specialization = specialization;
+                this.qValue = qValue;
+            }
+
+            /**
+             * Generate an accept header entry (if possible) for the given entry.
+             * @return null if the header could not be generated.
+             */
+            public static AcceptHeaderEntry of(String acceptHeaderEntry) {
+                List<String> entries = Arrays.asList(acceptHeaderEntry.split(";"));
+
+                final String contentType = entries.stream().findFirst().orElse(null);
+                double qValue = 1.0;
+                String specialization = null;
+                for (int i = 1; i < entries.size(); i++) {
+                    String element = entries.get(i).trim();
+                    if (element.startsWith("q=")) {
+                        try {
+                            qValue = Double.parseDouble(element.substring(2));
+                        } catch (NumberFormatException nfe) {
+                            qValue = 1.0;
+                        }
+                    } else {
+                        specialization = element;
+                    }
+                }
+                if (contentType == null) {
+                    return null;
+                } else {
+                    return new AcceptHeaderEntry(contentType, specialization, qValue);
+                }
+            }
+
+            @Override
+            public int compareTo(AcceptHeaderEntry other) {
+                return Double.compare(other.qValue, this.qValue);
+            }
+
+            @Override
+            public String toString() {
+                return "AcceptHeaderEntry{" +
+                       "contentType='" + contentType + '\'' +
+                       ", specialization='" + specialization + '\'' +
+                       ", qValue=" + qValue +
+                       '}';
+            }
+        }
+
+        /**
+         * Returns the correct response generator for any given accept header.
+         *
+         * behaviour is:
+         * * by default, return prometheus format
+         * * if something else is wanted, return that (if available)
+         * * if Accept header cannot be satisfied, return 406 (NOT ACCEPTABLE)
+         */
         public static ResponseType forAcceptHeader(String acceptHeader) {
-            return (acceptHeader != null && acceptHeader.contains(JSON.contentType)) ? JSON : PROMETHEUS;    //TODO: parse accept header correctly!
+            return Arrays.stream(acceptHeader.split(","))
+                .map(AcceptHeaderEntry::of).filter(Objects::nonNull) //parse
+                .sorted()       //sort by q-value
+                .flatMap(x ->   //for each entry: add the response type that is being accepted by the entry (may be multiple)
+                             Arrays.stream(ResponseType.values()).filter(rt -> rt.acceptedBy(x))
+                ).findFirst().orElse(null);
         }
     }
 
@@ -174,12 +281,23 @@ public class MetricsHandler extends PipedHttpHandler {
 
         if (registry != null) {
             if (context.getMethod() == METHOD.GET) {
-                exchange.setStatusCode(HttpStatus.SC_OK);
-                exchange.getResponseSender().send(
-                    ResponseType.forAcceptHeader(exchange.getRequestHeaders().getFirst(Headers.ACCEPT))
-                        .generateResponse(registry)
-                );
-                exchange.endExchange();
+                ResponseType responseType = ResponseType.forAcceptHeader(exchange.getRequestHeaders().getFirst(Headers.ACCEPT));
+                if (responseType != null) {
+                    exchange.setStatusCode(HttpStatus.SC_OK);
+                    responseType.writeTo(exchange, registry);
+                    exchange.endExchange();
+                } else {
+                    String acceptableTypes = Arrays.stream(ResponseType.values())
+                        .map(ResponseType::getContentType)
+                        .map(x -> "'" + x + "'")
+                        .collect(Collectors.joining(","));
+                    ResponseHelper.endExchangeWithMessage(exchange,
+                        context,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "not acceptable, acceptable content types are: " + acceptableTypes
+                    );
+                    next(exchange, context);
+                }
             } else {
                 exchange.setStatusCode(HttpStatus.SC_OK);
                 if (context.getContent() != null) {
