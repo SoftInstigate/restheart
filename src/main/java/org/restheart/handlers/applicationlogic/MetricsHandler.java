@@ -20,26 +20,23 @@ package org.restheart.handlers.applicationlogic;
 import com.google.common.annotations.VisibleForTesting;
 
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.json.MetricsModule;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
+import org.bson.json.JsonWriterSettings;
 import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.MetricsJsonGenerator;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.SharedMetricRegistryProxy;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -66,55 +63,59 @@ public class MetricsHandler extends PipedHttpHandler {
         JSON("application/json") {
             @Override
             public String generateResponse(MetricRegistry registry) throws IOException {
-                ObjectMapper mapper = new ObjectMapper();
-                MetricsModule metricsModule = new MetricsModule(TimeUnit.SECONDS, TimeUnit.MILLISECONDS, false);
-                mapper.registerModule(metricsModule);
-
-                ObjectWriter writer = mapper.writerWithDefaultPrettyPrinter();
-                StringWriter stringWriter = new StringWriter();
-                writer.writeValue(stringWriter, registry);
-                return stringWriter.toString();
+                BsonDocument document = MetricsJsonGenerator.generateMetricsBson(registry, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
+                return document.toJson(JsonWriterSettings.builder().indent(true).build());
             }
         },
         /**format description can be found at https://prometheus.io/docs/instrumenting/exposition_formats/ */
-        PROMETHEUS("text/plain", "version=0.0.4") { //TODO: which content type to use for this format?
+        PROMETHEUS("text/plain", "version=0.0.4") {
+            private String valueAsString(BsonValue value) {
+                if (value.isDouble()) {
+                    return Double.toString(value.asDouble().getValue());
+                } else if (value.isString()) {
+                    return value.asString().getValue();
+                } else if (value.isInt64()) {
+                    return Long.toString(value.asInt64().getValue());
+                } else if (value.isInt32()) {
+                    return Long.toString(value.asInt32().getValue());
+                } else {
+                    return value.toString();
+                }
+            }
+
             @Override
             public String generateResponse(MetricRegistry registry) throws IOException {
-                ObjectMapper mapper = new ObjectMapper();
-                MetricsModule metricsModule = new MetricsModule(TimeUnit.SECONDS, TimeUnit.MILLISECONDS, false);
-                mapper.registerModule(metricsModule);
-
                 StringBuilder sb = new StringBuilder();
 
-                JsonNode rootNode = mapper.valueToTree(registry);
-                Iterator<Map.Entry<String, JsonNode>> rootIt = rootNode.path("timers").fields();
-                while (rootIt.hasNext()) {
-                    Map.Entry<String, JsonNode> rootEntry = rootIt.next();
-                    String key = rootEntry.getKey();
-                    final String[] split = key.split("\\.");
-                    final String type = split[0];
-                    final String method = split[1];
-                    final String responseCode = split.length >= 3 ? split[2] : null;
+                long timestamp = System.currentTimeMillis();
 
-                    String metricType;
-                    Iterator<Map.Entry<String, JsonNode>> metricTypeIt = rootEntry.getValue().fields();
-                    while (metricTypeIt.hasNext()) {
-                        Map.Entry<String, JsonNode> metricTypeEntry = metricTypeIt.next();
-                        metricType = metricTypeEntry.getKey();
-                        String value = metricTypeEntry.getValue().asText();
-                        sb.append("http_response_timer_" + type + "_" + metricType);
-                        sb.append("{");
-                        sb.append("method=\"" + method + "\"");
-                        if (responseCode != null) {
-                            sb.append(",");
-                            sb.append("code=\"" + responseCode + "\"");
-                        }
-                        sb.append("}");
-                        sb.append("=" + value);
+                BsonDocument root = MetricsJsonGenerator.generateMetricsBson(registry, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
+                root.remove("version");
+                root.forEach((groupKey, groupContent) ->
+                     groupContent.asDocument().forEach((metricKey, metricContent) -> {
+                        final String[] split = metricKey.split("\\.");
+                        final String type = split[0];
+                        final String method = split[1];
+                        final String responseCode = split.length >= 3 ? split[2] : null;
+
+                        metricContent.asDocument().forEach((metricType, value) -> {
+                            sb.append("http_response_").append(groupKey).append("_").append(type).append("_").append(metricType);
+                            sb.append("{");
+                            sb.append("method=\"").append(method).append("\"");
+                            if (responseCode != null) {
+                                sb.append(",");
+                                sb.append("code=\"").append(responseCode).append("\"");
+                            }
+                            sb.append("} ");
+                            sb.append(valueAsString(value));
+                            sb.append(" ");
+                            sb.append(timestamp);
+                            sb.append("\n");
+                        });
+
                         sb.append("\n");
                     }
-                }
-
+                ));
 
                 return sb.toString();
             }
