@@ -103,7 +103,7 @@ public class RequestLoggerHandler extends PipedHttpHandler {
         }
 
         final StringBuilder sb = new StringBuilder();
-        final long start = context.getRequestStartTime();
+        final long start = context != null ? context.getRequestStartTime() : System.currentTimeMillis();
 
         if (logLevel == 1) {
             sb.append(exchange.getRequestMethod()).append(" ")

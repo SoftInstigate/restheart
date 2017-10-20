@@ -23,7 +23,10 @@ import com.codahale.metrics.MetricRegistry;
 
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.bson.json.Converter;
+import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
+import org.bson.json.StrictJsonWriter;
 import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
 import org.restheart.handlers.PipedHttpHandler;
@@ -64,7 +67,9 @@ public class MetricsHandler extends PipedHttpHandler {
             @Override
             public String generateResponse(MetricRegistry registry) throws IOException {
                 BsonDocument document = MetricsJsonGenerator.generateMetricsBson(registry, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
-                return document.toJson(JsonWriterSettings.builder().indent(true).build());
+                return document.toJson(
+                    JsonWriterSettings.builder().outputMode(JsonMode.RELAXED).indent(true).build()
+                );
             }
         },
         /**format description can be found at https://prometheus.io/docs/instrumenting/exposition_formats/ */

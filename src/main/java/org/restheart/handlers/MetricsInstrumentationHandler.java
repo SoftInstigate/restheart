@@ -6,6 +6,7 @@ import com.codahale.metrics.MetricRegistry;
 
 import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
+import org.restheart.db.DbsDAO;
 import org.restheart.utils.SharedMetricRegistryProxy;
 
 import java.util.concurrent.TimeUnit;
@@ -24,6 +25,11 @@ public class MetricsInstrumentationHandler extends PipedHttpHandler {
 
     public MetricsInstrumentationHandler(PipedHttpHandler next) {
         super(next);
+    }
+
+    @VisibleForTesting
+    MetricsInstrumentationHandler(PipedHttpHandler next, DbsDAO dbsDAO) {
+        super(next, dbsDAO);
     }
 
     /**Writable in unit tests to make testing easier*/
@@ -57,11 +63,15 @@ public class MetricsInstrumentationHandler extends PipedHttpHandler {
             .update(duration, TimeUnit.MILLISECONDS);
     }
 
-    private boolean isFilledAndNotMetrics(String dbOrCollectionName) {
-        return dbOrCollectionName != null && !dbOrCollectionName.equalsIgnoreCase(RequestContext._METRICS);
+    @VisibleForTesting
+    static boolean isFilledAndNotMetrics(String dbOrCollectionName) {
+        return dbOrCollectionName != null
+               && !dbOrCollectionName.trim().isEmpty()
+               && !dbOrCollectionName.equalsIgnoreCase(RequestContext._METRICS);
     }
 
-    private void addMetrics(long startTime, HttpServerExchange exchange, RequestContext context) {
+    @VisibleForTesting
+    void addMetrics(long startTime, HttpServerExchange exchange, RequestContext context) {
         if (configuration.gatheringAboveOrEqualToLevel(ROOT)) {
             long endTime = System.currentTimeMillis();
             long duration = endTime - startTime;
