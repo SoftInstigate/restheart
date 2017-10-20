@@ -11,6 +11,7 @@ import com.codahale.metrics.Timer;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonDouble;
+import org.bson.BsonInt32;
 import org.bson.BsonInt64;
 import org.bson.BsonString;
 import org.bson.BsonValue;
@@ -132,8 +133,12 @@ public class MetricsJsonGenerator {
             final BsonValue valueAsBson;
             if (value instanceof Double) {
                 valueAsBson = new BsonDouble((Double) value);
+            } else if (value instanceof Float) {
+                valueAsBson = new BsonDouble((Float)value);
             } else if (value instanceof Long) {
                 valueAsBson = new BsonInt64((Long)value);
+            } else if (value instanceof Integer) {
+                valueAsBson = new BsonInt32((Integer)value);
             } else { //returning a string is formally wrong here, but the best I can get for all the rest
                 valueAsBson = new BsonString(value.toString());
             }
