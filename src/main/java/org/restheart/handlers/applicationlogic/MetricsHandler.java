@@ -23,12 +23,11 @@ import com.codahale.metrics.MetricRegistry;
 
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.bson.json.Converter;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
-import org.bson.json.StrictJsonWriter;
 import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
+import org.restheart.db.DbsDAO;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
@@ -39,8 +38,10 @@ import org.restheart.utils.SharedMetricRegistryProxy;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -50,6 +51,7 @@ import io.undertow.util.Headers;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.COLLECTION;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.DATABASE;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
+import static org.restheart.handlers.RequestContext.REPRESENTATION_FORMAT_KEY;
 
 /**
  * A handler for dropwizard.io metrics that can return both default metrics JSON and the prometheus format.
@@ -58,7 +60,8 @@ import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
  */
 public class MetricsHandler extends PipedHttpHandler {
 
-    private enum ResponseType {
+    @VisibleForTesting
+    enum ResponseType {
         /** dropwizard-metrics compatible JSON format, see
          *  https://github.com/iZettle/dropwizard-metrics/blob/v3.1.2/metrics-json/src/main/java/com/codahale/metrics/json/MetricsModule.java
          *  for how it looks like
@@ -128,22 +131,34 @@ public class MetricsHandler extends PipedHttpHandler {
 
         /**The content-type that is being used for both Accept and Content-Type headers*/
         String contentType;
+        /**the media range for the given content type*/
+        String mediaRange;
         /**if any, the specialization of the content-type (after ";" in Content-Type header). null if n/a.*/
         String specialization;
         abstract public String generateResponse(MetricRegistry registry) throws IOException;
 
         ResponseType(String contentType) {
-            this.contentType = contentType;
-            this.specialization = null;
+            this(contentType, null);
         }
         ResponseType(String contentType, String specialization) {
             this.contentType = contentType;
+            this.mediaRange = calculateMediaRange(contentType);
             this.specialization = specialization;
+        }
+
+        @VisibleForTesting
+        static String calculateMediaRange(String contentType) {
+            return contentType.substring(0, contentType.indexOf('/')) + "/*";
         }
 
         public String getContentType() {
             return contentType;
         }
+
+        public String getMediaRange() {
+            return mediaRange;
+        }
+
         public String getOutputContentType() {
             if (specialization == null) {
                 return contentType;
@@ -152,10 +167,13 @@ public class MetricsHandler extends PipedHttpHandler {
             }
         }
 
-        public boolean acceptedBy(AcceptHeaderEntry entry) {
+        /** whether this content type is acceptable for the given accept header entry*/
+        public boolean isAcceptableFor(AcceptHeaderEntry entry) {
             return entry.contentType.equalsIgnoreCase("*/*")
-                   || entry.contentType.equalsIgnoreCase(contentType)
-                   && (entry.specialization == null || entry.specialization.equalsIgnoreCase(specialization));
+                   || (entry.contentType.equalsIgnoreCase(contentType)
+                      && (entry.specialization == null || entry.specialization.equalsIgnoreCase(specialization))
+                      )
+                   || entry.contentType.equalsIgnoreCase(mediaRange);
         }
 
         public void writeTo(HttpServerExchange exchange, MetricRegistry registry) throws IOException {
@@ -163,10 +181,15 @@ public class MetricsHandler extends PipedHttpHandler {
             exchange.getResponseSender().send(generateResponse(registry));
         }
 
-        static class AcceptHeaderEntry implements Comparable<AcceptHeaderEntry> {
+        /**Encapsulate code around accept-header handling*/
+        static class AcceptHeaderEntry {
             String contentType;
             String specialization;
             double qValue = 1.0;
+
+            public AcceptHeaderEntry(String contentType) {
+                this(contentType, null, Double.MAX_VALUE);
+            }
 
             public AcceptHeaderEntry(String contentType, String specialization, double qValue) {
                 this.contentType = contentType;
@@ -175,7 +198,8 @@ public class MetricsHandler extends PipedHttpHandler {
             }
 
             /**
-             * Generate an accept header entry (if possible) for the given entry.
+             * Generate an accept header entry (if possible) for the given entry. Will be called for each
+             * entry of the accept header.
              * @return null if the header could not be generated.
              */
             public static AcceptHeaderEntry of(String acceptHeaderEntry) {
@@ -204,17 +228,20 @@ public class MetricsHandler extends PipedHttpHandler {
             }
 
             @Override
-            public int compareTo(AcceptHeaderEntry other) {
-                return Double.compare(other.qValue, this.qValue);
-            }
-
-            @Override
             public String toString() {
                 return "AcceptHeaderEntry{" +
                        "contentType='" + contentType + '\'' +
                        ", specialization='" + specialization + '\'' +
                        ", qValue=" + qValue +
                        '}';
+            }
+        }
+
+        /**sorts large q-values first, smaller ones later*/
+        static class AcceptHeaderEntryComparator implements Comparator<AcceptHeaderEntry> {
+            @Override
+            public int compare(AcceptHeaderEntry one, AcceptHeaderEntry two) {
+                return -Double.compare(one.qValue, two.qValue);
             }
         }
 
@@ -227,12 +254,25 @@ public class MetricsHandler extends PipedHttpHandler {
          * * if Accept header cannot be satisfied, return 406 (NOT ACCEPTABLE)
          */
         public static ResponseType forAcceptHeader(String acceptHeader) {
+            if (acceptHeader == null) {
+                return ResponseType.PROMETHEUS;
+            }
             return Arrays.stream(acceptHeader.split(","))
+                .map(String::trim)
                 .map(AcceptHeaderEntry::of).filter(Objects::nonNull) //parse
-                .sorted()       //sort by q-value
+                .sorted(new AcceptHeaderEntryComparator())       //sort by q-value
                 .flatMap(x ->   //for each entry: add the response type that is being accepted by the entry (may be multiple)
-                             Arrays.stream(ResponseType.values()).filter(rt -> rt.acceptedBy(x))
+                             Arrays.stream(ResponseType.values()).filter(rt -> rt.isAcceptableFor(x))
                 ).findFirst().orElse(null);
+        }
+
+        public static ResponseType forQueryParameter(String rep) {
+            if (RequestContext.REPRESENTATION_FORMAT.PLAIN_JSON.name().equalsIgnoreCase(rep)
+                || RequestContext.REPRESENTATION_FORMAT.PJ.name().equalsIgnoreCase(rep)) {
+                return ResponseType.JSON;
+            } else {
+                return null;
+            }
         }
     }
 
@@ -246,6 +286,10 @@ public class MetricsHandler extends PipedHttpHandler {
         super(next);
     }
 
+    public MetricsHandler(PipedHttpHandler next, DbsDAO dbsDao) {
+        super(next, dbsDao);
+    }
+
     private boolean isFilledAndNotMetrics(String dbOrCollectionName) {
         return dbOrCollectionName != null && !dbOrCollectionName.equalsIgnoreCase(RequestContext._METRICS);
     }
@@ -255,7 +299,7 @@ public class MetricsHandler extends PipedHttpHandler {
      * Will only write metrics in case they have been gathered - if none are there, will return null.
      * @return a metric registry, or null if none match
      */
-    private MetricRegistry getCorrectMetricRegistry(RequestContext context) {
+    MetricRegistry getCorrectMetricRegistry(RequestContext context) {
         MetricRegistry registry = null;
         if (configuration.gatheringAboveOrEqualToLevel(ROOT)) {
             if (isFilledAndNotMetrics(context.getDBName())) {
@@ -287,7 +331,11 @@ public class MetricsHandler extends PipedHttpHandler {
 
         if (registry != null) {
             if (context.getMethod() == METHOD.GET) {
-                ResponseType responseType = ResponseType.forAcceptHeader(exchange.getRequestHeaders().getFirst(Headers.ACCEPT));
+                ResponseType responseType = Optional.ofNullable(
+                        ResponseType.forQueryParameter(exchange.getRequestHeaders().getFirst(REPRESENTATION_FORMAT_KEY))
+                    ).orElseGet(() ->
+                        ResponseType.forAcceptHeader(exchange.getRequestHeaders().getFirst(Headers.ACCEPT))
+                    );
                 if (responseType != null) {
                     exchange.setStatusCode(HttpStatus.SC_OK);
                     responseType.writeTo(exchange, registry);
