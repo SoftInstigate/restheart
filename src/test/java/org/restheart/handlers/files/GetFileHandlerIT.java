@@ -1,6 +1,7 @@
 package org.restheart.handlers.files;
 
 import com.eclipsesource.json.JsonObject;
+import com.mashape.unirest.http.Unirest;
 import io.undertow.util.Headers;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -17,10 +18,12 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.util.EntityUtils;
 import org.bson.types.ObjectId;
+import org.junit.Assert;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -42,10 +45,14 @@ public class GetFileHandlerIT extends HttpClientAbstactIT {
 
     public GetFileHandlerIT() {
     }
+    
+    @Before
+    public void init() throws Exception {
+        createBucket();
+    }
 
     @Test
     public void testGetFile() throws Exception {
-        createBucket();
         ObjectId fileId = createFile();
 
         String url = dbTmpUri + "/" + BUCKET + ".files/" + fileId.toString() + "/binary";
@@ -68,17 +75,43 @@ public class GetFileHandlerIT extends HttpClientAbstactIT {
         entity.writeTo(fos);
         assertTrue(tempFile.length() > 0);
     }
-
+    
     @Test
-    public void testPostFile() throws Exception {
-        createBucket();
-        ObjectId fileId = createFile();
+    public void testGetNotExistingFile() throws Exception {
+        String bucketUlr = dbTmpUri.toString().concat("/").concat(BUCKET.concat(".files")); 
+        
+        com.mashape.unirest.http.HttpResponse<String> resp = Unirest
+                .get(bucketUlr)
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .asString();
+        
+        Assert.assertEquals("bucket exists " + BUCKET,
+                org.apache.http.HttpStatus.SC_OK, resp.getStatus());
+        
+        
+        // get not existing file metadata
+        
+        resp = Unirest
+                .get(bucketUlr.concat("/notexistingid"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .asString();
+        
+        Assert.assertEquals("get not existing file metadata",
+                org.apache.http.HttpStatus.SC_NOT_FOUND, resp.getStatus());
+        
+        // get not existing file binary
+        
+        resp = Unirest
+                .get(bucketUlr.concat("/notexistingid/binary"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .asString();
+        
+        Assert.assertEquals("get not existing file binary",
+                org.apache.http.HttpStatus.SC_NOT_FOUND, resp.getStatus());
     }
 
     @Test
     public void testEmptyBucket() throws Exception {
-        createBucket();
-
         // test that GET /db includes the rh:bucket array
         Response resp = adminExecutor.execute(Request.Get(dbTmpUri));
 
@@ -118,7 +151,6 @@ public class GetFileHandlerIT extends HttpClientAbstactIT {
 
     @Test
     public void testBucketWithFile() throws Exception {
-        createBucket();
         ObjectId fileId = createFile();
 
         // test that GET /db/bucket.files includes the file
@@ -159,8 +191,6 @@ public class GetFileHandlerIT extends HttpClientAbstactIT {
 
     @Test
     public void testPutFile() throws Exception {
-        createBucket();
-
         String id = "test";
 
         createFilePut(id);
