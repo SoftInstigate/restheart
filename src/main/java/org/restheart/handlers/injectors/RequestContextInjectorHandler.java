@@ -119,7 +119,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 try {
                     rep = REPRESENTATION_FORMAT.valueOf(_rep.trim().toUpperCase());
                 } catch (IllegalArgumentException iae) {
-                    rcontext.addWarning("illegal rep paramenter " + _rep + " (must be PLAIN_JSON, PJ or HAL)");
+                    rcontext.addWarning("illegal rep parameter " + _rep + " (must be PLAIN_JSON, PJ or HAL)");
                 }
             }
         }
