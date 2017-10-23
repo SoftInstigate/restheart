@@ -279,7 +279,8 @@ public final class RequestDispatcherHandler extends PipedHttpHandler {
 
         putPipedHttpHandler(TYPE.FILE_BINARY, METHOD.GET,
                 new GetFileBinaryHandler(
-                        new HookMetadataHandler()));
+                        new HookMetadataHandler(
+                                new ResponseSenderHandler())));
 
         putPipedHttpHandler(TYPE.FILE, METHOD.DELETE,
                 new RequestTransformerMetadataHandler(

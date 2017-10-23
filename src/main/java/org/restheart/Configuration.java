@@ -611,11 +611,18 @@ public class Configuration {
     private final long queryTimeLimit;
     private final long aggregationTimeLimit;
     private final boolean ansiConsole;
+    
+    /**
+     * the configuration map
+     */
+    private final Map<String, Object> configurationFileMap;
 
     /**
      * Creates a new instance of Configuration with defaults values.
      */
     public Configuration() {
+        this.configurationFileMap = null;
+        
         ansiConsole = true;
 
         httpsListener = true;
@@ -749,6 +756,8 @@ public class Configuration {
      * @throws org.restheart.ConfigurationException
      */
     public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
+        this.configurationFileMap = conf;
+        
         this.silent = silent;
 
         ansiConsole = getAsBooleanOrDefault(conf, ANSI_CONSOLE, true);
@@ -1589,6 +1598,14 @@ public class Configuration {
     }
 
     /**
+     * @return the configurationFileMap
+     */
+    public Map<String, Object> getConfigurationFileMap() {
+        return configurationFileMap;
+    }
+
+    /**
+<<<<<<< HEAD
      * @return the level of metrics that will be collected (and above)
      */
     public METRICS_GATHERING_LEVEL getMetricsGatheringLevel() {
@@ -1601,13 +1618,21 @@ public class Configuration {
     }
 
     public enum METRICS_GATHERING_LEVEL {
-        /**do not gather any metrics*/
+        /**
+         * do not gather any metrics
+         */
         OFF,
-        /**gather basic metrics (for all databases, but not specific per database)*/
+        /**
+         * gather basic metrics (for all databases, but not specific per database)
+         */
         ROOT,
-        /**gather basic metrics, and also specific per database (but not collection-specific)*/
+        /**
+         * gather basic metrics, and also specific per database (but not collection-specific)
+         */
         DATABASE,
-        /**gather basic, database, and collection-specific metrics*/
+        /**
+         * gather basic, database, and collection-specific metrics
+         */
         COLLECTION
     }
 }
