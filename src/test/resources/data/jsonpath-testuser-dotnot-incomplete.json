@@ -1,7 +1,0 @@
-{
-    "_id": "b@si.com",
-    "name": "Andrea", 
-    "password": "changeit",
-    "roles.2": "ROLE3",
-    "details.city": "Milan"
-}
