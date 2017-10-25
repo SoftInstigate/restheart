@@ -5,7 +5,9 @@ import io.undertow.security.api.AuthenticationMode;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+
 import java.util.List;
+
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.security.AccessManager;
@@ -21,6 +23,12 @@ import org.restheart.security.handlers.SecurityInitialHandler;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public abstract class PipedHttpHandler implements HttpHandler {
+
+    protected static final String PROPERTIES = "properties";
+    protected static final String FILE_METADATA = "metadata";
+    protected static final String _ID = "_id";
+    protected static final String CONTENT_TYPE = "contentType";
+    protected static final String FILENAME = "filename";
 
     protected static PipedHttpHandler buildSecurityHandlerChain(
             PipedHttpHandler next,
