@@ -24,6 +24,7 @@ import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.aggregation.AggregationTransformer;
 import org.restheart.handlers.aggregation.GetAggregationHandler;
+import org.restheart.handlers.applicationlogic.MetricsHandler;
 import org.restheart.handlers.bulk.BulkDeleteDocumentsHandler;
 import org.restheart.handlers.bulk.BulkPatchDocumentsHandler;
 import org.restheart.handlers.bulk.BulkPostCollectionHandler;
@@ -71,9 +72,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public final class RequestDispacherHandler extends PipedHttpHandler {
+public final class RequestDispatcherHandler extends PipedHttpHandler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RequestDispacherHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequestDispatcherHandler.class);
 
     private final Map<TYPE, Map<METHOD, PipedHttpHandler>> handlersMultimap;
 
@@ -83,7 +84,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of RequestDispacherHandler
      */
-    public RequestDispacherHandler() {
+    public RequestDispatcherHandler() {
         this(true);
     }
 
@@ -93,7 +94,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
      *
      * @param initialize if false then do not initialize the handlersMultimap
      */
-    RequestDispacherHandler(boolean initialize) {
+    RequestDispatcherHandler(boolean initialize) {
         super(null, null);
         this.handlersMultimap = new HashMap<>();
         if (initialize) {
@@ -343,6 +344,9 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                 new RequestTransformerMetadataHandler(
                         new DeleteDocumentHandler(
                                 respTransformers())));
+
+
+        putPipedHttpHandler(TYPE.METRICS, METHOD.GET, new MetricsHandler(respTransformers()));
     }
 
     private PipedHttpHandler respTransformers() {
@@ -443,7 +447,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                     exchange,
                     context,
                     HttpStatus.SC_METHOD_NOT_ALLOWED,
-                    "mentod " + context.getMethod().name() + " not allowed");
+                    "method " + context.getMethod().name() + " not allowed");
             responseSenderHandler.handleRequest(exchange, context);
             return;
         }
@@ -476,7 +480,7 @@ public final class RequestDispacherHandler extends PipedHttpHandler {
                     exchange,
                     context,
                     HttpStatus.SC_METHOD_NOT_ALLOWED,
-                    "mentod " + context.getMethod().name() + " not allowed");
+                    "method " + context.getMethod().name() + " not allowed");
             responseSenderHandler.handleRequest(exchange, context);
         }
     }

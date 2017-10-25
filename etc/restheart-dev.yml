@@ -214,6 +214,8 @@ auth-token-ttl: 15
 # log-file-path: to specify the log file path (default value: restheart.log in system temporary directory)
 # log-level: to set the log level. Value can be OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. (default value is INFO)
 # requests-log-level: log the request-response. 0 => no log, 1 => light log, 2 => detailed dump
+# metrics-gathering-level: metrics gathering for which level? OFF => no gathering, ROOT => gathering at root level,
+#                          DATABASE => at db level, COLLECTION => at collection level
 # WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
 
 enable-log-file: true
@@ -221,6 +223,7 @@ log-file-path: /tmp/restheart.log
 enable-log-console: true
 log-level: DEBUG
 requests-log-level: 1
+metrics-gathering-level: DATABASE
 
 #### ETag policy
 
