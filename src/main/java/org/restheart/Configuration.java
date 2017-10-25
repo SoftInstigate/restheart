@@ -486,10 +486,16 @@ public class Configuration {
     public static final String LOG_REQUESTS_LEVEL_KEY = "requests-log-level";
 
     /**
+     *  Set metrics gathering level (can be ALL, COLLECTION, DATABASE, ROOT, OFF), gradually gathering less specific metrics.
+     *  Every level contain the upper level as well.
+     */
+    public static final String METRICS_GATHERING_LEVEL_KEY = "metrics-gathering-level";
+
+    /**
      * The key for enabling the Ansi console (for logging with colors)
      */
     public static final String ANSI_CONSOLE = "ansi-console";
-    
+
     /**
      * undertow connetction options
      *
@@ -601,6 +607,7 @@ public class Configuration {
     private final ETAG_CHECK_POLICY docEtagCheckPolicy;
     private final Map<String, Object> connectionOptions;
     private final Integer logExchangeDump;
+    private final METRICS_GATHERING_LEVEL metricsGatheringLevel;
     private final long queryTimeLimit;
     private final long aggregationTimeLimit;
     private final boolean ansiConsole;
@@ -712,6 +719,7 @@ public class Configuration {
         docEtagCheckPolicy = DEFAULT_DOC_ETAG_CHECK_POLICY;
 
         logExchangeDump = 0;
+        metricsGatheringLevel = METRICS_GATHERING_LEVEL.ROOT;
 
         connectionOptions = Maps.newHashMap();
     }
@@ -931,13 +939,23 @@ public class Configuration {
         }
 
         logExchangeDump = getAsIntegerOrDefault(conf, LOG_REQUESTS_LEVEL_KEY, 0);
+        {
+            METRICS_GATHERING_LEVEL mglevel;
+            try {
+                String value = getAsStringOrDefault(conf, METRICS_GATHERING_LEVEL_KEY, "ROOT");
+                mglevel = METRICS_GATHERING_LEVEL.valueOf(value.toUpperCase());
+            } catch (IllegalArgumentException iae) {
+                mglevel = METRICS_GATHERING_LEVEL.ROOT;
+            }
+            metricsGatheringLevel = mglevel;
+        }
 
         connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY);
     }
 
     @Override
     public String toString() {
-        return "Configuration{" + "silent=" + silent + ", httpsListener=" + httpsListener + ", httpsPort=" + httpsPort + ", httpsHost=" + httpsHost + ", httpListener=" + httpListener + ", httpPort=" + httpPort + ", httpHost=" + httpHost + ", ajpListener=" + ajpListener + ", ajpPort=" + ajpPort + ", ajpHost=" + ajpHost + ", instanceName=" + instanceName + ", defaultRepresentationFromat=" + defaultRepresentationFromat + ", useEmbeddedKeystore=" + useEmbeddedKeystore + ", keystoreFile=" + keystoreFile + ", keystorePassword=" + keystorePassword + ", certPassword=" + certPassword + ", mongoUri=" + mongoUri + ", mongoMounts=" + mongoMounts + ", staticResourcesMounts=" + staticResourcesMounts + ", applicationLogicMounts=" + applicationLogicMounts + ", metadataNamedSingletons=" + metadataNamedSingletons + ", idmImpl=" + idmImpl + ", idmArgs=" + idmArgs + ", authMechanismImpl=" + authMechanismImpl + ", authMechanismArgs=" + authMechanismArgs + ", amImpl=" + amImpl + ", amArgs=" + amArgs + ", logFilePath=" + logFilePath + ", logLevel=" + logLevel + ", logToConsole=" + logToConsole + ", logToFile=" + logToFile + ", localCacheEnabled=" + localCacheEnabled + ", localCacheTtl=" + localCacheTtl + ", schemaCacheEnabled=" + schemaCacheEnabled + ", schemaCacheTtl=" + schemaCacheTtl + ", requestsLimit=" + requestsLimit + ", ioThreads=" + ioThreads + ", workerThreads=" + workerThreads + ", bufferSize=" + bufferSize + ", buffersPerRegion=" + buffersPerRegion + ", directBuffers=" + directBuffers + ", forceGzipEncoding=" + forceGzipEncoding + ", eagerPoolSize=" + eagerPoolSize + ", eagerLinearSliceWidht=" + eagerLinearSliceWidht + ", eagerLinearSliceDelta=" + eagerLinearSliceDelta + ", eagerLinearSliceHeights=" + Arrays.toString(eagerLinearSliceHeights) + ", eagerRndSliceMinWidht=" + eagerRndSliceMinWidht + ", eagerRndMaxCursors=" + eagerRndMaxCursors + ", authTokenEnabled=" + authTokenEnabled + ", authTokenTtl=" + authTokenTtl + ", dbEtagCheckPolicy=" + dbEtagCheckPolicy + ", collEtagCheckPolicy=" + collEtagCheckPolicy + ", docEtagCheckPolicy=" + docEtagCheckPolicy + ", connectionOptions=" + connectionOptions + ", logExchangeDump=" + logExchangeDump + ", queryTimeLimit=" + queryTimeLimit + ", aggregationTimeLimit=" + aggregationTimeLimit + ", ansiConsole=" + ansiConsole + '}';
+        return "Configuration{" + "silent=" + silent + ", httpsListener=" + httpsListener + ", httpsPort=" + httpsPort + ", httpsHost=" + httpsHost + ", httpListener=" + httpListener + ", httpPort=" + httpPort + ", httpHost=" + httpHost + ", ajpListener=" + ajpListener + ", ajpPort=" + ajpPort + ", ajpHost=" + ajpHost + ", instanceName=" + instanceName + ", defaultRepresentationFromat=" + defaultRepresentationFromat + ", useEmbeddedKeystore=" + useEmbeddedKeystore + ", keystoreFile=" + keystoreFile + ", keystorePassword=" + keystorePassword + ", certPassword=" + certPassword + ", mongoUri=" + mongoUri + ", mongoMounts=" + mongoMounts + ", staticResourcesMounts=" + staticResourcesMounts + ", applicationLogicMounts=" + applicationLogicMounts + ", metadataNamedSingletons=" + metadataNamedSingletons + ", idmImpl=" + idmImpl + ", idmArgs=" + idmArgs + ", authMechanismImpl=" + authMechanismImpl + ", authMechanismArgs=" + authMechanismArgs + ", amImpl=" + amImpl + ", amArgs=" + amArgs + ", logFilePath=" + logFilePath + ", logLevel=" + logLevel + ", logToConsole=" + logToConsole + ", logToFile=" + logToFile + ", localCacheEnabled=" + localCacheEnabled + ", localCacheTtl=" + localCacheTtl + ", schemaCacheEnabled=" + schemaCacheEnabled + ", schemaCacheTtl=" + schemaCacheTtl + ", requestsLimit=" + requestsLimit + ", ioThreads=" + ioThreads + ", workerThreads=" + workerThreads + ", bufferSize=" + bufferSize + ", buffersPerRegion=" + buffersPerRegion + ", directBuffers=" + directBuffers + ", forceGzipEncoding=" + forceGzipEncoding + ", eagerPoolSize=" + eagerPoolSize + ", eagerLinearSliceWidht=" + eagerLinearSliceWidht + ", eagerLinearSliceDelta=" + eagerLinearSliceDelta + ", eagerLinearSliceHeights=" + Arrays.toString(eagerLinearSliceHeights) + ", eagerRndSliceMinWidht=" + eagerRndSliceMinWidht + ", eagerRndMaxCursors=" + eagerRndMaxCursors + ", authTokenEnabled=" + authTokenEnabled + ", authTokenTtl=" + authTokenTtl + ", dbEtagCheckPolicy=" + dbEtagCheckPolicy + ", collEtagCheckPolicy=" + collEtagCheckPolicy + ", docEtagCheckPolicy=" + docEtagCheckPolicy + ", connectionOptions=" + connectionOptions + ", logExchangeDump=" + logExchangeDump + ", metricsGatheringLevel=" + metricsGatheringLevel + ", queryTimeLimit=" + queryTimeLimit + ", aggregationTimeLimit=" + aggregationTimeLimit + ", ansiConsole=" + ansiConsole + '}';
     }
 
     /**
@@ -1584,5 +1602,37 @@ public class Configuration {
      */
     public Map<String, Object> getConfigurationFileMap() {
         return configurationFileMap;
+    }
+
+    /**
+<<<<<<< HEAD
+     * @return the level of metrics that will be collected (and above)
+     */
+    public METRICS_GATHERING_LEVEL getMetricsGatheringLevel() {
+        return metricsGatheringLevel;
+    }
+
+    /** decides whether metrics are gathered at the given log level or not*/
+    public boolean gatheringAboveOrEqualToLevel(METRICS_GATHERING_LEVEL level) {
+        return getMetricsGatheringLevel().compareTo(level) >= 0;
+    }
+
+    public enum METRICS_GATHERING_LEVEL {
+        /**
+         * do not gather any metrics
+         */
+        OFF,
+        /**
+         * gather basic metrics (for all databases, but not specific per database)
+         */
+        ROOT,
+        /**
+         * gather basic metrics, and also specific per database (but not collection-specific)
+         */
+        DATABASE,
+        /**
+         * gather basic, database, and collection-specific metrics
+         */
+        COLLECTION
     }
 }

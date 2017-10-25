@@ -17,6 +17,7 @@
  */
 package org.restheart;
 
+import com.codahale.metrics.SharedMetricRegistries;
 import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.undertow.Handlers.path;
@@ -65,11 +66,12 @@ import static org.restheart.Configuration.RESTHEART_VERSION;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.handlers.ErrorHandler;
 import org.restheart.handlers.GzipEncodingHandler;
+import org.restheart.handlers.MetricsInstrumentationHandler;
 import org.restheart.handlers.OptionsHandler;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.PipedWrappingHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestDispacherHandler;
+import org.restheart.handlers.RequestDispatcherHandler;
 import org.restheart.handlers.RequestLoggerHandler;
 import org.restheart.handlers.applicationlogic.ApplicationLogicHandler;
 import org.restheart.handlers.injectors.AccountInjectorHandler;
@@ -749,7 +751,7 @@ public class Bootstrapper {
                 = new AccountInjectorHandler(
                         new DbPropsInjectorHandler(
                                 new CollectionPropsInjectorHandler(
-                                        new RequestDispacherHandler()
+                                        new RequestDispatcherHandler()
                                 )));
 
         PathHandler paths = path();
@@ -759,17 +761,18 @@ public class Bootstrapper {
             String db = (String) m.get(Configuration.MONGO_MOUNT_WHAT_KEY);
 
             paths.addPrefixPath(url,
-                    new RequestLoggerHandler(
+                new RequestContextInjectorHandler(url, db,
+                    new MetricsInstrumentationHandler(
+                        new RequestLoggerHandler(
                             new CORSHandler(
-                                    new RequestContextInjectorHandler(url, db,
-                                            new OptionsHandler(
-                                                    new BodyInjectorHandler(
-                                                            new SecurityHandlerDispacher(
-                                                                    coreHandlerChain,
-                                                                    authenticationMechanism,
-                                                                    identityManager,
-                                                                    accessManager))))
-                            )));
+                                new OptionsHandler(
+                                    new BodyInjectorHandler(
+                                        new SecurityHandlerDispacher(
+                                                coreHandlerChain,
+                                                authenticationMechanism,
+                                                identityManager,
+                                                accessManager))))
+                ))));
 
             LOGGER.info("URL {} bound to MongoDB resource {}", url, db);
         });
