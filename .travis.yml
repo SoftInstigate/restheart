@@ -61,6 +61,8 @@ after_success:
                 echo "On master branch. Tagging image softinstigate/restheart:$RESTHEART_VERSION as latest";
                 docker tag softinstigate/restheart:$RESTHEART_VERSION softinstigate/restheart:latest;
                 docker push softinstigate/restheart:latest;
+                echo "Publishing Maven site at http://softinstigate.github.io/restheart/project-info.html"
+                mvn site --settings deploy-settings.xml -P report
             fi
         else
             echo "ERROR! Variable RESTHEART_VERSION is undefined";
@@ -73,3 +75,4 @@ env:
     - secure: rlLQCDykTqV7/EC+kTCw5JpYbuZwk0Neq5q1kRQ6hjcUYRdgjPJretVg+1e5+GcGOH4/Z/aOGdQrk1HtPW6tE+ePIUDAUwuLX2+6AUt2FqIqumYoJxYR7rsw+THkjiPaopB7qmWOUJ1vec7QCEiaGexYcjs3j6mv//SbnUksY2w=
     - secure: t4tS+6EAC9nuE9SOKMfooux34usyPY2oBt0/737A2o9y3LXgy/jt0hyx09W4Gc1ZHq8QYoEiwHU40rlo2KWcxPKK/e4U/dZ1ne5OBJLKt5dhGr/PwaO0rVa7039zgQRn1VN+ayx92AfQCZMyA7iTrVDrM/2lxvDww0UYyZmViaA=
     - secure: NJiw/JRqiwYkEx2eisu5yllgX6oKJwhV60SldnlpnHqWzOaqXoqsKLOiP18cBPeLT6BuVYT9Z0PyaI9+2bPzt2IUC6vKuhimPYA0IRqoDfAcdSKa/Q1LcbLdbX+T941IE0iPlVesh3iFf41Cc5BM5ND2fu/yRlAHOcJFTdSqGAs=
+    - secure: "ioL0SvduMVDJPuortrpxtQcyoerlJOwj0bDMPXtwGfpI3aMYvf9gmY4vWHvI6rq3r4VfchyBxYUeKP8n6W3mqMd7twlNJlvtRjtXNh0/0BaDieuuwG6o3xsto87OQlRgh1dP6q7K6lcT+E9Qtix+YUrKZ4/EjfuPX03NBmlYAWQ="
