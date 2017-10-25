@@ -124,6 +124,7 @@ local.properties
 
 # Package Files #
 *.jar
+!bin/**/*.jar
 *.war
 *.ear
 

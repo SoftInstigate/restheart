@@ -99,7 +99,7 @@
             <url>https://jitpack.io</url>
         </repository>
     </repositories>
-    
+
     <scm>
         <url>https://github.com/SoftInstigate/restheart</url>
         <connection>scm:git:git@github.com:SoftInstigate/restheart.git</connection>
@@ -156,7 +156,7 @@
             <artifactId>org.everit.json.schema</artifactId>
             <version>1.6.0</version>
         </dependency>
-        
+
         <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId>
@@ -222,6 +222,18 @@
             <artifactId>minimal-json</artifactId>
             <version>0.9.4</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>4.5.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna-platform</artifactId>
+            <version>4.5.0</version>
         </dependency>
 
     </dependencies>
@@ -346,13 +358,36 @@
                         <phase>pre-integration-test</phase>
                         <configuration>
                             <skip>${skipITs}</skip>
-                            <target>
-                                <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
-                                <echo>1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
-                                <echo>2 - mongodb already started on default port without authentication enabled (no --auth option)</echo>
+                            <exportAntProperties>true</exportAntProperties>
+                            <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
+                            <echo>1 - mongodb already started on default port without authentication enabled (no --auth option)</echo>
+                            <target if="isUnix">
+                                <echo>Starting integration tests on Unix</echo>
                                 <exec dir="${basedir}" executable="${basedir}/bin/start.sh">
                                     <arg value="${basedir}/etc/restheart-integrationtest.yml"/>
                                 </exec>
+                            </target>
+                            <target if="isWindows">
+                                <echo>Starting integration tests on Windows</echo>
+                                <java jar="${basedir}/target/restheart.jar"
+                                    fork="true"
+                                    spawn="true">
+                                    <jvmarg value="-Dfile.encoding=UTF-8" />
+                                    <jvmarg value="-server" />
+                                    <arg value="${basedir}/etc/restheart-integrationtest.yml" />
+                                </java>
+                                <exec executable="${JAVA_HOME}/bin/jps">
+                                    <arg value="-l" />
+                                    <redirector outputproperty="process.pid">
+                                        <outputfilterchain>
+                                            <linecontains>
+                                                <contains value="restheart.jar" />
+                                            </linecontains>
+                                            <replacestring from=" ${basedir}\target\restheart.jar" />
+                                        </outputfilterchain>
+                                    </redirector>
+                                </exec>
+                                <sleep seconds="2" />
                             </target>
                         </configuration>
                         <goals>
@@ -364,10 +399,20 @@
                         <phase>post-integration-test</phase>
                         <configuration>
                             <skip>${skipITs}</skip>
-                            <target>
+                            <echo>Shutting down RESTHeart server</echo>
+                            <target if="isUnix">
                                 <exec dir="${basedir}" executable="${basedir}/bin/stop.sh">
                                     <arg value="${basedir}/etc/restheart-integrationtest.yml"/>
                                 </exec>
+                            </target>
+                            <target if="isWindows">
+                                <java classname="org.restheart.Shutdowner"
+                                    classpath="${basedir}/target/restheart.jar;${basedir}/bin/win32-x86.jar"
+                                    fork="true"
+                                    spawn="true">
+                                    <jvmarg value="-server" />
+                                    <arg value="${process.pid}" />
+                                </java>
                             </target>
                         </configuration>
                         <goals>
@@ -397,7 +442,7 @@
                     </resources>
                 </configuration>
             </plugin>
-            
+
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
                 <artifactId>nexus-staging-maven-plugin</artifactId>
@@ -582,6 +627,29 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>Windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <isWindows>true</isWindows>
+            </properties>
+        </profile>
+        <profile>
+            <id>unix</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                </os>
+            </activation>
+            <properties>
+                <isUnix>true</isUnix>
+            </properties>
         </profile>
     </profiles>
 </project>
