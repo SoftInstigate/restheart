@@ -88,7 +88,10 @@ public class PutFileHandler extends PipedHttpHandler {
                                 metadata,
                                 context.getFilePath());
             } else {
-                throw new RuntimeException("error. file data is null");
+                // throw new RuntimeException("error. file data is null");
+                // try to pass to next handler in order to PUT new metadata on existing file.
+                next(exchange, context);
+                return;
             }
         } catch (IOException | RuntimeException t) {
             if (t instanceof MongoWriteException
