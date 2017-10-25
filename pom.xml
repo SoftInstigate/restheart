@@ -124,13 +124,13 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>23.0</version>
+            <version>23.2-jre</version>
         </dependency>
 
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
-            <version>1.18</version>
+            <version>1.19</version>
         </dependency>
 
         <dependency>
@@ -172,7 +172,7 @@
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
             <artifactId>metrics-core</artifactId>
-            <version>3.2.3</version>
+            <version>3.2.5</version>
         </dependency>
 
         <dependency>
@@ -432,7 +432,7 @@
                             <dependency>
                                 <groupId>com.puppycrawl.tools</groupId>
                                 <artifactId>checkstyle</artifactId>
-                                <version>8.2</version>
+                                <version>8.3</version>
                             </dependency>
                         </dependencies>
                         <configuration>
