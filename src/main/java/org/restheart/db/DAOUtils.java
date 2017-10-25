@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -20,20 +20,24 @@ package org.restheart.db;
 import com.mongodb.MongoCommandException;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.MongoCollection;
+
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
+
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.model.UpdateOneModel;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
 import com.mongodb.client.result.UpdateResult;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
@@ -41,40 +45,45 @@ import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
+
 import static org.restheart.utils.RequestHelper.UPDATE_OPERATORS;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @author Nath Papadacis {@literal <nath@thirststudios.co.uk>}
  */
 public class DAOUtils {
 
     public final static Logger LOGGER = LoggerFactory.getLogger(DAOUtils.class);
 
-    public final static FindOneAndUpdateOptions FAU_UPSERT_OPS
-            = new FindOneAndUpdateOptions()
-                    .upsert(true);
+    public final static FindOneAndUpdateOptions FAU_UPSERT_OPS = new FindOneAndUpdateOptions()
+            .upsert(true);
 
-    public final static FindOneAndUpdateOptions FAU_AFTER_UPSERT_OPS
-            = new FindOneAndUpdateOptions()
-                    .upsert(true).returnDocument(ReturnDocument.AFTER);
+    public final static FindOneAndUpdateOptions FAU_NOT_UPSERT_OPS = new FindOneAndUpdateOptions()
+            .upsert(false);
 
-    public final static UpdateOptions U_UPSERT_OPS
-            = new UpdateOptions()
-                    .upsert(true);
+    public final static FindOneAndUpdateOptions FAU_AFTER_UPSERT_OPS = new FindOneAndUpdateOptions()
+            .upsert(true).returnDocument(ReturnDocument.AFTER);
 
-    public final static UpdateOptions U_NOT_UPSERT_OPS
-            = new UpdateOptions()
-                    .upsert(false);
+    public final static FindOneAndUpdateOptions FAU_AFTER_NOT_UPSERT_OPS = new FindOneAndUpdateOptions()
+            .upsert(false).returnDocument(ReturnDocument.AFTER);
 
-    private static final Bson IMPOSSIBLE_CONDITION
-            = eq("_etag", new ObjectId());
+    public final static UpdateOptions U_UPSERT_OPS = new UpdateOptions()
+            .upsert(true);
+
+    public final static UpdateOptions U_NOT_UPSERT_OPS = new UpdateOptions()
+            .upsert(false);
+
+    private static final Bson IMPOSSIBLE_CONDITION = eq("_etag", new ObjectId());
 
     /**
      *
-     * @param newContent the value of newContent
+     * @param newContent
+     *            the value of newContent
      * @return a not null BsonDocument
      */
     protected static BsonDocument validContent(final BsonDocument newContent) {
@@ -84,8 +93,40 @@ public class DAOUtils {
     /**
      *
      * @param coll
-     * @param documentId use Optional.empty() to specify no documentId (null is
-     * _id: null)
+     * @param documentId
+     *            use Optional.empty() to specify no documentId (null is
+     *            _id: null)
+     * @param shardKeys
+     * @param data
+     * @param patching
+     *            Whether we want to patch the metadata or replace it entirely.
+     * @return the old document
+     */
+    public static OperationResult updateMetadata(
+            MongoCollection<BsonDocument> coll,
+            Object documentId,
+            BsonDocument filter,
+            BsonDocument shardKeys,
+            BsonDocument data,
+            boolean patching) {
+        return updateDocument(
+                coll,
+                documentId,
+                filter,
+                shardKeys,
+                data,
+                false,
+                false,
+                patching,
+                false);
+    }
+
+    /**
+     *
+     * @param coll
+     * @param documentId
+     *            use Optional.empty() to specify no documentId (null is
+     *            _id: null)
      * @param shardKeys
      * @param data
      * @param replace
@@ -105,20 +146,31 @@ public class DAOUtils {
                 shardKeys,
                 data,
                 replace,
-                false);
+                false,
+                false,
+                true);
     }
 
     /**
+     * Update a mongo document<br>
+     * <strong>TODO</strong> - Think about changing the numerous arguments into a context
      *
      * @param coll
-     * @param documentId use Optional.empty() to specify no documentId (null is
-     * _id: null)
+     * @param documentId
+     *            use Optional.empty() to specify no documentId (null is
+     *            _id: null)
      * @param shardKeys
      * @param data
      * @param replace
      * @param returnNew
+     * @param deepPatching
+     *            if true then we will flatten any nested BsonDocuments
+     *            into dot notation to ensure only the requested fields are updated.
+     * @param allowUpsert
+     *            whether or not to allow upsert mode
      * @return the new or old document depending on returnNew
      */
+    @SuppressWarnings("rawtypes")
     public static OperationResult updateDocument(
             MongoCollection<BsonDocument> coll,
             Object documentId,
@@ -126,11 +178,13 @@ public class DAOUtils {
             BsonDocument shardKeys,
             BsonDocument data,
             boolean replace,
-            boolean returnNew) {
+            boolean returnNew,
+            boolean deepPatching,
+            boolean allowUpsert) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(data);
 
-        BsonDocument document = getUpdateDocument(data);
+        BsonDocument document = getUpdateDocument(data, deepPatching);
 
         Bson query;
 
@@ -170,11 +224,11 @@ public class DAOUtils {
                 newDocument = coll.findOneAndUpdate(
                         query,
                         document,
-                        FAU_AFTER_UPSERT_OPS);
+                        allowUpsert ? FAU_AFTER_UPSERT_OPS : FAU_AFTER_NOT_UPSERT_OPS);
             } catch (MongoCommandException mce) {
                 if (mce.getErrorCode() == 11000 && filter != null) {
                     // DuplicateKey error
-                    // this happens if the filter parameter didn't match 
+                    // this happens if the filter parameter didn't match
                     // the existing document
                     return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED, oldDocument, oldDocument);
                 } else {
@@ -189,11 +243,11 @@ public class DAOUtils {
                 newDocument = coll.findOneAndUpdate(
                         query,
                         document,
-                        FAU_AFTER_UPSERT_OPS);
+                        allowUpsert ? FAU_AFTER_UPSERT_OPS : FAU_AFTER_NOT_UPSERT_OPS);
             } catch (MongoCommandException mce) {
                 if (mce.getErrorCode() == 11000 && filter != null) {
                     // DuplicateKey error
-                    // this happens if the filter parameter didn't match 
+                    // this happens if the filter parameter didn't match
                     // the existing document
                     return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED);
                 } else {
@@ -209,11 +263,11 @@ public class DAOUtils {
                 oldDocument = coll.findOneAndUpdate(
                         query,
                         document,
-                        FAU_UPSERT_OPS);
+                        allowUpsert ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS);
             } catch (MongoCommandException mce) {
                 if (mce.getErrorCode() == 11000 && filter != null) {
                     // DuplicateKey error
-                    // this happens if the filter parameter didn't match 
+                    // this happens if the filter parameter didn't match
                     // the existing document
                     return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED);
                 } else {
@@ -230,7 +284,8 @@ public class DAOUtils {
             Object documentId,
             BsonDocument shardKeys,
             BsonDocument data,
-            Object etag) {
+            Object etag,
+            String etagLocation) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(documentId);
         Objects.requireNonNull(data);
@@ -240,7 +295,9 @@ public class DAOUtils {
         if (etag == null) {
             query = eq("_id", documentId);
         } else {
-            query = and(eq("_id", documentId), eq("_etag", etag));
+            query = and(eq("_id", documentId), eq(
+                    etagLocation != null && !etagLocation.isEmpty() ?
+                            etagLocation : "_etag", etag));
         }
 
         if (shardKeys != null) {
@@ -318,7 +375,7 @@ public class DAOUtils {
                                 _filter,
                                 getUpdateDocument(document),
                                 new UpdateOptions().upsert(true)
-                        ));
+                                ));
                     }
                 });
 
@@ -331,6 +388,17 @@ public class DAOUtils {
      * @return the document for update operation, with proper update operators
      */
     public static BsonDocument getUpdateDocument(BsonDocument data) {
+        return getUpdateDocument(data, false);
+    }
+
+    /**
+     *
+     * @param data
+     * @param flatten
+     *            if we should flatten nested documents' values using dot notation
+     * @return the document for update operation, with proper update operators
+     */
+    public static BsonDocument getUpdateDocument(BsonDocument data, boolean flatten) {
         BsonDocument ret = new BsonDocument();
 
         // add other update operators
@@ -352,8 +420,12 @@ public class DAOUtils {
 
             setKeys.stream().forEach((String key)
                     -> {
-                set.append(key, data.get(key));
-            });
+                        if (flatten) {
+                            flatten(null, key, data, set);
+                        } else {
+                            set.append(key, data.get(key));
+                        }
+                    });
 
             if (!set.isEmpty()) {
                 if (ret.get("$set") == null) {
@@ -369,6 +441,21 @@ public class DAOUtils {
         }
 
         return ret;
+    }
+
+    /*
+     * Recursively flatten BsonDocuments using dot notation so that we only set values on explicit keys
+     */
+    private static void flatten(String prefix, String key, BsonDocument data, BsonDocument set) {
+        final String newPrefix = prefix == null ? key : prefix + "." + key;
+        final BsonValue value = data.get(key);
+        if (value.isDocument()) {
+            ((BsonDocument) value).keySet().forEach(childKey -> {
+                flatten(newPrefix, childKey, (BsonDocument) value, set);
+            });
+        } else {
+            set.append(newPrefix, value);
+        }
     }
 
     private DAOUtils() {

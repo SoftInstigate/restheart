@@ -1,25 +1,27 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
+
 import java.util.HashMap;
 import java.util.Map;
+
 import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.aggregation.AggregationTransformer;
@@ -43,6 +45,7 @@ import org.restheart.handlers.document.PatchDocumentHandler;
 import org.restheart.handlers.document.PutDocumentHandler;
 import org.restheart.handlers.files.DeleteBucketHandler;
 import org.restheart.handlers.files.DeleteFileHandler;
+import org.restheart.handlers.files.FileMetadataHandler;
 import org.restheart.handlers.files.GetFileBinaryHandler;
 import org.restheart.handlers.files.GetFileHandler;
 import org.restheart.handlers.files.PostBucketHandler;
@@ -260,7 +263,8 @@ public final class RequestDispatcherHandler extends PipedHttpHandler {
                 new RequestTransformerMetadataHandler(
                         new BeforeWriteCheckMetadataHandler(
                                 new PutFileHandler(
-                                        respTransformers()))));
+                                        new FileMetadataHandler(
+                                                respTransformers())))));
 
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.PUT,
                 new RequestTransformerMetadataHandler(
@@ -286,6 +290,26 @@ public final class RequestDispatcherHandler extends PipedHttpHandler {
                 new RequestTransformerMetadataHandler(
                         new DeleteFileHandler(
                                 respTransformers())));
+
+        // PUTting or PATCHing a file involves updating the metadata in the
+        // xxx.files bucket for an _id. Although the chunks are immutable we
+        // can treat the metadata like a regular document.
+        putPipedHttpHandler(TYPE.FILE, METHOD.PATCH,
+                new RequestTransformerMetadataHandler(
+                        new BeforeWriteCheckMetadataHandler(
+                                new FileMetadataHandler(
+                                        new AfterWriteCheckMetadataHandler(
+                                                respTransformers())))));
+
+        /*
+         * TODO There's already a PUT handler that allows custom id's to be set. Need to think about how to handle PUT with no binary data
+        putPipedHttpHandler(TYPE.FILE, METHOD.PUT,
+                new RequestTransformerMetadataHandler(
+                        new BeforeWriteCheckMetadataHandler(
+                                new FileMetadataHandler(
+                                        new AfterWriteCheckMetadataHandler(
+                                                respTransformers())))));
+         */
 
         // *** AGGREGATION handler
         putPipedHttpHandler(TYPE.AGGREGATION, METHOD.GET,

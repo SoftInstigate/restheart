@@ -15,55 +15,55 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.document;
+package org.restheart.handlers.files;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.db.DocumentDAO;
+import org.restheart.db.FileMetadataDAO;
+import org.restheart.db.FileMetadataRepository;
 import org.restheart.db.OperationResult;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
 /**
+ * A customised and cut down version of the {@link org.restheart.handlers.document.PutDocumentHandler PutDocumentHandler}
+ * or {@link org.restheart.handlers.document.PatchDocumentHandler PatchDocumentHandler}, this deals with both PUT and PATCHing
+ * of the metadata for a binary file.
  *
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @author Nath Papadacis {@literal <nath@thirststudios.co.uk>}
  */
-public class PatchDocumentHandler extends PipedHttpHandler {
+public class FileMetadataHandler extends PipedHttpHandler {
 
-    private final DocumentDAO documentDAO;
+    private final FileMetadataRepository fileMetadataDAO;
 
     /**
-     * Creates a new instance of PatchDocumentHandler
+     * Creates a new instance of PatchFileMetadataHandler
      */
-    public PatchDocumentHandler() {
-        this(null, new DocumentDAO());
+    public FileMetadataHandler() {
+        this(null, new FileMetadataDAO());
     }
 
-    public PatchDocumentHandler(DocumentDAO documentDAO) {
+    public FileMetadataHandler(FileMetadataRepository fileMetadataDAO) {
         super(null);
-        this.documentDAO = documentDAO;
+        this.fileMetadataDAO = fileMetadataDAO;
     }
 
-    public PatchDocumentHandler(PipedHttpHandler next) {
+    public FileMetadataHandler(PipedHttpHandler next) {
         super(next);
-        this.documentDAO = new DocumentDAO();
+        this.fileMetadataDAO = new FileMetadataDAO();
     }
 
-    public PatchDocumentHandler(PipedHttpHandler next, DocumentDAO documentDAO) {
+    public FileMetadataHandler(PipedHttpHandler next, FileMetadataRepository fileMetadataDAO) {
         super(next);
-        this.documentDAO = documentDAO;
+        this.fileMetadataDAO = fileMetadataDAO;
     }
 
-    /**
-     *
-     * @param exchange
-     * @param context
-     * @throws Exception
-     */
     @Override
     public void handleRequest(
             HttpServerExchange exchange,
@@ -73,10 +73,10 @@ public class PatchDocumentHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-        
+
         BsonValue _content = context.getContent();
 
-        // cannot PATCH with no data
+        // cannot proceed with no data
         if (_content == null) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
@@ -87,7 +87,7 @@ public class PatchDocumentHandler extends PipedHttpHandler {
             return;
         }
 
-        // cannot PATCH an array
+        // cannot proceed with an array
         if (!_content.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
@@ -97,7 +97,7 @@ public class PatchDocumentHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-        
+
         if (_content.asDocument().isEmpty()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
@@ -108,13 +108,43 @@ public class PatchDocumentHandler extends PipedHttpHandler {
             return;
         }
 
+        if (context.getFilePath() != null) {
+            // PUT request with non null data will be dealt with by previous handler (PutFileHandler)
+            if (context.getMethod() == METHOD.PATCH) {
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "only metadata is allowed, not binary data");
+            }
+            next(exchange, context);
+            return;
+        }
+
+        // Ensure the passed content whether already within a metadata/properties document or just plain
+        // is wrapped in a metadata document.
         BsonDocument content = _content.asDocument();
+        if (content.containsKey(PROPERTIES)) {
+            content = new BsonDocument(FILE_METADATA, content.get(PROPERTIES));
+        } else if (!content.containsKey(FILE_METADATA)) {
+            content = new BsonDocument(FILE_METADATA, content);
+        }
+
+        // Remove any _id field from the metadata.
+        final BsonDocument _metadata = content.get(FILE_METADATA).asDocument();
+        _metadata.remove(_ID);
+
+        // Update main document filename to match metadata
+        final BsonValue filename = _metadata.get(FILENAME);
+        if (filename != null && filename.isString()) {
+            content.put(FILENAME, filename);
+        }
 
         BsonValue id = context.getDocumentId();
 
-        if (content.get("_id") == null) {
-            content.put("_id", id);
-        } else if (!content.get("_id").equals(id)) {
+        if (content.get(_ID) == null) {
+            content.put(_ID, id);
+        } else if (!content.get(_ID).equals(id)) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     context,
@@ -124,7 +154,7 @@ public class PatchDocumentHandler extends PipedHttpHandler {
             return;
         }
 
-        OperationResult result = documentDAO.upsertDocument(
+        OperationResult result = fileMetadataDAO.updateMetadata(
                 context.getDBName(),
                 context.getCollectionName(),
                 context.getDocumentId(),
@@ -132,7 +162,7 @@ public class PatchDocumentHandler extends PipedHttpHandler {
                 context.getShardKey(),
                 content,
                 context.getETag(),
-                true,
+                context.getMethod() == METHOD.PATCH,
                 context.isETagCheckRequired());
 
         context.setDbOperationResult(result);
@@ -148,12 +178,12 @@ public class PatchDocumentHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_CONFLICT,
                     "The document's ETag must be provided using the '"
-                    + Headers.IF_MATCH
-                    + "' header");
+                            + Headers.IF_MATCH
+                            + "' header");
             next(exchange, context);
             return;
         }
-        
+
         // handle the case of duplicate key error
         if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
             ResponseHelper.endExchangeWithMessage(

@@ -537,9 +537,9 @@ public class Configuration {
      * @param integers
      * @return
      */
-    public static int[] convertListToIntArray(List integers) {
+    public static int[] convertListToIntArray(List<Object> integers) {
         int[] ret = new int[integers.size()];
-        Iterator iterator = integers.iterator();
+        Iterator<Object> iterator = integers.iterator();
         for (int i = 0; i < ret.length; i++) {
             Object o = iterator.next();
 
@@ -1029,7 +1029,6 @@ public class Configuration {
      * @param defaultValue
      * @return
      */
-    @SuppressWarnings("unchecked")
     private Boolean getAsBooleanOrDefault(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
         if (conf == null) {
             if (!silent) {
@@ -1066,7 +1065,6 @@ public class Configuration {
      * @param defaultValue
      * @return
      */
-    @SuppressWarnings("unchecked")
     private String getAsStringOrDefault(final Map<String, Object> conf, final String key, final String defaultValue) {
 
         if (conf == null || conf.get(key) == null) {
@@ -1095,7 +1093,6 @@ public class Configuration {
      * @param defaultValue
      * @return
      */
-    @SuppressWarnings("unchecked")
     private Integer getAsIntegerOrDefault(final Map<String, Object> conf, final String key, final Integer defaultValue) {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
@@ -1123,7 +1120,6 @@ public class Configuration {
      * @param defaultValue
      * @return
      */
-    @SuppressWarnings("unchecked")
     private Long getAsLongOrDefault(final Map<String, Object> conf, final String key, final Long defaultValue) {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
@@ -1171,7 +1167,7 @@ public class Configuration {
                 LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
             }
 
-            int ret[] = convertListToIntArray((List) conf.get(key));
+            int ret[] = convertListToIntArray((List<Object>) conf.get(key));
 
             if (ret.length == 0) {
                 if (!silent) {
