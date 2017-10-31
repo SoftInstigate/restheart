@@ -86,14 +86,14 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         return contentTypes != null
                 && !contentTypes.isEmpty()
                 && contentTypes.stream().anyMatch(ct -> ct.startsWith(Representation.HAL_JSON_MEDIA_TYPE)
-                        || ct.startsWith(Representation.JSON_MEDIA_TYPE));
+                || ct.startsWith(Representation.JSON_MEDIA_TYPE));
     }
 
     private static boolean isFormOrMultipart(final HeaderValues contentTypes) {
         return contentTypes != null
                 && !contentTypes.isEmpty()
                 && contentTypes.stream().anyMatch(ct -> ct.startsWith(Representation.APP_FORM_URLENCODED_TYPE)
-                        || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE));
+                || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE));
     }
 
     /**
@@ -212,7 +212,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      *
      * @param formData
      * @return the parsed BsonDocument from the form data or an empty
-     *         BsonDocument
+     * BsonDocument
      */
     protected static BsonDocument extractMetadata(
             final FormData formData)
@@ -224,8 +224,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         metadataString = formData.getFirst(FILE_METADATA) != null
                 ? formData.getFirst(FILE_METADATA).getValue()
                 : formData.getFirst(PROPERTIES) != null
-                        ? formData.getFirst(PROPERTIES).getValue()
-                        : null;
+                ? formData.getFirst(PROPERTIES).getValue()
+                : null;
 
         if (metadataString != null) {
             metadata = BsonDocument.parse(metadataString);
@@ -254,8 +254,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     /**
      * Detect the file's mediatype
      *
-     * @param file
-     *            input file
+     * @param file input file
      * @return the content-type as a String
      * @throws IOException
      */
@@ -380,49 +379,52 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             context.setFilePath(path);
 
             injectContentTypeFromFile(content.asDocument(), path.toFile());
-        } else if (isHalOrJson(contentType)) {
-            // get and parse the content
+        } else {
+            // get the raw content
             final String contentString = ChannelReader.read(exchange.getRequestChannel());
-
             context.setRawContent(contentString);
 
-            if (contentString != null
-                    && !contentString.isEmpty()) { // check content type
+            if (isHalOrJson(contentType)) {
 
-                try {
-                    content = JsonUtils.parse(contentString);
+                // parse the json content
+                if (contentString != null
+                        && !contentString.isEmpty()) { // check content type
 
-                    if (content != null
-                            && !content.isDocument()
-                            && !content.isArray()) {
-                        throw new IllegalArgumentException(
-                                "request data must be either a json object "
-                                        + "or an array"
-                                        + ", got " + content.getBsonType().name());
+                    try {
+                        content = JsonUtils.parse(contentString);
+
+                        if (content != null
+                                && !content.isDocument()
+                                && !content.isArray()) {
+                            throw new IllegalArgumentException(
+                                    "request data must be either a json object "
+                                    + "or an array"
+                                    + ", got " + content.getBsonType().name());
+                        }
+                    } catch (JsonParseException | IllegalArgumentException ex) {
+                        ResponseHelper.endExchangeWithMessage(
+                                exchange,
+                                context,
+                                HttpStatus.SC_NOT_ACCEPTABLE,
+                                "Invalid JSON",
+                                ex);
+                        next(exchange, context);
+                        return;
                     }
-                } catch (JsonParseException | IllegalArgumentException ex) {
-                    ResponseHelper.endExchangeWithMessage(
-                            exchange,
-                            context,
-                            HttpStatus.SC_NOT_ACCEPTABLE,
-                            "Invalid JSON",
-                            ex);
-                    next(exchange, context);
-                    return;
+                } else {
+                    content = null;
                 }
-            } else {
+            } else if (contentType == null) {
                 content = null;
+            } else {
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
+                        ERROR_INVALID_CONTENTTYPE);
+                next(exchange, context);
+                return;
             }
-        } else if (contentType == null) {
-            content = null;
-        } else {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
-                    ERROR_INVALID_CONTENTTYPE);
-            next(exchange, context);
-            return;
         }
 
         if (content == null) {
@@ -436,8 +438,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                         context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "request data can be an array only "
-                                + "for POST to collection resources "
-                                + "(bulk post)");
+                        + "for POST to collection resources "
+                        + "(bulk post)");
                 next(exchange, context);
                 return;
             }
