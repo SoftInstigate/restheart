@@ -17,6 +17,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <checkstyle.file.path>checkstyle-checker.xml</checkstyle.file.path>
+        <dependency.locations.enabled>false</dependency.locations.enabled>
         <!-- By default skip integration tests. Use 'mvn verify -DskipITs=false' to run them. -->
         <skipITs>true</skipITs>
     </properties>
