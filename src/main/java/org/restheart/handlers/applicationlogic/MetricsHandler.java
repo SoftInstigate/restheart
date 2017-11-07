@@ -254,7 +254,7 @@ public class MetricsHandler extends PipedHttpHandler {
          * * if Accept header cannot be satisfied, return 406 (NOT ACCEPTABLE)
          */
         public static ResponseType forAcceptHeader(String acceptHeader) {
-            if (acceptHeader == null) {
+            if (acceptHeader == null || acceptHeader.equalsIgnoreCase("*/*")) {
                 return ResponseType.PROMETHEUS;
             }
             return Arrays.stream(acceptHeader.split(","))
