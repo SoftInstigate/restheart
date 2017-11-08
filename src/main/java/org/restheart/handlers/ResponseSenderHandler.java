@@ -37,7 +37,7 @@ public class ResponseSenderHandler extends PipedHttpHandler {
     public ResponseSenderHandler() {
         super(null);
     }
-    
+
     /**
      * @param next
      */
@@ -110,7 +110,9 @@ public class ResponseSenderHandler extends PipedHttpHandler {
                     Headers.CONTENT_TYPE, Representation.JSON_MEDIA_TYPE);
         }
 
-        exchange.setStatusCode(context.getResponseStatusCode());
+        if (!exchange.isResponseStarted()) {
+            exchange.setStatusCode(context.getResponseStatusCode());
+        }
 
         if (responseContent != null) {
             exchange.getResponseSender().send(

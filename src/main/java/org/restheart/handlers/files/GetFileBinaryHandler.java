@@ -100,7 +100,7 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
         if (dbsfile == null) {
             fileNotFound(context, exchange);
         } else if (!checkEtag(exchange, dbsfile)) {
-            sendBinaryContent(gridFSBucket, dbsfile, exchange);
+            sendBinaryContent(context, gridFSBucket, dbsfile, exchange);
         }
 
         next(exchange, context);
@@ -150,6 +150,7 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
     }
 
     private void sendBinaryContent(
+            final RequestContext context,
             final GridFSBucket gridFSBucket,
             final GridFSFile file,
             final HttpServerExchange exchange)
@@ -161,10 +162,10 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
                 && file.getMetadata().get("contentType") != null) {
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
                     file.getMetadata().get("contentType").toString());
-        } else if (file.getExtraElements() != null
-                && file.getExtraElements().get("contentType") != null) {
+        } else if (file.getMetadata() != null
+                && file.getMetadata().get("contentType") != null) {
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
-                    file.getExtraElements().get("contentType").toString());
+                    file.getMetadata().get("contentType").toString());
         } else {
             exchange.getResponseHeaders().put(
                     Headers.CONTENT_TYPE,
@@ -186,13 +187,11 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
 
         ResponseHelper.injectEtagHeader(exchange, file.getMetadata());
 
-        exchange.setStatusCode(HttpStatus.SC_OK);
+        context.setResponseStatusCode(HttpStatus.SC_OK);
 
         gridFSBucket.downloadToStream(
                 file.getId(),
                 exchange.getOutputStream());
-
-        exchange.endExchange();
     }
 
     private String extractFilename(final GridFSFile dbsfile) {
