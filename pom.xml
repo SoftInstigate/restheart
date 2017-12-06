@@ -105,8 +105,8 @@
     <dependencies>
         <dependency>
             <groupId>org.mongodb</groupId>
-            <artifactId>mongo-java-driver</artifactId>
-            <version>3.5.0</version>
+            <artifactId>mongodb-driver</artifactId>
+            <version>3.6.0</version>
         </dependency>
 
         <dependency>
@@ -325,6 +325,7 @@
                 <configuration>
                     <debug>true</debug>
                     <!--<compilerArgument>-Xlint</compilerArgument>-->
+                    <showDeprecation>false</showDeprecation>
                 </configuration>
             </plugin>
 
