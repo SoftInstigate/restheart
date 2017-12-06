@@ -24,6 +24,7 @@ import java.util.Deque;
 import java.util.Optional;
 import org.bson.BSONObject;
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.Bootstrapper;
 import org.restheart.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
@@ -47,6 +48,7 @@ import static org.restheart.handlers.RequestContext.SORT_QPARAM_KEY;
 import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.aggregation.AggregationPipeline;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.JsonUtils;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 
@@ -283,9 +285,9 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 }
 
                 try {
-                    Object _keys = JSON.parse(f);
+                    BsonValue _keys = JsonUtils.parse(f);
 
-                    if (!(_keys instanceof BSONObject)) {
+                    if (!_keys.isDocument()) {
                         ResponseHelper.endExchangeWithMessage(
                                 exchange,
                                 rcontext,
@@ -328,9 +330,9 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 }
 
                 try {
-                    Object _filter = JSON.parse(f);
+                    BsonValue _filter = JsonUtils.parse(f);
 
-                    if (!(_filter instanceof BSONObject)) {
+                    if (!_filter.isDocument()) {
                         ResponseHelper.endExchangeWithMessage(
                                 exchange,
                                 rcontext,
@@ -340,7 +342,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                                 + " => "
                                 + f.getClass().getSimpleName());
                         return true;
-                    } else if (((BSONObject) _filter).keySet().isEmpty()) {
+                    } else if (_filter.asDocument().keySet().isEmpty()) {
                         ResponseHelper.endExchangeWithMessage(
                                 exchange,
                                 rcontext,
