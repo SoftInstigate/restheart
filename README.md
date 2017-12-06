@@ -159,7 +159,7 @@ If you want to embed RESTHeart in your project, add the dependency to your POM f
     <dependency>
         <groupId>org.restheart</groupId>
         <artifactId>restheart</artifactId>
-        <version>2.0.2</version>
+        <version>3.1.4</version>
     </dependency>
 </dependencies>
 ```
@@ -189,7 +189,7 @@ Then include the SNAPSHOT dependency in your POM:
     <dependency>
         <groupId>org.restheart</groupId>
         <artifactId>restheart</artifactId>
-        <version>3.0.0-SNAPSHOT</version>
+        <version>3.2.0-SNAPSHOT</version>
     </dependency>
 </dependencies>
 ```
