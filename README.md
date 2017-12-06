@@ -27,7 +27,7 @@ Summary
 
 For an example of how RESTHeart works, check our sample **AngularJS** [notes application](https://github.com/softinstigate/restheart-notes-example).
 
-**Note**: We've tested RESTHeart against MongoDB v. **2.6** and **3.0**. We now test it mainly with **3.2** and **3.4**.
+**Note**: RESTHeart works with MongoDB v. **2.6** and later. We now test it mainly with **3.6** and **3.4**.
 
 For detailed information, visit RESTHeart's [website](http://restheart.org), [issues tracker](https://softinstigate.atlassian.net/projects/RH) and [detailed documentation wiki](https://softinstigate.atlassian.net/wiki/x/l4CM).
 
