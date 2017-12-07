@@ -3,8 +3,9 @@ set -e
 
 if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
     mvn deploy --settings deploy-settings.xml -Dmaven.test.skip=true;
-    export RESTHEART_VERSION=$(./bin/project-version.sh 2>/dev/null);
-    if [[ $RESTHEART_VERSION ]]; then
+    RESTHEART_VERSION=$(./bin/project-version.sh 2>/dev/null);
+    export RESTHEART_VERSION
+    if [[ "$RESTHEART_VERSION" ]]; then
         echo "Building Docker image for RESTHeart $RESTHEART_VERSION";
         docker login -u="$DOCKER_USER" -p="$DOCKER_PASS";
         cd Docker && cp ../target/restheart.jar . ;
