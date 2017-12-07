@@ -411,6 +411,7 @@
                         <artifactId>site-maven-plugin</artifactId>
                         <version>0.12</version>
                         <configuration>
+                            <server>github</server>
                             <message>Creating site for ${project.version}</message>
                         </configuration>
                         <executions>
