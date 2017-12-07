@@ -2,7 +2,7 @@ dist: trusty
 sudo: false
 language: java
 jdk:
-   - oraclejdk8
+   - openjdk8
 
 notifications:
   email:
@@ -12,8 +12,6 @@ notifications:
   slack:
     secure: IeoyrbTPjPtopkmTFbcCzgy+9q8MMzhla9lXhZYdqsbn19KKe4UKNp0Cu0SY601ss586Lw4jsegvba6LFF3bi3j4aK0ZITtGJ4PYGvYByh3O7zi4Y0K2RUeYU1CfTIl18QBHcAIjQSmKLJPnyN9Y5Y4/4KhfWTqXy7tvkB36Oys=
 
-sudo: false
-
 addons:
   apt:
     sources:
@@ -22,16 +20,10 @@ addons:
     packages:
       - mongodb-org-server
       - mongodb-org-shell
-      - oracle-java8-installer
-  sonarcloud:
-    organization: "softinstigate"
-    token:
-      secure: "IMY8Ove0KKHwrNFJ+C3kkK12lIENnEtlhNzzANaaS71bls+VA80t5Ri6wti0p3VDnFzXBNC7il1KWGBit5G5t5RpKi53hfwjrzUF3lFjF03P8OPpiMh9pt0sB7vuVvKMON80e4bWTCN0nw0eBlvLNqB+6vW/8KIfwBKo+Abya/g="
-
+    
 cache:
   directories:
      - '$HOME/.m2'
-     - '$HOME/.sonar/cache'
 
 services:
    - mongodb
