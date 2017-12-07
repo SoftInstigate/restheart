@@ -15,11 +15,9 @@ notifications:
 addons:
   apt:
     sources:
-      - mongodb-upstart
-      - mongodb-3.6-trusty
+      - mongodb-3.4-trusty
     packages:
       - mongodb-org-server
-      - mongodb-org-shell
     
 cache:
   directories:
