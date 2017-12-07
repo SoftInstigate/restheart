@@ -2,7 +2,7 @@
 set -e
 
 if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
-    mvn deploy --settings deploy-settings.xml -Dmaven.test.skip=true;
+    mvn deploy --settings deploy-settings.xml -P release -Dmaven.test.skip=true;
     RESTHEART_VERSION=$(./bin/project-version.sh 2>/dev/null);
     export RESTHEART_VERSION
     if [[ "$RESTHEART_VERSION" ]]; then
