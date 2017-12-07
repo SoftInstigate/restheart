@@ -28,15 +28,11 @@ services:
    - docker
 
 before_install:
-    - ./bin/before-deploy.sh
+    - bin/before-deploy.sh
+    - git submodule update --init --recursive
 
-install: true
-
-before_script:
-   - git submodule update --init --recursive
-
-script:
-   - mvn clean install -DskipITs=false
+install:
+    - mvn clean install -DskipITs=false
 
 after_success:
    - ./bin/maven-deploy.sh
