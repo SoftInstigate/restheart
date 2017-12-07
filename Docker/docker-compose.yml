@@ -32,7 +32,7 @@ services:
 
    mongodb:
       # select a MongoDB 3.x version
-      image: mongo:3.4
+      image: mongo:3.6
       ### Name the container explicitly
       container_name: restheart-dev-mongo
       ### Uncomment to use the permanent data volume
