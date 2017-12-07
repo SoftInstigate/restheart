@@ -47,9 +47,12 @@
                                                                                                                                                                                                                                                                           <li class="collapsed">
                           <a href="project-info.html" title="Project Information">Project Information</a>
                   </li>
-                                                                                                                                                                                          <li class="expanded">
+                                                                                                                                                                                                            <li class="expanded">
                           <a href="project-reports.html" title="Project Reports">Project Reports</a>
                     <ul>
+                      <li class="none">
+                          <a href="failsafe-report.html" title="Failsafe Report">Failsafe Report</a>
+            </li>
                       <li class="none">
                           <a href="dependency-updates-report.html" title="Dependency Updates Report">Dependency Updates Report</a>
             </li>
@@ -366,7 +369,7 @@
 <td><a href="#org.restheart.handlers.aggregation.AggregationTransformer.java">org/restheart/handlers/aggregation/AggregationTransformer.java</a></td>
 <td>0</td>
 <td>0</td>
-<td>12</td></tr>
+<td>11</td></tr>
 <tr class="b">
 <td><a href="#org.restheart.handlers.aggregation.GetAggregationHandler.java">org/restheart/handlers/aggregation/GetAggregationHandler.java</a></td>
 <td>0</td>
@@ -376,7 +379,7 @@
 <td><a href="#org.restheart.handlers.aggregation.MapReduce.java">org/restheart/handlers/aggregation/MapReduce.java</a></td>
 <td>0</td>
 <td>0</td>
-<td>15</td></tr>
+<td>16</td></tr>
 <tr class="b">
 <td><a href="#org.restheart.handlers.aggregation.QueryVariableNotBoundException.java">org/restheart/handlers/aggregation/QueryVariableNotBoundException.java</a></td>
 <td>0</td>
@@ -8915,70 +8918,64 @@
 <tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>javadoc</td>
-<td>JavadocPackage</td>
-<td>Missing package-info.java file.</td>
-<td></td></tr>
-<tr class="a">
-<td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
-<td>javadoc</td>
 <td>JavadocStyle</td>
 <td>First sentence should end with a period.</td>
 <td>32</td></tr>
-<tr class="b">
+<tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>design</td>
 <td>DesignForExtension</td>
 <td>Class 'AggregationTransformer' looks like designed for extension (can be subclassed), but the method 'transform' does not have javadoc that explains how to do that safely. If class is not designed for extension consider making the class 'AggregationTransformer' final or making the method 'transform' static/final/abstract/empty, or adding allowed annotation for the method.</td>
 <td>42</td></tr>
-<tr class="a">
+<tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
 <td>Parameter exchange should be final.</td>
 <td>44</td></tr>
-<tr class="b">
+<tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
 <td>Parameter context should be final.</td>
 <td>45</td></tr>
-<tr class="a">
+<tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
 <td>Parameter args should be final.</td>
 <td>47</td></tr>
-<tr class="b">
+<tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>naming</td>
 <td>LocalVariableName</td>
 <td>Name '_contentToTransform' must match pattern '^[a-z][a-zA-Z0-9]*$'.</td>
 <td>58</td></tr>
-<tr class="a">
+<tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>naming</td>
 <td>LocalVariableName</td>
 <td>Name '_embedded' must match pattern '^[a-z][a-zA-Z0-9]*$'.</td>
 <td>81</td></tr>
-<tr class="b">
+<tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
 <td>Parameter contentToTransform should be final.</td>
 <td>114</td></tr>
-<tr class="a">
+<tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>naming</td>
 <td>LocalVariableName</td>
 <td>Name '___aggrs' must match pattern '^[a-z][a-zA-Z0-9]*$'.</td>
 <td>115</td></tr>
-<tr class="b">
+<tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>naming</td>
 <td>LocalVariableName</td>
 <td>Name '__aggrs' must match pattern '^[a-z][a-zA-Z0-9]*$'.</td>
 <td>123</td></tr>
-<tr class="a">
+<tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>naming</td>
 <td>LocalVariableName</td>
@@ -8987,73 +8984,73 @@
 <div class="section">
 <h3 id="org.restheart.handlers.aggregation.GetAggregationHandler.java">org/restheart/handlers/aggregation/GetAggregationHandler.java</h3>
 <table border="0" class="bodyTable">
-<tr class="b">
+<tr class="a">
 <th>Severity</th>
 <th>Category</th>
 <th>Rule</th>
 <th>Message</th>
 <th>Line</th></tr>
-<tr class="a">
+<tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>javadoc</td>
 <td>JavadocStyle</td>
 <td>First sentence should end with a period.</td>
 <td>45</td></tr>
-<tr class="b">
+<tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>javadoc</td>
 <td>JavadocStyle</td>
 <td>First sentence should end with a period.</td>
 <td>52</td></tr>
-<tr class="a">
+<tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
 <td>Parameter next should be final.</td>
 <td>57</td></tr>
-<tr class="b">
+<tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>javadoc</td>
 <td>JavadocMethod</td>
 <td>Expected @param tag for 'next'.</td>
 <td>57</td></tr>
-<tr class="a">
+<tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>sizes</td>
 <td>MethodLength</td>
 <td>Method length is 156 lines (max allowed is 150).</td>
 <td>67</td></tr>
-<tr class="b">
+<tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
 <td>Parameter exchange should be final.</td>
 <td>68</td></tr>
-<tr class="a">
+<tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
 <td>Parameter context should be final.</td>
 <td>69</td></tr>
-<tr class="b">
+<tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>naming</td>
 <td>LocalVariableName</td>
 <td>Name '_query' must match pattern '^[a-z][a-zA-Z0-9]*$'.</td>
 <td>81</td></tr>
-<tr class="a">
+<tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
 <td>Parameter data should be final.</td>
 <td>227</td></tr>
-<tr class="b">
+<tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
 <td>Parameter context should be final.</td>
 <td>228</td></tr>
-<tr class="a">
+<tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>coding</td>
 <td>AvoidInlineConditionals</td>
@@ -9062,12 +9059,18 @@
 <div class="section">
 <h3 id="org.restheart.handlers.aggregation.MapReduce.java">org/restheart/handlers/aggregation/MapReduce.java</h3>
 <table border="0" class="bodyTable">
-<tr class="b">
+<tr class="a">
 <th>Severity</th>
 <th>Category</th>
 <th>Rule</th>
 <th>Message</th>
 <th>Line</th></tr>
+<tr class="b">
+<td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
+<td>javadoc</td>
+<td>JavadocPackage</td>
+<td>Missing package-info.java file.</td>
+<td></td></tr>
 <tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>javadoc</td>

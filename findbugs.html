@@ -47,9 +47,12 @@
                                                                                                                                                                                                                                                                           <li class="collapsed">
                           <a href="project-info.html" title="Project Information">Project Information</a>
                   </li>
-                                                                                                                                                                                          <li class="expanded">
+                                                                                                                                                                                                            <li class="expanded">
                           <a href="project-reports.html" title="Project Reports">Project Reports</a>
                     <ul>
+                      <li class="none">
+                          <a href="failsafe-report.html" title="Failsafe Report">Failsafe Report</a>
+            </li>
                       <li class="none">
                           <a href="dependency-updates-report.html" title="Dependency Updates Report">Dependency Updates Report</a>
             </li>
@@ -98,8 +101,8 @@
 <th>Errors</th>
 <th>Missing Classes</th></tr>
 <tr class="b">
-<td>240</td>
-<td>44</td>
+<td>229</td>
+<td>37</td>
 <td>0</td>
 <td>0</td></tr></table></div>
 <div class="section">
@@ -125,22 +128,22 @@
 <td>1</td></tr>
 <tr class="a">
 <td><a href="#org.restheart.handlers.RequestLoggerHandler">org.restheart.handlers.RequestLoggerHandler</a></td>
-<td>3</td></tr>
-<tr class="b">
-<td><a href="#org.restheart.handlers.applicationlogic.GetRoleHandler">org.restheart.handlers.applicationlogic.GetRoleHandler</a></td>
 <td>1</td></tr>
-<tr class="a">
+<tr class="b">
 <td><a href="#org.restheart.handlers.applicationlogic.MetricsHandler$ResponseType$AcceptHeaderEntryComparator">org.restheart.handlers.applicationlogic.MetricsHandler$ResponseType$AcceptHeaderEntryComparator</a></td>
 <td>2</td></tr>
-<tr class="b">
+<tr class="a">
 <td><a href="#org.restheart.handlers.collection.CollectionRepresentationFactory">org.restheart.handlers.collection.CollectionRepresentationFactory</a></td>
 <td>1</td></tr>
-<tr class="a">
+<tr class="b">
 <td><a href="#org.restheart.handlers.database.DBRepresentationFactory">org.restheart.handlers.database.DBRepresentationFactory</a></td>
 <td>1</td></tr>
-<tr class="b">
+<tr class="a">
 <td><a href="#org.restheart.handlers.document.DocumentRepresentationFactory">org.restheart.handlers.document.DocumentRepresentationFactory</a></td>
 <td>3</td></tr>
+<tr class="b">
+<td><a href="#org.restheart.handlers.injectors.BodyInjectorHandler">org.restheart.handlers.injectors.BodyInjectorHandler</a></td>
+<td>1</td></tr>
 <tr class="a">
 <td><a href="#org.restheart.handlers.injectors.CollectionPropsInjectorHandler">org.restheart.handlers.injectors.CollectionPropsInjectorHandler</a></td>
 <td>2</td></tr>
@@ -160,17 +163,11 @@
 <td><a href="#org.restheart.metadata.hooks.HookMetadata">org.restheart.metadata.hooks.HookMetadata</a></td>
 <td>1</td></tr>
 <tr class="a">
-<td><a href="#org.restheart.metadata.transformers.HashTransformer">org.restheart.metadata.transformers.HashTransformer</a></td>
-<td>1</td></tr>
-<tr class="b">
 <td><a href="#org.restheart.metadata.transformers.RepresentationTransformer">org.restheart.metadata.transformers.RepresentationTransformer</a></td>
 <td>1</td></tr>
-<tr class="a">
+<tr class="b">
 <td><a href="#org.restheart.security.AuthTokenAuthenticationMechanism">org.restheart.security.AuthTokenAuthenticationMechanism</a></td>
 <td>1</td></tr>
-<tr class="b">
-<td><a href="#org.restheart.security.handlers.SecurityInitialHandler">org.restheart.security.handlers.SecurityInitialHandler</a></td>
-<td>4</td></tr>
 <tr class="a">
 <td><a href="#org.restheart.security.impl.SimpleAccount">org.restheart.security.impl.SimpleAccount</a></td>
 <td>3</td></tr>
@@ -274,37 +271,10 @@
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="b">
-<td>Unused field: org.restheart.handlers.RequestLoggerHandler.LOGGER</td>
-<td>PERFORMANCE</td>
-<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#UUF_UNUSED_FIELD">UUF_UNUSED_FIELD</a></td>
-<td></td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>Unused field: org.restheart.handlers.RequestLoggerHandler.configuration</td>
-<td>PERFORMANCE</td>
-<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#UUF_UNUSED_FIELD">UUF_UNUSED_FIELD</a></td>
-<td></td>
-<td>Medium</td></tr>
-<tr class="b">
-<td>Unused field: org.restheart.handlers.RequestLoggerHandler.handler</td>
-<td>PERFORMANCE</td>
-<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#UUF_UNUSED_FIELD">UUF_UNUSED_FIELD</a></td>
-<td></td>
-<td>Medium</td></tr></table></div><a name="org.restheart.handlers.applicationlogic.GetRoleHandler"></a>
-<div class="section">
-<h3>org.restheart.handlers.applicationlogic.GetRoleHandler<a name="org.restheart.handlers.applicationlogic.GetRoleHandler"></a></h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>Unread field: org.restheart.handlers.applicationlogic.GetRoleHandler.url</td>
-<td>PERFORMANCE</td>
-<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#URF_UNREAD_FIELD">URF_UNREAD_FIELD</a></td>
-<td>66</td>
+<td>Useless condition: it's known that logLevel &gt;= 2 at this point</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#UC_USELESS_CONDITION">UC_USELESS_CONDITION</a></td>
+<td>117</td>
 <td>Medium</td></tr></table></div><a name="org.restheart.handlers.applicationlogic.MetricsHandlerResponseTypeAcceptHeaderEntryComparator"></a>
 <div class="section">
 <h3>org.restheart.handlers.applicationlogic.MetricsHandler$ResponseType$AcceptHeaderEntryComparator<a name="org.restheart.handlers.applicationlogic.MetricsHandlerResponseTypeAcceptHeaderEntryComparator"></a></h3>
@@ -325,7 +295,7 @@
 <td>org.restheart.handlers.applicationlogic.MetricsHandler$ResponseType$AcceptHeaderEntryComparator implements Comparator but not Serializable</td>
 <td>BAD_PRACTICE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#SE_COMPARATOR_SHOULD_BE_SERIALIZABLE">SE_COMPARATOR_SHOULD_BE_SERIALIZABLE</a></td>
-<td>1</td>
+<td>263</td>
 <td>Medium</td></tr></table></div><a name="org.restheart.handlers.collection.CollectionRepresentationFactory"></a>
 <div class="section">
 <h3>org.restheart.handlers.collection.CollectionRepresentationFactory<a name="org.restheart.handlers.collection.CollectionRepresentationFactory"></a></h3>
@@ -383,7 +353,22 @@
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#RCN_REDUNDANT_NULLCHECK_OF_NULL_VALUE">RCN_REDUNDANT_NULLCHECK_OF_NULL_VALUE</a></td>
 <td>133</td>
-<td>Medium</td></tr></table></div><a name="org.restheart.handlers.injectors.CollectionPropsInjectorHandler"></a>
+<td>Medium</td></tr></table></div><a name="org.restheart.handlers.injectors.BodyInjectorHandler"></a>
+<div class="section">
+<h3>org.restheart.handlers.injectors.BodyInjectorHandler<a name="org.restheart.handlers.injectors.BodyInjectorHandler"></a></h3>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="a">
+<td>Redundant nullcheck of _id, which is known to be non-null in org.restheart.handlers.injectors.BodyInjectorHandler.handleRequest(HttpServerExchange, RequestContext)</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE">RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE</a></td>
+<td>490</td>
+<td>High</td></tr></table></div><a name="org.restheart.handlers.injectors.CollectionPropsInjectorHandler"></a>
 <div class="section">
 <h3>org.restheart.handlers.injectors.CollectionPropsInjectorHandler<a name="org.restheart.handlers.injectors.CollectionPropsInjectorHandler"></a></h3>
 <table border="0" class="bodyTable">
@@ -478,22 +463,7 @@
 <td>Dead store to singletons in new org.restheart.metadata.hooks.HookMetadata(String, BsonValue)</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#DLS_DEAD_LOCAL_STORE">DLS_DEAD_LOCAL_STORE</a></td>
-<td>108</td>
-<td>Medium</td></tr></table></div><a name="org.restheart.metadata.transformers.HashTransformer"></a>
-<div class="section">
-<h3>org.restheart.metadata.transformers.HashTransformer<a name="org.restheart.metadata.transformers.HashTransformer"></a></h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>Return value of org.restheart.handlers.RequestContext.getMethod() ignored, but method has no side effect</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT">RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT</a></td>
-<td>65</td>
+<td>109</td>
 <td>Medium</td></tr></table></div><a name="org.restheart.metadata.transformers.RepresentationTransformer"></a>
 <div class="section">
 <h3>org.restheart.metadata.transformers.RepresentationTransformer<a name="org.restheart.metadata.transformers.RepresentationTransformer"></a></h3>
@@ -524,62 +494,29 @@
 <td>PERFORMANCE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#SS_SHOULD_BE_STATIC">SS_SHOULD_BE_STATIC</a></td>
 <td>59</td>
-<td>Medium</td></tr></table></div><a name="org.restheart.security.handlers.SecurityInitialHandler"></a>
-<div class="section">
-<h3>org.restheart.security.handlers.SecurityInitialHandler<a name="org.restheart.security.handlers.SecurityInitialHandler"></a></h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>Unused field: org.restheart.security.handlers.SecurityInitialHandler.authenticationMode</td>
-<td>PERFORMANCE</td>
-<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#UUF_UNUSED_FIELD">UUF_UNUSED_FIELD</a></td>
-<td></td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>Unused field: org.restheart.security.handlers.SecurityInitialHandler.contextFactory</td>
-<td>PERFORMANCE</td>
-<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#UUF_UNUSED_FIELD">UUF_UNUSED_FIELD</a></td>
-<td></td>
-<td>Medium</td></tr>
-<tr class="b">
-<td>Unused field: org.restheart.security.handlers.SecurityInitialHandler.identityManager</td>
-<td>PERFORMANCE</td>
-<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#UUF_UNUSED_FIELD">UUF_UNUSED_FIELD</a></td>
-<td></td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>Unused field: org.restheart.security.handlers.SecurityInitialHandler.programaticMechName</td>
-<td>PERFORMANCE</td>
-<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#UUF_UNUSED_FIELD">UUF_UNUSED_FIELD</a></td>
-<td></td>
 <td>Medium</td></tr></table></div><a name="org.restheart.security.impl.SimpleAccount"></a>
 <div class="section">
 <h3>org.restheart.security.impl.SimpleAccount<a name="org.restheart.security.impl.SimpleAccount"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="b">
+<tr class="a">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="a">
+<tr class="b">
 <td>Class org.restheart.security.impl.SimpleAccount defines non-transient non-serializable instance field credential</td>
 <td>BAD_PRACTICE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#SE_BAD_FIELD">SE_BAD_FIELD</a></td>
 <td></td>
 <td>Medium</td></tr>
-<tr class="b">
+<tr class="a">
 <td>Class org.restheart.security.impl.SimpleAccount defines non-transient non-serializable instance field principal</td>
 <td>BAD_PRACTICE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#SE_BAD_FIELD">SE_BAD_FIELD</a></td>
 <td></td>
 <td>Medium</td></tr>
-<tr class="a">
+<tr class="b">
 <td>org.restheart.security.impl.SimplePrincipal stored into non-transient field SimpleAccount.principal</td>
 <td>BAD_PRACTICE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#SE_BAD_FIELD_STORE">SE_BAD_FIELD_STORE</a></td>
@@ -588,25 +525,25 @@
 <div class="section">
 <h3>org.restheart.utils.FileUtils<a name="org.restheart.utils.FileUtils"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="b">
+<tr class="a">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="a">
+<tr class="b">
 <td>Hard coded reference to an absolute pathname in org.restheart.utils.FileUtils.&lt;static initializer for FileUtils&gt;()</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#DMI_HARDCODED_ABSOLUTE_FILENAME">DMI_HARDCODED_ABSOLUTE_FILENAME</a></td>
 <td>43</td>
 <td>Medium</td></tr>
-<tr class="b">
+<tr class="a">
 <td>Found reliance on default encoding in org.restheart.utils.FileUtils.createPidFile(Path): new java.io.FileWriter(File)</td>
 <td>I18N</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
 <td>113</td>
 <td>High</td></tr>
-<tr class="a">
+<tr class="b">
 <td>Found reliance on default encoding in org.restheart.utils.FileUtils.getPidFromFile(Path): new java.io.FileReader(File)</td>
 <td>I18N</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
@@ -615,19 +552,19 @@
 <div class="section">
 <h3>org.restheart.utils.Minify<a name="org.restheart.utils.Minify"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="b">
+<tr class="a">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="a">
+<tr class="b">
 <td>Found reliance on default encoding in org.restheart.utils.Minify.minify(String): java.io.ByteArrayOutputStream.toString()</td>
 <td>I18N</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
 <td>132</td>
 <td>High</td></tr>
-<tr class="b">
+<tr class="a">
 <td>Switch statement found in org.restheart.utils.Minify.action(Minify$Action) where one case falls through to the next case</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#SF_SWITCH_FALLTHROUGH">SF_SWITCH_FALLTHROUGH</a></td>
@@ -636,13 +573,13 @@
 <div class="section">
 <h3>org.restheart.utils.RHDaemon<a name="org.restheart.utils.RHDaemon"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="a">
+<tr class="b">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="b">
+<tr class="a">
 <td>org.restheart.utils.RHDaemon.daemonize() invokes System.exit(...), which shuts down the entire virtual machine</td>
 <td>BAD_PRACTICE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#DM_EXIT">DM_EXIT</a></td>
@@ -651,25 +588,25 @@
 <div class="section">
 <h3>org.restheart.utils.ResourcesExtractor<a name="org.restheart.utils.ResourcesExtractor"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="a">
+<tr class="b">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="b">
+<tr class="a">
 <td>Possible null pointer dereference in org.restheart.utils.ResourcesExtractor.delete(File) due to return value of called method</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
 <td>145</td>
 <td>Medium</td></tr>
-<tr class="a">
+<tr class="b">
 <td>Possible null pointer dereference in org.restheart.utils.ResourcesExtractor.delete(File) due to return value of called method</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
 <td>164</td>
 <td>Medium</td></tr>
-<tr class="b">
+<tr class="a">
 <td>Possible null pointer dereference in org.restheart.utils.ResourcesExtractor.delete(File) due to return value of called method</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
@@ -678,19 +615,19 @@
 <div class="section">
 <h3>org.restheart.utils.URLUtils<a name="org.restheart.utils.URLUtils"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="a">
+<tr class="b">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="b">
+<tr class="a">
 <td>Load of known null value in org.restheart.utils.URLUtils.getReferenceLink(String, Object)</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#NP_LOAD_OF_KNOWN_NULL_VALUE">NP_LOAD_OF_KNOWN_NULL_VALUE</a></td>
-<td>162</td>
+<td>160</td>
 <td>Medium</td></tr>
-<tr class="a">
+<tr class="b">
 <td>Return value of java.util.Objects.nonNull(Object) ignored, but method has no side effect</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT">RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT</a></td>
