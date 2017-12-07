@@ -54,7 +54,8 @@ import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
 import static org.restheart.handlers.RequestContext.REPRESENTATION_FORMAT_KEY;
 
 /**
- * A handler for dropwizard.io metrics that can return both default metrics JSON and the prometheus format.
+ * A handler for dropwizard.io metrics that can return both default metrics JSON
+ * and the prometheus format.
  *
  * @author Lena Brüder {@literal <brueder@e-spirit.com>}
  */
@@ -62,20 +63,24 @@ public class MetricsHandler extends PipedHttpHandler {
 
     @VisibleForTesting
     enum ResponseType {
-        /** dropwizard-metrics compatible JSON format, see
-         *  https://github.com/iZettle/dropwizard-metrics/blob/v3.1.2/metrics-json/src/main/java/com/codahale/metrics/json/MetricsModule.java
-         *  for how it looks like
+        /**
+         * dropwizard-metrics compatible JSON format, see
+         * https://github.com/iZettle/dropwizard-metrics/blob/v3.1.2/metrics-json/src/main/java/com/codahale/metrics/json/MetricsModule.java
+         * for how it looks like
          */
         JSON("application/json") {
             @Override
             public String generateResponse(MetricRegistry registry) throws IOException {
                 BsonDocument document = MetricsJsonGenerator.generateMetricsBson(registry, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
                 return document.toJson(
-                    JsonWriterSettings.builder().outputMode(JsonMode.RELAXED).indent(true).build()
+                        JsonWriterSettings.builder().outputMode(JsonMode.RELAXED).indent(true).build()
                 );
             }
         },
-        /**format description can be found at https://prometheus.io/docs/instrumenting/exposition_formats/ */
+        /**
+         * format description can be found at
+         * https://prometheus.io/docs/instrumenting/exposition_formats/
+         */
         PROMETHEUS("text/plain", "version=0.0.4") {
             private String valueAsString(BsonValue value) {
                 if (value.isDouble()) {
@@ -99,47 +104,57 @@ public class MetricsHandler extends PipedHttpHandler {
 
                 BsonDocument root = MetricsJsonGenerator.generateMetricsBson(registry, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
                 root.remove("version");
-                root.forEach((groupKey, groupContent) ->
-                     groupContent.asDocument().forEach((metricKey, metricContent) -> {
-                        final String[] split = metricKey.split("\\.");
-                        final String type = split[0];
-                        final String method = split[1];
-                        final String responseCode = split.length >= 3 ? split[2] : null;
+                root.forEach((groupKey, groupContent)
+                        -> groupContent.asDocument().forEach((metricKey, metricContent) -> {
+                            final String[] split = metricKey.split("\\.");
+                            final String type = split[0];
+                            final String method = split[1];
+                            final String responseCode = split.length >= 3 ? split[2] : null;
 
-                        metricContent.asDocument().forEach((metricType, value) -> {
-                            sb.append("http_response_").append(groupKey).append("_").append(type).append("_").append(metricType);
-                            sb.append("{");
-                            sb.append("method=\"").append(method).append("\"");
-                            if (responseCode != null) {
-                                sb.append(",");
-                                sb.append("code=\"").append(responseCode).append("\"");
-                            }
-                            sb.append("} ");
-                            sb.append(valueAsString(value));
-                            sb.append(" ");
-                            sb.append(timestamp);
+                            metricContent.asDocument().forEach((metricType, value) -> {
+                                sb.append("http_response_").append(groupKey).append("_").append(type).append("_").append(metricType);
+                                sb.append("{");
+                                sb.append("method=\"").append(method).append("\"");
+                                if (responseCode != null) {
+                                    sb.append(",");
+                                    sb.append("code=\"").append(responseCode).append("\"");
+                                }
+                                sb.append("} ");
+                                sb.append(valueAsString(value));
+                                sb.append(" ");
+                                sb.append(timestamp);
+                                sb.append("\n");
+                            });
+
                             sb.append("\n");
-                        });
-
-                        sb.append("\n");
-                    }
-                ));
+                        }
+                        ));
 
                 return sb.toString();
             }
         };
 
-        /**The content-type that is being used for both Accept and Content-Type headers*/
+        /**
+         * The content-type that is being used for both Accept and Content-Type
+         * headers
+         */
         String contentType;
-        /**the media range for the given content type*/
+        /**
+         * the media range for the given content type
+         */
         String mediaRange;
-        /**if any, the specialization of the content-type (after ";" in Content-Type header). null if n/a.*/
+        /**
+         * if any, the specialization of the content-type (after ";" in
+         * Content-Type header). null if n/a.
+         */
         String specialization;
+
         abstract public String generateResponse(MetricRegistry registry) throws IOException;
 
         ResponseType(String contentType) {
             this(contentType, null);
         }
+
         ResponseType(String contentType, String specialization) {
             this.contentType = contentType;
             this.mediaRange = calculateMediaRange(contentType);
@@ -167,13 +182,15 @@ public class MetricsHandler extends PipedHttpHandler {
             }
         }
 
-        /** whether this content type is acceptable for the given accept header entry*/
+        /**
+         * whether this content type is acceptable for the given accept header
+         * entry
+         */
         public boolean isAcceptableFor(AcceptHeaderEntry entry) {
             return entry.contentType.equalsIgnoreCase("*/*")
-                   || (entry.contentType.equalsIgnoreCase(contentType)
-                      && (entry.specialization == null || entry.specialization.equalsIgnoreCase(specialization))
-                      )
-                   || entry.contentType.equalsIgnoreCase(mediaRange);
+                    || (entry.contentType.equalsIgnoreCase(contentType)
+                    && (entry.specialization == null || entry.specialization.equalsIgnoreCase(specialization)))
+                    || entry.contentType.equalsIgnoreCase(mediaRange);
         }
 
         public void writeTo(HttpServerExchange exchange, MetricRegistry registry) throws IOException {
@@ -181,7 +198,9 @@ public class MetricsHandler extends PipedHttpHandler {
             exchange.getResponseSender().send(generateResponse(registry));
         }
 
-        /**Encapsulate code around accept-header handling*/
+        /**
+         * Encapsulate code around accept-header handling
+         */
         static class AcceptHeaderEntry {
             String contentType;
             String specialization;
@@ -198,8 +217,9 @@ public class MetricsHandler extends PipedHttpHandler {
             }
 
             /**
-             * Generate an accept header entry (if possible) for the given entry. Will be called for each
-             * entry of the accept header.
+             * Generate an accept header entry (if possible) for the given
+             * entry. Will be called for each entry of the accept header.
+             *
              * @return null if the header could not be generated.
              */
             public static AcceptHeaderEntry of(String acceptHeaderEntry) {
@@ -229,15 +249,17 @@ public class MetricsHandler extends PipedHttpHandler {
 
             @Override
             public String toString() {
-                return "AcceptHeaderEntry{" +
-                       "contentType='" + contentType + '\'' +
-                       ", specialization='" + specialization + '\'' +
-                       ", qValue=" + qValue +
-                       '}';
+                return "AcceptHeaderEntry{"
+                        + "contentType='" + contentType + '\''
+                        + ", specialization='" + specialization + '\''
+                        + ", qValue=" + qValue
+                        + '}';
             }
         }
 
-        /**sorts large q-values first, smaller ones later*/
+        /**
+         * sorts large q-values first, smaller ones later
+         */
         static class AcceptHeaderEntryComparator implements Comparator<AcceptHeaderEntry> {
             @Override
             public int compare(AcceptHeaderEntry one, AcceptHeaderEntry two) {
@@ -248,27 +270,27 @@ public class MetricsHandler extends PipedHttpHandler {
         /**
          * Returns the correct response generator for any given accept header.
          *
-         * behaviour is:
-         * * by default, return prometheus format
-         * * if something else is wanted, return that (if available)
-         * * if Accept header cannot be satisfied, return 406 (NOT ACCEPTABLE)
+         * behaviour is: * by default, return prometheus format * if something
+         * else is wanted, return that (if available) * if Accept header cannot
+         * be satisfied, return 406 (NOT ACCEPTABLE)
          */
         public static ResponseType forAcceptHeader(String acceptHeader) {
             if (acceptHeader == null || acceptHeader.equalsIgnoreCase("*/*")) {
                 return ResponseType.PROMETHEUS;
             }
             return Arrays.stream(acceptHeader.split(","))
-                .map(String::trim)
-                .map(AcceptHeaderEntry::of).filter(Objects::nonNull) //parse
-                .sorted(new AcceptHeaderEntryComparator())       //sort by q-value
-                .flatMap(x ->   //for each entry: add the response type that is being accepted by the entry (may be multiple)
-                             Arrays.stream(ResponseType.values()).filter(rt -> rt.isAcceptableFor(x))
-                ).findFirst().orElse(null);
+                    .map(String::trim)
+                    .map(AcceptHeaderEntry::of).filter(Objects::nonNull) //parse
+                    .sorted(new AcceptHeaderEntryComparator()) //sort by q-value
+                    .flatMap(x
+                            -> //for each entry: add the response type that is being accepted by the entry (may be multiple)
+                            Arrays.stream(ResponseType.values()).filter(rt -> rt.isAcceptableFor(x))
+                    ).findFirst().orElse(null);
         }
 
         public static ResponseType forQueryParameter(String rep) {
             if (RequestContext.REPRESENTATION_FORMAT.PLAIN_JSON.name().equalsIgnoreCase(rep)
-                || RequestContext.REPRESENTATION_FORMAT.PJ.name().equalsIgnoreCase(rep)) {
+                    || RequestContext.REPRESENTATION_FORMAT.PJ.name().equalsIgnoreCase(rep)) {
                 return ResponseType.JSON;
             } else {
                 return null;
@@ -295,8 +317,10 @@ public class MetricsHandler extends PipedHttpHandler {
     }
 
     /**
-     * Finds the metric registry that is related to the request path currently being asked for.
-     * Will only write metrics in case they have been gathered - if none are there, will return null.
+     * Finds the metric registry that is related to the request path currently
+     * being asked for. Will only write metrics in case they have been gathered
+     * - if none are there, will return null.
+     *
      * @return a metric registry, or null if none match
      */
     MetricRegistry getCorrectMetricRegistry(RequestContext context) {
@@ -331,24 +355,35 @@ public class MetricsHandler extends PipedHttpHandler {
 
         if (registry != null) {
             if (context.getMethod() == METHOD.GET) {
+                // context.getRepresentationFormat().name()
                 ResponseType responseType = Optional.ofNullable(
-                        ResponseType.forQueryParameter(exchange.getRequestHeaders().getFirst(REPRESENTATION_FORMAT_KEY))
-                    ).orElseGet(() ->
-                        ResponseType.forAcceptHeader(exchange.getRequestHeaders().getFirst(Headers.ACCEPT))
-                    );
+                        ResponseType.forQueryParameter(exchange
+                                .getQueryParameters()
+                                .get(REPRESENTATION_FORMAT_KEY) == null
+                                ? null
+                                : exchange
+                                        .getQueryParameters()
+                                        .get(REPRESENTATION_FORMAT_KEY)
+                                        .getFirst())
+                ).orElseGet(()
+                        -> ResponseType.forAcceptHeader(
+                                exchange
+                                        .getRequestHeaders()
+                                        .getFirst(Headers.ACCEPT))
+                );
                 if (responseType != null) {
                     exchange.setStatusCode(HttpStatus.SC_OK);
                     responseType.writeTo(exchange, registry);
                     exchange.endExchange();
                 } else {
                     String acceptableTypes = Arrays.stream(ResponseType.values())
-                        .map(ResponseType::getContentType)
-                        .map(x -> "'" + x + "'")
-                        .collect(Collectors.joining(","));
+                            .map(ResponseType::getContentType)
+                            .map(x -> "'" + x + "'")
+                            .collect(Collectors.joining(","));
                     ResponseHelper.endExchangeWithMessage(exchange,
-                        context,
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        "not acceptable, acceptable content types are: " + acceptableTypes
+                            context,
+                            HttpStatus.SC_NOT_ACCEPTABLE,
+                            "not acceptable, acceptable content types are: " + acceptableTypes
                     );
                     next(exchange, context);
                 }
