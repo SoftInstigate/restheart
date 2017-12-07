@@ -202,6 +202,7 @@ log-file-path: /var/log/restheart.log
 enable-log-console: true
 log-level: DEBUG
 requests-log-level: 1
+metrics-gathering-level: DATABASE
 
 #### ETag policy
 
