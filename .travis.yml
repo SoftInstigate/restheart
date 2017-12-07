@@ -16,7 +16,7 @@ addons:
   apt:
     sources:
       - mongodb-upstart
-      - mongodb-3.2-trusty
+      - mongodb-3.6-trusty
     packages:
       - mongodb-org-server
       - mongodb-org-shell
