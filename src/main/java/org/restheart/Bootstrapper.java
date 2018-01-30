@@ -761,7 +761,7 @@ public class Bootstrapper {
             String db = (String) m.get(Configuration.MONGO_MOUNT_WHAT_KEY);
 
             paths.addPrefixPath(url,
-                new RequestContextInjectorHandler(url, db,
+                new RequestContextInjectorHandler(url, db, configuration.getAggregationCheckOperators(),
                     new MetricsInstrumentationHandler(
                         new RequestLoggerHandler(
                             new CORSHandler(
@@ -991,6 +991,7 @@ public class Bootstrapper {
                                 = new RequestContextInjectorHandler(
                                         "/_logic",
                                         "*",
+                                        conf.getAggregationCheckOperators(),
                                         new BodyInjectorHandler(alHandler));
 
                         if (alSecured) {
