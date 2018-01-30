@@ -60,14 +60,16 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
     private final String whereUri;
     private final String whatUri;
+    private final boolean checkAggregationOperators;
 
     /**
      *
      * @param whereUri
      * @param whatUri
+     * @param checkAggregationOperators
      * @param next
      */
-    public RequestContextInjectorHandler(String whereUri, String whatUri, PipedHttpHandler next) {
+    public RequestContextInjectorHandler(String whereUri, String whatUri, boolean checkAggregationOperators, PipedHttpHandler next) {
         super(next);
 
         if (whereUri == null) {
@@ -84,6 +86,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
         this.whereUri = URLUtils.removeTrailingSlashes(whereUri);
         this.whatUri = whatUri;
+        this.checkAggregationOperators = checkAggregationOperators;
     }
 
     /**
@@ -428,7 +431,9 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 }
 
                 // throws SecurityException if aVars contains operators
-                AggregationPipeline.checkAggregationVariables(qvars);
+                if(checkAggregationOperators) {
+                    AggregationPipeline.checkAggregationVariables(qvars);
+                }
 
                 rcontext.setAggregationVars(qvars);
             } catch (SecurityException t) {
