@@ -18,6 +18,7 @@
 package org.restheart.handlers.applicationlogic;
 
 import com.mongodb.client.MongoCollection;
+import static com.mongodb.client.model.Filters.eq;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
@@ -145,7 +146,15 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
                                         .getDatabase(params.db)
                                         .getCollection(params.coll, BsonDocument.class);
 
-                                mcoll.insertMany(documents);
+                                if (params.update) {
+                                    documents.stream().forEach(document -> {
+                                        mcoll.findOneAndUpdate(eq("_id", document.get("_id")),
+                                                new BsonDocument("$set", document));
+                                    });
+                                } else {
+
+                                    mcoll.insertMany(documents);
+                                }
                                 exchange.setStatusCode(HttpStatus.SC_OK);
                             } else {
                                 exchange.setStatusCode(HttpStatus.SC_NOT_MODIFIED);
@@ -304,12 +313,14 @@ class CsvRequestParams {
     private static final String TRANFORMER_QPARAM_NAME = "transformer";
     private static final String PROP_KEYS_NAME = "props";
     private static final String PROP_VALUES_NAME = "values";
+    private static final String UPDATE_QPARAM_NAME = "update";
 
     public final int idIdx;
     public final String db;
     public final String coll;
     public final String sep;
     public final Transformer transformer;
+    public final boolean update;
 
     public final Deque<String> props;
     public final Deque<String> values;
@@ -320,6 +331,7 @@ class CsvRequestParams {
         Deque<String> _sep = exchange.getQueryParameters().get(SEPARATOR_QPARAM_NAME);
         Deque<String> _id = exchange.getQueryParameters().get(ID_IDX_QPARAM_NAME);
         Deque<String> _tranformer = exchange.getQueryParameters().get(TRANFORMER_QPARAM_NAME);
+        Deque<String> _update = exchange.getQueryParameters().get(UPDATE_QPARAM_NAME);
 
         this.props = exchange.getQueryParameters().get(PROP_KEYS_NAME);
         this.values = exchange.getQueryParameters().get(PROP_VALUES_NAME);
@@ -351,5 +363,7 @@ class CsvRequestParams {
         } else {
             transformer = null;
         }
+
+        update = _update != null && !_update.isEmpty();
     }
 }
