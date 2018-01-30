@@ -23,10 +23,10 @@ under the License.
     <link>http://www.restheart.org</link>
     <description>Restheart - Checkstyle report</description>
     <language>en-us</language>
-    <copyright>&#169;2014 - 2017 SoftInstigate</copyright>
+    <copyright>&#169;2014 - 2018 SoftInstigate</copyright>
     <item>
       <title>File: 203,
-             Errors: 3119,
+             Errors: 3121,
              Warnings: 0,
              Infos: 0
       </title>
@@ -2071,7 +2071,7 @@ under the License.
                   0
                 </td>
                 <td>
-                  46
+                  48
                 </td>
               </tr>
                           <tr>
