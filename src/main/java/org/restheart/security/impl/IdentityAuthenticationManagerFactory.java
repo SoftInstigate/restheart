@@ -40,7 +40,7 @@ public class IdentityAuthenticationManagerFactory implements AuthenticationMecha
     @Override
     public AuthenticationMechanism build(Map<String, Object> args, IdentityManager idm) {
         // get credentials from configuration arguments
-        
+
         final String username = (String) args.get("username");
         final String pwd = (String) args.get("pwd");
 
@@ -49,7 +49,7 @@ public class IdentityAuthenticationManagerFactory implements AuthenticationMecha
             public AuthenticationMechanism.AuthenticationMechanismOutcome authenticate(HttpServerExchange hse, SecurityContext sc) {
                 // verify the credentials against the configured IdentityManager
                 Account sa = idm.verify(username, new PasswordCredential(pwd.toCharArray()));
-
+                
                 if (sa != null) {
                     sc.authenticationComplete(sa,
                             "IdentityAuthenticationManager", false);

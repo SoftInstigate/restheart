@@ -81,7 +81,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         }
 
         if (!whatUri.startsWith("/") && !whatUri.equals("*")) {
-            throw new IllegalArgumentException("whatUri must start with \"/\". check your mongo-mounts");
+            throw new IllegalArgumentException("whatUri must be * (all db resorces) or start with \"/\". (eg. /db/coll) check your mongo-mounts");
         }
 
         this.whereUri = URLUtils.removeTrailingSlashes(whereUri);

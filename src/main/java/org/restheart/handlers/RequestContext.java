@@ -23,6 +23,7 @@ import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
+import io.undertow.util.PathTemplateMatch;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -31,6 +32,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
@@ -156,22 +159,22 @@ public final class RequestContext {
                 type = TYPE.DOCUMENT;
             }
         } else if (pathTokens.length >= 3
-                   && pathTokens[2].endsWith(_SCHEMAS)) {
+                && pathTokens[2].endsWith(_SCHEMAS)) {
             if (pathTokens.length == 3) {
                 type = TYPE.SCHEMA_STORE;
             } else {
                 type = TYPE.SCHEMA;
             }
         } else if (pathTokens.length >= 3
-                   && pathTokens[2].equalsIgnoreCase(_METRICS)) {
+                && pathTokens[2].equalsIgnoreCase(_METRICS)) {
             type = TYPE.METRICS;
         } else if (pathTokens.length < 4) {
             type = TYPE.COLLECTION;
         } else if (pathTokens.length == 4
-                   && pathTokens[3].equalsIgnoreCase(_METRICS)) {
+                && pathTokens[3].equalsIgnoreCase(_METRICS)) {
             type = TYPE.METRICS;
         } else if (pathTokens.length == 4
-                   && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
+                && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.COLLECTION_INDEXES;
         } else if (pathTokens.length == 4
                 && pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
@@ -198,13 +201,11 @@ public final class RequestContext {
      * @return true if the dbName is a reserved resource
      */
     public static boolean isReservedResourceDb(String dbName) {
-        return !dbName.equalsIgnoreCase(_METRICS) && (
-                   dbName.equals(ADMIN)
+        return !dbName.equalsIgnoreCase(_METRICS) && (dbName.equals(ADMIN)
                 || dbName.equals(LOCAL)
                 || dbName.startsWith(SYSTEM)
                 || dbName.startsWith(UNDERSCORE)
-                || dbName.equals(RESOURCES_WILDCARD_KEY)
-        );
+                || dbName.equals(RESOURCES_WILDCARD_KEY));
     }
 
     /**
@@ -312,6 +313,9 @@ public final class RequestContext {
 
     private long requestStartTime = System.currentTimeMillis();
 
+    // path template match
+    private PathTemplateMatch pathTemplateMatch;
+
     /**
      *
      * @param exchange the url rewriting feature is implemented by the whatUri
@@ -351,6 +355,14 @@ public final class RequestContext {
                         : "/" + whatUri);
 
         this.mappedUri = exchange.getRequestPath();
+
+        if (exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY) != null) {
+            this.pathTemplateMatch = exchange
+                    .getAttachment(PathTemplateMatch.ATTACHMENT_KEY);
+        } else {
+            this.pathTemplateMatch = null;
+        }
+
         this.unmappedUri = unmapUri(exchange.getRequestPath());
 
         // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
@@ -377,12 +389,21 @@ public final class RequestContext {
     /**
      * given a mapped uri (/some/mapping/coll) returns the canonical uri
      * (/db/coll) URLs are mapped to mongodb resources by using the mongo-mounts
-     * configuration properties
+     * configuration properties. note that the mapped uri can make use of path
+     * templates (/some/{path}/template/*)
      *
      * @param mappedUri
      * @return
      */
-    public String unmapUri(String mappedUri) {
+    private String unmapUri(String mappedUri) {
+        if (this.pathTemplateMatch == null) {
+            return unmapPathUri(mappedUri);
+        } else {
+            return unmapPathTemplateUri(mappedUri);
+        }
+    }
+
+    private String unmapPathUri(String mappedUri) {
         String ret = URLUtils.removeTrailingSlashes(mappedUri);
 
         if (whatUri.equals("*")) {
@@ -404,6 +425,70 @@ public final class RequestContext {
         return ret;
     }
 
+    private String unmapPathTemplateUri(String mappedUri) {
+        String ret = URLUtils.removeTrailingSlashes(mappedUri);
+        String rewriteUri;
+
+        // path template with variables resolved to actual values
+        rewriteUri = this.pathTemplateMatch.getMatchedTemplate();
+
+        // remove trailing wildcard from template
+        if (rewriteUri.endsWith("/*")) {
+            rewriteUri = rewriteUri.substring(0, rewriteUri.length() - 2);
+        }
+
+        // collect params
+        this.pathTemplateMatch
+                .getParameters()
+                .keySet()
+                .stream()
+                .filter(key -> !key.equals("*"))
+                .collect(Collectors.toMap(
+                        key -> key,
+                        key -> this.pathTemplateMatch
+                                .getParameters().get(key)));
+
+        // replace params with actual values
+        for (String key : this.pathTemplateMatch
+                .getParameters().keySet()) {
+            rewriteUri = rewriteUri.replace(
+                    "{".concat(key).concat("}"),
+                    this.pathTemplateMatch
+                            .getParameters().get(key));
+        }
+
+        String whatUri = new String(this.whatUri);
+
+        // replace params with in whatUri
+        // eg what: /{account}, where: /{account/*
+        for (String key : this.pathTemplateMatch
+                .getParameters().keySet()) {
+            whatUri = whatUri.replace(
+                    "{".concat(key).concat("}"),
+                    this.pathTemplateMatch
+                            .getParameters().get(key));
+        }
+
+        // now replace mappedUri with resolved path template
+        if (whatUri.equals("*")) {
+            if (!this.whereUri.equals(SLASH)) {
+                ret = ret.replaceFirst("^" + rewriteUri, "");
+            }
+        } else if (!this.whereUri.equals(SLASH)) {
+            ret = URLUtils.removeTrailingSlashes(
+                    ret.replaceFirst("^" + rewriteUri, whatUri));
+        } else {
+            ret = URLUtils.removeTrailingSlashes(
+                    URLUtils.removeTrailingSlashes(whatUri) + ret);
+        }
+
+        if (ret.isEmpty()) {
+            ret = SLASH;
+        }
+
+        return ret;
+    }
+
     /**
      * given a canonical uri (/db/coll) returns the mapped uri
      * (/some/mapping/uri) relative to this context. URLs are mapped to mongodb
@@ -413,6 +498,14 @@ public final class RequestContext {
      * @return
      */
     public String mapUri(String unmappedUri) {
+        if (this.pathTemplateMatch == null) {
+            return mapPathUri(unmappedUri);
+        } else {
+            return mapPathTemplateUri(unmappedUri);
+        }
+    }
+    
+    private String mapPathUri(String unmappedUri) {
         String ret = URLUtils.removeTrailingSlashes(unmappedUri);
 
         if (whatUri.equals("*")) {
@@ -422,6 +515,67 @@ public final class RequestContext {
         } else {
             ret = URLUtils.removeTrailingSlashes(
                     ret.replaceFirst("^" + this.whatUri, this.whereUri));
+        }
+
+        if (ret.isEmpty()) {
+            ret = SLASH;
+        }
+
+        return ret;
+    }
+    
+    private String mapPathTemplateUri(String unmappedUri) {
+        String ret = URLUtils.removeTrailingSlashes(unmappedUri);
+        String rewriteUri;
+
+        // path template with variables resolved to actual values
+        rewriteUri = this.pathTemplateMatch.getMatchedTemplate();
+
+        // remove trailing wildcard from template
+        if (rewriteUri.endsWith("/*")) {
+            rewriteUri = rewriteUri.substring(0, rewriteUri.length() - 2);
+        }
+
+        // collect params
+        this.pathTemplateMatch
+                .getParameters()
+                .keySet()
+                .stream()
+                .filter(key -> !key.equals("*"))
+                .collect(Collectors.toMap(
+                        key -> key,
+                        key -> this.pathTemplateMatch
+                                .getParameters().get(key)));
+
+        // replace params with actual values
+        for (String key : this.pathTemplateMatch
+                .getParameters().keySet()) {
+            rewriteUri = rewriteUri.replace(
+                    "{".concat(key).concat("}"),
+                    this.pathTemplateMatch
+                            .getParameters().get(key));
+        }
+
+        String whatUri = new String(this.whatUri);
+
+        // replace params with in whatUri
+        // eg what: /{prefix}_db, where: /{prefix}/*
+        for (String key : this.pathTemplateMatch
+                .getParameters().keySet()) {
+            whatUri = whatUri.replace(
+                    "{".concat(key).concat("}"),
+                    this.pathTemplateMatch
+                            .getParameters().get(key));
+        }
+
+        // now replace mappedUri with resolved path template
+        if (whatUri.equals("*")) {
+            if (!this.whereUri.equals(SLASH)) {
+                return rewriteUri + unmappedUri;
+            }
+        } else {
+            ret = URLUtils.removeTrailingSlashes(
+                    ret.replaceFirst("^" + whatUri, rewriteUri));
         }
 
         if (ret.isEmpty()) {
@@ -810,6 +964,20 @@ public final class RequestContext {
      */
     public String getMappedRequestUri() {
         return mappedUri;
+    }
+
+    /**
+     * if mongo-mounts specifies a path template (i.e. /{foo}/*) this returns
+     * the request template parameters (/x/y => foo=x, *=y)
+     *
+     * @return
+     */
+    public Map<String, String> getPathTemplateParamenters() {
+        if (this.pathTemplateMatch == null) {
+            return null;
+        } else {
+            return this.pathTemplateMatch.getParameters();
+        }
     }
 
     /**
@@ -1497,4 +1665,5 @@ public final class RequestContext {
         REQUIRED_FOR_DELETE, // only requires the etag for DELETE, return PRECONDITION FAILED if missing
         OPTIONAL                // checks the etag only if provided by client via If-Match header
     }
+
 }
