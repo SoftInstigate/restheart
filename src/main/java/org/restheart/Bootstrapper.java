@@ -17,10 +17,10 @@
  */
 package org.restheart;
 
-import com.codahale.metrics.SharedMetricRegistries;
 import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.undertow.Handlers.path;
+import static io.undertow.Handlers.pathTemplate;
 import static io.undertow.Handlers.resource;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
@@ -31,6 +31,7 @@ import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
 import io.undertow.server.handlers.PathHandler;
+import io.undertow.server.handlers.PathTemplateHandler;
 import io.undertow.server.handlers.RequestLimit;
 import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.server.handlers.resource.FileResourceManager;
@@ -739,6 +740,14 @@ public class Bootstrapper {
         System.exit(status);
     }
 
+    private static boolean isPathTemplate(final String url) {
+        if (url == null) {
+            return false;
+        } else {
+            return url.contains("{") && url.contains("}");
+        }
+    }
+
     /**
      * getHandlersPipe
      *
@@ -755,27 +764,57 @@ public class Bootstrapper {
                                 )));
 
         PathHandler paths = path();
+        PathTemplateHandler pathsTemplates = pathTemplate(false);
 
-        configuration.getMongoMounts().stream().forEach(m -> {
-            String url = (String) m.get(Configuration.MONGO_MOUNT_WHERE_KEY);
-            String db = (String) m.get(Configuration.MONGO_MOUNT_WHAT_KEY);
+        // check that all mounts are either all paths or all path templates
+        boolean allPathTemplates = configuration.getMongoMounts()
+                .stream()
+                .map(m -> (String) m.get(Configuration.MONGO_MOUNT_WHERE_KEY))
+                .allMatch(url -> isPathTemplate(url));
 
-            paths.addPrefixPath(url,
-                new RequestContextInjectorHandler(url, db, configuration.getAggregationCheckOperators(),
-                    new MetricsInstrumentationHandler(
-                        new RequestLoggerHandler(
-                            new CORSHandler(
+
+        boolean allPaths = configuration.getMongoMounts()
+                .stream()
+                .map(m -> (String) m.get(Configuration.MONGO_MOUNT_WHERE_KEY))
+                .allMatch(url -> !isPathTemplate(url));
+
+        final PipedHttpHandler baseChain = new MetricsInstrumentationHandler(
+                new RequestLoggerHandler(
+                        new CORSHandler(
                                 new OptionsHandler(
-                                    new BodyInjectorHandler(
-                                        new SecurityHandlerDispacher(
-                                                coreHandlerChain,
-                                                authenticationMechanism,
-                                                identityManager,
-                                                accessManager))))
-                ))));
+                                        new BodyInjectorHandler(
+                                                new SecurityHandlerDispacher(
+                                                        coreHandlerChain,
+                                                        authenticationMechanism,
+                                                        identityManager,
+                                                        accessManager))))));
 
-            LOGGER.info("URL {} bound to MongoDB resource {}", url, db);
-        });
+        if (!allPathTemplates && !allPaths) {
+            LOGGER.error("No mongo resource mounted! Check your mongo-mounts. where url must be either all absolute paths or all path templates");
+        } else {
+            configuration.getMongoMounts().stream().forEach(m -> {
+                String url = (String) m.get(Configuration.MONGO_MOUNT_WHERE_KEY);
+                String db = (String) m.get(Configuration.MONGO_MOUNT_WHAT_KEY);
+
+                PipedHttpHandler pipe = new RequestContextInjectorHandler(
+                        url, 
+                        db, 
+                        configuration.getAggregationCheckOperators(), 
+                        baseChain);
+
+                if (allPathTemplates) {
+                    pathsTemplates.add(url, pipe);
+                } else {
+                    paths.addPrefixPath(url, pipe);
+                }
+
+                LOGGER.info("URL {} bound to MongoDB resource {}", url, db);
+            });
+
+            if (allPathTemplates) {
+                paths.addPrefixPath("/", pathsTemplates);
+            }
+        }
 
         pipeStaticResourcesHandlers(configuration, paths, authenticationMechanism, identityManager, accessManager);
 
