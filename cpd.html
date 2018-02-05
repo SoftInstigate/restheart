@@ -152,6 +152,64 @@
 <th>File</th>
 <th>Line</th></tr>
 <tr class="b">
+<td>org/restheart/handlers/RequestContext.java</td>
+<td>429</td></tr>
+<tr class="a">
+<td>org/restheart/handlers/RequestContext.java</td>
+<td>528</td></tr>
+<tr class="b"><td colspan='2'>
+<div>
+<pre>        String ret = URLUtils.removeTrailingSlashes(mappedUri);
+        String rewriteUri;
+
+        // path template with variables resolved to actual values
+        rewriteUri = this.pathTemplateMatch.getMatchedTemplate();
+
+        // remove trailing wildcard from template
+        if (rewriteUri.endsWith(&quot;/*&quot;)) {
+            rewriteUri = rewriteUri.substring(0, rewriteUri.length() - 2);
+        }
+
+        // collect params
+        this.pathTemplateMatch
+                .getParameters()
+                .keySet()
+                .stream()
+                .filter(key -&gt; !key.equals(&quot;*&quot;))
+                .collect(Collectors.toMap(
+                        key -&gt; key,
+                        key -&gt; this.pathTemplateMatch
+                                .getParameters().get(key)));
+
+        // replace params with actual values
+        for (String key : this.pathTemplateMatch
+                .getParameters().keySet()) {
+            rewriteUri = rewriteUri.replace(
+                    &quot;{&quot;.concat(key).concat(&quot;}&quot;),
+                    this.pathTemplateMatch
+                            .getParameters().get(key));
+        }
+
+        String whatUri = new String(this.whatUri);
+
+        // replace params with in whatUri
+        // eg what: /{account}, where: /{account/*
+        for (String key : this.pathTemplateMatch
+                .getParameters().keySet()) {
+            whatUri = whatUri.replace(
+                    &quot;{&quot;.concat(key).concat(&quot;}&quot;),
+                    this.pathTemplateMatch
+                            .getParameters().get(key));
+        }
+
+        // now replace mappedUri with resolved path template
+        if (whatUri.equals(&quot;*&quot;)) {
+            if (!this.whereUri.equals(SLASH)) {</pre></div></td></tr></table>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>File</th>
+<th>Line</th></tr>
+<tr class="b">
 <td>org/restheart/handlers/collection/PatchCollectionHandler.java</td>
 <td>120</td></tr>
 <tr class="a">
