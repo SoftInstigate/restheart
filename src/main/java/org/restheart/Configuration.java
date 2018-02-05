@@ -210,6 +210,11 @@ public class Configuration {
     private static final String AGGREGATION_TIME_LIMIT_KEY = "aggregation-time-limit";
 
     /**
+     * The key for enabling check that aggregation variables contains operators.
+     */
+    public static final String AGGREGATION_CHECK_OPERATORS = "aggregation-check-operators";
+
+    /**
      * the key for the enable-log-file property.
      */
     public static final String ENABLE_LOG_FILE_KEY = "enable-log-file";
@@ -610,6 +615,7 @@ public class Configuration {
     private final METRICS_GATHERING_LEVEL metricsGatheringLevel;
     private final long queryTimeLimit;
     private final long aggregationTimeLimit;
+    private final boolean aggregationCheckOperators;
     private final boolean ansiConsole;
     
     /**
@@ -695,6 +701,7 @@ public class Configuration {
 
         queryTimeLimit = 0;
         aggregationTimeLimit = 0;
+        aggregationCheckOperators = true;
 
         ioThreads = 2;
         workerThreads = 32;
@@ -855,6 +862,7 @@ public class Configuration {
 
         queryTimeLimit = getAsLongOrDefault(conf, QUERY_TIME_LIMIT_KEY, (long) 0);
         aggregationTimeLimit = getAsLongOrDefault(conf, AGGREGATION_TIME_LIMIT_KEY, (long) 0);
+        aggregationCheckOperators = getAsBooleanOrDefault(conf, AGGREGATION_CHECK_OPERATORS, true);
 
         localCacheEnabled = getAsBooleanOrDefault(conf, LOCAL_CACHE_ENABLED_KEY, true);
         localCacheTtl = getAsLongOrDefault(conf, LOCAL_CACHE_TTL_KEY, (long) 1000);
@@ -955,7 +963,7 @@ public class Configuration {
 
     @Override
     public String toString() {
-        return "Configuration{" + "silent=" + silent + ", httpsListener=" + httpsListener + ", httpsPort=" + httpsPort + ", httpsHost=" + httpsHost + ", httpListener=" + httpListener + ", httpPort=" + httpPort + ", httpHost=" + httpHost + ", ajpListener=" + ajpListener + ", ajpPort=" + ajpPort + ", ajpHost=" + ajpHost + ", instanceName=" + instanceName + ", defaultRepresentationFromat=" + defaultRepresentationFromat + ", useEmbeddedKeystore=" + useEmbeddedKeystore + ", keystoreFile=" + keystoreFile + ", keystorePassword=" + keystorePassword + ", certPassword=" + certPassword + ", mongoUri=" + mongoUri + ", mongoMounts=" + mongoMounts + ", staticResourcesMounts=" + staticResourcesMounts + ", applicationLogicMounts=" + applicationLogicMounts + ", metadataNamedSingletons=" + metadataNamedSingletons + ", idmImpl=" + idmImpl + ", idmArgs=" + idmArgs + ", authMechanismImpl=" + authMechanismImpl + ", authMechanismArgs=" + authMechanismArgs + ", amImpl=" + amImpl + ", amArgs=" + amArgs + ", logFilePath=" + logFilePath + ", logLevel=" + logLevel + ", logToConsole=" + logToConsole + ", logToFile=" + logToFile + ", localCacheEnabled=" + localCacheEnabled + ", localCacheTtl=" + localCacheTtl + ", schemaCacheEnabled=" + schemaCacheEnabled + ", schemaCacheTtl=" + schemaCacheTtl + ", requestsLimit=" + requestsLimit + ", ioThreads=" + ioThreads + ", workerThreads=" + workerThreads + ", bufferSize=" + bufferSize + ", buffersPerRegion=" + buffersPerRegion + ", directBuffers=" + directBuffers + ", forceGzipEncoding=" + forceGzipEncoding + ", eagerPoolSize=" + eagerPoolSize + ", eagerLinearSliceWidht=" + eagerLinearSliceWidht + ", eagerLinearSliceDelta=" + eagerLinearSliceDelta + ", eagerLinearSliceHeights=" + Arrays.toString(eagerLinearSliceHeights) + ", eagerRndSliceMinWidht=" + eagerRndSliceMinWidht + ", eagerRndMaxCursors=" + eagerRndMaxCursors + ", authTokenEnabled=" + authTokenEnabled + ", authTokenTtl=" + authTokenTtl + ", dbEtagCheckPolicy=" + dbEtagCheckPolicy + ", collEtagCheckPolicy=" + collEtagCheckPolicy + ", docEtagCheckPolicy=" + docEtagCheckPolicy + ", connectionOptions=" + connectionOptions + ", logExchangeDump=" + logExchangeDump + ", metricsGatheringLevel=" + metricsGatheringLevel + ", queryTimeLimit=" + queryTimeLimit + ", aggregationTimeLimit=" + aggregationTimeLimit + ", ansiConsole=" + ansiConsole + '}';
+        return "Configuration{" + "silent=" + silent + ", httpsListener=" + httpsListener + ", httpsPort=" + httpsPort + ", httpsHost=" + httpsHost + ", httpListener=" + httpListener + ", httpPort=" + httpPort + ", httpHost=" + httpHost + ", ajpListener=" + ajpListener + ", ajpPort=" + ajpPort + ", ajpHost=" + ajpHost + ", instanceName=" + instanceName + ", defaultRepresentationFromat=" + defaultRepresentationFromat + ", useEmbeddedKeystore=" + useEmbeddedKeystore + ", keystoreFile=" + keystoreFile + ", keystorePassword=" + keystorePassword + ", certPassword=" + certPassword + ", mongoUri=" + mongoUri + ", mongoMounts=" + mongoMounts + ", staticResourcesMounts=" + staticResourcesMounts + ", applicationLogicMounts=" + applicationLogicMounts + ", metadataNamedSingletons=" + metadataNamedSingletons + ", idmImpl=" + idmImpl + ", idmArgs=" + idmArgs + ", authMechanismImpl=" + authMechanismImpl + ", authMechanismArgs=" + authMechanismArgs + ", amImpl=" + amImpl + ", amArgs=" + amArgs + ", logFilePath=" + logFilePath + ", logLevel=" + logLevel + ", logToConsole=" + logToConsole + ", logToFile=" + logToFile + ", localCacheEnabled=" + localCacheEnabled + ", localCacheTtl=" + localCacheTtl + ", schemaCacheEnabled=" + schemaCacheEnabled + ", schemaCacheTtl=" + schemaCacheTtl + ", requestsLimit=" + requestsLimit + ", ioThreads=" + ioThreads + ", workerThreads=" + workerThreads + ", bufferSize=" + bufferSize + ", buffersPerRegion=" + buffersPerRegion + ", directBuffers=" + directBuffers + ", forceGzipEncoding=" + forceGzipEncoding + ", eagerPoolSize=" + eagerPoolSize + ", eagerLinearSliceWidht=" + eagerLinearSliceWidht + ", eagerLinearSliceDelta=" + eagerLinearSliceDelta + ", eagerLinearSliceHeights=" + Arrays.toString(eagerLinearSliceHeights) + ", eagerRndSliceMinWidht=" + eagerRndSliceMinWidht + ", eagerRndMaxCursors=" + eagerRndMaxCursors + ", authTokenEnabled=" + authTokenEnabled + ", authTokenTtl=" + authTokenTtl + ", dbEtagCheckPolicy=" + dbEtagCheckPolicy + ", collEtagCheckPolicy=" + collEtagCheckPolicy + ", docEtagCheckPolicy=" + docEtagCheckPolicy + ", connectionOptions=" + connectionOptions + ", logExchangeDump=" + logExchangeDump + ", metricsGatheringLevel=" + metricsGatheringLevel + ", queryTimeLimit=" + queryTimeLimit + ", aggregationTimeLimit=" + aggregationTimeLimit + ", aggregationCheckOperators=" + aggregationCheckOperators + ", ansiConsole=" + ansiConsole + '}';
     }
 
     /**
@@ -1443,6 +1451,13 @@ public class Configuration {
      */
     public long getAggregationTimeLimit() {
         return aggregationTimeLimit;
+    }
+
+    /**
+     * @return the aggregationCheckOperators
+     */
+    public boolean getAggregationCheckOperators() {
+        return aggregationCheckOperators;
     }
 
     /**
