@@ -18,7 +18,6 @@
 package org.restheart.handlers.applicationlogic;
 
 import com.mongodb.client.MongoCollection;
-import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
@@ -73,6 +72,8 @@ import org.slf4j.LoggerFactory;
 public class CsvLoaderHandler extends ApplicationLogicHandler {
 
     public static final String CVS_CONTENT_TYPE = "text/csv";
+    
+    public static final String FILTER_PROPERTY = "_filter";
 
     private static final Logger LOGGER
             = LoggerFactory.getLogger(CsvLoaderHandler.class);
@@ -154,7 +155,17 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
 
                                 if (params.update) {
                                     documents.stream().forEach(document -> {
-                                        mcoll.findOneAndUpdate(eq("_id", document.get("_id")),
+                                        BsonDocument updateQuery = new BsonDocument("_id", document.remove("_id"));
+
+                                        // for upate import, take _filter property into account
+                                        // for instance, a filter allows to use $ positional array operator
+                                        BsonValue _filter = document.remove(FILTER_PROPERTY);
+
+                                        if (_filter != null && _filter.isDocument()) {
+                                            updateQuery.putAll(_filter.asDocument());
+                                        }
+
+                                        mcoll.findOneAndUpdate(updateQuery,
                                                 new BsonDocument("$set", document),
                                                 FAU_NO_UPSERT_OPS);
                                     });

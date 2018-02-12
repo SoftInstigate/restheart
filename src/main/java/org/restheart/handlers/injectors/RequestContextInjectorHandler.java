@@ -17,12 +17,10 @@
  */
 package org.restheart.handlers.injectors;
 
-import com.mongodb.util.JSON;
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Optional;
-import org.bson.BSONObject;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
