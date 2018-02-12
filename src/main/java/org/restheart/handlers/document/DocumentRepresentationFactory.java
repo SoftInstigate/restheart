@@ -127,7 +127,6 @@ public class DocumentRepresentationFactory {
             parentPath = URLUtils.getParentPath(requestPath);
         }
 
-        String _docIdType = null;
         if (isBinaryFile(data)) {
             rep.addLink(new Link("rh:data",
                     String.format("%s/%s", href, RequestContext.BINARY_CONTENT)));
