@@ -64,7 +64,7 @@ public class ContentSizeChecker implements Checker {
             Integer minSize = null;
             Object _minSize = condition.get("min");
 
-            if (_minSize != null && _minSize instanceof Integer) {
+            if (_minSize != null) {
                 minSize = (Integer) _minSize;
             }
 
