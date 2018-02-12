@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public final class RequestContext {
+public class RequestContext {
 
     private static final Logger LOGGER
             = LoggerFactory.getLogger(RequestContext.class);
@@ -311,10 +311,10 @@ public final class RequestContext {
      */
     private HAL_MODE halMode = HAL_MODE.FULL;
 
-    private long requestStartTime = System.currentTimeMillis();
+    private final long requestStartTime = System.currentTimeMillis();
 
     // path template match
-    private PathTemplateMatch pathTemplateMatch;
+    private final PathTemplateMatch pathTemplateMatch;
 
     /**
      *
@@ -457,7 +457,7 @@ public final class RequestContext {
                             .getParameters().get(key));
         }
 
-        String whatUri = new String(this.whatUri);
+        String whatUri = this.whatUri;
 
         // replace params with in whatUri
         // eg what: /{account}, where: /{account/*
@@ -556,7 +556,7 @@ public final class RequestContext {
                             .getParameters().get(key));
         }
 
-        String whatUri = new String(this.whatUri);
+        String whatUri = this.whatUri;
 
         // replace params with in whatUri
         // eg what: /{prefix}_db, where: /{prefix}/*

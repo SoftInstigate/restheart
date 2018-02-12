@@ -18,10 +18,8 @@
 package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
-
 import java.util.HashMap;
 import java.util.Map;
-
 import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.aggregation.AggregationTransformer;
@@ -75,7 +73,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public final class RequestDispatcherHandler extends PipedHttpHandler {
+public class RequestDispatcherHandler extends PipedHttpHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestDispatcherHandler.class);
 
@@ -310,7 +308,6 @@ public final class RequestDispatcherHandler extends PipedHttpHandler {
                                         new AfterWriteCheckMetadataHandler(
                                                 respTransformers())))));
          */
-
         // *** AGGREGATION handler
         putPipedHttpHandler(TYPE.AGGREGATION, METHOD.GET,
                 new RequestTransformerMetadataHandler(
@@ -368,7 +365,6 @@ public final class RequestDispatcherHandler extends PipedHttpHandler {
                 new RequestTransformerMetadataHandler(
                         new DeleteDocumentHandler(
                                 respTransformers())));
-
 
         putPipedHttpHandler(TYPE.METRICS, METHOD.GET, new MetricsHandler(respTransformers()));
     }
