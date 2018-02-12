@@ -261,7 +261,6 @@ public class Minify {
 
             case OUTPUT_CURR:
                 out.write(currChar);
-                break;
 
             case DELETE_CURR:
                 currChar = nextChar;
@@ -283,7 +282,6 @@ public class Minify {
                         }
                     }
                 }
-                break;
 
             case DELETE_NEXT:
                 nextChar = next();
@@ -306,7 +304,6 @@ public class Minify {
                     }
                     nextChar = next();
                 }
-                break;
         }
     }
 
