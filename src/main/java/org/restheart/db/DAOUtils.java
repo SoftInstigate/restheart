@@ -20,24 +20,20 @@ package org.restheart.db;
 import com.mongodb.MongoCommandException;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.MongoCollection;
-
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
-
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.model.UpdateOneModel;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
 import com.mongodb.client.result.UpdateResult;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
@@ -45,9 +41,7 @@ import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
-
 import static org.restheart.utils.RequestHelper.UPDATE_OPERATORS;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,8 +76,7 @@ public class DAOUtils {
 
     /**
      *
-     * @param newContent
-     *            the value of newContent
+     * @param newContent the value of newContent
      * @return a not null BsonDocument
      */
     protected static BsonDocument validContent(final BsonDocument newContent) {
@@ -93,13 +86,12 @@ public class DAOUtils {
     /**
      *
      * @param coll
-     * @param documentId
-     *            use Optional.empty() to specify no documentId (null is
-     *            _id: null)
+     * @param documentId use Optional.empty() to specify no documentId (null is
+     * _id: null)
      * @param shardKeys
      * @param data
-     * @param patching
-     *            Whether we want to patch the metadata or replace it entirely.
+     * @param patching Whether we want to patch the metadata or replace it
+     * entirely.
      * @return the old document
      */
     public static OperationResult updateMetadata(
@@ -124,9 +116,8 @@ public class DAOUtils {
     /**
      *
      * @param coll
-     * @param documentId
-     *            use Optional.empty() to specify no documentId (null is
-     *            _id: null)
+     * @param documentId use Optional.empty() to specify no documentId (null is
+     * _id: null)
      * @param shardKeys
      * @param data
      * @param replace
@@ -153,21 +144,19 @@ public class DAOUtils {
 
     /**
      * Update a mongo document<br>
-     * <strong>TODO</strong> - Think about changing the numerous arguments into a context
+     * <strong>TODO</strong> - Think about changing the numerous arguments into
+     * a context
      *
      * @param coll
-     * @param documentId
-     *            use Optional.empty() to specify no documentId (null is
-     *            _id: null)
+     * @param documentId use Optional.empty() to specify no documentId (null is
+     * _id: null)
      * @param shardKeys
      * @param data
      * @param replace
      * @param returnNew
-     * @param deepPatching
-     *            if true then we will flatten any nested BsonDocuments
-     *            into dot notation to ensure only the requested fields are updated.
-     * @param allowUpsert
-     *            whether or not to allow upsert mode
+     * @param deepPatching if true then we will flatten any nested BsonDocuments
+     * into dot notation to ensure only the requested fields are updated.
+     * @param allowUpsert whether or not to allow upsert mode
      * @return the new or old document depending on returnNew
      */
     @SuppressWarnings("rawtypes")
@@ -296,8 +285,8 @@ public class DAOUtils {
             query = eq("_id", documentId);
         } else {
             query = and(eq("_id", documentId), eq(
-                    etagLocation != null && !etagLocation.isEmpty() ?
-                            etagLocation : "_etag", etag));
+                    etagLocation != null && !etagLocation.isEmpty()
+                    ? etagLocation : "_etag", etag));
         }
 
         if (shardKeys != null) {
@@ -375,7 +364,7 @@ public class DAOUtils {
                                 _filter,
                                 getUpdateDocument(document),
                                 new UpdateOptions().upsert(true)
-                                ));
+                        ));
                     }
                 });
 
@@ -394,8 +383,8 @@ public class DAOUtils {
     /**
      *
      * @param data
-     * @param flatten
-     *            if we should flatten nested documents' values using dot notation
+     * @param flatten if we should flatten nested documents' values using dot
+     * notation
      * @return the document for update operation, with proper update operators
      */
     public static BsonDocument getUpdateDocument(BsonDocument data, boolean flatten) {
@@ -420,12 +409,12 @@ public class DAOUtils {
 
             setKeys.stream().forEach((String key)
                     -> {
-                        if (flatten) {
-                            flatten(null, key, data, set);
-                        } else {
-                            set.append(key, data.get(key));
-                        }
-                    });
+                if (flatten) {
+                    flatten(null, key, data, set);
+                } else {
+                    set.append(key, data.get(key));
+                }
+            });
 
             if (!set.isEmpty()) {
                 if (ret.get("$set") == null) {

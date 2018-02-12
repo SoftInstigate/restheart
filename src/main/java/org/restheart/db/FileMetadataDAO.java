@@ -17,10 +17,11 @@
  */
 package org.restheart.db;
 
+import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
-
 import java.util.Objects;
-
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
@@ -28,12 +29,9 @@ import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
 
-import com.mongodb.MongoClient;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-
 /**
- * This DAO takes care of changes to metadata for binary files that have been created using GridFS.
+ * This DAO takes care of changes to metadata for binary files that have been
+ * created using GridFS.
  *
  * @author Nath Papadacis {@literal <nath@thirststudios.co.uk>}
  */
@@ -79,8 +77,8 @@ public class FileMetadataDAO implements FileMetadataRepository {
             if (oldDocument == null) { // Attempted an insert of a new doc.
                 return new OperationResult(
                         updateResult.getHttpCode() > 0
-                                ? updateResult.getHttpCode()
-                                : HttpStatus.SC_CONFLICT, newEtag, null, updateResult.getNewData());
+                        ? updateResult.getHttpCode()
+                        : HttpStatus.SC_CONFLICT, newEtag, null, updateResult.getNewData());
             } else if (checkEtag) {
                 // check the old etag (in case restore the old document version)
                 return optimisticCheckEtag(
@@ -113,13 +111,13 @@ public class FileMetadataDAO implements FileMetadataRepository {
 
             return new OperationResult(
                     updateResult.getHttpCode() > 0
-                            ? updateResult.getHttpCode()
-                            : HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
+                    ? updateResult.getHttpCode()
+                    : HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
         } else { // Attempted an insert of a new doc.
             return new OperationResult(
                     updateResult.getHttpCode() > 0
-                            ? updateResult.getHttpCode()
-                            : HttpStatus.SC_CONFLICT, newEtag, null, updateResult.getNewData());
+                    ? updateResult.getHttpCode()
+                    : HttpStatus.SC_CONFLICT, newEtag, null, updateResult.getNewData());
         }
     }
 
