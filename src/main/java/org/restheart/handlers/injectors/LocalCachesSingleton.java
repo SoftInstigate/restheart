@@ -121,7 +121,7 @@ public class LocalCachesSingleton {
                 _dbProps = dbPropsCache.getLoading(dbName);
             } catch (Throwable uex) {
                 if (uex.getCause() instanceof MongoException) {
-                    throw (RuntimeException) uex.getCause();
+                    throw new RuntimeException(uex.getCause());
                 } else {
                     throw uex;
                 }
