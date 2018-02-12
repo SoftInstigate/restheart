@@ -144,6 +144,8 @@ public class SimpleAccessManager extends AbstractSimpleSecurityManager implement
 
     private static class NotAuthenticatedAccount implements Account {
 
+        private static final long serialVersionUID = 3124L;
+
         @Override
         public Principal getPrincipal() {
             return null;
