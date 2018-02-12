@@ -21,6 +21,7 @@ import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Optional;
+import java.util.logging.Logger;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
@@ -55,6 +56,8 @@ import org.restheart.utils.URLUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestContextInjectorHandler extends PipedHttpHandler {
+
+    private static final Logger LOG = Logger.getLogger(RequestContextInjectorHandler.class.getName());
 
     private final String whereUri;
     private final String whatUri;
@@ -400,7 +403,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 try {
                     next(exchange, rcontext);
                 } catch (Exception e) {
-                    // nothing to do
+                    LOG.warning(e.getMessage());
                 }
 
                 return;
