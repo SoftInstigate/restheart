@@ -64,7 +64,7 @@ public class Shutdowner {
         if (pid < 0) {
             LOGGER.warn("RESTHeart instance pid file not found. Is it actually running?");
             LOGGER.info("Eventually you need to stop it using your OS tools.");
-            System.exit(-1);
+            throw new IllegalStateException("RESTHeart instance pid file not found.");
         } else {
             LOGGER.info("Pid file {}", pidFilePath);
         }
