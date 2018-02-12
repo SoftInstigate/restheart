@@ -5,9 +5,7 @@ import io.undertow.security.api.AuthenticationMode;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-
 import java.util.List;
-
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.security.AccessManager;

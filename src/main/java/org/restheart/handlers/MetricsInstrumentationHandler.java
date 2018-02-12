@@ -1,27 +1,38 @@
 package org.restheart.handlers;
 
-import com.google.common.annotations.VisibleForTesting;
-
 import com.codahale.metrics.MetricRegistry;
-
+import com.google.common.annotations.VisibleForTesting;
+import io.undertow.server.HttpServerExchange;
+import java.util.concurrent.TimeUnit;
 import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
-import org.restheart.db.DbsDAO;
-import org.restheart.utils.SharedMetricRegistryProxy;
-
-import java.util.concurrent.TimeUnit;
-
-import io.undertow.server.HttpServerExchange;
-
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.COLLECTION;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.DATABASE;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
+import org.restheart.db.DbsDAO;
+import org.restheart.utils.SharedMetricRegistryProxy;
 
 /**
- * Handler to measure calls to restheart.
- * Will only take actions if metrics should be gathered (config option "metrics-gathering-level" > OFF)
+ * Handler to measure calls to restheart. Will only take actions if metrics
+ * should be gathered (config option "metrics-gathering-level" > OFF)
  */
 public class MetricsInstrumentationHandler extends PipedHttpHandler {
+
+    @VisibleForTesting
+    static boolean isFilledAndNotMetrics(String dbOrCollectionName) {
+        return dbOrCollectionName != null
+                && !dbOrCollectionName.trim().isEmpty()
+                && !dbOrCollectionName.equalsIgnoreCase(RequestContext._METRICS);
+    }
+
+    /**
+     * Writable in unit tests to make testing easier
+     */
+    @VisibleForTesting
+    Configuration configuration = Bootstrapper.getConfiguration();
+
+    @VisibleForTesting
+    SharedMetricRegistryProxy metrics = new SharedMetricRegistryProxy();
 
     public MetricsInstrumentationHandler(PipedHttpHandler next) {
         super(next);
@@ -31,13 +42,6 @@ public class MetricsInstrumentationHandler extends PipedHttpHandler {
     MetricsInstrumentationHandler(PipedHttpHandler next, DbsDAO dbsDAO) {
         super(next, dbsDAO);
     }
-
-    /**Writable in unit tests to make testing easier*/
-    @VisibleForTesting
-    Configuration configuration = Bootstrapper.getConfiguration();
-
-    @VisibleForTesting
-    SharedMetricRegistryProxy metrics = new SharedMetricRegistryProxy();
 
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
@@ -56,18 +60,11 @@ public class MetricsInstrumentationHandler extends PipedHttpHandler {
 
     private void addDefaultMetrics(MetricRegistry registry, long duration, HttpServerExchange exchange, RequestContext context) {
         registry.timer(context.getType().toString() + "." + context.getMethod().toString())
-            .update(duration, TimeUnit.MILLISECONDS);
+                .update(duration, TimeUnit.MILLISECONDS);
         registry.timer(context.getType().toString() + "." + context.getMethod().toString() + "." + exchange.getStatusCode())
-            .update(duration, TimeUnit.MILLISECONDS);
+                .update(duration, TimeUnit.MILLISECONDS);
         registry.timer(context.getType().toString() + "." + context.getMethod().toString() + "." + (exchange.getStatusCode() / 100) + "xx")
-            .update(duration, TimeUnit.MILLISECONDS);
-    }
-
-    @VisibleForTesting
-    static boolean isFilledAndNotMetrics(String dbOrCollectionName) {
-        return dbOrCollectionName != null
-               && !dbOrCollectionName.trim().isEmpty()
-               && !dbOrCollectionName.equalsIgnoreCase(RequestContext._METRICS);
+                .update(duration, TimeUnit.MILLISECONDS);
     }
 
     @VisibleForTesting
