@@ -15,4 +15,4 @@ do
    shift
 done
 
-java -server $SPROPS -jar /opt/restheart/restheart.jar $ARGS
+java -Dfile.encoding=UTF-8 -server $SPROPS -jar /opt/restheart/restheart.jar $ARGS
