@@ -2,15 +2,12 @@ package org.restheart.utils;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
-
+import java.util.concurrent.TimeUnit;
 import org.bson.BsonDocument;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
-import org.junit.Test;
-
-import java.util.concurrent.TimeUnit;
-
 import static org.junit.Assert.assertEquals;
+import org.junit.Test;
 
 public class MetricsJsonGeneratorTest {
 

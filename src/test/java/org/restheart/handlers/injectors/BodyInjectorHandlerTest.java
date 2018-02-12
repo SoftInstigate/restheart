@@ -17,12 +17,10 @@
  */
 package org.restheart.handlers.injectors;
 
-import static org.junit.Assert.assertEquals;
 import io.undertow.server.handlers.form.FormData;
-
 import java.lang.reflect.Field;
-
 import org.bson.BsonDocument;
+import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 import org.restheart.handlers.PipedHttpHandler;
 
