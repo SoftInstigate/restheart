@@ -56,7 +56,7 @@ public class AuthTokenAuthenticationMechanism extends BasicAuthenticationMechani
             array[i] = 0x00;
         }
     }
-    private final String mechanismName = "TOKEN";
+    private final static String mechanismName = "TOKEN";
 
     /**
      *
