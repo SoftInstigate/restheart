@@ -44,30 +44,43 @@ public class IdentityAuthenticationManagerFactory implements AuthenticationMecha
         final String username = (String) args.get("username");
         final String pwd = (String) args.get("pwd");
 
-        return new AuthenticationMechanism() {
-            @Override
-            public AuthenticationMechanism.AuthenticationMechanismOutcome authenticate(HttpServerExchange hse, SecurityContext sc) {
-                // verify the credentials against the configured IdentityManager
-                Account sa = idm.verify(username, new PasswordCredential(pwd.toCharArray()));
-                
-                if (sa != null) {
-                    sc.authenticationComplete(sa,
-                            "IdentityAuthenticationManager", false);
-                    return AuthenticationMechanism.AuthenticationMechanismOutcome.AUTHENTICATED;
-                } else {
-                    // by returning NOT_ATTEMPTED, in case the provided credentials 
-                    // don't match any user of the IdentityManager, the authentication 
-                    // will fallback to the default authentication manager (BasicAuthenticationManager)
-                    // to make it failing, return NOT_AUTHENTICATED
-                    return AuthenticationMechanism.AuthenticationMechanismOutcome.NOT_ATTEMPTED;
-                }
-            }
+        return new AuthenticationMechanismImpl(idm, username, pwd);
+    }
 
-            @Override
-            public AuthenticationMechanism.ChallengeResult sendChallenge(HttpServerExchange hse, SecurityContext sc) {
-                return new AuthenticationMechanism.ChallengeResult(true, 200);
+    private static class AuthenticationMechanismImpl implements AuthenticationMechanism {
+
+        private final IdentityManager idm;
+        private final String username;
+        private final String pwd;
+
+        public AuthenticationMechanismImpl(IdentityManager idm, String username, String pwd) {
+            this.idm = idm;
+            this.username = username;
+            this.pwd = pwd;
+        }
+
+        @Override
+        public AuthenticationMechanism.AuthenticationMechanismOutcome authenticate(HttpServerExchange hse, SecurityContext sc) {
+            // verify the credentials against the configured IdentityManager
+            Account sa = idm.verify(username, new PasswordCredential(pwd.toCharArray()));
+            
+            if (sa != null) {
+                sc.authenticationComplete(sa,
+                        "IdentityAuthenticationManager", false);
+                return AuthenticationMechanism.AuthenticationMechanismOutcome.AUTHENTICATED;
+            } else {
+                // by returning NOT_ATTEMPTED, in case the provided credentials
+                // don't match any user of the IdentityManager, the authentication
+                // will fallback to the default authentication manager (BasicAuthenticationManager)
+                // to make it failing, return NOT_AUTHENTICATED
+                return AuthenticationMechanism.AuthenticationMechanismOutcome.NOT_ATTEMPTED;
             }
-        };
+        }
+
+        @Override
+        public AuthenticationMechanism.ChallengeResult sendChallenge(HttpServerExchange hse, SecurityContext sc) {
+            return new AuthenticationMechanism.ChallengeResult(true, 200);
+        }
     }
 
 }
