@@ -1,22 +1,15 @@
 package org.restheart.handlers;
 
 import com.codahale.metrics.MetricRegistry;
-
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Methods;
+import static org.junit.Assert.*;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.mockito.Mockito;
+import static org.mockito.Mockito.*;
 import org.restheart.Configuration;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.utils.SharedMetricRegistryProxy;
-
-
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.ServerConnection;
-import io.undertow.util.Methods;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
 public class MetricsInstrumentationHandlerTest {
 

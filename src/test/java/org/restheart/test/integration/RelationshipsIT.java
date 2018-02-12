@@ -104,7 +104,7 @@ public class RelationshipsIT extends AbstactIT {
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
-        JsonValue rbody = Json.parse(resp.getBody().toString());
+        JsonValue rbody = Json.parse(resp.getBody());
 
         Assert.assertTrue("check _links",
                 rbody != null

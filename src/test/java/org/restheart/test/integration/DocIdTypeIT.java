@@ -46,10 +46,14 @@ import org.restheart.utils.HttpStatus;
  */
 public class DocIdTypeIT extends HttpClientAbstactIT {
 
+
+    private final String DB = "test-id-db";
+    private final String COLL = "coll";
+
+    com.mashape.unirest.http.HttpResponse<String> resp;
     public DocIdTypeIT() {
         super();
     }
-
     @Test
     public void testPostCollectionInt() throws Exception {
         // *** PUT tmpdb
@@ -96,7 +100,6 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         assertNotNull("check created doc content", content.get("a"));
         assertTrue("check created doc content", content.get("a").asInt() == 1);
     }
-
     @Test
     public void testPostCollectionString() throws Exception {
         // *** PUT tmpdb
@@ -168,11 +171,6 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         assertTrue("check created doc content", content.get("_returned").asInt() == 1);
     }
 
-    private final String DB = "test-id-db";
-    private final String COLL = "coll";
-
-    com.mashape.unirest.http.HttpResponse<String> resp;
-
     @Before
     public void createTestData() throws Exception {
         // create test db
@@ -215,7 +213,7 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
                 .queryString("rep", "pj")
                 .asString();
 
-        JsonValue rbody = Json.parse(resp.getBody().toString());
+        JsonValue rbody = Json.parse(resp.getBody());
 
         Assert.assertTrue("check doc",
                 rbody != null

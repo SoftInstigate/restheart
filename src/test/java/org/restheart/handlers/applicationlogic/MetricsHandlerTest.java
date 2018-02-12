@@ -1,33 +1,21 @@
 package org.restheart.handlers.applicationlogic;
 
 import com.codahale.metrics.MetricRegistry;
-
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Methods;
+import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import org.restheart.Configuration;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.SharedMetricRegistryProxy;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Methods;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 public class MetricsHandlerTest {
 
-    class MyMetricRegistry extends MetricRegistry {
-        String name;
-        MyMetricRegistry(String name) {
-            this.name = name;
-        }
 
-        public String getName() {
-            return name;
-        }
-    }
-
+    MetricsHandler handler;
     @Before
     public void setUp() throws Exception {
         handler = new MetricsHandler(null, null);
@@ -50,8 +38,6 @@ public class MetricsHandlerTest {
         };
 
     }
-
-    MetricsHandler handler;
 
     private Configuration configWith(Configuration.METRICS_GATHERING_LEVEL mgl) {
         return new Configuration() {
@@ -118,5 +104,15 @@ public class MetricsHandlerTest {
         registry = handler.getCorrectMetricRegistry(requestContext);
         assertTrue(registry instanceof MyMetricRegistry);
         assertEquals("ROOT", ((MyMetricRegistry) registry).getName());
+    }
+    class MyMetricRegistry extends MetricRegistry {
+        String name;
+        MyMetricRegistry(String name) {
+            this.name = name;
+        }
+        
+        public String getName() {
+            return name;
+        }
     }
 }
