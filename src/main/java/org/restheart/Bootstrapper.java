@@ -772,7 +772,6 @@ public class Bootstrapper {
                 .map(m -> (String) m.get(Configuration.MONGO_MOUNT_WHERE_KEY))
                 .allMatch(url -> isPathTemplate(url));
 
-
         boolean allPaths = configuration.getMongoMounts()
                 .stream()
                 .map(m -> (String) m.get(Configuration.MONGO_MOUNT_WHERE_KEY))
@@ -797,9 +796,9 @@ public class Bootstrapper {
                 String db = (String) m.get(Configuration.MONGO_MOUNT_WHAT_KEY);
 
                 PipedHttpHandler pipe = new RequestContextInjectorHandler(
-                        url, 
-                        db, 
-                        configuration.getAggregationCheckOperators(), 
+                        url,
+                        db,
+                        configuration.getAggregationCheckOperators(),
                         baseChain);
 
                 if (allPathTemplates) {
@@ -877,7 +876,7 @@ public class Bootstrapper {
             final PathHandler paths,
             AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager,
             final AccessManager accessManager) {
-        if (conf.getStaticResourcesMounts() != null) {
+        if (!conf.getStaticResourcesMounts().isEmpty()) {
             conf.getStaticResourcesMounts().stream().forEach(sr -> {
                 try {
                     String path = (String) sr.get(Configuration.STATIC_RESOURCES_MOUNT_WHAT_KEY);
@@ -999,7 +998,7 @@ public class Bootstrapper {
             final PathHandler paths,
             AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager,
             final AccessManager accessManager) {
-        if (conf.getApplicationLogicMounts() != null) {
+        if (!conf.getApplicationLogicMounts().isEmpty()) {
             conf.getApplicationLogicMounts().stream().forEach((Map<String, Object> al) -> {
                 try {
                     String alClazz = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHAT_KEY);
