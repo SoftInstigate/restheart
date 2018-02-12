@@ -117,22 +117,12 @@ public class RequestTransformerMetadataHandler
             }
 
             if (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST) {
-                if (rt.getScope() == RepresentationTransformer.SCOPE.THIS
-                        && requestType == RequestContext.TYPE.DB) {
-                    t.transform(
-                            exchange,
-                            context,
-                            context.getContent(),
-                            rt.getArgs(),
-                            confArgs);
-                } else {
-                    t.transform(
-                            exchange,
-                            context,
-                            context.getContent(),
-                            rt.getArgs(),
-                            confArgs);
-                }
+                t.transform(
+                        exchange,
+                        context,
+                        context.getContent(),
+                        rt.getArgs(),
+                        confArgs);
             }
         }
     }
