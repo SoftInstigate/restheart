@@ -102,7 +102,7 @@
 <th>Missing Classes</th></tr>
 <tr class="b">
 <td>230</td>
-<td>37</td>
+<td>34</td>
 <td>0</td>
 <td>0</td></tr></table></div>
 <div class="section">
@@ -113,12 +113,6 @@
 <th>Bugs</th></tr>
 <tr class="b">
 <td><a href="#org.restheart.Configuration">org.restheart.Configuration</a></td>
-<td>1</td></tr>
-<tr class="a">
-<td><a href="#org.restheart.ConfigurationHelper">org.restheart.ConfigurationHelper</a></td>
-<td>1</td></tr>
-<tr class="b">
-<td><a href="#org.restheart.db.GridFsDAO">org.restheart.db.GridFsDAO</a></td>
 <td>1</td></tr>
 <tr class="a">
 <td><a href="#org.restheart.db.IndexDAO">org.restheart.db.IndexDAO</a></td>
@@ -140,7 +134,7 @@
 <td>1</td></tr>
 <tr class="a">
 <td><a href="#org.restheart.handlers.document.DocumentRepresentationFactory">org.restheart.handlers.document.DocumentRepresentationFactory</a></td>
-<td>3</td></tr>
+<td>2</td></tr>
 <tr class="b">
 <td><a href="#org.restheart.handlers.injectors.BodyInjectorHandler">org.restheart.handlers.injectors.BodyInjectorHandler</a></td>
 <td>1</td></tr>
@@ -199,37 +193,7 @@
 <td>org.restheart.Configuration.getEagerLinearSliceHeights() may expose internal representation by returning Configuration.eagerLinearSliceHeights</td>
 <td>MALICIOUS_CODE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
-<td>1502</td>
-<td>Medium</td></tr></table></div><a name="org.restheart.ConfigurationHelper"></a>
-<div class="section">
-<h3>org.restheart.ConfigurationHelper<a name="org.restheart.ConfigurationHelper"></a></h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>Redundant nullcheck of options, which is known to be non-null in org.restheart.ConfigurationHelper.setConnectionOptions(Undertow$Builder, Configuration)</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE">RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE</a></td>
-<td>85</td>
-<td>Medium</td></tr></table></div><a name="org.restheart.db.GridFsDAO"></a>
-<div class="section">
-<h3>org.restheart.db.GridFsDAO<a name="org.restheart.db.GridFsDAO"></a></h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>org.restheart.db.GridFsDAO.createFile(Database, String, String, BsonDocument, Path) may fail to clean up java.io.InputStream</td>
-<td>EXPERIMENTAL</td>
-<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#OBL_UNSATISFIED_OBLIGATION">OBL_UNSATISFIED_OBLIGATION</a></td>
-<td>78</td>
+<td>1503</td>
 <td>Medium</td></tr></table></div><a name="org.restheart.db.IndexDAO"></a>
 <div class="section">
 <h3>org.restheart.db.IndexDAO<a name="org.restheart.db.IndexDAO"></a></h3>
@@ -347,23 +311,17 @@
 <td>CORRECTNESS</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#BC_IMPOSSIBLE_INSTANCEOF">BC_IMPOSSIBLE_INSTANCEOF</a></td>
 <td>51</td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>Redundant nullcheck of _docIdType which is known to be null in org.restheart.handlers.document.DocumentRepresentationFactory.getRepresentation(String, HttpServerExchange, RequestContext, BsonDocument)</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#RCN_REDUNDANT_NULLCHECK_OF_NULL_VALUE">RCN_REDUNDANT_NULLCHECK_OF_NULL_VALUE</a></td>
-<td>133</td>
 <td>Medium</td></tr></table></div><a name="org.restheart.handlers.injectors.BodyInjectorHandler"></a>
 <div class="section">
 <h3>org.restheart.handlers.injectors.BodyInjectorHandler<a name="org.restheart.handlers.injectors.BodyInjectorHandler"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="b">
+<tr class="a">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="a">
+<tr class="b">
 <td>Redundant nullcheck of _id, which is known to be non-null in org.restheart.handlers.injectors.BodyInjectorHandler.handleRequest(HttpServerExchange, RequestContext)</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE">RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE</a></td>
@@ -372,19 +330,19 @@
 <div class="section">
 <h3>org.restheart.handlers.injectors.CollectionPropsInjectorHandler<a name="org.restheart.handlers.injectors.CollectionPropsInjectorHandler"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="b">
+<tr class="a">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="a">
+<tr class="b">
 <td>Format-string method String.format(String, Object[]) called with format string &quot;Collection '%s' does not exist&quot; wants 1 arguments but is given 2 in org.restheart.handlers.injectors.CollectionPropsInjectorHandler.doesNotExists(RequestContext, HttpServerExchange)</td>
 <td>CORRECTNESS</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#VA_FORMAT_STRING_EXTRA_ARGUMENTS_PASSED">VA_FORMAT_STRING_EXTRA_ARGUMENTS_PASSED</a></td>
 <td>120</td>
 <td>Medium</td></tr>
-<tr class="b">
+<tr class="a">
 <td>Format-string method String.format(String, Object[]) called with format string &quot;File Bucket '%s' does not exist&quot; wants 1 arguments but is given 2 in org.restheart.handlers.injectors.CollectionPropsInjectorHandler.doesNotExists(RequestContext, HttpServerExchange)</td>
 <td>CORRECTNESS</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#VA_FORMAT_STRING_EXTRA_ARGUMENTS_PASSED">VA_FORMAT_STRING_EXTRA_ARGUMENTS_PASSED</a></td>
@@ -393,13 +351,13 @@
 <div class="section">
 <h3>org.restheart.handlers.metadata.RequestTransformerMetadataHandler<a name="org.restheart.handlers.metadata.RequestTransformerMetadataHandler"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="a">
+<tr class="b">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="b">
+<tr class="a">
 <td>org.restheart.handlers.metadata.RequestTransformerMetadataHandler.enforceDbRepresentationTransformLogic(HttpServerExchange, RequestContext) uses the same code for two branches</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#DB_DUPLICATE_BRANCHES">DB_DUPLICATE_BRANCHES</a></td>
@@ -408,13 +366,13 @@
 <div class="section">
 <h3>org.restheart.handlers.schema.SchemaStoreClient<a name="org.restheart.handlers.schema.SchemaStoreClient"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="a">
+<tr class="b">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="b">
+<tr class="a">
 <td>Found reliance on default encoding in org.restheart.handlers.schema.SchemaStoreClient.get(String): String.getBytes()</td>
 <td>I18N</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
@@ -423,13 +381,13 @@
 <div class="section">
 <h3>org.restheart.metadata.checkers.ContentSizeChecker<a name="org.restheart.metadata.checkers.ContentSizeChecker"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="a">
+<tr class="b">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="b">
+<tr class="a">
 <td>instanceof will always return false in org.restheart.metadata.checkers.ContentSizeChecker.check(HttpServerExchange, RequestContext, BsonDocument, BsonValue), since a org.bson.BsonValue can't be a Integer</td>
 <td>CORRECTNESS</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#BC_IMPOSSIBLE_INSTANCEOF">BC_IMPOSSIBLE_INSTANCEOF</a></td>
@@ -438,13 +396,13 @@
 <div class="section">
 <h3>org.restheart.metadata.checkers.JsonSchemaChecker<a name="org.restheart.metadata.checkers.JsonSchemaChecker"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="a">
+<tr class="b">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="b">
+<tr class="a">
 <td>Nullcheck of args at line 61 of value previously dereferenced in org.restheart.metadata.checkers.JsonSchemaChecker.check(HttpServerExchange, RequestContext, BsonDocument, BsonValue)</td>
 <td>CORRECTNESS</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE">RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE</a></td>
@@ -453,13 +411,13 @@
 <div class="section">
 <h3>org.restheart.metadata.hooks.HookMetadata<a name="org.restheart.metadata.hooks.HookMetadata"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="a">
+<tr class="b">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="b">
+<tr class="a">
 <td>Dead store to singletons in new org.restheart.metadata.hooks.HookMetadata(String, BsonValue)</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#DLS_DEAD_LOCAL_STORE">DLS_DEAD_LOCAL_STORE</a></td>
@@ -468,13 +426,13 @@
 <div class="section">
 <h3>org.restheart.metadata.transformers.RepresentationTransformer<a name="org.restheart.metadata.transformers.RepresentationTransformer"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="a">
+<tr class="b">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="b">
+<tr class="a">
 <td>Redundant nullcheck of phase, which is known to be non-null in org.restheart.metadata.transformers.RepresentationTransformer.getSingleFromJson(BsonDocument)</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE">RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE</a></td>
@@ -483,13 +441,13 @@
 <div class="section">
 <h3>org.restheart.security.AuthTokenAuthenticationMechanism<a name="org.restheart.security.AuthTokenAuthenticationMechanism"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="a">
+<tr class="b">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="b">
+<tr class="a">
 <td>Unread field: org.restheart.security.AuthTokenAuthenticationMechanism.mechanismName; should this field be static?</td>
 <td>PERFORMANCE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#SS_SHOULD_BE_STATIC">SS_SHOULD_BE_STATIC</a></td>
@@ -498,25 +456,25 @@
 <div class="section">
 <h3>org.restheart.security.impl.SimpleAccount<a name="org.restheart.security.impl.SimpleAccount"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="a">
+<tr class="b">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="b">
+<tr class="a">
 <td>Class org.restheart.security.impl.SimpleAccount defines non-transient non-serializable instance field credential</td>
 <td>BAD_PRACTICE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#SE_BAD_FIELD">SE_BAD_FIELD</a></td>
 <td></td>
 <td>Medium</td></tr>
-<tr class="a">
+<tr class="b">
 <td>Class org.restheart.security.impl.SimpleAccount defines non-transient non-serializable instance field principal</td>
 <td>BAD_PRACTICE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#SE_BAD_FIELD">SE_BAD_FIELD</a></td>
 <td></td>
 <td>Medium</td></tr>
-<tr class="b">
+<tr class="a">
 <td>org.restheart.security.impl.SimplePrincipal stored into non-transient field SimpleAccount.principal</td>
 <td>BAD_PRACTICE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#SE_BAD_FIELD_STORE">SE_BAD_FIELD_STORE</a></td>
@@ -525,25 +483,25 @@
 <div class="section">
 <h3>org.restheart.utils.FileUtils<a name="org.restheart.utils.FileUtils"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="a">
+<tr class="b">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="b">
+<tr class="a">
 <td>Hard coded reference to an absolute pathname in org.restheart.utils.FileUtils.&lt;static initializer for FileUtils&gt;()</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#DMI_HARDCODED_ABSOLUTE_FILENAME">DMI_HARDCODED_ABSOLUTE_FILENAME</a></td>
 <td>43</td>
 <td>Medium</td></tr>
-<tr class="a">
+<tr class="b">
 <td>Found reliance on default encoding in org.restheart.utils.FileUtils.createPidFile(Path): new java.io.FileWriter(File)</td>
 <td>I18N</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
 <td>113</td>
 <td>High</td></tr>
-<tr class="b">
+<tr class="a">
 <td>Found reliance on default encoding in org.restheart.utils.FileUtils.getPidFromFile(Path): new java.io.FileReader(File)</td>
 <td>I18N</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
@@ -552,19 +510,19 @@
 <div class="section">
 <h3>org.restheart.utils.Minify<a name="org.restheart.utils.Minify"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="a">
+<tr class="b">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="b">
+<tr class="a">
 <td>Found reliance on default encoding in org.restheart.utils.Minify.minify(String): java.io.ByteArrayOutputStream.toString()</td>
 <td>I18N</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
 <td>132</td>
 <td>High</td></tr>
-<tr class="a">
+<tr class="b">
 <td>Switch statement found in org.restheart.utils.Minify.action(Minify$Action) where one case falls through to the next case</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#SF_SWITCH_FALLTHROUGH">SF_SWITCH_FALLTHROUGH</a></td>
@@ -573,13 +531,13 @@
 <div class="section">
 <h3>org.restheart.utils.RHDaemon<a name="org.restheart.utils.RHDaemon"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="b">
+<tr class="a">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="a">
+<tr class="b">
 <td>org.restheart.utils.RHDaemon.daemonize() invokes System.exit(...), which shuts down the entire virtual machine</td>
 <td>BAD_PRACTICE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#DM_EXIT">DM_EXIT</a></td>
@@ -588,25 +546,25 @@
 <div class="section">
 <h3>org.restheart.utils.ResourcesExtractor<a name="org.restheart.utils.ResourcesExtractor"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="b">
+<tr class="a">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="a">
+<tr class="b">
 <td>Possible null pointer dereference in org.restheart.utils.ResourcesExtractor.delete(File) due to return value of called method</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
 <td>145</td>
 <td>Medium</td></tr>
-<tr class="b">
+<tr class="a">
 <td>Possible null pointer dereference in org.restheart.utils.ResourcesExtractor.delete(File) due to return value of called method</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
 <td>164</td>
 <td>Medium</td></tr>
-<tr class="a">
+<tr class="b">
 <td>Possible null pointer dereference in org.restheart.utils.ResourcesExtractor.delete(File) due to return value of called method</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
@@ -615,19 +573,19 @@
 <div class="section">
 <h3>org.restheart.utils.URLUtils<a name="org.restheart.utils.URLUtils"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="b">
+<tr class="a">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="a">
+<tr class="b">
 <td>Load of known null value in org.restheart.utils.URLUtils.getReferenceLink(String, Object)</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#NP_LOAD_OF_KNOWN_NULL_VALUE">NP_LOAD_OF_KNOWN_NULL_VALUE</a></td>
 <td>160</td>
 <td>Medium</td></tr>
-<tr class="b">
+<tr class="a">
 <td>Return value of java.util.Objects.nonNull(Object) ignored, but method has no side effect</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT">RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT</a></td>
