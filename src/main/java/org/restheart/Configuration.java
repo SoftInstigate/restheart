@@ -1612,11 +1612,10 @@ public class Configuration {
      * @return the configurationFileMap
      */
     public Map<String, Object> getConfigurationFileMap() {
-        return configurationFileMap;
+        return Collections.unmodifiableMap(configurationFileMap);
     }
 
     /**
-<<<<<<< HEAD
      * @return the level of metrics that will be collected (and above)
      */
     public METRICS_GATHERING_LEVEL getMetricsGatheringLevel() {
