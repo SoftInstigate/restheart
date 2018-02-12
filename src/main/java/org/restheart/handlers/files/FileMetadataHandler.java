@@ -19,7 +19,6 @@ package org.restheart.handlers.files;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.db.FileMetadataDAO;
@@ -32,9 +31,11 @@ import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
 /**
- * A customised and cut down version of the {@link org.restheart.handlers.document.PutDocumentHandler PutDocumentHandler}
- * or {@link org.restheart.handlers.document.PatchDocumentHandler PatchDocumentHandler}, this deals with both PUT and PATCHing
- * of the metadata for a binary file.
+ * A customised and cut down version of the
+ * {@link org.restheart.handlers.document.PutDocumentHandler PutDocumentHandler}
+ * or
+ * {@link org.restheart.handlers.document.PatchDocumentHandler PatchDocumentHandler},
+ * this deals with both PUT and PATCHing of the metadata for a binary file.
  *
  * @author Nath Papadacis {@literal <nath@thirststudios.co.uk>}
  */
@@ -178,8 +179,8 @@ public class FileMetadataHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_CONFLICT,
                     "The document's ETag must be provided using the '"
-                            + Headers.IF_MATCH
-                            + "' header");
+                    + Headers.IF_MATCH
+                    + "' header");
             next(exchange, context);
             return;
         }
@@ -191,8 +192,8 @@ public class FileMetadataHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_CONFLICT,
                     "A duplicate key error occurred. "
-                            + "The patched document does not fulfill "
-                            + "an unique index constraint");
+                    + "The patched document does not fulfill "
+                    + "an unique index constraint");
 
             next(exchange, context);
             return;
