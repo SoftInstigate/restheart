@@ -29,6 +29,8 @@ import java.util.Set;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SimpleAccount implements Account {
+    
+    private final static long serialVersionUID = 5146445L;
 
     final private Principal principal;
     final private PasswordCredential credential;
