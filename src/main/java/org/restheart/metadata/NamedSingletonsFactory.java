@@ -53,7 +53,7 @@ public class NamedSingletonsFactory {
 
     private static NamedSingletonsFactory HOLDER;
 
-    public static NamedSingletonsFactory getInstance() {
+    public static synchronized NamedSingletonsFactory getInstance() {
         if (HOLDER == null) {
             HOLDER = new NamedSingletonsFactory();
         }
