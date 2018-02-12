@@ -17,25 +17,10 @@
  */
 package org.restheart.handlers.applicationlogic;
 
-import com.google.common.annotations.VisibleForTesting;
-
 import com.codahale.metrics.MetricRegistry;
-
-import org.bson.BsonDocument;
-import org.bson.BsonValue;
-import org.bson.json.JsonMode;
-import org.bson.json.JsonWriterSettings;
-import org.restheart.Bootstrapper;
-import org.restheart.Configuration;
-import org.restheart.db.DbsDAO;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.METHOD;
-import org.restheart.utils.HttpStatus;
-import org.restheart.utils.MetricsJsonGenerator;
-import org.restheart.utils.ResponseHelper;
-import org.restheart.utils.SharedMetricRegistryProxy;
-
+import com.google.common.annotations.VisibleForTesting;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -44,14 +29,24 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
-
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
+import org.bson.json.JsonMode;
+import org.bson.json.JsonWriterSettings;
+import org.restheart.Bootstrapper;
+import org.restheart.Configuration;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.COLLECTION;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.DATABASE;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
+import org.restheart.db.DbsDAO;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.REPRESENTATION_FORMAT_KEY;
+import org.restheart.utils.HttpStatus;
+import org.restheart.utils.MetricsJsonGenerator;
+import org.restheart.utils.ResponseHelper;
+import org.restheart.utils.SharedMetricRegistryProxy;
 
 /**
  * A handler for dropwizard.io metrics that can return both default metrics JSON
@@ -202,15 +197,16 @@ public class MetricsHandler extends PipedHttpHandler {
          * Encapsulate code around accept-header handling
          */
         static class AcceptHeaderEntry {
+
             String contentType;
             String specialization;
             double qValue = 1.0;
 
-            public AcceptHeaderEntry(String contentType) {
+            AcceptHeaderEntry(String contentType) {
                 this(contentType, null, Double.MAX_VALUE);
             }
 
-            public AcceptHeaderEntry(String contentType, String specialization, double qValue) {
+            AcceptHeaderEntry(String contentType, String specialization, double qValue) {
                 this.contentType = contentType;
                 this.specialization = specialization;
                 this.qValue = qValue;
@@ -261,6 +257,7 @@ public class MetricsHandler extends PipedHttpHandler {
          * sorts large q-values first, smaller ones later
          */
         static class AcceptHeaderEntryComparator implements Comparator<AcceptHeaderEntry> {
+
             @Override
             public int compare(AcceptHeaderEntry one, AcceptHeaderEntry two) {
                 return -Double.compare(one.qValue, two.qValue);
