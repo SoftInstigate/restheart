@@ -65,8 +65,8 @@ import org.slf4j.LoggerFactory;
  * - values=&lt;values&gt; optional (default: no values) values of additional
  * props to add to each row<br>
  * - transformer=&lt;tname&gt; optional (default: no transformer). name (as
- * defined in conf file) of a tranformer to apply to imported data
- * - update optional (default: no). use data to update matching documents");
+ * defined in conf file) of a tranformer to apply to imported data - update
+ * optional (default: no). use data to update matching documents");
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
@@ -85,8 +85,8 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
             + "sep=<column_separator> optional (default: ,), "
             + "props=<props> optional (default: no props) additional props to add to each row, "
             + "values=<values> optional (default: no values) values of additional props to add to each row, "
-            + "transformer=<tname> optional (default: no transformer). name (as defined in conf file) of a tranformer to apply to imported data"
-            + "update optional (default: no). use data to update matching documents");
+            + "transformer=<tname> optional (default: no transformer). name (as defined in conf file) of a tranformer to apply to imported data, "
+            + "update=true optional (default: false). use data to update matching documents");
 
     private static final BsonString ERROR_CONTENT_TYPE = new BsonString(
             "Content-Type request header must be 'text/csv'");
@@ -96,7 +96,7 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
 
     private static final BsonString ERROR_PARSING_DATA = new BsonString(
             "Error parsing CSV, see logs for more information");
-    
+
     private final static FindOneAndUpdateOptions FAU_NO_UPSERT_OPS = new FindOneAndUpdateOptions()
             .upsert(false);
 
@@ -371,6 +371,8 @@ class CsvRequestParams {
             transformer = null;
         }
 
-        update = _update != null && !_update.isEmpty();
+        update = _update != null
+                && (_update.isEmpty()
+                || "true".equalsIgnoreCase(_update.getFirst()));
     }
 }
