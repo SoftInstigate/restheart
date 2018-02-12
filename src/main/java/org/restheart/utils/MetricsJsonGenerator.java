@@ -45,7 +45,6 @@ public class MetricsJsonGenerator {
                 .append("meters", generator.toBson(registry.getMeters(), generator::generateMeter))
                 .append("timers", generator.toBson(registry.getTimers(), generator::generateTimer));
     }
-    private final TimeUnit rateUnit;
     private final String singularRateUnitString;
     private final double rateFactor;
     private final TimeUnit durationUnit;
@@ -55,7 +54,6 @@ public class MetricsJsonGenerator {
     private MetricsJsonGenerator(TimeUnit rateUnit, TimeUnit durationUnit) {
         this.durationUnit = durationUnit;
         this.durationFactor = 1.0 / durationUnit.toNanos(1);
-        this.rateUnit = rateUnit;
         this.rateFactor = rateUnit.toSeconds(1);
         this.singularRateUnitString = singular(rateUnit);
     }
