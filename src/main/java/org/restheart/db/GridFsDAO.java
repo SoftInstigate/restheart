@@ -75,35 +75,36 @@ public class GridFsDAO implements GridFsRepository {
         ObjectId etag = new ObjectId();
         metadata.put("_etag", new BsonObjectId(etag));
 
-        InputStream sourceStream = new FileInputStream(filePath.toFile());
+        try (InputStream sourceStream = new FileInputStream(filePath.toFile())) {
 
-        if (metadata.get("_id") == null) {
-            GridFSUploadOptions options = new GridFSUploadOptions()
-                    .metadata(Document.parse(metadata.toJson()));
+            if (metadata.get("_id") == null) {
+                GridFSUploadOptions options = new GridFSUploadOptions()
+                        .metadata(Document.parse(metadata.toJson()));
 
-            ObjectId _id = gridFSBucket.uploadFromStream(
-                    filename,
-                    sourceStream,
-                    options);
+                ObjectId _id = gridFSBucket.uploadFromStream(
+                        filename,
+                        sourceStream,
+                        options);
 
-            return new OperationResult(HttpStatus.SC_CREATED,
-                    new BsonObjectId(etag),
-                    new BsonObjectId(_id));
-        } else {
-            BsonValue _id = metadata.remove("_id");
+                return new OperationResult(HttpStatus.SC_CREATED,
+                        new BsonObjectId(etag),
+                        new BsonObjectId(_id));
+            } else {
+                BsonValue _id = metadata.remove("_id");
 
-            GridFSUploadOptions options = new GridFSUploadOptions()
-                    .metadata(Document.parse(metadata.toJson()));
+                GridFSUploadOptions options = new GridFSUploadOptions()
+                        .metadata(Document.parse(metadata.toJson()));
 
-            gridFSBucket.uploadFromStream(
-                    _id,
-                    filename,
-                    sourceStream,
-                    options);
+                gridFSBucket.uploadFromStream(
+                        _id,
+                        filename,
+                        sourceStream,
+                        options);
 
-            return new OperationResult(HttpStatus.SC_CREATED,
-                    new BsonObjectId(etag),
-                    _id);
+                return new OperationResult(HttpStatus.SC_CREATED,
+                        new BsonObjectId(etag),
+                        _id);
+            }
         }
     }
 
