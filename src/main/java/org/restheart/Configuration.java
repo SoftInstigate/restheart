@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.ETAG_CHECK_POLICY;
@@ -951,7 +952,7 @@ public class Configuration {
             METRICS_GATHERING_LEVEL mglevel;
             try {
                 String value = getAsStringOrDefault(conf, METRICS_GATHERING_LEVEL_KEY, "ROOT");
-                mglevel = METRICS_GATHERING_LEVEL.valueOf(value.toUpperCase());
+                mglevel = METRICS_GATHERING_LEVEL.valueOf(value.toUpperCase(Locale.getDefault()));
             } catch (IllegalArgumentException iae) {
                 mglevel = METRICS_GATHERING_LEVEL.ROOT;
             }
