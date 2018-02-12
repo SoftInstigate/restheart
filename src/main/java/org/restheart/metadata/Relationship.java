@@ -295,10 +295,8 @@ public class Relationship {
                             + _referenceValue);
                 }
 
-                BsonValue[] ids = _referenceValue
-                        .asArray()
-                        .getValues()
-                        .toArray(new BsonValue[0]);
+                List<BsonValue> bsonVals = _referenceValue.asArray().getValues();
+                BsonValue[] ids = bsonVals.toArray(new BsonValue[bsonVals.size()]);
 
                 return URLUtils.getUriWithFilterMany(context, db, targetCollection, ids);
             }
