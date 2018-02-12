@@ -509,18 +509,4 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
         next(exchange, context);
     }
-
-    private BsonValue checkIdType(BsonDocument doc)
-            throws UnsupportedDocumentIdException {
-
-        if (doc.containsKey(_ID)) {
-            BsonValue _id = doc.get(_ID);
-
-            URLUtils.checkId(_id);
-
-            return _id;
-        } else {
-            return null;
-        }
-    }
 }
