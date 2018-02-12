@@ -113,11 +113,11 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
         if (resourceName == null) {
             errMsg = RESOURCE_DOES_NOT_EXIST;
         } else if (resourceName.endsWith(RequestContext.FS_FILES_SUFFIX)) {
-            errMsg = String.format(FILE_BUCKET_DOES_NOT_EXIST, context.getCollectionName(), context.getMethod());
+            errMsg = String.format(FILE_BUCKET_DOES_NOT_EXIST, context.getCollectionName());
         } else if (RequestContext._SCHEMAS.equals(resourceName)) {
             errMsg = SCHEMA_STORE_DOES_NOT_EXIST;
         } else {
-            errMsg = String.format(COLLECTION_DOES_NOT_EXIST, context.getCollectionName(), context.getMethod());
+            errMsg = String.format(COLLECTION_DOES_NOT_EXIST, context.getCollectionName());
         }
 
         LOGGER.debug(errMsg);
