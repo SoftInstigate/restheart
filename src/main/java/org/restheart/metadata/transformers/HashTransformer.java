@@ -60,12 +60,6 @@ public class HashTransformer implements Transformer {
             return;
         }
 
-        if (context.getType() == TYPE.DOCUMENT
-                && (context.getMethod() == RequestContext.METHOD.PATCH
-                || context.getMethod() == RequestContext.METHOD.PUT)) {
-
-        }
-
         if (!contentToTransform.isDocument()) {
             throw new IllegalStateException(
                     "content to transform is not a document");
