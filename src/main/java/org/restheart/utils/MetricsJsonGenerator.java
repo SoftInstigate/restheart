@@ -7,7 +7,13 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
-
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import static java.util.stream.Collectors.toMap;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonDouble;
@@ -16,31 +22,35 @@ import org.bson.BsonInt64;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toMap;
-
 /**
- * Json Generator for the metrics format, follows for output what can be found at
+ * Json Generator for the metrics format, follows for output what can be found
+ * at
  * https://github.com/iZettle/dropwizard-metrics/blob/v3.1.2/metrics-json/src/main/java/com/codahale/metrics/json/MetricsModule.java
  */
 public class MetricsJsonGenerator {
+
+    private static String singular(TimeUnit timeUnit) {
+        String unitString = timeUnit.name().toLowerCase(Locale.US);
+        return unitString.substring(0, unitString.length() - 1);
+    }
+
+    public static BsonDocument generateMetricsBson(MetricRegistry registry, TimeUnit rateUnit, TimeUnit durationUnit) {
+        MetricsJsonGenerator generator = new MetricsJsonGenerator(rateUnit, durationUnit);
+
+        return new BsonDocument()
+                .append("version", new BsonString("3.0.0"))
+                .append("gauges", generator.toBson(registry.getGauges(), generator::generateGauge))
+                .append("counters", generator.toBson(registry.getCounters(), generator::generateCounter))
+                .append("histograms", generator.toBson(registry.getHistograms(), generator::generateHistogram))
+                .append("meters", generator.toBson(registry.getMeters(), generator::generateMeter))
+                .append("timers", generator.toBson(registry.getTimers(), generator::generateTimer));
+    }
     private final TimeUnit rateUnit;
     private final String singularRateUnitString;
     private final double rateFactor;
     private final TimeUnit durationUnit;
     private final double durationFactor;
     boolean showSamples = false;
-
-    private static String singular(TimeUnit timeUnit) {
-        String unitString = timeUnit.name().toLowerCase(Locale.US);
-        return unitString.substring(0, unitString.length() - 1);
-    }
 
     private MetricsJsonGenerator(TimeUnit rateUnit, TimeUnit durationUnit) {
         this.durationUnit = durationUnit;
@@ -67,10 +77,10 @@ public class MetricsJsonGenerator {
 
         if (showSamples) {
             document.append("values", new BsonArray(
-                Arrays.stream(snapshot.getValues())
-                    .mapToDouble(x -> x * durationFactor)
-                    .mapToObj(BsonDouble::new)
-                    .collect(Collectors.toList())
+                    Arrays.stream(snapshot.getValues())
+                            .mapToDouble(x -> x * durationFactor)
+                            .mapToObj(BsonDouble::new)
+                            .collect(Collectors.toList())
             ));
         }
 
@@ -117,9 +127,9 @@ public class MetricsJsonGenerator {
 
         if (showSamples) {
             document.append("values", new BsonArray(
-                Arrays.stream(snapshot.getValues())
-                    .mapToObj(BsonInt64::new)
-                    .collect(Collectors.toList())
+                    Arrays.stream(snapshot.getValues())
+                            .mapToObj(BsonInt64::new)
+                            .collect(Collectors.toList())
             ));
         }
 
@@ -134,11 +144,11 @@ public class MetricsJsonGenerator {
             if (value instanceof Double) {
                 valueAsBson = new BsonDouble((Double) value);
             } else if (value instanceof Float) {
-                valueAsBson = new BsonDouble((Float)value);
+                valueAsBson = new BsonDouble((Float) value);
             } else if (value instanceof Long) {
-                valueAsBson = new BsonInt64((Long)value);
+                valueAsBson = new BsonInt64((Long) value);
             } else if (value instanceof Integer) {
-                valueAsBson = new BsonInt32((Integer)value);
+                valueAsBson = new BsonInt32((Integer) value);
             } else { //returning a string is formally wrong here, but the best I can get for all the rest
                 valueAsBson = new BsonString(value.toString());
             }
@@ -150,21 +160,10 @@ public class MetricsJsonGenerator {
 
     private <T> BsonDocument toBson(Map<String, T> map, Function<T, BsonDocument> f) {
         Map<String, BsonDocument> collect = map.entrySet().stream()
-            .collect(toMap(Map.Entry::getKey, x -> f.apply(x.getValue())));
+                .collect(toMap(Map.Entry::getKey, x -> f.apply(x.getValue())));
         BsonDocument document = new BsonDocument();
         document.putAll(collect);
         return document;
     }
 
-    public static BsonDocument generateMetricsBson(MetricRegistry registry, TimeUnit rateUnit, TimeUnit durationUnit) {
-        MetricsJsonGenerator generator = new MetricsJsonGenerator(rateUnit, durationUnit);
-
-        return new BsonDocument()
-            .append("version", new BsonString("3.0.0"))
-            .append("gauges", generator.toBson(registry.getGauges(), generator::generateGauge))
-            .append("counters", generator.toBson(registry.getCounters(), generator::generateCounter))
-            .append("histograms", generator.toBson(registry.getHistograms(), generator::generateHistogram))
-            .append("meters", generator.toBson(registry.getMeters(), generator::generateMeter))
-            .append("timers", generator.toBson(registry.getTimers(), generator::generateTimer));
-    }
 }

@@ -44,7 +44,7 @@ abstract class AbstractSimpleSecurityManager {
     abstract Consumer<? super Map<String, Object>> consumeConfiguration();
 
     @SuppressWarnings("unchecked")
-    final void init(Map<String, Object> arguments, String type) throws FileNotFoundException, UnsupportedEncodingException {
+    void init(Map<String, Object> arguments, String type) throws FileNotFoundException, UnsupportedEncodingException {
         InputStream is = null;
         try {
             final String confFilePath = extractConfigFilePath(arguments);
