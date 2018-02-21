@@ -25,8 +25,8 @@ under the License.
     <language>en-us</language>
     <copyright>&#169;2014 - 2018 SoftInstigate</copyright>
     <item>
-      <title>File: 203,
-             Errors: 3137,
+      <title>File: 204,
+             Errors: 3160,
              Warnings: 0,
              Infos: 0
       </title>
@@ -2254,6 +2254,20 @@ under the License.
                 </td>
                 <td>
                   5
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.security.impl.JwtAuthenticationManagerFactory.java">org/restheart/security/impl/JwtAuthenticationManagerFactory.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  23
                 </td>
               </tr>
                           <tr>
