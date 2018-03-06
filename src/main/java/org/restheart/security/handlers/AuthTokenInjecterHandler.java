@@ -14,15 +14,17 @@
  * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */ 
+ */
 package org.restheart.security.handlers;
 
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
+import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
-import java.util.UUID;
 import org.restheart.Bootstrapper;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -31,6 +33,8 @@ import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_LOCATION_HEA
 import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_VALID_HEADER;
 import org.restheart.security.impl.AuthTokenIdentityManager;
 import org.restheart.security.impl.SimpleAccount;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -39,6 +43,20 @@ import org.restheart.security.impl.SimpleAccount;
 public class AuthTokenInjecterHandler extends PipedHttpHandler {
     private static final boolean enabled = Bootstrapper.getConfiguration().isAuthTokenEnabled();
     private static final long TTL = Bootstrapper.getConfiguration().getAuthTokenTtl();
+
+    private static final Logger LOGGER
+            = LoggerFactory.getLogger(AuthTokenInjecterHandler.class);
+
+    private static SecureRandom RND_GENERATOR;
+
+    static {
+        try {
+            RND_GENERATOR = SecureRandom.getInstanceStrong();
+        } catch (NoSuchAlgorithmException nsaex) {
+            LOGGER.warn("cannot use strong algorithm for auth token generation", nsaex);
+            RND_GENERATOR = new SecureRandom();
+        }
+    }
 
     /**
      * Creates a new instance of AuthTokenInjecterHandler
@@ -81,13 +99,25 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
         Optional<SimpleAccount> cachedTokenAccount = AuthTokenIdentityManager.getInstance().getCachedAccounts().get(id);
 
         if (cachedTokenAccount == null) {
-            char[] token = UUID.randomUUID().toString().toCharArray();
-            SimpleAccount newCachedTokenAccount = new SimpleAccount(id, token, authenticatedAccount.getRoles());
-            AuthTokenIdentityManager.getInstance().getCachedAccounts().put(id, newCachedTokenAccount);
+            char[] token = nextToken();
+            SimpleAccount newCachedTokenAccount = new SimpleAccount(
+                    id,
+                    nextToken(),
+                    authenticatedAccount.getRoles());
+
+            AuthTokenIdentityManager.getInstance()
+                    .getCachedAccounts()
+                    .put(id, newCachedTokenAccount);
 
             return token;
         } else {
             return cachedTokenAccount.get().getCredentials().getPassword();
         }
+    }
+
+    private static char[] nextToken() {
+        return new BigInteger(256, RND_GENERATOR)
+                .toString(Character.MAX_RADIX)
+                .toCharArray();
     }
 }
