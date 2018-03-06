@@ -102,7 +102,7 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
             char[] token = nextToken();
             SimpleAccount newCachedTokenAccount = new SimpleAccount(
                     id,
-                    nextToken(),
+                    token,
                     authenticatedAccount.getRoles());
 
             AuthTokenIdentityManager.getInstance()
