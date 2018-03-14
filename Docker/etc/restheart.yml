@@ -26,7 +26,7 @@ ajp-port: 8009
 # The name of this restheart instance. displayed in log, also allows to implement instance specific custom code
 # For instance, an email notifier hook can send emails to a test email address in development environments
 
-instance-name: docker-dev
+instance-name: restheart-docker
 
 #### default representation format (PLAIN_JSON or HAL)
 
@@ -65,8 +65,10 @@ use-embedded-keystore: true
 # mongodb://user:secret@127.0.0.1/?authSource=authdb
 #
 # More information at http://api.mongodb.org/java/current/com/mongodb/MongoClientURI.html
-
-mongo-uri: mongodb://mongodb
+# Be sure that the following credentials match with the 
+# MONGO_INITDB_ROOT_USERNAME and MONGO_INITDB_ROOT_PASSWORD in docker-compose.yml
+# WARNING: change in both files the below default credentials!
+mongo-uri: mongodb://restheart:R3ste4rt!@mongodb
 
 # Use mongo-mounts to bind URls to mongodb resources using the out-of-the-box URL rewrite feature.
 mongo-mounts:
