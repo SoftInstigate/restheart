@@ -7,18 +7,18 @@ version: '2'
 networks:
    backend:
        
-### Uncomment to create a permanent, named data volume
+### Create a permanent, named data volume
 # This makes much easier to identify where the mongodb data is stored on host
 # See: https://docs.docker.com/engine/userguide/containers/dockervolumes/#mount-a-shared-storage-volume-as-a-data-volume
-#volumes:
-#   datavolume:
+volumes:
+   restheart-datadb:
 
 services:
    restheart:
       ### Change the tag below to run a different version of RESTHeart
       image: softinstigate/restheart
       ### Uncomment to name the container explicitly
-      container_name: restheart-dev
+      container_name: restheart
       depends_on:
          - mongodb
       networks:
@@ -34,13 +34,17 @@ services:
       # select a MongoDB 3.x version
       image: mongo:3.6
       ### Name the container explicitly
-      container_name: restheart-dev-mongo
-      ### Uncomment to use the permanent data volume
-      #volumes:
-      #   - datavolume:/data/db
+      container_name: restheart-mongo
+      environment:
+            # Be sure this credentials match with those in etc/restheart.yml
+            # $ mongo --username restheart --password R3ste4rt! --authenticationDatabase admin
+            MONGO_INITDB_ROOT_USERNAME: restheart
+            MONGO_INITDB_ROOT_PASSWORD: R3ste4rt!
+      command:
+            - '--auth'
+      volumes:
+         - restheart-datadb:/data/db
       networks:
          - backend
-      ### As the mongo container starts unauthenticated, for security reasons comment out the below ports
-      ### so that mongodb can be accessed from restheart only
-      #ports:
-      #   - "27017:27017"
+      ports:
+         - "27017:27017"
