@@ -17,7 +17,7 @@ users:
     - userid: admin
       password: changeit
       roles: [users, admins]
-
+      
 ## Configuration for db based Identity Manager
 ## bcrypt-hashed-password: true to authenticate against bcrypt hashed passwords
 ## https://github.com/svenkubiak/jBCrypt
@@ -54,9 +54,13 @@ permissions:
     - role: $unauthenticated
       predicate: path-prefix[path="/publicdb/"] and method[value="GET"]
 
-# Users with role 'users' can GET any collection or document resource (excluding dbs)
+# Users with role 'users' can GET any collection or document resource (excluding dbs and _logic )
     - role: users
-      predicate: regex[pattern="/.*/.*", value="%R", full-match=true] and method[value="GET"]
+      predicate: regex[pattern="/.*/.*", value="%R", full-match=true] and method[value="GET"] and not path-prefix[path="/_logic"]
+
+# Users with role 'users' can request URI /_logic/csv
+    - role: users
+      predicate: path["/_logic/csv"]
 
 # Users with role 'users' can do anything on the collection /publicdb/{username}
     - role: users

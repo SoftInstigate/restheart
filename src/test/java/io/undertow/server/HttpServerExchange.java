@@ -41,6 +41,7 @@ public class HttpServerExchange extends AbstractAttachable {
     private int statusCode = 0;
     private String queryString;
     private String requestPath;
+    private String relativePath;
     private HttpString requestMethod;
     private Map<String, Deque<String>> queryParameters;
 
@@ -151,5 +152,19 @@ public class HttpServerExchange extends AbstractAttachable {
 
     public SecurityContext getSecurityContext() {
         return null;
+    }
+
+    /**
+     * @return the relativePath
+     */
+    public String getRelativePath() {
+        return relativePath;
+    }
+
+    /**
+     * @param relativePath the relativePath to set
+     */
+    public void setRelativePath(String relativePath) {
+        this.relativePath = relativePath;
     }
 }
