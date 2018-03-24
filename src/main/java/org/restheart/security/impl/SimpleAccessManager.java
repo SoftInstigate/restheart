@@ -45,6 +45,7 @@ public class SimpleAccessManager extends AbstractSimpleSecurityManager implement
     /**
      * @param configuration
      * @throws java.io.FileNotFoundException
+     * @throws java.io.UnsupportedEncodingException
      */
     public SimpleAccessManager(Map<String, Object> configuration) throws FileNotFoundException, UnsupportedEncodingException {
         init(configuration, "permissions");
@@ -95,7 +96,15 @@ public class SimpleAccessManager extends AbstractSimpleSecurityManager implement
             exchange.putAttachment(PREDICATE_CONTEXT, new TreeMap<>());
         }
 
-        return roles(exchange).anyMatch(role -> aclForRole(role).stream().anyMatch(p -> p.resolve(exchange)));
+        // this fixes undertow bug https://issues.jboss.org/browse/UNDERTOW-1317
+        if (exchange.getRelativePath() == null || exchange.getRelativePath().isEmpty()) {
+            exchange.setRelativePath(exchange.getRequestPath());
+        }
+        
+         return roles(exchange).anyMatch(
+                 role -> aclForRole(role).stream()
+                         .anyMatch(
+                                 p -> p.resolve(exchange)));
     }
 
     @Override
