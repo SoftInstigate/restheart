@@ -100,11 +100,11 @@ public class SimpleAccessManager extends AbstractSimpleSecurityManager implement
         if (exchange.getRelativePath() == null || exchange.getRelativePath().isEmpty()) {
             exchange.setRelativePath(exchange.getRequestPath());
         }
-        
-         return roles(exchange).anyMatch(
-                 role -> aclForRole(role).stream()
-                         .anyMatch(
-                                 p -> p.resolve(exchange)));
+
+        return roles(exchange).anyMatch(
+                role -> aclForRole(role).stream()
+                        .anyMatch(
+                                p -> p.resolve(exchange)));
     }
 
     @Override
@@ -114,7 +114,23 @@ public class SimpleAccessManager extends AbstractSimpleSecurityManager implement
         }
 
         Set<Predicate> ps = getAcl().get("$unauthenticated");
-        return ps == null ? true : !ps.stream().anyMatch(p -> p.resolve(exchange));
+
+        if (ps != null) {
+            // this fixes undertow bug 377
+            // https://issues.jboss.org/browse/UNDERTOW-377
+            if (exchange.getAttachment(PREDICATE_CONTEXT) == null) {
+                exchange.putAttachment(PREDICATE_CONTEXT, new TreeMap<>());
+            }
+
+            // this fixes undertow bug https://issues.jboss.org/browse/UNDERTOW-1317
+            if (exchange.getRelativePath() == null || exchange.getRelativePath().isEmpty()) {
+                exchange.setRelativePath(exchange.getRequestPath());
+            }
+
+            return !ps.stream().anyMatch(p -> p.resolve(exchange));
+        } else {
+            return true;
+        }
     }
 
     private Stream<String> roles(HttpServerExchange exchange) {
