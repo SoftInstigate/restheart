@@ -96,10 +96,10 @@ public class SimpleAccessManager extends AbstractSimpleSecurityManager implement
             exchange.putAttachment(PREDICATE_CONTEXT, new TreeMap<>());
         }
 
-        // this fixes undertow bug https://issues.jboss.org/browse/UNDERTOW-1317
-        if (exchange.getRelativePath() == null || exchange.getRelativePath().isEmpty()) {
-            exchange.setRelativePath(exchange.getRequestPath());
-        }
+        // Predicate.resolve() uses getRelativePath() that is the path relative to
+        // the last PathHandler We want to check against the full request path
+        // see https://issues.jboss.org/browse/UNDERTOW-1317
+        exchange.setRelativePath(exchange.getRequestPath());
 
         return roles(exchange).anyMatch(
                 role -> aclForRole(role).stream()
@@ -122,11 +122,10 @@ public class SimpleAccessManager extends AbstractSimpleSecurityManager implement
                 exchange.putAttachment(PREDICATE_CONTEXT, new TreeMap<>());
             }
 
-            // this fixes undertow bug https://issues.jboss.org/browse/UNDERTOW-1317
-            if (exchange.getRelativePath() == null || exchange.getRelativePath().isEmpty()) {
-                exchange.setRelativePath(exchange.getRequestPath());
-            }
-
+            // Predicate.resolve() uses getRelativePath() that is the path relative to
+            // the last PathHandler We want to check against the full request path
+            // see https://issues.jboss.org/browse/UNDERTOW-1317
+            exchange.setRelativePath(exchange.getRequestPath());
             return !ps.stream().anyMatch(p -> p.resolve(exchange));
         } else {
             return true;
