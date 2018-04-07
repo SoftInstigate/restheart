@@ -17,6 +17,7 @@ services:
    restheart:
       ### Change the tag below to run a different version of RESTHeart
       image: softinstigate/restheart
+      build: .
       ### Uncomment to name the container explicitly
       container_name: restheart
       depends_on:
