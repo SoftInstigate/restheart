@@ -46,5 +46,6 @@ services:
          - restheart-datadb:/data/db
       networks:
          - backend
-      ports:
-         - "27017:27017"
+      ### Uncoment below if you want to map mongodb port
+      #ports:
+      #   - "27017:27017"
