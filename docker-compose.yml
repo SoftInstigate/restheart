@@ -41,8 +41,7 @@ services:
             # $ mongo --username restheart --password R3ste4rt! --authenticationDatabase admin
             MONGO_INITDB_ROOT_USERNAME: restheart
             MONGO_INITDB_ROOT_PASSWORD: R3ste4rt!
-      command:
-            - '--auth'
+      command: --bind_ip_all --auth
       volumes:
          - restheart-datadb:/data/db
       networks:
