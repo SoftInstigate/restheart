@@ -29,7 +29,7 @@ services:
       ### Uncoment below if you want to mount a local configuration folder
       ### to overwrite default restheart.yml and/or security.yml
       #volumes:
-      #   - "$PWD"/etc:/opt/restheart/etc:ro
+      #   - ./etc:/opt/restheart/etc:ro
 
    mongodb:
       # select a MongoDB 3.x version
