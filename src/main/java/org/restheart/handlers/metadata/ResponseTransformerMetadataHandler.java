@@ -61,38 +61,43 @@ public class ResponseTransformerMetadataHandler
     }
 
     @Override
-    boolean canCollRepresentationTransformersAppy(RequestContext context) {
+    boolean doesCollTransformerAppy(RequestContext context) {
         return (!context.isInError()
-                && (context.getType() == RequestContext.TYPE.DOCUMENT
-                || context.getType() == RequestContext.TYPE.BULK_DOCUMENTS
-                || context.getType() == RequestContext.TYPE.COLLECTION
-                || context.getType() == RequestContext.TYPE.AGGREGATION
-                || context.getType() == RequestContext.TYPE.FILE
-                || context.getType() == RequestContext.TYPE.FILES_BUCKET
-                || context.getType() == RequestContext.TYPE.INDEX
-                || context.getType() == RequestContext.TYPE.COLLECTION_INDEXES
-                || context.getType() == RequestContext.TYPE.SCHEMA_STORE
-                || context.getType() == RequestContext.TYPE.SCHEMA)
+                && (context.isDocument()
+                || context.isBulkDocuments()
+                || context.isCollection()
+                || context.isAggregation()
+                || context.isFile()
+                || context.isFilesBucket()
+                || context.isIndex()
+                || context.isCollectionIndexes()
+                || context.isSchemaStore()
+                || context.isSchema())
                 && context.getCollectionProps() != null
                 && context.getCollectionProps()
                         .containsKey(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
-    boolean canDBRepresentationTransformersAppy(RequestContext context) {
+    boolean doesDBTransformerAppy(RequestContext context) {
         return (!context.isInError()
-                && (context.getType() == RequestContext.TYPE.DB
-                || context.getType() == RequestContext.TYPE.COLLECTION
-                || context.getType() == RequestContext.TYPE.FILES_BUCKET
-                || context.getType() == RequestContext.TYPE.COLLECTION_INDEXES
-                || context.getType() == RequestContext.TYPE.SCHEMA_STORE)
+                && (context.isDocument()
+                || context.isBulkDocuments()
+                || context.isCollection()
+                || context.isAggregation()
+                || context.isFile()
+                || context.isFilesBucket()
+                || context.isIndex()
+                || context.isCollectionIndexes()
+                || context.isSchemaStore()
+                || context.isSchema())
                 && context.getDbProps() != null
                 && context.getDbProps()
                         .containsKey(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
-    void enforceDbRepresentationTransformLogic(
+    void applyDbTransformer(
             HttpServerExchange exchange,
             RequestContext context)
             throws InvalidMetadataException {
@@ -100,127 +105,58 @@ public class ResponseTransformerMetadataHandler
                 = RepresentationTransformer
                         .getFromJson(context.getDbProps());
 
-        RequestContext.TYPE requestType = context.getType(); // DB or COLLECTION
-        dbRts.stream().filter((rt) -> (rt.getPhase() == RepresentationTransformer.PHASE.RESPONSE)).forEachOrdered((rt) -> {
-            NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
-            Transformer t = (Transformer) nsf
-                    .get("transformers", rt.getName());
-
-            BsonDocument confArgs
-                    = nsf.getArgs("transformers", rt.getName());
-
-            if (t == null) {
-                throw new IllegalArgumentException("cannot find singleton "
-                        + rt.getName()
-                        + " in singleton group transformers");
-            }
-
-            if (rt.getScope() == RepresentationTransformer.SCOPE.THIS
-                    && requestType == RequestContext.TYPE.DB) {
-                t.transform(
-                        exchange,
-                        context,
-                        context.getResponseContent(),
-                        rt.getArgs(),
-                        confArgs);
-            } else if (rt.getScope()
-                    == RepresentationTransformer.SCOPE.CHILDREN
-                    && requestType == RequestContext.TYPE.COLLECTION) {
-                if (context
-                        .getResponseContent()
-                        .isDocument()
-                        && context
-                                .getResponseContent()
-                                .asDocument()
-                                .containsKey("_embedded")) {
-                    BsonValue _embedded = context
-                            .getResponseContent()
-                            .asDocument()
-                            .get("_embedded");
-
-                    if (_embedded.isDocument()
-                            && _embedded
-                                    .asDocument()
-                                    .containsKey("_embedded")) {
-                        // execute the logic on children documents
-                        BsonArray colls = _embedded.asDocument()
-                                .get("rh:coll")
-                                .asArray();
-
-                        if (colls != null) {
-                            colls.getValues().stream().forEach(
-                                    (coll) -> {
-                                        t.transform(
-                                                exchange,
-                                                context,
-                                                coll,
-                                                rt.getArgs(),
-                                                confArgs);
-                                    });
-                        }
-                    }
-                }
-            }
-        });
+        applyTransformLogic(exchange, context, dbRts);
     }
 
     @Override
-    void enforceCollRepresentationTransformLogic(
+    void applyCollRTransformer(
             HttpServerExchange exchange,
             RequestContext context)
             throws InvalidMetadataException {
-        List<RepresentationTransformer> dbRts = RepresentationTransformer
-                .getFromJson(context.getCollectionProps());
+        List<RepresentationTransformer> collRts
+                = RepresentationTransformer
+                        .getFromJson(context.getCollectionProps());
 
-        RequestContext.TYPE requestType = context.getType(); // DOCUMENT or COLLECTION
+        applyTransformLogic(exchange, context, collRts);
+    }
 
-        for (RepresentationTransformer rt : dbRts) {
-            if (rt.getPhase() == RepresentationTransformer.PHASE.RESPONSE) {
-                Transformer t;
-                BsonDocument confArgs;
+    private void applyTransformLogic(
+            HttpServerExchange exchange,
+            RequestContext context,
+            List<RepresentationTransformer> rts)
+            throws InvalidMetadataException {
 
-                try {
-                    NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
-                    t = (Transformer) nsf
+        rts.stream().filter((rt)
+                -> (rt.getPhase() == RepresentationTransformer.PHASE.RESPONSE))
+                .forEachOrdered((rt) -> {
+                    NamedSingletonsFactory nsf = NamedSingletonsFactory
+                            .getInstance();
+
+                    Transformer t = (Transformer) nsf
                             .get("transformers", rt.getName());
 
-                    confArgs
+                    BsonDocument confArgs
                             = nsf.getArgs("transformers", rt.getName());
-                } catch (IllegalArgumentException ex) {
-                    context.addWarning("error applying transformer: "
-                            + ex.getMessage());
-                    return;
-                }
 
-                if (t == null) {
-                    throw new IllegalArgumentException("cannot find singleton "
-                            + rt.getName()
-                            + " in singleton group transformers");
-                }
+                    if (t == null) {
+                        throw new IllegalArgumentException("cannot find singleton "
+                                + rt.getName()
+                                + " in singleton group transformers");
+                    }
+                    
+                    BsonValue responseContent = context.getResponseContent() == null
+                    ? new BsonDocument()
+                    : context.getResponseContent();
 
-                if (rt.getScope() == RepresentationTransformer.SCOPE.THIS
-                        && (requestType == RequestContext.TYPE.COLLECTION)) {
-                    // transform the collection
-                    t.transform(
-                            exchange,
-                            context,
-                            context.getResponseContent(),
-                            rt.getArgs(),
-                            confArgs);
-                } else if (rt.getScope() == RepresentationTransformer.SCOPE.CHILDREN
-                        && requestType == RequestContext.TYPE.COLLECTION) {
-                    if (context.getResponseContent() == null) {
-                        // transform null content
+                    if (rt.getScope() == RepresentationTransformer.SCOPE.THIS) {
                         t.transform(
                                 exchange,
                                 context,
-                                null,
+                                responseContent,
                                 rt.getArgs(),
                                 confArgs);
-                    } else if (context
-                            .getResponseContent().isDocument()
-                            && context
-                                    .getResponseContent()
+                    } else if (responseContent.isDocument()
+                            && responseContent
                                     .asDocument()
                                     .containsKey("_embedded")) {
                         BsonValue _embedded = context
@@ -228,62 +164,47 @@ public class ResponseTransformerMetadataHandler
                                 .asDocument()
                                 .get("_embedded");
 
-                        if (_embedded.isDocument()
-                                && _embedded
-                                        .asDocument()
-                                        .containsKey("rh:doc")) {
+                        // execute the logic on children documents
+                        BsonDocument embedded = _embedded.asDocument();
 
-                            // execute the logic on children documents
-                            BsonArray docs = _embedded
-                                    .asDocument()
-                                    .get("rh:doc")
-                                    .asArray();
+                        embedded
+                                .keySet()
+                                .stream()
+                                .filter(key -> "rh:doc".equals(key)
+                                || "rh:file".equals(key)
+                                || "rh:bucket".equals(key)
+                                || "rh:db".equals(key)
+                                || "rh:coll".equals(key)
+                                || "rh:index".equals(key)
+                                || "rh:result".equals(key)
+                                || "rh:schema".equals(key))
+                                .filter(key -> embedded.get(key).isArray())
+                                .forEachOrdered(key -> {
 
-                            docs.getValues().stream().forEach((doc) -> {
-                                t.transform(
-                                        exchange,
-                                        context,
-                                        doc,
-                                        rt.getArgs(),
-                                        confArgs);
-                            });
-                        }
+                                    BsonArray children = embedded
+                                            .get(key)
+                                            .asArray();
 
-                        if (_embedded.isDocument()
-                                && _embedded
-                                        .asDocument().
-                                        containsKey("rh:file")) {
-                            // execute the logic on children files
-                            BsonArray files = _embedded
-                                    .asDocument()
-                                    .get("rh:file")
-                                    .asArray();
-
-                            if (files != null) {
-                                files.getValues().stream().forEach((file) -> {
-                                    t.transform(
-                                            exchange,
-                                            context,
-                                            file,
-                                            rt.getArgs(),
-                                            confArgs);
+                                    if (children != null) {
+                                        children.getValues().stream()
+                                                .forEach((child) -> {
+                                                    t.transform(
+                                                            exchange,
+                                                            context,
+                                                            child,
+                                                            rt.getArgs(),
+                                                            confArgs);
+                                                });
+                                    }
                                 });
-                            }
-                        }
+                    } else if (context.isDocument()) {
+                        t.transform(
+                                exchange,
+                                context,
+                                responseContent.asDocument(),
+                                rt.getArgs(),
+                                confArgs);
                     }
-
-                } else if ((rt.getScope()
-                        == RepresentationTransformer.SCOPE.CHILDREN
-                        || rt.getScope()
-                        == RepresentationTransformer.SCOPE.THIS)
-                        && requestType == RequestContext.TYPE.DOCUMENT) {
-                    t.transform(exchange,
-                            context,
-                            context.getResponseContent(),
-                            rt.getArgs(),
-                            confArgs);
-                }
-            }
-        }
+                });
     }
 }

@@ -19,7 +19,6 @@ package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
-import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.PipedHttpHandler;
@@ -52,93 +51,75 @@ public class RequestTransformerMetadataHandler
     }
 
     @Override
-    boolean canCollRepresentationTransformersAppy(RequestContext context) {
+    boolean doesCollTransformerAppy(RequestContext context) {
         return (!context.isInError()
-                && (context.getType() == RequestContext.TYPE.DOCUMENT
-                || context.getType() == RequestContext.TYPE.BULK_DOCUMENTS
-                || context.getType() == RequestContext.TYPE.COLLECTION
-                || context.getType() == RequestContext.TYPE.AGGREGATION
-                || context.getType() == RequestContext.TYPE.FILE
-                || context.getType() == RequestContext.TYPE.FILES_BUCKET
-                || context.getType() == RequestContext.TYPE.INDEX
-                || context.getType() == RequestContext.TYPE.COLLECTION_INDEXES
-                || context.getType() == RequestContext.TYPE.SCHEMA_STORE
-                || context.getType() == RequestContext.TYPE.SCHEMA)
+                && (context.isDocument()
+                || context.isBulkDocuments()
+                || context.isCollection()
+                || context.isAggregation()
+                || context.isFile()
+                || context.isFilesBucket()
+                || context.isIndex()
+                || context.isCollectionIndexes()
+                || context.isSchemaStore()
+                || context.isSchema())
                 && context.getCollectionProps() != null
                 && context.getCollectionProps()
                         .containsKey(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
-    boolean canDBRepresentationTransformersAppy(RequestContext context) {
+    boolean doesDBTransformerAppy(RequestContext context) {
         return (!context.isInError()
-                && (context.getType() == RequestContext.TYPE.DB
-                || context.getType() == RequestContext.TYPE.COLLECTION
-                || context.getType() == RequestContext.TYPE.FILES_BUCKET
-                || context.getType() == RequestContext.TYPE.COLLECTION_INDEXES
-                || context.getType() == RequestContext.TYPE.SCHEMA_STORE)
+                && (context.isDocument()
+                || context.isBulkDocuments()
+                || context.isCollection()
+                || context.isAggregation()
+                || context.isFile()
+                || context.isFilesBucket()
+                || context.isIndex()
+                || context.isCollectionIndexes()
+                || context.isSchemaStore()
+                || context.isSchema())
                 && context.getDbProps() != null
                 && context.getDbProps()
                         .containsKey(RepresentationTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
-    void enforceDbRepresentationTransformLogic(
+    void applyDbTransformer(
             HttpServerExchange exchange,
             RequestContext context)
             throws InvalidMetadataException {
         List<RepresentationTransformer> dbRts
-                = RepresentationTransformer.getFromJson(context.getDbProps());
+                = RepresentationTransformer
+                        .getFromJson(context.getDbProps());
 
-        RequestContext.TYPE requestType = context.getType(); // DB, COLLECTION or FILES_BUCKET
-
-        for (RepresentationTransformer rt : dbRts) {
-            Transformer t;
-            BsonDocument confArgs;
-
-            try {
-                NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
-
-                t = (Transformer) nsf
-                        .get("transformers", rt.getName());
-
-                confArgs
-                        = nsf.getArgs("transformers", rt.getName());
-            } catch (IllegalArgumentException ex) {
-                context.addWarning("error applying transformer: "
-                        + ex.getMessage());
-                return;
-            }
-
-            if (t == null) {
-                throw new IllegalArgumentException("cannot find singleton "
-                        + rt.getName()
-                        + " in singleton group transformers");
-            }
-
-            if (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST) {
-                t.transform(
-                        exchange,
-                        context,
-                        context.getContent(),
-                        rt.getArgs(),
-                        confArgs);
-            }
-        }
+        applyTransformLogic(exchange, context, dbRts);
     }
 
     @Override
-    void enforceCollRepresentationTransformLogic(
+    void applyCollRTransformer(
             HttpServerExchange exchange,
             RequestContext context)
             throws InvalidMetadataException {
-        List<RepresentationTransformer> collRts = RepresentationTransformer
-                .getFromJson(context.getCollectionProps());
+        List<RepresentationTransformer> collRts
+                = RepresentationTransformer
+                        .getFromJson(context.getCollectionProps());
 
-        collRts.stream().filter((rt) -> (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST))
+        applyTransformLogic(exchange, context, collRts);
+    }
+
+    private void applyTransformLogic(
+            HttpServerExchange exchange,
+            RequestContext context,
+            List<RepresentationTransformer> rts)
+            throws InvalidMetadataException {
+        rts.stream().filter((rt)
+                -> (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST))
                 .forEachOrdered((rt) -> {
-                    NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
-
+                    NamedSingletonsFactory nsf = NamedSingletonsFactory
+                            .getInstance();
                     Transformer t = (Transformer) nsf
                             .get("transformers", rt.getName());
 
@@ -146,44 +127,34 @@ public class RequestTransformerMetadataHandler
                             = nsf.getArgs("transformers", rt.getName());
 
                     if (t == null) {
-                        throw new IllegalArgumentException("cannot find singleton "
+                        throw new IllegalArgumentException(
+                                "cannot find singleton "
                                 + rt.getName()
                                 + " in singleton group transformers");
                     }
 
-                    BsonValue content = context.getContent();
+                    BsonValue requestContent = context.getContent() == null
+                            ? new BsonDocument()
+                            : context.getContent();
 
-                    // content can be an array for bulk POST
-                    if (content == null) {
+                    if (requestContent.isDocument()) {
                         t.transform(
                                 exchange,
                                 context,
-                                new BsonDocument(),
+                                requestContent,
                                 rt.getArgs(),
                                 confArgs);
-                    } else if (content.isDocument()) {
-                        t.transform(
-                                exchange,
-                                context,
-                                content.asDocument(),
-                                rt.getArgs(),
-                                confArgs);
-                    } else if (content.isArray()) {
-                        BsonArray arrayContent = content.asArray();
-
-                        arrayContent.stream().forEach(obj -> {
-                            if (obj.isDocument()) {
-                                t.transform(
-                                        exchange,
-                                        context,
-                                        obj.asDocument(),
-                                        rt.getArgs(),
-                                        confArgs);
-                            } else {
-                                LOGGER.warn("an element of content array "
-                                        + "is not an object");
-                            }
-                        });
+                    } else if (context.isPost()
+                            && requestContent.isArray()) {
+                        requestContent.asArray().stream().forEachOrdered(
+                                (doc) -> {
+                                    t.transform(
+                                            exchange,
+                                            context,
+                                            doc,
+                                            rt.getArgs(),
+                                            confArgs);
+                                });
                     }
                 });
     }

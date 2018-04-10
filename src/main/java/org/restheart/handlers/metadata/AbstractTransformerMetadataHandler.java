@@ -43,30 +43,30 @@ public abstract class AbstractTransformerMetadataHandler extends PipedHttpHandle
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (canCollRepresentationTransformersAppy(context)) {
+        if (doesCollTransformerAppy(context)) {
             try {
-                enforceCollRepresentationTransformLogic(exchange, context);
+                applyCollRTransformer(exchange, context);
             } catch (Throwable e) {
-                context.addWarning("error enforcing representation transformation logic: " + e.getMessage());
+                context.addWarning("error applying transformer: " + e.getMessage());
             } 
         }
 
-        if (canDBRepresentationTransformersAppy(context)) {
+        if (doesDBTransformerAppy(context)) {
             try {
-                enforceDbRepresentationTransformLogic(exchange, context);
+                applyDbTransformer(exchange, context);
             } catch (Throwable e) {
-                context.addWarning("error enforcing representation transformation logic: " + e.getMessage());
+                context.addWarning("error applying transformer: " + e.getMessage());
             }
         }
 
         next(exchange, context);
     }
 
-    abstract boolean canCollRepresentationTransformersAppy(RequestContext context);
+    abstract boolean doesCollTransformerAppy(RequestContext context);
 
-    abstract boolean canDBRepresentationTransformersAppy(RequestContext context);
+    abstract boolean doesDBTransformerAppy(RequestContext context);
 
-    abstract void enforceDbRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException;
+    abstract void applyDbTransformer(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException;
 
-    abstract void enforceCollRepresentationTransformLogic(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException;
+    abstract void applyCollRTransformer(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException;
 }

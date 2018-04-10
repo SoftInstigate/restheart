@@ -74,19 +74,26 @@ public class RepresentationTransformer {
         } catch (IllegalArgumentException iae) {
             throw new InvalidMetadataException("invalid '" + RT_PHASE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(PHASE.values()));
         }
-        if (_scope == null || !_scope.isString()) {
-            throw new InvalidMetadataException((phase == null ? "missing '" : "invalid '") + RT_SCOPE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(SCOPE.values()));
+
+        SCOPE scope = null;
+        
+        if (phase == PHASE.RESPONSE) {
+            if (_scope == null || !_scope.isString()) {
+                throw new InvalidMetadataException((phase == null ? "missing '" : "invalid '") + RT_SCOPE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(SCOPE.values()));
+            }
+            
+            try {
+                scope = SCOPE.valueOf(_scope.asString().getValue());
+            } catch (IllegalArgumentException iae) {
+                throw new InvalidMetadataException("invalid '" + RT_SCOPE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(SCOPE.values()));
+            }
         }
-        SCOPE scope;
-        try {
-            scope = SCOPE.valueOf(_scope.asString().getValue());
-        } catch (IllegalArgumentException iae) {
-            throw new InvalidMetadataException("invalid '" + RT_SCOPE_ELEMENT_NAME + "' element; acceptable values are: " + Arrays.toString(SCOPE.values()));
-        }
+        
         if (_name == null || !_name.isString()) {
             throw new InvalidMetadataException((_name == null ? "missing '" : "invalid '") + RT_NAME_ELEMENT_NAME + "' element");
         }
         String name = _name.asString().getValue();
+        
         return new RepresentationTransformer(phase, scope, name, _args);
     }
 
