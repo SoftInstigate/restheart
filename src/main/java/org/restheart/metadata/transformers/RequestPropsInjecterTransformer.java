@@ -79,6 +79,11 @@ public class RequestPropsInjecterTransformer implements Transformer {
             final RequestContext context,
             BsonValue contentToTransform,
             final BsonValue args) {
+        if (context.isGet()) {
+            // nothing to do
+            return;
+        }
+        
         if (contentToTransform == null) {
             // nothing to do
             return;
