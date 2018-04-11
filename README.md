@@ -74,7 +74,7 @@ Finally, point your browser to [http://localhost:8080/browser/](http://localhost
 If you have cloned from master branch, you should notice from the logs that RESTHeart's running version is the same as the POM's version (e.g. `3.1.0-SNAPSHOT`).
 
 **Properties**
-```
+```javascript
 {
   "_size": 0,
   "_total_pages": 0,
@@ -139,15 +139,15 @@ Build the project with Maven:
 Integration Tests
 --
 
-Optionally, you can run the integration test suite. Make sure __mongod is running__ on localhost on default port 27017 without authentication enabled—i.e. no `--auth` option is specified.
+To run the integration test suite, first make sure that __mongod is running__ on localhost, on default port 27017 and without authentication enabled — i.e. no `--auth` option is specified.
 
     $ mvn verify -DskipITs=false
 
-Alternatiuvely, if you have Docker running, you can execute the following script:
+Alternatively, if you have Docker running, it's even simpler to execute the following script:
 
     $ ./bin/integration-tests.sh 
     
-It will first start an empty docker container running mongodb and execute the integration tests with Maven. It will clean-up the container at the end.
+It will first start an empty Docker container running MongoDB and then execute the integration tests with Maven. It will clean-up the container at the end. As each time it starts a new, empty MongoDB instance, each tests execution is independent.
 
 Maven Dependencies
 --
@@ -165,7 +165,7 @@ If you want to embed RESTHeart in your project, add the dependency to your POM f
     <dependency>
         <groupId>org.restheart</groupId>
         <artifactId>restheart</artifactId>
-        <version>3.1.4</version>
+        <version>3.2.2</version>
     </dependency>
 </dependencies>
 ```
@@ -195,7 +195,7 @@ Then include the SNAPSHOT dependency in your POM:
     <dependency>
         <groupId>org.restheart</groupId>
         <artifactId>restheart</artifactId>
-        <version>3.2.0-SNAPSHOT</version>
+        <version>3.3.0-SNAPSHOT</version>
     </dependency>
 </dependencies>
 ```
