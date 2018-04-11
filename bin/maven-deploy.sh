@@ -7,7 +7,6 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
     if [[ "$RESTHEART_VERSION" ]]; then
         echo "###### Building Docker image for RESTHeart $RESTHEART_VERSION";
         docker login -u="$DOCKER_USER" -p="$DOCKER_PASS";
-        cd Docker && cp ../target/restheart.jar . ;
         docker build -t softinstigate/restheart:$RESTHEART_VERSION . ;
         docker push softinstigate/restheart:$RESTHEART_VERSION;
         echo "###### Branch is $TRAVIS_BRANCH";
@@ -16,7 +15,7 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
             docker tag softinstigate/restheart:$RESTHEART_VERSION softinstigate/restheart:latest;
             docker push softinstigate/restheart:latest;
             echo "###### Publishing Maven site at http://softinstigate.github.io/restheart/project-info.html";
-            cd .. && mvn site --settings deploy-settings.xml -P report -Dmaven.test.skip=true;
+            mvn site --settings deploy-settings.xml -P report -Dmaven.test.skip=true;
         fi
     else
         echo "###### ERROR! Variable RESTHEART_VERSION is undefined";
