@@ -57,7 +57,7 @@ For detailed information, visit RESTHeart's [website](http://restheart.org), [is
 * **Horizontally scalable** with a **stateless architecture** and full support for MongoDB **replica sets** and **shards**.
 * **µService**: It does one thing, and it does it well.
 
-### Test with Docker
+### Quickstart with Docker
 
 If you're running a Docker service locally, you can be on your way with RESTHeart and MongoDB in just few minutes. We've included a `Docker` folder with `Dockerfile` and `docker-compose.yml` files, plus a specific `restheart.yml` configuration in the `Docker/etc` folder. The `build.sh` bash script compiles the source code and builds the Docker image.
 
@@ -142,6 +142,12 @@ Integration Tests
 Optionally, you can run the integration test suite. Make sure __mongod is running__ on localhost on default port 27017 without authentication enabled—i.e. no `--auth` option is specified.
 
     $ mvn verify -DskipITs=false
+
+Alternatiuvely, if you have Docker running, you can execute the following script:
+
+    $ ./bin/integration-tests.sh 
+    
+It will first start an empty docker container running mongodb and execute the integration tests with Maven. It will clean-up the container at the end.
 
 Maven Dependencies
 --
