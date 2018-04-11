@@ -29,12 +29,12 @@ For an example of how RESTHeart works, check our sample **AngularJS** [notes app
 
 **Note**: RESTHeart works with MongoDB v. **2.6** and later. We now test it mainly with **3.6** and **3.4**.
 
-For detailed information, visit RESTHeart's [website](http://restheart.org), [issues tracker](https://softinstigate.atlassian.net/projects/RH) and [detailed documentation wiki](https://softinstigate.atlassian.net/wiki/x/l4CM).
+For more detailed information, visit RESTHeart's [website](http://restheart.org) and [documentation](http://restheart.org/learn/).
 
 ### Built on a Solid Foundation
 
 * The API strictly follows the **RESTful** paradigm.
-* Resources are represented with the [HAL+json](https://softinstigate.atlassian.net/wiki/x/UICM) format.
+* Resources are represented with the [HAL+json](http://restheart.org/learn/representation-format/) format.
 * Built on top of the [Undertow](http://undertow.io) web server.
 * Makes use of few, best-of-breed libraries. Check the [pom.xml](https://github.com/SoftInstigate/restheart/blob/master/pom.xml)!
 
@@ -52,7 +52,7 @@ For detailed information, visit RESTHeart's [website](http://restheart.org), [is
 
 ### Fast & Light
 
-* **High throughput**: Check the [performance tests](https://softinstigate.atlassian.net/wiki/x/gICM).
+* **High throughput**: Check the [performance tests](http://restheart.org/learn/performances/).
 * **Lightweight**: ~10Mb footprint, low RAM usage, and starts in ~1 sec.
 * **Horizontally scalable** with a **stateless architecture** and full support for MongoDB **replica sets** and **shards**.
 * **µService**: It does one thing, and it does it well.
