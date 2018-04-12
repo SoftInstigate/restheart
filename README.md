@@ -1,6 +1,6 @@
 ## RESTHeart
 
-The leading REST API Server for MongoDB, created by [SoftInstigate](http://www.softinstigate.com).
+The Web API for MongoDB _made with :heart: by [SoftInstigate](http://www.softinstigate.com/)_
 
 [![Build Status](https://travis-ci.org/SoftInstigate/restheart.svg?branch=master)](https://travis-ci.org/SoftInstigate/restheart)
 [![Docker Stars](https://img.shields.io/docker/stars/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
@@ -108,4 +108,4 @@ We continually deploy development releases to Maven Central with [Travis-CI](htt
 
 <hr></hr>
 
-_Made with :heart: by [the SoftInstigate Team](http://www.softinstigate.com/). Follow us on [Twitter](https://twitter.com/softinstigate)_.
+_Made with :heart: by [SoftInstigate](http://www.softinstigate.com/). Follow us on [Twitter](https://twitter.com/softinstigate)_.
