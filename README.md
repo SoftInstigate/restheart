@@ -19,13 +19,13 @@ Table of Contents
 Summary
 --
 
-**RESTHeart** connects to **MongoDB** and opens data to the Web. Mobile and Web app can use the database via **RESTful API** calls.
+**RESTHeart** connects to **MongoDB** and opens data to the Web. Clients such as mobile and javascript apps can use the database via a simple **RESTful API**.
 
 > For more information, visit RESTHeart's [website](http://restheart.org) and [documentation](http://restheart.org/learn/).
 
-### Setup
+## Setup
 
-Refer to [restheart.org/learn/setup/](http://restheart.org/learn/setup/) for detailed information on running RESTHeart.
+Refer to [restheart.org/learn/setup](http://restheart.org/learn/setup) for detailed information on how to setup RESTHeart.
 
 How to Build
 --
