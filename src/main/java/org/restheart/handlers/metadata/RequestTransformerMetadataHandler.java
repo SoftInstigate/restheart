@@ -71,7 +71,8 @@ public class RequestTransformerMetadataHandler
     @Override
     boolean doesDBTransformerAppy(RequestContext context) {
         return (!context.isInError()
-                && (context.isDocument()
+                && (context.isDb()
+                || context.isDocument()
                 || context.isBulkDocuments()
                 || context.isCollection()
                 || context.isAggregation()
