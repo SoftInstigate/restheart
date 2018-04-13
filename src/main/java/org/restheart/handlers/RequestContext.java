@@ -128,9 +128,24 @@ public class RequestContext {
 
     static TYPE selectRequestType(String[] pathTokens) {
         TYPE type;
-        if (pathTokens.length < 2) {
+
+        if (pathTokens.length > 0 && pathTokens[pathTokens.length - 1].equalsIgnoreCase(_COUNT)) {
+            if (pathTokens.length == 2) {
+                type = TYPE.ROOT_COUNT;
+            } else if (pathTokens.length == 3) {
+                type = TYPE.DB_COUNT;
+            } else if (pathTokens.length == 4 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
+                type = TYPE.FILES_BUCKET_COUNT;
+            } else if (pathTokens.length == 4 && pathTokens[2].endsWith(_SCHEMAS)) {
+                type = TYPE.SCHEMA_STORE_COUNT;
+            } else if (pathTokens.length == 4) {
+                type = TYPE.COLLECTION_COUNT;
+            } else {
+                type = TYPE.INVALID;
+            }
+        } else if (pathTokens.length < 2) {
             type = TYPE.ROOT;
-        } else if (pathTokens.length < 3 
+        } else if (pathTokens.length < 3
                 && pathTokens[1].equalsIgnoreCase(_METRICS)) {
             type = TYPE.METRICS;
         } else if (pathTokens.length < 3) {
@@ -176,9 +191,6 @@ public class RequestContext {
                 && pathTokens[3].equalsIgnoreCase(_METRICS)) {
             type = TYPE.METRICS;
         } else if (pathTokens.length == 4
-                && pathTokens[3].equalsIgnoreCase(_COUNT)) {
-            type = TYPE.COUNT;
-        } else if (pathTokens.length == 4
                 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.COLLECTION_INDEXES;
         } else if (pathTokens.length == 4
@@ -206,7 +218,9 @@ public class RequestContext {
      * @return true if the dbName is a reserved resource
      */
     public static boolean isReservedResourceDb(String dbName) {
-        return !dbName.equalsIgnoreCase(_METRICS) && (dbName.equals(ADMIN)
+        return !dbName.equalsIgnoreCase(_METRICS)
+                && !dbName.equalsIgnoreCase(_COUNT)
+                && (dbName.equals(ADMIN)
                 || dbName.equals(LOCAL)
                 || dbName.startsWith(SYSTEM)
                 || dbName.startsWith(UNDERSCORE)
@@ -222,6 +236,7 @@ public class RequestContext {
         return collectionName != null
                 && !collectionName.equalsIgnoreCase(_SCHEMAS)
                 && !collectionName.equalsIgnoreCase(_METRICS)
+                && !collectionName.equalsIgnoreCase(_COUNT)
                 && (collectionName.startsWith(SYSTEM)
                 || collectionName.startsWith(UNDERSCORE)
                 || collectionName.endsWith(FS_CHUNKS_SUFFIX)
@@ -510,7 +525,7 @@ public class RequestContext {
             return mapPathTemplateUri(unmappedUri);
         }
     }
-    
+
     private String mapPathUri(String unmappedUri) {
         String ret = URLUtils.removeTrailingSlashes(unmappedUri);
 
@@ -529,7 +544,7 @@ public class RequestContext {
 
         return ret;
     }
-    
+
     private String mapPathTemplateUri(String unmappedUri) {
         String ret = URLUtils.removeTrailingSlashes(unmappedUri);
         String rewriteUri;
@@ -752,7 +767,11 @@ public class RequestContext {
      * @return the count
      */
     public boolean isCount() {
-        return count || this.type == TYPE.COUNT;
+        return count
+                || this.type == TYPE.ROOT_COUNT
+                || this.type == TYPE.COLLECTION_COUNT
+                || this.type == TYPE.FILES_BUCKET_COUNT
+                || this.type == TYPE.SCHEMA_STORE_COUNT;
     }
 
     /**
@@ -1412,7 +1431,7 @@ public class RequestContext {
     public boolean isNoProps() {
         return noProps;
     }
-    
+
     /**
      * @param noProps the noProps to set
      */
@@ -1565,7 +1584,7 @@ public class RequestContext {
     public boolean isSchemaStore() {
         return this.type == TYPE.SCHEMA_STORE;
     }
-    
+
     /**
      * helper method to check request resource type
      *
@@ -1632,20 +1651,24 @@ public class RequestContext {
     public enum TYPE {
         INVALID,
         ROOT,
+        ROOT_COUNT,
         DB,
+        DB_COUNT,
         COLLECTION,
+        COLLECTION_COUNT,
         DOCUMENT,
         COLLECTION_INDEXES,
         INDEX,
         FILES_BUCKET,
+        FILES_BUCKET_COUNT,
         FILE,
         FILE_BINARY,
         AGGREGATION,
         SCHEMA,
         SCHEMA_STORE,
+        SCHEMA_STORE_COUNT,
         BULK_DOCUMENTS,
-        METRICS,
-        COUNT
+        METRICS
     }
 
     public enum METHOD {
