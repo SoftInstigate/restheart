@@ -62,6 +62,7 @@ import org.restheart.handlers.metadata.TransformerHandler;
 import org.restheart.handlers.root.GetRootHandler;
 import org.restheart.handlers.schema.JsonMetaSchemaChecker;
 import org.restheart.handlers.schema.JsonSchemaTransformer;
+import org.restheart.metadata.transformers.CountRequestTransformer;
 import org.restheart.metadata.transformers.PlainJsonTransformer;
 import org.restheart.metadata.transformers.RepresentationTransformer.PHASE;
 import org.restheart.utils.HttpStatus;
@@ -157,6 +158,21 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
                                                 PHASE.RESPONSE,
                                                 new PlainJsonTransformer(),
                                                 new AggregationTransformer())))));
+
+        // *** COLLECTION handlers
+        putPipedHttpHandler(TYPE.COUNT, METHOD.GET,
+                new RequestTransformerMetadataHandler(
+                        new TransformerHandler(
+                                new GetCollectionHandler(
+                                        new ResponseTransformerMetadataHandler(
+                                                new TransformerHandler(
+                                                        new HookMetadataHandler(
+                                                                new ResponseSenderHandler()),
+                                                        PHASE.RESPONSE,
+                                                        new CountRequestTransformer()))),
+                                PHASE.REQUEST,
+                                new CountRequestTransformer()))
+        );
 
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST,
                 new NormalOrBulkDispatcherHandler(
