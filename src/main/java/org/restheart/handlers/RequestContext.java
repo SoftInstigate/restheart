@@ -81,6 +81,7 @@ public class RequestContext {
     public static final String LOCAL = "local";
     public static final String ADMIN = "admin";
     public static final String _METRICS = "_metrics";
+    public static final String _COUNT = "_count";
 
     public static final String FS_CHUNKS_SUFFIX = ".chunks";
     public static final String FS_FILES_SUFFIX = ".files";
@@ -129,7 +130,8 @@ public class RequestContext {
         TYPE type;
         if (pathTokens.length < 2) {
             type = TYPE.ROOT;
-        } else if (pathTokens.length < 3 && pathTokens[1].equalsIgnoreCase(_METRICS)) {
+        } else if (pathTokens.length < 3 
+                && pathTokens[1].equalsIgnoreCase(_METRICS)) {
             type = TYPE.METRICS;
         } else if (pathTokens.length < 3) {
             type = TYPE.DB;
@@ -173,6 +175,9 @@ public class RequestContext {
         } else if (pathTokens.length == 4
                 && pathTokens[3].equalsIgnoreCase(_METRICS)) {
             type = TYPE.METRICS;
+        } else if (pathTokens.length == 4
+                && pathTokens[3].equalsIgnoreCase(_COUNT)) {
+            type = TYPE.COUNT;
         } else if (pathTokens.length == 4
                 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.COLLECTION_INDEXES;
@@ -240,6 +245,7 @@ public class RequestContext {
                 || (type != TYPE.AGGREGATION
                 && _AGGREGATIONS.equalsIgnoreCase(documentIdRaw)))
                 && !documentIdRaw.equalsIgnoreCase(_METRICS)
+                && !documentIdRaw.equalsIgnoreCase(_COUNT)
                 && !documentIdRaw.equalsIgnoreCase(_INDEXES)
                 && !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID)
                 && !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID)
@@ -746,7 +752,7 @@ public class RequestContext {
      * @return the count
      */
     public boolean isCount() {
-        return count;
+        return count || this.type == TYPE.COUNT;
     }
 
     /**
@@ -1406,6 +1412,13 @@ public class RequestContext {
     public boolean isNoProps() {
         return noProps;
     }
+    
+    /**
+     * @param noProps the noProps to set
+     */
+    public void setNoProps(boolean noProps) {
+        this.noProps = noProps;
+    }
 
     /**
      * @return the inError
@@ -1552,6 +1565,15 @@ public class RequestContext {
     public boolean isSchemaStore() {
         return this.type == TYPE.SCHEMA_STORE;
     }
+    
+    /**
+     * helper method to check request resource type
+     *
+     * @return true if type is TYPE.METRICS
+     */
+    public boolean isMetrics() {
+        return this.type == TYPE.METRICS;
+    }
 
     /**
      * helper method to check request method
@@ -1622,7 +1644,8 @@ public class RequestContext {
         SCHEMA,
         SCHEMA_STORE,
         BULK_DOCUMENTS,
-        METRICS
+        METRICS,
+        COUNT
     }
 
     public enum METHOD {
