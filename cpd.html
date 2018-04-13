@@ -128,7 +128,8 @@
     @Override
     boolean doesDBTransformerAppy(RequestContext context) {
         return (!context.isInError()
-                &amp;&amp; (context.isDocument()
+                &amp;&amp; (context.isDb()
+                || context.isDocument()
                 || context.isBulkDocuments()
                 || context.isCollection()
                 || context.isAggregation()
