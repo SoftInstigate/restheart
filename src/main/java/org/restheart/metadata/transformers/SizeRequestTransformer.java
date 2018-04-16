@@ -31,7 +31,7 @@ import org.restheart.handlers.RequestContext;
  * just contain the _size property
  *
  */
-public class CountRequestTransformer implements Transformer {
+public class SizeRequestTransformer implements Transformer {
 
     /**
      *
