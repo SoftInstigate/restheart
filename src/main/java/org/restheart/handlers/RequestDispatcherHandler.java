@@ -62,7 +62,7 @@ import org.restheart.handlers.metadata.TransformerHandler;
 import org.restheart.handlers.root.GetRootHandler;
 import org.restheart.handlers.schema.JsonMetaSchemaChecker;
 import org.restheart.handlers.schema.JsonSchemaTransformer;
-import org.restheart.metadata.transformers.CountRequestTransformer;
+import org.restheart.metadata.transformers.SizeRequestTransformer;
 import org.restheart.metadata.transformers.PlainJsonTransformer;
 import org.restheart.metadata.transformers.RepresentationTransformer.PHASE;
 import org.restheart.utils.HttpStatus;
@@ -120,16 +120,16 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
                                         PHASE.RESPONSE,
                                         new PlainJsonTransformer()))));
 
-        putPipedHttpHandler(TYPE.ROOT_COUNT, METHOD.GET,
+        putPipedHttpHandler(TYPE.ROOT_SIZE, METHOD.GET,
                 new RequestTransformerMetadataHandler(
                         new TransformerHandler(
                                 new GetRootHandler(
                                         new TransformerHandler(
                                                 new ResponseSenderHandler(null),
                                                 PHASE.RESPONSE,
-                                                new CountRequestTransformer())),
+                                                new SizeRequestTransformer())),
                                 PHASE.REQUEST,
-                                new CountRequestTransformer()))
+                                new SizeRequestTransformer()))
         );
 
         // *** DB handlers
@@ -143,16 +143,16 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
                                         new AggregationTransformer(),
                                         new PlainJsonTransformer()))));
         
-        putPipedHttpHandler(TYPE.DB_COUNT, METHOD.GET,
+        putPipedHttpHandler(TYPE.DB_SIZE, METHOD.GET,
                 new RequestTransformerMetadataHandler(
                         new TransformerHandler(
                                 new GetDBHandler(
                                         new TransformerHandler(
                                                 new ResponseSenderHandler(null),
                                                 PHASE.RESPONSE,
-                                                new CountRequestTransformer())),
+                                                new SizeRequestTransformer())),
                                 PHASE.REQUEST,
-                                new CountRequestTransformer()))
+                                new SizeRequestTransformer()))
         );
 
         putPipedHttpHandler(TYPE.DB, METHOD.PUT,
@@ -183,7 +183,7 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
                                                 new PlainJsonTransformer(),
                                                 new AggregationTransformer())))));
 
-        putPipedHttpHandler(TYPE.COLLECTION_COUNT, METHOD.GET,
+        putPipedHttpHandler(TYPE.COLLECTION_SIZE, METHOD.GET,
                 new RequestTransformerMetadataHandler(
                         new TransformerHandler(
                                 new GetCollectionHandler(
@@ -192,9 +192,9 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
                                                         new HookMetadataHandler(
                                                                 new ResponseSenderHandler()),
                                                         PHASE.RESPONSE,
-                                                        new CountRequestTransformer()))),
+                                                        new SizeRequestTransformer()))),
                                 PHASE.REQUEST,
-                                new CountRequestTransformer()))
+                                new SizeRequestTransformer()))
         );
 
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.POST,
@@ -296,16 +296,16 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
                         new GetCollectionHandler(
                                 respTransformers())));
         
-        putPipedHttpHandler(TYPE.FILES_BUCKET_COUNT, METHOD.GET,
+        putPipedHttpHandler(TYPE.FILES_BUCKET_SIZE, METHOD.GET,
                 new RequestTransformerMetadataHandler(
                         new TransformerHandler(
                                 new GetCollectionHandler(
                                         new TransformerHandler(
                                                 new ResponseSenderHandler(null),
                                                 PHASE.RESPONSE,
-                                                new CountRequestTransformer())),
+                                                new SizeRequestTransformer())),
                                 PHASE.REQUEST,
-                                new CountRequestTransformer()))
+                                new SizeRequestTransformer()))
         );
         
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.POST,
@@ -380,16 +380,16 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
                                         PHASE.RESPONSE,
                                         new JsonSchemaTransformer()))));
 
-        putPipedHttpHandler(TYPE.SCHEMA_STORE_COUNT, METHOD.GET,
+        putPipedHttpHandler(TYPE.SCHEMA_STORE_SIZE, METHOD.GET,
                 new RequestTransformerMetadataHandler(
                         new TransformerHandler(
                                 new GetCollectionHandler(
                                         new TransformerHandler(
                                                 new ResponseSenderHandler(null),
                                                 PHASE.RESPONSE,
-                                                new CountRequestTransformer())),
+                                                new SizeRequestTransformer())),
                                 PHASE.REQUEST,
-                                new CountRequestTransformer()))
+                                new SizeRequestTransformer()))
         );
         
         putPipedHttpHandler(TYPE.SCHEMA_STORE, METHOD.PUT,

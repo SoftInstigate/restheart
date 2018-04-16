@@ -81,7 +81,7 @@ public class RequestContext {
     public static final String LOCAL = "local";
     public static final String ADMIN = "admin";
     public static final String _METRICS = "_metrics";
-    public static final String _COUNT = "_count";
+    public static final String _SIZE = "_size";
 
     public static final String FS_CHUNKS_SUFFIX = ".chunks";
     public static final String FS_FILES_SUFFIX = ".files";
@@ -129,17 +129,17 @@ public class RequestContext {
     static TYPE selectRequestType(String[] pathTokens) {
         TYPE type;
 
-        if (pathTokens.length > 0 && pathTokens[pathTokens.length - 1].equalsIgnoreCase(_COUNT)) {
+        if (pathTokens.length > 0 && pathTokens[pathTokens.length - 1].equalsIgnoreCase(_SIZE)) {
             if (pathTokens.length == 2) {
-                type = TYPE.ROOT_COUNT;
+                type = TYPE.ROOT_SIZE;
             } else if (pathTokens.length == 3) {
-                type = TYPE.DB_COUNT;
+                type = TYPE.DB_SIZE;
             } else if (pathTokens.length == 4 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
-                type = TYPE.FILES_BUCKET_COUNT;
+                type = TYPE.FILES_BUCKET_SIZE;
             } else if (pathTokens.length == 4 && pathTokens[2].endsWith(_SCHEMAS)) {
-                type = TYPE.SCHEMA_STORE_COUNT;
+                type = TYPE.SCHEMA_STORE_SIZE;
             } else if (pathTokens.length == 4) {
-                type = TYPE.COLLECTION_COUNT;
+                type = TYPE.COLLECTION_SIZE;
             } else {
                 type = TYPE.INVALID;
             }
@@ -219,7 +219,7 @@ public class RequestContext {
      */
     public static boolean isReservedResourceDb(String dbName) {
         return !dbName.equalsIgnoreCase(_METRICS)
-                && !dbName.equalsIgnoreCase(_COUNT)
+                && !dbName.equalsIgnoreCase(_SIZE)
                 && (dbName.equals(ADMIN)
                 || dbName.equals(LOCAL)
                 || dbName.startsWith(SYSTEM)
@@ -236,7 +236,7 @@ public class RequestContext {
         return collectionName != null
                 && !collectionName.equalsIgnoreCase(_SCHEMAS)
                 && !collectionName.equalsIgnoreCase(_METRICS)
-                && !collectionName.equalsIgnoreCase(_COUNT)
+                && !collectionName.equalsIgnoreCase(_SIZE)
                 && (collectionName.startsWith(SYSTEM)
                 || collectionName.startsWith(UNDERSCORE)
                 || collectionName.endsWith(FS_CHUNKS_SUFFIX)
@@ -260,7 +260,7 @@ public class RequestContext {
                 || (type != TYPE.AGGREGATION
                 && _AGGREGATIONS.equalsIgnoreCase(documentIdRaw)))
                 && !documentIdRaw.equalsIgnoreCase(_METRICS)
-                && !documentIdRaw.equalsIgnoreCase(_COUNT)
+                && !documentIdRaw.equalsIgnoreCase(_SIZE)
                 && !documentIdRaw.equalsIgnoreCase(_INDEXES)
                 && !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID)
                 && !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID)
@@ -768,10 +768,10 @@ public class RequestContext {
      */
     public boolean isCount() {
         return count
-                || this.type == TYPE.ROOT_COUNT
-                || this.type == TYPE.COLLECTION_COUNT
-                || this.type == TYPE.FILES_BUCKET_COUNT
-                || this.type == TYPE.SCHEMA_STORE_COUNT;
+                || this.type == TYPE.ROOT_SIZE
+                || this.type == TYPE.COLLECTION_SIZE
+                || this.type == TYPE.FILES_BUCKET_SIZE
+                || this.type == TYPE.SCHEMA_STORE_SIZE;
     }
 
     /**
@@ -1651,22 +1651,22 @@ public class RequestContext {
     public enum TYPE {
         INVALID,
         ROOT,
-        ROOT_COUNT,
+        ROOT_SIZE,
         DB,
-        DB_COUNT,
+        DB_SIZE,
         COLLECTION,
-        COLLECTION_COUNT,
+        COLLECTION_SIZE,
         DOCUMENT,
         COLLECTION_INDEXES,
         INDEX,
         FILES_BUCKET,
-        FILES_BUCKET_COUNT,
+        FILES_BUCKET_SIZE,
         FILE,
         FILE_BINARY,
         AGGREGATION,
         SCHEMA,
         SCHEMA_STORE,
-        SCHEMA_STORE_COUNT,
+        SCHEMA_STORE_SIZE,
         BULK_DOCUMENTS,
         METRICS
     }
