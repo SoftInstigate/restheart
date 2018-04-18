@@ -22,6 +22,7 @@ import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.Set;
 import org.bson.BsonArray;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
@@ -47,18 +48,18 @@ import org.slf4j.LoggerFactory;
  * latter case, the properties are added to the representation nested in the
  * passed object property key.
  *
- * the properties that can be added are: userName, userRoles, dateTime, localIp,
- * localPort, localServerName, queryString, relativePath, remoteIp,
- * requestMethod, requestProtocol
+ * the properties that can be added are: userName, userRoles, epochTimeStamp,
+ * dateTime, localIp, localPort, localServerName, queryString, relativePath,
+ * remoteIp, requestMethod, requestProtocol
  *
  * <br>for instance, with the following definition:
- * <br>{name:"addRequestProperties", "phase":"REQUEST", "scope":"CHILDREN",
- * args:{"log": ["userName", "remoteIp"]}}
+ * <br>{"name":"addRequestProperties", "phase":"REQUEST", "args":{"log":
+ * ["userName", "remoteIp"]}}
  * <br>injected properties are: log: { userName:"andrea", remoteIp:"127.0.0.1"}
  *
  * <br>for instance, with the following definition:
- * <br>{name:"addRequestProperties", "phase":"REQUEST", "scope":"CHILDREN",
- * args:["userName", "remoteIp"]}
+ * <br>{"name":"addRequestProperties", "phase":"REQUEST", "args":["userName",
+ * "remoteIp"]}
  * <br>injected properties are: userName:"andrea", remoteIp:"127.0.0.1"
  *
  */
@@ -83,7 +84,7 @@ public class RequestPropsInjecterTransformer implements Transformer {
             // nothing to do
             return;
         }
-        
+
         if (contentToTransform == null) {
             // nothing to do
             return;
@@ -176,21 +177,27 @@ public class RequestPropsInjecterTransformer implements Transformer {
         // remote user
         properties.put("userName", new BsonString(
                 ExchangeAttributes
-                .remoteUser()
-                .readAttribute(exchange)));
+                        .remoteUser()
+                        .readAttribute(exchange)));
 
         // user roles
         if (Objects.nonNull(exchange.getSecurityContext())
                 && Objects.nonNull(
                         exchange.getSecurityContext()
-                        .getAuthenticatedAccount())
+                                .getAuthenticatedAccount())
                 && Objects.nonNull(exchange
                         .getSecurityContext()
                         .getAuthenticatedAccount().getRoles())) {
-            properties.put("userRoles", new BsonString(
-                    exchange
+            Set<String> roles = exchange
                     .getSecurityContext()
-                    .getAuthenticatedAccount().getRoles().toString()));
+                    .getAuthenticatedAccount().getRoles();
+            BsonArray _roles = new BsonArray();
+
+            roles.stream()
+                    .map(role -> new BsonString(role))
+                    .forEachOrdered(role -> _roles.add(role));
+
+            properties.put("userRoles", _roles);
         } else {
             properties.put("userRoles", new BsonNull());
         }
@@ -198,7 +205,7 @@ public class RequestPropsInjecterTransformer implements Transformer {
         // dateTime
         properties.put("epochTimeStamp",
                 new BsonDateTime(Instant.now().getEpochSecond() * 1000));
-        
+
         // dateTime
         properties.put("dateTime", new BsonString(
                 ExchangeAttributes.dateTime().readAttribute(exchange)));
