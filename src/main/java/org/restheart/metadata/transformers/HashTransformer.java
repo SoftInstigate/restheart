@@ -35,7 +35,7 @@ import org.restheart.handlers.RequestContext.TYPE;
  * passed in the args argument as an array of strings. the bcrypt
  *
  * <br>Example that hashes the property 'password' from the response:
- * <br>{ rts: [{"name": "hashProperties", "phase":"REQUEST", "scope":"CHILDREN",
+ * <br>{ rts: [{"name": "hashProperties", "phase":"REQUEST",
  * "args": { "props": ["password"], "complexity": 12 }}] }
  *
  */

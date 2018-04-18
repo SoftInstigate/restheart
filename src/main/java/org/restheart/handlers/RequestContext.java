@@ -1584,7 +1584,52 @@ public class RequestContext {
     public boolean isSchemaStore() {
         return this.type == TYPE.SCHEMA_STORE;
     }
+    
+    /**
+     * helper method to check request resource type
+     *
+     * @return true if type is TYPE.ROOT_SIZE
+     */
+    public boolean isRootSize() {
+        return this.type == TYPE.ROOT_SIZE;
+    }
+    
+    /**
+     * helper method to check request resource type
+     *
+     * @return true if type is TYPE.DB_SIZE
+     */
+    public boolean isDbSize() {
+        return this.type == TYPE.DB_SIZE;
+    }
+    
+    /**
+     * helper method to check request resource type
+     *
+     * @return true if type is TYPE.COLLECTION_SIZE
+     */
+    public boolean isCollectionSize() {
+        return this.type == TYPE.COLLECTION_SIZE;
+    }
 
+    /**
+     * helper method to check request resource type
+     *
+     * @return true if type is TYPE.FILES_BUCKET_SIZE
+     */
+    public boolean isFilesBucketSize() {
+        return this.type == TYPE.FILES_BUCKET_SIZE;
+    }
+    
+    /**
+     * helper method to check request resource type
+     *
+     * @return true if type is TYPE.SCHEMA_STORE_SIZE
+     */
+    public boolean isSchemaStoreSize() {
+        return this.type == TYPE.SCHEMA_STORE_SIZE;
+    }
+    
     /**
      * helper method to check request resource type
      *
