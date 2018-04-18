@@ -215,7 +215,6 @@ public class DAOUtils {
                         document,
                         allowUpsert ? FAU_AFTER_UPSERT_OPS : FAU_AFTER_NOT_UPSERT_OPS);
             } catch (MongoCommandException mce) {
-                LOGGER.debug("******** {}", mce.getErrorMessage());
                 if (mce.getErrorCode() == 11000) {
                     if (allowUpsert
                             && filter != null
@@ -243,7 +242,6 @@ public class DAOUtils {
                         document,
                         allowUpsert ? FAU_AFTER_UPSERT_OPS : FAU_AFTER_NOT_UPSERT_OPS);
             } catch (MongoCommandException mce) {
-                LOGGER.debug("******** {}", mce.getErrorMessage());
                 if (mce.getErrorCode() == 11000) {
                     if (allowUpsert
                             && filter != null
@@ -272,7 +270,6 @@ public class DAOUtils {
                         document,
                         allowUpsert ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS);
             } catch (MongoCommandException mce) {
-                LOGGER.debug("******** {}", mce.getErrorMessage());
                 if (mce.getErrorCode() == 11000) {
                     if (allowUpsert
                             && filter != null
