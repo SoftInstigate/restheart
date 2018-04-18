@@ -402,7 +402,7 @@
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     context,
-                    HttpStatus.SC_CONFLICT,
+                    HttpStatus.SC_EXPECTATION_FAILED,
                     &quot;A duplicate key error occurred. &quot;
                             + &quot;The patched document does not fulfill &quot;
                             + &quot;an unique index constraint&quot;);
@@ -597,7 +597,7 @@
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     context,
-                    HttpStatus.SC_CONFLICT,
+                    HttpStatus.SC_EXPECTATION_FAILED,
                     &quot;A duplicate key error occurred. &quot;
                             + &quot;The patched document does not fulfill &quot;</pre></div></td></tr></table>
 <table border="0" class="bodyTable">
