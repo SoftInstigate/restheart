@@ -26,7 +26,7 @@ under the License.
     <copyright>&#169;2014 - 2018 SoftInstigate</copyright>
     <item>
       <title>File: 205,
-             Errors: 3180,
+             Errors: 3185,
              Warnings: 0,
              Infos: 0
       </title>
@@ -476,20 +476,6 @@ under the License.
                 </td>
                 <td>
                   6
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.metadata.transformers.CountRequestTransformer.java">org/restheart/metadata/transformers/CountRequestTransformer.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  2
                 </td>
               </tr>
                           <tr>
@@ -1852,6 +1838,20 @@ under the License.
               </tr>
                           <tr>
                 <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.metadata.transformers.SizeRequestTransformer.java">org/restheart/metadata/transformers/SizeRequestTransformer.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  2
+                </td>
+              </tr>
+                          <tr>
+                <td>
                   <a href="http://www.restheart.org/checkstyle.html#org.restheart.handlers.database.PutDBHandler.java">org/restheart/handlers/database/PutDBHandler.java</a>
                 </td>
                 <td>
@@ -2869,7 +2869,7 @@ under the License.
                   0
                 </td>
                 <td>
-                  251
+                  256
                 </td>
               </tr>
                           <tr>
