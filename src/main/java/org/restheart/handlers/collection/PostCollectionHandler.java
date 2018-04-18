@@ -160,7 +160,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     context,
-                    HttpStatus.SC_CONFLICT,
+                    HttpStatus.SC_EXPECTATION_FAILED,
                     "A duplicate key error occurred. "
                     + "The posted data does not fulfill "
                     + "an unique index constraint");

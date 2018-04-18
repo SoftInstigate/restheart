@@ -190,7 +190,7 @@ public class FileMetadataHandler extends PipedHttpHandler {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     context,
-                    HttpStatus.SC_CONFLICT,
+                    HttpStatus.SC_EXPECTATION_FAILED,
                     "A duplicate key error occurred. "
                     + "The patched document does not fulfill "
                     + "an unique index constraint");

@@ -215,11 +215,20 @@ public class DAOUtils {
                         document,
                         allowUpsert ? FAU_AFTER_UPSERT_OPS : FAU_AFTER_NOT_UPSERT_OPS);
             } catch (MongoCommandException mce) {
-                if (mce.getErrorCode() == 11000 && filter != null) {
-                    // DuplicateKey error
-                    // this happens if the filter parameter didn't match
-                    // the existing document
-                    return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED, oldDocument, oldDocument);
+                LOGGER.debug("******** {}", mce.getErrorMessage());
+                if (mce.getErrorCode() == 11000) {
+                    if (allowUpsert
+                            && filter != null
+                            && !filter.isEmpty()
+                            && mce.getErrorMessage().contains("$_id_ dup key")) {
+                        // DuplicateKey error
+                        // this happens if the filter parameter didn't match
+                        // the existing document and so the upserted doc
+                        // has an existing _id 
+                        return new OperationResult(HttpStatus.SC_NOT_FOUND, oldDocument, oldDocument);
+                    } else {
+                        return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED);
+                    }
                 } else {
                     throw mce;
                 }
@@ -234,11 +243,20 @@ public class DAOUtils {
                         document,
                         allowUpsert ? FAU_AFTER_UPSERT_OPS : FAU_AFTER_NOT_UPSERT_OPS);
             } catch (MongoCommandException mce) {
-                if (mce.getErrorCode() == 11000 && filter != null) {
-                    // DuplicateKey error
-                    // this happens if the filter parameter didn't match
-                    // the existing document
-                    return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED);
+                LOGGER.debug("******** {}", mce.getErrorMessage());
+                if (mce.getErrorCode() == 11000) {
+                    if (allowUpsert
+                            && filter != null
+                            && !filter.isEmpty()
+                            && mce.getErrorMessage().contains("$_id_ dup key")) {
+                        // DuplicateKey error due to filter 
+                        // this happens if the filter parameter didn't match
+                        // the existing document and so the upserted doc
+                        // has an existing _id 
+                        return new OperationResult(HttpStatus.SC_NOT_FOUND);
+                    } else {
+                        return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED);
+                    }
                 } else {
                     throw mce;
                 }
@@ -254,11 +272,20 @@ public class DAOUtils {
                         document,
                         allowUpsert ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS);
             } catch (MongoCommandException mce) {
-                if (mce.getErrorCode() == 11000 && filter != null) {
-                    // DuplicateKey error
-                    // this happens if the filter parameter didn't match
-                    // the existing document
-                    return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED);
+                LOGGER.debug("******** {}", mce.getErrorMessage());
+                if (mce.getErrorCode() == 11000) {
+                    if (allowUpsert
+                            && filter != null
+                            && !filter.isEmpty()
+                            && mce.getErrorMessage().contains("$_id_ dup key")) {
+                        // DuplicateKey error
+                        // this happens if the filter parameter didn't match
+                        // the existing document and so the upserted doc
+                        // has an existing _id 
+                        return new OperationResult(HttpStatus.SC_NOT_FOUND);
+                    } else {
+                        return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED);
+                    }
                 } else {
                     throw mce;
                 }
