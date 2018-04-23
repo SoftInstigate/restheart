@@ -39,14 +39,14 @@ import org.restheart.utils.ResponseHelper;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class AfterWriteCheckMetadataHandler
-        extends BeforeWriteCheckMetadataHandler {
+public class AfterWriteCheckHandler
+        extends BeforeWriteCheckHandler {
 
-    public AfterWriteCheckMetadataHandler() {
+    public AfterWriteCheckHandler() {
         super(null);
     }
 
-    public AfterWriteCheckMetadataHandler(PipedHttpHandler next) {
+    public AfterWriteCheckHandler(PipedHttpHandler next) {
         super(next);
     }
 

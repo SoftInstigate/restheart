@@ -39,10 +39,10 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
+public class BeforeWriteCheckHandler extends PipedHttpHandler {
 
     static final Logger LOGGER
-            = LoggerFactory.getLogger(BeforeWriteCheckMetadataHandler.class);
+            = LoggerFactory.getLogger(BeforeWriteCheckHandler.class);
 
     public static final String SINGLETON_GROUP_NAME = "checkers";
 
@@ -55,7 +55,7 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public BeforeWriteCheckMetadataHandler(PipedHttpHandler next) {
+    public BeforeWriteCheckHandler(PipedHttpHandler next) {
         super(next);
     }
 

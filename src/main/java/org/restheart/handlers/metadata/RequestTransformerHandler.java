@@ -19,7 +19,6 @@ package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
-import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.PipedHttpHandler;
@@ -31,32 +30,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
  * handler that applies the transformers defined in the collection properties to
- * the response
+ * the request
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ResponseTransformerMetadataHandler
-        extends AbstractTransformerMetadataHandler {
+public class RequestTransformerHandler
+        extends AbstractTransformerHandler {
 
     static final Logger LOGGER
-            = LoggerFactory.getLogger(ResponseTransformerMetadataHandler.class);
+            = LoggerFactory.getLogger(RequestTransformerHandler.class);
 
     /**
-     * Creates a new instance of ResponseTransformerMetadataHandler
-     *
-     */
-    public ResponseTransformerMetadataHandler() {
-        super(null);
-    }
-
-    /**
-     * Creates a new instance of ResponseTransformerMetadataHandler
+     * Creates a new instance of RequestTransformerMetadataHandler
      *
      * @param next
      */
-    public ResponseTransformerMetadataHandler(PipedHttpHandler next) {
+    public RequestTransformerHandler(PipedHttpHandler next) {
         super(next);
     }
 
@@ -66,12 +56,15 @@ public class ResponseTransformerMetadataHandler
                 && (context.isDocument()
                 || context.isBulkDocuments()
                 || context.isCollection()
+                || context.isCollectionSize()
                 || context.isAggregation()
                 || context.isFile()
                 || context.isFilesBucket()
+                || context.isFilesBucketSize()
                 || context.isIndex()
                 || context.isCollectionIndexes()
                 || context.isSchemaStore()
+                || context.isSchemaStoreSize()
                 || context.isSchema())
                 && context.getCollectionProps() != null
                 && context.getCollectionProps()
@@ -82,15 +75,19 @@ public class ResponseTransformerMetadataHandler
     boolean doesDBTransformerAppy(RequestContext context) {
         return (!context.isInError()
                 && (context.isDb()
+                || context.isDbSize()
                 || context.isDocument()
                 || context.isBulkDocuments()
                 || context.isCollection()
+                || context.isCollectionSize()
                 || context.isAggregation()
                 || context.isFile()
                 || context.isFilesBucket()
+                || context.isFilesBucketSize()
                 || context.isIndex()
                 || context.isCollectionIndexes()
                 || context.isSchemaStore()
+                || context.isSchemaStoreSize()
                 || context.isSchema())
                 && context.getDbProps() != null
                 && context.getDbProps()
@@ -126,13 +123,11 @@ public class ResponseTransformerMetadataHandler
             RequestContext context,
             List<RequestTransformer> rts)
             throws InvalidMetadataException {
-
         rts.stream().filter((rt)
-                -> (rt.getPhase() == RequestTransformer.PHASE.RESPONSE))
+                -> (rt.getPhase() == RequestTransformer.PHASE.REQUEST))
                 .forEachOrdered((rt) -> {
                     NamedSingletonsFactory nsf = NamedSingletonsFactory
                             .getInstance();
-
                     Transformer t = (Transformer) nsf
                             .get("transformers", rt.getName());
 
@@ -140,71 +135,34 @@ public class ResponseTransformerMetadataHandler
                             = nsf.getArgs("transformers", rt.getName());
 
                     if (t == null) {
-                        throw new IllegalArgumentException("cannot find singleton "
+                        throw new IllegalArgumentException(
+                                "cannot find singleton "
                                 + rt.getName()
                                 + " in singleton group transformers");
                     }
-                    
-                    BsonValue responseContent = context.getResponseContent() == null
-                    ? new BsonDocument()
-                    : context.getResponseContent();
 
-                    if (rt.getScope() == RequestTransformer.SCOPE.THIS) {
+                    BsonValue requestContent = context.getContent() == null
+                            ? new BsonDocument()
+                            : context.getContent();
+
+                    if (requestContent.isDocument()) {
                         t.transform(
                                 exchange,
                                 context,
-                                responseContent,
+                                requestContent,
                                 rt.getArgs(),
                                 confArgs);
-                    } else if (responseContent.isDocument()
-                            && responseContent
-                                    .asDocument()
-                                    .containsKey("_embedded")) {
-                        BsonValue _embedded = context
-                                .getResponseContent()
-                                .asDocument()
-                                .get("_embedded");
-
-                        // execute the logic on children documents
-                        BsonDocument embedded = _embedded.asDocument();
-
-                        embedded
-                                .keySet()
-                                .stream()
-                                .filter(key -> "rh:doc".equals(key)
-                                || "rh:file".equals(key)
-                                || "rh:bucket".equals(key)
-                                || "rh:db".equals(key)
-                                || "rh:coll".equals(key)
-                                || "rh:index".equals(key)
-                                || "rh:result".equals(key)
-                                || "rh:schema".equals(key))
-                                .filter(key -> embedded.get(key).isArray())
-                                .forEachOrdered(key -> {
-
-                                    BsonArray children = embedded
-                                            .get(key)
-                                            .asArray();
-
-                                    if (children != null) {
-                                        children.getValues().stream()
-                                                .forEach((child) -> {
-                                                    t.transform(
-                                                            exchange,
-                                                            context,
-                                                            child,
-                                                            rt.getArgs(),
-                                                            confArgs);
-                                                });
-                                    }
+                    } else if (context.isPost()
+                            && requestContent.isArray()) {
+                        requestContent.asArray().stream().forEachOrdered(
+                                (doc) -> {
+                                    t.transform(
+                                            exchange,
+                                            context,
+                                            doc,
+                                            rt.getArgs(),
+                                            confArgs);
                                 });
-                    } else if (context.isDocument()) {
-                        t.transform(
-                                exchange,
-                                context,
-                                responseContent.asDocument(),
-                                rt.getArgs(),
-                                confArgs);
                     }
                 });
     }
