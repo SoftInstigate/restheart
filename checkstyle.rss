@@ -242,20 +242,6 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.handlers.metadata.RequestTransformerMetadataHandler.java">org/restheart/handlers/metadata/RequestTransformerMetadataHandler.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  18
-                </td>
-              </tr>
-                          <tr>
-                <td>
                   <a href="http://www.restheart.org/checkstyle.html#org.restheart.handlers.document.DocumentRepresentationFactory.java">org/restheart/handlers/document/DocumentRepresentationFactory.java</a>
                 </td>
                 <td>
@@ -312,6 +298,20 @@ under the License.
               </tr>
                           <tr>
                 <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.handlers.metadata.HookHandler.java">org/restheart/handlers/metadata/HookHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  8
+                </td>
+              </tr>
+                          <tr>
+                <td>
                   <a href="http://www.restheart.org/checkstyle.html#org.restheart.utils.LoggingInitializer.java">org/restheart/utils/LoggingInitializer.java</a>
                 </td>
                 <td>
@@ -350,20 +350,6 @@ under the License.
                 </td>
                 <td>
                   1
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.handlers.metadata.HookMetadataHandler.java">org/restheart/handlers/metadata/HookMetadataHandler.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  8
                 </td>
               </tr>
                           <tr>
@@ -886,20 +872,6 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.handlers.metadata.BeforeWriteCheckMetadataHandler.java">org/restheart/handlers/metadata/BeforeWriteCheckMetadataHandler.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  20
-                </td>
-              </tr>
-                          <tr>
-                <td>
                   <a href="http://www.restheart.org/checkstyle.html#org.restheart.security.impl.AbstractDbIdentityManager.java">org/restheart/security/impl/AbstractDbIdentityManager.java</a>
                 </td>
                 <td>
@@ -1096,7 +1068,35 @@ under the License.
               </tr>
                           <tr>
                 <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.handlers.metadata.RequestTransformerHandler.java">org/restheart/handlers/metadata/RequestTransformerHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  18
+                </td>
+              </tr>
+                          <tr>
+                <td>
                   <a href="http://www.restheart.org/checkstyle.html#org.restheart.metadata.transformers.PlainJsonTransformer.java">org/restheart/metadata/transformers/PlainJsonTransformer.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  20
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.handlers.metadata.BeforeWriteCheckHandler.java">org/restheart/handlers/metadata/BeforeWriteCheckHandler.java</a>
                 </td>
                 <td>
                   0
@@ -1414,20 +1414,6 @@ under the License.
                 </td>
                 <td>
                   9
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.handlers.metadata.AbstractTransformerMetadataHandler.java">org/restheart/handlers/metadata/AbstractTransformerMetadataHandler.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  5
                 </td>
               </tr>
                           <tr>
@@ -2160,20 +2146,6 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.handlers.metadata.AfterWriteCheckMetadataHandler.java">org/restheart/handlers/metadata/AfterWriteCheckMetadataHandler.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  10
-                </td>
-              </tr>
-                          <tr>
-                <td>
                   <a href="http://www.restheart.org/checkstyle.html#org.restheart.security.impl.AbstractSimpleSecurityManager.java">org/restheart/security/impl/AbstractSimpleSecurityManager.java</a>
                 </td>
                 <td>
@@ -2184,6 +2156,20 @@ under the License.
                 </td>
                 <td>
                   6
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.handlers.metadata.ResponseTransformerHandler.java">org/restheart/handlers/metadata/ResponseTransformerHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  20
                 </td>
               </tr>
                           <tr>
@@ -2426,6 +2412,20 @@ under the License.
               </tr>
                           <tr>
                 <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.handlers.metadata.AfterWriteCheckHandler.java">org/restheart/handlers/metadata/AfterWriteCheckHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  10
+                </td>
+              </tr>
+                          <tr>
+                <td>
                   <a href="http://www.restheart.org/checkstyle.html#org.restheart.handlers.PipedWrappingHandler.java">org/restheart/handlers/PipedWrappingHandler.java</a>
                 </td>
                 <td>
@@ -2566,20 +2566,6 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.handlers.metadata.ResponseTransformerMetadataHandler.java">org/restheart/handlers/metadata/ResponseTransformerMetadataHandler.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  20
-                </td>
-              </tr>
-                          <tr>
-                <td>
                   <a href="http://www.restheart.org/checkstyle.html#org.restheart.db.OperationResult.java">org/restheart/db/OperationResult.java</a>
                 </td>
                 <td>
@@ -2618,6 +2604,20 @@ under the License.
                 </td>
                 <td>
                   12
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.handlers.metadata.AbstractTransformerHandler.java">org/restheart/handlers/metadata/AbstractTransformerHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  5
                 </td>
               </tr>
                           <tr>
