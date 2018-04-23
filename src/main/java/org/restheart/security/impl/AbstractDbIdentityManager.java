@@ -36,7 +36,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.bson.BsonDocument;
-import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.mindrot.jbcrypt.BCrypt;
