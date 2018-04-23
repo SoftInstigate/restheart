@@ -34,15 +34,15 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class HookMetadataHandler extends PipedHttpHandler {
+public class HookHandler extends PipedHttpHandler {
 
     static final Logger LOGGER
-            = LoggerFactory.getLogger(HookMetadataHandler.class);
+            = LoggerFactory.getLogger(HookHandler.class);
 
     /**
      * Creates a new instance of HookMetadataHandler
      */
-    public HookMetadataHandler() {
+    public HookHandler() {
         super(null);
     }
 
@@ -51,7 +51,7 @@ public class HookMetadataHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public HookMetadataHandler(PipedHttpHandler next) {
+    public HookHandler(PipedHttpHandler next) {
         super(next);
     }
 
