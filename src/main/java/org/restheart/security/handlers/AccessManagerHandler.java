@@ -18,9 +18,12 @@
 package org.restheart.security.handlers;
 
 import io.undertow.server.HttpServerExchange;
+import java.util.HashSet;
+import java.util.Set;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.security.AccessManager;
+import org.restheart.security.RequestContextPredicate;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -30,6 +33,7 @@ import org.restheart.utils.HttpStatus;
 public class AccessManagerHandler extends PipedHttpHandler {
 
     private final AccessManager accessManager;
+    private static Set<RequestContextPredicate> globalSecurityPredicates = new HashSet<>();
 
     /**
      * Creates a new instance of AccessManagerHandler
@@ -49,12 +53,29 @@ public class AccessManagerHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (accessManager.isAllowed(exchange, context)) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange hse,
+            RequestContext context) throws Exception {
+        if (accessManager.isAllowed(hse, context)
+                && checkGlobalPredicates(hse, context)) {
+            next(hse, context);
         } else {
-            exchange.setStatusCode(HttpStatus.SC_FORBIDDEN);
-            exchange.endExchange();
+            hse.setStatusCode(HttpStatus.SC_FORBIDDEN);
+            hse.endExchange();
         }
+    }
+
+    private boolean checkGlobalPredicates(HttpServerExchange hse,
+            RequestContext context) {
+        return this.getGlobalSecurityPredicates()
+                .stream()
+                .allMatch(predicate -> predicate.resolve(hse, context));
+    }
+
+    /**
+     * @return the globalSecurityPredicates allow to get and set the global
+     * security predicates to apply to all requests
+     */
+    public static Set<RequestContextPredicate> getGlobalSecurityPredicates() {
+        return globalSecurityPredicates;
     }
 }

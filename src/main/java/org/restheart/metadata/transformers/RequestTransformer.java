@@ -29,7 +29,7 @@ import org.restheart.handlers.metadata.InvalidMetadataException;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RepresentationTransformer {
+public class RequestTransformer {
 
     public static final String RTS_ELEMENT_NAME = "rts";
 
@@ -38,7 +38,7 @@ public class RepresentationTransformer {
     public static final String RT_SCOPE_ELEMENT_NAME = "scope";
     public static final String RT_ARGS_ELEMENT_NAME = "args";
 
-    public static List<RepresentationTransformer> getFromJson(BsonDocument props) throws InvalidMetadataException {
+    public static List<RequestTransformer> getFromJson(BsonDocument props) throws InvalidMetadataException {
         BsonValue _rts = props.get(RTS_ELEMENT_NAME);
 
         if (_rts == null || !_rts.isArray()) {
@@ -47,7 +47,7 @@ public class RepresentationTransformer {
 
         BsonArray rts = _rts.asArray();
 
-        List<RepresentationTransformer> ret = new ArrayList<>();
+        List<RequestTransformer> ret = new ArrayList<>();
 
         for (BsonValue o : rts.getValues()) {
             if (o.isDocument()) {
@@ -60,7 +60,7 @@ public class RepresentationTransformer {
         return ret;
     }
 
-    private static RepresentationTransformer getSingleFromJson(BsonDocument props) throws InvalidMetadataException {
+    private static RequestTransformer getSingleFromJson(BsonDocument props) throws InvalidMetadataException {
         BsonValue _phase = props.get(RT_PHASE_ELEMENT_NAME);
         BsonValue _scope = props.get(RT_SCOPE_ELEMENT_NAME);
         BsonValue _name = props.get(RT_NAME_ELEMENT_NAME);
@@ -94,7 +94,7 @@ public class RepresentationTransformer {
         }
         String name = _name.asString().getValue();
         
-        return new RepresentationTransformer(phase, scope, name, _args);
+        return new RequestTransformer(phase, scope, name, _args);
     }
 
     private final String name;
@@ -110,7 +110,7 @@ public class RepresentationTransformer {
      * configuration file
      * @param args
      */
-    public RepresentationTransformer(PHASE phase, SCOPE scope, String name, BsonValue args) {
+    public RequestTransformer(PHASE phase, SCOPE scope, String name, BsonValue args) {
         this.phase = phase;
         this.scope = scope;
         this.name = name;

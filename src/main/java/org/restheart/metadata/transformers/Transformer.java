@@ -22,11 +22,11 @@ import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 
 /**
- * A Transformer applies a transformation on request content. This can appen
- * both to incoming data (write requests) and to response data (read requests),
- * depending on the RepresentationTransformer phase attribute.
+ * A Transformer applies a transformation on requests. It can apply both to
+ * incoming requests data (body, qparams, etc) and response body for read
+ * requests), depending on the RequestTransformer phase attribute.
  *
- * @see org.restheart.hal.metadata.RepresentationTransformer
+ * @see org.restheart.hal.metadata.RequestTransformer
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -39,22 +39,24 @@ public interface Transformer {
      * @param exchange the server exchange
      * @param context the request context
      * @param contentToTransform the content data to transform
-     * @param args the args sepcified in the collection metadata via args property
-     * property
+     * @param args the args sepcified in the collection metadata via args
+     * property property
      */
     void transform(
             final HttpServerExchange exchange,
             final RequestContext context,
             BsonValue contentToTransform,
             final BsonValue args);
-    
+
     /**
-     * 
+     *
      * @param exchange the server exchange
      * @param context the request context
      * @param contentToTransform the content data to transform
-     * @param args the args sepcified in the collection metadata via args property
-     * @param confArgs the args specified in the configuration file via args property
+     * @param args the args sepcified in the collection metadata via args
+     * property
+     * @param confArgs the args specified in the configuration file via args
+     * property
      * @return true if completed successfully
      */
     default void transform(

@@ -24,7 +24,7 @@ import org.bson.BsonValue;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.metadata.NamedSingletonsFactory;
-import org.restheart.metadata.transformers.RepresentationTransformer;
+import org.restheart.metadata.transformers.RequestTransformer;
 import org.restheart.metadata.transformers.Transformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +68,7 @@ public class RequestTransformerMetadataHandler
                 || context.isSchema())
                 && context.getCollectionProps() != null
                 && context.getCollectionProps()
-                        .containsKey(RepresentationTransformer.RTS_ELEMENT_NAME));
+                        .containsKey(RequestTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
@@ -91,7 +91,7 @@ public class RequestTransformerMetadataHandler
                 || context.isSchema())
                 && context.getDbProps() != null
                 && context.getDbProps()
-                        .containsKey(RepresentationTransformer.RTS_ELEMENT_NAME));
+                        .containsKey(RequestTransformer.RTS_ELEMENT_NAME));
     }
 
     @Override
@@ -99,8 +99,8 @@ public class RequestTransformerMetadataHandler
             HttpServerExchange exchange,
             RequestContext context)
             throws InvalidMetadataException {
-        List<RepresentationTransformer> dbRts
-                = RepresentationTransformer
+        List<RequestTransformer> dbRts
+                = RequestTransformer
                         .getFromJson(context.getDbProps());
 
         applyTransformLogic(exchange, context, dbRts);
@@ -111,8 +111,8 @@ public class RequestTransformerMetadataHandler
             HttpServerExchange exchange,
             RequestContext context)
             throws InvalidMetadataException {
-        List<RepresentationTransformer> collRts
-                = RepresentationTransformer
+        List<RequestTransformer> collRts
+                = RequestTransformer
                         .getFromJson(context.getCollectionProps());
 
         applyTransformLogic(exchange, context, collRts);
@@ -121,10 +121,10 @@ public class RequestTransformerMetadataHandler
     private void applyTransformLogic(
             HttpServerExchange exchange,
             RequestContext context,
-            List<RepresentationTransformer> rts)
+            List<RequestTransformer> rts)
             throws InvalidMetadataException {
         rts.stream().filter((rt)
-                -> (rt.getPhase() == RepresentationTransformer.PHASE.REQUEST))
+                -> (rt.getPhase() == RequestTransformer.PHASE.REQUEST))
                 .forEachOrdered((rt) -> {
                     NamedSingletonsFactory nsf = NamedSingletonsFactory
                             .getInstance();
