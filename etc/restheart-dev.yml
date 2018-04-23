@@ -180,12 +180,15 @@ metadata-named-singletons:
 # idm: the Identity Manager responsible of authentication
 # access-manager: the Access Manager responsible of authorization
 # auth-mechanism: the additional Authentication Mechanism to use 
-# The RESTHeart security is pluggable and you can provide you own implementation of both IDM and AM.
-# the provided default implementations of IDM and AM are SimpleFileIdentityManager, DbIdentityManager and SimpleAccessManager.
-# conf-file paths are either absolute (starting with /) or relative to the restheart.jar directory
+# The RESTHeart security is pluggable and you can provide you own 
+# implementation of both IDM and AM. the provided default 
+# implementations of IDM and AM are SimpleFileIdentityManager, 
+# DbIdentityManager, JwtIdentityManager and SimpleAccessManager.
+# conf-file paths are either absolute (starting with /) 
+# or relative to the restheart.jar directory
 
 idm:
-    implementation-class: org.restheart.security.impl.SimpleFileIdentityManager
+    implementation-class: org.restheart.security.impl.DbIdentityManager
     conf-file: ../etc/security.yml
 access-manager:
     implementation-class: org.restheart.security.impl.SimpleAccessManager 

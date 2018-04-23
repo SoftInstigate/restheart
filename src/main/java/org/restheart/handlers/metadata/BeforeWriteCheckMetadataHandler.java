@@ -149,12 +149,17 @@ public class BeforeWriteCheckMetadataHandler extends PipedHttpHandler {
                                                         + "bulk operation");
                             }
 
-                            context.addWarning("the checker "
+                            String warnMsg = "the checker "
                                     + _checker.getClass().getSimpleName()
                                     + " does not support this request and "
-                                    + "is configured to fail in this case. "
-                                    + "Note that the request "
-                                    + noteMsg);
+                                    + "is configured to fail in this case.";
+
+                            if (!noteMsg.isEmpty()) {
+                                warnMsg = warnMsg.concat(" Note that the request "
+                                        + noteMsg);
+                            }
+
+                            context.addWarning(warnMsg);
                             return false;
                         }
 

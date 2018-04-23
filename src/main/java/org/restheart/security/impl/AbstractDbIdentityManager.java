@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.mindrot.jbcrypt.BCrypt;
@@ -43,6 +44,7 @@ import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.db.MongoDBClientSingleton;
+import org.restheart.security.handlers.AccessManagerHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,6 +126,14 @@ public abstract class AbstractDbIdentityManager
                 LOGGER.trace("not creating default user since users exist");
             }
         }
+        
+        // add a global security predicate to deny requests
+        // to users collection, containing a filter on password property
+        // this avoids clients to potentially steal passwords
+        AccessManagerHandler.getGlobalSecurityPredicates().add(
+                new DenyFilterOnUserPasswordPredicate(db, 
+                        coll, 
+                        propertyNamePassword));
     }
 
     @Override
@@ -345,8 +355,6 @@ public abstract class AbstractDbIdentityManager
                             account.getRoles());
 
             authTokenCache.put(id, updatedAuthTokenAccount);
-
-            LOGGER.debug("***** updated auth token cache");
         }
     }
 

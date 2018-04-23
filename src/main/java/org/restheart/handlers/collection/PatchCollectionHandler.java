@@ -28,7 +28,7 @@ import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.metadata.Relationship;
 import org.restheart.metadata.checkers.RequestChecker;
-import org.restheart.metadata.transformers.RepresentationTransformer;
+import org.restheart.metadata.transformers.RequestTransformer;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -141,9 +141,9 @@ public class PatchCollectionHandler extends PipedHttpHandler {
         }
 
         // check RT metadata
-        if (content.containsKey(RepresentationTransformer.RTS_ELEMENT_NAME)) {
+        if (content.containsKey(RequestTransformer.RTS_ELEMENT_NAME)) {
             try {
-                RepresentationTransformer.getFromJson(content);
+                RequestTransformer.getFromJson(content);
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,

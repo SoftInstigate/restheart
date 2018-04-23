@@ -64,7 +64,7 @@ import org.restheart.handlers.schema.JsonMetaSchemaChecker;
 import org.restheart.handlers.schema.JsonSchemaTransformer;
 import org.restheart.metadata.transformers.SizeRequestTransformer;
 import org.restheart.metadata.transformers.PlainJsonTransformer;
-import org.restheart.metadata.transformers.RepresentationTransformer.PHASE;
+import org.restheart.metadata.transformers.RequestTransformer.PHASE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
