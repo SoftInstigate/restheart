@@ -25,8 +25,8 @@ under the License.
     <language>en-us</language>
     <copyright>&#169;2014 - 2018 SoftInstigate</copyright>
     <item>
-      <title>File: 205,
-             Errors: 3186,
+      <title>File: 207,
+             Errors: 3214,
              Warnings: 0,
              Infos: 0
       </title>
@@ -774,6 +774,20 @@ under the License.
               </tr>
                           <tr>
                 <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.metadata.transformers.RequestTransformer.java">org/restheart/metadata/transformers/RequestTransformer.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  37
+                </td>
+              </tr>
+                          <tr>
+                <td>
                   <a href="http://www.restheart.org/checkstyle.html#org.restheart.handlers.metadata.InvalidMetadataException.java">org/restheart/handlers/metadata/InvalidMetadataException.java</a>
                 </td>
                 <td>
@@ -900,6 +914,20 @@ under the License.
               </tr>
                           <tr>
                 <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.security.impl.DenyFilterOnUserPasswordPredicate.java">org/restheart/security/impl/DenyFilterOnUserPasswordPredicate.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  24
+                </td>
+              </tr>
+                          <tr>
+                <td>
                   <a href="http://www.restheart.org/checkstyle.html#org.restheart.handlers.files.PutFileHandler.java">org/restheart/handlers/files/PutFileHandler.java</a>
                 </td>
                 <td>
@@ -956,20 +984,6 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.metadata.transformers.RepresentationTransformer.java">org/restheart/metadata/transformers/RepresentationTransformer.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  37
-                </td>
-              </tr>
-                          <tr>
-                <td>
                   <a href="http://www.restheart.org/checkstyle.html#org.restheart.security.AuthTokenAuthenticationMechanism.java">org/restheart/security/AuthTokenAuthenticationMechanism.java</a>
                 </td>
                 <td>
@@ -994,6 +1008,20 @@ under the License.
                 </td>
                 <td>
                   6
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.security.RequestContextPredicate.java">org/restheart/security/RequestContextPredicate.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  2
                 </td>
               </tr>
                           <tr>
@@ -2841,7 +2869,7 @@ under the License.
                   0
                 </td>
                 <td>
-                  8
+                  10
                 </td>
               </tr>
                           <tr>
