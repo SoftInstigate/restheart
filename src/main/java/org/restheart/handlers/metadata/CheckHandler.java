@@ -18,6 +18,7 @@
 package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.restheart.handlers.PipedHttpHandler;
@@ -36,6 +37,9 @@ import org.slf4j.LoggerFactory;
 public class CheckHandler extends PipedHttpHandler {
 
     static final Logger LOGGER = LoggerFactory.getLogger(CheckHandler.class);
+    
+    private static List<Checker> globalCheckers
+            = new ArrayList<>();
 
     private final List<Checker> checkers;
 
@@ -96,10 +100,22 @@ public class CheckHandler extends PipedHttpHandler {
                             .name());
         }
 
-        return checkers.stream().allMatch(checker
+        ArrayList<Checker> _checkers = new ArrayList<>();
+        
+        _checkers.addAll(this.globalCheckers);
+        _checkers.addAll(this.checkers);
+        
+        return _checkers.stream().allMatch(checker
                 -> checker.check(exchange,
                         context,
                         context.getContent().asDocument(),
                         null));
+    }
+    
+    /**
+     * @return the globalCheckers
+     */
+    public static List<Checker> getGlobalCheckers() {
+        return globalCheckers;
     }
 }

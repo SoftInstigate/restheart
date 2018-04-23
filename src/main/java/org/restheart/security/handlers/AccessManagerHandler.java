@@ -33,7 +33,8 @@ import org.restheart.utils.HttpStatus;
 public class AccessManagerHandler extends PipedHttpHandler {
 
     private final AccessManager accessManager;
-    private static Set<RequestContextPredicate> globalSecurityPredicates = new HashSet<>();
+    private static Set<RequestContextPredicate> globalSecurityPredicates
+            = new HashSet<>();
 
     /**
      * Creates a new instance of AccessManagerHandler

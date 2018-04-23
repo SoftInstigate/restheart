@@ -38,7 +38,7 @@ public class HookHandler extends PipedHttpHandler {
 
     static final Logger LOGGER
             = LoggerFactory.getLogger(HookHandler.class);
-
+    
     /**
      * Creates a new instance of HookMetadataHandler
      */
@@ -72,7 +72,7 @@ public class HookHandler extends PipedHttpHandler {
             } catch (InvalidMetadataException ime) {
                 context.addWarning(ime.getMessage());
             }
-
+            
             if (mdHooks != null) {
                 for (HookMetadata mdHook : mdHooks) {
                     Hook wh;

@@ -27,7 +27,7 @@ import org.restheart.handlers.RequestContext;
  */
 public abstract class AbstractTransformerHandler extends PipedHttpHandler {
     /**
-     * Creates a new instance of RequestScriptMetadataHandler
+     * Creates a new instance of AbstractTransformerHandler
      *
      * @param next
      */

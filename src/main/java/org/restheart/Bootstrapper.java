@@ -17,6 +17,7 @@
  */
 package org.restheart;
 
+import org.restheart.init.Initializer;
 import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.undertow.Handlers.path;
@@ -410,6 +411,38 @@ public class Bootstrapper {
             LOGGER.info("Pid file {}", pidFilePath);
         }
 
+        // run initialized if defined
+        if (configuration.getInitializerClass() != null) {
+            try {
+
+                Object o = Class
+                        .forName(configuration.getInitializerClass())
+                        .newInstance();
+
+                if (o instanceof Initializer) {
+                    try {
+                        ((Initializer) o).init();
+                        LOGGER.info(ansi().fg(GREEN).bold().a(
+                                "initializer {} executed")
+                                .reset().toString(),
+                                configuration.getInitializerClass());
+                    } catch (Throwable t) {
+                        LOGGER.error(ansi().fg(RED).bold().a(
+                                "Error executing intializer {}")
+                                .reset().toString(),
+                                configuration.getInitializerClass(),
+                                t);
+                    }
+                }
+            } catch (Throwable t) {
+                LOGGER.error(ansi().fg(RED).bold().a(
+                        "Wrong configuration for intializer {}")
+                        .reset().toString(),
+                        configuration.getInitializerClass(),
+                        t);
+            }
+        }
+        
         LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart started").reset().toString());
     }
 
