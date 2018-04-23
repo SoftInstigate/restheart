@@ -256,10 +256,10 @@
 <th>Line</th></tr>
 <tr class="b">
 <td>org/restheart/handlers/metadata/RequestTransformerHandler.java</td>
-<td>90</td></tr>
+<td>94</td></tr>
 <tr class="a">
 <td>org/restheart/handlers/metadata/ResponseTransformerHandler.java</td>
-<td>93</td></tr>
+<td>97</td></tr>
 <tr class="b"><td colspan='2'>
 <div>
 <pre>                || context.isSchemaStoreSize()
@@ -298,8 +298,9 @@
             RequestContext context,
             List&lt;RequestTransformer&gt; rts)
             throws InvalidMetadataException {
-        rts.stream().filter((rt)
-                -&gt; (rt.getPhase() == RequestTransformer.PHASE.REQUEST))</pre></div></td></tr></table>
+
+        // execture global tranformers
+        this.globalTransformers.stream().forEachOrdered(t -&gt; {</pre></div></td></tr></table>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>File</th>

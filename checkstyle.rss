@@ -25,8 +25,8 @@ under the License.
     <language>en-us</language>
     <copyright>&#169;2014 - 2018 SoftInstigate</copyright>
     <item>
-      <title>File: 207,
-             Errors: 3214,
+      <title>File: 209,
+             Errors: 3220,
              Warnings: 0,
              Infos: 0
       </title>
@@ -1007,7 +1007,7 @@ under the License.
                   0
                 </td>
                 <td>
-                  12
+                  13
                 </td>
               </tr>
                           <tr>
@@ -1077,7 +1077,7 @@ under the License.
                   0
                 </td>
                 <td>
-                  18
+                  19
                 </td>
               </tr>
                           <tr>
@@ -1176,6 +1176,20 @@ under the License.
                 </td>
                 <td>
                   11
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.init.TestInitializer.java">org/restheart/init/TestInitializer.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  1
                 </td>
               </tr>
                           <tr>
@@ -2169,7 +2183,7 @@ under the License.
                   0
                 </td>
                 <td>
-                  20
+                  19
                 </td>
               </tr>
                           <tr>
@@ -2645,7 +2659,7 @@ under the License.
                   0
                 </td>
                 <td>
-                  46
+                  47
                 </td>
               </tr>
                           <tr>
@@ -2786,6 +2800,20 @@ under the License.
                 </td>
                 <td>
                   11
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.init.Initializer.java">org/restheart/init/Initializer.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  3
                 </td>
               </tr>
                           <tr>
