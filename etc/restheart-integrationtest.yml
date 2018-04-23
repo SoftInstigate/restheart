@@ -200,7 +200,7 @@ metadata-named-singletons:
 # making sure that userbase.account collection holds test users
 
 idm:
-    implementation-class: org.restheart.security.impl.DbIdentityManager
+    implementation-class: org.restheart.security.impl.SimpleFileIdentityManager
     conf-file: ../etc/security-integrationtest.yml
 access-manager:
     implementation-class: org.restheart.security.impl.SimpleAccessManager
