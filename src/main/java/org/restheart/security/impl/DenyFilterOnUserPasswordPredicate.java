@@ -19,7 +19,6 @@ package org.restheart.security.impl;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
-import org.bson.BsonString;
 import org.restheart.handlers.RequestContext;
 import org.restheart.security.RequestContextPredicate;
 import org.slf4j.Logger;
