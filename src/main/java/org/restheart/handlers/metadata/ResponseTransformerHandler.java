@@ -18,6 +18,7 @@
 package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
+import java.util.ArrayList;
 import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -42,6 +43,9 @@ public class ResponseTransformerHandler
 
     static final Logger LOGGER
             = LoggerFactory.getLogger(ResponseTransformerHandler.class);
+
+    private static List<Transformer> globalTransformers
+            = new ArrayList<>();
 
     /**
      * Creates a new instance of ResponseTransformerMetadataHandler
@@ -126,7 +130,18 @@ public class ResponseTransformerHandler
             RequestContext context,
             List<RequestTransformer> rts)
             throws InvalidMetadataException {
+        
+        // execture global tranformers
+        this.globalTransformers.stream().forEachOrdered(t -> {
+            t.transform(
+                    exchange,
+                    context,
+                    context.getResponseContent(),
+                    null,
+                    null);
+        });
 
+        // execute request transformers
         rts.stream().filter((rt)
                 -> (rt.getPhase() == RequestTransformer.PHASE.RESPONSE))
                 .forEachOrdered((rt) -> {
@@ -144,20 +159,17 @@ public class ResponseTransformerHandler
                                 + rt.getName()
                                 + " in singleton group transformers");
                     }
-                    
-                    BsonValue responseContent = context.getResponseContent() == null
-                    ? new BsonDocument()
-                    : context.getResponseContent();
 
                     if (rt.getScope() == RequestTransformer.SCOPE.THIS) {
                         t.transform(
                                 exchange,
                                 context,
-                                responseContent,
+                                context.getResponseContent(),
                                 rt.getArgs(),
                                 confArgs);
-                    } else if (responseContent.isDocument()
-                            && responseContent
+                    } else if (context.getResponseContent() != null 
+                            && context.getResponseContent().isDocument()
+                            && context.getResponseContent()
                                     .asDocument()
                                     .containsKey("_embedded")) {
                         BsonValue _embedded = context
@@ -202,10 +214,17 @@ public class ResponseTransformerHandler
                         t.transform(
                                 exchange,
                                 context,
-                                responseContent.asDocument(),
+                                context.getResponseContent(),
                                 rt.getArgs(),
                                 confArgs);
                     }
                 });
+    }
+
+    /**
+     * @return the globalTransformers
+     */
+    public static List<Transformer> getGlobalTransformers() {
+        return globalTransformers;
     }
 }

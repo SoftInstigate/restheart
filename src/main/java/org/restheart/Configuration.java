@@ -500,7 +500,12 @@ public class Configuration {
     /**
      * The key for enabling the Ansi console (for logging with colors)
      */
-    public static final String ANSI_CONSOLE = "ansi-console";
+    public static final String ANSI_CONSOLE_KEY = "ansi-console";
+    
+    /**
+     * The key for specifying an initializer class
+     */
+    public static final String INITIALIZER_CLASS_KEY = "initializer-class";
 
     /**
      * undertow connetction options
@@ -618,6 +623,7 @@ public class Configuration {
     private final long aggregationTimeLimit;
     private final boolean aggregationCheckOperators;
     private final boolean ansiConsole;
+    private final String initializerClass;
     
     /**
      * the configuration map
@@ -730,6 +736,7 @@ public class Configuration {
         metricsGatheringLevel = METRICS_GATHERING_LEVEL.ROOT;
 
         connectionOptions = Maps.newHashMap();
+        initializerClass = null;
     }
 
     /**
@@ -768,7 +775,7 @@ public class Configuration {
         
         this.silent = silent;
 
-        ansiConsole = getAsBooleanOrDefault(conf, ANSI_CONSOLE, true);
+        ansiConsole = getAsBooleanOrDefault(conf, ANSI_CONSOLE_KEY, true);
 
         httpsListener = getAsBooleanOrDefault(conf, HTTPS_LISTENER, true);
         httpsPort = getAsIntegerOrDefault(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
@@ -960,6 +967,8 @@ public class Configuration {
         }
 
         connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY);
+        
+        initializerClass = getAsStringOrDefault(conf, INITIALIZER_CLASS_KEY, null);
     }
 
     @Override
@@ -1645,5 +1654,12 @@ public class Configuration {
          * gather basic, database, and collection-specific metrics
          */
         COLLECTION
+    }
+
+    /**
+     * @return the initializerClass
+     */
+    public String getInitializerClass() {
+        return initializerClass;
     }
 }

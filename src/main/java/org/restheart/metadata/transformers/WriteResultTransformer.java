@@ -1,6 +1,7 @@
 package org.restheart.metadata.transformers;
 
 import io.undertow.server.HttpServerExchange;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.bson.BsonValue;
@@ -39,6 +40,18 @@ public class WriteResultTransformer implements Transformer {
                         == null
                                 ? new BsonNull()
                                 : context.getDbOperationResult().getNewData());
+            }
+            
+            // this to deal with POST collection
+            if (context.isCollection() && context.isPost()) {
+                BsonDocument body = new BsonDocument();
+                BsonDocument embedded = new BsonDocument();
+                BsonArray rhdoc = new BsonArray();
+                
+                rhdoc.add(resp);
+                embedded.put("rh:result", rhdoc);
+                body.put("_embedded", embedded);
+                context.setResponseContent(body);
             }
         }
     }

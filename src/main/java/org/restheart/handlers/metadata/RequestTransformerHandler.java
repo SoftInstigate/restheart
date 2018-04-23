@@ -18,6 +18,7 @@
 package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
+import java.util.ArrayList;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
@@ -40,6 +41,9 @@ public class RequestTransformerHandler
 
     static final Logger LOGGER
             = LoggerFactory.getLogger(RequestTransformerHandler.class);
+
+    private static List<Transformer> globalTransformers
+            = new ArrayList<>();
 
     /**
      * Creates a new instance of RequestTransformerMetadataHandler
@@ -123,6 +127,35 @@ public class RequestTransformerHandler
             RequestContext context,
             List<RequestTransformer> rts)
             throws InvalidMetadataException {
+
+        // execture global tranformers
+        this.globalTransformers.stream().forEachOrdered(t -> {
+            BsonValue requestContent = context.getContent() == null
+                    ? new BsonDocument()
+                    : context.getContent();
+
+            if (requestContent.isDocument()) {
+                t.transform(
+                        exchange,
+                        context,
+                        requestContent,
+                        null,
+                        null);
+            } else if (context.isPost()
+                    && requestContent.isArray()) {
+                requestContent.asArray().stream().forEachOrdered(
+                        (doc) -> {
+                            t.transform(
+                                    exchange,
+                                    context,
+                                    doc,
+                                    null,
+                                    null);
+                        });
+            }
+        });
+        
+        // executure request tranformers
         rts.stream().filter((rt)
                 -> (rt.getPhase() == RequestTransformer.PHASE.REQUEST))
                 .forEachOrdered((rt) -> {
@@ -165,5 +198,12 @@ public class RequestTransformerHandler
                                 });
                     }
                 });
+    }
+
+    /**
+     * @return the globalTransformers
+     */
+    public static List<Transformer> getGlobalTransformers() {
+        return globalTransformers;
     }
 }
