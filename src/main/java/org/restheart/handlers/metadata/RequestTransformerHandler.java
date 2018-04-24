@@ -18,14 +18,15 @@
 package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
-import java.util.ArrayList;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.metadata.NamedSingletonsFactory;
+import org.restheart.metadata.transformers.GlobalTransformer;
 import org.restheart.metadata.transformers.RequestTransformer;
+import org.restheart.metadata.transformers.RequestTransformer.PHASE;
 import org.restheart.metadata.transformers.Transformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,13 +38,10 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestTransformerHandler
-        extends AbstractTransformerHandler {
+        extends TransformerHandler {
 
     static final Logger LOGGER
             = LoggerFactory.getLogger(RequestTransformerHandler.class);
-
-    private static List<Transformer> globalTransformers
-            = new ArrayList<>();
 
     /**
      * Creates a new instance of RequestTransformerMetadataHandler
@@ -52,6 +50,14 @@ public class RequestTransformerHandler
      */
     public RequestTransformerHandler(PipedHttpHandler next) {
         super(next);
+    }
+    
+    @Override
+    boolean doesGlobalTransformerAppy(GlobalTransformer gt, 
+            HttpServerExchange exchange, 
+            RequestContext context) {
+        return gt.getPhase() == PHASE.REQUEST &&
+                gt.resolve(exchange, context);
     }
 
     @Override
@@ -128,8 +134,10 @@ public class RequestTransformerHandler
             List<RequestTransformer> rts)
             throws InvalidMetadataException {
 
-        // execture global tranformers
-        this.globalTransformers.stream().forEachOrdered(t -> {
+        // execture global request tranformers
+        getGlobalTransformers().stream()
+                .filter(t -> t.getPhase() == PHASE.REQUEST)
+                .forEachOrdered(t -> {
             BsonValue requestContent = context.getContent() == null
                     ? new BsonDocument()
                     : context.getContent();
@@ -138,9 +146,7 @@ public class RequestTransformerHandler
                 t.transform(
                         exchange,
                         context,
-                        requestContent,
-                        null,
-                        null);
+                        requestContent);
             } else if (context.isPost()
                     && requestContent.isArray()) {
                 requestContent.asArray().stream().forEachOrdered(
@@ -148,19 +154,18 @@ public class RequestTransformerHandler
                             t.transform(
                                     exchange,
                                     context,
-                                    doc,
-                                    null,
-                                    null);
+                                    doc);
                         });
             }
         });
+        
+        NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
         
         // executure request tranformers
         rts.stream().filter((rt)
                 -> (rt.getPhase() == RequestTransformer.PHASE.REQUEST))
                 .forEachOrdered((rt) -> {
-                    NamedSingletonsFactory nsf = NamedSingletonsFactory
-                            .getInstance();
+                    
                     Transformer t = (Transformer) nsf
                             .get("transformers", rt.getName());
 
@@ -198,12 +203,5 @@ public class RequestTransformerHandler
                                 });
                     }
                 });
-    }
-
-    /**
-     * @return the globalTransformers
-     */
-    public static List<Transformer> getGlobalTransformers() {
-        return globalTransformers;
     }
 }

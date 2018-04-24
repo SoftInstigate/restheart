@@ -70,7 +70,7 @@ public class DenyFilterOnUserPasswordPredicate implements RequestContextPredicat
                     "cannot execute request with filter on password property");
             return false;
         }
-
+ 
         return true;
     }
 

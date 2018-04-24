@@ -18,15 +18,15 @@
 package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
-import java.util.ArrayList;
 import java.util.List;
-import org.bson.BsonArray;
 import org.bson.BsonDocument;
-import org.bson.BsonValue;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.metadata.NamedSingletonsFactory;
+import org.restheart.metadata.transformers.GlobalTransformer;
 import org.restheart.metadata.transformers.RequestTransformer;
+import org.restheart.metadata.transformers.RequestTransformer.PHASE;
+import org.restheart.metadata.transformers.RequestTransformer.SCOPE;
 import org.restheart.metadata.transformers.Transformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,13 +39,10 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ResponseTransformerHandler
-        extends AbstractTransformerHandler {
+        extends TransformerHandler {
 
     static final Logger LOGGER
             = LoggerFactory.getLogger(ResponseTransformerHandler.class);
-
-    private static List<Transformer> globalTransformers
-            = new ArrayList<>();
 
     /**
      * Creates a new instance of ResponseTransformerMetadataHandler
@@ -63,9 +60,21 @@ public class ResponseTransformerHandler
     public ResponseTransformerHandler(PipedHttpHandler next) {
         super(next);
     }
+    
+    @Override
+    boolean doesGlobalTransformerAppy(GlobalTransformer gt, 
+            HttpServerExchange exchange, 
+            RequestContext context) {
+        return gt.getPhase() == PHASE.RESPONSE &&
+                gt.resolve(exchange, context);
+    }
 
     @Override
     boolean doesCollTransformerAppy(RequestContext context) {
+        // must also apply if global transformers are present
+        // also         "error applying transformer: missing 'rts' element; it must be an array"
+
+        
         return (!context.isInError()
                 && (context.isDocument()
                 || context.isBulkDocuments()
@@ -100,7 +109,7 @@ public class ResponseTransformerHandler
                 && context.getDbProps()
                         .containsKey(RequestTransformer.RTS_ELEMENT_NAME));
     }
-
+    
     @Override
     void applyDbTransformer(
             HttpServerExchange exchange,
@@ -130,21 +139,10 @@ public class ResponseTransformerHandler
             RequestContext context,
             List<RequestTransformer> rts)
             throws InvalidMetadataException {
-        
-        // execture global tranformers
-        this.globalTransformers.stream().forEachOrdered(t -> {
-            t.transform(
-                    exchange,
-                    context,
-                    context.getResponseContent(),
-                    null,
-                    null);
-        });
-
         // execute request transformers
-        rts.stream().filter((rt)
-                -> (rt.getPhase() == RequestTransformer.PHASE.RESPONSE))
-                .forEachOrdered((rt) -> {
+        rts.stream()
+                .filter(rt -> rt.getPhase() == PHASE.RESPONSE)
+                .forEachOrdered(rt -> {
                     NamedSingletonsFactory nsf = NamedSingletonsFactory
                             .getInstance();
 
@@ -160,56 +158,23 @@ public class ResponseTransformerHandler
                                 + " in singleton group transformers");
                     }
 
-                    if (rt.getScope() == RequestTransformer.SCOPE.THIS) {
+                    if (rt.getScope() == SCOPE.THIS) {
                         t.transform(
                                 exchange,
                                 context,
                                 context.getResponseContent(),
                                 rt.getArgs(),
                                 confArgs);
-                    } else if (context.getResponseContent() != null 
+                    } else if (context.getResponseContent() != null
                             && context.getResponseContent().isDocument()
                             && context.getResponseContent()
                                     .asDocument()
                                     .containsKey("_embedded")) {
-                        BsonValue _embedded = context
-                                .getResponseContent()
-                                .asDocument()
-                                .get("_embedded");
-
-                        // execute the logic on children documents
-                        BsonDocument embedded = _embedded.asDocument();
-
-                        embedded
-                                .keySet()
-                                .stream()
-                                .filter(key -> "rh:doc".equals(key)
-                                || "rh:file".equals(key)
-                                || "rh:bucket".equals(key)
-                                || "rh:db".equals(key)
-                                || "rh:coll".equals(key)
-                                || "rh:index".equals(key)
-                                || "rh:result".equals(key)
-                                || "rh:schema".equals(key))
-                                .filter(key -> embedded.get(key).isArray())
-                                .forEachOrdered(key -> {
-
-                                    BsonArray children = embedded
-                                            .get(key)
-                                            .asArray();
-
-                                    if (children != null) {
-                                        children.getValues().stream()
-                                                .forEach((child) -> {
-                                                    t.transform(
-                                                            exchange,
-                                                            context,
-                                                            child,
-                                                            rt.getArgs(),
-                                                            confArgs);
-                                                });
-                                    }
-                                });
+                        applyChildrenTransformLogic(exchange,
+                                context,
+                                t,
+                                rt.getArgs(),
+                                confArgs);
                     } else if (context.isDocument()) {
                         t.transform(
                                 exchange,
@@ -219,12 +184,5 @@ public class ResponseTransformerHandler
                                 confArgs);
                     }
                 });
-    }
-
-    /**
-     * @return the globalTransformers
-     */
-    public static List<Transformer> getGlobalTransformers() {
-        return globalTransformers;
     }
 }

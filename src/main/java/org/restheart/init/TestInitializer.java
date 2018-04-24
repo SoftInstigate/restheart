@@ -17,8 +17,13 @@
  */
 package org.restheart.init;
 
+import io.undertow.server.HttpServerExchange;
+import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.metadata.ResponseTransformerHandler;
+import org.restheart.metadata.transformers.GlobalTransformer;
+import org.restheart.metadata.transformers.RequestTransformer;
 import org.restheart.metadata.transformers.WriteResultTransformer;
+import org.restheart.security.RequestContextPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,12 +33,24 @@ import org.slf4j.LoggerFactory;
  */
 public class TestInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestInitializer.class);
-    
+
     @Override
     public void init() {
         ResponseTransformerHandler.getGlobalTransformers().add(
-                new WriteResultTransformer());
+                new GlobalTransformer(new WriteResultTransformer(),
+                        new RequestContextPredicate() {
+                    @Override
+                    public boolean resolve(HttpServerExchange hse, RequestContext context) {
+                        return context.isGet()
+                                && (context.isDb() || context.isCollection());
+                    }
+                },
+                        RequestTransformer.PHASE.RESPONSE,
+                        RequestTransformer.SCOPE.THIS,
+                        null, null)
+        );
+
         LOGGER.info("Added WriteResultTransformer as global transformer");
-        LOGGER.info("It adds to write requests a response body with new and old document data");        
+        LOGGER.info("It adds to write requests a response body with new and old document data");
     }
 }

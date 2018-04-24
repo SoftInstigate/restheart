@@ -51,14 +51,6 @@ public class AfterWriteCheckHandler
     }
 
     @Override
-    protected boolean doesCheckerApply(
-            RequestContext context,
-            Checker checker) {
-        return !context.isInError()
-                && checker.getPhase(context) == Checker.PHASE.AFTER_WRITE;
-    }
-
-    @Override
     public void handleRequest(
             HttpServerExchange exchange,
             RequestContext context)
@@ -130,6 +122,14 @@ public class AfterWriteCheckHandler
         }
 
         next(exchange, context);
+    }
+    
+    @Override
+    protected boolean doesCheckerApply(
+            RequestContext context,
+            Checker checker) {
+        return !context.isInError()
+                && checker.getPhase(context) == Checker.PHASE.AFTER_WRITE;
     }
 
     private boolean doesCheckerAppy(RequestContext context) {
