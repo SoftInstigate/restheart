@@ -255,57 +255,6 @@
 <th>File</th>
 <th>Line</th></tr>
 <tr class="b">
-<td>org/restheart/handlers/metadata/RequestTransformerHandler.java</td>
-<td>94</td></tr>
-<tr class="a">
-<td>org/restheart/handlers/metadata/ResponseTransformerHandler.java</td>
-<td>97</td></tr>
-<tr class="b"><td colspan='2'>
-<div>
-<pre>                || context.isSchemaStoreSize()
-                || context.isSchema())
-                &amp;&amp; context.getDbProps() != null
-                &amp;&amp; context.getDbProps()
-                        .containsKey(RequestTransformer.RTS_ELEMENT_NAME));
-    }
-
-    @Override
-    void applyDbTransformer(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws InvalidMetadataException {
-        List&lt;RequestTransformer&gt; dbRts
-                = RequestTransformer
-                        .getFromJson(context.getDbProps());
-
-        applyTransformLogic(exchange, context, dbRts);
-    }
-
-    @Override
-    void applyCollRTransformer(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws InvalidMetadataException {
-        List&lt;RequestTransformer&gt; collRts
-                = RequestTransformer
-                        .getFromJson(context.getCollectionProps());
-
-        applyTransformLogic(exchange, context, collRts);
-    }
-
-    private void applyTransformLogic(
-            HttpServerExchange exchange,
-            RequestContext context,
-            List&lt;RequestTransformer&gt; rts)
-            throws InvalidMetadataException {
-
-        // execture global tranformers
-        this.globalTransformers.stream().forEachOrdered(t -&gt; {</pre></div></td></tr></table>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>File</th>
-<th>Line</th></tr>
-<tr class="b">
 <td>org/restheart/handlers/document/PatchDocumentHandler.java</td>
 <td>59</td></tr>
 <tr class="a">
@@ -417,6 +366,54 @@
         next(exchange, context);
     }
 }</pre></div></td></tr></table>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>File</th>
+<th>Line</th></tr>
+<tr class="b">
+<td>org/restheart/handlers/metadata/RequestTransformerHandler.java</td>
+<td>100</td></tr>
+<tr class="a">
+<td>org/restheart/handlers/metadata/ResponseTransformerHandler.java</td>
+<td>106</td></tr>
+<tr class="b"><td colspan='2'>
+<div>
+<pre>                || context.isSchemaStoreSize()
+                || context.isSchema())
+                &amp;&amp; context.getDbProps() != null
+                &amp;&amp; context.getDbProps()
+                        .containsKey(RequestTransformer.RTS_ELEMENT_NAME));
+    }
+
+    @Override
+    void applyDbTransformer(
+            HttpServerExchange exchange,
+            RequestContext context)
+            throws InvalidMetadataException {
+        List&lt;RequestTransformer&gt; dbRts
+                = RequestTransformer
+                        .getFromJson(context.getDbProps());
+
+        applyTransformLogic(exchange, context, dbRts);
+    }
+
+    @Override
+    void applyCollRTransformer(
+            HttpServerExchange exchange,
+            RequestContext context)
+            throws InvalidMetadataException {
+        List&lt;RequestTransformer&gt; collRts
+                = RequestTransformer
+                        .getFromJson(context.getCollectionProps());
+
+        applyTransformLogic(exchange, context, collRts);
+    }
+
+    private void applyTransformLogic(
+            HttpServerExchange exchange,
+            RequestContext context,
+            List&lt;RequestTransformer&gt; rts)
+            throws InvalidMetadataException {</pre></div></td></tr></table>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>File</th>
