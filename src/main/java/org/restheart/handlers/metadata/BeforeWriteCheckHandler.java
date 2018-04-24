@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class BeforeWriteCheckHandler extends PipedHttpHandler {
+public class BeforeWriteCheckHandler extends CheckHandler {
 
     static final Logger LOGGER
             = LoggerFactory.getLogger(BeforeWriteCheckHandler.class);
@@ -49,7 +49,7 @@ public class BeforeWriteCheckHandler extends PipedHttpHandler {
     public static final String ROOT_KEY = "checkers";
 
     /**
-     * Creates a new instance of CheckMetadataHandler
+     * Creates a new instance of CheckMetBeforeWriteCheckHandleradataHandler
      *
      * handler that applies the checkers defined in the collection properties
      *
@@ -80,152 +80,180 @@ public class BeforeWriteCheckHandler extends PipedHttpHandler {
         }
     }
 
-    private boolean doesCheckerAppy(RequestContext context) {
-        return context.getCollectionProps() != null
-                && context.getCollectionProps().containsKey(ROOT_KEY);
-    }
-
     protected boolean check(
             HttpServerExchange exchange,
             RequestContext context)
             throws InvalidMetadataException {
-        List<RequestChecker> checkers = RequestChecker
-                .getFromJson(context.getCollectionProps());
+        List<RequestChecker> requestCheckers = RequestChecker.getFromJson(
+                context.getCollectionProps());
 
-        return checkers != null
-                && checkers.stream().allMatch(checker -> {
-                    try {
-                        NamedSingletonsFactory nsf = NamedSingletonsFactory
-                                .getInstance();
+        // apply global checkers
+        boolean globalCheckersResult = getGlobalCheckers().isEmpty()
+                || getGlobalCheckers().stream()
+                        .filter(gc -> doesCheckerApply(context, gc.getChecker()))
+                        .allMatch(gc -> {
+                            return applyChecker(exchange,
+                                    context,
+                                    gc.isSkipNotSupported(),
+                                    gc.getChecker(),
+                                    gc.getArgs(),
+                                    gc.getConfArgs());
+                        });
 
-                        Checker _checker = (Checker) nsf
-                                .get(ROOT_KEY, checker.getName());
+        if (!globalCheckersResult) {
+            return false;
+        } else {
+            return requestCheckers != null
+                    && requestCheckers.stream().allMatch(requestChecker -> {
+                        try {
+                            NamedSingletonsFactory nsf = NamedSingletonsFactory
+                                    .getInstance();
 
-                        BsonDocument confArgs
-                                = nsf.getArgs(ROOT_KEY, checker.getName());
+                            Checker checker = (Checker) nsf
+                                    .get(ROOT_KEY, requestChecker.getName());
 
-                        if (_checker == null) {
-                            throw new IllegalArgumentException(
-                                    "cannot find singleton "
-                                    + checker.getName()
-                                    + " in singleton group checkers");
-                        }
+                            BsonDocument confArgs = nsf.getArgs(ROOT_KEY,
+                                    requestChecker.getName());
 
-                        // all checkers (both BEFORE_WRITE and AFTER_WRITE) are checked
-                        // to support the request; if any checker does not support the
-                        // request and it is configured to fail in this case,
-                        // then the request fails.
-                        if (!_checker.doesSupportRequests(context)
-                                && !checker.skipNotSupported()) {
-                            LOGGER.debug("checker "
-                                    + _checker.getClass().getSimpleName()
-                                    + " does not support this request. "
-                                    + "check will "
-                                    + (checker.skipNotSupported()
-                                    ? "not fail"
-                                    : "fail"));
-
-                            String noteMsg = "";
-
-                            if (CheckersUtils.doesRequestUsesDotNotation(
-                                    context.getContent())) {
-                                noteMsg = noteMsg.concat(
-                                        "uses the dot notation");
+                            if (checker == null) {
+                                throw new IllegalArgumentException(
+                                        "cannot find singleton "
+                                        + requestChecker.getName()
+                                        + " in singleton group checkers");
                             }
 
-                            if (CheckersUtils.doesRequestUsesUpdateOperators(
-                                    context.getContent())) {
-                                noteMsg = noteMsg.isEmpty()
-                                        ? "uses update operators"
-                                        : noteMsg
-                                                .concat(" and update operators");
-                            }
-
-                            if (CheckersUtils.isBulkRequest(context)) {
-                                noteMsg = noteMsg.isEmpty()
-                                        ? "is a bulk operation"
-                                        : noteMsg
-                                                .concat(" and it is a "
-                                                        + "bulk operation");
-                            }
-
-                            String warnMsg = "the checker "
-                                    + _checker.getClass().getSimpleName()
-                                    + " does not support this request and "
-                                    + "is configured to fail in this case.";
-
-                            if (!noteMsg.isEmpty()) {
-                                warnMsg = warnMsg.concat(" Note that the request "
-                                        + noteMsg);
-                            }
-
-                            context.addWarning(warnMsg);
+                            return applyChecker(exchange,
+                                    context,
+                                    requestChecker.skipNotSupported(),
+                                    checker,
+                                    requestChecker.getArgs(),
+                                    confArgs);
+                        } catch (IllegalArgumentException ex) {
+                            context.addWarning("error applying checker: "
+                                    + ex.getMessage());
                             return false;
                         }
+                    });
+        }
+    }
 
-                        if (doesCheckerApply(context, _checker)
-                                && _checker.doesSupportRequests(context)) {
+    private boolean applyChecker(HttpServerExchange exchange,
+            RequestContext context,
+            boolean skipNotSupported,
+            Checker checker,
+            BsonValue args,
+            BsonValue confArgs) {
+        // all checkers (both BEFORE_WRITE and AFTER_WRITE) are checked
+        // to support the request; if any checker does not support the
+        // request and it is configured to fail in this case,
+        // then the request fails.
+        if (!checker.doesSupportRequests(context) && !skipNotSupported) {
+            LOGGER.debug("checker "
+                    + checker.getClass().getSimpleName()
+                    + " does not support this request. "
+                    + "check will "
+                    + (skipNotSupported
+                            ? "not fail"
+                            : "fail"));
 
-                            BsonValue content = context.getContent();
+            String noteMsg = "";
 
-                            BsonValue _data;
+            if (CheckersUtils.doesRequestUsesDotNotation(
+                    context.getContent())) {
+                noteMsg = noteMsg.concat(
+                        "uses the dot notation");
+            }
 
-                            if (_checker.getPhase(context)
-                                    == PHASE.BEFORE_WRITE) {
-                                _data = context.getContent();
-                            } else {
-                                Objects.requireNonNull(
-                                        context.getDbOperationResult());
+            if (CheckersUtils.doesRequestUsesUpdateOperators(
+                    context.getContent())) {
+                noteMsg = noteMsg.isEmpty()
+                        ? "uses update operators"
+                        : noteMsg
+                                .concat(" and update operators");
+            }
 
-                                _data = context
-                                        .getDbOperationResult()
-                                        .getNewData();
-                            }
+            if (CheckersUtils.isBulkRequest(context)) {
+                noteMsg = noteMsg.isEmpty()
+                        ? "is a bulk operation"
+                        : noteMsg
+                                .concat(" and it is a "
+                                        + "bulk operation");
+            }
 
-                            if (_data.isDocument()) {
-                                return _checker.check(
-                                        exchange,
-                                        context,
-                                        _data.asDocument(),
-                                        checker.getArgs(),
-                                        confArgs);
-                            } else if (content.isArray()) {
-                                // content can be an array of bulk POST
+            String warnMsg = "the checker "
+                    + checker.getClass().getSimpleName()
+                    + " does not support this request and "
+                    + "is configured to fail in this case.";
 
-                                BsonArray arrayContent = _data.asArray();
+            if (!noteMsg.isEmpty()) {
+                warnMsg = warnMsg.concat(" Note that the request "
+                        + noteMsg);
+            }
 
-                                return arrayContent.stream().allMatch(obj -> {
-                                    if (obj.isDocument()) {
-                                        return _checker
-                                                .check(
-                                                        exchange,
-                                                        context,
-                                                        obj.asDocument(),
-                                                        checker.getArgs(),
-                                                        confArgs);
-                                    } else {
-                                        LOGGER.warn(
-                                                "element of content array "
-                                                + "is not an object");
-                                        return true;
-                                    }
-                                });
+            context.addWarning(warnMsg);
+            return false;
+        }
 
-                            } else {
-                                LOGGER.warn(
-                                        "content is not an object or an array");
-                                return true;
-                            }
-                        } else {
-                            return true;
-                        }
+        if (doesCheckerApply(context, checker)
+                && checker.doesSupportRequests(context)) {
 
-                    } catch (IllegalArgumentException ex) {
-                        context.addWarning("error applying checker: "
-                                + ex.getMessage());
-                        return false;
+            BsonValue content = context.getContent();
+
+            BsonValue _data;
+
+            if (checker.getPhase(context)
+                    == PHASE.BEFORE_WRITE) {
+                _data = context.getContent();
+            } else {
+                Objects.requireNonNull(
+                        context.getDbOperationResult());
+
+                _data = context
+                        .getDbOperationResult()
+                        .getNewData();
+            }
+
+            if (_data.isDocument()) {
+                return checker.check(
+                        exchange,
+                        context,
+                        _data.asDocument(),
+                        args,
+                        confArgs);
+            } else if (content.isArray()) {
+                // content can be an array of bulk POST
+
+                BsonArray arrayContent = _data.asArray();
+
+                return arrayContent.stream().allMatch(obj -> {
+                    if (obj.isDocument()) {
+                        return checker.check(
+                                exchange,
+                                context,
+                                obj.asDocument(),
+                                args,
+                                confArgs);
+                    } else {
+                        LOGGER.warn(
+                                "element of content array "
+                                + "is not an object");
+                        return true;
                     }
                 });
+
+            } else {
+                LOGGER.warn(
+                        "content is not an object or an array");
+                return true;
+            }
+        } else {
+            return true;
+        }
+    }
+
+    private boolean doesCheckerAppy(RequestContext context) {
+        return context.getCollectionProps() != null
+                && context.getCollectionProps().containsKey(ROOT_KEY);
     }
 
     protected boolean doesCheckerApply(

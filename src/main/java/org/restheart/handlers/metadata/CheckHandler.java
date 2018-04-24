@@ -17,105 +17,32 @@
  */
 package org.restheart.handlers.metadata;
 
-import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
-import org.restheart.metadata.checkers.Checker;
-import org.restheart.utils.HttpStatus;
-import org.restheart.utils.ResponseHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.restheart.metadata.checkers.GlobalChecker;
 
 /**
- * handler that applies the checkers passed in the costructor
  *
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class CheckHandler extends PipedHttpHandler {
-
-    static final Logger LOGGER = LoggerFactory.getLogger(CheckHandler.class);
-    
-    private static List<Checker> globalCheckers
+public abstract class CheckHandler extends PipedHttpHandler {
+    private static List<GlobalChecker> globalCheckers
             = new ArrayList<>();
-
-    private final List<Checker> checkers;
-
+    
     /**
-     * Creates a new instance of CheckHandler
      *
      * @param next
-     * @param checkers
      */
-    public CheckHandler(PipedHttpHandler next, Checker... checkers) {
+    public CheckHandler(PipedHttpHandler next) {
         super(next);
-
-        this.checkers = Arrays.asList(checkers);
-    }
-
-    @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
-            return;
-        }
-        
-        if (doesCheckerAppy()) {
-            if (check(exchange, context)) {
-                next(exchange, context);
-            } else {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        context,
-                        HttpStatus.SC_BAD_REQUEST,
-                        "request check failed");
-                next(exchange, context);
-            }
-        } else {
-            next(exchange, context);
-        }
-    }
-
-    private boolean doesCheckerAppy() {
-        return checkers != null
-                && !checkers.isEmpty();
-    }
-
-    private boolean check(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws InvalidMetadataException {
-        if (context.getContent() != null
-                && !context.getContent().isDocument()) {
-            throw new RuntimeException(
-                    "this hanlder only supports content of type json object; "
-                    + "content type: " + context
-                            .getContent()
-                            .getBsonType()
-                            .name());
-        }
-
-        ArrayList<Checker> _checkers = new ArrayList<>();
-        
-        _checkers.addAll(this.globalCheckers);
-        _checkers.addAll(this.checkers);
-        
-        return _checkers.stream().allMatch(checker
-                -> checker.check(exchange,
-                        context,
-                        context.getContent().asDocument(),
-                        null));
     }
     
     /**
+     *
      * @return the globalCheckers
      */
-    public static List<Checker> getGlobalCheckers() {
+    public static List<GlobalChecker> getGlobalCheckers() {
         return globalCheckers;
     }
 }

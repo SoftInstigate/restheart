@@ -18,79 +18,155 @@
 package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.metadata.transformers.GlobalTransformer;
 import org.restheart.metadata.transformers.RequestTransformer;
 import org.restheart.metadata.transformers.Transformer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
- * handler that applies the transformers passed to the costructor
- *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class TransformerHandler extends PipedHttpHandler {
-
-    static final Logger LOGGER
-            = LoggerFactory.getLogger(TransformerHandler.class);
-
-    private final List<Transformer> transformers;
-    private final RequestTransformer.PHASE phase;
-
+public abstract class TransformerHandler extends PipedHttpHandler {
+    private static final List<GlobalTransformer> globalTransformers
+            = new ArrayList<>();
+    
     /**
-     * Creates a new instance of TransformerHandler
+     * Creates a new instance of AbstractTransformerHandler
      *
      * @param next
-     * @param phase
-     * @param transformers
      */
-    public TransformerHandler(
-            PipedHttpHandler next,
-            RequestTransformer.PHASE phase,
-            Transformer... transformers) {
+    public TransformerHandler(PipedHttpHandler next) {
         super(next);
-
-        this.phase = phase;
-        this.transformers = Arrays.asList(transformers);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception {
+    public void handleRequest(HttpServerExchange exchange, 
+            RequestContext context) throws Exception {
+        applyGlobalTransformers(exchange, context);
         
-        
-        if (doesTransformerAppy()) {
-            transform(exchange, context);
+        if (doesCollTransformerAppy(context)) {
+            try {
+                applyCollRTransformer(exchange, context);
+            } catch (Throwable e) {
+                context.addWarning("error applying transformer: " + e.getMessage());
+            } 
+        }
+
+        if (doesDBTransformerAppy(context)) {
+            try {
+                applyDbTransformer(exchange, context);
+            } catch (Throwable e) {
+                context.addWarning("error applying transformer: " + e.getMessage());
+            }
         }
 
         next(exchange, context);
     }
-
-    private boolean doesTransformerAppy() {
-        return transformers != null
-                && !transformers.isEmpty();
+    
+    /**
+     * @return the globalTransformers
+     */
+    public static List<GlobalTransformer> getGlobalTransformers() {
+        return globalTransformers;
     }
 
-    private void transform(
+    abstract boolean doesGlobalTransformerAppy(GlobalTransformer gt, 
+            HttpServerExchange exchange, 
+            RequestContext context);
+    
+    abstract boolean doesCollTransformerAppy(RequestContext context);
+
+    abstract boolean doesDBTransformerAppy(RequestContext context);
+
+    void applyGlobalTransformers(HttpServerExchange exchange, RequestContext context) {
+        // execture global response tranformers
+        getGlobalTransformers().stream()
+                .filter(gt -> doesGlobalTransformerAppy(gt, exchange, context))
+                .forEachOrdered(gt -> {
+                    if (gt.getScope() == RequestTransformer.SCOPE.THIS) {
+                        gt.transform(
+                                exchange,
+                                context,
+                                context.getResponseContent());
+                    } else if (context.getResponseContent() != null
+                            && context.getResponseContent().isDocument()
+                            && context.getResponseContent()
+                                    .asDocument()
+                                    .containsKey("_embedded")) {
+                        applyChildrenTransformLogic(exchange,
+                                context,
+                                gt.getTransformer(),
+                                gt.getArgs(),
+                                gt.getConfArgs());
+                    } else if (context.isDocument()) {
+                        gt.transform(
+                                exchange,
+                                context,
+                                context.getResponseContent());
+                    }
+                });
+    }
+    
+    abstract void applyDbTransformer(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException;
+
+    abstract void applyCollRTransformer(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException;
+    
+    protected void applyChildrenTransformLogic(
             HttpServerExchange exchange,
-            RequestContext context)
-            throws InvalidMetadataException {
-        BsonValue data;
+            RequestContext context,
+            Transformer t,
+            BsonValue args,
+            BsonValue confArgs) {
+        BsonValue _embedded = context
+                .getResponseContent()
+                .asDocument()
+                .get("_embedded");
 
-        if (this.phase == RequestTransformer.PHASE.REQUEST) {
-            data = context.getContent();
-        } else {
-            data = context.getResponseContent();
-        }
+        // execute the logic on children documents
+        BsonDocument embedded = _embedded.asDocument();
 
-        transformers.stream().forEachOrdered(
-                t -> t.transform(exchange, context, data, null));
+        embedded
+                .keySet()
+                .stream()
+                .filter(key -> "rh:doc".equals(key)
+                || "rh:file".equals(key)
+                || "rh:bucket".equals(key)
+                || "rh:db".equals(key)
+                || "rh:coll".equals(key)
+                || "rh:index".equals(key)
+                || "rh:result".equals(key)
+                || "rh:schema".equals(key))
+                .filter(key -> embedded.get(key).isArray())
+                .forEachOrdered(key -> {
+
+                    BsonArray children = embedded
+                            .get(key)
+                            .asArray();
+
+                    if (children != null) {
+                        children.getValues().stream()
+                                .forEach((child) -> {
+                                    t.transform(
+                                            exchange,
+                                            context,
+                                            child,
+                                            args,
+                                            confArgs);
+                                });
+                    }
+                });
     }
 }
