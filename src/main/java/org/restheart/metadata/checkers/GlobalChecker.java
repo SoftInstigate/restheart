@@ -36,9 +36,18 @@ public class GlobalChecker {
     private final BsonValue args;
     private final BsonValue confArgs;
 
+    /**
+     * 
+     * @param checker
+     * @param predicate checker is applied only to requests that resolve
+     * the predicate
+     * @param skipNotSupported
+     * @param args
+     * @param confArgs 
+     */
     public GlobalChecker(Checker checker,
-            boolean skipNotSupported,
             RequestContextPredicate predicate,
+            boolean skipNotSupported,
             BsonValue args,
             BsonValue confArgs) {
         this.checker = checker;
