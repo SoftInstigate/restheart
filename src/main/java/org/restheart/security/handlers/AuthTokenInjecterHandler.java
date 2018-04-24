@@ -47,16 +47,7 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(AuthTokenInjecterHandler.class);
 
-    private static SecureRandom RND_GENERATOR;
-
-    static {
-        try {
-            RND_GENERATOR = SecureRandom.getInstanceStrong();
-        } catch (NoSuchAlgorithmException nsaex) {
-            LOGGER.warn("cannot use strong algorithm for auth token generation", nsaex);
-            RND_GENERATOR = new SecureRandom();
-        }
-    }
+    private static SecureRandom RND_GENERATOR = new SecureRandom();
 
     /**
      * Creates a new instance of AuthTokenInjecterHandler
