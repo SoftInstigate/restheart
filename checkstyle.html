@@ -101,7 +101,7 @@
 <td>213</td>
 <td>0</td>
 <td>0</td>
-<td>3310</td></tr></table></div>
+<td>3312</td></tr></table></div>
 <div class="section">
 <h2>Files<a name="Files"></a></h2>
 <table border="0" class="bodyTable">
@@ -784,7 +784,7 @@
 <td><a href="#org.restheart.metadata.checkers.GlobalChecker.java">org/restheart/metadata/checkers/GlobalChecker.java</a></td>
 <td>0</td>
 <td>0</td>
-<td>27</td></tr>
+<td>29</td></tr>
 <tr class="a">
 <td><a href="#org.restheart.metadata.checkers.JsonPathConditionsChecker.java">org/restheart/metadata/checkers/JsonPathConditionsChecker.java</a></td>
 <td>0</td>
@@ -1223,7 +1223,7 @@
 <td><a class="externalLink" href="http://checkstyle.sourceforge.net/config_javadoc.html#JavadocMethod">JavadocMethod</a>
 <ul>
 <li>scope: <tt>&quot;public&quot;</tt></li></ul></td>
-<td>631</td>
+<td>633</td>
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td></tr>
 <tr class="b">
 <td></td>
@@ -16067,160 +16067,172 @@
 <td>26</td></tr>
 <tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
-<td>javadoc</td>
-<td>JavadocMethod</td>
-<td>Missing a Javadoc comment.</td>
-<td>39</td></tr>
-<tr class="a">
-<td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
 <td>Parameter checker should be final.</td>
-<td>39</td></tr>
-<tr class="b">
+<td>48</td></tr>
+<tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>coding</td>
 <td>HiddenField</td>
 <td>'checker' hides a field.</td>
-<td>39</td></tr>
-<tr class="a">
-<td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
-<td>misc</td>
-<td>FinalParameters</td>
-<td>Parameter skipNotSupported should be final.</td>
-<td>40</td></tr>
+<td>48</td></tr>
 <tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
-<td>coding</td>
-<td>HiddenField</td>
-<td>'skipNotSupported' hides a field.</td>
-<td>40</td></tr>
+<td>javadoc</td>
+<td>JavadocMethod</td>
+<td>Expected @param tag for 'checker'.</td>
+<td>48</td></tr>
 <tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
 <td>Parameter predicate should be final.</td>
-<td>41</td></tr>
+<td>49</td></tr>
 <tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>coding</td>
 <td>HiddenField</td>
 <td>'predicate' hides a field.</td>
-<td>41</td></tr>
+<td>49</td></tr>
 <tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
-<td>Parameter args should be final.</td>
-<td>42</td></tr>
+<td>Parameter skipNotSupported should be final.</td>
+<td>50</td></tr>
 <tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>coding</td>
 <td>HiddenField</td>
+<td>'skipNotSupported' hides a field.</td>
+<td>50</td></tr>
+<tr class="a">
+<td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
+<td>javadoc</td>
+<td>JavadocMethod</td>
+<td>Expected @param tag for 'skipNotSupported'.</td>
+<td>50</td></tr>
+<tr class="b">
+<td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
+<td>misc</td>
+<td>FinalParameters</td>
+<td>Parameter args should be final.</td>
+<td>51</td></tr>
+<tr class="a">
+<td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
+<td>coding</td>
+<td>HiddenField</td>
 <td>'args' hides a field.</td>
-<td>42</td></tr>
+<td>51</td></tr>
+<tr class="b">
+<td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
+<td>javadoc</td>
+<td>JavadocMethod</td>
+<td>Expected @param tag for 'args'.</td>
+<td>51</td></tr>
 <tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
 <td>Parameter confArgs should be final.</td>
-<td>43</td></tr>
+<td>52</td></tr>
 <tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>coding</td>
 <td>HiddenField</td>
 <td>'confArgs' hides a field.</td>
-<td>43</td></tr>
+<td>52</td></tr>
 <tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>design</td>
 <td>DesignForExtension</td>
 <td>Class 'GlobalChecker' looks like designed for extension (can be subclassed), but the method 'check' does not have javadoc that explains how to do that safely. If class is not designed for extension consider making the class 'GlobalChecker' final or making the method 'check' static/final/abstract/empty, or adding allowed annotation for the method.</td>
-<td>51</td></tr>
+<td>60</td></tr>
 <tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>javadoc</td>
 <td>JavadocMethod</td>
 <td>Missing a Javadoc comment.</td>
-<td>51</td></tr>
+<td>60</td></tr>
 <tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
 <td>Parameter exchange should be final.</td>
-<td>52</td></tr>
+<td>61</td></tr>
 <tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
 <td>Parameter context should be final.</td>
-<td>53</td></tr>
+<td>62</td></tr>
 <tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
 <td>Parameter contentToCheck should be final.</td>
-<td>54</td></tr>
+<td>63</td></tr>
 <tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>design</td>
 <td>DesignForExtension</td>
 <td>Class 'GlobalChecker' looks like designed for extension (can be subclassed), but the method 'resolve' does not have javadoc that explains how to do that safely. If class is not designed for extension consider making the class 'GlobalChecker' final or making the method 'resolve' static/final/abstract/empty, or adding allowed annotation for the method.</td>
-<td>64</td></tr>
+<td>73</td></tr>
 <tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>javadoc</td>
 <td>JavadocMethod</td>
 <td>Missing a Javadoc comment.</td>
-<td>64</td></tr>
+<td>73</td></tr>
 <tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
 <td>Parameter exchange should be final.</td>
-<td>64</td></tr>
+<td>73</td></tr>
 <tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
 <td>Parameter context should be final.</td>
-<td>65</td></tr>
+<td>74</td></tr>
 <tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>design</td>
 <td>DesignForExtension</td>
 <td>Class 'GlobalChecker' looks like designed for extension (can be subclassed), but the method 'getPhase' does not have javadoc that explains how to do that safely. If class is not designed for extension consider making the class 'GlobalChecker' final or making the method 'getPhase' static/final/abstract/empty, or adding allowed annotation for the method.</td>
-<td>69</td></tr>
+<td>78</td></tr>
 <tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>javadoc</td>
 <td>JavadocMethod</td>
 <td>Missing a Javadoc comment.</td>
-<td>69</td></tr>
+<td>78</td></tr>
 <tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
 <td>Parameter context should be final.</td>
-<td>69</td></tr>
+<td>78</td></tr>
 <tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>design</td>
 <td>DesignForExtension</td>
 <td>Class 'GlobalChecker' looks like designed for extension (can be subclassed), but the method 'doesSupportRequests' does not have javadoc that explains how to do that safely. If class is not designed for extension consider making the class 'GlobalChecker' final or making the method 'doesSupportRequests' static/final/abstract/empty, or adding allowed annotation for the method.</td>
-<td>73</td></tr>
+<td>82</td></tr>
 <tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>javadoc</td>
 <td>JavadocMethod</td>
 <td>Missing a Javadoc comment.</td>
-<td>73</td></tr>
+<td>82</td></tr>
 <tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>misc</td>
 <td>FinalParameters</td>
 <td>Parameter context should be final.</td>
-<td>73</td></tr></table></div>
+<td>82</td></tr></table></div>
 <div class="section">
 <h3 id="org.restheart.metadata.checkers.JsonPathConditionsChecker.java">org/restheart/metadata/checkers/JsonPathConditionsChecker.java</h3>
 <table border="0" class="bodyTable">
