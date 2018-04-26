@@ -133,6 +133,36 @@ public class ResponseTransformerHandler
 
         applyTransformLogic(exchange, context, collRts);
     }
+    
+    @Override
+    void applyGlobalTransformers(HttpServerExchange exchange, RequestContext context) {
+        // execture global response tranformers
+        getGlobalTransformers().stream()
+                .filter(gt -> doesGlobalTransformerAppy(gt, exchange, context))
+                .forEachOrdered(gt -> {
+                    if (gt.getScope() == RequestTransformer.SCOPE.THIS) {
+                        gt.transform(
+                                exchange,
+                                context,
+                                context.getResponseContent());
+                    } else if (context.getResponseContent() != null
+                            && context.getResponseContent().isDocument()
+                            && context.getResponseContent()
+                                    .asDocument()
+                                    .containsKey("_embedded")) {
+                        applyChildrenTransformLogic(exchange,
+                                context,
+                                gt.getTransformer(),
+                                gt.getArgs(),
+                                gt.getConfArgs());
+                    } else if (context.isDocument()) {
+                        gt.transform(
+                                exchange,
+                                context,
+                                context.getResponseContent());
+                    }
+                });
+    }
 
     private void applyTransformLogic(
             HttpServerExchange exchange,

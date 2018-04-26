@@ -91,34 +91,7 @@ public abstract class TransformerHandler extends PipedHttpHandler {
 
     abstract boolean doesDBTransformerAppy(RequestContext context);
 
-    void applyGlobalTransformers(HttpServerExchange exchange, RequestContext context) {
-        // execture global response tranformers
-        getGlobalTransformers().stream()
-                .filter(gt -> doesGlobalTransformerAppy(gt, exchange, context))
-                .forEachOrdered(gt -> {
-                    if (gt.getScope() == RequestTransformer.SCOPE.THIS) {
-                        gt.transform(
-                                exchange,
-                                context,
-                                context.getResponseContent());
-                    } else if (context.getResponseContent() != null
-                            && context.getResponseContent().isDocument()
-                            && context.getResponseContent()
-                                    .asDocument()
-                                    .containsKey("_embedded")) {
-                        applyChildrenTransformLogic(exchange,
-                                context,
-                                gt.getTransformer(),
-                                gt.getArgs(),
-                                gt.getConfArgs());
-                    } else if (context.isDocument()) {
-                        gt.transform(
-                                exchange,
-                                context,
-                                context.getResponseContent());
-                    }
-                });
-    }
+    abstract void applyGlobalTransformers(HttpServerExchange exchange, RequestContext context);
     
     abstract void applyDbTransformer(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException;
 

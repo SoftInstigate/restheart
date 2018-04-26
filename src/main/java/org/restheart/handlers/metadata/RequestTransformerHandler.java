@@ -127,6 +127,28 @@ public class RequestTransformerHandler
 
         applyTransformLogic(exchange, context, collRts);
     }
+    
+    @Override
+    void applyGlobalTransformers(HttpServerExchange exchange, RequestContext context) {
+        // execture global request tranformers
+        getGlobalTransformers().stream()
+                .filter(gt -> doesGlobalTransformerAppy(gt, exchange, context))
+                .forEachOrdered(gt -> {
+                    if (context.getContent().isDocument()) {
+                        gt.transform(
+                                exchange,
+                                context,
+                                context.getContent());
+                    } else if (context.getContent().isArray()) {
+                        context.getContent().asArray().forEach(doc -> {
+                            gt.transform(
+                                exchange,
+                                context,
+                                doc);
+                        });
+                    }
+                });
+    }
 
     private void applyTransformLogic(
             HttpServerExchange exchange,
