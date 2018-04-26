@@ -70,7 +70,7 @@ public class DenyFilterOnUserPasswordPredicate implements RequestContextPredicat
                     "cannot execute request with filter on password property");
             return false;
         }
- 
+
         return true;
     }
 
@@ -97,8 +97,12 @@ public class DenyFilterOnUserPasswordPredicate implements RequestContextPredicat
             return false;
         } else {
             return context.isGet()
-                    && this.db == null ? true : this.db.equals(context.getDBName())
-                            && this.coll == null ? true : this.coll.equals(context.getCollectionName());
+                    && this.db == null
+                            ? true
+                            : this.db.equals(context.getDBName())
+                            && this.coll == null
+                                    ? true
+                                    : this.coll.equals(context.getCollectionName());
         }
     }
 }

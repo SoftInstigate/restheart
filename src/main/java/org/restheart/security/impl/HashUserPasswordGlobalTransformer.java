@@ -30,6 +30,14 @@ import org.restheart.security.RequestContextPredicate;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class HashUserPasswordGlobalTransformer extends GlobalTransformer {
+    /**
+     *
+     * @param db name of the db to apply the transformer (if null, apply to all
+     * dbs)
+     * @param coll name of the collection to apply the transformer (mandatory)
+     * @param args arguments to pass to HashTransformer
+     * @param propertyNamePassword the name of the password property
+     */
     public HashUserPasswordGlobalTransformer(
             String db,
             String coll,
@@ -40,7 +48,9 @@ public class HashUserPasswordGlobalTransformer extends GlobalTransformer {
                 new RequestContextPredicate() {
             @Override
             public boolean resolve(HttpServerExchange hse, RequestContext context) {
-                return db.equals(context.getDBName())
+                return (db == null
+                        ? true
+                        : db.equals(context.getDBName()))
                         && coll.equals(context.getCollectionName())
                         && (((context.isPut() || context.isPatch())
                         && context.isDocument())
