@@ -30,22 +30,31 @@ import org.restheart.security.RequestContextPredicate;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class FilterUserPasswordGlobalTransformer extends GlobalTransformer {
+    /**
+     *
+     * @param db name of the db to apply the transformer (if null, apply to all
+     * dbs)
+     * @param coll name of the collection to apply the transformer (mandatory)
+     * @param args arguments to pass to FilterTransformer
+     */
     public FilterUserPasswordGlobalTransformer(
             String db,
             String coll,
-            BsonArray propsToFilter) {
+            BsonArray args) {
         super(
                 new FilterTransformer(),
                 new RequestContextPredicate() {
             @Override
             public boolean resolve(HttpServerExchange hse, RequestContext context) {
-                return db.equals(context.getDBName())
+                return (db == null
+                        ? true
+                        : db.equals(context.getDBName()))
                         && coll.equals(context.getCollectionName());
             }
         },
                 RequestTransformer.PHASE.RESPONSE,
                 RequestTransformer.SCOPE.CHILDREN,
-                propsToFilter,
+                args,
                 null);
     }
 
