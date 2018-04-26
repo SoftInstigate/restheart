@@ -422,14 +422,11 @@ public class Bootstrapper {
                 if (o instanceof Initializer) {
                     try {
                         ((Initializer) o).init();
-                        LOGGER.info(ansi().fg(GREEN).bold().a(
-                                "initializer {} executed")
-                                .reset().toString(),
+                        LOGGER.info(
+                                "initializer {} executed",
                                 configuration.getInitializerClass());
                     } catch (Throwable t) {
-                        LOGGER.error(ansi().fg(RED).bold().a(
-                                "Error executing intializer {}")
-                                .reset().toString(),
+                        LOGGER.error("Error executing intializer {}",
                                 configuration.getInitializerClass(),
                                 t);
                     }
