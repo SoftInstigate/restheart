@@ -155,32 +155,6 @@ public class RequestTransformerHandler
             RequestContext context,
             List<RequestTransformer> rts)
             throws InvalidMetadataException {
-
-        // execture global request tranformers
-        getGlobalTransformers().stream()
-                .filter(t -> t.getPhase() == PHASE.REQUEST)
-                .forEachOrdered(t -> {
-            BsonValue requestContent = context.getContent() == null
-                    ? new BsonDocument()
-                    : context.getContent();
-
-            if (requestContent.isDocument()) {
-                t.transform(
-                        exchange,
-                        context,
-                        requestContent);
-            } else if (context.isPost()
-                    && requestContent.isArray()) {
-                requestContent.asArray().stream().forEachOrdered(
-                        (doc) -> {
-                            t.transform(
-                                    exchange,
-                                    context,
-                                    doc);
-                        });
-            }
-        });
-        
         NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
         
         // executure request tranformers
