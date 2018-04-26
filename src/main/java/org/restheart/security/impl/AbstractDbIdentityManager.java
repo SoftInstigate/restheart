@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
@@ -138,14 +139,29 @@ public abstract class AbstractDbIdentityManager
                             coll,
                             propertyNamePassword));
 
-            // add a global transformer to filter the password from request to users
-            // collection
-            BsonArray _propertyNamePasswordArray = new BsonArray();
-            _propertyNamePasswordArray.add(new BsonString(propertyNamePassword));
+            // add a global transformer to filter out the password from response 
+            BsonArray filterPasswordArgs = new BsonArray();
+            filterPasswordArgs.add(new BsonString(propertyNamePassword));
             TransformerHandler.getGlobalTransformers().add(
                     new FilterUserPasswordGlobalTransformer(db,
                             coll,
-                            _propertyNamePasswordArray));
+                            filterPasswordArgs));
+
+            // add a global transformer to hash the password on write requests 
+            // on accounts collection
+            if (bcryptHashedPassword) {
+                BsonDocument hashPasswordArgs = new BsonDocument();
+                BsonArray _propsToHash = new BsonArray();
+                _propsToHash.add(new BsonString(propertyNamePassword));
+                hashPasswordArgs.put("props", _propsToHash);
+                hashPasswordArgs.put("complexity", new BsonInt32(12));
+
+                TransformerHandler.getGlobalTransformers().add(
+                        new HashUserPasswordGlobalTransformer(db,
+                                coll,
+                                hashPasswordArgs,
+                                propertyNamePassword));
+            }
         }
     }
 
