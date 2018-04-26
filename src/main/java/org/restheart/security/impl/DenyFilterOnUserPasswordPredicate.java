@@ -97,12 +97,14 @@ public class DenyFilterOnUserPasswordPredicate implements RequestContextPredicat
             return false;
         } else {
             return context.isGet()
-                    && this.db == null
+                    && (this.db == null
                             ? true
-                            : this.db.equals(context.getDBName())
-                            && this.coll == null
-                                    ? true
-                                    : this.coll.equals(context.getCollectionName());
+                            : this.db.equals(
+                                    context.getDBName()))
+                    && (this.coll == null
+                            ? true
+                            : this.coll.equals(
+                                    context.getCollectionName()));
         }
     }
 }
