@@ -134,7 +134,8 @@ public class RequestTransformerHandler
         getGlobalTransformers().stream()
                 .filter(gt -> doesGlobalTransformerAppy(gt, exchange, context))
                 .forEachOrdered(gt -> {
-                    if (context.getContent().isDocument()) {
+                    if (context.getContent() == null
+                            || context.getContent().isDocument()) {
                         gt.transform(
                                 exchange,
                                 context,
