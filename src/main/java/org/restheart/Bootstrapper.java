@@ -17,6 +17,7 @@
  */
 package org.restheart;
 
+import io.undertow.server.HttpHandler;
 import org.restheart.init.Initializer;
 import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
@@ -534,10 +535,7 @@ public class Bootstrapper {
         LoggingInitializer.stopLogging();
     }
 
-    /**
-     * startCoreSystem
-     */
-    private static void startCoreSystem() {
+    public static HttpHandler buildCoreSystem(Configuration configuration) {
         if (configuration == null) {
             logErrorAndExit("No configuration found. exiting..", null, false, -1);
         }
@@ -545,6 +543,8 @@ public class Bootstrapper {
         if (!configuration.isHttpsListener() && !configuration.isHttpListener() && !configuration.isAjpListener()) {
             logErrorAndExit("No listener specified. exiting..", null, false, -1);
         }
+
+        Bootstrapper.configuration = configuration;
 
         final IdentityManager identityManager = loadIdentityManager();
 
@@ -554,6 +554,40 @@ public class Bootstrapper {
 
         if (configuration.isAuthTokenEnabled()) {
             LOGGER.info("Token based authentication enabled with token TTL {} minutes", configuration.getAuthTokenTtl());
+        }
+
+        LocalCachesSingleton.init(configuration);
+
+        if (configuration.isLocalCacheEnabled()) {
+            LOGGER.info("Local cache for db and collection properties enabled with TTL {} msecs",
+                    configuration.getLocalCacheTtl() < 0 ? "∞"
+                            : configuration.getLocalCacheTtl());
+        } else {
+            LOGGER.info("Local cache for db and collection properties not enabled");
+        }
+
+        if (configuration.isSchemaCacheEnabled()) {
+            LOGGER.info("Local cache for schema stores enabled  with TTL {} msecs",
+                    configuration.getSchemaCacheTtl() < 0 ? "∞"
+                            : configuration.getSchemaCacheTtl());
+        } else {
+            LOGGER.info("Local cache for schema stores not enabled");
+        }
+
+        return getHandlersPipe(authenticationMechanism, identityManager, accessManager);
+    }
+
+    /**
+     * startCoreSystem
+     */
+    private static void startCoreSystem() {
+
+        if (configuration == null) {
+            logErrorAndExit("No configuration found. exiting..", null, false, -1);
+        }
+
+        if (!configuration.isHttpsListener() && !configuration.isHttpListener() && !configuration.isAjpListener()) {
+            logErrorAndExit("No listener specified. exiting..", null, false, -1);
         }
 
         SSLContext sslContext = null;
@@ -613,25 +647,7 @@ public class Bootstrapper {
             LOGGER.info("Ajp listener bound at {}:{}", configuration.getAjpHost(), configuration.getAjpPort());
         }
 
-        LocalCachesSingleton.init(configuration);
-
-        if (configuration.isLocalCacheEnabled()) {
-            LOGGER.info("Local cache for db and collection properties enabled with TTL {} msecs",
-                    configuration.getLocalCacheTtl() < 0 ? "∞"
-                    : configuration.getLocalCacheTtl());
-        } else {
-            LOGGER.info("Local cache for db and collection properties not enabled");
-        }
-
-        if (configuration.isSchemaCacheEnabled()) {
-            LOGGER.info("Local cache for schema stores enabled  with TTL {} msecs",
-                    configuration.getSchemaCacheTtl() < 0 ? "∞"
-                    : configuration.getSchemaCacheTtl());
-        } else {
-            LOGGER.info("Local cache for schema stores not enabled");
-        }
-
-        shutdownHandler = getHandlersPipe(authenticationMechanism, identityManager, accessManager);
+        shutdownHandler = buildGracefulShutdownHandler(buildCoreSystem(configuration));
 
         builder = builder
                 .setIoThreads(configuration.getIoThreads())
@@ -785,7 +801,7 @@ public class Bootstrapper {
      * @param accessManager
      * @return a GracefulShutdownHandler
      */
-    private static GracefulShutdownHandler getHandlersPipe(final AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager, final AccessManager accessManager) {
+    private static HttpHandler getHandlersPipe(final AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager, final AccessManager accessManager) {
         PipedHttpHandler coreHandlerChain
                 = new AccountInjectorHandler(
                         new DbPropsInjectorHandler(
@@ -859,33 +875,35 @@ public class Bootstrapper {
                                         identityManager,
                                         new FullAccessManager()))));
 
-        return buildGracefulShutdownHandler(paths);
+        return buildHandlersPipe(paths);
     }
 
     /**
      * buildGracefulShutdownHandler
      *
-     * @param paths
+     * @param rootHandler
      * @return
      */
-    private static GracefulShutdownHandler buildGracefulShutdownHandler(PathHandler paths) {
-        return new GracefulShutdownHandler(
-                new RequestLimitingHandler(new RequestLimit(configuration.getRequestLimit()),
-                        new AllowedMethodsHandler(
-                                new BlockingHandler(
-                                        new GzipEncodingHandler(
-                                                new ErrorHandler(
-                                                        new HttpContinueAcceptingHandler(paths)
-                                                ), configuration.isForceGzipEncoding()
-                                        )
-                                ), // allowed methods
-                                HttpString.tryFromString(RequestContext.METHOD.GET.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.POST.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.PUT.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.DELETE.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.PATCH.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.OPTIONS.name())
-                        )
+    private static GracefulShutdownHandler buildGracefulShutdownHandler(HttpHandler rootHandler) {
+        return new GracefulShutdownHandler(rootHandler);
+    }
+
+    private static HttpHandler buildHandlersPipe(PathHandler paths) {
+        return new RequestLimitingHandler(new RequestLimit(configuration.getRequestLimit()),
+                new AllowedMethodsHandler(
+                        new BlockingHandler(
+                                new GzipEncodingHandler(
+                                        new ErrorHandler(
+                                                new HttpContinueAcceptingHandler(paths)
+                                        ), configuration.isForceGzipEncoding()
+                                )
+                        ), // allowed methods
+                        HttpString.tryFromString(RequestContext.METHOD.GET.name()),
+                        HttpString.tryFromString(RequestContext.METHOD.POST.name()),
+                        HttpString.tryFromString(RequestContext.METHOD.PUT.name()),
+                        HttpString.tryFromString(RequestContext.METHOD.DELETE.name()),
+                        HttpString.tryFromString(RequestContext.METHOD.PATCH.name()),
+                        HttpString.tryFromString(RequestContext.METHOD.OPTIONS.name())
                 )
         );
     }
