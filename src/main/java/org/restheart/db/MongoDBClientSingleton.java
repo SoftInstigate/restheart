@@ -34,6 +34,7 @@ public class MongoDBClientSingleton {
     private static boolean initialized = false;
 
     private static MongoClientURI mongoUri;
+    private static MongoClient outsideMongoClient;
 
     private static String serverVersion;
 
@@ -46,6 +47,12 @@ public class MongoDBClientSingleton {
     public static void init(Configuration conf) {
         mongoUri = conf.getMongoUri();
         initialized = true;
+    }
+
+    public static void init(MongoClient outsideMongoClient) {
+        initialized = true;
+        MongoDBClientSingleton.outsideMongoClient = outsideMongoClient;
+        serverVersion = "?";
     }
 
     /**
@@ -77,7 +84,7 @@ public class MongoDBClientSingleton {
         }
 
         try {
-            setup();
+            setup(outsideMongoClient);
         } catch (UnknownHostException ex) {
             LOGGER.error("error initializing mongodb client", ex);
         } catch (Throwable tr) {
@@ -85,9 +92,10 @@ public class MongoDBClientSingleton {
         }
     }
 
-    private void setup() throws UnknownHostException {
+    private void setup(MongoClient outsideMongoClient) throws UnknownHostException {
         if (isInitialized()) {
-            mongoClient = new MongoClient(mongoUri);
+
+            mongoClient = outsideMongoClient != null ? outsideMongoClient : new MongoClient(mongoUri);
         }
 
         try {
