@@ -153,8 +153,16 @@ public class PutDocumentIT extends HttpClientAbstactIT {
                 .header("content-type", "application/json")
                 .body("{ '$push': {'array': 'a'}, '$inc': { 'count': 100 }, '$currentDate': {'timestamp': true } }")
                 .asString();
-
-        Assert.assertEquals("check response status of create test data", org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+        
+        Assert.assertEquals("check response status of create test data", org.apache.http.HttpStatus.SC_BAD_REQUEST, resp.getStatus());
+        
+        resp = Unirest.put(url(DB, COLL, "docid2"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{ '$currentDate': {'timestamp': true } }")
+                .asString();
+        
+        Assert.assertEquals("check response status of create test data with $currentDate operator", org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
 
         resp = Unirest.get(url(DB, COLL, "docid2"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
@@ -167,27 +175,6 @@ public class PutDocumentIT extends HttpClientAbstactIT {
         Assert.assertTrue("check data to be a json object",
                 rbody != null
                 && rbody.isObject());
-
-        JsonValue array = rbody.asObject().get("array");
-
-        Assert.assertTrue("check data to have the 'array' array with one element",
-                array != null
-                && array.isArray()
-                && array.asArray().size() == 1);
-
-        JsonValue element = array.asArray().get(0);
-
-        Assert.assertTrue("check array element to be the string 'a'",
-                element != null
-                && element.isString()
-                && element.asString().equals("a"));
-
-        JsonValue count = rbody.asObject().get("count");
-
-        Assert.assertTrue("check count property to be 100",
-                count != null
-                && count.isNumber()
-                && count.asInt() == 100);
 
         JsonValue timestamp = rbody.asObject().get("timestamp");
 
