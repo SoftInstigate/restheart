@@ -22,6 +22,7 @@ import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.MongoCollection;
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
+import com.mongodb.client.model.FindOneAndReplaceOptions;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.model.UpdateOneModel;
@@ -29,19 +30,21 @@ import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
 import com.mongodb.client.result.UpdateResult;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
+import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
-import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.JsonUtils;
 import static org.restheart.utils.RequestHelper.UPDATE_OPERATORS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,10 +64,16 @@ public class DAOUtils {
     public final static FindOneAndUpdateOptions FAU_NOT_UPSERT_OPS = new FindOneAndUpdateOptions()
             .upsert(false);
 
-    public final static FindOneAndUpdateOptions FAU_AFTER_UPSERT_OPS = new FindOneAndUpdateOptions()
+    public final static FindOneAndUpdateOptions FOU_AFTER_UPSERT_OPS = new FindOneAndUpdateOptions()
             .upsert(true).returnDocument(ReturnDocument.AFTER);
 
-    public final static FindOneAndUpdateOptions FAU_AFTER_NOT_UPSERT_OPS = new FindOneAndUpdateOptions()
+    public final static FindOneAndReplaceOptions FOR_AFTER_UPSERT_OPS = new FindOneAndReplaceOptions()
+            .upsert(true).returnDocument(ReturnDocument.AFTER);
+
+    public final static FindOneAndUpdateOptions FOU_AFTER_NOT_UPSERT_OPS = new FindOneAndUpdateOptions()
+            .upsert(false).returnDocument(ReturnDocument.AFTER);
+
+    public final static FindOneAndReplaceOptions FOR_AFTER_NOT_UPSERT_OPS = new FindOneAndReplaceOptions()
             .upsert(false).returnDocument(ReturnDocument.AFTER);
 
     public final static UpdateOptions U_UPSERT_OPS = new UpdateOptions()
@@ -109,7 +118,6 @@ public class DAOUtils {
                 shardKeys,
                 data,
                 false,
-                false,
                 patching,
                 false);
     }
@@ -139,7 +147,6 @@ public class DAOUtils {
                 data,
                 replace,
                 false,
-                false,
                 true);
     }
 
@@ -154,7 +161,6 @@ public class DAOUtils {
      * @param shardKeys
      * @param data
      * @param replace
-     * @param returnNew
      * @param deepPatching if true then we will flatten any nested BsonDocuments
      * into dot notation to ensure only the requested fields are updated.
      * @param allowUpsert whether or not to allow upsert mode
@@ -168,13 +174,10 @@ public class DAOUtils {
             BsonDocument shardKeys,
             BsonDocument data,
             boolean replace,
-            boolean returnNew,
             boolean deepPatching,
             boolean allowUpsert) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(data);
-
-        BsonDocument document = getUpdateDocument(data, deepPatching);
 
         Bson query;
 
@@ -196,25 +199,27 @@ public class DAOUtils {
             query = and(query, filter);
         }
 
-        if (replace) {
-            // here we cannot use the atomic findOneAndReplace because it does
-            // not support update operators.
+        BsonDocument oldDocument;
 
-            BsonDocument oldDocument;
+        if (idPresent) {
+            oldDocument = coll.find(query).first();
 
-            if (idPresent) {
-                oldDocument = coll.findOneAndReplace(query, new BsonDocument());
-            } else {
-                oldDocument = null;
+            if (!allowUpsert && oldDocument == null) {
+                return new OperationResult(HttpStatus.SC_NOT_FOUND);
             }
+        } else {
+            oldDocument = null;
+        }
 
+        if (replace) {
             BsonDocument newDocument;
 
             try {
-                newDocument = coll.findOneAndUpdate(
-                        query,
-                        document,
-                        allowUpsert ? FAU_AFTER_UPSERT_OPS : FAU_AFTER_NOT_UPSERT_OPS);
+                newDocument = coll.findOneAndReplace(query,
+                        getReplaceDocument(data),
+                        allowUpsert ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS);
+            } catch (IllegalArgumentException iae) {
+                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, null);
             } catch (MongoCommandException mce) {
                 if (mce.getErrorCode() == 11000) {
                     if (allowUpsert
@@ -225,9 +230,9 @@ public class DAOUtils {
                         // this happens if the filter parameter didn't match
                         // the existing document and so the upserted doc
                         // has an existing _id 
-                        return new OperationResult(HttpStatus.SC_NOT_FOUND, oldDocument, oldDocument);
+                        return new OperationResult(HttpStatus.SC_NOT_FOUND, oldDocument, null);
                     } else {
-                        return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED);
+                        return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED, oldDocument, null);
                     }
                 } else {
                     throw mce;
@@ -235,40 +240,12 @@ public class DAOUtils {
             }
 
             return new OperationResult(-1, oldDocument, newDocument);
-        } else if (returnNew) {
-            BsonDocument newDocument;
-            try {
-                newDocument = coll.findOneAndUpdate(
-                        query,
-                        document,
-                        allowUpsert ? FAU_AFTER_UPSERT_OPS : FAU_AFTER_NOT_UPSERT_OPS);
-            } catch (MongoCommandException mce) {
-                if (mce.getErrorCode() == 11000) {
-                    if (allowUpsert
-                            && filter != null
-                            && !filter.isEmpty()
-                            && mce.getErrorMessage().contains("$_id_ dup key")) {
-                        // DuplicateKey error due to filter 
-                        // this happens if the filter parameter didn't match
-                        // the existing document and so the upserted doc
-                        // has an existing _id 
-                        return new OperationResult(HttpStatus.SC_NOT_FOUND);
-                    } else {
-                        return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED);
-                    }
-                } else {
-                    throw mce;
-                }
-            }
-
-            return new OperationResult(-1, null, newDocument);
         } else {
-            BsonDocument oldDocument;
+            BsonDocument newDocument;
 
             try {
-                oldDocument = coll.findOneAndUpdate(
-                        query,
-                        document,
+                newDocument = coll.findOneAndUpdate(query,
+                        getUpdateDocument(data, deepPatching),
                         allowUpsert ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS);
             } catch (MongoCommandException mce) {
                 if (mce.getErrorCode() == 11000) {
@@ -280,16 +257,20 @@ public class DAOUtils {
                         // this happens if the filter parameter didn't match
                         // the existing document and so the upserted doc
                         // has an existing _id 
-                        return new OperationResult(HttpStatus.SC_NOT_FOUND);
+                        return new OperationResult(HttpStatus.SC_NOT_FOUND,
+                                oldDocument,
+                                null);
                     } else {
-                        return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED);
+                        return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED,
+                                oldDocument,
+                                null);
                     }
                 } else {
                     throw mce;
                 }
             }
 
-            return new OperationResult(-1, oldDocument, null);
+            return new OperationResult(-1, oldDocument, newDocument);
         }
     }
 
@@ -407,6 +388,35 @@ public class DAOUtils {
 
     /**
      *
+     * @param doc
+     * @return the document for replace operation, without dot notation and
+     * replacing $currentDate operator
+     */
+    public static BsonDocument getReplaceDocument(final BsonDocument doc) {
+        BsonDocument ret = new BsonDocument();
+        ret.putAll(doc);
+
+        BsonValue cd = ret.remove("$currentDate");
+        
+        if (cd != null) {
+            BsonDateTime date = new BsonDateTime(System.currentTimeMillis());
+            
+            if (cd.isDocument()) {
+                cd.asDocument().keySet().stream().forEach(key -> {
+                    ret.put(key, date);
+                });
+                
+                
+            } else {
+                throw new IllegalArgumentException("wrong $currentDate operator");
+            }
+        }
+        
+        return JsonUtils.unflatten(ret).asDocument();
+    }
+
+    /**
+     *
      * @param data
      * @param flatten if we should flatten nested documents' values using dot
      * notation
@@ -423,24 +433,23 @@ public class DAOUtils {
                 });
 
         // add properties to $set update operator
-        List<String> setKeys;
+        List<String> keys;
 
-        setKeys = data.keySet().stream().filter((String key)
-                -> !UPDATE_OPERATORS.contains(key))
+        keys = data.keySet()
+                .stream()
+                .filter((String key)
+                        -> !UPDATE_OPERATORS.contains(key))
                 .collect(Collectors.toList());
 
-        if (setKeys != null && !setKeys.isEmpty()) {
-            BsonDocument set = new BsonDocument();
+        if (keys != null && !keys.isEmpty()) {
+            BsonDocument set;
 
-            setKeys.stream().forEach((String key)
-                    -> {
-                if (flatten) {
-                    flatten(null, key, data, set);
-                } else {
-                    set.append(key, data.get(key));
-                }
-            });
-
+            if (flatten) {
+                set = JsonUtils.flatten(data).asDocument();
+            } else {
+                set = new BsonDocument();
+                keys.stream().forEach(key -> set.append(key, data.get(key)));
+            }
             if (!set.isEmpty()) {
                 if (ret.get("$set") == null) {
                     ret.put("$set", set);
@@ -455,21 +464,6 @@ public class DAOUtils {
         }
 
         return ret;
-    }
-
-    /*
-     * Recursively flatten BsonDocuments using dot notation so that we only set values on explicit keys
-     */
-    private static void flatten(String prefix, String key, BsonDocument data, BsonDocument set) {
-        final String newPrefix = prefix == null ? key : prefix + "." + key;
-        final BsonValue value = data.get(key);
-        if (value.isDocument()) {
-            ((BsonDocument) value).keySet().forEach(childKey -> {
-                flatten(newPrefix, childKey, (BsonDocument) value, set);
-            });
-        } else {
-            set.append(newPrefix, value);
-        }
     }
 
     private DAOUtils() {

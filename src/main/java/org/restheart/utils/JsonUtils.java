@@ -17,6 +17,10 @@
  */
 package org.restheart.utils;
 
+import com.github.wnameless.json.flattener.FlattenMode;
+import com.github.wnameless.json.flattener.JsonFlattener;
+import com.github.wnameless.json.flattener.PrintMode;
+import com.github.wnameless.json.unflattener.JsonUnflattener;
 import com.mongodb.MongoClient;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -733,6 +737,28 @@ public class JsonUtils {
                 MongoClient.getDefaultCodecRegistry());
     }
 
-    private JsonUtils() {
+    /**
+     * Recursively replace dot notatation fields to nested objects from
+     * {"a.b":} to {"a":{"b":2}}
+     */
+    public static BsonValue unflatten(BsonValue json)
+            throws IllegalArgumentException {
+        return parse(
+                new JsonUnflattener(toJson(json))
+                        .withPrintMode(PrintMode.MINIMAL)
+                        .withFlattenMode(FlattenMode.MONGODB)
+                        .unflatten());
+    }
+
+    /**
+     * Recursively flatten nested objects using dot notation for {"a":{"b":1}}
+     * to {"a.b":1}
+     */
+    public static BsonValue flatten(BsonValue json) {
+        return parse(
+                new JsonFlattener(toJson(json))
+                        .withPrintMode(PrintMode.MINIMAL)
+                        .withFlattenMode(FlattenMode.MONGODB)
+                        .flatten());
     }
 }

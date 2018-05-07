@@ -32,7 +32,8 @@
                 },
                 {
                     "path": "$.roles.[*]",
-                    "type": "string"
+                    "type": "string",
+                    "nullable": true
                 },
                 {
                     "path": "$.name",

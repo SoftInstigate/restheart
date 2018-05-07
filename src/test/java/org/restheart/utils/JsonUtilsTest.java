@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import org.bson.BsonDocument;
 import org.bson.BsonDouble;
+import org.bson.BsonNull;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.junit.After;
@@ -737,5 +738,58 @@ public class JsonUtilsTest {
         }
 
         return typeMatch;
+    }
+
+    @Test
+    public void testJsonFlatten() {
+        BsonDocument grandchild1 = new BsonDocument("a", BsonNull.VALUE);
+        grandchild1.put("b", BsonNull.VALUE);
+
+        BsonDocument grandchild2 = new BsonDocument("a", BsonNull.VALUE);
+
+        BsonDocument child1 = new BsonDocument("grandchild1", grandchild1);
+        BsonDocument child2 = new BsonDocument("grandchild2", grandchild2);
+
+        BsonDocument root = new BsonDocument("child1", child1);
+
+        root.put("child2", child2);
+
+        BsonDocument flatten = JsonUtils.flatten(root).asDocument();
+
+        Assert.assertTrue(flatten.size() == 3);
+        Assert.assertTrue(flatten.containsKey("child1.grandchild1.a"));
+        Assert.assertTrue(flatten.containsKey("child1.grandchild1.b"));
+        Assert.assertTrue(flatten.containsKey("child2.grandchild2.a"));
+
+        BsonValue unflatten = JsonUtils.unflatten(flatten);
+
+        Assert.assertTrue(unflatten.isDocument());
+        Assert.assertTrue(unflatten.asDocument().containsKey("child1"));
+        Assert.assertTrue(unflatten.asDocument().containsKey("child2"));
+
+        Assert.assertTrue(unflatten.asDocument().get("child1").isDocument());
+        Assert.assertTrue(unflatten.asDocument().get("child2").isDocument());
+        Assert.assertTrue(unflatten.asDocument().get("child1")
+                .asDocument().containsKey("grandchild1"));
+        Assert.assertTrue(unflatten.asDocument().get("child2")
+                .asDocument().containsKey("grandchild2"));
+    }
+
+    @Test
+    public void testJsonFlatten2() {
+        String flatten = "{\n"
+                + "    \"_id\": \"a@si.com\",\n"
+                + "    \"name\": \"Andrea\", \n"
+                + "    \"password\": \"changeit\",\n"
+                + "    \"roles.2\": \"ROLE3\",\n"
+                + "    \"details.city\": \"Milan\", \n"
+                + "    \"details.address\": \"address\",\n"
+                + "    \"details.country\": \"Italy\" \n"
+                + "}";
+
+        BsonValue unflatten = JsonUtils.unflatten(
+                JsonUtils.parse(flatten));
+
+        System.out.println(unflatten);;
     }
 }
