@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
+import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
@@ -202,7 +203,7 @@ public class DAOUtils {
             BsonDocument oldDocument;
 
             if (idPresent) {
-                oldDocument = coll.findOneAndDelete(query);
+                oldDocument = coll.findOneAndReplace(query, new BsonDocument());
             } else {
                 oldDocument = null;
             }
