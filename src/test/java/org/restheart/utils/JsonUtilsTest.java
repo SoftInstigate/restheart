@@ -741,7 +741,7 @@ public class JsonUtilsTest {
     }
 
     @Test
-    public void testJsonFlatten() {
+    public void testJsonUnflatten() {
         BsonDocument grandchild1 = new BsonDocument("a", BsonNull.VALUE);
         grandchild1.put("b", BsonNull.VALUE);
 
@@ -754,7 +754,7 @@ public class JsonUtilsTest {
 
         root.put("child2", child2);
 
-        BsonDocument flatten = JsonUtils.flatten(root).asDocument();
+        BsonDocument flatten = JsonUtils.flatten(root, false).asDocument();
 
         Assert.assertTrue(flatten.size() == 3);
         Assert.assertTrue(flatten.containsKey("child1.grandchild1.a"));
@@ -773,23 +773,5 @@ public class JsonUtilsTest {
                 .asDocument().containsKey("grandchild1"));
         Assert.assertTrue(unflatten.asDocument().get("child2")
                 .asDocument().containsKey("grandchild2"));
-    }
-
-    @Test
-    public void testJsonFlatten2() {
-        String flatten = "{\n"
-                + "    \"_id\": \"a@si.com\",\n"
-                + "    \"name\": \"Andrea\", \n"
-                + "    \"password\": \"changeit\",\n"
-                + "    \"roles.2\": \"ROLE3\",\n"
-                + "    \"details.city\": \"Milan\", \n"
-                + "    \"details.address\": \"address\",\n"
-                + "    \"details.country\": \"Italy\" \n"
-                + "}";
-
-        BsonValue unflatten = JsonUtils.unflatten(
-                JsonUtils.parse(flatten));
-
-        System.out.println(unflatten);;
     }
 }
