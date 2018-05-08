@@ -36,9 +36,12 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
+import org.bson.BsonBoolean;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
+import org.bson.BsonString;
+import org.bson.BsonTimestamp;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
@@ -391,29 +394,50 @@ public class DAOUtils {
      * replacing $currentDate operator
      */
     public static BsonDocument getReplaceDocument(final BsonDocument doc) {
-        BsonDocument ret = new BsonDocument();
-        ret.putAll(doc);
+        if (JsonUtils.containsUpdateOperators(doc, false)) {
+            BsonDocument ret = new BsonDocument();
+            ret.putAll(doc);
 
-        BsonValue cd = ret.remove("$currentDate");
-        
-        if (cd != null) {
-            BsonDateTime date = new BsonDateTime(System.currentTimeMillis());
-            
-            if (cd.isDocument()) {
-                cd.asDocument()
-                        .keySet()
-                        .stream()
-                        .forEach(key -> ret.put(key, date));
-                
-                
-            } else {
-                throw new IllegalArgumentException("wrong $currentDate operator");
+            BsonValue cd = ret.remove("$currentDate");
+
+            if (cd != null) {
+                long currentTimeMillis = System.currentTimeMillis();
+
+                if (cd.isDocument()) {
+                    cd.asDocument()
+                            .entrySet()
+                            .stream()
+                            .forEach(entry -> {
+                                if (BsonBoolean.TRUE.equals(entry.getValue())) {
+                                    ret.put(entry.getKey(),
+                                            new BsonDateTime(currentTimeMillis));
+                                } else if (entry.getValue().isDocument()
+                                        && entry.getValue().asDocument().
+                                                containsKey("$type")) {
+                                    if (new BsonString("date").equals(
+                                            entry.getValue().asDocument().get("$type"))) {
+                                        ret.put(entry.getKey(),
+                                                new BsonDateTime(currentTimeMillis));
+
+                                    } else if (new BsonString("timestamp").equals(
+                                            entry.getValue().asDocument().get("$type"))) {
+                                        ret.put(entry.getKey(),
+                                                new BsonTimestamp(currentTimeMillis));
+                                    } else {
+                                        throw new IllegalArgumentException("wrong $currentDate operator");
+                                    }
+
+                                } else {
+                                    throw new IllegalArgumentException("wrong $currentDate operator");
+                                }
+                            });
+                }
             }
+
+            return JsonUtils.unflatten(ret).asDocument();
+        } else {
+            return doc;
         }
-        
-        return JsonUtils
-                .unflatten(ret)
-                .asDocument();
     }
 
     /**

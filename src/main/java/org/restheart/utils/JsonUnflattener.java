@@ -17,7 +17,6 @@
  */
 package org.restheart.utils;
 
-import java.io.StringWriter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -66,7 +65,7 @@ public final class JsonUnflattener {
     }
 
     private Pattern keyPartPattern() {
-        return Pattern.compile("[^" + Pattern.quote(separator.toString()) + "]+");
+        return Pattern.compile("^$|[^" + Pattern.quote(separator.toString()) + "]+");
     }
 
     /**
@@ -108,10 +107,10 @@ public final class JsonUnflattener {
      * @return a JSON string of nested objects
      */
     public BsonValue unflatten() {
-        StringWriter sw = new StringWriter();
         if (root.isArray()) {
             return unflattenArray(root.asArray());
         }
+        
         if (!root.isDocument()) {
             return root;
         }
@@ -123,7 +122,7 @@ public final class JsonUnflattener {
             BsonValue currentVal = unflattened;
             String objKey = null;
             Integer aryIdx = null;
-
+            
             Matcher matcher = keyPartPattern().matcher(key);
             while (matcher.find()) {
                 String keyPart = matcher.group();
