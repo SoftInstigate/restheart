@@ -159,7 +159,7 @@ public class PutDocumentIT extends HttpClientAbstactIT {
         resp = Unirest.put(url(DB, COLL, "docid2"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
-                .body("{ '$currentDate': {'timestamp': { '$type': 'timestamp' }}}")
+                .body("{ '$currentDate': {'timestamp': { '$type': 'date' }}}")
                 .asString();
         
         Assert.assertEquals("check response status of create test data with $currentDate operator", org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
