@@ -663,6 +663,8 @@ public class URLUtils {
             return null;
         } else if (id.isString()) {
             return id.asString().getValue();
+        } else if (id.isObjectId()) {
+            return id.asObjectId().getValue().toHexString();
         } else {
             return JsonUtils.minify(
                     JsonUtils.toJson(id));
