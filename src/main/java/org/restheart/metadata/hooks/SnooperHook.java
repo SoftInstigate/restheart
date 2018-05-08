@@ -50,6 +50,10 @@ public class SnooperHook implements Hook {
                 JsonUtils.toJson(confArgs));
         
         if (context.getDbOperationResult() != null) {
+            BsonValue newId = context
+                    .getDbOperationResult()
+                    .getNewId();
+            
             BsonDocument newData = context
                     .getDbOperationResult()
                     .getNewData();
@@ -58,6 +62,9 @@ public class SnooperHook implements Hook {
                     .getDbOperationResult()
                     .getOldData();
 
+            LOGGER.info("**** New id ****\n{}",
+                    newId == null ? null : newId);
+            
             LOGGER.info("**** New data ****\n{}",
                     newData == null ? null : newData.toJson());
 

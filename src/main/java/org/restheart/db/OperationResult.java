@@ -44,7 +44,7 @@ public class OperationResult {
         this.etag = null;
         this.newData = newData;
         this.oldData = oldData;
-        this.newId = null;
+        this.newId = newData == null ? null : newData.get("_id");
     }
     
     public OperationResult(int httpCode, Object etag) {
@@ -68,7 +68,7 @@ public class OperationResult {
         this.etag = etag;
         this.newData = newData;
         this.oldData = oldData;
-        this.newId = null;
+        this.newId = newData == null ? null : newData.get("_id");
     }
 
     /**
