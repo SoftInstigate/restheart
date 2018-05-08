@@ -36,14 +36,12 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.hal.Representation;
-import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.ChannelReader;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
 import org.restheart.utils.ResponseHelper;
-import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,22 +63,6 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     private static final String ERROR_INVALID_CONTENTTYPE_FILE = "Content-Type must be either: "
             + Representation.APP_FORM_URLENCODED_TYPE
             + " or " + Representation.MULTIPART_FORM_DATA_TYPE;
-
-    private static boolean isFilesBucketRequest(final RequestContext context) {
-        return context.getType() == RequestContext.TYPE.FILES_BUCKET;
-    }
-
-    private static boolean isFileRequest(final RequestContext context) {
-        return context.getType() == RequestContext.TYPE.FILE;
-    }
-
-    private static boolean isPostRequest(final RequestContext context) {
-        return context.getMethod() == RequestContext.METHOD.POST;
-    }
-
-    private static boolean isPutRequest(final RequestContext context) {
-        return context.getMethod() == RequestContext.METHOD.PUT;
-    }
 
     private static boolean isHalOrJson(final HeaderValues contentTypes) {
         return contentTypes != null
@@ -301,8 +283,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
         final HeaderValues contentType = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
         if (isFormOrMultipart(contentType)) {
-            if (!((isPostRequest(context) && isFilesBucketRequest(context))
-                    || (isPutRequest(context) && isFileRequest(context)))) {
+            if (!((context.isPost() && context.isFilesBucket())
+                    || (context.isPut() && context.isFile()))) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
                         context,
@@ -430,8 +412,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         if (content == null) {
             content = new BsonDocument();
         } else if (content.isArray()) {
-            if (context.getType() != RequestContext.TYPE.COLLECTION
-                    || (context.getMethod() != RequestContext.METHOD.POST)) {
+            if (!context.isCollection() || !context.isPost()) {
 
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
@@ -503,6 +484,24 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             }
 
             filterJsonContent(_content, context);
+        }
+
+        if (context.isPost() || context.isPut()) {
+            if (JsonUtils.containsUpdateOperators(content, true)) {
+                // not acceptable
+                String errMsg = "update operators (but $currentDate) cannot be used on POST and PUT requests";
+                
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_BAD_REQUEST,
+                        errMsg);
+                next(exchange, context);
+                return;
+            }
+
+            // flatten request content for POST and PUT requests
+            content = JsonUtils.unflatten(content);
         }
 
         context.setContent(content);

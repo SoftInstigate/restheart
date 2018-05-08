@@ -151,7 +151,7 @@ public class PutDocumentIT extends HttpClientAbstactIT {
         resp = Unirest.put(url(DB, COLL, "docid2"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
-                .body("{ '$push': {'array': 'a'}, '$inc': { 'count': 100 }, '$currentDate': {'timestamp': true } }")
+                .body("{ '$push': {'array': 'a'}, '$inc': { 'count': 100 } }")
                 .asString();
         
         Assert.assertEquals("check response status of create test data", org.apache.http.HttpStatus.SC_BAD_REQUEST, resp.getStatus());
@@ -159,7 +159,7 @@ public class PutDocumentIT extends HttpClientAbstactIT {
         resp = Unirest.put(url(DB, COLL, "docid2"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
-                .body("{ '$currentDate': {'timestamp': true } }")
+                .body("{ '$currentDate': {'timestamp': { '$type': 'timestamp' }}}")
                 .asString();
         
         Assert.assertEquals("check response status of create test data with $currentDate operator", org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());

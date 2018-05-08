@@ -764,7 +764,7 @@ public class JsonUtils {
      * @param json
      * @return true if json contains update operators
      */
-    public static boolean containsUpdateOperators(BsonDocument json) {
+    public static boolean containsUpdateOperators(BsonValue json) {
         return containsUpdateOperators(json, false);
     }
 
@@ -775,14 +775,34 @@ public class JsonUtils {
      * @param json
      * @return true if json contains update operators
      */
-    public static boolean containsUpdateOperators(BsonDocument json, boolean ignoreCurrentDate) {
+    public static boolean containsUpdateOperators(BsonValue json,
+            boolean ignoreCurrentDate) {
         if (json == null) {
             return false;
+        } else if (json.isDocument()) {
+            return _containsUpdateOperators(json.asDocument(), ignoreCurrentDate);
+        } else if (json.isArray()) {
+            return json.asArray()
+                    .stream()
+                    .filter(el -> el.isDocument())
+                    .anyMatch(element
+                            -> _containsUpdateOperators(element.asDocument(),
+                            ignoreCurrentDate));
         } else {
-            return json.keySet().stream()
-                    .filter(key -> !ignoreCurrentDate || !key.equals("$currentDate"))
-                    .anyMatch(key -> isUpdateOperator(key));
+            return false;
         }
+    }
+
+    private static boolean _containsUpdateOperators(BsonDocument json,
+            boolean ignoreCurrentDate) {
+        if (json == null) {
+            return false;
+        }
+
+        return json.asDocument().keySet().stream()
+                .filter(key
+                        -> !ignoreCurrentDate || !key.equals("$currentDate"))
+                .anyMatch(key -> isUpdateOperator(key));
     }
 
     /**

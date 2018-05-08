@@ -164,7 +164,7 @@ public class PostCollectionIT extends HttpClientAbstactIT {
         resp = Unirest.post(url(DB, COLL))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
-                .body("{ '_id': 'docid2', '$push': {'array': 'a'}, '$inc': { 'count': 100 }, '$currentDate': {'timestamp': true } }")
+                .body("{ '_id': 'docid2', '$push': {'array': 'a'}, '$inc': { 'count': 100 }}")
                 .asString();
 
         Assert.assertEquals("check response status of create test data", org.apache.http.HttpStatus.SC_BAD_REQUEST, resp.getStatus());
