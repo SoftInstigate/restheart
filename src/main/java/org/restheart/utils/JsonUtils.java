@@ -20,11 +20,12 @@ package org.restheart.utils;
 import com.mongodb.MongoClient;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
-import javax.swing.JTable.PrintMode;
+import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInvalidOperationException;
@@ -734,26 +735,114 @@ public class JsonUtils {
                 MongoClient.getDefaultCodecRegistry());
     }
 
+    private static final String _UPDATE_OPERATORS[] = {
+        "$inc", "$mul", "$rename", // Field Update Operators
+        "$setOnInsert", "$set", "$unset",
+        "$min", "$max", "$currentDate",
+        "$", "$[]", "$addToSet", "$pop", "$pullAll", // Array Update Operators
+        "$pull", "$pushAll", "$push",
+        "$each", "$position", "$slice", "$sort",
+        "$bit", // Bitwise Update Operator
+        "$isolated" // Isolation Update Operator
+    };
+
+    private static final List<String> UPDATE_OPERATORS
+            = Collections.unmodifiableList(Arrays.asList(_UPDATE_OPERATORS));
+
     /**
-     * Recursively replace dot notatation fields to nested objects from
-     * {"a.b":} to {"a":{"b":2}}
+     * @see https://docs.mongodb.com/manual/reference/operator/update/
+     * @param key
+     * @return true if key is an update operator
      */
-    public static BsonValue unflatten(BsonValue json)
-            throws IllegalArgumentException {
-        return 
-                new JsonUnflattener(json)
-                        .unflatten();
+    public static boolean isUpdateOperator(String key) {
+        return UPDATE_OPERATORS.contains(key);
     }
 
     /**
-     * Recursively flatten nested objects using dot notation for {"a":{"b":1}}
-     * to {"a.b":1}
+     * @see https://docs.mongodb.com/manual/reference/operator/update/
+     *
+     * @param json
+     * @return true if json contains update operators
      */
-    public static BsonValue flatten(BsonValue json) {
-        return parse(
-                new JsonFlattener(toJson(json))
-                        .withPrintMode(PrintMode.MINIMAL)
-                        .withFlattenMode(FlattenMode.MONGODB)
-                        .flatten());
+    public static boolean containsUpdateOperators(BsonDocument json) {
+        return containsUpdateOperators(json, false);
+    }
+
+    /**
+     * @see https://docs.mongodb.com/manual/reference/operator/update/
+     *
+     * @param ignoreCurrentDate true to ignore $currentDate
+     * @param json
+     * @return true if json contains update operators
+     */
+    public static boolean containsUpdateOperators(BsonDocument json, boolean ignoreCurrentDate) {
+        if (json == null) {
+            return false;
+        } else {
+            return json.keySet().stream()
+                    .filter(key -> !ignoreCurrentDate || !key.equals("$currentDate"))
+                    .anyMatch(key -> isUpdateOperator(key));
+        }
+    }
+
+    /**
+     * @return the unflatten json replacing dot notatation fkeys with nested
+     * objects: from {"a.b":2} to {"a":{"b":2}}
+     */
+    public static BsonValue unflatten(BsonValue json)
+            throws IllegalArgumentException {
+        return new JsonUnflattener(json)
+                .unflatten();
+    }
+
+    /**
+     *
+     * @param ignoreUpdateOperators true to not flatten update operators
+     *
+     * @return the flatten json objects using dot notation from {"a":{"b":1},
+     * {"$currentDate": {"my.field": true}} to {"a.b":1, {"$currentDate":
+     * {"my.field": true}}
+     */
+    public static BsonDocument flatten(BsonDocument json, boolean ignoreUpdateOperators) {
+        List<String> keys = json
+                .keySet()
+                .stream()
+                .filter(key -> !ignoreUpdateOperators || !isUpdateOperator(key))
+                .collect(Collectors.toList());
+
+        if (keys != null && !keys.isEmpty()) {
+            BsonDocument ret = new BsonDocument();
+
+            // add update operators
+            keys
+                    .stream()
+                    .filter(key -> JsonUtils.isUpdateOperator(key))
+                    .forEach(key -> ret.put(key, json.get(key)));
+
+            // add properties to $set update operator
+            keys
+                    .stream()
+                    .forEach(key -> flatten(null, key, json, ret));
+
+            return ret;
+        } else {
+            return json;
+        }
+    }
+
+    private static void flatten(String prefix, String key, BsonDocument data, BsonDocument set) {
+        final String newPrefix = prefix == null ? key : prefix + "." + key;
+        final BsonValue value = data.get(key);
+
+        if (value.isDocument()) {
+            value.asDocument()
+                    .keySet()
+                    .forEach(childKey -> flatten(newPrefix,
+                    childKey,
+                    value.asDocument(),
+                    set));
+        } else {
+            set.append(newPrefix, value);
+        }
     }
 }

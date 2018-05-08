@@ -32,17 +32,6 @@ import org.bson.types.ObjectId;
  */
 public class RequestHelper {
 
-    private static final String _UPDATE_OPERATORS[] = {
-        "$inc", "$mul", "$rename", "$setOnInsert", "$set", "$unset", // Field Update Operators
-        "$min", "$max", "$currentDate",
-        "$", "$addToSet", "$pop", "$pullAll", "$pull", "$pushAll", "$push", // Array Update Operators
-        "$bit", // Bitwise Update Operator
-        "$isolated" // Isolation Update Operator
-    };
-
-    public static final List<String> UPDATE_OPERATORS
-            = Collections.unmodifiableList(Arrays.asList(_UPDATE_OPERATORS));
-
     /**
      *
      * @param exchange

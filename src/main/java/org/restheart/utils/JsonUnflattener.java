@@ -35,18 +35,6 @@ import org.bson.BsonValue;
  *
  */
 public final class JsonUnflattener {
-
-    /**
-     * Returns a JSON string of nested objects by the given flattened JSON
-     * string.
-     *
-     * @param json a flattened JSON string
-     * @return a JSON string of nested objects
-     */
-    public static BsonValue unflatten(String json) {
-        return new JsonUnflattener(BsonDocument.parse(json)).unflatten();
-    }
-
     /**
      * Returns a JSON string of nested objects by the given flattened JSON
      * string.
@@ -67,18 +55,9 @@ public final class JsonUnflattener {
     /**
      * Creates a JSON unflattener.
      *
-     * @param json the JSON string
      */
-    public JsonUnflattener(String json) {
-        root = BsonDocument.parse(json);
-    }
-
-    /**
-     * Creates a JSON unflattener.
-     *
-     */
-    public JsonUnflattener(BsonValue doc) {
-        root = doc;
+    public JsonUnflattener(BsonValue json) {
+        root = json;
     }
 
     private String objectComplexKey() {
@@ -289,7 +268,7 @@ public final class JsonUnflattener {
                 BsonValue jsonArray = new BsonArray();
                 for (BsonValue arrayVal : val.asArray()) {
                     jsonArray.asArray().add(newJsonUnflattener(
-                            arrayVal.toString()).unflatten());
+                            arrayVal).unflatten());
                 }
                 currentVal.asDocument().put(objKey, jsonArray);
             } else {
@@ -301,7 +280,7 @@ public final class JsonUnflattener {
         }
     }
 
-    private JsonUnflattener newJsonUnflattener(String json) {
+    private JsonUnflattener newJsonUnflattener(BsonValue json) {
         JsonUnflattener jf = new JsonUnflattener(json);
 
         if (leftBracket != null && rightBracket != null) {

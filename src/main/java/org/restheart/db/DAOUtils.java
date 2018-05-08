@@ -30,7 +30,6 @@ import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
 import com.mongodb.client.result.UpdateResult;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -45,7 +44,6 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
-import static org.restheart.utils.RequestHelper.UPDATE_OPERATORS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -402,9 +400,10 @@ public class DAOUtils {
             BsonDateTime date = new BsonDateTime(System.currentTimeMillis());
             
             if (cd.isDocument()) {
-                cd.asDocument().keySet().stream().forEach(key -> {
-                    ret.put(key, date);
-                });
+                cd.asDocument()
+                        .keySet()
+                        .stream()
+                        .forEach(key -> ret.put(key, date));
                 
                 
             } else {
@@ -412,7 +411,9 @@ public class DAOUtils {
             }
         }
         
-        return JsonUtils.unflatten(ret).asDocument();
+        return JsonUtils
+                .unflatten(ret)
+                .asDocument();
     }
 
     /**
@@ -426,26 +427,24 @@ public class DAOUtils {
         BsonDocument ret = new BsonDocument();
 
         // add other update operators
-        data.keySet().stream().filter((String key)
-                -> UPDATE_OPERATORS.contains(key))
-                .forEach(key -> {
-                    ret.put(key, data.get(key));
-                });
+        data.keySet()
+                .stream()
+                .filter(key -> JsonUtils.isUpdateOperator(key))
+                .forEach(key -> ret.put(key, data.get(key)));
 
         // add properties to $set update operator
         List<String> keys;
 
         keys = data.keySet()
                 .stream()
-                .filter((String key)
-                        -> !UPDATE_OPERATORS.contains(key))
+                .filter(key -> !JsonUtils.isUpdateOperator(key))
                 .collect(Collectors.toList());
 
         if (keys != null && !keys.isEmpty()) {
             BsonDocument set;
 
             if (flatten) {
-                set = JsonUtils.flatten(data).asDocument();
+                set = JsonUtils.flatten(ret, false);
             } else {
                 set = new BsonDocument();
                 keys.stream().forEach(key -> set.append(key, data.get(key)));

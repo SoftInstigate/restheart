@@ -21,7 +21,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
-import static org.restheart.utils.RequestHelper.UPDATE_OPERATORS;
+import org.restheart.utils.JsonUtils;
 
 /**
  *
@@ -36,11 +36,7 @@ public class CheckersUtils {
 
     public static boolean doesRequestUsesUpdateOperators(BsonValue content) {
         if (content.isDocument()) {
-            BsonDocument obj = content.asDocument();
-
-            return obj.keySet().stream().anyMatch(key -> {
-                return UPDATE_OPERATORS.contains(key);
-            });
+            return JsonUtils.containsUpdateOperators(content.asDocument());
         } else if (content.isArray()) {
             BsonArray objs = content.asArray();
 
