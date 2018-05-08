@@ -17,10 +17,6 @@
  */
 package org.restheart.utils;
 
-import com.github.wnameless.json.flattener.FlattenMode;
-import com.github.wnameless.json.flattener.JsonFlattener;
-import com.github.wnameless.json.flattener.PrintMode;
-import com.github.wnameless.json.unflattener.JsonUnflattener;
 import com.mongodb.MongoClient;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import javax.swing.JTable.PrintMode;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInvalidOperationException;
@@ -743,11 +740,9 @@ public class JsonUtils {
      */
     public static BsonValue unflatten(BsonValue json)
             throws IllegalArgumentException {
-        return parse(
-                new JsonUnflattener(toJson(json))
-                        .withPrintMode(PrintMode.MINIMAL)
-                        .withFlattenMode(FlattenMode.MONGODB)
-                        .unflatten());
+        return 
+                new JsonUnflattener(json)
+                        .unflatten();
     }
 
     /**
