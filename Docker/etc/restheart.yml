@@ -113,54 +113,60 @@ application-logic-mounts:
     - what: org.restheart.handlers.applicationlogic.CacheInvalidator
       where: /ic
       secured: true
+    - what: org.restheart.handlers.applicationlogic.CsvLoaderHandler
+      where: /csv
+      secured: true
 
 ### Metadata Named Singletons
 
 # Metadata implementation can rely on singletons, this section configures the
-# singleton factory #org.restheart.hal.metadata.singletons.NamedSingletonsFactory
+# singleton factory #org.restheart.metadata.NamedSingletonsFactory
 
 metadata-named-singletons:
     # Checkers group used by handler:
     # org.restheart.handlers.metadata.CheckMetadataHandler
     # More information in checkers javadoc
     - group: checkers
-      interface: org.restheart.hal.metadata.singletons.Checker
+      interface: org.restheart.metadata.checkers.Checker
       singletons:
         - name: jsonSchema
-          class: org.restheart.hal.metadata.singletons.JsonSchemaChecker
+          class: org.restheart.metadata.checkers.JsonSchemaChecker
         - name: checkContent
-          class: org.restheart.hal.metadata.singletons.JsonPathConditionsChecker
+          class: org.restheart.metadata.checkers.JsonPathConditionsChecker
         - name: checkContentSize
-          class: org.restheart.hal.metadata.singletons.ContentSizeChecker
+          class: org.restheart.metadata.checkers.ContentSizeChecker
 
     # Checkers group used by handlers:
     # org.restheart.handlers.metadata.RequestTransformerMetadataHandler and
     # org.restheart.handlers.metadata.ResponseTransformerMetadataHandler
     # More information in transformers javadoc
     - group: transformers
-      interface: org.restheart.hal.metadata.singletons.Transformer
+      interface: org.restheart.metadata.transformers.Transformer
       singletons:
         - name: addRequestProperties
-          class: org.restheart.hal.metadata.singletons.RequestPropsInjecterTransformer
+          class: org.restheart.metadata.transformers.RequestPropsInjecterTransformer
         - name: filterProperties
-          class: org.restheart.hal.metadata.singletons.FilterTransformer
+          class: org.restheart.metadata.transformers.FilterTransformer
         - name: stringsToOids
-          class: org.restheart.hal.metadata.singletons.ValidOidsStringsAsOidsTransformer
+          class: org.restheart.metadata.transformers.ValidOidsStringsAsOidsTransformer
         - name: oidsToStrings
-          class: org.restheart.hal.metadata.singletons.OidsAsStringsTransformer
+          class: org.restheart.metadata.transformers.OidsAsStringsTransformer
         - name: writeResult
-          class: org.restheart.hal.metadata.singletons.WriteResultTransformer
+          class: org.restheart.metadata.transformers.WriteResultTransformer
         - name: hashProperties
-          class: org.restheart.hal.metadata.singletons.HashTransformer
+          class: org.restheart.metadata.transformers.HashTransformer
           
     # Hook group used by handler:
     # org.restheart.handlers.metadata.HookHandler
     # More information in hook javadoc
     - group: hooks
-      interface: org.restheart.hal.metadata.singletons.Hook
+      interface: org.restheart.metadata.hooks.Hook
       singletons:
         - name: snooper
-          class: org.restheart.hal.metadata.singletons.SnooperHook
+          class: org.restheart.metadata.hooks.SnooperHook
+          args: 
+            string: foo
+            number: 1 
 
 ### Security
 
@@ -188,6 +194,10 @@ access-manager:
 auth-token-enabled: true
 auth-token-ttl: 15
 
+# Check if aggregation variables use operators. allowing operators in aggregation variables 
+# is risky. requester can inject operators modifying the query
+aggregation-check-operators: true
+
 #### Logging
 
 # enable-log-console: true => log messages to the console (default value: true)
@@ -195,7 +205,9 @@ auth-token-ttl: 15
 # log-file-path: to specify the log file path (default value: restheart.log in system temporary directory)
 # log-level: to set the log level. Value can be OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. (default value is INFO)
 # requests-log-level: log the request-response. 0 => no log, 1 => light log, 2 => detailed dump
-# WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
+# metrics-gathering-level: metrics gathering for which level? OFF => no gathering, ROOT => gathering at root level,
+#                          DATABASE => at db level, COLLECTION => at collection level
+# WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
 
 enable-log-file: true
 log-file-path: /var/log/restheart.log
