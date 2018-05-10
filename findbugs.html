@@ -102,7 +102,7 @@
 <th>Missing Classes</th></tr>
 <tr class="b">
 <td>246</td>
-<td>33</td>
+<td>45</td>
 <td>0</td>
 <td>0</td></tr></table></div>
 <div class="section">
@@ -115,6 +115,12 @@
 <td><a href="#org.restheart.Configuration">org.restheart.Configuration</a></td>
 <td>1</td></tr>
 <tr class="a">
+<td><a href="#org.restheart.db.DocumentDAO">org.restheart.db.DocumentDAO</a></td>
+<td>2</td></tr>
+<tr class="b">
+<td><a href="#org.restheart.db.GridFsDAO">org.restheart.db.GridFsDAO</a></td>
+<td>1</td></tr>
+<tr class="a">
 <td><a href="#org.restheart.db.IndexDAO">org.restheart.db.IndexDAO</a></td>
 <td>1</td></tr>
 <tr class="b">
@@ -124,17 +130,23 @@
 <td><a href="#org.restheart.handlers.RequestLoggerHandler">org.restheart.handlers.RequestLoggerHandler</a></td>
 <td>1</td></tr>
 <tr class="b">
+<td><a href="#org.restheart.handlers.aggregation.GetAggregationHandler">org.restheart.handlers.aggregation.GetAggregationHandler</a></td>
+<td>2</td></tr>
+<tr class="a">
 <td><a href="#org.restheart.handlers.applicationlogic.MetricsHandler$ResponseType$AcceptHeaderEntryComparator">org.restheart.handlers.applicationlogic.MetricsHandler$ResponseType$AcceptHeaderEntryComparator</a></td>
 <td>2</td></tr>
-<tr class="a">
+<tr class="b">
 <td><a href="#org.restheart.handlers.collection.CollectionRepresentationFactory">org.restheart.handlers.collection.CollectionRepresentationFactory</a></td>
 <td>1</td></tr>
-<tr class="b">
+<tr class="a">
 <td><a href="#org.restheart.handlers.database.DBRepresentationFactory">org.restheart.handlers.database.DBRepresentationFactory</a></td>
 <td>1</td></tr>
-<tr class="a">
+<tr class="b">
 <td><a href="#org.restheart.handlers.document.DocumentRepresentationFactory">org.restheart.handlers.document.DocumentRepresentationFactory</a></td>
 <td>2</td></tr>
+<tr class="a">
+<td><a href="#org.restheart.handlers.files.GetFileBinaryHandler">org.restheart.handlers.files.GetFileBinaryHandler</a></td>
+<td>7</td></tr>
 <tr class="b">
 <td><a href="#org.restheart.handlers.injectors.BodyInjectorHandler">org.restheart.handlers.injectors.BodyInjectorHandler</a></td>
 <td>1</td></tr>
@@ -191,9 +203,9 @@
 <td>MALICIOUS_CODE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
 <td>1512</td>
-<td>Medium</td></tr></table></div><a name="org.restheart.db.IndexDAO"></a>
+<td>Medium</td></tr></table></div><a name="org.restheart.db.DocumentDAO"></a>
 <div class="section">
-<h3>org.restheart.db.IndexDAO<a name="org.restheart.db.IndexDAO"></a></h3>
+<h3>org.restheart.db.DocumentDAO<a name="org.restheart.db.DocumentDAO"></a></h3>
 <table border="0" class="bodyTable">
 <tr class="b">
 <th>Bug</th>
@@ -202,6 +214,42 @@
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="a">
+<td>Redundant nullcheck of oldDocument, which is known to be non-null in org.restheart.db.DocumentDAO.deleteDocument(String, String, Object, BsonDocument, BsonDocument, String, boolean)</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE">RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE</a></td>
+<td>313</td>
+<td>Medium</td></tr>
+<tr class="b">
+<td>Redundant nullcheck of documents, which is known to be non-null in org.restheart.db.DocumentDAO.getDocumentEtag(String, String, Object)</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE">RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE</a></td>
+<td>72</td>
+<td>Medium</td></tr></table></div><a name="org.restheart.db.GridFsDAO"></a>
+<div class="section">
+<h3>org.restheart.db.GridFsDAO<a name="org.restheart.db.GridFsDAO"></a></h3>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="b">
+<td>Possible null pointer dereference in org.restheart.db.GridFsDAO.deleteFile(Database, String, String, BsonValue, String, boolean) due to return value of called method</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
+<td>151</td>
+<td>Medium</td></tr></table></div><a name="org.restheart.db.IndexDAO"></a>
+<div class="section">
+<h3>org.restheart.db.IndexDAO<a name="org.restheart.db.IndexDAO"></a></h3>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="b">
 <td>Useless object stored in variable io of method org.restheart.db.IndexDAO.createIndex(String, String, BsonDocument, BsonDocument)</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#UC_USELESS_OBJECT">UC_USELESS_OBJECT</a></td>
@@ -210,13 +258,13 @@
 <div class="section">
 <h3>org.restheart.hal.HALUtils<a name="org.restheart.hal.HALUtils"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="b">
+<tr class="a">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="a">
+<tr class="b">
 <td>Useless condition: it's known that page &gt;= 2 at this point</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#UC_USELESS_CONDITION">UC_USELESS_CONDITION</a></td>
@@ -225,17 +273,38 @@
 <div class="section">
 <h3>org.restheart.handlers.RequestLoggerHandler<a name="org.restheart.handlers.RequestLoggerHandler"></a></h3>
 <table border="0" class="bodyTable">
-<tr class="b">
+<tr class="a">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="a">
+<tr class="b">
 <td>Useless condition: it's known that logLevel &gt;= 2 at this point</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#UC_USELESS_CONDITION">UC_USELESS_CONDITION</a></td>
 <td>117</td>
+<td>Medium</td></tr></table></div><a name="org.restheart.handlers.aggregation.GetAggregationHandler"></a>
+<div class="section">
+<h3>org.restheart.handlers.aggregation.GetAggregationHandler<a name="org.restheart.handlers.aggregation.GetAggregationHandler"></a></h3>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="b">
+<td>Redundant nullcheck of agrOutput, which is known to be non-null in org.restheart.handlers.aggregation.GetAggregationHandler.handleRequest(HttpServerExchange, RequestContext)</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE">RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE</a></td>
+<td>179</td>
+<td>Medium</td></tr>
+<tr class="a">
+<td>Redundant nullcheck of mrOutput, which is known to be non-null in org.restheart.handlers.aggregation.GetAggregationHandler.handleRequest(HttpServerExchange, RequestContext)</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE">RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE</a></td>
+<td>139</td>
 <td>Medium</td></tr></table></div><a name="org.restheart.handlers.applicationlogic.MetricsHandlerResponseTypeAcceptHeaderEntryComparator"></a>
 <div class="section">
 <h3>org.restheart.handlers.applicationlogic.MetricsHandler$ResponseType$AcceptHeaderEntryComparator<a name="org.restheart.handlers.applicationlogic.MetricsHandlerResponseTypeAcceptHeaderEntryComparator"></a></h3>
@@ -308,6 +377,57 @@
 <td>CORRECTNESS</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#BC_IMPOSSIBLE_INSTANCEOF">BC_IMPOSSIBLE_INSTANCEOF</a></td>
 <td>51</td>
+<td>Medium</td></tr></table></div><a name="org.restheart.handlers.files.GetFileBinaryHandler"></a>
+<div class="section">
+<h3>org.restheart.handlers.files.GetFileBinaryHandler<a name="org.restheart.handlers.files.GetFileBinaryHandler"></a></h3>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="a">
+<td>Possible null pointer dereference in org.restheart.handlers.files.GetFileBinaryHandler.checkEtag(HttpServerExchange, GridFSFile) due to return value of called method</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
+<td>114</td>
+<td>Medium</td></tr>
+<tr class="b">
+<td>Possible null pointer dereference in org.restheart.handlers.files.GetFileBinaryHandler.checkEtag(HttpServerExchange, GridFSFile) due to return value of called method</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
+<td>115</td>
+<td>Medium</td></tr>
+<tr class="a">
+<td>Possible null pointer dereference in org.restheart.handlers.files.GetFileBinaryHandler.sendBinaryContent(RequestContext, GridFSBucket, GridFSFile, HttpServerExchange) due to return value of called method</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
+<td>162</td>
+<td>Medium</td></tr>
+<tr class="b">
+<td>Possible null pointer dereference in org.restheart.handlers.files.GetFileBinaryHandler.sendBinaryContent(RequestContext, GridFSBucket, GridFSFile, HttpServerExchange) due to return value of called method</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
+<td>164</td>
+<td>Medium</td></tr>
+<tr class="a">
+<td>Possible null pointer dereference in org.restheart.handlers.files.GetFileBinaryHandler.sendBinaryContent(RequestContext, GridFSBucket, GridFSFile, HttpServerExchange) due to return value of called method</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
+<td>166</td>
+<td>Medium</td></tr>
+<tr class="b">
+<td>Possible null pointer dereference in org.restheart.handlers.files.GetFileBinaryHandler.sendBinaryContent(RequestContext, GridFSBucket, GridFSFile, HttpServerExchange) due to return value of called method</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
+<td>168</td>
+<td>Medium</td></tr>
+<tr class="a">
+<td>Redundant nullcheck of com.mongodb.client.gridfs.model.GridFSFile.getFilename(), which is known to be non-null in org.restheart.handlers.files.GetFileBinaryHandler.extractFilename(GridFSFile)</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE">RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE</a></td>
+<td>198</td>
 <td>Medium</td></tr></table></div><a name="org.restheart.handlers.injectors.BodyInjectorHandler"></a>
 <div class="section">
 <h3>org.restheart.handlers.injectors.BodyInjectorHandler<a name="org.restheart.handlers.injectors.BodyInjectorHandler"></a></h3>
