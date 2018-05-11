@@ -36,7 +36,7 @@ public class GridFsDAOTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(GridFsDAOTest.class);
 
-    public static final String FILENAME = "RESTHeart_documentation.pdf";
+    public static final String FILENAME = "sample.pdf";
     @Rule
     public TestRule watcher = new TestWatcher() {
         @Override
