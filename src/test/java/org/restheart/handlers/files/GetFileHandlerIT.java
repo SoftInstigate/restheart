@@ -37,7 +37,7 @@ import org.restheart.utils.HttpStatus;
  */
 public class GetFileHandlerIT extends HttpClientAbstactIT {
 
-    public static final String FILENAME = "RESTHeart_documentation.pdf";
+    public static final String FILENAME = "sample.pdf";
     public static final String BUCKET = "mybucket";
     public static Object ID = "myfile";
     @Rule
