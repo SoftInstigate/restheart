@@ -178,7 +178,9 @@ public class RequestPropsInjecterTransformer implements Transformer {
                         .remoteUser()
                         .readAttribute(exchange);
         
-        BsonValue userName = _userName != null ? new BsonString(_userName): BsonNull.VALUE;
+        BsonValue userName = _userName != null 
+                ? new BsonString(_userName)
+                : BsonNull.VALUE;
         
         // remote user
         properties.put("userName", userName);
