@@ -168,11 +168,17 @@ public class RequestPropsInjecterTransformer implements Transformer {
             final RequestContext context) {
         HashMap<String, BsonValue> properties = new HashMap<>();
 
+
+        String _userName = ExchangeAttributes
+                        .remoteUser()
+                        .readAttribute(exchange);
+        
+        BsonValue userName = _userName != null 
+                ? new BsonString(_userName)
+                : BsonNull.VALUE;
+        
         // remote user
-        properties.put("userName", new BsonString(
-                ExchangeAttributes
-                .remoteUser()
-                .readAttribute(exchange)));
+        properties.put("userName", userName);
 
         // user roles
         if (Objects.nonNull(exchange.getSecurityContext())
