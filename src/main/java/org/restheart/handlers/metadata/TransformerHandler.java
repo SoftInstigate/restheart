@@ -26,7 +26,6 @@ import org.bson.BsonValue;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.metadata.transformers.GlobalTransformer;
-import org.restheart.metadata.transformers.RequestTransformer;
 import org.restheart.metadata.transformers.Transformer;
 
 /**
