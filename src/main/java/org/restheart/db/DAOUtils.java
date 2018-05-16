@@ -60,10 +60,10 @@ public class DAOUtils {
     public final static Logger LOGGER = LoggerFactory.getLogger(DAOUtils.class);
 
     public final static FindOneAndUpdateOptions FAU_UPSERT_OPS = new FindOneAndUpdateOptions()
-            .upsert(true);
+            .upsert(true).returnDocument(ReturnDocument.AFTER);
 
     public final static FindOneAndUpdateOptions FAU_NOT_UPSERT_OPS = new FindOneAndUpdateOptions()
-            .upsert(false);
+            .upsert(false).returnDocument(ReturnDocument.AFTER);
 
     public final static FindOneAndUpdateOptions FOU_AFTER_UPSERT_OPS = new FindOneAndUpdateOptions()
             .upsert(true).returnDocument(ReturnDocument.AFTER);
