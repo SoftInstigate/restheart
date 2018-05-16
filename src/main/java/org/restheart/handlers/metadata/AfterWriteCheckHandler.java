@@ -31,6 +31,7 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.metadata.checkers.Checker;
+import org.restheart.metadata.checkers.GlobalChecker;
 import org.restheart.metadata.checkers.RequestChecker;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -55,84 +56,78 @@ public class AfterWriteCheckHandler
             HttpServerExchange exchange,
             RequestContext context)
             throws Exception {
-        if (doesCheckerAppy(context)) {
-            if (!check(exchange, context)) {
-                // restore old data
+        if ((doesCheckersApply(context)
+                && !applyCheckers(exchange, context))
+                || (doesGlobalCheckersApply()
+                && !applyGlobalCheckers(exchange, context))) {
+            // restore old data
 
-                MongoClient client = MongoDBClientSingleton
-                        .getInstance()
-                        .getClient();
+            MongoClient client = MongoDBClientSingleton
+                    .getInstance()
+                    .getClient();
 
-                MongoDatabase mdb = client
-                        .getDatabase(context.getDBName());
+            MongoDatabase mdb = client
+                    .getDatabase(context.getDBName());
 
-                MongoCollection<BsonDocument> coll = mdb
-                        .getCollection(
-                                context.getCollectionName(),
-                                BsonDocument.class);
+            MongoCollection<BsonDocument> coll = mdb
+                    .getCollection(
+                            context.getCollectionName(),
+                            BsonDocument.class);
 
-                BsonDocument oldData = context
-                        .getDbOperationResult()
-                        .getOldData();
+            BsonDocument oldData = context
+                    .getDbOperationResult()
+                    .getOldData();
 
-                Object newEtag = context.getDbOperationResult().getEtag();
+            Object newEtag = context.getDbOperationResult().getEtag();
 
-                if (oldData != null) {
-                    // document was updated, restore old one
-                    DAOUtils.restoreDocument(coll,
-                            oldData.get("_id"),
-                            context.getShardKey(),
-                            oldData,
-                            newEtag,
-                            "_etag");
+            if (oldData != null) {
+                // document was updated, restore old one
+                DAOUtils.restoreDocument(coll,
+                        oldData.get("_id"),
+                        context.getShardKey(),
+                        oldData,
+                        newEtag,
+                        "_etag");
 
-                    // add to response old etag
-                    if (oldData.get("$set") != null
-                            && oldData.get("$set").isDocument()
-                            && oldData.get("$set")
+                // add to response old etag
+                if (oldData.get("$set") != null
+                        && oldData.get("$set").isDocument()
+                        && oldData.get("$set")
+                                .asDocument()
+                                .get("_etag") != null) {
+                    exchange.getResponseHeaders().put(Headers.ETAG,
+                            oldData.get("$set")
                                     .asDocument()
-                                    .get("_etag") != null) {
-                        exchange.getResponseHeaders().put(Headers.ETAG,
-                                oldData.get("$set")
-                                        .asDocument()
-                                        .get("_etag")
-                                        .asObjectId()
-                                        .getValue()
-                                        .toString());
-                    } else {
-                        exchange.getResponseHeaders().remove(Headers.ETAG);
-                    }
-
+                                    .get("_etag")
+                                    .asObjectId()
+                                    .getValue()
+                                    .toString());
                 } else {
-                    // document was created, delete it
-                    Object newId = context.getDbOperationResult()
-                            .getNewData().get("_id");
-
-                    coll.deleteOne(and(eq("_id", newId), eq("_etag", newEtag)));
+                    exchange.getResponseHeaders().remove(Headers.ETAG);
                 }
 
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        context,
-                        HttpStatus.SC_BAD_REQUEST,
-                        "request check failed");
-                next(exchange, context);
-                return;
+            } else {
+                // document was created, delete it
+                Object newId = context.getDbOperationResult()
+                        .getNewData().get("_id");
+
+                coll.deleteOne(and(eq("_id", newId), eq("_etag", newEtag)));
             }
+
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_BAD_REQUEST,
+                    "request check failed");
+            next(exchange, context);
+            return;
         }
 
         next(exchange, context);
     }
-    
-    @Override
-    protected boolean doesCheckerApply(
-            RequestContext context,
-            Checker checker) {
-        return !context.isInError()
-                && checker.getPhase(context) == Checker.PHASE.AFTER_WRITE;
-    }
 
-    private boolean doesCheckerAppy(RequestContext context) {
+    @Override
+    boolean doesCheckersApply(RequestContext context) {
         return context.getCollectionProps() != null
                 && (((context.getMethod() == METHOD.PUT
                 || context.getMethod() == METHOD.PATCH)
@@ -147,5 +142,21 @@ public class AfterWriteCheckHandler
                         .containsKey(RequestChecker.ROOT_KEY)
                 && (context.getDbOperationResult() != null
                 && context.getDbOperationResult().getHttpCode() < 300);
+    }
+
+    @Override
+    protected boolean doesCheckersApply(
+            RequestContext context,
+            Checker checker) {
+        return !context.isInError()
+                && checker.getPhase(context) == Checker.PHASE.AFTER_WRITE;
+    }
+
+    @Override
+    boolean doesGlobalCheckerApply(GlobalChecker gc,
+            HttpServerExchange exchange,
+            RequestContext context) {
+        return gc.getPhase(context) == Checker.PHASE.AFTER_WRITE
+                && gc.resolve(exchange, context);
     }
 }

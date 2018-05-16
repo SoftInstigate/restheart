@@ -29,6 +29,7 @@ import org.restheart.metadata.NamedSingletonsFactory;
 import org.restheart.metadata.checkers.Checker;
 import org.restheart.metadata.checkers.Checker.PHASE;
 import org.restheart.metadata.checkers.CheckersUtils;
+import org.restheart.metadata.checkers.GlobalChecker;
 import org.restheart.metadata.checkers.RequestChecker;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -64,77 +65,64 @@ public class BeforeWriteCheckHandler extends CheckHandler {
             HttpServerExchange exchange,
             RequestContext context)
             throws Exception {
-        if (doesCheckerAppy(context)) {
-            if (check(exchange, context)) {
-                next(exchange, context);
-            } else {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        context,
-                        HttpStatus.SC_BAD_REQUEST,
-                        "request check failed");
-                next(exchange, context);
-            }
-        } else {
-            next(exchange, context);
+        if (doesCheckersApply(context) && !applyCheckers(exchange, context)) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_BAD_REQUEST,
+                    "request check failed");
+        } 
+        
+        if (doesGlobalCheckersApply() 
+                && !applyGlobalCheckers(exchange, context)) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_BAD_REQUEST,
+                    "request check failed");
         }
+        
+        next(exchange, context);
     }
 
-    protected boolean check(
+    protected boolean applyCheckers(
             HttpServerExchange exchange,
             RequestContext context)
             throws InvalidMetadataException {
         List<RequestChecker> requestCheckers = RequestChecker.getFromJson(
                 context.getCollectionProps());
 
-        // apply global checkers
-        boolean globalCheckersResult = getGlobalCheckers().isEmpty()
-                || getGlobalCheckers().stream()
-                        .filter(gc -> doesCheckerApply(context, gc.getChecker()))
-                        .allMatch(gc -> {
-                            return applyChecker(exchange,
-                                    context,
-                                    gc.isSkipNotSupported(),
-                                    gc.getChecker(),
-                                    gc.getArgs(),
-                                    gc.getConfArgs());
-                        });
+        return requestCheckers != null
+                && requestCheckers.stream().allMatch(requestChecker -> {
+                    try {
+                        NamedSingletonsFactory nsf = NamedSingletonsFactory
+                                .getInstance();
 
-        if (!globalCheckersResult) {
-            return false;
-        } else {
-            return requestCheckers != null
-                    && requestCheckers.stream().allMatch(requestChecker -> {
-                        try {
-                            NamedSingletonsFactory nsf = NamedSingletonsFactory
-                                    .getInstance();
+                        Checker checker = (Checker) nsf
+                                .get(ROOT_KEY, requestChecker.getName());
 
-                            Checker checker = (Checker) nsf
-                                    .get(ROOT_KEY, requestChecker.getName());
+                        BsonDocument confArgs = nsf.getArgs(ROOT_KEY,
+                                requestChecker.getName());
 
-                            BsonDocument confArgs = nsf.getArgs(ROOT_KEY,
-                                    requestChecker.getName());
-
-                            if (checker == null) {
-                                throw new IllegalArgumentException(
-                                        "cannot find singleton "
-                                        + requestChecker.getName()
-                                        + " in singleton group checkers");
-                            }
-
-                            return applyChecker(exchange,
-                                    context,
-                                    requestChecker.skipNotSupported(),
-                                    checker,
-                                    requestChecker.getArgs(),
-                                    confArgs);
-                        } catch (IllegalArgumentException ex) {
-                            context.addWarning("error applying checker: "
-                                    + ex.getMessage());
-                            return false;
+                        if (checker == null) {
+                            throw new IllegalArgumentException(
+                                    "cannot find singleton "
+                                    + requestChecker.getName()
+                                    + " in singleton group checkers");
                         }
-                    });
-        }
+
+                        return applyChecker(exchange,
+                                context,
+                                requestChecker.skipNotSupported(),
+                                checker,
+                                requestChecker.getArgs(),
+                                confArgs);
+                    } catch (IllegalArgumentException ex) {
+                        context.addWarning("error applying checker: "
+                                + ex.getMessage());
+                        return false;
+                    }
+                });
     }
 
     private boolean applyChecker(HttpServerExchange exchange,
@@ -194,7 +182,7 @@ public class BeforeWriteCheckHandler extends CheckHandler {
             return false;
         }
 
-        if (doesCheckerApply(context, checker)
+        if (doesCheckersApply(context, checker)
                 && checker.doesSupportRequests(context)) {
 
             BsonValue content = context.getContent();
@@ -251,14 +239,40 @@ public class BeforeWriteCheckHandler extends CheckHandler {
         }
     }
 
-    private boolean doesCheckerAppy(RequestContext context) {
+    boolean applyGlobalCheckers(HttpServerExchange exchange, RequestContext context) {
+        // execture global request tranformers
+        return getGlobalCheckers().stream()
+                .filter(gc -> doesGlobalCheckerApply(gc, exchange, context))
+                .allMatch(gc
+                        -> applyChecker(exchange,
+                        context,
+                        gc.isSkipNotSupported(),
+                        gc.getChecker(),
+                        gc.getArgs(),
+                        gc.getConfArgs())
+                );
+    }
+
+    boolean doesCheckersApply(RequestContext context) {
         return context.getCollectionProps() != null
                 && context.getCollectionProps().containsKey(ROOT_KEY);
     }
 
-    protected boolean doesCheckerApply(
+    boolean doesGlobalCheckersApply() {
+        return !getGlobalCheckers().isEmpty();
+    }
+
+    protected boolean doesCheckersApply(
             RequestContext context,
             Checker checker) {
         return checker.getPhase(context) == Checker.PHASE.BEFORE_WRITE;
+    }
+
+    boolean doesGlobalCheckerApply(GlobalChecker gc,
+            HttpServerExchange exchange,
+            RequestContext context) {
+        return gc.getPhase(context) == Checker.PHASE.BEFORE_WRITE
+                && gc.resolve(exchange, context)
+                && doesCheckersApply(context, gc.getChecker());
     }
 }
