@@ -71,6 +71,12 @@ use-embedded-keystore: true
 mongo-uri: mongodb://restheart:R3ste4rt!@mongodb
 
 # Use mongo-mounts to bind URls to mongodb resources using the out-of-the-box URL rewrite feature.
+# The where URI can be an absolute path (eg. /api) or path template (eg. /{foo}/bar/*). 
+# The values of the path templates properties are available:
+# - in the what property (e.g. what: /{foo}_db/coll) 
+# - programmatically from RequestContext.getPathTemplateParamenters() method.
+# It is not possible to mix absolute paths and path templates: where URIs need to be 
+# either all absolute paths or all path templates.
 mongo-mounts:
     - what: "*"
       where: /

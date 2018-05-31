@@ -91,6 +91,7 @@ public class ErrorHandler implements HttpHandler {
             sender.handleRequest(exchange, errorContext);
         } catch (MongoBulkWriteException mce) {
             MongoBulkWriteException bmce = mce;
+            
 
             BulkResultRepresentationFactory rf = new BulkResultRepresentationFactory();
 
