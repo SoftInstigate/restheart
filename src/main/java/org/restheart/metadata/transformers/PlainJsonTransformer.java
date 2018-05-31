@@ -133,6 +133,27 @@ public class PlainJsonTransformer implements Transformer {
                     responseContent.append("_errors", _errors);
                 }
 
+                // add _results if any
+                if (embedded.containsKey("rh:result")) {
+                    BsonArray bulkResp = embedded.get("rh:result")
+                            .asArray();
+
+                    if (bulkResp.size() > 0) {
+                        BsonValue el = bulkResp.get(0);
+
+                        if (el.isDocument()) {
+                            BsonDocument doc = el.asDocument();
+
+                            doc
+                                    .keySet()
+                                    .stream()
+                                    .forEach(key
+                                            -> responseContent
+                                            .append(key, doc.get(key)));
+                        }
+                    }
+                }
+
                 // add _exception if any
                 BsonArray _exception = new BsonArray();
                 addItems(_exception, embedded, "rh:exception");

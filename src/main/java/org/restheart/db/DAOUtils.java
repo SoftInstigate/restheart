@@ -20,6 +20,7 @@ package org.restheart.db;
 import com.mongodb.MongoCommandException;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.BulkWriteOptions;
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.FindOneAndReplaceOptions;
@@ -82,6 +83,9 @@ public class DAOUtils {
 
     public final static UpdateOptions U_NOT_UPSERT_OPS = new UpdateOptions()
             .upsert(false);
+    
+    public final static  BulkWriteOptions BWO_NOT_ORDERED = new BulkWriteOptions()
+            .ordered(false);
 
     private static final Bson IMPOSSIBLE_CONDITION = eq("_etag", new ObjectId());
 
@@ -326,7 +330,8 @@ public class DAOUtils {
                 shardKeys,
                 newEtag);
 
-        BulkWriteResult result = coll.bulkWrite(wm);
+        
+        BulkWriteResult result = coll.bulkWrite(wm, BWO_NOT_ORDERED);
 
         return new BulkOperationResult(HttpStatus.SC_OK, newEtag, result);
     }
