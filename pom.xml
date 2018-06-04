@@ -296,7 +296,7 @@
                             <descriptors>
                                 <descriptor>assembly.xml</descriptor>
                             </descriptors>
-                            <attach>true</attach>
+                            <attach>false</attach>
                             <tarLongFileMode>posix</tarLongFileMode>
                         </configuration>
                     </execution>
