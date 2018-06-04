@@ -560,6 +560,29 @@
 <th>File</th>
 <th>Line</th></tr>
 <tr class="b">
+<td>org/restheart/Bootstrapper.java</td>
+<td>157</td></tr>
+<tr class="a">
+<td>org/restheart/Bootstrapper.java</td>
+<td>358</td></tr>
+<tr class="b"><td colspan='2'>
+<div>
+<pre>            if (OSChecker.isWindows()) {
+                String instanceName = getInstanceName();
+
+                LOGGER.info(STARTING
+                        + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
+                        + INSTANCE
+                        + ansi().fg(RED).bold().a(instanceName).reset().toString());
+
+                if (RESTHEART_VERSION != null) {
+                    LOGGER.info(VERSION, ansi().fg(MAGENTA).bold().a(RESTHEART_VERSION).reset().toString());
+                }</pre></div></td></tr></table>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>File</th>
+<th>Line</th></tr>
+<tr class="b">
 <td>org/restheart/handlers/document/PatchDocumentHandler.java</td>
 <td>135</td></tr>
 <tr class="a">
