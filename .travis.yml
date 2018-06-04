@@ -20,20 +20,33 @@ services:
    - docker
 
 before_install:
-    - docker run -d -p 27017:27017 mongo:$MONGO
-    - ./bin/before-deploy.sh
+  - docker run -d -p 27017:27017 mongo:$MONGO
+  - ./bin/before-deploy.sh
 
 install: true
 
 before_script:
-   - git submodule update --init --recursive
+  - git submodule update --init --recursive
 
 script:
-   - docker ps
-   - mvn clean verify -DskipITs=false
+  - docker ps
+  - mvn clean verify -DskipITs=false
 
 after_success:
-   - if [[ "$MAVEN_DEPLOY" == true ]]; then ./bin/maven-deploy.sh; fi
+  - if [[ "$MAVEN_DEPLOY" == true ]]; then ./bin/maven-deploy.sh; fi
+   
+deploy:
+  provider: releases
+  api_key:
+    secure: EEGZ5uRn23QqhPqiENRZxBkuDw+qyl23ELUr0HHltI/DK+UIsFQrQydZbtl6VIPTzE8O3EOy/PhzTk2zXlh5cfi+THkIAzpNzW93CAUNFMknUV/cDsrgRSKwEXlF1LJ1WqerM8g4pKvyfyJTOIkFwir/1bIZ/ww+8zIqw6+SBlo=
+  file_glob: true
+  file: 
+    - "target/*.tar.gz"
+    - "target/*.zip"
+    - "target/restheart.jar"
+  skip_cleanup: true
+  on:
+    tags: true
 
 env:
   matrix:
