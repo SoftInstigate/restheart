@@ -185,8 +185,6 @@ public class BeforeWriteCheckHandler extends CheckHandler {
         if (doesCheckersApply(context, checker)
                 && checker.doesSupportRequests(context)) {
 
-            BsonValue content = context.getContent();
-
             BsonValue _data;
 
             if (checker.getPhase(context)
@@ -208,7 +206,7 @@ public class BeforeWriteCheckHandler extends CheckHandler {
                         _data.asDocument(),
                         args,
                         confArgs);
-            } else if (content.isArray()) {
+            } else if (_data.isArray()) {
                 // content can be an array of bulk POST
 
                 BsonArray arrayContent = _data.asArray();
