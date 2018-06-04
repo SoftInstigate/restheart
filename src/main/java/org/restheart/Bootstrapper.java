@@ -62,6 +62,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
+import static org.fusesource.jansi.Ansi.Color.MAGENTA;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.fusesource.jansi.AnsiConsole;
 import static org.restheart.Configuration.RESTHEART_VERSION;
@@ -143,7 +144,7 @@ public class Bootstrapper {
                     + ansi().fg(RED).bold().a(UNDEFINED).reset().toString());
 
             if (RESTHEART_VERSION != null) {
-                LOGGER.info(VERSION, RESTHEART_VERSION);
+                LOGGER.info(VERSION, ansi().fg(MAGENTA).bold().a(RESTHEART_VERSION).reset().toString());
             }
 
             logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
@@ -162,7 +163,7 @@ public class Bootstrapper {
                         + ansi().fg(RED).bold().a(instanceName).reset().toString());
 
                 if (RESTHEART_VERSION != null) {
-                    LOGGER.info(VERSION, RESTHEART_VERSION);
+                    LOGGER.info(VERSION, ansi().fg(MAGENTA).bold().a(RESTHEART_VERSION).reset().toString());
                 }
 
                 LOGGER.error("Fork is not supported on Windows");
@@ -262,7 +263,8 @@ public class Bootstrapper {
             configuration = FileUtils.getConfiguration(confFilePath, false);
         } catch (ConfigurationException ex) {
             if (RESTHEART_VERSION != null) {
-                LOGGER.info(ansi().fg(RED).bold().a(RESTHEART).reset().toString() + " version {}", RESTHEART_VERSION);
+                LOGGER.info(ansi().fg(RED).bold().a(RESTHEART).reset().toString() + " version {}",
+                        ansi().fg(MAGENTA).bold().a(RESTHEART_VERSION).reset().toString());
             }
 
             logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
@@ -362,7 +364,7 @@ public class Bootstrapper {
                 + ansi().fg(RED).bold().a(instanceName).reset().toString());
 
         if (RESTHEART_VERSION != null) {
-            LOGGER.info(VERSION, RESTHEART_VERSION);
+            LOGGER.info(VERSION, ansi().fg(MAGENTA).bold().a(RESTHEART_VERSION).reset().toString());
         }
 
         Path pidFilePath = FileUtils.getPidFilePath(
@@ -383,7 +385,8 @@ public class Bootstrapper {
             //force setup
             MongoDBClientSingleton.getInstance();
             LOGGER.info("MongoDB connection pool initialized");
-            LOGGER.info("MongoDB version {}", MongoDBClientSingleton.getServerVersion());
+            LOGGER.info("MongoDB version {}",
+                    ansi().fg(MAGENTA).bold().a(MongoDBClientSingleton.getServerVersion()).reset().toString());
         } catch (Throwable t) {
             logErrorAndExit("Error connecting to MongoDB. exiting..", t, false, !pidFileAlreadyExists, -1);
         }
@@ -439,7 +442,7 @@ public class Bootstrapper {
                         t);
             }
         }
-        
+
         LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart started").reset().toString());
     }
 
