@@ -47,6 +47,7 @@ deploy:
   skip_cleanup: true
   on:
     tags: true
+    condition: $MAVEN_DEPLOY = true 
 
 env:
   matrix:
