@@ -226,6 +226,12 @@ public class DAOUtils {
             } catch (IllegalArgumentException iae) {
                 return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, null);
             } catch (MongoCommandException mce) {
+                LOGGER.debug("document {} not updated, "
+                        + "might be due to a duplicate key error. "
+                        + "errorCode: {}, errorMessage: {}", 
+                        documentId, 
+                        mce.getErrorCode(),
+                        mce.getErrorMessage());
                 if (mce.getErrorCode() == 11000) {
                     if (allowUpsert
                             && filter != null
