@@ -227,7 +227,7 @@ public class DAOUtils {
                 return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, null);
             } catch (MongoCommandException mce) {
                 LOGGER.debug("document {} not updated, "
-                        + "might be due to a duplicate key error. "
+                        + "might be due to a duplicate keys. "
                         + "errorCode: {}, errorMessage: {}", 
                         documentId, 
                         mce.getErrorCode(),
@@ -236,7 +236,7 @@ public class DAOUtils {
                     if (allowUpsert
                             && filter != null
                             && !filter.isEmpty()
-                            && mce.getErrorMessage().contains("$_id_ dup key")) {
+                            && mce.getErrorMessage().contains("_id_ dup key")) {
                         // DuplicateKey error
                         // this happens if the filter parameter didn't match
                         // the existing document and so the upserted doc
