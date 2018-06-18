@@ -30,6 +30,7 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.restheart.hal.Representation;
+import static org.restheart.test.integration.AbstactIT.url;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import org.restheart.utils.HttpStatus;
 
@@ -62,7 +63,7 @@ public class PutDocumentIT extends HttpClientAbstactIT {
         // *** PUT tmpdoc
         response = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check put tmp doc", response, HttpStatus.SC_CREATED);
-
+        
         // try to put without etag
         response = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check put tmp doc without etag", response, HttpStatus.SC_OK);
@@ -110,6 +111,26 @@ public class PutDocumentIT extends HttpClientAbstactIT {
         Assert.assertEquals("create collection " + DB.concat("/").concat(COLL), org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
     }
 
+    @Test
+    public void testPutDocumentWithNotMatchingFilter() throws Exception {
+        resp = Unirest.put(url(DB, COLL, "testPutWithWrongFilter"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{'a':1}")
+                .asString();
+        
+        Assert.assertEquals(HttpStatus.SC_CREATED, resp.getStatus());
+        
+        resp = Unirest.put(url(DB, COLL, "testPutWithWrongFilter"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .queryString("filter", "{'a':2}")
+                .body("{'modified':true}")
+                .asString();
+
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, resp.getStatus());
+    }
+    
     @Test
     public void testPutDocumentDotNotation() throws Exception {
         resp = Unirest.put(url(DB, COLL, "docid1"))
