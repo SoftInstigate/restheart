@@ -64,10 +64,28 @@ public abstract class AbstractDbIdentityManager
 
     static boolean checkPassword(boolean hashed, char[] password, char[] expected) {
         if (hashed) {
+            // speedup bcrypted pwd check if already checked.
+            // bcrypt check is very CPU intensive by design.
+            Optional<String> _cachedHash = HASHES_CACHE.get(new String(expected));
+            
+            if (_cachedHash != null &&
+                    _cachedHash.isPresent()
+                    && new String(password)
+                            .equals(_cachedHash.get())) {
+                return true;
+            }
+            
             try {
-                return BCrypt.checkpw(
+                boolean check = BCrypt.checkpw(
                         new String(password),
                         new String(expected));
+                
+                if (check) {
+                    HASHES_CACHE.put(new String(expected), new String(password));
+                    return true;
+                } else {
+                    return false;
+                }
             } catch (Throwable t) {
                 return false;
             }
@@ -93,6 +111,12 @@ public abstract class AbstractDbIdentityManager
             = Cache.EXPIRE_POLICY.AFTER_WRITE;
 
     private LoadingCache<String, SimpleAccount> cache = null;
+    
+    private static final transient Cache<String, String> HASHES_CACHE
+            = CacheFactory.createLocalCache(
+                     1_000l,
+                    Cache.EXPIRE_POLICY.NEVER,
+                    -1);
 
     /**
      *

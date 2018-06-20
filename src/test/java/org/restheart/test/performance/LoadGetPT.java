@@ -76,7 +76,6 @@ public class LoadGetPT extends AbstractPT {
 
     /**
      *
-     * arguments passed via * @throws IOException
      */
     public void get() throws IOException {
         URLConnection connection = new URL(url).openConnection();
