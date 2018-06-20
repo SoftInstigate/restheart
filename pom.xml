@@ -116,7 +116,7 @@
         <dependency>
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
-            <version>3.3.0</version>
+            <version>3.4.0</version>
         </dependency>
 
         <dependency>
@@ -231,7 +231,7 @@
                                 </requireMavenVersion>
                                 <requireReleaseDeps>
                                     <message>No Snapshots Allowed!</message>
-                                    <excludes></excludes>
+                                    <excludes/>
                                 </requireReleaseDeps>
                                 <requireJavaVersion>
                                     <version>1.8</version>
