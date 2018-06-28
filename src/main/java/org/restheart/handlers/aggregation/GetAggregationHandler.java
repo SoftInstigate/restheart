@@ -154,11 +154,16 @@ public class GetAggregationHandler extends PipedHttpHandler {
                                         context.getDBName(),
                                         context.getCollectionName())
                                 .aggregate(
-                                        pipeline
-                                                .getResolvedStagesAsList(
-                                                        context.getAggreationVars()))
-                                .maxTime(Bootstrapper.getConfiguration().getAggregationTimeLimit(), TimeUnit.MILLISECONDS);
-                    } catch (MongoCommandException | InvalidMetadataException ex) {
+                                        pipeline.getResolvedStagesAsList(
+                                                context
+                                                        .getAggreationVars()))
+                                .maxTime(Bootstrapper.getConfiguration()
+                                        .getAggregationTimeLimit(),
+                                        TimeUnit.MILLISECONDS)
+                                .allowDiskUse(pipeline
+                                        .getAllowDiskUse().getValue());
+                    } catch (MongoCommandException 
+                            | InvalidMetadataException ex) {
                         ResponseHelper.endExchangeWithMessage(
                                 exchange,
                                 context,

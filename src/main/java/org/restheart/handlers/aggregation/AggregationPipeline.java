@@ -20,6 +20,7 @@ package org.restheart.handlers.aggregation;
 import java.util.ArrayList;
 import java.util.List;
 import org.bson.BsonArray;
+import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.metadata.InvalidMetadataException;
@@ -33,7 +34,10 @@ import org.restheart.utils.JsonUtils;
 public class AggregationPipeline extends AbstractAggregationOperation {
 
     public static final String STAGES_ELEMENT_NAME = "stages";
+    public static final String ALLOW_DISK_USER_ELEMENT_NAME = "allowDiskUse";
+    
     private final BsonArray stages;
+    private final BsonBoolean allowDiskUse;
 
     /**
      * @param properties the json properties object. It must include the
@@ -50,6 +54,7 @@ public class AggregationPipeline extends AbstractAggregationOperation {
      * {
      *   "type":"pipeline",
      *   "uri":"test_ap",
+     *   "allowDiskUse": false,
      *   "stages":
      *     [
      *       {"_$match": { "name": { "_$exists": true}}},
@@ -80,8 +85,21 @@ public class AggregationPipeline extends AbstractAggregationOperation {
                     + "': " + _stages
                     + "; must be an array of stage objects");
         }
-
+        
         this.stages = _stages.asArray();
+        
+        BsonValue _allowDiskUse = properties.get(ALLOW_DISK_USER_ELEMENT_NAME);
+
+        if (_allowDiskUse != null && !_allowDiskUse.isBoolean()) {
+            throw new InvalidMetadataException("query /" + getUri()
+                    + "has invalid '" + ALLOW_DISK_USER_ELEMENT_NAME
+                    + "': " + _allowDiskUse
+                    + "; must be boolean");
+        }
+
+        this.allowDiskUse = _allowDiskUse != null 
+                ? _allowDiskUse.asBoolean()
+                : BsonBoolean.FALSE;
     }
 
     /**
@@ -111,5 +129,12 @@ public class AggregationPipeline extends AbstractAggregationOperation {
                 });
         
         return ret;
+    }
+
+    /**
+     * @return the allowDiskUse
+     */
+    public BsonBoolean getAllowDiskUse() {
+        return allowDiskUse;
     }
 }
