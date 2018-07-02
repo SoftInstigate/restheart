@@ -214,20 +214,22 @@ public class MetricsHandler extends PipedHttpHandler {
                             final String responseCode = split.length >= 3 ? split[2] : null;
 
                             metricContent.asDocument().forEach((metricType, value) -> {
-                                sb.append("http_response_").append(groupKey)
+                                if (value.isNumber()) {
+                                    sb.append("http_response_").append(groupKey)
                                         .append("_").append(type).append("_")
                                         .append(metricType);
-                                sb.append("{");
-                                sb.append("method=\"").append(method).append("\"");
-                                if (responseCode != null) {
-                                    sb.append(",");
-                                    sb.append("code=\"").append(responseCode).append("\"");
+                                    sb.append("{");
+                                    sb.append("method=\"").append(method).append("\"");
+                                    if (responseCode != null) {
+                                        sb.append(",");
+                                        sb.append("code=\"").append(responseCode).append("\"");
+                                    }
+                                    sb.append("} ");
+                                    sb.append(valueAsString(value));
+                                    sb.append(" ");
+                                    sb.append(timestamp);
+                                    sb.append("\n");
                                 }
-                                sb.append("} ");
-                                sb.append(valueAsString(value));
-                                sb.append(" ");
-                                sb.append(timestamp);
-                                sb.append("\n");
                             });
 
                             sb.append("\n");
