@@ -5,16 +5,20 @@
 if [[ -z $MONGO_VERSION ]]; then
     MONGO_VERSION=3.6
 fi
+if [[ -z $IMAGE ]]; then
+    IMAGE=mongo
+    # export IMAGE=percona/percona-server-mongodb (to run against Percona Server)
+fi
 
 cd "$(dirname ${BASH_SOURCE[0]})"/.. || exit 1
 
-echo "### Running volatile mongo:$MONGO_VERSION Docker container..."
-CONTAINER_ID=$( docker run --rm -d -p 27017:27017 mongo:"$MONGO_VERSION" )
+echo "### Running volatile $IMAGE:$MONGO_VERSION Docker container..."
+CONTAINER_ID=$( docker run --rm -d -p 27017:27017 "$IMAGE:$MONGO_VERSION" )
 
 echo "### Build RESTHeart and run integration tests..."
 mvn clean verify -DskipITs=false
 
-echo "### Cleaning up mongo:$MONGO_VERSION container..."
+echo "### Cleaning up $IMAGE:$MONGO_VERSION container..."
 docker stop "$CONTAINER_ID"
 
-echo "### Done."
+echo "### Done testing RESTHeart with $IMAGE:$MONGO_VERSION"
