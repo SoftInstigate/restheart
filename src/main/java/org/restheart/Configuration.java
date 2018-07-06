@@ -144,7 +144,27 @@ public class Configuration {
      */
     public static final ETAG_CHECK_POLICY DEFAULT_DOC_ETAG_CHECK_POLICY
             = ETAG_CHECK_POLICY.OPTIONAL;
-
+    
+    /**
+     * default doc etag check policy
+     */
+    public static final int DEFAULT_MAX_DOC_ETAG_CHECK_POLICY= 1000;
+    
+    /**
+     * default value for max-pagesize
+     */
+    public static final int DEFAULT_MAX_PAGESIZE = 1000;
+    
+    /**
+     * default value for max-pagesize
+     */
+    public static final int DEFAULT_DEFAULT_PAGESIZE = 100;
+    
+    /**
+     * default value for cursor batch size
+     */
+    public static final int DEFAULT_CURSOR_BATCH_SIZE = 1000;
+    
     /**
      * the key for the local-cache-enabled property.
      */
@@ -506,6 +526,21 @@ public class Configuration {
      * The key for specifying an initializer class
      */
     public static final String INITIALIZER_CLASS_KEY = "initializer-class";
+    
+    /**
+     * The key for specifying the max pagesize
+     */
+    public static final String MAX_PAGESIZE_KEY = "max-pagesize";
+    
+    /**
+     * The key for specifying the default pagesize
+     */
+    public static final String DEFAULT_PAGESIZE_KEY = "default-pagesize";
+    
+    /**
+     * The key for specifying the cursor batch size
+     */
+    public static final String CURSOR_BATCH_SIZE_KEY = "cursor-batch-size";
 
     /**
      * undertow connetction options
@@ -625,6 +660,10 @@ public class Configuration {
     private final boolean ansiConsole;
     private final String initializerClass;
     
+    private final int cursorBatchSize;
+    private final int defaultPagesize;
+    private final int maxPagesize;
+    
     /**
      * the configuration map
      */
@@ -737,6 +776,10 @@ public class Configuration {
 
         connectionOptions = Maps.newHashMap();
         initializerClass = null;
+        
+        cursorBatchSize = DEFAULT_CURSOR_BATCH_SIZE;
+        defaultPagesize = DEFAULT_DEFAULT_PAGESIZE;
+        maxPagesize = DEFAULT_MAX_PAGESIZE;
     }
 
     /**
@@ -969,6 +1012,15 @@ public class Configuration {
         connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY);
         
         initializerClass = getAsStringOrDefault(conf, INITIALIZER_CLASS_KEY, null);
+        
+        cursorBatchSize = getAsIntegerOrDefault(conf, CURSOR_BATCH_SIZE_KEY, 
+                DEFAULT_CURSOR_BATCH_SIZE);
+        
+        defaultPagesize = getAsIntegerOrDefault(conf, DEFAULT_PAGESIZE_KEY, 
+                DEFAULT_DEFAULT_PAGESIZE);
+        
+        maxPagesize = getAsIntegerOrDefault(conf, MAX_PAGESIZE_KEY, 
+                DEFAULT_MAX_PAGESIZE);
     }
 
     @Override
@@ -1661,5 +1713,26 @@ public class Configuration {
      */
     public String getInitializerClass() {
         return initializerClass;
+    }
+
+    /**
+     * @return the cursorBatchSize
+     */
+    public int getCursorBatchSize() {
+        return cursorBatchSize;
+    }
+
+    /**
+     * @return the maxPagesize
+     */
+    public int getMaxPagesize() {
+        return maxPagesize;
+    }
+
+    /**
+     * @return the defaultPagesize
+     */
+    public int getDefaultPagesize() {
+        return defaultPagesize;
     }
 }
