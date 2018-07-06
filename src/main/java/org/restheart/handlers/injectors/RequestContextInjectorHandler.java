@@ -58,6 +58,14 @@ import org.restheart.utils.URLUtils;
 public class RequestContextInjectorHandler extends PipedHttpHandler {
 
     private static final Logger LOG = Logger.getLogger(RequestContextInjectorHandler.class.getName());
+    
+    private static final int DEFAULT_PAGESIZE = Bootstrapper
+            .getConfiguration()
+            .getDefaultPagesize();
+    
+    private static final int MAX_PAGESIZE = Bootstrapper
+            .getConfiguration()
+            .getMaxPagesize();
 
     private final String whereUri;
     private final String whatUri;
@@ -172,7 +180,8 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 .get(PAGESIZE_QPARAM_KEY);
 
         int page = 1; // default page
-        int pagesize = 100; // default pagesize
+        
+        int pagesize = DEFAULT_PAGESIZE;
 
         if (__pagesize != null && !(__pagesize.isEmpty())) {
             try {
@@ -188,12 +197,13 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             }
         }
 
-        if (pagesize < 0 || pagesize > 1_000) {
+        if (pagesize < 0 || pagesize > MAX_PAGESIZE) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     rcontext,
                     HttpStatus.SC_BAD_REQUEST,
-                    "illegal page parameter, pagesize must be >= 0 and <= 1000");
+                    "illegal page parameter, pagesize must be >= 0 and <= " 
+                            + MAX_PAGESIZE);
             next(exchange, rcontext);
             return;
         } else {
@@ -432,7 +442,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 }
 
                 // throws SecurityException if aVars contains operators
-                if(checkAggregationOperators) {
+                if (checkAggregationOperators) {
                     AggregationPipeline.checkAggregationVariables(qvars);
                 }
 
