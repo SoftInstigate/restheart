@@ -17,6 +17,7 @@
  */
 package org.restheart;
 
+import org.restheart.handlers.TracingInstrumentationHandler;
 import org.restheart.init.Initializer;
 import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
@@ -811,6 +812,7 @@ public class Bootstrapper {
                 .allMatch(url -> !isPathTemplate(url));
 
         final PipedHttpHandler baseChain = new MetricsInstrumentationHandler(
+            new TracingInstrumentationHandler(
                 new RequestLoggerHandler(
                         new CORSHandler(
                                 new OptionsHandler(
@@ -819,7 +821,7 @@ public class Bootstrapper {
                                                         coreHandlerChain,
                                                         authenticationMechanism,
                                                         identityManager,
-                                                        accessManager))))));
+                                                        accessManager)))))));
 
         if (!allPathTemplates && !allPaths) {
             LOGGER.error("No mongo resource mounted! Check your mongo-mounts. where url must be either all absolute paths or all path templates");
@@ -1066,22 +1068,24 @@ public class Bootstrapper {
                                         new BodyInjectorHandler(alHandler));
 
                         if (alSecured) {
-                            paths.addPrefixPath("/_logic" + alWhere, new RequestLoggerHandler(
-                                    new CORSHandler(
-                                            new SecurityHandlerDispacher(
-                                                    handler,
-                                                    authenticationMechanism,
-                                                    identityManager,
-                                                    accessManager))));
+                            paths.addPrefixPath("/_logic" + alWhere, new TracingInstrumentationHandler(
+                                new RequestLoggerHandler(
+                                        new CORSHandler(
+                                                new SecurityHandlerDispacher(
+                                                        handler,
+                                                        authenticationMechanism,
+                                                        identityManager,
+                                                        accessManager)))));
                         } else {
                             paths.addPrefixPath("/_logic" + alWhere,
-                                    new RequestLoggerHandler(
-                                            new CORSHandler(
-                                                    new SecurityHandlerDispacher(
-                                                            handler,
-                                                            authenticationMechanism,
-                                                            identityManager,
-                                                            new FullAccessManager()))));
+                                    new TracingInstrumentationHandler(
+                                        new RequestLoggerHandler(
+                                                new CORSHandler(
+                                                        new SecurityHandlerDispacher(
+                                                                handler,
+                                                                authenticationMechanism,
+                                                                identityManager,
+                                                                new FullAccessManager())))));
                         }
 
                         LOGGER.info("URL {} bound to application logic handler {}."
