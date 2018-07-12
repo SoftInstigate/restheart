@@ -256,6 +256,11 @@ public class Configuration {
     public static final String LOG_FILE_PATH_KEY = "log-file-path";
 
     /**
+     * the key for the requests-log-tracing-headers property.
+     */
+    public static final String REQUESTS_LOG_TRACE_HEADERS_KEY = "requests-log-trace-headers";
+
+    /**
      * the key for the implementation-class property.
      */
     public static final String IMPLEMENTATION_CLASS_KEY = "implementation-class";
@@ -629,6 +634,7 @@ public class Configuration {
     private final Level logLevel;
     private final boolean logToConsole;
     private final boolean logToFile;
+    private final List<String> traceHeaders;
     private final boolean localCacheEnabled;
     private final long localCacheTtl;
     private final boolean schemaCacheEnabled;
@@ -736,6 +742,7 @@ public class Configuration {
         logToConsole = true;
         logToFile = true;
         logLevel = Level.INFO;
+        traceHeaders = Collections.emptyList();
 
         localCacheEnabled = true;
         localCacheTtl = 1000;
@@ -895,6 +902,7 @@ public class Configuration {
         String _logLevel = getAsStringOrDefault(conf, LOG_LEVEL_KEY, "INFO");
         logToConsole = getAsBooleanOrDefault(conf, ENABLE_LOG_CONSOLE_KEY, true);
         logToFile = getAsBooleanOrDefault(conf, ENABLE_LOG_FILE_KEY, true);
+        traceHeaders = getAsListOfStrings(conf, REQUESTS_LOG_TRACE_HEADERS_KEY, Collections.emptyList());
 
         Level level;
 
@@ -1255,6 +1263,37 @@ public class Configuration {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private List<String> getAsListOfStrings(final Map<String, Object> conf, final String key, final List<String> defaultValue) {
+        if (conf == null || conf.get(key) == null) {
+            // if default value is null there is no default value actually
+            if (defaultValue != null && !silent) {
+                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
+            }
+            return defaultValue;
+        } else if (conf.get(key) instanceof List) {
+            if (!silent) {
+                LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
+            }
+
+            List<String> ret = ((List<String>) conf.get(key));
+
+            if (ret.isEmpty()) {
+                if (!silent) {
+                    LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
+                }
+                return defaultValue;
+            } else {
+                return ret;
+            }
+        } else {
+            if (!silent) {
+                LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
+            }
+            return defaultValue;
+        }
+    }
+
     /**
      * @return the httpsListener
      */
@@ -1380,6 +1419,10 @@ public class Configuration {
      */
     public boolean isLogToFile() {
         return logToFile;
+    }
+
+    public List<String> getTraceHeaders() {
+        return traceHeaders;
     }
 
     /**
