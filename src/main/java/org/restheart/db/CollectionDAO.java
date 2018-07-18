@@ -19,6 +19,7 @@ package org.restheart.db;
 
 import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoCommandException;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
@@ -319,7 +320,7 @@ class CollectionDAO {
             final String collName,
             final BsonDocument properties,
             final String requestEtag,
-            final boolean updating,
+            boolean updating,
             final boolean patching,
             final boolean checkEtag) {
 
@@ -328,7 +329,21 @@ class CollectionDAO {
         }
 
         if (!updating) {
-            client.getDatabase(dbName).createCollection(collName);
+            try {
+                client.getDatabase(dbName).createCollection(collName);
+            } catch (MongoCommandException ex) {
+                // error 48 is NamespaceExists
+                // this can happen when a request A creates a collection
+                // and a concurrent request B checks if it exists before A 
+                // completes (updating = false) and try to create it after A 
+                // actually created it.
+                // see https://github.com/SoftInstigate/restheart/issues/297
+                if (ex.getErrorCode() != 48) {
+                    throw ex;
+                } else {
+                    updating = true;
+                }
+            }
         }
 
         ObjectId newEtag = new ObjectId();
