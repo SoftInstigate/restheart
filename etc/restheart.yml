@@ -36,6 +36,12 @@ default-representation-format: PLAIN_JSON
 
 ansi-console: true
 
+#### Allow unescaped characters in URL
+# Starting with Undertow 1.4.23 URLs validation became much stricter.
+# However, this is breaking existing clients. Now you can decide which behaviour you prefer
+
+allow-unescaped-characters-in-url: true
+
 #### SSL Configuration
 
 # Configure the keystore to enable the https listener.

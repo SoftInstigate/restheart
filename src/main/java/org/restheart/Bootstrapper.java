@@ -650,7 +650,8 @@ public class Bootstrapper {
         // allow unescaped chars in URL (otherwise not allowed by default)
         builder.setServerOption(
                 UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL,
-                true);
+                configuration.isAllowUnescapedCharactersInUrl());
+        LOGGER.info("Allow unescaped characters in URL: {}", configuration.isAllowUnescapedCharactersInUrl());
 
         ConfigurationHelper.setConnectionOptions(builder, configuration);
 
