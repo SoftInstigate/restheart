@@ -17,6 +17,7 @@
  */
 package org.restheart;
 
+import org.restheart.handlers.TracingInstrumentationHandler;
 import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.undertow.Handlers.path;
@@ -823,15 +824,16 @@ public class Bootstrapper {
                 .allMatch(url -> !isPathTemplate(url));
 
         final PipedHttpHandler baseChain = new MetricsInstrumentationHandler(
-                new RequestLoggerHandler(
-                        new CORSHandler(
-                                new OptionsHandler(
-                                        new BodyInjectorHandler(
-                                                new SecurityHandlerDispacher(
-                                                        coreHandlerChain,
-                                                        authenticationMechanism,
-                                                        identityManager,
-                                                        accessManager))))));
+                new TracingInstrumentationHandler(
+                        new RequestLoggerHandler(
+                                new CORSHandler(
+                                        new OptionsHandler(
+                                                new BodyInjectorHandler(
+                                                        new SecurityHandlerDispacher(
+                                                                coreHandlerChain,
+                                                                authenticationMechanism,
+                                                                identityManager,
+                                                                accessManager)))))));
 
         if (!allPathTemplates && !allPaths) {
             LOGGER.error("No mongo resource mounted! Check your mongo-mounts."
@@ -1080,22 +1082,24 @@ public class Bootstrapper {
                                         new BodyInjectorHandler(alHandler));
 
                         if (alSecured) {
-                            paths.addPrefixPath("/_logic" + alWhere, new RequestLoggerHandler(
-                                    new CORSHandler(
-                                            new SecurityHandlerDispacher(
-                                                    handler,
-                                                    authenticationMechanism,
-                                                    identityManager,
-                                                    accessManager))));
-                        } else {
-                            paths.addPrefixPath("/_logic" + alWhere,
+                            paths.addPrefixPath("/_logic" + alWhere, new TracingInstrumentationHandler(
                                     new RequestLoggerHandler(
                                             new CORSHandler(
                                                     new SecurityHandlerDispacher(
                                                             handler,
                                                             authenticationMechanism,
                                                             identityManager,
-                                                            new FullAccessManager()))));
+                                                            accessManager)))));
+                        } else {
+                            paths.addPrefixPath("/_logic" + alWhere,
+                                    new TracingInstrumentationHandler(
+                                            new RequestLoggerHandler(
+                                                    new CORSHandler(
+                                                            new SecurityHandlerDispacher(
+                                                                    handler,
+                                                                    authenticationMechanism,
+                                                                    identityManager,
+                                                                    new FullAccessManager())))));
                         }
 
                         LOGGER.info("URL {} bound to application logic handler {}."
