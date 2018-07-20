@@ -47,11 +47,13 @@ public class MetricsInstrumentationHandler extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         final long requestStartTime = context.getRequestStartTime();
 
-        exchange.addExchangeCompleteListener((httpServerExchange, nextListener) -> {
-            addMetrics(requestStartTime, exchange, context);
+        if (!exchange.isComplete()) {
+            exchange.addExchangeCompleteListener((httpServerExchange, nextListener) -> {
+                addMetrics(requestStartTime, exchange, context);
 
-            nextListener.proceed();
-        });
+                nextListener.proceed();
+            });
+        }
 
         if (!exchange.isResponseComplete() && getNext() != null) {
             next(exchange, context);
