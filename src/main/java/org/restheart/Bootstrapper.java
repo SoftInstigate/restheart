@@ -25,6 +25,7 @@ import static io.undertow.Handlers.pathTemplate;
 import static io.undertow.Handlers.resource;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
+import io.undertow.UndertowOptions;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.handlers.AllowedMethodsHandler;
@@ -643,6 +644,13 @@ public class Bootstrapper {
                 .setBufferSize(configuration.getBufferSize())
                 .setBuffersPerRegion(configuration.getBuffersPerRegion())
                 .setHandler(shutdownHandler);
+        
+        // starting undertow 1.4.23 URL become much stricter 
+        // (undertow commit 09d40a13089dbff37f8c76d20a41bf0d0e600d9d)
+        // allow unescaped chars in URL (otherwise not allowed by default)
+        builder.setServerOption(
+                UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL, 
+                true);
 
         ConfigurationHelper.setConnectionOptions(builder, configuration);
 
@@ -788,7 +796,10 @@ public class Bootstrapper {
      * @param accessManager
      * @return a GracefulShutdownHandler
      */
-    private static GracefulShutdownHandler getHandlersPipe(final AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager, final AccessManager accessManager) {
+    private static GracefulShutdownHandler getHandlersPipe(
+            final AuthenticationMechanism authenticationMechanism,
+            final IdentityManager identityManager,
+            final AccessManager accessManager) {
         PipedHttpHandler coreHandlerChain
                 = new AccountInjectorHandler(
                         new DbPropsInjectorHandler(
@@ -822,7 +833,9 @@ public class Bootstrapper {
                                                         accessManager))))));
 
         if (!allPathTemplates && !allPaths) {
-            LOGGER.error("No mongo resource mounted! Check your mongo-mounts. where url must be either all absolute paths or all path templates");
+            LOGGER.error("No mongo resource mounted! Check your mongo-mounts."
+                    + " where url must be either all absolute paths"
+                    + " or all path templates");
         } else {
             configuration.getMongoMounts().stream().forEach(m -> {
                 String url = (String) m.get(Configuration.MONGO_MOUNT_WHERE_KEY);
