@@ -144,27 +144,27 @@ public class Configuration {
      */
     public static final ETAG_CHECK_POLICY DEFAULT_DOC_ETAG_CHECK_POLICY
             = ETAG_CHECK_POLICY.OPTIONAL;
-    
+
     /**
      * default doc etag check policy
      */
-    public static final int DEFAULT_MAX_DOC_ETAG_CHECK_POLICY= 1000;
-    
+    public static final int DEFAULT_MAX_DOC_ETAG_CHECK_POLICY = 1000;
+
     /**
      * default value for max-pagesize
      */
     public static final int DEFAULT_MAX_PAGESIZE = 1000;
-    
+
     /**
      * default value for max-pagesize
      */
     public static final int DEFAULT_DEFAULT_PAGESIZE = 100;
-    
+
     /**
      * default value for cursor batch size
      */
     public static final int DEFAULT_CURSOR_BATCH_SIZE = 1000;
-    
+
     /**
      * the key for the local-cache-enabled property.
      */
@@ -512,8 +512,9 @@ public class Configuration {
     public static final String LOG_REQUESTS_LEVEL_KEY = "requests-log-level";
 
     /**
-     *  Set metrics gathering level (can be ALL, COLLECTION, DATABASE, ROOT, OFF), gradually gathering less specific metrics.
-     *  Every level contain the upper level as well.
+     * Set metrics gathering level (can be ALL, COLLECTION, DATABASE, ROOT,
+     * OFF), gradually gathering less specific metrics. Every level contain the
+     * upper level as well.
      */
     public static final String METRICS_GATHERING_LEVEL_KEY = "metrics-gathering-level";
 
@@ -521,22 +522,22 @@ public class Configuration {
      * The key for enabling the Ansi console (for logging with colors)
      */
     public static final String ANSI_CONSOLE_KEY = "ansi-console";
-    
+
     /**
      * The key for specifying an initializer class
      */
     public static final String INITIALIZER_CLASS_KEY = "initializer-class";
-    
+
     /**
      * The key for specifying the max pagesize
      */
     public static final String MAX_PAGESIZE_KEY = "max-pagesize";
-    
+
     /**
      * The key for specifying the default pagesize
      */
     public static final String DEFAULT_PAGESIZE_KEY = "default-pagesize";
-    
+
     /**
      * The key for specifying the cursor batch size
      */
@@ -659,11 +660,11 @@ public class Configuration {
     private final boolean aggregationCheckOperators;
     private final boolean ansiConsole;
     private final String initializerClass;
-    
+
     private final int cursorBatchSize;
     private final int defaultPagesize;
     private final int maxPagesize;
-    
+
     /**
      * the configuration map
      */
@@ -674,7 +675,7 @@ public class Configuration {
      */
     public Configuration() {
         this.configurationFileMap = null;
-        
+
         ansiConsole = true;
 
         httpsListener = true;
@@ -776,7 +777,7 @@ public class Configuration {
 
         connectionOptions = Maps.newHashMap();
         initializerClass = null;
-        
+
         cursorBatchSize = DEFAULT_CURSOR_BATCH_SIZE;
         defaultPagesize = DEFAULT_DEFAULT_PAGESIZE;
         maxPagesize = DEFAULT_MAX_PAGESIZE;
@@ -815,7 +816,7 @@ public class Configuration {
      */
     public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
         this.configurationFileMap = conf;
-        
+
         this.silent = silent;
 
         ansiConsole = getAsBooleanOrDefault(conf, ANSI_CONSOLE_KEY, true);
@@ -1010,16 +1011,16 @@ public class Configuration {
         }
 
         connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY);
-        
+
         initializerClass = getAsStringOrDefault(conf, INITIALIZER_CLASS_KEY, null);
-        
-        cursorBatchSize = getAsIntegerOrDefault(conf, CURSOR_BATCH_SIZE_KEY, 
+
+        cursorBatchSize = getAsIntegerOrDefault(conf, CURSOR_BATCH_SIZE_KEY,
                 DEFAULT_CURSOR_BATCH_SIZE);
-        
-        defaultPagesize = getAsIntegerOrDefault(conf, DEFAULT_PAGESIZE_KEY, 
+
+        defaultPagesize = getAsIntegerOrDefault(conf, DEFAULT_PAGESIZE_KEY,
                 DEFAULT_DEFAULT_PAGESIZE);
-        
-        maxPagesize = getAsIntegerOrDefault(conf, MAX_PAGESIZE_KEY, 
+
+        maxPagesize = getAsIntegerOrDefault(conf, MAX_PAGESIZE_KEY,
                 DEFAULT_MAX_PAGESIZE);
     }
 
@@ -1684,7 +1685,12 @@ public class Configuration {
         return metricsGatheringLevel;
     }
 
-    /** decides whether metrics are gathered at the given log level or not*/
+    /**
+     * decides whether metrics are gathered at the given log level or not
+     *
+     * @param level Metrics Gathering Level
+     * @return true if gathering Above Or Equal To Level
+     */
     public boolean gatheringAboveOrEqualToLevel(METRICS_GATHERING_LEVEL level) {
         return getMetricsGatheringLevel().compareTo(level) >= 0;
     }
@@ -1695,11 +1701,13 @@ public class Configuration {
          */
         OFF,
         /**
-         * gather basic metrics (for all databases, but not specific per database)
+         * gather basic metrics (for all databases, but not specific per
+         * database)
          */
         ROOT,
         /**
-         * gather basic metrics, and also specific per database (but not collection-specific)
+         * gather basic metrics, and also specific per database (but not
+         * collection-specific)
          */
         DATABASE,
         /**
