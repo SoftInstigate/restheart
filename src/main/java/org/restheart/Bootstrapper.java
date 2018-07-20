@@ -17,7 +17,6 @@
  */
 package org.restheart;
 
-import org.restheart.init.Initializer;
 import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.undertow.Handlers.path;
@@ -62,8 +61,8 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
-import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.Color.MAGENTA;
+import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.fusesource.jansi.AnsiConsole;
 import static org.restheart.Configuration.RESTHEART_VERSION;
@@ -84,6 +83,7 @@ import org.restheart.handlers.injectors.CollectionPropsInjectorHandler;
 import org.restheart.handlers.injectors.DbPropsInjectorHandler;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.handlers.injectors.RequestContextInjectorHandler;
+import org.restheart.init.Initializer;
 import org.restheart.security.AccessManager;
 import org.restheart.security.AuthenticationMechanismFactory;
 import org.restheart.security.FullAccessManager;
@@ -435,7 +435,7 @@ public class Bootstrapper {
                                 t);
                     }
                 }
-            } catch (Throwable t) {
+            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException t) {
                 LOGGER.error(ansi().fg(RED).bold().a(
                         "Wrong configuration for intializer {}")
                         .reset().toString(),
@@ -644,12 +644,12 @@ public class Bootstrapper {
                 .setBufferSize(configuration.getBufferSize())
                 .setBuffersPerRegion(configuration.getBuffersPerRegion())
                 .setHandler(shutdownHandler);
-        
+
         // starting undertow 1.4.23 URL become much stricter 
         // (undertow commit 09d40a13089dbff37f8c76d20a41bf0d0e600d9d)
         // allow unescaped chars in URL (otherwise not allowed by default)
         builder.setServerOption(
-                UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL, 
+                UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL,
                 true);
 
         ConfigurationHelper.setConnectionOptions(builder, configuration);
