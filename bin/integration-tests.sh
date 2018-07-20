@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+
 # if you want to run integration tests against a different version of MongoDB
 # export the MONGO_VERSION variable.
 # For example: export MONGO_VERSION=3.4 && ./bin/integration-tests.sh
