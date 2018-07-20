@@ -25,8 +25,8 @@ under the License.
     <language>en-us</language>
     <copyright>&#169;2014 - 2018 SoftInstigate</copyright>
     <item>
-      <title>File: 215,
-             Errors: 3403,
+      <title>File: 216,
+             Errors: 3417,
              Warnings: 0,
              Infos: 0
       </title>
@@ -1572,6 +1572,20 @@ under the License.
               </tr>
                           <tr>
                 <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.handlers.TracingInstrumentationHandler.java">org/restheart/handlers/TracingInstrumentationHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  12
+                </td>
+              </tr>
+                          <tr>
+                <td>
                   <a href="http://www.restheart.org/checkstyle.html#org.restheart.security.RestheartIdentityManager.java">org/restheart/security/RestheartIdentityManager.java</a>
                 </td>
                 <td>
@@ -2743,7 +2757,7 @@ under the License.
                   0
                 </td>
                 <td>
-                  55
+                  57
                 </td>
               </tr>
                           <tr>
