@@ -51,7 +51,7 @@ deploy:
 
 env:
   matrix:
-    - MONGO=3.4
+    - MONGO=4.0
     - MONGO=3.6 MAVEN_DEPLOY=true
   global:
     - secure: "rlLQCDykTqV7/EC+kTCw5JpYbuZwk0Neq5q1kRQ6hjcUYRdgjPJretVg+1e5+GcGOH4/Z/aOGdQrk1HtPW6tE+ePIUDAUwuLX2+6AUt2FqIqumYoJxYR7rsw+THkjiPaopB7qmWOUJ1vec7QCEiaGexYcjs3j6mv//SbnUksY2w="
