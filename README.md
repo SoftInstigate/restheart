@@ -1,4 +1,4 @@
-## RESTHeart
+# RESTHeart
 
 The Web API for MongoDB _made with :heart: by [SoftInstigate](http://www.softinstigate.com/)_
 
@@ -7,17 +7,20 @@ The Web API for MongoDB _made with :heart: by [SoftInstigate](http://www.softins
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
 [![Join the chat at https://gitter.im/SoftInstigate/restheart](https://badges.gitter.im/SoftInstigate/restheart.svg)](https://gitter.im/SoftInstigate/restheart?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Table of Contents
---
+## Table of Contents
 
-- [Setup](#setup)
-- [How to Build](#how-to-build)
-- [Integration Tests](#integration-tests)
-- [Maven Dependencies](#maven-dependencies)
-- [Snapshot Builds](#snapshot-builds)
+- [RESTHeart](#restheart)
+    - [Table of Contents](#table-of-contents)
+    - [Summary](#summary)
+    - [Setup](#setup)
+    - [How to Build](#how-to-build)
+    - [Integration Tests](#integration-tests)
+    - [Maven Dependencies](#maven-dependencies)
+        - [Snapshot Builds](#snapshot-builds)
+        - [Maven Site](#maven-site)
+    - [Continuous Integration](#continuous-integration)
 
-Summary
---
+## Summary
 
 **RESTHeart** connects to **MongoDB** and opens data to the Web. Clients such as mobile and javascript apps can use the database via a simple **RESTful API**.
 
@@ -27,8 +30,8 @@ Summary
 
 Refer to [restheart.org/learn/setup](http://restheart.org/learn/setup) for detailed information on how to setup RESTHeart.
 
-How to Build
---
+## How to Build
+
 
 > Building RESTHeart requires [Maven](http://www.oracle.com/technetwork/java/javase/downloads/index.html).
 
@@ -40,8 +43,7 @@ Build the project with Maven:
 
     $ mvn clean package
 
-Integration Tests
---
+## Integration Tests
 
 To run the integration test suite, first make sure that __mongod is running__ on localhost, on default port 27017 and without authentication enabled — i.e. no `--auth` option is specified.
 
@@ -53,8 +55,7 @@ Alternatively, if you have Docker, execute the following script:
     
 The script starts a Docker container running MongoDB and then execute the integration tests with Maven. It will clean-up the container at the end.
 
-Maven Dependencies
---
+## Maven Dependencies
 
 RESTHeart's releases are available on [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22org.restheart%22).
 
@@ -74,8 +75,7 @@ If you want to embed RESTHeart in your project, add the dependency to your POM f
 </dependencies>
 ```
 
-Snapshot Builds
----
+### Snapshot Builds
 
 Snapshots are available at [Sonatype](https://oss.sonatype.org/content/repositories/snapshots/org/restheart/restheart/). If you want to build your project against a development release, first add the SNAPSHOT repository:
 
@@ -104,7 +104,15 @@ Then include the SNAPSHOT dependency in your POM:
 </dependencies>
 ```
 
-We continually deploy development releases to Maven Central with [Travis-CI](https://travis-ci.org/SoftInstigate/restheart).
+### Maven Site
+
+An automatically generated Maven Site for each build of the `master` branch is available at: http://softinstigate.github.io/restheart/
+
+## Continuous Integration
+
+We continually integrate and deploy development releases to Maven Central with [Travis-CI](https://travis-ci.org/SoftInstigate/restheart).
+
+RESTHeart's public Docker images are also automatically built and pushed to [Docker Hub](https://hub.docker.com/r/softinstigate/restheart/). The `latest` tag for Docker images refers to the most recent SNAPSHOT release on the `master` branch.
 
 <hr></hr>
 
