@@ -148,7 +148,8 @@ public class GridFsDAO implements GridFsRepository {
 
         if (file == null) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
-        } else if (checkEtag) {
+        }
+        if (checkEtag) {
             Document metadata = file.getMetadata();
             if (metadata != null) {
                 Object oldEtag = metadata.get("_etag");
