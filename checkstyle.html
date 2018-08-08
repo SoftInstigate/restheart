@@ -101,7 +101,7 @@
 <td>216</td>
 <td>0</td>
 <td>0</td>
-<td>3417</td></tr></table></div>
+<td>3415</td></tr></table></div>
 <div class="section">
 <h2>Files<a name="Files"></a></h2>
 <table border="0" class="bodyTable">
@@ -219,7 +219,7 @@
 <td><a href="#org.restheart.db.GridFsDAO.java">org/restheart/db/GridFsDAO.java</a></td>
 <td>0</td>
 <td>0</td>
-<td>7</td></tr>
+<td>5</td></tr>
 <tr class="b">
 <td><a href="#org.restheart.db.GridFsRepository.java">org/restheart/db/GridFsRepository.java</a></td>
 <td>0</td>
@@ -1206,7 +1206,7 @@
 <tr class="b">
 <td>design</td>
 <td><a class="externalLink" href="http://checkstyle.sourceforge.net/config_design.html#DesignForExtension">DesignForExtension</a></td>
-<td>175</td>
+<td>172</td>
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td></tr>
 <tr class="a">
 <td></td>
@@ -1236,7 +1236,7 @@
 <tr class="b">
 <td></td>
 <td><a class="externalLink" href="http://checkstyle.sourceforge.net/config_imports.html#UnusedImports">UnusedImports</a></td>
-<td>11</td>
+<td>12</td>
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td></tr>
 <tr class="a">
 <td>javadoc</td>
@@ -1385,12 +1385,12 @@
 <tr class="a">
 <td></td>
 <td><a class="externalLink" href="http://checkstyle.sourceforge.net/config_whitespace.html#WhitespaceAfter">WhitespaceAfter</a></td>
-<td>10</td>
+<td>12</td>
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td></tr>
 <tr class="b">
 <td></td>
 <td><a class="externalLink" href="http://checkstyle.sourceforge.net/config_whitespace.html#WhitespaceAround">WhitespaceAround</a></td>
-<td>3</td>
+<td>1</td>
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td></tr></table></div>
 <div class="section">
 <h2>Details<a name="Details"></a></h2>
@@ -4900,46 +4900,34 @@
 <th>Line</th></tr>
 <tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
+<td>imports</td>
+<td>UnusedImports</td>
+<td>Unused import - java.util.logging.Logger.</td>
+<td>35</td></tr>
+<tr class="a">
+<td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>javadoc</td>
 <td>JavadocMethod</td>
 <td>Missing a Javadoc comment.</td>
-<td>54</td></tr>
-<tr class="a">
-<td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
-<td>design</td>
-<td>DesignForExtension</td>
-<td>Class 'GridFsDAO' looks like designed for extension (can be subclassed), but the method 'createFile' does not have javadoc that explains how to do that safely. If class is not designed for extension consider making the class 'GridFsDAO' final or making the method 'createFile' static/final/abstract/empty, or adding allowed annotation for the method.</td>
-<td>58</td></tr>
+<td>62</td></tr>
 <tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>naming</td>
 <td>LocalVariableName</td>
 <td>Name '_id' must match pattern '^[a-z][a-zA-Z0-9]*$'.</td>
-<td>85</td></tr>
+<td>104</td></tr>
 <tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>naming</td>
 <td>LocalVariableName</td>
 <td>Name '_id' must match pattern '^[a-z][a-zA-Z0-9]*$'.</td>
-<td>94</td></tr>
+<td>113</td></tr>
 <tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>naming</td>
 <td>LocalVariableName</td>
 <td>Name '_filename' must match pattern '^[a-z][a-zA-Z0-9]*$'.</td>
-<td>117</td></tr>
-<tr class="a">
-<td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
-<td>design</td>
-<td>DesignForExtension</td>
-<td>Class 'GridFsDAO' looks like designed for extension (can be subclassed), but the method 'deleteFile' does not have javadoc that explains how to do that safely. If class is not designed for extension consider making the class 'GridFsDAO' final or making the method 'deleteFile' static/final/abstract/empty, or adding allowed annotation for the method.</td>
-<td>131</td></tr>
-<tr class="b">
-<td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
-<td>design</td>
-<td>DesignForExtension</td>
-<td>Class 'GridFsDAO' looks like designed for extension (can be subclassed), but the method 'deleteChunksCollection' does not have javadoc that explains how to do that safely. If class is not designed for extension consider making the class 'GridFsDAO' final or making the method 'deleteChunksCollection' static/final/abstract/empty, or adding allowed annotation for the method.</td>
-<td>175</td></tr></table></div>
+<td>136</td></tr></table></div>
 <div class="section">
 <h3 id="org.restheart.db.GridFsRepository.java">org/restheart/db/GridFsRepository.java</h3>
 <table border="0" class="bodyTable">
@@ -18800,13 +18788,13 @@
 <tr class="b">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>whitespace</td>
-<td>WhitespaceAround</td>
+<td>WhitespaceAfter</td>
 <td>'if' is not followed by whitespace.</td>
 <td>47</td></tr>
 <tr class="a">
 <td><img src="images/icon_error_sml.gif" alt="" />&#160;Error</td>
 <td>whitespace</td>
-<td>WhitespaceAround</td>
+<td>WhitespaceAfter</td>
 <td>'if' is not followed by whitespace.</td>
 <td>53</td></tr></table></div>
 <div class="section">
