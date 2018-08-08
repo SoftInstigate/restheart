@@ -19,6 +19,7 @@ package org.restheart.db;
  */
 import com.mongodb.DuplicateKeyException;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoGridFSException;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
 import com.mongodb.client.gridfs.model.GridFSFile;
@@ -160,7 +161,13 @@ public class GridFsDAO implements GridFsRepository {
             }
         }
 
-        gridFSBucket.delete(fileId);
+        // Even checking the existence of file before,
+        // It's possible that the is already deleted at this point (due to concurrency problems).
+        try {
+            gridFSBucket.delete(fileId);
+        } catch (MongoGridFSException e) {
+            return new OperationResult(HttpStatus.SC_NOT_FOUND);
+        }
 
         return new OperationResult(HttpStatus.SC_NO_CONTENT);
     }
