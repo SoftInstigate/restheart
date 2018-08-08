@@ -25,10 +25,6 @@ import org.restheart.db.OperationResult;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
-import org.restheart.handlers.metadata.InvalidMetadataException;
-import org.restheart.metadata.Relationship;
-import org.restheart.metadata.checkers.RequestChecker;
-import org.restheart.metadata.transformers.RequestTransformer;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -122,54 +118,10 @@ public class PatchCollectionHandler extends PipedHttpHandler {
             return;
         }
 
-        BsonDocument content = _content.asDocument();
+        final BsonDocument content = _content.asDocument();
 
-        // check RELS metadata
-        if (content.containsKey(Relationship.RELATIONSHIPS_ELEMENT_NAME)) {
-            try {
-                Relationship.getFromJson(content);
-            } catch (InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        context,
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong relationships definition. "
-                        + ex.getMessage(), ex);
-                next(exchange, context);
-                return;
-            }
-        }
-
-        // check RT metadata
-        if (content.containsKey(RequestTransformer.RTS_ELEMENT_NAME)) {
-            try {
-                RequestTransformer.getFromJson(content);
-            } catch (InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        context,
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong representation transformer definition. "
-                        + ex.getMessage(), ex);
-                next(exchange, context);
-                return;
-            }
-        }
-
-        // check SC metadata
-        if (content.containsKey(RequestChecker.ROOT_KEY)) {
-            try {
-                RequestChecker.getFromJson(content);
-            } catch (InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        context,
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong checker definition. "
-                        + ex.getMessage(), ex);
-                next(exchange, context);
-                return;
-            }
+        if (isInvalidMetadata(content, exchange, context)) {
+            return;
         }
 
         OperationResult result = getDatabase()
@@ -208,4 +160,5 @@ public class PatchCollectionHandler extends PipedHttpHandler {
 
         next(exchange, context);
     }
+
 }

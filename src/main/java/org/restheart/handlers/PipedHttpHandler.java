@@ -6,8 +6,13 @@ import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
+import org.bson.BsonDocument;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
+import org.restheart.handlers.metadata.InvalidMetadataException;
+import org.restheart.metadata.Relationship;
+import org.restheart.metadata.checkers.RequestChecker;
+import org.restheart.metadata.transformers.RequestTransformer;
 import org.restheart.security.AccessManager;
 import org.restheart.security.handlers.AccessManagerHandler;
 import org.restheart.security.handlers.AuthTokenInjecterHandler;
@@ -15,6 +20,8 @@ import org.restheart.security.handlers.AuthenticationCallHandler;
 import org.restheart.security.handlers.AuthenticationConstraintHandler;
 import org.restheart.security.handlers.AuthenticationMechanismsHandler;
 import org.restheart.security.handlers.SecurityInitialHandler;
+import org.restheart.utils.HttpStatus;
+import org.restheart.utils.ResponseHelper;
 
 /**
  *
@@ -120,5 +127,54 @@ public abstract class PipedHttpHandler implements HttpHandler {
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }
+    }
+
+    protected boolean isInvalidMetadata(BsonDocument content, HttpServerExchange exchange, RequestContext context) throws Exception {
+        // check RELS metadata
+        if (content.containsKey(Relationship.RELATIONSHIPS_ELEMENT_NAME)) {
+            try {
+                Relationship.getFromJson(content);
+            } catch (InvalidMetadataException ex) {
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "wrong relationships definition. "
+                        + ex.getMessage(), ex);
+                next(exchange, context);
+                return true;
+            }
+        }
+        // check RT metadata
+        if (content.containsKey(RequestTransformer.RTS_ELEMENT_NAME)) {
+            try {
+                RequestTransformer.getFromJson(content);
+            } catch (InvalidMetadataException ex) {
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "wrong representation transformer definition. "
+                        + ex.getMessage(), ex);
+                next(exchange, context);
+                return true;
+            }
+        }
+        // check SC metadata
+        if (content.containsKey(RequestChecker.ROOT_KEY)) {
+            try {
+                RequestChecker.getFromJson(content);
+            } catch (InvalidMetadataException ex) {
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "wrong checker definition. "
+                        + ex.getMessage(), ex);
+                next(exchange, context);
+                return true;
+            }
+        }
+        return false;
     }
 }
