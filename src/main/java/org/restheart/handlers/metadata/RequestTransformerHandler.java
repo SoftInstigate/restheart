@@ -51,13 +51,13 @@ public class RequestTransformerHandler
     public RequestTransformerHandler(PipedHttpHandler next) {
         super(next);
     }
-    
+
     @Override
-    boolean doesGlobalTransformerAppy(GlobalTransformer gt, 
-            HttpServerExchange exchange, 
+    boolean doesGlobalTransformerAppy(GlobalTransformer gt,
+            HttpServerExchange exchange,
             RequestContext context) {
-        return gt.getPhase() == PHASE.REQUEST &&
-                gt.resolve(exchange, context);
+        return gt.getPhase() == PHASE.REQUEST
+                && gt.resolve(exchange, context);
     }
 
     @Override
@@ -105,30 +105,6 @@ public class RequestTransformerHandler
     }
 
     @Override
-    void applyDbTransformer(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws InvalidMetadataException {
-        List<RequestTransformer> dbRts
-                = RequestTransformer
-                        .getFromJson(context.getDbProps());
-
-        applyTransformLogic(exchange, context, dbRts);
-    }
-
-    @Override
-    void applyCollRTransformer(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws InvalidMetadataException {
-        List<RequestTransformer> collRts
-                = RequestTransformer
-                        .getFromJson(context.getCollectionProps());
-
-        applyTransformLogic(exchange, context, collRts);
-    }
-    
-    @Override
     void applyGlobalTransformers(HttpServerExchange exchange, RequestContext context) {
         // execture global request tranformers
         getGlobalTransformers().stream()
@@ -143,26 +119,27 @@ public class RequestTransformerHandler
                     } else if (context.getContent().isArray()) {
                         context.getContent().asArray().forEach(doc -> {
                             gt.transform(
-                                exchange,
-                                context,
-                                doc);
+                                    exchange,
+                                    context,
+                                    doc);
                         });
                     }
                 });
     }
 
-    private void applyTransformLogic(
+    @Override
+    void applyTransformLogic(
             HttpServerExchange exchange,
             RequestContext context,
             List<RequestTransformer> rts)
             throws InvalidMetadataException {
         NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
-        
+
         // executure request tranformers
         rts.stream().filter((rt)
                 -> (rt.getPhase() == RequestTransformer.PHASE.REQUEST))
-                .forEachOrdered((rt) -> {
-                    
+                .forEachOrdered((RequestTransformer rt) -> {
+
                     Transformer t = (Transformer) nsf
                             .get("transformers", rt.getName());
 
