@@ -60,13 +60,13 @@ public class ResponseTransformerHandler
     public ResponseTransformerHandler(PipedHttpHandler next) {
         super(next);
     }
-    
+
     @Override
-    boolean doesGlobalTransformerAppy(GlobalTransformer gt, 
-            HttpServerExchange exchange, 
+    boolean doesGlobalTransformerAppy(GlobalTransformer gt,
+            HttpServerExchange exchange,
             RequestContext context) {
-        return gt.getPhase() == PHASE.RESPONSE &&
-                gt.resolve(exchange, context);
+        return gt.getPhase() == PHASE.RESPONSE
+                && gt.resolve(exchange, context);
     }
 
     @Override
@@ -74,7 +74,6 @@ public class ResponseTransformerHandler
         // must also apply if global transformers are present
         // also         "error applying transformer: missing 'rts' element; it must be an array"
 
-        
         return (!context.isInError()
                 && (context.isDocument()
                 || context.isBulkDocuments()
@@ -109,31 +108,7 @@ public class ResponseTransformerHandler
                 && context.getDbProps()
                         .containsKey(RequestTransformer.RTS_ELEMENT_NAME));
     }
-    
-    @Override
-    void applyDbTransformer(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws InvalidMetadataException {
-        List<RequestTransformer> dbRts
-                = RequestTransformer
-                        .getFromJson(context.getDbProps());
 
-        applyTransformLogic(exchange, context, dbRts);
-    }
-
-    @Override
-    void applyCollRTransformer(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws InvalidMetadataException {
-        List<RequestTransformer> collRts
-                = RequestTransformer
-                        .getFromJson(context.getCollectionProps());
-
-        applyTransformLogic(exchange, context, collRts);
-    }
-    
     @Override
     void applyGlobalTransformers(HttpServerExchange exchange, RequestContext context) {
         // execture global response tranformers
@@ -164,7 +139,8 @@ public class ResponseTransformerHandler
                 });
     }
 
-    private void applyTransformLogic(
+    @Override
+    void applyTransformLogic(
             HttpServerExchange exchange,
             RequestContext context,
             List<RequestTransformer> rts)
