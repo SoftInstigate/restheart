@@ -32,7 +32,6 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Logger;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.BsonValue;
