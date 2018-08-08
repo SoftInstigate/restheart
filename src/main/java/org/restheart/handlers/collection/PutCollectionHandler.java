@@ -97,56 +97,10 @@ public class PutCollectionHandler extends PipedHttpHandler {
             return;
         }
 
-        BsonDocument content = _content.asDocument();
+        final BsonDocument content = _content.asDocument();
 
-        // check RELS metadata
-        if (content.containsKey(Relationship.RELATIONSHIPS_ELEMENT_NAME)) {
-            try {
-                Relationship.getFromJson(content);
-            } catch (InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        context,
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong relationships definition. " + ex.getMessage(),
-                         ex);
-                next(exchange, context);
-                return;
-            }
-        }
-
-        // check RT metadata
-        if (content.containsKey(RequestTransformer.RTS_ELEMENT_NAME)) {
-            try {
-                RequestTransformer.getFromJson(content);
-            } catch (InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        context,
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong representation transformer definition. "
-                        + ex.getMessage(),
-                        ex);
-                next(exchange, context);
-                return;
-            }
-        }
-
-        // check SC metadata
-        if (content.containsKey(RequestChecker.ROOT_KEY)) {
-            try {
-                RequestChecker.getFromJson(content);
-            } catch (InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        context,
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong checker definition. "
-                        + ex.getMessage(),
-                        ex);
-                next(exchange, context);
-                return;
-            }
+        if (isInvalidMetadata(content, exchange, context)) {
+            return;
         }
 
         boolean updating = context.getCollectionProps() != null;
