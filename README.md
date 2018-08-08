@@ -9,16 +9,14 @@ The Web API for MongoDB _made with :heart: by [SoftInstigate](http://www.softins
 
 ## Table of Contents
 
-- [RESTHeart](#restheart)
-    - [Table of Contents](#table-of-contents)
-    - [Summary](#summary)
-    - [Setup](#setup)
-    - [How to Build](#how-to-build)
-    - [Integration Tests](#integration-tests)
-    - [Maven Dependencies](#maven-dependencies)
-        - [Snapshot Builds](#snapshot-builds)
-        - [Maven Site](#maven-site)
-    - [Continuous Integration](#continuous-integration)
+- [Summary](#summary)
+- [Setup](#setup)
+- [How to Build](#how-to-build)
+- [Integration Tests](#integration-tests)
+- [Maven Dependencies](#maven-dependencies)
+    - [Snapshot Builds](#snapshot-builds)
+    - [Maven Site](#maven-site)
+- [Continuous Integration](#continuous-integration)
 
 ## Summary
 
