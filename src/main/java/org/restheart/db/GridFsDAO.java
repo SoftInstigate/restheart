@@ -149,14 +149,17 @@ public class GridFsDAO implements GridFsRepository {
         if (file == null) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
         } else if (checkEtag) {
-            Object oldEtag = file.getMetadata().get("_etag");
+            Document metadata = file.getMetadata();
+            if (metadata != null) {
+                Object oldEtag = metadata.get("_etag");
 
-            if (oldEtag != null) {
-                if (requestEtag == null) {
-                    return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
-                } else if (!Objects.equals(oldEtag.toString(), requestEtag)) {
-                    return new OperationResult(
-                            HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+                if (oldEtag != null) {
+                    if (requestEtag == null) {
+                        return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
+                    } else if (!Objects.equals(oldEtag.toString(), requestEtag)) {
+                        return new OperationResult(
+                                HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+                    }
                 }
             }
         }
