@@ -448,59 +448,23 @@ public class RequestContext {
 
     private String unmapPathTemplateUri(String mappedUri) {
         String ret = URLUtils.removeTrailingSlashes(mappedUri);
-        String rewriteUri;
+        String rewriteUri = replaceParamsWithActualValues();
 
-        // path template with variables resolved to actual values
-        rewriteUri = this.pathTemplateMatch.getMatchedTemplate();
-
-        // remove trailing wildcard from template
-        if (rewriteUri.endsWith("/*")) {
-            rewriteUri = rewriteUri.substring(0, rewriteUri.length() - 2);
-        }
-
-        // collect params
-        this.pathTemplateMatch
-                .getParameters()
-                .keySet()
-                .stream()
-                .filter(key -> !key.equals("*"))
-                .collect(Collectors.toMap(
-                        key -> key,
-                        key -> this.pathTemplateMatch
-                                .getParameters().get(key)));
-
-        // replace params with actual values
-        for (String key : this.pathTemplateMatch
-                .getParameters().keySet()) {
-            rewriteUri = rewriteUri.replace(
-                    "{".concat(key).concat("}"),
-                    this.pathTemplateMatch
-                            .getParameters().get(key));
-        }
-
-        String whatUri = this.whatUri;
-
+        String replacedWhatUri = replaceParamsWithinWhatUri();
         // replace params with in whatUri
         // eg what: /{account}, where: /{account/*
-        for (String key : this.pathTemplateMatch
-                .getParameters().keySet()) {
-            whatUri = whatUri.replace(
-                    "{".concat(key).concat("}"),
-                    this.pathTemplateMatch
-                            .getParameters().get(key));
-        }
 
         // now replace mappedUri with resolved path template
-        if (whatUri.equals("*")) {
+        if (replacedWhatUri.equals("*")) {
             if (!this.whereUri.equals(SLASH)) {
                 ret = ret.replaceFirst("^" + rewriteUri, "");
             }
         } else if (!this.whereUri.equals(SLASH)) {
             ret = URLUtils.removeTrailingSlashes(
-                    ret.replaceFirst("^" + rewriteUri, whatUri));
+                    ret.replaceFirst("^" + rewriteUri, replacedWhatUri));
         } else {
             ret = URLUtils.removeTrailingSlashes(
-                    URLUtils.removeTrailingSlashes(whatUri) + ret);
+                    URLUtils.removeTrailingSlashes(replacedWhatUri) + ret);
         }
 
         if (ret.isEmpty()) {
@@ -547,16 +511,48 @@ public class RequestContext {
 
     private String mapPathTemplateUri(String unmappedUri) {
         String ret = URLUtils.removeTrailingSlashes(unmappedUri);
-        String rewriteUri;
+        String rewriteUri = replaceParamsWithActualValues();
+        String replacedWhatUri = replaceParamsWithinWhatUri();
 
+        // now replace mappedUri with resolved path template
+        if (replacedWhatUri.equals("*")) {
+            if (!this.whereUri.equals(SLASH)) {
+                return rewriteUri + unmappedUri;
+            }
+        } else {
+            ret = URLUtils.removeTrailingSlashes(
+                    ret.replaceFirst("^" + replacedWhatUri, rewriteUri));
+        }
+
+        if (ret.isEmpty()) {
+            ret = SLASH;
+        }
+
+        return ret;
+    }
+
+    private String replaceParamsWithinWhatUri() {
+        String uri = this.whatUri;
+        // replace params within whatUri
+        // eg what: /{prefix}_db, where: /{prefix}/*
+        for (String key : this.pathTemplateMatch
+                .getParameters().keySet()) {
+            uri = uri.replace(
+                    "{".concat(key).concat("}"),
+                    this.pathTemplateMatch
+                            .getParameters().get(key));
+        }
+        return uri;
+    }
+
+    private String replaceParamsWithActualValues() {
+        String rewriteUri;
         // path template with variables resolved to actual values
         rewriteUri = this.pathTemplateMatch.getMatchedTemplate();
-
         // remove trailing wildcard from template
         if (rewriteUri.endsWith("/*")) {
             rewriteUri = rewriteUri.substring(0, rewriteUri.length() - 2);
         }
-
         // collect params
         this.pathTemplateMatch
                 .getParameters()
@@ -567,7 +563,6 @@ public class RequestContext {
                         key -> key,
                         key -> this.pathTemplateMatch
                                 .getParameters().get(key)));
-
         // replace params with actual values
         for (String key : this.pathTemplateMatch
                 .getParameters().keySet()) {
@@ -576,34 +571,7 @@ public class RequestContext {
                     this.pathTemplateMatch
                             .getParameters().get(key));
         }
-
-        String whatUri = this.whatUri;
-
-        // replace params with in whatUri
-        // eg what: /{prefix}_db, where: /{prefix}/*
-        for (String key : this.pathTemplateMatch
-                .getParameters().keySet()) {
-            whatUri = whatUri.replace(
-                    "{".concat(key).concat("}"),
-                    this.pathTemplateMatch
-                            .getParameters().get(key));
-        }
-
-        // now replace mappedUri with resolved path template
-        if (whatUri.equals("*")) {
-            if (!this.whereUri.equals(SLASH)) {
-                return rewriteUri + unmappedUri;
-            }
-        } else {
-            ret = URLUtils.removeTrailingSlashes(
-                    ret.replaceFirst("^" + whatUri, rewriteUri));
-        }
-
-        if (ret.isEmpty()) {
-            ret = SLASH;
-        }
-
-        return ret;
+        return rewriteUri;
     }
 
     /**
@@ -1584,7 +1552,7 @@ public class RequestContext {
     public boolean isSchemaStore() {
         return this.type == TYPE.SCHEMA_STORE;
     }
-    
+
     /**
      * helper method to check request resource type
      *
@@ -1593,7 +1561,7 @@ public class RequestContext {
     public boolean isRootSize() {
         return this.type == TYPE.ROOT_SIZE;
     }
-    
+
     /**
      * helper method to check request resource type
      *
@@ -1602,7 +1570,7 @@ public class RequestContext {
     public boolean isDbSize() {
         return this.type == TYPE.DB_SIZE;
     }
-    
+
     /**
      * helper method to check request resource type
      *
@@ -1620,7 +1588,7 @@ public class RequestContext {
     public boolean isFilesBucketSize() {
         return this.type == TYPE.FILES_BUCKET_SIZE;
     }
-    
+
     /**
      * helper method to check request resource type
      *
@@ -1629,7 +1597,7 @@ public class RequestContext {
     public boolean isSchemaStoreSize() {
         return this.type == TYPE.SCHEMA_STORE_SIZE;
     }
-    
+
     /**
      * helper method to check request resource type
      *
