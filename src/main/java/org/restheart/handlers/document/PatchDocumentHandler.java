@@ -75,7 +75,7 @@ public class PatchDocumentHandler extends PipedHttpHandler {
 
         BsonValue _content = context.getContent();
 
-        if (isInvalidContent(_content, exchange, context)) {
+        if (isNotAcceptableContent(_content, exchange, context)) {
             return;
         }
 
