@@ -18,7 +18,6 @@
 package org.restheart.handlers.collection;
 
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.db.OperationResult;
@@ -134,20 +133,7 @@ public class PatchCollectionHandler extends PipedHttpHandler {
                         true,
                         context.isETagCheckRequired());
 
-        context.setDbOperationResult(result);
-
-        // inject the etag
-        if (result.getEtag() != null) {
-            ResponseHelper.injectEtagHeader(exchange, result.getEtag());
-        }
-
-        if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.endExchangeWithMessage(exchange,
-                    context,
-                    HttpStatus.SC_CONFLICT,
-                    "The collection's ETag must be provided using the '"
-                    + Headers.IF_MATCH + "' header.");
-            next(exchange, context);
+        if (isResponseInConflict(context, result, exchange)) {
             return;
         }
 
