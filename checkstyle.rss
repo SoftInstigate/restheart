@@ -25,8 +25,8 @@ under the License.
     <language>en-us</language>
     <copyright>&#169;2014 - 2018 SoftInstigate</copyright>
     <item>
-      <title>File: 216,
-             Errors: 3413,
+      <title>File: 215,
+             Errors: 3372,
              Warnings: 0,
              Infos: 0
       </title>
@@ -489,7 +489,7 @@ under the License.
                   0
                 </td>
                 <td>
-                  24
+                  33
                 </td>
               </tr>
                           <tr>
@@ -1526,20 +1526,6 @@ under the License.
                 </td>
                 <td>
                   18
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.db.Repository.java">org/restheart/db/Repository.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  50
                 </td>
               </tr>
                           <tr>
