@@ -157,16 +157,7 @@ public class Bootstrapper {
             startServer(false);
         } else {
             if (OSChecker.isWindows()) {
-                String instanceName = getInstanceName();
-
-                LOGGER.info(STARTING
-                        + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
-                        + INSTANCE
-                        + ansi().fg(RED).bold().a(instanceName).reset().toString());
-
-                if (RESTHEART_VERSION != null) {
-                    LOGGER.info(VERSION, ansi().fg(MAGENTA).bold().a(RESTHEART_VERSION).reset().toString());
-                }
+                logWindowsStart();
 
                 LOGGER.error("Fork is not supported on Windows");
 
@@ -217,6 +208,19 @@ public class Bootstrapper {
                     logErrorAndExit("Error forking", t, false, false, -1);
                 }
             }
+        }
+    }
+
+    private static void logWindowsStart() {
+        String instanceName = getInstanceName();
+        
+        LOGGER.info(STARTING
+                + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
+                + INSTANCE
+                + ansi().fg(RED).bold().a(instanceName).reset().toString());
+        
+        if (RESTHEART_VERSION != null) {
+            LOGGER.info(VERSION, ansi().fg(MAGENTA).bold().a(RESTHEART_VERSION).reset().toString());
         }
     }
 
@@ -358,16 +362,7 @@ public class Bootstrapper {
      * @param fork
      */
     private static void startServer(boolean fork) {
-        String instanceName = getInstanceName();
-
-        LOGGER.info(STARTING
-                + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
-                + INSTANCE
-                + ansi().fg(RED).bold().a(instanceName).reset().toString());
-
-        if (RESTHEART_VERSION != null) {
-            LOGGER.info(VERSION, ansi().fg(MAGENTA).bold().a(RESTHEART_VERSION).reset().toString());
-        }
+        logWindowsStart();
 
         Path pidFilePath = FileUtils.getPidFilePath(
                 FileUtils.getFileAbsoultePathHash(CONF_FILE_PATH));
