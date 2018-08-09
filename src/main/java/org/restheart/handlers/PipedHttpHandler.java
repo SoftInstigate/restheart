@@ -181,7 +181,7 @@ public abstract class PipedHttpHandler implements HttpHandler {
         return false;
     }
 
-    protected boolean isInvalidContent(BsonValue _content, HttpServerExchange exchange, RequestContext context) throws Exception {
+    protected boolean isNotAcceptableContent(BsonValue _content, HttpServerExchange exchange, RequestContext context) throws Exception {
         // cannot proceed with no data
         if (_content == null) {
             ResponseHelper.endExchangeWithMessage(
