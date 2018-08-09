@@ -5,11 +5,13 @@ import io.undertow.security.api.AuthenticationMode;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
+import org.restheart.db.OperationResult;
 import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.metadata.Relationship;
 import org.restheart.metadata.checkers.RequestChecker;
@@ -206,6 +208,38 @@ public abstract class PipedHttpHandler implements HttpHandler {
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
+            next(exchange, context);
+            return true;
+        }
+        return false;
+    }
+
+    protected boolean isResponseInConflict(RequestContext context, OperationResult result, HttpServerExchange exchange) throws Exception {
+        context.setDbOperationResult(result);
+        // inject the etag
+        if (result.getEtag() != null) {
+            ResponseHelper.injectEtagHeader(exchange, result.getEtag());
+        }
+        if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_CONFLICT,
+                    "The document's ETag must be provided using the '"
+                    + Headers.IF_MATCH
+                    + "' header");
+            next(exchange, context);
+            return true;
+        }
+        // handle the case of duplicate key error
+        if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_EXPECTATION_FAILED,
+                    "A duplicate key error occurred. "
+                    + "The patched document does not fulfill "
+                    + "an unique index constraint");
             next(exchange, context);
             return true;
         }
