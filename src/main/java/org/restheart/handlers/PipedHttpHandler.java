@@ -7,6 +7,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.handlers.metadata.InvalidMetadataException;
@@ -174,6 +175,39 @@ public abstract class PipedHttpHandler implements HttpHandler {
                 next(exchange, context);
                 return true;
             }
+        }
+        return false;
+    }
+
+    protected boolean isInvalidContent(BsonValue _content, HttpServerExchange exchange, RequestContext context) throws Exception {
+        // cannot proceed with no data
+        if (_content == null) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "no data provided");
+            next(exchange, context);
+            return true;
+        }
+        // cannot proceed with an array
+        if (!_content.isDocument()) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "data must be a json object");
+            next(exchange, context);
+            return true;
+        }
+        if (_content.asDocument().isEmpty()) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "no data provided");
+            next(exchange, context);
+            return true;
         }
         return false;
     }

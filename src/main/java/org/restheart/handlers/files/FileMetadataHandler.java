@@ -77,37 +77,7 @@ public class FileMetadataHandler extends PipedHttpHandler {
 
         BsonValue _content = context.getContent();
 
-        // cannot proceed with no data
-        if (_content == null) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "no data provided");
-            next(exchange, context);
-            return;
-        }
-
-        // cannot proceed with an array
-        if (!_content.isDocument()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "data must be a json object");
-            next(exchange, context);
-            return;
-        }
-
-        if (_content.asDocument().isEmpty()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "no data provided");
-            next(exchange, context);
-            return;
-        }
+        if (isInvalidContent(_content, exchange, context)) return;
 
         if (context.getFilePath() != null) {
             // PUT request with non null data will be dealt with by previous handler (PutFileHandler)

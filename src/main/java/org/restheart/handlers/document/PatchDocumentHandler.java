@@ -73,38 +73,10 @@ public class PatchDocumentHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-        
+
         BsonValue _content = context.getContent();
 
-        // cannot PATCH with no data
-        if (_content == null) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "no data provided");
-            next(exchange, context);
-            return;
-        }
-
-        // cannot PATCH an array
-        if (!_content.isDocument()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "data must be a json object");
-            next(exchange, context);
-            return;
-        }
-        
-        if (_content.asDocument().isEmpty()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "no data provided");
-            next(exchange, context);
+        if (isInvalidContent(_content, exchange, context)) {
             return;
         }
 
@@ -153,7 +125,7 @@ public class PatchDocumentHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-        
+
         // handle the case of duplicate key error
         if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
             ResponseHelper.endExchangeWithMessage(
@@ -161,8 +133,8 @@ public class PatchDocumentHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_EXPECTATION_FAILED,
                     "A duplicate key error occurred. "
-                            + "The patched document does not fulfill "
-                            + "an unique index constraint");
+                    + "The patched document does not fulfill "
+                    + "an unique index constraint");
 
             next(exchange, context);
             return;
