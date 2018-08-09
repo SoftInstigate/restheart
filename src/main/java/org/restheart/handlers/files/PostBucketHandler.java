@@ -30,6 +30,9 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static org.restheart.utils.URLUtils.getReferenceLink;
 
 /**
@@ -37,6 +40,7 @@ import static org.restheart.utils.URLUtils.getReferenceLink;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class PostBucketHandler extends PipedHttpHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PostBucketHandler.class);
     private final GridFsRepository gridFsDAO;
 
     public PostBucketHandler() {
@@ -96,6 +100,7 @@ public class PostBucketHandler extends PipedHttpHandler {
             if (t instanceof DuplicateKeyException) {
                 // update not supported
                 String errMsg = "file resource update is not yet implemented";
+                LOGGER.error(errMsg, t);
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
                         context,

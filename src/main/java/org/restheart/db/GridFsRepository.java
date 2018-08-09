@@ -30,12 +30,23 @@ import org.bson.BsonValue;
 public interface GridFsRepository {
 
     OperationResult createFile(
-            Database db, 
-            String dbName, 
-            String bucketName, 
-            BsonDocument metadata, 
-            Path filePath) 
+            Database db,
+            String dbName,
+            String bucketName,
+            BsonDocument metadata,
+            Path filePath)
             throws IOException, DuplicateKeyException;
+
+    OperationResult upsertFile(
+            final Database db,
+            final String dbName,
+            final String bucketName,
+            final BsonDocument metadata,
+            final Path filePath,
+            final BsonValue fileId,
+            final String requestEtag,
+            final boolean checkEtag)
+            throws IOException;
 
     OperationResult deleteFile(
             Database db, 

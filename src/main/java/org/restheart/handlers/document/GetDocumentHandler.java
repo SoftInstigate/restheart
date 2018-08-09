@@ -25,6 +25,7 @@ import java.util.HashSet;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.conversions.Bson;
+import org.restheart.Bootstrapper;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -34,12 +35,15 @@ import org.restheart.utils.JsonUtils;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GetDocumentHandler extends PipedHttpHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GetDocumentHandler.class);
 
     /**
      * Default ctor
