@@ -50,7 +50,7 @@ public class AggregationPipeline extends AbstractAggregationOperation {
      * <p>
      * Example:      <code>
      *
-     * aggregations: [
+     * aggrs: [
      * {
      *   "type":"pipeline",
      *   "uri":"test_ap",

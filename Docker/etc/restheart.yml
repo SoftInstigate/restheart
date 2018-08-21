@@ -36,6 +36,12 @@ default-representation-format: PLAIN_JSON
 
 ansi-console: true
 
+#### Allow unescaped characters in URL
+# Starting with Undertow 1.4.23 URLs validation became much stricter.
+# However, this is breaking existing clients. Now you can decide which behaviour you prefer
+
+allow-unescaped-characters-in-url: true
+
 #### SSL Configuration
 
 # Configure the keystore to enable the https listener.
@@ -59,7 +65,7 @@ use-embedded-keystore: true
 
 # Specify the mongodb connection using a Mongo Client URI.
 # The format of the URI is:
-#   mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
+#    mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
 #
 # The URI option authSource allows to specify the authetication database, example:
 # mongodb://user:secret@127.0.0.1/?authSource=authdb
@@ -81,12 +87,12 @@ mongo-mounts:
     - what: "*"
       where: /
 
-#### Static Web Resources
+#### Static Web Resources
 
 # Static web resources to bind to the specified URL.
 # The 'what' property is the path of the directory containing the resources.
-# The path is either absolute (starting with /) or relative to the restheart.jar directory.
-# If embedded is true, the resources are either included in the restheart.jar or in the classpath.
+# The path is either absolute (starting with /) or relative to the restheart.jar directory
+# If embedded is true, the resources are either included in the restheart.jar or in the classpath
 
 static-resources-mounts:
     - what: browser
@@ -103,7 +109,7 @@ static-resources-mounts:
 
 #initializer-class: org.restheart.init.TestInitializer
 
-#### Application Logic
+#### Application Logic
 
 # RESTHeart has a pipeline architecture where specialized undertow handlers are chained to serve the requests.
 # In order to provide additional application logic, custom hanlders pipes can be bound under the /_logic URL.
@@ -152,7 +158,7 @@ metadata-named-singletons:
         - name: checkContentSize
           class: org.restheart.metadata.checkers.ContentSizeChecker
 
-    # transformers group used by handlers:
+  # transformers group used by handlers:
     # org.restheart.handlers.metadata.RequestTransformerMetadataHandler and
     # org.restheart.handlers.metadata.ResponseTransformerMetadataHandler
     # More information in transformers javadoc
@@ -170,7 +176,7 @@ metadata-named-singletons:
         - name: writeResult
           class: org.restheart.metadata.transformers.WriteResultTransformer
         - name: hashProperties
-          class: org.restheart.metadata.transformers.HashTransformer
+          class: org.restheart.metadata.transformers.HashTransformer  
           
     # hooks group used by handler:
     # org.restheart.handlers.metadata.HookHandler
@@ -180,9 +186,6 @@ metadata-named-singletons:
       singletons:
         - name: snooper
           class: org.restheart.metadata.hooks.SnooperHook
-          args: 
-            string: foo
-            number: 1 
 
 ### Security
 
@@ -204,6 +207,7 @@ idm:
 access-manager:
     implementation-class: org.restheart.security.impl.SimpleAccessManager
     conf-file: ./etc/security.yml
+    
 # RESTHeart uses the BasicAuthenticationMechanism by default. 
 # A different mechanism can be specified via the auth-mechanism configuration option
 # the implementation-class must specify a factory class implementing
@@ -261,6 +265,8 @@ aggregation-check-operators: true
 # log-file-path: to specify the log file path (default value: restheart.log in system temporary directory)
 # log-level: to set the log level. Value can be OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. (default value is INFO)
 # requests-log-level: log the request-response. 0 => no log, 1 => light log, 2 => detailed dump
+# requests-log-trace-headers: add the HTTP headers you want to be put on the MDC for logback. Use with %X{header-name} in logback.xml.
+#                             Useful for tracing support in the logs. Leave empty to deactivate this feature.
 # metrics-gathering-level: metrics gathering for which level? OFF => no gathering, ROOT => gathering at root level,
 #                          DATABASE => at db level, COLLECTION => at collection level
 # WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
@@ -268,9 +274,17 @@ aggregation-check-operators: true
 enable-log-file: true
 log-file-path: /var/log/restheart.log
 enable-log-console: true
-log-level: DEBUG
+log-level: INFO
 requests-log-level: 1
 metrics-gathering-level: DATABASE
+requests-log-trace-headers:
+#  - x-b3-traceid      # vv Zipkin headers, see https://github.com/openzipkin/b3-propagation
+#  - x-b3-spanid
+#  - x-b3-parentspanid
+#  - x-b3-sampled      # ^^
+#  - uber-trace-id     # jaeger header, see https://www.jaegertracing.io/docs/client-libraries/#trace-span-identity
+#  - traceparent       # vv opencensus.io headers, see https://github.com/w3c/distributed-tracing/blob/master/trace_context/HTTP_HEADER_FORMAT.md
+#  - tracestate        # ^^
 
 #### ETag policy
 
@@ -285,8 +299,31 @@ etag-check-policy:
 
 #### Performace Settings
 
+## Read Performance
+
+default-pagesize: 100
+
+# default-pagesize is the number of documents returned when the pagesize query 
+# parameter is not specified
+# see https://restheart.org/learn/query-documents/#paging
+
+max-pagesize: 1000
+
+# max-pagesize sets the maximum allowed value of the pagesize query parameter
+# generally, the greater the pagesize, the more json serializan overhead occurs
+# the rule of thumb is not exeeding 1000
+
+cursor-batch-size: 1000
+
+# cursor-batch-size sets the mongodb cursor batchSize
+# see https://docs.mongodb.com/manual/reference/method/cursor.batchSize/
+# cursor-batch-size should be smaller or equal to the max-pagesize
+# the rule of thumb is setting cursor-batch-size equal to max-pagesize
+# a small cursor-batch-size (e.g. 101, the default mongodb batchSize)
+# speeds up requests with small pagesize
+
 ## Eager DB Cursor Preallocation Policy
-# In big collections, reading a far page involves skipping the db cursor for many documents resulting in a performance bottleneck.
+# In big collections, reading a far page involves skipping the db cursor for many documents resulting in a performance bottleneck
 # For instance, with default pagesize of 100, a GET with page=50.000 involves 500.000 skips on the db cursor.
 # The eager db cursor preallocation engine boosts up performaces (in some use cases, up to 1000%). the following options control its behavior.
 
@@ -357,7 +394,7 @@ connection-options:
     # The idle timeout in milliseconds after which the channel will be closed.
     # If the underlying channel already has a read or write timeout set 
     # the smaller of the two values will be used for read/write timeouts.
-    # Defaults to unlimited (-1).
+    # Defaults to unlimited (-1).
     IDLE_TIMEOUT: -1
     
     # The maximum allowed time of reading HTTP request in milliseconds.
@@ -366,7 +403,7 @@ connection-options:
     
     # The amount of time the connection can be idle with no current requests 
     # before it is closed;
-    # Defaults to unlimited (-1).
+    # Defaults to unlimited (-1).
     NO_REQUEST_TIMEOUT: -1
 
     # The maximum number of query parameters that are permitted in a request. 
@@ -401,4 +438,4 @@ connection-options:
     # unless the server does not have an accurate clock.
     # Defaults to true
     ALWAYS_SET_DATE: true
-    
+

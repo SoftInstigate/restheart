@@ -17,7 +17,7 @@
  */
 package org.restheart;
 
-import org.restheart.init.Initializer;
+import org.restheart.handlers.TracingInstrumentationHandler;
 import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.undertow.Handlers.path;
@@ -25,6 +25,7 @@ import static io.undertow.Handlers.pathTemplate;
 import static io.undertow.Handlers.resource;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
+import io.undertow.UndertowOptions;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.handlers.AllowedMethodsHandler;
@@ -61,8 +62,8 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
-import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.Color.MAGENTA;
+import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.fusesource.jansi.AnsiConsole;
 import static org.restheart.Configuration.RESTHEART_VERSION;
@@ -83,6 +84,7 @@ import org.restheart.handlers.injectors.CollectionPropsInjectorHandler;
 import org.restheart.handlers.injectors.DbPropsInjectorHandler;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.handlers.injectors.RequestContextInjectorHandler;
+import org.restheart.init.Initializer;
 import org.restheart.security.AccessManager;
 import org.restheart.security.AuthenticationMechanismFactory;
 import org.restheart.security.FullAccessManager;
@@ -155,16 +157,7 @@ public class Bootstrapper {
             startServer(false);
         } else {
             if (OSChecker.isWindows()) {
-                String instanceName = getInstanceName();
-
-                LOGGER.info(STARTING
-                        + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
-                        + INSTANCE
-                        + ansi().fg(RED).bold().a(instanceName).reset().toString());
-
-                if (RESTHEART_VERSION != null) {
-                    LOGGER.info(VERSION, ansi().fg(MAGENTA).bold().a(RESTHEART_VERSION).reset().toString());
-                }
+                logWindowsStart();
 
                 LOGGER.error("Fork is not supported on Windows");
 
@@ -215,6 +208,19 @@ public class Bootstrapper {
                     logErrorAndExit("Error forking", t, false, false, -1);
                 }
             }
+        }
+    }
+
+    private static void logWindowsStart() {
+        String instanceName = getInstanceName();
+        
+        LOGGER.info(STARTING
+                + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
+                + INSTANCE
+                + ansi().fg(RED).bold().a(instanceName).reset().toString());
+        
+        if (RESTHEART_VERSION != null) {
+            LOGGER.info(VERSION, ansi().fg(MAGENTA).bold().a(RESTHEART_VERSION).reset().toString());
         }
     }
 
@@ -356,16 +362,7 @@ public class Bootstrapper {
      * @param fork
      */
     private static void startServer(boolean fork) {
-        String instanceName = getInstanceName();
-
-        LOGGER.info(STARTING
-                + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
-                + INSTANCE
-                + ansi().fg(RED).bold().a(instanceName).reset().toString());
-
-        if (RESTHEART_VERSION != null) {
-            LOGGER.info(VERSION, ansi().fg(MAGENTA).bold().a(RESTHEART_VERSION).reset().toString());
-        }
+        logWindowsStart();
 
         Path pidFilePath = FileUtils.getPidFilePath(
                 FileUtils.getFileAbsoultePathHash(CONF_FILE_PATH));
@@ -434,7 +431,7 @@ public class Bootstrapper {
                                 t);
                     }
                 }
-            } catch (Throwable t) {
+            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException t) {
                 LOGGER.error(ansi().fg(RED).bold().a(
                         "Wrong configuration for intializer {}")
                         .reset().toString(),
@@ -644,6 +641,14 @@ public class Bootstrapper {
                 .setBuffersPerRegion(configuration.getBuffersPerRegion())
                 .setHandler(shutdownHandler);
 
+        // starting undertow 1.4.23 URL become much stricter 
+        // (undertow commit 09d40a13089dbff37f8c76d20a41bf0d0e600d9d)
+        // allow unescaped chars in URL (otherwise not allowed by default)
+        builder.setServerOption(
+                UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL,
+                configuration.isAllowUnescapedCharactersInUrl());
+        LOGGER.info("Allow unescaped characters in URL: {}", configuration.isAllowUnescapedCharactersInUrl());
+
         ConfigurationHelper.setConnectionOptions(builder, configuration);
 
         undertowServer = builder.build();
@@ -788,7 +793,10 @@ public class Bootstrapper {
      * @param accessManager
      * @return a GracefulShutdownHandler
      */
-    private static GracefulShutdownHandler getHandlersPipe(final AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager, final AccessManager accessManager) {
+    private static GracefulShutdownHandler getHandlersPipe(
+            final AuthenticationMechanism authenticationMechanism,
+            final IdentityManager identityManager,
+            final AccessManager accessManager) {
         PipedHttpHandler coreHandlerChain
                 = new AccountInjectorHandler(
                         new DbPropsInjectorHandler(
@@ -811,18 +819,21 @@ public class Bootstrapper {
                 .allMatch(url -> !isPathTemplate(url));
 
         final PipedHttpHandler baseChain = new MetricsInstrumentationHandler(
-                new RequestLoggerHandler(
-                        new CORSHandler(
-                                new OptionsHandler(
-                                        new BodyInjectorHandler(
-                                                new SecurityHandlerDispacher(
-                                                        coreHandlerChain,
-                                                        authenticationMechanism,
-                                                        identityManager,
-                                                        accessManager))))));
+                new TracingInstrumentationHandler(
+                        new RequestLoggerHandler(
+                                new CORSHandler(
+                                        new OptionsHandler(
+                                                new BodyInjectorHandler(
+                                                        new SecurityHandlerDispacher(
+                                                                coreHandlerChain,
+                                                                authenticationMechanism,
+                                                                identityManager,
+                                                                accessManager)))))));
 
         if (!allPathTemplates && !allPaths) {
-            LOGGER.error("No mongo resource mounted! Check your mongo-mounts. where url must be either all absolute paths or all path templates");
+            LOGGER.error("No mongo resource mounted! Check your mongo-mounts."
+                    + " where url must be either all absolute paths"
+                    + " or all path templates");
         } else {
             configuration.getMongoMounts().stream().forEach(m -> {
                 String url = (String) m.get(Configuration.MONGO_MOUNT_WHERE_KEY);
@@ -1066,22 +1077,24 @@ public class Bootstrapper {
                                         new BodyInjectorHandler(alHandler));
 
                         if (alSecured) {
-                            paths.addPrefixPath("/_logic" + alWhere, new RequestLoggerHandler(
-                                    new CORSHandler(
-                                            new SecurityHandlerDispacher(
-                                                    handler,
-                                                    authenticationMechanism,
-                                                    identityManager,
-                                                    accessManager))));
-                        } else {
-                            paths.addPrefixPath("/_logic" + alWhere,
+                            paths.addPrefixPath("/_logic" + alWhere, new TracingInstrumentationHandler(
                                     new RequestLoggerHandler(
                                             new CORSHandler(
                                                     new SecurityHandlerDispacher(
                                                             handler,
                                                             authenticationMechanism,
                                                             identityManager,
-                                                            new FullAccessManager()))));
+                                                            accessManager)))));
+                        } else {
+                            paths.addPrefixPath("/_logic" + alWhere,
+                                    new TracingInstrumentationHandler(
+                                            new RequestLoggerHandler(
+                                                    new CORSHandler(
+                                                            new SecurityHandlerDispacher(
+                                                                    handler,
+                                                                    authenticationMechanism,
+                                                                    identityManager,
+                                                                    new FullAccessManager())))));
                         }
 
                         LOGGER.info("URL {} bound to application logic handler {}."

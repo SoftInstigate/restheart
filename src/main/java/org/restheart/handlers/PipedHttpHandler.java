@@ -5,9 +5,17 @@ import io.undertow.security.api.AuthenticationMode;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import java.util.List;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
+import org.restheart.db.OperationResult;
+import org.restheart.handlers.metadata.InvalidMetadataException;
+import org.restheart.metadata.Relationship;
+import org.restheart.metadata.checkers.RequestChecker;
+import org.restheart.metadata.transformers.RequestTransformer;
 import org.restheart.security.AccessManager;
 import org.restheart.security.handlers.AccessManagerHandler;
 import org.restheart.security.handlers.AuthTokenInjecterHandler;
@@ -15,6 +23,8 @@ import org.restheart.security.handlers.AuthenticationCallHandler;
 import org.restheart.security.handlers.AuthenticationConstraintHandler;
 import org.restheart.security.handlers.AuthenticationMechanismsHandler;
 import org.restheart.security.handlers.SecurityInitialHandler;
+import org.restheart.utils.HttpStatus;
+import org.restheart.utils.ResponseHelper;
 
 /**
  *
@@ -120,5 +130,119 @@ public abstract class PipedHttpHandler implements HttpHandler {
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }
+    }
+
+    protected boolean isInvalidMetadata(BsonDocument content, HttpServerExchange exchange, RequestContext context) throws Exception {
+        // check RELS metadata
+        if (content.containsKey(Relationship.RELATIONSHIPS_ELEMENT_NAME)) {
+            try {
+                Relationship.getFromJson(content);
+            } catch (InvalidMetadataException ex) {
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "wrong relationships definition. "
+                        + ex.getMessage(), ex);
+                next(exchange, context);
+                return true;
+            }
+        }
+        // check RT metadata
+        if (content.containsKey(RequestTransformer.RTS_ELEMENT_NAME)) {
+            try {
+                RequestTransformer.getFromJson(content);
+            } catch (InvalidMetadataException ex) {
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "wrong representation transformer definition. "
+                        + ex.getMessage(), ex);
+                next(exchange, context);
+                return true;
+            }
+        }
+        // check SC metadata
+        if (content.containsKey(RequestChecker.ROOT_KEY)) {
+            try {
+                RequestChecker.getFromJson(content);
+            } catch (InvalidMetadataException ex) {
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "wrong checker definition. "
+                        + ex.getMessage(), ex);
+                next(exchange, context);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected boolean isNotAcceptableContent(BsonValue _content, HttpServerExchange exchange, RequestContext context) throws Exception {
+        // cannot proceed with no data
+        if (_content == null) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "no data provided");
+            next(exchange, context);
+            return true;
+        }
+        // cannot proceed with an array
+        if (!_content.isDocument()) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "data must be a json object");
+            next(exchange, context);
+            return true;
+        }
+        if (_content.asDocument().isEmpty()) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "no data provided");
+            next(exchange, context);
+            return true;
+        }
+        return false;
+    }
+
+    protected boolean isResponseInConflict(RequestContext context, OperationResult result, HttpServerExchange exchange) throws Exception {
+        context.setDbOperationResult(result);
+        // inject the etag
+        if (result.getEtag() != null) {
+            ResponseHelper.injectEtagHeader(exchange, result.getEtag());
+        }
+        if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_CONFLICT,
+                    "The document's ETag must be provided using the '"
+                    + Headers.IF_MATCH
+                    + "' header");
+            next(exchange, context);
+            return true;
+        }
+        // handle the case of duplicate key error
+        if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_EXPECTATION_FAILED,
+                    "A duplicate key error occurred. "
+                    + "The patched document does not fulfill "
+                    + "an unique index constraint");
+            next(exchange, context);
+            return true;
+        }
+        return false;
     }
 }

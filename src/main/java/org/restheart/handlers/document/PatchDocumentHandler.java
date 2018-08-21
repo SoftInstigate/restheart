@@ -18,7 +18,6 @@
 package org.restheart.handlers.document;
 
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.db.DocumentDAO;
@@ -73,38 +72,10 @@ public class PatchDocumentHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-        
+
         BsonValue _content = context.getContent();
 
-        // cannot PATCH with no data
-        if (_content == null) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "no data provided");
-            next(exchange, context);
-            return;
-        }
-
-        // cannot PATCH an array
-        if (!_content.isDocument()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "data must be a json object");
-            next(exchange, context);
-            return;
-        }
-        
-        if (_content.asDocument().isEmpty()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "no data provided");
-            next(exchange, context);
+        if (isNotAcceptableContent(_content, exchange, context)) {
             return;
         }
 
@@ -135,36 +106,7 @@ public class PatchDocumentHandler extends PipedHttpHandler {
                 true,
                 context.isETagCheckRequired());
 
-        context.setDbOperationResult(result);
-
-        // inject the etag
-        if (result.getEtag() != null) {
-            ResponseHelper.injectEtagHeader(exchange, result.getEtag());
-        }
-
-        if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_CONFLICT,
-                    "The document's ETag must be provided using the '"
-                    + Headers.IF_MATCH
-                    + "' header");
-            next(exchange, context);
-            return;
-        }
-        
-        // handle the case of duplicate key error
-        if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_EXPECTATION_FAILED,
-                    "A duplicate key error occurred. "
-                            + "The patched document does not fulfill "
-                            + "an unique index constraint");
-
-            next(exchange, context);
+        if (isResponseInConflict(context, result, exchange)) {
             return;
         }
 
@@ -172,4 +114,5 @@ public class PatchDocumentHandler extends PipedHttpHandler {
 
         next(exchange, context);
     }
+
 }

@@ -103,8 +103,6 @@ public class PutFileHandler extends PipedHttpHandler {
             if (t instanceof MongoWriteException
                     && ((MongoException) t).getCode() == 11000) {
 
-
-
                 // update not supported
                 String errMsg = "file resource update is not yet implemented";
                 LOGGER.error(errMsg, t);

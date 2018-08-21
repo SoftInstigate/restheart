@@ -18,13 +18,10 @@
 package org.restheart.handlers.collection;
 
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 import org.restheart.db.OperationResult;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
-import org.restheart.utils.HttpStatus;
-import org.restheart.utils.ResponseHelper;
 
 /**
  *
@@ -60,26 +57,11 @@ public class DeleteCollectionHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-        
+
         OperationResult result = getDatabase().deleteCollection(context.getDBName(), context.getCollectionName(),
                 context.getETag(), context.isETagCheckRequired());
 
-        context.setDbOperationResult(result);
-
-        // inject the etag
-        if (result.getEtag() != null) {
-            ResponseHelper.injectEtagHeader(exchange, result.getEtag());
-        }
-
-        if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_CONFLICT,
-                    "The collection's ETag must be provided using the '"
-                    + Headers.IF_MATCH
-                    + "' header.");
-            next(exchange, context);
+        if (isResponseInConflict(context, result, exchange)) {
             return;
         }
 

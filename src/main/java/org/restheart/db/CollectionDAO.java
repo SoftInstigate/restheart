@@ -19,6 +19,7 @@ package org.restheart.db;
 
 import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoCommandException;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
@@ -37,6 +38,7 @@ import org.bson.Document;
 import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
 import org.restheart.Bootstrapper;
+import org.restheart.Configuration;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +52,13 @@ import org.slf4j.LoggerFactory;
  */
 class CollectionDAO {
 
-    public static final int BATCH_SIZE = 1000;
+    private static final int BATCH_SIZE = Bootstrapper
+            .getConfiguration() != null
+                    ? Bootstrapper
+                            .getConfiguration()
+                            .getCursorBatchSize()
+                    : Configuration.DEFAULT_CURSOR_BATCH_SIZE;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(CollectionDAO.class);
     private static final BsonDocument FIELDS_TO_RETURN;
 
@@ -147,7 +155,8 @@ class CollectionDAO {
                 .projection(keys)
                 .sort(sortBy)
                 .batchSize(BATCH_SIZE)
-                .maxTime(Bootstrapper.getConfiguration().getQueryTimeLimit(), TimeUnit.MILLISECONDS);
+                .maxTime(Bootstrapper.getConfiguration()
+                        .getQueryTimeLimit(), TimeUnit.MILLISECONDS);
     }
 
     ArrayList<BsonDocument> getCollectionData(
@@ -311,7 +320,7 @@ class CollectionDAO {
             final String collName,
             final BsonDocument properties,
             final String requestEtag,
-            final boolean updating,
+            boolean updating,
             final boolean patching,
             final boolean checkEtag) {
 
@@ -320,7 +329,21 @@ class CollectionDAO {
         }
 
         if (!updating) {
-            client.getDatabase(dbName).createCollection(collName);
+            try {
+                client.getDatabase(dbName).createCollection(collName);
+            } catch (MongoCommandException ex) {
+                // error 48 is NamespaceExists
+                // this can happen when a request A creates a collection
+                // and a concurrent request B checks if it exists before A 
+                // completes (updating = false) and try to create it after A 
+                // actually created it.
+                // see https://github.com/SoftInstigate/restheart/issues/297
+                if (ex.getErrorCode() != 48) {
+                    throw ex;
+                } else {
+                    updating = true;
+                }
+            }
         }
 
         ObjectId newEtag = new ObjectId();

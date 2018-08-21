@@ -8,7 +8,9 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
         echo "###### Building Docker image for RESTHeart $RESTHEART_VERSION";
         docker login -u="$DOCKER_USER" -p="$DOCKER_PASS";
         docker build -t softinstigate/restheart:$RESTHEART_VERSION . ;
-        docker push softinstigate/restheart:$RESTHEART_VERSION;
+        if [[ $RESTHEART_VERSION != *-SNAPSHOT ]]; then
+            docker push softinstigate/restheart:$RESTHEART_VERSION;
+        fi
         echo "###### Branch is $TRAVIS_BRANCH";
         if [ "$TRAVIS_BRANCH" == "master" ]; then
             echo "###### On master branch. Tagging image softinstigate/restheart:$RESTHEART_VERSION as latest";

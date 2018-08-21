@@ -19,6 +19,7 @@ package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -26,6 +27,7 @@ import org.bson.BsonValue;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.metadata.transformers.GlobalTransformer;
+import org.restheart.metadata.transformers.RequestTransformer;
 import org.restheart.metadata.transformers.Transformer;
 
 /**
@@ -33,9 +35,10 @@ import org.restheart.metadata.transformers.Transformer;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public abstract class TransformerHandler extends PipedHttpHandler {
-    private static final List<GlobalTransformer> globalTransformers
-            = new ArrayList<>();
-    
+
+    private static final List<GlobalTransformer> GLOBAL_TRANSFORMERS
+            = Collections.synchronizedList(new ArrayList<>());
+
     /**
      * Creates a new instance of AbstractTransformerHandler
      *
@@ -52,50 +55,70 @@ public abstract class TransformerHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, 
+    public void handleRequest(HttpServerExchange exchange,
             RequestContext context) throws Exception {
         applyGlobalTransformers(exchange, context);
-        
+
         if (doesCollTransformerAppy(context)) {
             try {
                 applyCollRTransformer(exchange, context);
-            } catch (Throwable e) {
+            } catch (InvalidMetadataException e) {
                 context.addWarning("error applying transformer: " + e.getMessage());
-            } 
+            }
         }
 
         if (doesDBTransformerAppy(context)) {
             try {
                 applyDbTransformer(exchange, context);
-            } catch (Throwable e) {
+            } catch (InvalidMetadataException e) {
                 context.addWarning("error applying transformer: " + e.getMessage());
             }
         }
 
         next(exchange, context);
     }
-    
+
     /**
-     * @return the globalTransformers
+     * @return the GLOBAL_TRANSFORMERS
      */
-    public static List<GlobalTransformer> getGlobalTransformers() {
-        return globalTransformers;
+    public static synchronized List<GlobalTransformer> getGlobalTransformers() {
+        return GLOBAL_TRANSFORMERS;
     }
 
-    abstract boolean doesGlobalTransformerAppy(GlobalTransformer gt, 
-            HttpServerExchange exchange, 
+    abstract boolean doesGlobalTransformerAppy(GlobalTransformer gt,
+            HttpServerExchange exchange,
             RequestContext context);
-    
+
     abstract boolean doesCollTransformerAppy(RequestContext context);
 
     abstract boolean doesDBTransformerAppy(RequestContext context);
 
     abstract void applyGlobalTransformers(HttpServerExchange exchange, RequestContext context);
-    
-    abstract void applyDbTransformer(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException;
 
-    abstract void applyCollRTransformer(HttpServerExchange exchange, RequestContext context) throws InvalidMetadataException;
-    
+    abstract void applyTransformLogic(HttpServerExchange exchange, RequestContext context, List<RequestTransformer> dbRts) throws InvalidMetadataException;
+
+    void applyDbTransformer(
+            HttpServerExchange exchange,
+            RequestContext context)
+            throws InvalidMetadataException {
+        List<RequestTransformer> dbRts
+                = RequestTransformer
+                        .getFromJson(context.getDbProps());
+
+        applyTransformLogic(exchange, context, dbRts);
+    }
+
+    void applyCollRTransformer(
+            HttpServerExchange exchange,
+            RequestContext context)
+            throws InvalidMetadataException {
+        List<RequestTransformer> collRts
+                = RequestTransformer
+                        .getFromJson(context.getCollectionProps());
+
+        applyTransformLogic(exchange, context, collRts);
+    }
+
     protected void applyChildrenTransformLogic(
             HttpServerExchange exchange,
             RequestContext context,
