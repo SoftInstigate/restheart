@@ -30,16 +30,16 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
+import static org.restheart.utils.URLUtils.getReferenceLink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.restheart.utils.URLUtils.getReferenceLink;
 
 /**
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class PostBucketHandler extends PipedHttpHandler {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(PostBucketHandler.class);
     private final GridFsRepository gridFsDAO;
 
@@ -67,7 +67,7 @@ public class PostBucketHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-        
+
         final BsonValue _metadata = context.getContent();
 
         // must be an object

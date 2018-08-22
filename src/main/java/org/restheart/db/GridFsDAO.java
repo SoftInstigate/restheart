@@ -25,8 +25,6 @@ import com.mongodb.client.gridfs.GridFSBuckets;
 import com.mongodb.client.gridfs.model.GridFSFile;
 import com.mongodb.client.gridfs.model.GridFSUploadOptions;
 import static com.mongodb.client.model.Filters.eq;
-import static org.restheart.utils.HttpStatus.*;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +37,7 @@ import org.bson.BsonObjectId;
 import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.types.ObjectId;
-import org.restheart.utils.HttpStatus;
+import static org.restheart.utils.HttpStatus.*;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -131,13 +129,13 @@ public class GridFsDAO implements GridFsRepository {
 
     @Override
     public OperationResult upsertFile(final Database db,
-                                      final String dbName,
-                                      final String bucketName,
-                                      final BsonDocument metadata,
-                                      final Path filePath,
-                                      final BsonValue fileId,
-                                      final String requestEtag,
-                                      final boolean checkEtag) throws IOException {
+            final String dbName,
+            final String bucketName,
+            final BsonDocument metadata,
+            final Path filePath,
+            final BsonValue fileId,
+            final String requestEtag,
+            final boolean checkEtag) throws IOException {
 
         OperationResult deletionResult = deleteFile(db, dbName, bucketName, fileId, requestEtag, checkEtag);
 
@@ -146,16 +144,15 @@ public class GridFsDAO implements GridFsRepository {
         final boolean fileDidntExist = deletionResult.getHttpCode() == SC_NOT_FOUND;
         final boolean fileExisted = !fileDidntExist;
 
-        if(deleteOperationWasSuccessful || fileDidntExist) {
+        if (deleteOperationWasSuccessful || fileDidntExist) {
             OperationResult creationResult = createFile(db, dbName, bucketName, metadata, filePath);
 
             //https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.5
             final boolean creationOperationWasSuccessful = SC_CREATED == creationResult.getHttpCode() || SC_OK == creationResult.getHttpCode();
-            if(creationOperationWasSuccessful) {
-
+            if (creationOperationWasSuccessful) {
 
                 //https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.6
-                if(fileExisted) {
+                if (fileExisted) {
                     return new OperationResult(SC_OK, creationResult.getEtag(), creationResult.getOldData(), creationResult.getNewData());
                 } else {
                     return new OperationResult(SC_CREATED, creationResult.getEtag(), creationResult.getNewId());
@@ -229,10 +226,10 @@ public class GridFsDAO implements GridFsRepository {
 
                     if (oldEtag != null) {
                         if (requestEtag == null) {
-                            return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
+                            return new OperationResult(SC_CONFLICT, oldEtag);
                         } else if (!Objects.equals(oldEtag.toString(), requestEtag)) {
                             return new OperationResult(
-                                    HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
+                                    SC_PRECONDITION_FAILED, oldEtag);
                         }
                     }
                 }
@@ -255,8 +252,8 @@ public class GridFsDAO implements GridFsRepository {
 
     private GridFSFile getFileForId(GridFSBucket gridFSBucket, BsonValue fileId) {
         return gridFSBucket
-            .find(eq("_id", fileId))
-            .limit(1).iterator().tryNext();
+                .find(eq("_id", fileId))
+                .limit(1).iterator().tryNext();
     }
 
     /**
