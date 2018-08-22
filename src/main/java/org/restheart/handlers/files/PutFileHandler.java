@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class PutFileHandler extends PipedHttpHandler {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(PutFileHandler.class);
 
     private final GridFsRepository gridFsDAO;
