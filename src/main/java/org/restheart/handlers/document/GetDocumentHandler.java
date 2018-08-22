@@ -34,12 +34,15 @@ import org.restheart.utils.JsonUtils;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GetDocumentHandler extends PipedHttpHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GetDocumentHandler.class);
 
     /**
      * Default ctor

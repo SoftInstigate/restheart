@@ -25,6 +25,8 @@ import com.mongodb.client.gridfs.GridFSBuckets;
 import com.mongodb.client.gridfs.model.GridFSFile;
 import com.mongodb.client.gridfs.model.GridFSUploadOptions;
 import static com.mongodb.client.model.Filters.eq;
+import static org.restheart.utils.HttpStatus.*;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -105,7 +107,7 @@ public class GridFsDAO implements GridFsRepository {
                         sourceStream,
                         options);
 
-                return new OperationResult(HttpStatus.SC_CREATED,
+                return new OperationResult(SC_CREATED,
                         new BsonObjectId(etag),
                         new BsonObjectId(_id));
             } else {
@@ -120,10 +122,49 @@ public class GridFsDAO implements GridFsRepository {
                         sourceStream,
                         options);
 
-                return new OperationResult(HttpStatus.SC_CREATED,
+                return new OperationResult(SC_CREATED,
                         new BsonObjectId(etag),
                         _id);
             }
+        }
+    }
+
+    @Override
+    public OperationResult upsertFile(final Database db,
+                                      final String dbName,
+                                      final String bucketName,
+                                      final BsonDocument metadata,
+                                      final Path filePath,
+                                      final BsonValue fileId,
+                                      final String requestEtag,
+                                      final boolean checkEtag) throws IOException {
+
+        OperationResult deletionResult = deleteFile(db, dbName, bucketName, fileId, requestEtag, checkEtag);
+
+        //https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.7
+        final boolean deleteOperationWasSuccessful = deletionResult.getHttpCode() == SC_NO_CONTENT || deletionResult.getHttpCode() == SC_OK;
+        final boolean fileDidntExist = deletionResult.getHttpCode() == SC_NOT_FOUND;
+        final boolean fileExisted = !fileDidntExist;
+
+        if(deleteOperationWasSuccessful || fileDidntExist) {
+            OperationResult creationResult = createFile(db, dbName, bucketName, metadata, filePath);
+
+            //https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.5
+            final boolean creationOperationWasSuccessful = SC_CREATED == creationResult.getHttpCode() || SC_OK == creationResult.getHttpCode();
+            if(creationOperationWasSuccessful) {
+
+
+                //https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.6
+                if(fileExisted) {
+                    return new OperationResult(SC_OK, creationResult.getEtag(), creationResult.getOldData(), creationResult.getNewData());
+                } else {
+                    return new OperationResult(SC_CREATED, creationResult.getEtag(), creationResult.getNewId());
+                }
+            } else {
+                return creationResult;
+            }
+        } else {
+            return deletionResult;
         }
     }
 
@@ -175,12 +216,10 @@ public class GridFsDAO implements GridFsRepository {
         // Note: this won't help much if RESTHeart is clustered, as the lock is local
         deleteLock.lock();
         try {
-            GridFSFile file = gridFSBucket
-                    .find(eq("_id", fileId))
-                    .limit(1).iterator().tryNext();
+            GridFSFile file = getFileForId(gridFSBucket, fileId);
 
             if (file == null) {
-                return new OperationResult(HttpStatus.SC_NOT_FOUND);
+                return new OperationResult(SC_NOT_FOUND);
             }
 
             if (checkEtag) {
@@ -204,14 +243,20 @@ public class GridFsDAO implements GridFsRepository {
                 LOGGER.info("Succesfully deleted fileId {}", fileId);
             } catch (MongoGridFSException e) {
                 LOGGER.error("Can't delete fileId '{}'", fileId, e);
-                return new OperationResult(HttpStatus.SC_NOT_FOUND);
+                return new OperationResult(SC_NOT_FOUND);
             }
 
-            return new OperationResult(HttpStatus.SC_NO_CONTENT);
+            return new OperationResult(SC_NO_CONTENT);
 
         } finally {
             deleteLock.unlock();
         }
+    }
+
+    private GridFSFile getFileForId(GridFSBucket gridFSBucket, BsonValue fileId) {
+        return gridFSBucket
+            .find(eq("_id", fileId))
+            .limit(1).iterator().tryNext();
     }
 
     /**

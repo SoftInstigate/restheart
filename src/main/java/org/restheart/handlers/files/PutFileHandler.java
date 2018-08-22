@@ -13,12 +13,15 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class PutFileHandler extends PipedHttpHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PutFileHandler.class);
 
     private final GridFsRepository gridFsDAO;
 
@@ -82,11 +85,14 @@ public class PutFileHandler extends PipedHttpHandler {
         try {
             if (context.getFilePath() != null) {
                 result = gridFsDAO
-                        .createFile(getDatabase(),
+                        .upsertFile(getDatabase(),
                                 context.getDBName(),
                                 context.getCollectionName(),
                                 metadata,
-                                context.getFilePath());
+                                context.getFilePath(),
+                                id,
+                                context.getETag(),
+                                context.isETagCheckRequired());
             } else {
                 // throw new RuntimeException("error. file data is null");
                 // try to pass to next handler in order to PUT new metadata on existing file.
@@ -96,8 +102,10 @@ public class PutFileHandler extends PipedHttpHandler {
         } catch (IOException | RuntimeException t) {
             if (t instanceof MongoWriteException
                     && ((MongoException) t).getCode() == 11000) {
+
                 // update not supported
                 String errMsg = "file resource update is not yet implemented";
+                LOGGER.error(errMsg, t);
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
                         context,
