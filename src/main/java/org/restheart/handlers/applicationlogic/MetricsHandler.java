@@ -215,10 +215,9 @@ public class MetricsHandler extends PipedHttpHandler {
 
                             metricContent.asDocument().forEach((metricType, value) -> {
                                 if (value.isNumber()) {
-                                    sb.append("http_response_").append(groupKey)
-                                        .append("_").append(type).append("_")
-                                        .append(metricType);
+                                    sb.append("http_response_").append(groupKey).append("_").append(metricType);
                                     sb.append("{");
+                                    sb.append("type=\"").append(type).append("\",");
                                     sb.append("method=\"").append(method).append("\"");
                                     if (responseCode != null) {
                                         sb.append(",");
