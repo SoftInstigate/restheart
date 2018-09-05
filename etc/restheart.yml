@@ -299,19 +299,15 @@ etag-check-policy:
 
 ## Read Performance
 
-default-pagesize: 100
-
 # default-pagesize is the number of documents returned when the pagesize query 
 # parameter is not specified
 # see https://restheart.org/learn/query-documents/#paging
-
-max-pagesize: 1000
+default-pagesize: 100
 
 # max-pagesize sets the maximum allowed value of the pagesize query parameter
 # generally, the greater the pagesize, the more json serializan overhead occurs
 # the rule of thumb is not exeeding 1000
-
-cursor-batch-size: 1000
+max-pagesize: 1000
 
 # cursor-batch-size sets the mongodb cursor batchSize
 # see https://docs.mongodb.com/manual/reference/method/cursor.batchSize/
@@ -319,6 +315,7 @@ cursor-batch-size: 1000
 # the rule of thumb is setting cursor-batch-size equal to max-pagesize
 # a small cursor-batch-size (e.g. 101, the default mongodb batchSize)
 # speeds up requests with small pagesize
+cursor-batch-size: 1000
 
 ## Eager DB Cursor Preallocation Policy
 # In big collections, reading a far page involves skipping the db cursor for many documents resulting in a performance bottleneck

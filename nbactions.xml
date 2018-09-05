@@ -12,6 +12,7 @@
             <properties>
                 <exec.args>-Xdock:name=RESTHeart -classpath %classpath org.restheart.Bootstrapper etc/restheart-dev.yml</exec.args>
                 <exec.executable>java</exec.executable>
+                <jshell.run.enable>true</jshell.run.enable>
             </properties>
         </action>
         <action>
@@ -27,6 +28,7 @@
                 <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -Xdock:name=RESTHeart -classpath %classpath org.restheart.Bootstrapper etc/restheart-dev.yml</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
+                <jshell.run.enable>true</jshell.run.enable>
             </properties>
         </action>
         <action>
