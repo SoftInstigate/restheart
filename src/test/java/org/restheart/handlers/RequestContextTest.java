@@ -128,11 +128,11 @@ public class RequestContextTest {
         when(ex.getRequestPath()).thenReturn("/");
         when(ex.getRequestMethod()).thenReturn(HttpString.EMPTY);
 
-        String whatUri = "/mydb/mycollection";
+        String whatUri = "/db/mycollection";
         String whereUri = "/";
 
         RequestContext context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/mydb/mycollection", context.getUnmappedRequestUri());
+        assertEquals("/db/mycollection", context.getUnmappedRequestUri());
 
         whatUri = "*";
         whereUri = "/";

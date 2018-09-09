@@ -61,7 +61,7 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
     protected static URI dbUri;
     protected static URI dbUriRemappedAll;
     protected static URI dbUriRemappedDb;
-    protected static final String dbName = TEST_DB_PREFIX + "mydb";
+    protected static final String dbName = TEST_DB_PREFIX + "db";
     protected static URI dbTmpUri;
     protected static final String dbTmpName = TEST_DB_PREFIX + "mytmpdb";
     protected static URI dbTmpUri2;

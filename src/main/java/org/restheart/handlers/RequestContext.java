@@ -348,9 +348,9 @@ public class RequestContext {
      *
      * example 1
      *
-     * whatUri = /mydb/mycollection whereUri = /
+     * whatUri = /db/mycollection whereUri = /
      *
-     * then the requestPath / is rewritten to /mydb/mycollection
+     * then the requestPath / is rewritten to /db/mycollection
      *
      * example 2
      *
@@ -578,7 +578,7 @@ public class RequestContext {
      * check if the parent of the requested resource is accessible in this
      * request context
      *
-     * for instance if /mydb/mycollection is mapped to /coll then:
+     * for instance if /db/mycollection is mapped to /coll then:
      *
      * the db is accessible from the collection the root is not accessible from
      * the collection (since / is actually mapped to the db)
