@@ -39,27 +39,27 @@ permissions:
       predicate: path-prefix[path="/"]
 
     - role: $unauthenticated
-      predicate: path-prefix[path="/restheart-integrationtests-mydb/refcoll1"] and method[value="GET"]
+      predicate: path-prefix[path="/testdb/refcoll1"] and method[value="GET"]
 
     - role: powerusers
-      predicate: path-prefix[path="/restheart-integrationtests-mydb"] and method[value="GET"]
+      predicate: path-prefix[path="/testdb"] and method[value="GET"]
 
     - role: powerusers
-      predicate: path-prefix[path="/restheart-integrationtests-mytmpdb"]
+      predicate: path-prefix[path="/testmytmpdb"]
 
     - role: users
-      predicate: path-prefix[path="/restheart-integrationtests-mydb/refcoll2"] and method[value="GET"]
+      predicate: path-prefix[path="/testdb/refcoll2"] and method[value="GET"]
 
     - role: users
-      predicate: path[path="/restheart-integrationtests-mydb/refcoll2"] and method[value="GET"]
+      predicate: path[path="/testdb/refcoll2"] and method[value="GET"]
 
     - role: users
-      predicate: (path[path="/restheart-integrationtests-tmpdb2"] or path[path="/restheart-integrationtests-tmpdb3"]) and method[value="PUT"]
+      predicate: (path[path="/testtmpdb2"] or path[path="/testtmpdb3"]) and method[value="PUT"]
 
     # This to check the path-template predicate
     - role: users
-      predicate: path-template[value="/restheart-integrationtests-tmpdb2/{username}"] and equals[%u, "${username}"]
+      predicate: path-template[value="/testtmpdb2/{username}"] and equals[%u, "${username}"]
 
     # This to check the regex predicate
     - role: users
-      predicate: regex[pattern="/restheart-integrationtests-tmpdb3/(.*?)", value="%R", full-match=true] and equals[%u, "${1}"]
+      predicate: regex[pattern="/testtmpdb3/(.*?)", value="%R", full-match=true] and equals[%u, "${1}"]

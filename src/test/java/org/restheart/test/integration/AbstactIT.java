@@ -63,7 +63,7 @@ public abstract class AbstactIT {
      * dbs starting with this prefix will be automatically deleted after test
      * execution
      */
-    protected static final String TEST_DB_PREFIX = "restheart-integrationtests-";
+    protected static final String TEST_DB_PREFIX = "test";
 
     protected static String BASE_URL;
 

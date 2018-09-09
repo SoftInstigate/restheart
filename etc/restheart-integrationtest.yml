@@ -86,15 +86,15 @@ mongo-mounts:
       where: /
     - what: "*"
       where: /remappedall
-    - what: /restheart-integrationtests-mydb
+    - what: /testdb
       where: /remappeddb
-    - what: /restheart-integrationtests-mydb/refcoll1
+    - what: /testdb/refcoll1
       where: /remappedrefcoll1
-    - what: /restheart-integrationtests-mydb/refcoll2
+    - what: /testdb/refcoll2
       where: /remappedrefcoll2
-    - what: /restheart-integrationtests-mydb/refcoll1/doc1
+    - what: /testdb/refcoll1/doc1
       where: /remappeddoc1
-    - what: /restheart-integrationtests-mydb/refcoll2/doc2
+    - what: /testdb/refcoll2/doc2
       where: /remappeddoc2
 
 #### Static Web Resources
@@ -285,7 +285,7 @@ aggregation-check-operators: true
 # WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
 
 enable-log-file: true
-log-file-path: /var/log/restheart.log
+log-file-path: restheart.log
 enable-log-console: true
 log-level: DEBUG
 requests-log-level: 1
