@@ -2,7 +2,8 @@ FROM openjdk:8u171-jre-alpine
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
-RUN apk upgrade --update && apk add --update libstdc++ curl ca-certificates bash
+RUN apk upgrade --update
+RUN apk add --no-cache libstdc++ curl ca-certificates bash
 
 WORKDIR /opt/restheart
 COPY Docker/etc/* /opt/restheart/etc/
