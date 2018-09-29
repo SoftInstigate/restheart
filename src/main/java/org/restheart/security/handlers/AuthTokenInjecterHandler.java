@@ -20,7 +20,6 @@ package org.restheart.security.handlers;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;

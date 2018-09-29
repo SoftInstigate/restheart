@@ -29,7 +29,7 @@ import io.undertow.security.idm.PasswordCredential;
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -507,7 +507,7 @@ public abstract class AbstractDbIdentityManager
             return null;
         }
 
-        Set<String> roles = new HashSet<>();
+        Set<String> roles = new LinkedHashSet<>();
 
         List<BsonValue> __roles = _roles.asArray().getValues();
 

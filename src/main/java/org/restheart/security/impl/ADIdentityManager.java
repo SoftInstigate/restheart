@@ -171,7 +171,7 @@ public class ADIdentityManager extends AbstractSimpleSecurityManager implements 
         sc.setReturningAttributes(new String[]{"memberOf"});
         String searchString = "(&(objectClass=user)(userPrincipalName=" + principalName + "))";
         try {
-            Set<String> roles = new HashSet<>();
+            Set<String> roles = new LinkedHashSet<>();
             NamingEnumeration<SearchResult> results = ldc.search(toDCList(principalNameSuffix), searchString, sc);
             if (results.hasMore()) {
                 SearchResult res = results.next();
