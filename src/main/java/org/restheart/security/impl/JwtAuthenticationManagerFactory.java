@@ -40,7 +40,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Base64;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import org.apache.commons.codec.binary.StringUtils;
 import org.slf4j.Logger;
@@ -115,7 +115,7 @@ public class JwtAuthenticationManagerFactory implements AuthenticationMechanismF
 
                         Claim _roles = verifiedJwt.getClaim(rolesClaim);
 
-                        Set<String> roles = new HashSet<>();
+                        Set<String> roles = new LinkedHashSet<>();
 
                         boolean rolesInitialized = false;
 
