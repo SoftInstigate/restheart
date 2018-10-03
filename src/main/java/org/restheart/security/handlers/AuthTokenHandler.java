@@ -17,6 +17,8 @@
  */
 package org.restheart.security.handlers;
 
+import com.google.common.escape.Escaper;
+import com.google.common.net.UrlEscapers;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
@@ -39,6 +41,8 @@ import org.restheart.utils.HttpStatus;
 public class AuthTokenHandler extends PipedHttpHandler {
 
     private static final boolean ENABLED = Bootstrapper.getConfiguration().isAuthTokenEnabled();
+    
+    private static final Escaper ESCAPER = UrlEscapers.urlPathSegmentEscaper();
 
     /**
      *
@@ -63,12 +67,14 @@ public class AuthTokenHandler extends PipedHttpHandler {
             exchange.endExchange();
             return;
         }
-
+        
         if (exchange.getSecurityContext() == null
                 || exchange.getSecurityContext().getAuthenticatedAccount() == null
                 || exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null
-                || !("/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName())
-                .equals(exchange.getRequestURI())) {
+                || !(("/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName())
+                .equals(exchange.getRequestURI())
+                || !(ESCAPER.escape("/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName()))
+                .equals(exchange.getRequestURI()))) {
             exchange.setStatusCode(HttpStatus.SC_FORBIDDEN);
             exchange.endExchange();
             return;
