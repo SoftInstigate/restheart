@@ -48,6 +48,7 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
+import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,8 +84,8 @@ public class DAOUtils {
 
     public final static UpdateOptions U_NOT_UPSERT_OPS = new UpdateOptions()
             .upsert(false);
-    
-    public final static  BulkWriteOptions BWO_NOT_ORDERED = new BulkWriteOptions()
+
+    public final static BulkWriteOptions BWO_NOT_ORDERED = new BulkWriteOptions()
             .ordered(false);
 
     private static final Bson IMPOSSIBLE_CONDITION = eq("_etag", new ObjectId());
@@ -228,8 +229,8 @@ public class DAOUtils {
             } catch (MongoCommandException mce) {
                 LOGGER.debug("document {} not updated, "
                         + "might be due to a duplicate keys. "
-                        + "errorCode: {}, errorMessage: {}", 
-                        documentId, 
+                        + "errorCode: {}, errorMessage: {}",
+                        documentId,
                         mce.getErrorCode(),
                         mce.getErrorMessage());
                 if (mce.getErrorCode() == 11000) {
@@ -237,13 +238,16 @@ public class DAOUtils {
                             && filter != null
                             && !filter.isEmpty()
                             && mce.getErrorMessage().contains("_id_ dup key")) {
-                        // DuplicateKey error
-                        // this happens if the filter parameter didn't match
-                        // the existing document and so the upserted doc
-                        // has an existing _id 
-                        return new OperationResult(HttpStatus.SC_NOT_FOUND, oldDocument, null);
+                        // error 11000 is duplicate key error
+                        // happens when the _id and a filter are specified,
+                        // the document exists but does not match the filter
+                        return new OperationResult(HttpStatus.SC_NOT_FOUND,
+                                oldDocument,
+                                null);
                     } else {
-                        return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED, oldDocument, null);
+                        return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED,
+                                oldDocument,
+                                null);
                     }
                 } else {
                     throw mce;
@@ -336,7 +340,6 @@ public class DAOUtils {
                 shardKeys,
                 newEtag);
 
-        
         BulkWriteResult result = coll.bulkWrite(wm, BWO_NOT_ORDERED);
 
         return new BulkOperationResult(HttpStatus.SC_OK, newEtag, result);

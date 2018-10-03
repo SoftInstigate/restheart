@@ -26,11 +26,13 @@ import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.restheart.db.BulkOperationResult;
+import org.restheart.db.OperationResult;
 import org.restheart.hal.AbstractRepresentationFactory;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
+import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 
@@ -153,18 +155,29 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
         wes.stream().forEach(error -> {
             Representation nrep = new Representation();
 
-            nrep.addProperty("index",
-                    new BsonInt32(error.getIndex()));
-            nrep.addProperty("mongodbErrorCode",
-                    new BsonInt32(error.getCode()));
-            nrep.addProperty("httpStatus",
-                    new BsonInt32(
-                            ResponseHelper.getHttpStatusFromErrorCode(
-                                    error.getCode())));
-            nrep.addProperty("message",
-                    new BsonString(
-                            ResponseHelper.getMessageFromErrorCode(
-                                    error.getCode())));
+            // error 11000 is duplicate key error
+            // happens when the _id and a filter are specified,
+            // the document exists but does not match the filter
+            if (error.getCode() == 11000 &&
+                    error.getMessage().contains("_id_ dup key")) {
+                nrep.addProperty("index",
+                        new BsonInt32(error.getIndex()));
+                nrep.addProperty("httpStatus",
+                        new BsonInt32(
+                                ResponseHelper.getHttpStatusFromErrorCode(
+                                        error.getCode())));
+            } else {
+                nrep.addProperty("index",
+                        new BsonInt32(error.getIndex()));
+                nrep.addProperty("mongodbErrorCode",
+                        new BsonInt32(error.getCode()));
+                nrep.addProperty("httpStatus",
+                        new BsonInt32(HttpStatus.SC_NOT_FOUND));
+                nrep.addProperty("message",
+                        new BsonString(
+                                ResponseHelper.getMessageFromErrorCode(
+                                        error.getCode())));
+            }
 
             rep.addRepresentation("rh:error", nrep);
         });
