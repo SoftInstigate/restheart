@@ -41,7 +41,8 @@ import org.restheart.utils.HttpStatus;
 public class AuthTokenHandler extends PipedHttpHandler {
 
     private static final boolean ENABLED = Bootstrapper.getConfiguration().isAuthTokenEnabled();
-    
+
+    // used to compare the requested URI containing escaped chars
     private static final Escaper ESCAPER = UrlEscapers.urlPathSegmentEscaper();
 
     /**
@@ -67,14 +68,14 @@ public class AuthTokenHandler extends PipedHttpHandler {
             exchange.endExchange();
             return;
         }
-        
+
         if (exchange.getSecurityContext() == null
                 || exchange.getSecurityContext().getAuthenticatedAccount() == null
                 || exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null
                 || !(("/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName())
-                .equals(exchange.getRequestURI())
+                        .equals(exchange.getRequestURI())
                 || !(ESCAPER.escape("/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName()))
-                .equals(exchange.getRequestURI()))) {
+                        .equals(exchange.getRequestURI()))) {
             exchange.setStatusCode(HttpStatus.SC_FORBIDDEN);
             exchange.endExchange();
             return;
@@ -84,11 +85,11 @@ public class AuthTokenHandler extends PipedHttpHandler {
             Representation rep = new Representation("/_authtokens/"
                     + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
 
-            rep.addProperty("auth_token", 
+            rep.addProperty("auth_token",
                     new BsonString(exchange.getResponseHeaders()
                             .get(AUTH_TOKEN_HEADER).getFirst()));
-            
-            rep.addProperty("auth_token_valid_until", 
+
+            rep.addProperty("auth_token_valid_until",
                     new BsonString(exchange.getResponseHeaders()
                             .get(AUTH_TOKEN_VALID_HEADER).getFirst()));
 
