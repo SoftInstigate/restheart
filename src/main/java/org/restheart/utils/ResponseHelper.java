@@ -300,7 +300,7 @@ public class ResponseHelper {
                 // Update tried to change the immutable shardkey
                 return HttpStatus.SC_FORBIDDEN;
             case 121:
-                //Document failed validation
+                // Document failed validation
                 return HttpStatus.SC_BAD_REQUEST;
             default:
                 // Other
