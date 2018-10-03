@@ -26,7 +26,6 @@ import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.restheart.db.BulkOperationResult;
-import org.restheart.db.OperationResult;
 import org.restheart.hal.AbstractRepresentationFactory;
 import org.restheart.hal.Link;
 import org.restheart.hal.Representation;
