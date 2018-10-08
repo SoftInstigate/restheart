@@ -51,13 +51,19 @@ deploy:
     condition: $MAVEN_DEPLOY = true 
 
 env:
-  - MONGO=4.0 
-  - MONGO=3.6 MAVEN_DEPLOY=true
+  - MONGO=4.0
+  - MONGO=3.6
+  - MAVEN_DEPLOY=true
+  - MAVEN_DEPLOY=false
 
 matrix:
   exclude:
   - jdk: openjdk11
-    env: MONGO=3.6 MAVEN_DEPLOY=true
+    env: MAVEN_DEPLOY=true
+  - jdk: openjdk8
+    env: MAVEN_DEPLOY=false
+  - jdk: openjdk8
+    env: MONGO=4.0 MAVEN_DEPLOY=true
 
 global:
   - secure: "rlLQCDykTqV7/EC+kTCw5JpYbuZwk0Neq5q1kRQ6hjcUYRdgjPJretVg+1e5+GcGOH4/Z/aOGdQrk1HtPW6tE+ePIUDAUwuLX2+6AUt2FqIqumYoJxYR7rsw+THkjiPaopB7qmWOUJ1vec7QCEiaGexYcjs3j6mv//SbnUksY2w="
