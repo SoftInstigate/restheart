@@ -1,0 +1,76 @@
+## uIAM simple security configuration file.
+---
+## Configuration for file based Identity Manager
+users:
+    - userid: a
+      password: a
+      roles: [admins]
+
+    - userid: user
+      password: changeit
+      roles: [users]
+
+    - userid: user2
+      password: changeit
+      roles: [users]
+
+    - userid: admin
+      password: changeit
+      roles: [users, admins]
+      
+## Configuration for db based Identity Manager
+## bcrypt-hashed-password: true to authenticate against bcrypt hashed passwords
+## https://github.com/svenkubiak/jBCrypt
+dbim:
+    - db: userbase
+      coll: accounts
+      prop-name-id: _id
+      prop-name-password: password
+      prop-name-roles: roles
+      bcrypt-hashed-password: false
+      create-user: false
+      create-user-document: '{"_id": "admin", "password": "secret", "roles": ["admins"]}'
+      cache-enabled: false
+      cache-size: 1000
+      cache-ttl: 60000
+      cache-expire-policy: AFTER_WRITE
+
+## Config for AD Identity Manager
+#adim:
+#    - domainControllers: ldap://eastdc.example.com
+#      principalNameSuffixes: corp.example.com,example.com
+
+## Configuration for file based Access Manager
+
+## Look at undertow documentation for information about predictates syntax
+## http://undertow.io/undertow-docs/undertow-docs-1.3.0/index.html#predicates-attributes-and-handlers
+## The special role $unauthenticated allows to give permissions without requiring authentication
+permissions:
+# Users with role 'admins' can do anything
+    - role: admins
+      predicate: path-prefix[path="/"]
+
+# Not authenticated user can only GET any resource under the /publicdb URI
+    - role: $unauthenticated
+      predicate: path-prefix[path="/publicdb/"] and method[value="GET"]
+
+# Users with role 'users' can GET any collection or document resource (excluding dbs and _logic )
+    - role: users
+      predicate: regex[pattern="/.*/.*", value="%R", full-match=true] and method[value="GET"] and not path-prefix[path="/_logic"]
+
+# Users with role 'users' can request URI /_logic/csv
+    - role: users
+      predicate: path["/_logic/csv"]
+
+# Users with role 'users' can do anything on the collection /publicdb/{username}
+    - role: users
+      predicate: path-template[value="/publicdb/{username}"] and equals[%u, "${username}"]
+
+# Users with role 'users' can do anything on documents of the collection /publicdb/{username}
+    - role: users
+      predicate: path-template[value="/publicdb/{username}/{doc}"] and equals[%u, "${username}"]
+
+# Same than previous one, but using regex predicate
+# Users with role 'users' can do anything on documents of the collection /publicdb/{username}
+#    - role: users
+#      predicate: regex[pattern="/publicdb/(.*?)/.*", value="%R", full-match=true] and equals[%u, "${1}"]
