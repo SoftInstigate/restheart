@@ -1,6 +1,6 @@
-# uAIM
+# &#181;IAM
 
-The IAM for micro services _made with :heart: by [SoftInstigate](http://www.softinstigate.com/)_
+The micro Identity and Access Manager designed for micro services.
 
 <hr></hr>
 
