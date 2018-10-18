@@ -574,6 +574,7 @@
                         <version>3.0.1</version>
                         <configuration>
                             <additionalparam>-Xdoclint:none</additionalparam>
+                            <failOnError>false</failOnError>
                         </configuration>
                         <executions>
                             <execution>
