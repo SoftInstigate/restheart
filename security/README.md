@@ -1,6 +1,6 @@
 # &#181;IAM
 
-The micro Identity and Access Manager designed for micro services.
+The Identity and Access Manager designed for microservices.
 
 <hr></hr>
 
