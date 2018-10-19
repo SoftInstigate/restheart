@@ -550,7 +550,7 @@ public class Bootstrapper {
                     kmf.init(ks, configuration.getCertPassword().toCharArray());
                 }
             } else {
-                LOGGER.error("The keystore is not configured.");
+                LOGGER.error("The keystore is not configured. Check the keystore-file, keystore-password and certpassword options.");
             }
 
             tmf.init(ks);
@@ -561,11 +561,11 @@ public class Bootstrapper {
                 | KeyStoreException
                 | CertificateException
                 | UnrecoverableKeyException ex) {
-            logErrorAndExit("Couldn't start uIAM, error with specified keystore. exiting..", ex, false, -1);
+            logErrorAndExit("Couldn't start uIAM, error with specified keystore. Check the keystore-file, keystore-password and certpassword options. Exiting..", ex, false, -1);
         } catch (FileNotFoundException ex) {
-            logErrorAndExit("Couldn't start uIAM, keystore file not found. exiting..", ex, false, -1);
+            logErrorAndExit("Couldn't start uIAM, keystore file not found. Check the keystore-file, keystore-password and certpassword options. Exiting..", ex, false, -1);
         } catch (IOException ex) {
-            logErrorAndExit("Couldn't start uIAM, error reading the keystore file. exiting..", ex, false, -1);
+            logErrorAndExit("Couldn't start uIAM, error reading the keystore file. Check the keystore-file, keystore-password and certpassword options. Exiting..", ex, false, -1);
         }
 
         Builder builder = Undertow.builder();
@@ -913,6 +913,12 @@ public class Bootstrapper {
             final PathHandler paths,
             AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager,
             final AccessManager accessManager) {
+        if (conf.getProxyMounts() == null || conf.getProxyMounts().isEmpty()) {
+            LOGGER.warn("No proxy-mounts specified. The uIAM is not protecting "
+                    + "any resource, are you just testing your IDM and AM?");
+            return;
+        }
+        
         conf.getProxyMounts().stream().forEachOrdered(m -> {
             String uri = (String) m.get(Configuration.PROXY_MOUNTS_URI_KEY);
             String resourceURL = (String) m.get(Configuration.PROXY_MOUNTS_URL_KEY);
