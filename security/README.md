@@ -21,15 +21,15 @@ It acts as a reverse proxy in front of resources to be protected providing Authe
 
 The following diagram shows &#181;IAM used as a sidecar proxy within each container pod. Each micro-service is protected by an instance of &#181;IAM with its own security policy.
 
-![Alt text](readme-assets/uiam-explained.png?raw=true "Title")
+![Alt text](readme-assets/uiam-explained.png?raw=true "uIAM explained")
 
-## Setup
+### Setup
 
-### Docker Image
+### With Docker
 
 > work in progress
 
-### Stable binaries
+### Use stable binaries
 
 > work in progress
 
@@ -37,7 +37,7 @@ The following diagram shows &#181;IAM used as a sidecar proxy within each contai
 
 > work in progress
 
-## Understanding &#181;IAM
+## Understanding &#181;IAM
 
 ### Identity Manager
 
