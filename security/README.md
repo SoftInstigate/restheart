@@ -23,17 +23,17 @@ The following diagram shows &#181;IAM used as a sidecar proxy within each contai
 
 ![Alt text](readme-assets/uiam-explained.png?raw=true "uIAM explained")
 
-## Setup
+# Setup
 
 ## With Docker
 
 > work in progress
 
-## Use stable binaries
+## Using stable binaries
 
 > work in progress
 
-## Build from source
+## Building from source
 
 > work in progress
 
@@ -69,7 +69,7 @@ The following diagram shows &#181;IAM used as a sidecar proxy within each contai
 
 > work in progress
 
-## The auth token
+# The auth token
 
 > work in progress
 
