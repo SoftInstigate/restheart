@@ -8,7 +8,7 @@ It acts as a reverse proxy in front of resources to be protected providing Authe
 
 > Think about &#181;IAM as the brick that you put in front of your APIs and micro-services to protect them. 
 
-## Main features
+# Main features
 
 - Placement within the container AND on the network layer
 - Basic and Token Authentication
@@ -23,49 +23,49 @@ The following diagram shows &#181;IAM used as a sidecar proxy within each contai
 
 ![Alt text](readme-assets/uiam-explained.png?raw=true "uIAM explained")
 
-### Setup
+## Setup
 
-### With Docker
-
-> work in progress
-
-### Use stable binaries
+## With Docker
 
 > work in progress
 
-### Build from source
+## Use stable binaries
 
 > work in progress
 
-## Understanding &#181;IAM
-
-### Identity Manager
+## Build from source
 
 > work in progress
 
-### Access Manager
+# Understanding &#181;IAM
+
+## Identity Manager
 
 > work in progress
 
-### Authentication Manager
+## Access Manager
 
 > work in progress
 
-## Configuration
+## Authentication Manager
 
 > work in progress
 
-## Available Implementations
-
-### SimpleFileIdentityManager
+# Configuration
 
 > work in progress
 
-### SimpleAccessManager
+# Available Modules Implementations
+
+## SimpleFileIdentityManager
 
 > work in progress
 
-### BasicAuthenticationManager
+## SimpleAccessManager
+
+> work in progress
+
+## BasicAuthenticationManager
 
 > work in progress
 
@@ -73,17 +73,21 @@ The following diagram shows &#181;IAM used as a sidecar proxy within each contai
 
 > work in progress
 
-## Customize
+# Develop 
 
-### Package code
-
-> work in progress
-
-### Custom Identity Manager
+## Package code
 
 > work in progress
 
-### Develop custom Access Manager
+## Custom Identity Manager
+
+> work in progress
+
+## Develop custom Access Manager
+
+> work in progress
+
+## Develop custom Authentication Manager
 
 > work in progress
 
