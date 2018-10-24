@@ -1,12 +1,12 @@
 # &#181;IAM
 
-&#181;IAM (micro-IAM) is a micro-gateway for **Identity and Access Management** designed for micro-services architectures.
+&#181;IAM (micro-IAM) is a micro-gateway for **Identity and Access Management** designed for microservices architectures.
 
 It acts as a reverse proxy in front of resources to be protected providing Authentication and Authorization services.
 
- &#181;IAM enables developers to configure security policies in standardized micro-gateway instances that are external to APIs and micro-services implementation avoiding coding security functions and a centralized gateway where scalability is a key concern.
+ &#181;IAM enables developers to configure security policies in standardized micro-gateway instances that are external to APIs and microservices implementation avoiding coding security functions and a centralized gateway where scalability is a key concern.
 
-> Think about &#181;IAM as the brick that you put in front of your APIs and micro-services to protect them. 
+> Think about &#181;IAM as the brick that you put in front of your APIs and microservices to protect them. 
 
 # Main features
 
@@ -30,7 +30,7 @@ The following diagram shows a single instance of &#181;IAM placed on the network
 
 ## &#181;IAM within containers
 
-The following diagram shows &#181;IAM used as a sidecar proxy within each container pod. Each micro-service is protected by an instance of &#181;IAM with its own security policy.
+The following diagram shows &#181;IAM used as a sidecar proxy within each container pod. Each microservice is protected by an instance of &#181;IAM with its own security policy.
 
 ![Alt text](readme-assets/uiam-within-containers.png?raw=true "uIAM within containers")
 
