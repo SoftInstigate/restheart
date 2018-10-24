@@ -70,7 +70,7 @@ proxy-mounts:
 
 As a result, the URLs `https://domain.io` and `https://domain.io/api` are proxied to the internal resources. All requests from the external network pass through &#181;IAM that enforces authentication and authorization.
 
-```
+```http
 GET https://domain.io/index.html
 HTTP/1.1 401 Unauthorized
 
@@ -97,7 +97,7 @@ permissions:
       predicate: path-prefix[path=/api] and (method[GET] or  method[POST])
 ```
 
-```bash
+```http
 GET https://domain.io/index.html Authorization:"Basic dXNlcjpzZWNyZXQ="
 HTTP/1.1 200 OK
 ...
