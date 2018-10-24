@@ -94,7 +94,7 @@ permissions:
 
     # Users with role 'api' can GET and POST /api resources 
     - role: api
-      predicate: path-prefix[path=/api] and (method[GET] or  method[POST])
+      predicate: path-prefix[path=/api] and (method[GET] or method[POST])
 ```
 
 ```http
