@@ -79,7 +79,7 @@ HTTP/1.1 401 Unauthorized
 
 ```
 
-In the default configuration &#181;IAM use the Basic Authentication scheme with credentials and permission defined in the `security.yml` file
+With the default configuration &#181;IAM uses the Basic Authentication scheme with credentials and permission defined in `security.yml` configuration file:
 
 ```yml
 users:
@@ -94,7 +94,7 @@ permissions:
 
     # Users with role 'api' can GET and POST /api resources 
     - role: api
-      predicate: path-prefix[path=/api] and (method[GET] or and method[POST])
+      predicate: path-prefix[path=/api] and (method[GET] or  method[POST])
 ```
 
 ```bash
