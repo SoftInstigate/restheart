@@ -65,7 +65,7 @@ proxy-mounts:
     - internal-uri: /api
       external-url: https://10.0.0.1/api
     - internal-uri: /
-      external-url: https://10.0.0.2/website
+      external-url: https://10.0.0.2/web
 ```
 
 As a result, the URLs `https://domain.io` and `https://domain.io/api` are proxied to the internal resources. All requests from the external network pass through &#181;IAM that enforces authentication and authorization.
