@@ -14,21 +14,6 @@ users:
       password: changeit
       roles: [users, admins]
 
-## Configuration for db based Identity Manager
-dbim:
-    - db: userbase
-      coll: accounts
-      prop-name-id: _id
-      prop-name-password: password
-      prop-name-roles: roles
-      bcrypt-hashed-password: false
-      create-user: false
-      create-user-document: '{"_id": "admin", "password": "secret", "roles": ["admins"]}'
-      cache-enabled: false
-      cache-size: 1000
-      cache-ttl: 60000
-      cache-expire-policy: AFTER_WRITE
-
 ## Configuration for file based Access Manager
 
 ## Look at undertow documentation for information about predictates syntax

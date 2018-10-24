@@ -10,6 +10,7 @@ It acts as a reverse proxy in front of resources to be protected providing Authe
 
 # Main features
 
+- Identity and Access Management at HTTP protocol level
 - Placement within the container AND on the network layer
 - Basic and Token Authentication
 - Roles based Authorization
@@ -38,6 +39,73 @@ The following diagram shows &#181;IAM used as a sidecar proxy within each contai
 The following diagram shows &#181;IAM used to implement a simple microservice using application logic extensions.
 
 ![Alt text](readme-assets/uiam-embedded.png?raw=true "uIAM embedded")
+
+# How it works
+
+The `uiam.yml` configuration file allows defining listeners and proxied resources.
+
+As an example we will securely expose the web resources of two hosts running on a private network.
+
+The following options set a HTTPS listener bound to the public ip of domain.io.
+
+```yml
+https-listener: true
+https-host: domain.io
+https-port: 443
+```
+
+The two hosts in private network `10.0.1.0/24` are:
+- an API server running on host `10.0.1.1` bound to URI `/api`
+- a web server running on host `10.0.1.2` bound to URI `/web`
+
+We proxy them as follows:
+
+```yml
+proxy-mounts:
+    - internal-uri: /api
+      external-url: https://10.0.0.1/api
+    - internal-uri: /
+      external-url: https://10.0.0.2/website
+```
+
+As a result, the URLs `https://domain.io` and `https://domain.io/api` are proxied to the internal resources. All requests from the external network pass through &#181;IAM that enforces authentication and authorization.
+
+```
+GET https://domain.io/index.html
+HTTP/1.1 401 Unauthorized
+
+GET https://domain.io/api/entities/1233
+HTTP/1.1 401 Unauthorized
+
+```
+
+In the default configuration &#181;IAM use the Basic Authentication scheme with credentials and permission defined in the `security.yml` file
+
+```yml
+users:
+    - userid: user
+      password: secret
+      roles: [web,api]
+
+permissions:
+    # Users with role 'web' can GET web resources 
+    - role: web
+      predicate: path-prefix[path=/] and not path-prefix[path=/api] and method[GET]
+
+    # Users with role 'api' can GET and POST /api resources 
+    - role: api
+      predicate: path-prefix[path=/api] and (method[GET] or and method[POST])
+```
+
+```bash
+GET https://domain.io/index.html Authorization:"Basic dXNlcjpzZWNyZXQ="
+HTTP/1.1 200 OK
+...
+
+GET https://domain.io/api/entities/1233 Authorization:" Basic dXNlcjpzZWNyZXQ="
+HTTP/1.1 200 OK
+...
+```
 
 # Setup
 
