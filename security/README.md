@@ -102,7 +102,7 @@ GET https://domain.io/index.html Authorization:"Basic dXNlcjpzZWNyZXQ="
 HTTP/1.1 200 OK
 ...
 
-GET https://domain.io/api/entities/1233 Authorization:" Basic dXNlcjpzZWNyZXQ="
+GET https://domain.io/api/entities/1233 Authorization:"Basic dXNlcjpzZWNyZXQ="
 HTTP/1.1 200 OK
 ...
 ```
