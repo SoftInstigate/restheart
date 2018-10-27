@@ -6,13 +6,13 @@ import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
-import io.uiam.security.AccessManager;
-import io.uiam.security.handlers.AccessManagerHandler;
-import io.uiam.security.handlers.AuthTokenInjecterHandler;
-import io.uiam.security.handlers.AuthenticationCallHandler;
-import io.uiam.security.handlers.AuthenticationConstraintHandler;
-import io.uiam.security.handlers.AuthenticationMechanismsHandler;
-import io.uiam.security.handlers.SecurityInitialHandler;
+import io.uiam.handlers.security.AccessManagerHandler;
+import io.uiam.handlers.security.AuthTokenInjecterHandler;
+import io.uiam.handlers.security.AuthenticationCallHandler;
+import io.uiam.handlers.security.AuthenticationConstraintHandler;
+import io.uiam.handlers.security.AuthenticationMechanismsHandler;
+import io.uiam.handlers.security.SecurityInitialHandler;
+import io.uiam.plugins.authorization.PluggableAccessManager;
 
 /**
  *
@@ -24,7 +24,7 @@ public abstract class PipedHttpHandler implements HttpHandler {
 
     protected static PipedHttpHandler buildSecurityHandlerChain(
             PipedHttpHandler next,
-            final AccessManager accessManager,
+            final PluggableAccessManager accessManager,
             final IdentityManager identityManager,
             final List<AuthenticationMechanism> mechanisms) {
         PipedHttpHandler handler;

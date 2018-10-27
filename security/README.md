@@ -2,7 +2,7 @@
 
 &#181;IAM (micro-IAM) is a micro-gateway for **Identity and Access Management** designed for microservices architectures.
 
-It acts as a reverse proxy in front of resources to be protected providing Authentication and Authorization services.
+It acts as a reverse proxy for resources to be protected providing Authentication and Authorization services.
 
  &#181;IAM enables developers to configure security policies in standardized micro-gateway instances that are external to APIs and microservices implementation avoiding coding security functions and a centralized gateway where scalability is a key concern.
 
@@ -10,15 +10,16 @@ It acts as a reverse proxy in front of resources to be protected providing Authe
 
 # Main features
 
-- Identity and Access Management at HTTP protocol level
-- Placement within the container AND on the network layer
-- Basic and Token Authentication
-- Roles based Authorization
-- Extensible and Configurable
-- Solid multi-threaded, no blocking architecture
-- High performance
-- Small memory footprint
-- Straightforward configuration
+- Identity and Access Management at HTTP protocol level.
+- Placement within the container, on the network layer and embeddable in java applications.
+- Plugins based. All modules can be customized and plugged in via conf file.
+- Basic and Token Authentication.
+- Roles based Authorization.
+- Extensible and Configurable.
+- Solid multi-threaded, no blocking architecture.
+- High performance.
+- Small memory footprint.
+- Straightforward configuration.
 
 # Use cases
 

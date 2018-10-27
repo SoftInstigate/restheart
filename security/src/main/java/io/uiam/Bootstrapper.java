@@ -62,15 +62,14 @@ import io.uiam.handlers.GzipEncodingHandler;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
 import io.uiam.handlers.RequestLoggerHandler;
-import io.uiam.handlers.applicationlogic.ApplicationLogicHandler;
+import io.uiam.plugins.handlers.PluggableHandler;
 import io.uiam.handlers.injectors.RequestContextInjectorHandler;
 import io.uiam.init.Initializer;
-import io.uiam.security.AccessManager;
-import io.uiam.security.AuthenticationMechanismFactory;
-import io.uiam.security.FullAccessManager;
-import io.uiam.security.handlers.AuthTokenHandler;
-import io.uiam.security.handlers.CORSHandler;
-import io.uiam.security.handlers.SecurityHandlerDispacher;
+import io.uiam.plugins.authentication.AuthenticationMechanismFactory;
+import io.uiam.plugins.authorization.FullAccessManager;
+import io.uiam.handlers.security.AuthTokenHandler;
+import io.uiam.handlers.security.CORSHandler;
+import io.uiam.handlers.security.SecurityHandlerDispacher;
 import io.uiam.utils.FileUtils;
 import io.uiam.utils.LoggingInitializer;
 import io.uiam.utils.OSChecker;
@@ -92,6 +91,7 @@ import org.xnio.Options;
 import org.xnio.SslClientAuthMode;
 import org.xnio.Xnio;
 import org.xnio.ssl.XnioSsl;
+import io.uiam.plugins.authorization.PluggableAccessManager;
 
 /**
  *
@@ -515,7 +515,7 @@ public class Bootstrapper {
 
         final IdentityManager identityManager = loadIdentityManager();
 
-        final AccessManager accessManager = loadAccessManager();
+        final PluggableAccessManager accessManager = loadAccessManager();
 
         final AuthenticationMechanism authenticationMechanism = loadAuthenticationMechanism(identityManager);
 
@@ -681,10 +681,10 @@ public class Bootstrapper {
     /**
      * loadAccessManager
      *
-     * @return the AccessManager
+     * @return the PluggableAccessManager
      */
-    private static AccessManager loadAccessManager() {
-        AccessManager accessManager = new FullAccessManager();
+    private static PluggableAccessManager loadAccessManager() {
+        PluggableAccessManager accessManager = new FullAccessManager();
         if (configuration.getAmImpl() == null && configuration.getIdmImpl() != null) {
             LOGGER.warn("***** no access manager specified. authenticated users can do anything.");
         } else if (configuration.getAmImpl() == null && configuration.getIdmImpl() == null) {
@@ -696,7 +696,7 @@ public class Bootstrapper {
                         .newInstance(configuration.getAmArgs());
 
                 LOGGER.info("Access Manager {} enabled", configuration.getAmImpl());
-                accessManager = (AccessManager) am;
+                accessManager = (PluggableAccessManager) am;
             } catch (ClassNotFoundException
                     | IllegalAccessException
                     | IllegalArgumentException
@@ -759,12 +759,12 @@ public class Bootstrapper {
     private static GracefulShutdownHandler getHandlersPipe(
             final AuthenticationMechanism authenticationMechanism,
             final IdentityManager identityManager,
-            final AccessManager accessManager) {
+            final PluggableAccessManager accessManager) {
         PathHandler paths = path();
 
         pipeApplicationLogicHandlers(configuration, paths, authenticationMechanism, identityManager, accessManager);
         
-        // pipe the auth tokens invalidation handler
+        // plug the auth tokens invalidation handler
         paths.addPrefixPath("/_authtokens",
                 new RequestLoggerHandler(
                         new CORSHandler(
@@ -821,41 +821,41 @@ public class Bootstrapper {
             final Configuration conf,
             final PathHandler paths,
             AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager,
-            final AccessManager accessManager) {
-        if (!conf.getApplicationLogicMounts().isEmpty()) {
-            conf.getApplicationLogicMounts().stream().forEach((Map<String, Object> al) -> {
+            final PluggableAccessManager accessManager) {
+        if (!conf.getHandlersMounts().isEmpty()) {
+            conf.getHandlersMounts().stream().forEach((Map<String, Object> al) -> {
                 try {
-                    String alClazz = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHAT_KEY);
-                    String alWhere = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE_KEY);
-                    boolean alSecured = (Boolean) al.get(Configuration.APPLICATION_LOGIC_MOUNT_SECURED_KEY);
-                    Object alArgs = al.get(Configuration.APPLICATION_LOGIC_MOUNT_ARGS_KEY);
+                    String clazz = (String) al.get(Configuration.HANDLER_MOUNT_WHAT_KEY);
+                    String where = (String) al.get(Configuration.HANDLER_MOUNT_WHERE_KEY);
+                    boolean secured = (Boolean) al.get(Configuration.HANDLER_MOUNT_SECURED_KEY);
+                    Object args = al.get(Configuration.HANDLER_MOUNT_ARGS_KEY);
 
-                    if (alWhere == null || !alWhere.startsWith("/")) {
-                        LOGGER.error("Cannot pipe application logic handler {}. Parameter 'where' must start with /", alWhere);
+                    if (where == null || !where.startsWith("/")) {
+                        LOGGER.error("Cannot plug handler {}. Parameter 'where' must start with /", where);
                         return;
                     }
 
-                    if (alArgs != null && !(alArgs instanceof Map)) {
-                        LOGGER.error("Cannot pipe application logic handler {}."
-                                + "Args are not defined as a map. It is a ", alWhere, alWhere.getClass());
+                    if (args != null && !(args instanceof Map)) {
+                        LOGGER.error("Cannot plug handler {}."
+                                + "Args are not defined as a map. It is a ", where, where.getClass());
                         return;
                     }
 
-                    Object o = Class.forName(alClazz)
+                    Object o = Class.forName(clazz)
                             .getConstructor(PipedHttpHandler.class, Map.class)
-                            .newInstance(null, (Map) alArgs);
+                            .newInstance(null, (Map) args);
 
-                    if (o instanceof ApplicationLogicHandler) {
-                        ApplicationLogicHandler alHandler = (ApplicationLogicHandler) o;
+                    if (o instanceof PluggableHandler) {
+                        PluggableHandler alHandler = (PluggableHandler) o;
 
                         PipedHttpHandler handler
                                 = new RequestContextInjectorHandler(
-                                        "/_logic",
+                                        "/",
                                         "/",
                                         alHandler);
 
-                        if (alSecured) {
-                            paths.addPrefixPath("/_logic" + alWhere,
+                        if (secured) {
+                            paths.addPrefixPath(where,
                                     new RequestLoggerHandler(
                                             new CORSHandler(
                                                     new XPoweredByInjector(
@@ -865,7 +865,7 @@ public class Bootstrapper {
                                                                     identityManager,
                                                                     accessManager)))));
                         } else {
-                            paths.addPrefixPath("/_logic" + alWhere,
+                            paths.addPrefixPath(where,
                                     new RequestLoggerHandler(
                                             new CORSHandler(
                                                     new XPoweredByInjector(
@@ -876,11 +876,11 @@ public class Bootstrapper {
                                                                     new FullAccessManager())))));
                         }
 
-                        LOGGER.info("URL {} bound to application logic handler {}."
-                                + " Access manager: {}", "/_logic" + alWhere, alClazz, alSecured);
+                        LOGGER.info("URL {} bound to handler {}."
+                                + " Access manager: {}", where, clazz, secured);
                     } else {
-                        LOGGER.error("Cannot pipe application logic handler {}."
-                                + " Class {} does not extend ApplicationLogicHandler", alWhere, alClazz);
+                        LOGGER.error("Cannot plug handler {}."
+                                + " Class {} does not extend ApplicationLogicHandler", where, clazz);
                     }
 
                 } catch (ClassNotFoundException
@@ -890,8 +890,8 @@ public class Bootstrapper {
                         | NoSuchMethodException
                         | SecurityException
                         | InvocationTargetException t) {
-                    LOGGER.error("Cannot pipe application logic handler {}",
-                            al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE_KEY), t);
+                    LOGGER.error("Cannot plug handler {}",
+                            al.get(Configuration.HANDLER_MOUNT_WHERE_KEY), t);
                 }
             }
             );
@@ -912,7 +912,7 @@ public class Bootstrapper {
             final Configuration conf,
             final PathHandler paths,
             AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager,
-            final AccessManager accessManager) {
+            final PluggableAccessManager accessManager) {
         if (conf.getProxyMounts() == null || conf.getProxyMounts().isEmpty()) {
             LOGGER.warn("No proxy-mounts specified. The uIAM is not protecting "
                     + "any resource, are you just testing your IDM and AM?");
@@ -962,7 +962,7 @@ public class Bootstrapper {
 
                 LOGGER.info("URI {} bound to resource {}", uri, resourceURL);
             } catch (URISyntaxException ex) {
-                LOGGER.warn("invalid URI {}, resource {} not mounted ", uri, resourceURL);
+                LOGGER.warn("Invalid URI {}, resource {} not mounted ", uri, resourceURL);
             }
         });
     }

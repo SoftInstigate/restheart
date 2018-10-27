@@ -321,7 +321,7 @@
                                 <echo>1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
                                 <echo>2 - mongodb already started on default port without authentication enabled (no --auth option)</echo>
                                 <exec dir="${basedir}" executable="${basedir}/bin/start.sh">
-                                    <arg value="${basedir}/etc/uiam-integrationtest.yml"/>
+                                    <arg value="${basedir}/etc/uiam-dev.yml"/>
                                 </exec>
                             </target>
                         </configuration>

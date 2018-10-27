@@ -91,29 +91,29 @@ public class Configuration {
     public static final String DEFAULT_INSTANCE_NAME = "default";
 
 /**
-     * the key for the application-logic-mounts property.
+     * the key for the handler-mounts property.
      */
-    public static final String APPLICATION_LOGIC_MOUNTS_KEY = "application-logic-mounts";  
+    public static final String HANDLER_MOUNTS_KEY = "handler-mounts";  
     
     /**
      * the key for the args property.
      */
-    public static final String APPLICATION_LOGIC_MOUNT_ARGS_KEY = "args";
+    public static final String HANDLER_MOUNT_ARGS_KEY = "args";
 
     /**
      * the key for the what property.
      */
-    public static final String APPLICATION_LOGIC_MOUNT_WHAT_KEY = "what";
+    public static final String HANDLER_MOUNT_WHAT_KEY = "what";
 
     /**
      * the key for the where property.
      */
-    public static final String APPLICATION_LOGIC_MOUNT_WHERE_KEY = "where";
+    public static final String HANDLER_MOUNT_WHERE_KEY = "where";
 
     /**
      * the key for the secured property.
      */
-    public static final String APPLICATION_LOGIC_MOUNT_SECURED_KEY = "secured";
+    public static final String HANDLER_MOUNT_SECURED_KEY = "secured";
 
     
     /**
@@ -424,8 +424,8 @@ public class Configuration {
     private final String keystorePassword;
     private final String certPassword;
     private final List<Map<String, Object>> proxyMounts;
-    private final List<Map<String, Object>> metadataNamedSingletons;
-    private final List<Map<String, Object>> applicationLogicMounts;
+    private final List<Map<String, Object>> namedPlugins;
+    private final List<Map<String, Object>> handlersMounts;
     private final String idmImpl;
     private final Map<String, Object> idmArgs;
     private final String authMechanismImpl;
@@ -488,9 +488,9 @@ public class Configuration {
         
         proxyMounts = new ArrayList<>();
 
-        applicationLogicMounts = new ArrayList<>();
+        handlersMounts = new ArrayList<>();
         
-        metadataNamedSingletons = new ArrayList<>();
+        namedPlugins = new ArrayList<>();
 
         idmImpl = null;
         idmArgs = null;
@@ -594,9 +594,9 @@ public class Configuration {
 
         proxyMounts = getAsListOfMaps(conf, PROXY_MOUNTS_KEY, proxyMountsDefault);
 
-        applicationLogicMounts = getAsListOfMaps(conf, APPLICATION_LOGIC_MOUNTS_KEY, new ArrayList<>());
+        handlersMounts = getAsListOfMaps(conf, HANDLER_MOUNTS_KEY, new ArrayList<>());
         
-        metadataNamedSingletons = getAsListOfMaps(conf, NAMED_SINGLETONS_KEY, new ArrayList<>());
+        namedPlugins = getAsListOfMaps(conf, NAMED_SINGLETONS_KEY, new ArrayList<>());
 
         Map<String, Object> idm = getAsMap(conf, IDM_KEY);
         Map<String, Object> authMech = getAsMap(conf, AUTH_MECHANISM_KEY);
@@ -676,8 +676,8 @@ public class Configuration {
                 + ", keystorePassword=" + keystorePassword
                 + ", certPassword=" + certPassword
                 + ", resourceMounts=" + proxyMounts
-                + ", applicationLogicMounts=" + applicationLogicMounts
-                + ", metadataNamedSingletons=" + metadataNamedSingletons
+                + ", applicationLogicMounts=" + handlersMounts
+                + ", metadataNamedSingletons=" + namedPlugins
                 + ", idmImpl=" + idmImpl
                 + ", idmArgs=" + idmArgs
                 + ", authMechanismImpl=" + authMechanismImpl
@@ -1217,17 +1217,17 @@ public class Configuration {
     }
 
     /**
-     * @return the metadataNamedSingletons
+     * @return the namedPlugins
      */
-    public List<Map<String, Object>> getMetadataNamedSingletons() {
-        return Collections.unmodifiableList(metadataNamedSingletons);
+    public List<Map<String, Object>> getNamedPlugins() {
+        return Collections.unmodifiableList(namedPlugins);
     }
     
     /**
-     * @return the applicationLogicMounts
+     * @return the handlersMounts
      */
-    public List<Map<String, Object>> getApplicationLogicMounts() {
-        return Collections.unmodifiableList(applicationLogicMounts);
+    public List<Map<String, Object>> getHandlersMounts() {
+        return Collections.unmodifiableList(handlersMounts);
     }
 
     /**

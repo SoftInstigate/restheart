@@ -71,31 +71,7 @@ use-embedded-keystore: true
 # A custom initializer implmenting the io.uiam.init.Initializer interface
 # Can be used to inizialize data or add global transformers, checkers or security predicates
 
-#initializer-class: io.uiam.init.TestInitializer
-
-#### Application Logic
-
-# uIAM has a pipeline architecture where specialized undertow handlers are chained to serve the requests.
-# In order to provide additional application logic, custom hanlders pipes can be bound under the /_logic URL.
-# The custom hanlder must extends the io.uiam.handlers.ApplicationLogicHandler class
-# Use application-logic-mounts to configure custom handlers.
-
-# In the following example two built-in application logic handlers are defined:
-# PingHandler bound to /_logic/ping that implements a simple ping service
-# GetRoleHandler bound to /_logic/roles that returns the current user authentication status and eventually its roles
-# CacheInvalidator bound to /_logic/ic that invalidates a db or collection cache entry
-
-application-logic-mounts:
-    - what: io.uiam.handlers.applicationlogic.PingHandler
-      where: /ping
-      secured: false
-      args:
-          msg: "ciao from the uIAM team"
-    - what: io.uiam.handlers.applicationlogic.GetRoleHandler
-      where: /roles
-      secured: false
-      args:
-          url: /_logic/roles
+#initializer-class: io.uiam.init.impl.TestInitializer
 
 ### Security
 
@@ -107,53 +83,32 @@ application-logic-mounts:
 # The uIAM security is pluggable and you can provide you own 
 # implementation of both IDM and AM. the provided default 
 # implementations of IDM and AM are SimpleFileIdentityManager, 
-# DbIdentityManager, JwtIdentityManager and SimpleAccessManager.
+# and SimpleFileAccessManager.
 # conf-file paths are either absolute (starting with /) 
 # or relative to the uiam.jar directory
 
 idm:
-    implementation-class: io.uiam.security.impl.SimpleFileIdentityManager
-    conf-file: /Users/uji/development/restheart/etc/security-integrationtest.yml
+    implementation-class: io.uiam.plugins.authentication.impl.SimpleFileIdentityManager
+    conf-file: ../etc/security.yml
 access-manager:
-    implementation-class: io.uiam.security.impl.SimpleAccessManager
-    conf-file: /Users/uji/development/restheart/etc/security-integrationtest.yml
+    implementation-class: io.uiam.plugins.authorization.impl.SimpleFileAccessManager
+    conf-file: ../etc/security.yml
+ 
+ # ../../restheart/etc/security-integrationtest.yml
     
 # uIAM uses the BasicAuthenticationMechanism by default. 
 # A different mechanism can be specified via the auth-mechanism configuration option
 # the implementation-class must specify a factory class implementing
-# the interface io.uiam.security.AuthenticationMechanismFactory
+# the interface io.uiam.pligins.authentication.AuthenticationMechanismFactory
 # See http://undertow.io/undertow-docs/undertow-docs-1.4.0/index.html#security 
-# JwtAuthenticationManagerFactory and IdentityAuthenticationManagerFactory 
-# for example implementations
+# and IdentityAuthenticationManagerFactory for an example implementation
 
 # Identity Authentication Manager 
 # All requests are bound to the specified user
-
 #auth-mechanism:
-#    implementation-class: io.uiam.security.impl.IdentityAuthenticationManagerFactory
+#    implementation-class: io.uiam.plugins.authentication.impl.IdentityAuthenticationManagerFactory
 #    username: a
 #    pwd: a
-
-# Jwt Authentication Manager 
-# Authentication via Json Web Token https://jwt.io
-
-# algorithm: RSA (RS256 | RS384 |RS512) or HMAC (HS256 | HS384 | HS512)
-# key: for RSA the base64 encoded of the public key; for HMAC, the secret key
-# base64Encoded: set to true if the jwt token is base64 encoded. optional, default valud: false
-# usernameClaim: the claim that holds the username. optional, default value: 'sub' (jwt subject). 
-# rolesClaim: the claim that holds the roles as string or array of strings
-# issuer: verify the issues (iss claim). optional, default value matches: null (don't check iss)
-# audience: verify the audience (aud claim). optional, default value matches: null (don't check aud)
-
-#auth-mechanism:
-#    implementation-class: io.uiam.security.impl.JwtAuthenticationManagerFactory
-#    algorithm: HS256
-#    key: secret
-#    base64Encoded: false
-#    usernameClaim: sub
-#    rolesClaim: roles
-#    issuer: myIssuer
-#    audience: myAudience
 
 # Authentication Token
 
@@ -163,6 +118,29 @@ access-manager:
 
 auth-token-enabled: true
 auth-token-ttl: 15
+
+#### Handlers
+
+# uIAM has a pluggable architecture where specialized undertow handlers are chained to serve requests.
+# In order to provide additional handlers, custom hanlders pipes can be bound under the /_logic URL.
+# The pluggable hanlder must extends the io.uiam.plugins.handlers.PluggableHandler class
+# Use handler-mounts option to plug handlers.
+
+# In the following example two built-in handlers are defined:
+# PingHandler bound to /ping that implements a simple ping service
+# GetRoleHandler bound to /roles that returns the current user authentication status and eventually its roles
+
+handler-mounts:
+    - what: io.uiam.plugins.handlers.impl.PingHandler
+      where: /ping
+      secured: false
+      args:
+          msg: "ciao from the uIAM team"
+    - what: io.uiam.plugins.handlers.impl.GetRoleHandler
+      where: /roles
+      secured: false
+      args:
+          url: /roles
 
 #### Logging
 
