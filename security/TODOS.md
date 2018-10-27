@@ -4,6 +4,7 @@
 - need to allow plugging several authentication mechanism
 - BasicAuthenticationMechanism is always added. It need to be plugged via configuration as others mechanism.
 - AuthTokenAuthenticationMechanism is controlled via auth-token-enabled option. It need to be plugged via configuration as others mechanism.
+- RequestContext class is useless. Implement util class to simplify usage of HttpServerExchange.
 
 # process automation
 
