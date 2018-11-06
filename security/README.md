@@ -1,5 +1,7 @@
 # &#181;IAM
 
+[![Build Status](https://travis-ci.org/SoftInstigate/uiam.svg?branch=master)](https://travis-ci.org/SoftInstigate/uiam)
+
 &#181;IAM (micro-IAM) is a micro-gateway for **Identity and Access Management** designed for microservices architectures.
 
 It acts as a reverse proxy for resources to be protected providing Authentication and Authorization services.
