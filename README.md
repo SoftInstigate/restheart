@@ -1,6 +1,6 @@
-# RESTHeart
+<img src="https://restheart.org/images/restheart.png" width="60%" height="auto" class="image-center img-responsive" alt="RESTHeart - Web API Server for MongoDB"/>
 
-The Web API for MongoDB _made with :heart: by [SoftInstigate](http://www.softinstigate.com/)_
+RESTHeart - Web API Server for MongoDB.
 
 [![Build Status](https://travis-ci.org/SoftInstigate/restheart.svg?branch=master)](https://travis-ci.org/SoftInstigate/restheart)
 [![Maven Central](https://img.shields.io/maven-central/v/org.restheart/restheart.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22org.restheart%22%20AND%20a:%22restheart%22)
