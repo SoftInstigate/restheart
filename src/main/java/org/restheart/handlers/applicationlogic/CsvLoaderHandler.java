@@ -72,7 +72,7 @@ import org.slf4j.LoggerFactory;
 public class CsvLoaderHandler extends ApplicationLogicHandler {
 
     public static final String CVS_CONTENT_TYPE = "text/csv";
-    
+
     public static final String FILTER_PROPERTY = "_filter";
 
     private static final Logger LOGGER
@@ -233,61 +233,61 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
             CsvRequestParams params,
             RequestContext context, String rawContent)
             throws IOException {
-        List<BsonDocument> ret = new ArrayList<>();
-
-        Scanner scanner = new Scanner(rawContent);
+        List<BsonDocument> listOfBsonDocuments = new ArrayList<>();
 
         boolean isHeader = true;
 
         List<String> cols = null;
 
-        while (scanner.hasNext()) {
-            String line = scanner.nextLine();
+        try (Scanner scanner = new Scanner(rawContent)) {
+            while (scanner.hasNext()) {
+                String line = scanner.nextLine();
 
-            // split on the separator only if that comma has zero, 
-            // or an even number of quotes ahead of it.
-            List<String> vals = Arrays.asList(line.
-                    split(params.sep + "(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1));
+                // split on the separator only if that comma has zero, 
+                // or an even number of quotes ahead of it.
+                List<String> vals = Arrays.asList(line.
+                        split(params.sep + "(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1));
 
-            if (isHeader) {
-                cols = vals;
-            } else {
-                BsonDocument doc = new BsonDocument("_etag", new BsonObjectId());
+                if (isHeader) {
+                    cols = vals;
+                } else {
+                    BsonDocument doc = new BsonDocument("_etag", new BsonObjectId());
 
-                int unnamedProps = 0;
+                    int unnamedProps = 0;
 
-                for (int idx = 0; idx < vals.size(); idx++) {
-                    if (idx == params.idIdx) {
-                        doc.append("_id", getBsonValue(vals.get(params.idIdx)));
-                    } else {
-                        String propname;
-
-                        if (cols.size() <= idx) {
-                            propname = "unnamed_" + unnamedProps;
-                            unnamedProps++;
+                    for (int idx = 0; idx < vals.size(); idx++) {
+                        if (idx == params.idIdx) {
+                            doc.append("_id", getBsonValue(vals.get(params.idIdx)));
                         } else {
-                            propname = cols.get(idx);
+                            String propname;
+
+                            if (cols.size() <= idx) {
+                                propname = "unnamed_" + unnamedProps;
+                                unnamedProps++;
+                            } else {
+                                propname = cols.get(idx);
+                            }
+
+                            doc.append(propname, getBsonValue(vals.get(idx)));
                         }
-
-                        doc.append(propname, getBsonValue(vals.get(idx)));
                     }
+
+                    // add props specified via keys and values qparams
+                    addProps(params, doc);
+
+                    // apply transformer if defined
+                    if (params.transformer != null) {
+                        params.transformer.transform(exchange, context, doc, null);
+                    }
+
+                    listOfBsonDocuments.add(doc);
                 }
 
-                // add props specified via keys and values qparams
-                addProps(params, doc);
-
-                // apply transformer if defined
-                if (params.transformer != null) {
-                    params.transformer.transform(exchange, context, doc, null);
-                }
-
-                ret.add(doc);
+                isHeader = false;
             }
-
-            isHeader = false;
         }
 
-        return ret;
+        return listOfBsonDocuments;
     }
 
     private void addProps(CsvRequestParams params, BsonDocument doc) {
