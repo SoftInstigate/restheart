@@ -19,6 +19,8 @@ The Web API for MongoDB _made with :heart: by [SoftInstigate](http://www.softins
     - [Maven Site](#maven-site)
 - [Continuous Integration](#continuous-integration)
 
+<img src="https://restheart.org/images/what.png" width="80%" height="auto" class="image-center img-responsive" />
+
 ## Summary
 
 **RESTHeart** connects to **MongoDB** and opens data to the Web. Clients such as mobile and javascript apps can use the database via a simple **RESTful API**.
