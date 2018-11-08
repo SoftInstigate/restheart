@@ -1,5 +1,7 @@
 <p align="center">
-    <img src="https://restheart.org/images/restheart.png" width="60%" height="auto" class="image-center img-responsive" alt="RESTHeart - Web API Server for MongoDB"/>
+    <a href="https://restheart.org">
+        <img src="https://restheart.org/images/restheart.png" width="60%" height="auto" class="image-center img-responsive" alt="RESTHeart - Web API Server for MongoDB"/>
+    </a>
 </p>
 
 <p align="center">
@@ -24,7 +26,9 @@ RESTHeart - Web API Server for MongoDB.
 - [Continuous Integration](#continuous-integration)
 
 <p align="center">
-   <img src="https://restheart.org/images/what.png" width="80%" height="auto" class="image-center img-responsive" />
+   <a href="https://restheart.org/learn">
+       <img src="https://restheart.org/images/what.png" width="80%" height="auto" class="image-center img-responsive" />
+   </a>
 </p>
 
 ## Summary
