@@ -15,9 +15,7 @@ volumes:
 
 services:
    restheart:
-      ### Change the tag below to run a different version of RESTHeart
       image: softinstigate/restheart
-      ### Uncomment to name the container explicitly
       container_name: restheart
       depends_on:
          - mongodb
@@ -31,13 +29,12 @@ services:
       #   - ./etc:/opt/restheart/etc:ro
 
    mongodb:
-      # select a MongoDB 3.x version
       image: mongo:3.6
-      ### Name the container explicitly
       container_name: restheart-mongo
       environment:
             # Be sure this credentials match with those in etc/restheart.yml
             # $ mongo --username restheart --password R3ste4rt! --authenticationDatabase admin
+            # These aren't needed if connecting to an existing database instance
             MONGO_INITDB_ROOT_USERNAME: restheart
             MONGO_INITDB_ROOT_PASSWORD: R3ste4rt!
       command: --bind_ip_all --auth
