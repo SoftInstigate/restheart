@@ -37,7 +37,11 @@ public class HALUtils {
      * @return
      * @throws IllegalQueryParamenterException
      */
-    public static TreeMap<String, String> getPaginationLinks(HttpServerExchange exchange, RequestContext context, long size) throws IllegalQueryParamenterException {
+    public static TreeMap<String, String> getPaginationLinks(
+            HttpServerExchange exchange,
+            RequestContext context,
+            long size) throws IllegalQueryParamenterException {
+
         String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
         String queryString = URLUtils.decodeQueryString(exchange.getQueryString());
 
@@ -60,7 +64,9 @@ public class HALUtils {
                 links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize);
             }
         } else {
-            String queryStringNoPagingProps = URLUtils.decodeQueryString(URLUtils.getQueryStringRemovingParams(exchange, "page", "pagesize"));
+            String queryStringNoPagingProps = URLUtils.decodeQueryString(
+                    URLUtils.getQueryStringRemovingParams(exchange, "page", "pagesize")
+            );
 
             if (queryStringNoPagingProps == null || queryStringNoPagingProps.isEmpty()) {
                 links.put("first", requestPath + "?pagesize=" + pagesize);
@@ -69,35 +75,46 @@ public class HALUtils {
                 // i.e. the url contains the count paramenter
                 if (totalPages > 0) {
                     if (page < totalPages) {
-                        links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize);
-                        links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
+                        links.put("last", requestPath
+                                + (totalPages != 1 ? "?page=" + totalPages : "")
+                                + "&pagesize=" + pagesize);
+                        links.put("next", requestPath + "?page=" + (page + 1)
+                                + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
                     } else {
-                        links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "") + "&pagesize=" + pagesize);
+                        links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "")
+                                + "&pagesize=" + pagesize);
                     }
                 }
 
                 if (page > 1) {
-                    links.put("previous", requestPath + (page >= 2 ? "?page=" + (page - 1) : "") + (page >= 2 ? "&pagesize=" + pagesize : "?pagesize=" + pagesize));
+                    links.put("previous", requestPath + "?page=" + (page - 1) + "&pagesize=" + pagesize);
                 }
             } else {
                 links.put("first", requestPath + "?pagesize=" + pagesize + "&" + queryStringNoPagingProps);
 
                 if (totalPages <= 0) {
-                    links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
+                    links.put("next", requestPath + "?page=" + (page + 1)
+                            + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
                 }
 
                 // i.e. the url contains the count paramenter
                 if (totalPages > 0) {
                     if (page < totalPages) {
-                        links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "") + (totalPages == 1 ? "?pagesize=" : "&pagesize=") + pagesize + "&" + queryStringNoPagingProps);
-                        links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
+                        links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "")
+                                + (totalPages == 1 ? "?pagesize=" : "&pagesize=") + pagesize
+                                + "&" + queryStringNoPagingProps);
+                        links.put("next", requestPath + "?page=" + (page + 1)
+                                + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
                     } else {
-                        links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "") + (totalPages == 1 ? "?pagesize=" : "&pagesize=") + pagesize + "&" + queryStringNoPagingProps);
+                        links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "")
+                                + (totalPages == 1 ? "?pagesize=" : "&pagesize=")
+                                + pagesize + "&" + queryStringNoPagingProps);
                     }
                 }
 
                 if (page > 1) {
-                    links.put("previous", requestPath + (page >= 2 ? "?page=" + (page - 1) : "") + (page >= 2 ? "&pagesize=" + pagesize : "?pagesize=" + pagesize) + "&" + queryStringNoPagingProps);
+                    links.put("previous", requestPath + "?page=" + (page - 1)
+                            + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
                 }
             }
         }
