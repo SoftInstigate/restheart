@@ -24,7 +24,6 @@ import com.mongodb.MongoClientURI;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -567,23 +566,12 @@ public class Configuration {
 
         Map<String, Object> conf = null;
 
-        FileInputStream fis = null;
-
-        try {
-            fis = new FileInputStream(confFilePath.toFile());
+        try (FileInputStream fis = new FileInputStream(confFilePath.toFile())) {
             conf = (Map<String, Object>) yaml.load(fis);
         } catch (FileNotFoundException fne) {
             throw new ConfigurationException("configuration file not found", fne);
         } catch (Throwable t) {
             throw new ConfigurationException("error parsing the configuration file", t);
-        } finally {
-            if (fis != null) {
-                try {
-                    fis.close();
-                } catch (IOException ioe) {
-                    LOGGER.warn("Can't close the FileInputStream", ioe);
-                }
-            }
         }
 
         return conf;
@@ -988,7 +976,6 @@ public class Configuration {
             dbEtagCheckPolicy = validDbValue;
 
             try {
-
                 validCollValue = ETAG_CHECK_POLICY.valueOf(_collEtagCheckPolicy);
             } catch (IllegalArgumentException iae) {
                 LOGGER.warn("wrong value for parameter {} setting it to default value {}",
@@ -1223,7 +1210,8 @@ public class Configuration {
                 return Long.parseLong(conf.get(key).toString());
             } catch (NumberFormatException nfe) {
                 if (!silent) {
-                    LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
+                    LOGGER.warn("wrong value for parameter {}: {}. using its default value {}",
+                            key, conf.get(key), defaultValue);
                 }
                 return defaultValue;
             }
@@ -1432,7 +1420,7 @@ public class Configuration {
     }
 
     public List<String> getTraceHeaders() {
-        return traceHeaders;
+        return Collections.unmodifiableList(traceHeaders);
     }
 
     /**
@@ -1747,27 +1735,6 @@ public class Configuration {
         return getMetricsGatheringLevel().compareTo(level) >= 0;
     }
 
-    public enum METRICS_GATHERING_LEVEL {
-        /**
-         * do not gather any metrics
-         */
-        OFF,
-        /**
-         * gather basic metrics (for all databases, but not specific per
-         * database)
-         */
-        ROOT,
-        /**
-         * gather basic metrics, and also specific per database (but not
-         * collection-specific)
-         */
-        DATABASE,
-        /**
-         * gather basic, database, and collection-specific metrics
-         */
-        COLLECTION
-    }
-
     /**
      * @return the initializerClass
      */
@@ -1798,6 +1765,27 @@ public class Configuration {
 
     public boolean isAllowUnescapedCharactersInUrl() {
         return allowUnescapedCharactersInUrl;
+    }
+
+    public enum METRICS_GATHERING_LEVEL {
+        /**
+         * do not gather any metrics
+         */
+        OFF,
+        /**
+         * gather basic metrics (for all databases, but not specific per
+         * database)
+         */
+        ROOT,
+        /**
+         * gather basic metrics, and also specific per database (but not
+         * collection-specific)
+         */
+        DATABASE,
+        /**
+         * gather basic, database, and collection-specific metrics
+         */
+        COLLECTION
     }
 
 }

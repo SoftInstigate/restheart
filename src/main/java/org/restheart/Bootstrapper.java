@@ -17,7 +17,6 @@
  */
 package org.restheart;
 
-import org.restheart.handlers.TracingInstrumentationHandler;
 import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.undertow.Handlers.path;
@@ -77,6 +76,7 @@ import org.restheart.handlers.PipedWrappingHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestDispatcherHandler;
 import org.restheart.handlers.RequestLoggerHandler;
+import org.restheart.handlers.TracingInstrumentationHandler;
 import org.restheart.handlers.applicationlogic.ApplicationLogicHandler;
 import org.restheart.handlers.injectors.AccountInjectorHandler;
 import org.restheart.handlers.injectors.BodyInjectorHandler;
@@ -171,7 +171,8 @@ public class Bootstrapper {
                     .supportedFileAttributeViews().contains("posix");
 
             if (!isPosix) {
-                logErrorAndExit("Unable to fork process, this is only supported on POSIX compliant OSes", null, false, -1);
+                logErrorAndExit("Unable to fork process, this is only supported on POSIX compliant OSes",
+                        null, false, -1);
             }
 
             RHDaemon d = new RHDaemon();
@@ -213,12 +214,12 @@ public class Bootstrapper {
 
     private static void logWindowsStart() {
         String instanceName = getInstanceName();
-        
+
         LOGGER.info(STARTING
                 + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
                 + INSTANCE
                 + ansi().fg(RED).bold().a(instanceName).reset().toString());
-        
+
         if (RESTHEART_VERSION != null) {
             LOGGER.info(VERSION, ansi().fg(MAGENTA).bold().a(RESTHEART_VERSION).reset().toString());
         }
