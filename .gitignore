@@ -241,7 +241,9 @@ buildNumber.properties
 .mvn/wrapper/maven-wrapper.jar
 
 ### NetBeans ###
-**/nbproject/private/
+/nbproject/
+nbactions.xml
+nb-configuration.xml
 build/
 nbbuild/
 dist/
