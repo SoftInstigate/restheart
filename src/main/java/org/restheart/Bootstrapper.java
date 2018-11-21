@@ -126,6 +126,8 @@ public class Bootstrapper {
 
     private static boolean IS_FORKED;
     private static String ENVIRONMENT;
+    private static final Set<Entry<Object, Object>> MANIFEST_ENTRIES = FileUtils.findManifestInfo();
+    private static String BUILD_TIME;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Bootstrapper.class);
     private static final Map<String, File> TMP_EXTRACTED_FILES = new HashMap<>();
@@ -145,6 +147,16 @@ public class Bootstrapper {
      * @param args command line arguments
      */
     public static void main(final String[] args) {
+        extractCommandLineParameters(args);
+
+        extractEnvironment();
+
+        extractBuildTime();
+
+        run();
+    }
+
+    private static void extractCommandLineParameters(final String[] args) {
         Args parameters = new Args();
         JCommander cmd = JCommander.newBuilder().addObject(parameters).build();
         cmd.setProgramName("restheart.jar");
@@ -153,11 +165,12 @@ public class Bootstrapper {
             cmd.usage();
             System.exit(0);
         }
-
-        CONF_FILE_PATH = FileUtils.getFileAbsoultePath(parameters.configPath);
+        CONF_FILE_PATH = FileUtils.getFileAbsolutePath(parameters.configPath);
         IS_FORKED = parameters.isForked;
         ENVIRONMENT = parameters.env;
+    }
 
+    private static void extractEnvironment() {
         if (ENVIRONMENT == null) {
             // no --env parameter, try to read from OS environment
             ENVIRONMENT = System.getenv("RESTHEART_ENV");
@@ -166,8 +179,15 @@ public class Bootstrapper {
                 ENVIRONMENT = "default";
             }
         }
+    }
 
-        Bootstrapper.run();
+    private static void extractBuildTime() {
+        for (Entry<Object, Object> entry : MANIFEST_ENTRIES) {
+            if (entry.getKey().toString().equals("Build-Time")) {
+                BUILD_TIME = (String) entry.getValue();
+                break;
+            }
+        }
     }
 
     private static void run() {
@@ -176,7 +196,7 @@ public class Bootstrapper {
             configuration = CONF_FILE_PATH != null
                     ? new Configuration(CONF_FILE_PATH, true)
                     : new Configuration();
-            
+
             LOGGER.debug(configuration.toString());
 
             if (!configuration.isAnsiConsole()) {
@@ -193,7 +213,7 @@ public class Bootstrapper {
             if (OSChecker.isWindows()) {
                 logWindowsStart();
                 LOGGER.error("Fork is not supported on Windows");
-                LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart stopped").reset().toString());
+                LOGGER.info(ansi().fg(GREEN).a("RESTHeart stopped").reset().toString());
                 System.exit(-1);
             }
 
@@ -222,6 +242,7 @@ public class Bootstrapper {
                 try {
                     logWindowsStart();
                     logLoggingConfiguration(true);
+                    logManifestInfo();
                     d.daemonize();
                 } catch (Throwable t) {
                     logErrorAndExit("Error forking", t, false, false, -1);
@@ -231,20 +252,22 @@ public class Bootstrapper {
     }
 
     private static void logWindowsStart() {
-        LOGGER.info("Starting {}...", ansi().fg(RED).bold().a(RESTHEART).reset().toString());
-        LOGGER.info("{\"Version\": \"{}\", \"Instance\": \"{}\", \"Environment\": \"{}\"}",
-                ansi().fg(MAGENTA).bold().a(RESTHEART_VERSION).reset().toString(),
-                ansi().fg(MAGENTA).bold().a(getInstanceName()).reset().toString(),
-                ansi().fg(MAGENTA).bold().a(ENVIRONMENT).reset().toString());
+        String info = String.format("  {\n"
+                + "    \"Version\": \"%s\",\n"
+                + "    \"Instance-Name\": \"%s\",\n"
+                + "    \"Environment\": \"%s\",\n"
+                + "    \"Build-Time\": \"%s\"\n"
+                + "  }",
+                ansi().fg(MAGENTA).a(RESTHEART_VERSION).reset().toString(),
+                ansi().fg(MAGENTA).a(getInstanceName()).reset().toString(),
+                ansi().fg(MAGENTA).a(ENVIRONMENT).reset().toString(),
+                ansi().fg(MAGENTA).a(BUILD_TIME).reset().toString());
 
-        Set<Entry<Object, Object>> manifestEntries = FileUtils.findManifestInfo();
-        StringBuilder info = new StringBuilder();
-        manifestEntries.forEach(entry -> {
-            info.append(String.format("\n    \u2022 %-26s: %s", entry.getKey(),
-                    ansi().bold().a(entry.getValue()).reset().toString()));
-        });
-        LOGGER.info("Build information: \n{}\n", info.toString());
+        LOGGER.info("Starting {}\n{}", ansi().fg(RED).a(RESTHEART).reset().toString(), info);
+    }
 
+    private static void logManifestInfo() {
+        LOGGER.debug("Build Information: {}", MANIFEST_ENTRIES.toString());
     }
 
     /**
@@ -260,7 +283,7 @@ public class Bootstrapper {
         // pid file name include the hash of the configuration file so that
         // for each configuration we can have just one instance running
         Path pidFilePath = FileUtils
-                .getPidFilePath(FileUtils.getFileAbsoultePathHash(confFilePath));
+                .getPidFilePath(FileUtils.getFileAbsolutePathHash(confFilePath));
         if (Files.exists(pidFilePath)) {
             LOGGER.warn("Found pid file! If this instance is already "
                     + "running, startup will fail with a BindException");
@@ -275,7 +298,7 @@ public class Bootstrapper {
      * @param confFilePath the path of the configuration file
      */
     public static void startup(final String confFilePath) {
-        startup(FileUtils.getFileAbsoultePath(confFilePath));
+        startup(FileUtils.getFileAbsolutePath(confFilePath));
     }
 
     /**
@@ -370,7 +393,7 @@ public class Bootstrapper {
         logWindowsStart();
 
         Path pidFilePath = FileUtils.getPidFilePath(
-                FileUtils.getFileAbsoultePathHash(CONF_FILE_PATH));
+                FileUtils.getFileAbsolutePathHash(CONF_FILE_PATH));
 
         boolean pidFileAlreadyExists = false;
 
@@ -379,6 +402,7 @@ public class Bootstrapper {
         }
 
         logLoggingConfiguration(fork);
+        logManifestInfo();
 
         LOGGER.debug("Initializing MongoDB connection pool to {} with options {}",
                 configuration.getMongoUri().getHosts(), configuration.getMongoUri().getOptions());
@@ -389,7 +413,7 @@ public class Bootstrapper {
             MongoDBClientSingleton.getInstance();
             LOGGER.info("MongoDB connection pool initialized");
             LOGGER.info("MongoDB version {}",
-                    ansi().fg(MAGENTA).bold().a(MongoDBClientSingleton.getServerVersion()).reset().toString());
+                    ansi().fg(MAGENTA).a(MongoDBClientSingleton.getServerVersion()).reset().toString());
         } catch (Throwable t) {
             logErrorAndExit("Error connecting to MongoDB. exiting..", t, false, !pidFileAlreadyExists, -1);
         }
@@ -438,7 +462,7 @@ public class Bootstrapper {
                     }
                 }
             } catch (ClassNotFoundException | IllegalAccessException | InstantiationException t) {
-                LOGGER.error(ansi().fg(RED).bold().a(
+                LOGGER.error(ansi().fg(RED).a(
                         "Wrong configuration for intializer {}")
                         .reset().toString(),
                         configuration.getInitializerClass(),
@@ -446,7 +470,7 @@ public class Bootstrapper {
             }
         }
 
-        LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart started").reset().toString());
+        LOGGER.info(ansi().fg(GREEN).a("RESTHeart started").reset().toString());
     }
 
     private static String getInstanceName() {
@@ -505,7 +529,7 @@ public class Bootstrapper {
         }
 
         Path pidFilePath = FileUtils.getPidFilePath(
-                FileUtils.getFileAbsoultePathHash(CONF_FILE_PATH));
+                FileUtils.getFileAbsolutePathHash(CONF_FILE_PATH));
 
         if (removePid && pidFilePath != null) {
             if (!silent) {
@@ -534,7 +558,7 @@ public class Bootstrapper {
         }
 
         if (!silent) {
-            LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart stopped").reset().toString());
+            LOGGER.info(ansi().fg(GREEN).a("RESTHeart stopped").reset().toString());
         }
 
         LoggingInitializer.stopLogging();
