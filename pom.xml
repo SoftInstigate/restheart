@@ -173,6 +173,12 @@
             <version>4.0.3</version>
         </dependency>
         
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+            <version>1.72</version>
+        </dependency>
+        
         <!-- BEGIN Test dependencies -->
         <dependency>
             <groupId>junit</groupId>
@@ -207,6 +213,14 @@
             <artifactId>minimal-json</artifactId>
             <version>0.9.5</version>
             <scope>test</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>com.github.spullara.mustache.java</groupId>
+            <artifactId>compiler</artifactId>
+            <version>0.9.5</version>
+            <scope>test</scope>
+            <type>jar</type>
         </dependency>
         <!-- END Test dependencies -->
     </dependencies>
