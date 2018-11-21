@@ -111,7 +111,7 @@ public class Bootstrapper {
     @Parameters
     public static class Args {
 
-        @Parameter(description = "Path of configuration file", required = true)
+        @Parameter(description = "<Configuration file>")
         private String configPath = null;
 
         @Parameter(names = "--fork", description = "Fork the process")
@@ -173,7 +173,10 @@ public class Bootstrapper {
     private static void run() {
         try {
             // read configuration silently, to avoid logging before initializing the logger
-            configuration = new Configuration(CONF_FILE_PATH, true);
+            configuration = CONF_FILE_PATH != null
+                    ? new Configuration(CONF_FILE_PATH, true)
+                    : new Configuration();
+            
             LOGGER.debug(configuration.toString());
 
             if (!configuration.isAnsiConsole()) {
