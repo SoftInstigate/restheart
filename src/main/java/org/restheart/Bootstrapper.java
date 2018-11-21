@@ -17,6 +17,9 @@
  */
 package org.restheart;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
 import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.undertow.Handlers.path;
@@ -60,9 +63,7 @@ import java.util.Map;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-import static org.fusesource.jansi.Ansi.Color.GREEN;
-import static org.fusesource.jansi.Ansi.Color.MAGENTA;
-import static org.fusesource.jansi.Ansi.Color.RED;
+import static org.fusesource.jansi.Ansi.Color.*;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.fusesource.jansi.AnsiConsole;
 import static org.restheart.Configuration.RESTHEART_VERSION;
@@ -105,6 +106,25 @@ import org.slf4j.LoggerFactory;
  */
 public class Bootstrapper {
 
+    @Parameters
+    public static class Args {
+
+        @Parameter(description = "Path of configuration file", required = true)
+        private String configPath = null;
+
+        @Parameter(names = "--fork", description = "Fork the process")
+        private boolean isForked = false;
+
+        @Parameter(names = "--env", description = "Environment name")
+        private String env = null;
+
+        @Parameter(names = "--help", help = true)
+        private boolean help;
+    }
+
+    private static boolean IS_FORKED;
+    private static String ENVIRONMENT;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(Bootstrapper.class);
     private static final Map<String, File> TMP_EXTRACTED_FILES = new HashMap<>();
 
@@ -115,45 +135,55 @@ public class Bootstrapper {
     private static Undertow undertowServer;
 
     private static final String EXITING = ", exiting...";
-    private static final String INSTANCE = " instance ";
-    private static final String STARTING = "Starting ";
-    private static final String UNDEFINED = "undefined";
     private static final String RESTHEART = "RESTHeart";
-    private static final String VERSION = "version {}";
 
     /**
-     * main method
+     * parameters method
      *
      * @param args command line arguments
      */
     public static void main(final String[] args) {
-        CONF_FILE_PATH = FileUtils.getConfigurationFilePath(args);
+        Args parameters = new Args();
+        JCommander cmd = JCommander.newBuilder().addObject(parameters).build();
+        cmd.setProgramName("restheart.jar");
+        cmd.parse(args);
+        if (parameters.help) {
+            cmd.usage();
+            System.exit(0);
+        }
 
+        CONF_FILE_PATH = FileUtils.getFileAbsoultePath(parameters.configPath);
+        IS_FORKED = parameters.isForked;
+        ENVIRONMENT = parameters.env;
+
+        if (ENVIRONMENT == null) {
+            // no --env parameter, try to read from OS environment
+            ENVIRONMENT = System.getenv("RESTHEART_ENV");
+            if (ENVIRONMENT == null) {
+                // no OS environment, set a default value
+                ENVIRONMENT = "default";
+            }
+        }
+
+        Bootstrapper.run();
+    }
+
+    private static void run() {
         try {
             // read configuration silently, to avoid logging before initializing the logger
-            configuration = FileUtils.getConfiguration(args, true);
+            configuration = new Configuration(CONF_FILE_PATH, true);
             LOGGER.debug(configuration.toString());
 
             if (!configuration.isAnsiConsole()) {
                 AnsiConsole.systemInstall();
             }
-            LOGGER.info("ANSI colored console: "
-                    + ansi().fg(RED).bold().a(configuration.isAnsiConsole()).reset().toString());
+            LOGGER.info("ANSI colored console: {}", configuration.isAnsiConsole());
         } catch (ConfigurationException ex) {
-            LOGGER.info(STARTING
-                    + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
-                    + INSTANCE
-                    + ansi().fg(RED).bold().a(UNDEFINED).reset().toString());
-
-            if (RESTHEART_VERSION != null) {
-                LOGGER.info(VERSION, ansi().fg(MAGENTA).bold().a(RESTHEART_VERSION).reset().toString());
-            }
-
             logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
         }
 
-        if (!hasForkOption(args)) {
-            initLogging(args, null);
+        if (!hasForkOption()) {
+            initLogging(null);
             startServer(false);
         } else {
             if (OSChecker.isWindows()) {
@@ -181,27 +211,17 @@ public class Bootstrapper {
                 try {
                     d.init();
                     LOGGER.info("Forked process: {}", LIBC.getpid());
-                    initLogging(args, d);
+                    initLogging(d);
                 } catch (Exception t) {
                     logErrorAndExit("Error staring forked process", t, false, false, -1);
                 }
 
                 startServer(true);
             } else {
-                initLogging(args, d);
+                initLogging(d);
 
                 try {
-                    String instanceName = getInstanceName();
-
-                    LOGGER.info(STARTING
-                            + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
-                            + INSTANCE
-                            + ansi().fg(RED).bold().a(instanceName).reset().toString());
-
-                    if (RESTHEART_VERSION != null) {
-                        LOGGER.info(VERSION, RESTHEART_VERSION);
-                    }
-
+                    logWindowsStart();
                     logLoggingConfiguration(true);
 
                     d.daemonize();
@@ -213,16 +233,10 @@ public class Bootstrapper {
     }
 
     private static void logWindowsStart() {
-        String instanceName = getInstanceName();
-
-        LOGGER.info(STARTING
-                + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
-                + INSTANCE
-                + ansi().fg(RED).bold().a(instanceName).reset().toString());
-
-        if (RESTHEART_VERSION != null) {
-            LOGGER.info(VERSION, ansi().fg(MAGENTA).bold().a(RESTHEART_VERSION).reset().toString());
-        }
+        LOGGER.info("Starting {}", ansi().fg(RED).bold().a(RESTHEART).reset().toString());
+        LOGGER.info("Instance name: {}", ansi().fg(CYAN).bold().a(getInstanceName()).reset().toString());
+        LOGGER.info("Version: {}", ansi().fg(MAGENTA).bold().a(RESTHEART_VERSION).reset().toString());
+        LOGGER.info("Environment: {}", ansi().fg(RED).bold().a(ENVIRONMENT).reset().toString());
     }
 
     /**
@@ -295,13 +309,13 @@ public class Bootstrapper {
      * @param args
      * @param d
      */
-    private static void initLogging(final String[] args, final RHDaemon d) {
+    private static void initLogging(final RHDaemon d) {
         LoggingInitializer.setLogLevel(configuration.getLogLevel());
 
         if (d != null && d.isDaemonized()) {
             LoggingInitializer.stopConsoleLogging();
             LoggingInitializer.startFileLogging(configuration.getLogFilePath());
-        } else if (!hasForkOption(args)) {
+        } else if (!hasForkOption()) {
             if (!configuration.isLogToConsole()) {
                 LoggingInitializer.stopConsoleLogging();
             }
@@ -341,20 +355,10 @@ public class Bootstrapper {
      * hasForkOption
      *
      * @param args
-     * @return true if has fork option
+     * @return true if has isForked option
      */
-    private static boolean hasForkOption(final String[] args) {
-        if (args == null || args.length < 1) {
-            return false;
-        }
-
-        for (String arg : args) {
-            if (arg.equals("--fork")) {
-                return true;
-            }
-        }
-
-        return false;
+    private static boolean hasForkOption() {
+        return IS_FORKED;
     }
 
     /**
@@ -446,9 +450,9 @@ public class Bootstrapper {
 
     private static String getInstanceName() {
         return configuration == null
-                ? UNDEFINED
+                ? "Undefined"
                 : configuration.getInstanceName() == null
-                ? UNDEFINED
+                ? "Undefined"
                 : configuration.getInstanceName();
     }
 
