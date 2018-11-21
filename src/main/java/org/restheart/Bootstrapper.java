@@ -60,6 +60,8 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -177,7 +179,6 @@ public class Bootstrapper {
             if (!configuration.isAnsiConsole()) {
                 AnsiConsole.systemInstall();
             }
-            LOGGER.info("ANSI colored console: {}", configuration.isAnsiConsole());
         } catch (ConfigurationException ex) {
             logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
         }
@@ -227,10 +228,20 @@ public class Bootstrapper {
     }
 
     private static void logWindowsStart() {
-        LOGGER.info("Starting {}", ansi().fg(RED).bold().a(RESTHEART).reset().toString());
-        LOGGER.info("Instance name: {}", ansi().fg(CYAN).bold().a(getInstanceName()).reset().toString());
-        LOGGER.info("Version: {}", ansi().fg(MAGENTA).bold().a(RESTHEART_VERSION).reset().toString());
-        LOGGER.info("Environment: {}", ansi().fg(RED).bold().a(ENVIRONMENT).reset().toString());
+        LOGGER.info("Starting {}...", ansi().fg(RED).bold().a(RESTHEART).reset().toString());
+        LOGGER.info("{\"Version\": \"{}\", \"Instance\": \"{}\", \"Environment\": \"{}\"}",
+                ansi().fg(MAGENTA).bold().a(RESTHEART_VERSION).reset().toString(),
+                ansi().fg(MAGENTA).bold().a(getInstanceName()).reset().toString(),
+                ansi().fg(MAGENTA).bold().a(ENVIRONMENT).reset().toString());
+
+        Set<Entry<Object, Object>> manifestEntries = FileUtils.findManifestInfo();
+        StringBuilder info = new StringBuilder();
+        manifestEntries.forEach(entry -> {
+            info.append(String.format("\n    \u2022 %-26s: %s", entry.getKey(),
+                    ansi().bold().a(entry.getValue()).reset().toString()));
+        });
+        LOGGER.info("Build information: \n{}\n", info.toString());
+
     }
 
     /**
