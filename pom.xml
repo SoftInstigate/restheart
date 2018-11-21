@@ -20,6 +20,7 @@
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <!-- By default skip integration tests. Use 'mvn verify -DskipITs=false' to run them. -->
         <skipITs>true</skipITs>
+        <license>GNU AGPL v3 (https://github.com/SoftInstigate/restheart/blob/master/LICENSE.txt)</license>
     </properties>
 
     <!-- Project Information -->
@@ -34,6 +35,12 @@
             <url>http://www.gnu.org/licenses/agpl-3.0.html</url>
             <distribution>repo</distribution>
             <comments>A business-friendly OSS license</comments>
+        </license>
+        <license>
+            <name>RESTHeart COMMERCIAL LICENSE</name>
+            <url>https://github.com/SoftInstigate/restheart/blob/master/COMM-LICENSE.txt</url>
+            <distribution>manual</distribution>
+            <comments>Optional commercial license</comments>
         </license>
     </licenses>
 
@@ -329,6 +336,10 @@
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                             <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                         </manifest>
+                        <manifestEntries>
+                            <Build-Time>${maven.build.timestamp}</Build-Time>
+                            <License>${license}</License>
+                        </manifestEntries>
                     </archive>
                 </configuration>
             </plugin>
