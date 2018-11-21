@@ -57,7 +57,7 @@ public class Shutdowner {
             LOGGER.info("Shutting down the RESTHeart instance run with configuration file {}", FileUtils.getConfigurationFilePath(args).toString());
         }
 
-        Path pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsoultePathHash(FileUtils.getConfigurationFilePath(args)));
+        Path pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsolutePathHash(FileUtils.getConfigurationFilePath(args)));
 
         int pid = FileUtils.getPidFromFile(pidFilePath);
 

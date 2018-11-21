@@ -50,7 +50,7 @@ public class FileUtils {
     private static final Path DEFAULT_PID_DIR = new File("/var/run").toPath();
     private static final Path TMP_DIR = new File(System.getProperty("java.io.tmpdir")).toPath();
 
-    public static Path getFileAbsoultePath(String path) {
+    public static Path getFileAbsolutePath(String path) {
         if (path == null) {
             return null;
         }
@@ -58,7 +58,7 @@ public class FileUtils {
         return FileSystems.getDefault().getPath(path).toAbsolutePath();
     }
 
-    public static int getFileAbsoultePathHash(Path path) {
+    public static int getFileAbsolutePathHash(Path path) {
         if (path == null) {
             return 0;
         }
@@ -86,7 +86,7 @@ public class FileUtils {
         if (args != null) {
             for (String arg : args) {
                 if (!arg.equals("--fork")) {
-                    return getFileAbsoultePath(arg);
+                    return getFileAbsolutePath(arg);
                 }
             }
         }
@@ -146,8 +146,8 @@ public class FileUtils {
         }
     }
 
-    public static  Set<Entry<Object,Object>> findManifestInfo() {
-        Set<Entry<Object,Object>> result = null;
+    public static Set<Entry<Object, Object>> findManifestInfo() {
+        Set<Entry<Object, Object>> result = null;
         try {
             Enumeration<URL> resources = Thread.currentThread().getContextClassLoader()
                     .getResources("META-INF/MANIFEST.MF");
@@ -158,6 +158,7 @@ public class FileUtils {
                 String implementationTitle = mainAttributes.getValue("Implementation-Title");
                 if (implementationTitle != null && implementationTitle.equals("Restheart")) {
                     result = mainAttributes.entrySet();
+                    break;
                 }
             }
         } catch (IOException e) {
