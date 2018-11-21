@@ -188,11 +188,8 @@ public class Bootstrapper {
         } else {
             if (OSChecker.isWindows()) {
                 logWindowsStart();
-
                 LOGGER.error("Fork is not supported on Windows");
-
                 LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart stopped").reset().toString());
-
                 System.exit(-1);
             }
 
@@ -215,15 +212,12 @@ public class Bootstrapper {
                 } catch (Exception t) {
                     logErrorAndExit("Error staring forked process", t, false, false, -1);
                 }
-
                 startServer(true);
             } else {
                 initLogging(d);
-
                 try {
                     logWindowsStart();
                     logLoggingConfiguration(true);
-
                     d.daemonize();
                 } catch (Throwable t) {
                     logErrorAndExit("Error forking", t, false, false, -1);
@@ -249,19 +243,15 @@ public class Bootstrapper {
         if (OSChecker.isWindows()) {
             return false;
         }
-
         // pid file name include the hash of the configuration file so that
         // for each configuration we can have just one instance running
-        Path pidFilePath = FileUtils.getPidFilePath(
-                FileUtils.getFileAbsoultePathHash(confFilePath));
-
+        Path pidFilePath = FileUtils
+                .getPidFilePath(FileUtils.getFileAbsoultePathHash(confFilePath));
         if (Files.exists(pidFilePath)) {
             LOGGER.warn("Found pid file! If this instance is already "
                     + "running, startup will fail with a BindException");
-
             return true;
         }
-
         return false;
     }
 
@@ -283,14 +273,9 @@ public class Bootstrapper {
         try {
             configuration = FileUtils.getConfiguration(confFilePath, false);
         } catch (ConfigurationException ex) {
-            if (RESTHEART_VERSION != null) {
-                LOGGER.info(ansi().fg(RED).bold().a(RESTHEART).reset().toString() + " version {}",
-                        ansi().fg(MAGENTA).bold().a(RESTHEART_VERSION).reset().toString());
-            }
-
+            logWindowsStart();
             logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
         }
-
         startServer(false);
     }
 
@@ -339,7 +324,8 @@ public class Bootstrapper {
         }
 
         if (configuration.isLogToFile()) {
-            LOGGER.info("Logging to file {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
+            LOGGER.info("Logging to file {} with level {}",
+                    configuration.getLogFilePath(), configuration.getLogLevel());
         }
 
         if (!fork) {
@@ -380,7 +366,8 @@ public class Bootstrapper {
 
         logLoggingConfiguration(fork);
 
-        LOGGER.debug("Initializing MongoDB connection pool to {} with options {}", configuration.getMongoUri().getHosts(), configuration.getMongoUri().getOptions());
+        LOGGER.debug("Initializing MongoDB connection pool to {} with options {}",
+                configuration.getMongoUri().getHosts(), configuration.getMongoUri().getOptions());
 
         try {
             MongoDBClientSingleton.init(configuration);
@@ -547,36 +534,33 @@ public class Bootstrapper {
             logErrorAndExit("No configuration found. exiting..", null, false, -1);
         }
 
-        if (!configuration.isHttpsListener() && !configuration.isHttpListener() && !configuration.isAjpListener()) {
+        if (!configuration.isHttpsListener()
+                && !configuration.isHttpListener()
+                && !configuration.isAjpListener()) {
             logErrorAndExit("No listener specified. exiting..", null, false, -1);
         }
 
         final IdentityManager identityManager = loadIdentityManager();
-
         final AccessManager accessManager = loadAccessManager();
-
         final AuthenticationMechanism authenticationMechanism = loadAuthenticationMechanism(identityManager);
 
         if (configuration.isAuthTokenEnabled()) {
-            LOGGER.info("Token based authentication enabled with token TTL {} minutes", configuration.getAuthTokenTtl());
+            LOGGER.info("Token based authentication enabled with token TTL {} minutes",
+                    configuration.getAuthTokenTtl());
         }
 
         SSLContext sslContext = null;
 
         try {
             sslContext = SSLContext.getInstance("TLS");
-
             KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-
             KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
 
             if (getConfiguration().isUseEmbeddedKeystore()) {
                 char[] storepass = "restheart".toCharArray();
                 char[] keypass = "restheart".toCharArray();
-
                 String storename = "rakeystore.jks";
-
                 ks.load(Bootstrapper.class.getClassLoader().getResourceAsStream(storename), storepass);
                 kmf.init(ks, keypass);
             } else {
@@ -585,9 +569,7 @@ public class Bootstrapper {
                     kmf.init(ks, configuration.getCertPassword().toCharArray());
                 }
             }
-
             tmf.init(ks);
-
             sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
         } catch (KeyManagementException
                 | NoSuchAlgorithmException
@@ -605,17 +587,20 @@ public class Bootstrapper {
 
         if (configuration.isHttpsListener()) {
             builder.addHttpsListener(configuration.getHttpsPort(), configuration.getHttpHost(), sslContext);
-            LOGGER.info("HTTPS listener bound at {}:{}", configuration.getHttpsHost(), configuration.getHttpsPort());
+            LOGGER.info("HTTPS listener bound at {}:{}",
+                    configuration.getHttpsHost(), configuration.getHttpsPort());
         }
 
         if (configuration.isHttpListener()) {
             builder.addHttpListener(configuration.getHttpPort(), configuration.getHttpsHost());
-            LOGGER.info("HTTP listener bound at {}:{}", configuration.getHttpHost(), configuration.getHttpPort());
+            LOGGER.info("HTTP listener bound at {}:{}",
+                    configuration.getHttpHost(), configuration.getHttpPort());
         }
 
         if (configuration.isAjpListener()) {
             builder.addAjpListener(configuration.getAjpPort(), configuration.getAjpHost());
-            LOGGER.info("Ajp listener bound at {}:{}", configuration.getAjpHost(), configuration.getAjpPort());
+            LOGGER.info("Ajp listener bound at {}:{}",
+                    configuration.getAjpHost(), configuration.getAjpPort());
         }
 
         LocalCachesSingleton.init(configuration);
@@ -652,7 +637,8 @@ public class Bootstrapper {
         builder.setServerOption(
                 UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL,
                 configuration.isAllowUnescapedCharactersInUrl());
-        LOGGER.info("Allow unescaped characters in URL: {}", configuration.isAllowUnescapedCharactersInUrl());
+        LOGGER.info("Allow unescaped characters in URL: {}",
+                configuration.isAllowUnescapedCharactersInUrl());
 
         ConfigurationHelper.setConnectionOptions(builder, configuration);
 
@@ -669,7 +655,8 @@ public class Bootstrapper {
         AuthenticationMechanism authMechanism = null;
         if (configuration.getAuthMechanism() != null) {
             try {
-                AuthenticationMechanismFactory am = (AuthenticationMechanismFactory) Class.forName(configuration.getAuthMechanism())
+                AuthenticationMechanismFactory am = (AuthenticationMechanismFactory) Class
+                        .forName(configuration.getAuthMechanism())
                         .getConstructor()
                         .newInstance();
 
@@ -682,10 +669,12 @@ public class Bootstrapper {
                     | NoSuchMethodException
                     | SecurityException
                     | InvocationTargetException ex) {
-                logErrorAndExit("Error configuring Authentication Mechanism implementation " + configuration.getAuthMechanism(), ex, false, -3);
+                logErrorAndExit("Error configuring Authentication Mechanism implementation "
+                        + configuration.getAuthMechanism(), ex, false, -3);
             }
         } else {
-            LOGGER.info("Authentication Mechanism io.undertow.security.impl.BasicAuthenticationMechanism enabled");
+            LOGGER.info("Authentication Mechanism "
+                    + "io.undertow.security.impl.BasicAuthenticationMechanism enabled");
         }
         return authMechanism;
     }
@@ -714,7 +703,8 @@ public class Bootstrapper {
                     | NoSuchMethodException
                     | SecurityException
                     | InvocationTargetException ex) {
-                logErrorAndExit("Error configuring Identity Manager implementation " + configuration.getIdmImpl(), ex, false, -3);
+                logErrorAndExit("Error configuring Identity Manager implementation "
+                        + configuration.getIdmImpl(), ex, false, -3);
             }
         }
         return identityManager;
@@ -736,7 +726,6 @@ public class Bootstrapper {
                 Object am = Class.forName(configuration.getAmImpl())
                         .getConstructor(Map.class)
                         .newInstance(configuration.getAmArgs());
-
                 LOGGER.info("Access Manager {} enabled", configuration.getAmImpl());
                 accessManager = (AccessManager) am;
             } catch (ClassNotFoundException
@@ -746,7 +735,8 @@ public class Bootstrapper {
                     | NoSuchMethodException
                     | SecurityException
                     | InvocationTargetException ex) {
-                logErrorAndExit("Error configuring Access Manager implementation " + configuration.getAmImpl(), ex, false, -3);
+                logErrorAndExit("Error configuring Access Manager implementation "
+                        + configuration.getAmImpl(), ex, false, -3);
             }
         }
         return accessManager;
@@ -784,11 +774,9 @@ public class Bootstrapper {
     }
 
     private static boolean isPathTemplate(final String url) {
-        if (url == null) {
-            return false;
-        } else {
-            return url.contains("{") && url.contains("}");
-        }
+        return (url == null)
+                ? false
+                : url.contains("{") && url.contains("}");
     }
 
     /**
@@ -865,7 +853,6 @@ public class Bootstrapper {
         }
 
         pipeStaticResourcesHandlers(configuration, paths, authenticationMechanism, identityManager, accessManager);
-
         pipeApplicationLogicHandlers(configuration, paths, authenticationMechanism, identityManager, accessManager);
 
         // pipe the auth tokens invalidation handler
@@ -943,7 +930,8 @@ public class Bootstrapper {
                     }
 
                     if (where == null || !where.startsWith("/")) {
-                        LOGGER.error("Cannot bind static resources to {}. parameter 'where' must start with /", where);
+                        LOGGER.error("Cannot bind static resources to {}. "
+                                + "parameter 'where' must start with /", where);
                         return;
                     }
 
@@ -956,7 +944,8 @@ public class Bootstrapper {
                     if (embedded) {
                         if (path.startsWith("/")) {
                             LOGGER.error("Cannot bind embedded static resources to {}. parameter 'where'"
-                                    + "cannot start with /. the path is relative to the jar root dir or classpath directory", where);
+                                    + "cannot start with /. the path is relative to the jar root dir"
+                                    + " or classpath directory", where);
                             return;
                         }
 
@@ -974,8 +963,10 @@ public class Bootstrapper {
                             LOGGER.error("Error extracting embedded static resource {}", path, ex);
 
                             if ("browser".equals(path)) {
-                                LOGGER.error("**** Have you downloaded the HAL Browser submodule before building?");
-                                LOGGER.error("**** To fix this, run: $ git submodule update --init --recursive");
+                                LOGGER.error("**** Have you downloaded the "
+                                        + "HAL Browser submodule before building?");
+                                LOGGER.error("**** To fix this, run: "
+                                        + "$ git submodule update --init --recursive");
                             }
                             return;
 
@@ -1021,13 +1012,16 @@ public class Bootstrapper {
 
                         paths.addPrefixPath(where, ph);
 
-                        LOGGER.info("URL {} bound to static resources {}. Access Manager: {}", where, file.getAbsolutePath(), secured);
+                        LOGGER.info("URL {} bound to static resources {}. Access Manager: {}",
+                                where, file.getAbsolutePath(), secured);
                     } else {
-                        LOGGER.error("Failed to bind URL {} to static resources {}. Directory does not exist.", where, path);
+                        LOGGER.error("Failed to bind URL {} to static resources {}."
+                                + " Directory does not exist.", where, path);
                     }
 
                 } catch (Throwable t) {
-                    LOGGER.error("Cannot bind static resources to {}", sr.get(Configuration.STATIC_RESOURCES_MOUNT_WHERE_KEY), t);
+                    LOGGER.error("Cannot bind static resources to {}",
+                            sr.get(Configuration.STATIC_RESOURCES_MOUNT_WHERE_KEY), t);
                 }
             });
         }
@@ -1056,13 +1050,15 @@ public class Bootstrapper {
                     Object alArgs = al.get(Configuration.APPLICATION_LOGIC_MOUNT_ARGS_KEY);
 
                     if (alWhere == null || !alWhere.startsWith("/")) {
-                        LOGGER.error("Cannot pipe application logic handler {}. Parameter 'where' must start with /", alWhere);
+                        LOGGER.error("Cannot pipe application logic handler {}."
+                                + " Parameter 'where' must start with /", alWhere);
                         return;
                     }
 
                     if (alArgs != null && !(alArgs instanceof Map)) {
                         LOGGER.error("Cannot pipe application logic handler {}."
-                                + "Args are not defined as a map. It is a ", alWhere, alWhere.getClass());
+                                + "Args are not defined as a map. It is a ",
+                                alWhere, alWhere.getClass());
                         return;
 
                     }
@@ -1106,7 +1102,8 @@ public class Bootstrapper {
                                 + " Access manager: {}", "/_logic" + alWhere, alClazz, alSecured);
                     } else {
                         LOGGER.error("Cannot pipe application logic handler {}."
-                                + " Class {} does not extend ApplicationLogicHandler", alWhere, alClazz);
+                                + " Class {} does not extend ApplicationLogicHandler",
+                                alWhere, alClazz);
                     }
 
                 } catch (ClassNotFoundException
