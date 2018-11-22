@@ -1,4 +1,4 @@
-FROM openjdk:8u171-jre-alpine
+FROM openjdk:8u181-jre-alpine
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
