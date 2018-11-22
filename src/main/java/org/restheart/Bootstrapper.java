@@ -159,7 +159,7 @@ public class Bootstrapper {
     private static void extractCommandLineParameters(final String[] args) {
         Args parameters = new Args();
         JCommander cmd = JCommander.newBuilder().addObject(parameters).build();
-        cmd.setProgramName("restheart.jar");
+        cmd.setProgramName("java -Dfile.encoding=UTF-8 -jar -server restheart.jar");
         cmd.parse(args);
         if (parameters.help) {
             cmd.usage();
