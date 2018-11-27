@@ -210,7 +210,7 @@ access-manager:
 # A different mechanism can be specified via the auth-mechanism configuration option
 # the implementation-class must specify a factory class implementing
 # the interface org.restheart.security.AuthenticationMechanismFactory
-# See http://undertow.io/undertow-docs/undertow-docs-1.4.0/index.html#security 
+# See http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#security
 # JwtAuthenticationManagerFactory and IdentityAuthenticationManagerFactory 
 # for example implementations
 
