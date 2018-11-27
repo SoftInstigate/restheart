@@ -38,7 +38,7 @@ public class MongoDBClientSingleton {
     private static MongoClientURI mongoUri;
 
     private static String serverVersion = null;
-    private static Boolean replicaSet = null;
+    private static boolean replicaSet = false;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoDBClientSingleton.class);
 
