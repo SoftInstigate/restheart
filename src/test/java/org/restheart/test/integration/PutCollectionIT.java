@@ -17,6 +17,7 @@
  */
 package org.restheart.test.integration;
 
+import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import io.undertow.util.Headers;
 import org.apache.http.client.fluent.Request;
@@ -62,7 +63,7 @@ public class PutCollectionIT extends HttpClientAbstactIT {
 
         resp = adminExecutor.execute(Request.Get(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
-        JsonObject content = JsonObject.readFrom(resp.returnContent().asString());
+        JsonObject content = Json.parse(resp.returnContent().asString()).asObject();
 
         String etag = content.get("_etag").asObject().get("$oid").asString();
 
@@ -72,7 +73,7 @@ public class PutCollectionIT extends HttpClientAbstactIT {
 
         resp = adminExecutor.execute(Request.Get(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
-        content = JsonObject.readFrom(resp.returnContent().asString());
+        content = Json.parse(resp.returnContent().asString()).asObject();
         assertNull("check put content", content.get("a"));
         assertNotNull("check put content", content.get("b"));
         assertTrue("check put content", content.get("b").asInt() == 2);

@@ -1,5 +1,6 @@
 package org.restheart.handlers.files;
 
+import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import com.mashape.unirest.http.Unirest;
 import io.undertow.util.Headers;
@@ -131,7 +132,7 @@ public class GetFileHandlerIT extends HttpClientAbstactIT {
         JsonObject json = null;
 
         try {
-            json = JsonObject.readFrom(content);
+            json = Json.parse(content).asObject();
         } catch (Throwable t) {
             fail("parsing received json");
         }
@@ -173,7 +174,7 @@ public class GetFileHandlerIT extends HttpClientAbstactIT {
         JsonObject json = null;
 
         try {
-            json = JsonObject.readFrom(content);
+            json = Json.parse(content).asObject();
         } catch (Throwable t) {
             fail("parsing received json");
         }
@@ -215,7 +216,7 @@ public class GetFileHandlerIT extends HttpClientAbstactIT {
         JsonObject json = null;
 
         try {
-            json = JsonObject.readFrom(content);
+            json = Json.parse(content).asObject();
         } catch (Throwable t) {
             fail("parsing received json");
         }

@@ -1,5 +1,6 @@
 package org.restheart.handlers.files;
 
+import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 
 import org.apache.http.HttpEntity;
@@ -16,7 +17,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.restheart.hal.Representation;
 import org.restheart.test.integration.HttpClientAbstactIT;
-import org.restheart.utils.HttpStatus;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -125,7 +125,7 @@ public class PutFileHandlerIT extends HttpClientAbstactIT {
         JsonObject json = null;
 
         try {
-            json = JsonObject.readFrom(content);
+            json = Json.parse(content).asObject();
         } catch (Throwable t) {
             fail("parsing received json");
         }
@@ -164,7 +164,7 @@ public class PutFileHandlerIT extends HttpClientAbstactIT {
         JsonObject json = null;
 
         try {
-            json = JsonObject.readFrom(content);
+            json = Json.parse(content).asObject();
         } catch (Throwable t) {
             fail("parsing received json");
         }

@@ -94,7 +94,7 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         Response resp4 = adminExecutor.execute(Request.Get(createdDocUri)
                 .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
-        JsonObject content = JsonObject.readFrom(resp4.returnContent().asString());
+        JsonObject content = Json.parse(resp4.returnContent().asString()).asObject();
         assertTrue("check created doc content", content.get("_id").asInt() == 100);
         assertNotNull("check created doc content", content.get("_etag"));
         assertNotNull("check created doc content", content.get("a"));
@@ -139,7 +139,7 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         Response resp4 = adminExecutor.execute(Request.Get(createdDocUri)
                 .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
-        JsonObject content = JsonObject.readFrom(resp4.returnContent().asString());
+        JsonObject content = Json.parse(resp4.returnContent().asString()).asObject();
         assertTrue("check created doc content", content.get("_id").asObject().get("$oid").asString()
                 .equals("54c965cbc2e64568e235b711"));
         assertNotNull("check created doc content", content.get("_etag"));
@@ -155,7 +155,7 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         Response resp5 = adminExecutor.execute(Request.Get(collectionTmpUriSearch)
                 .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
-        content = JsonObject.readFrom(resp5.returnContent().asString());
+        content = Json.parse(resp5.returnContent().asString()).asObject();
         assertTrue("check created doc content", content.get("_returned").asInt() == 0);
 
         // *** filter - case 1 - with oid id should find it
@@ -167,7 +167,7 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         Response resp6 = adminExecutor.execute(Request.Get(collectionTmpUriSearch)
                 .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
-        content = JsonObject.readFrom(resp6.returnContent().asString());
+        content = Json.parse(resp6.returnContent().asString()).asObject();
         assertTrue("check created doc content", content.get("_returned").asInt() == 1);
     }
 

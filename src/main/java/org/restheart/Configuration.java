@@ -556,7 +556,7 @@ public class Configuration {
      * undertow connetction options
      *
      * @see
-     * http://undertow.io/undertow-docs/undertow-docs-1.3.0/index.html#common-listener-optionshttp://undertow.io/undertow-docs/undertow-docs-1.3.0/index.html#common-listener-options
+     * http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#common-listener-options
      */
     public static final String CONNECTION_OPTIONS_KEY = "connection-options";
 

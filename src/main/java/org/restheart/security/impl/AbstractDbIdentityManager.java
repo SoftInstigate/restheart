@@ -146,7 +146,7 @@ public abstract class AbstractDbIdentityManager
 
         if (this.createUser) {
             LOGGER.trace("create user option enabled");
-            if (this.mongoColl.count() < 1) {
+            if (this.mongoColl.countDocuments() < 1) {
                 this.mongoColl.insertOne(this.createUserDocument);
                 LOGGER.info("no user found. created default user with _id {}", this.createUserDocument.get("_id"));
             } else {

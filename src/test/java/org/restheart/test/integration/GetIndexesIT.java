@@ -17,6 +17,7 @@
  */
 package org.restheart.test.integration;
 
+import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import java.net.URI;
@@ -76,7 +77,7 @@ public class GetIndexesIT extends HttpClientAbstactIT {
         JsonObject json = null;
 
         try {
-            json = JsonObject.readFrom(content);
+            json = Json.parse(content).asObject();
         } catch (Throwable t) {
             fail("parsing received json");
         }

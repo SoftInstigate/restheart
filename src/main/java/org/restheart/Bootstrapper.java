@@ -666,7 +666,6 @@ public class Bootstrapper {
                 .setWorkerThreads(configuration.getWorkerThreads())
                 .setDirectBuffers(configuration.isDirectBuffers())
                 .setBufferSize(configuration.getBufferSize())
-                .setBuffersPerRegion(configuration.getBuffersPerRegion())
                 .setHandler(shutdownHandler);
 
         // starting undertow 1.4.23 URL become much stricter 

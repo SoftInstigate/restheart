@@ -17,6 +17,7 @@
  */
 package org.restheart.test.integration;
 
+import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.mashape.unirest.http.Unirest;
@@ -87,7 +88,7 @@ public class GetCollectionIT extends HttpClientAbstactIT {
         JsonObject json = null;
 
         try {
-            json = JsonObject.readFrom(content);
+            json = Json.parse(content).asObject();
         } catch (Throwable t) {
             fail("@@@ Failed parsing received json");
         }
@@ -162,7 +163,7 @@ public class GetCollectionIT extends HttpClientAbstactIT {
         JsonObject json = null;
 
         try {
-            json = JsonObject.readFrom(content);
+            json = Json.parse(content).asObject();
         } catch (Throwable t) {
             fail("@@@ Failed parsing received json");
         }
@@ -224,7 +225,7 @@ public class GetCollectionIT extends HttpClientAbstactIT {
         JsonObject json = null;
 
         try {
-            json = JsonObject.readFrom(content);
+            json = Json.parse(content).asObject();
         } catch (Throwable t) {
             fail("@@@ Failed parsing received json");
         }
@@ -316,7 +317,7 @@ public class GetCollectionIT extends HttpClientAbstactIT {
         JsonObject json = null;
 
         try {
-            json = JsonObject.readFrom(content);
+            json = Json.parse(content).asObject();
         } catch (Throwable t) {
             fail("@@@ Failed parsing received json");
         }
@@ -374,7 +375,7 @@ public class GetCollectionIT extends HttpClientAbstactIT {
         JsonObject json = null;
 
         try {
-            json = JsonObject.readFrom(content);
+            json = Json.parse(content).asObject();
         } catch (Throwable t) {
             fail("@@@ Failed parsing received json");
         }
@@ -431,30 +432,6 @@ public class GetCollectionIT extends HttpClientAbstactIT {
         doc.append("data", data);
         
         coll.insertOne(doc);
-        
-        URI documentUri = buildURI("/" + dbName + "/" + collection1Name + "/bin");
-        
-        String url = documentUri.toString();
-        
-        com.mashape.unirest.http.HttpResponse<String> resp = Unirest.get(url)
-                .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .asString();
-        
-        assertEquals("get document with binary property", 200, resp.getStatus());
-    }
-    
-    @Test
-    public void testBinaryPropertyLegacyDriver() throws Exception {
-        byte[] data = "DqnEq7hiWZ1jHoYf/YJpNHevlGrRmT5V9NGN7daoPYetiTvgeP4C9n4j8Gu5mduhEYzWDFK2a3gO+CvzrDgM3BBFG07fF6qabHXDsGTo92m93QohjGtqn8nkNP6KVnWIcbgBbw==".getBytes();
-        
-        DBCollection coll = mongoClient.getDB(dbName).getCollection(collection1Name);
-        
-        BasicDBObject doc = new BasicDBObject();
-        
-        doc.append("_id", "bin");
-        doc.append("data", data);
-        
-        coll.insert(doc);
         
         URI documentUri = buildURI("/" + dbName + "/" + collection1Name + "/bin");
         

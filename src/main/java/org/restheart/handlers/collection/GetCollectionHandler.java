@@ -19,10 +19,10 @@ package org.restheart.handlers.collection;
 
 import com.mongodb.MongoException;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.util.JSONParseException;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
 import org.bson.BsonDocument;
+import org.bson.json.JsonParseException;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.hal.Representation;
@@ -97,7 +97,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
                         context.getFiltersDocument(),
                         context.getProjectionDocument(),
                         context.getCursorAllocationPolicy());
-            } catch (JSONParseException jpe) {
+            } catch (JsonParseException jpe) {
                 // the filter expression is not a valid json string
                 LOGGER.debug("invalid filter expression {}",
                         context.getFilter(), jpe);

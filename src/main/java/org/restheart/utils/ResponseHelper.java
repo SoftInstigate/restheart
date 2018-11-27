@@ -17,7 +17,6 @@
  */
 package org.restheart.utils;
 
-import com.mongodb.util.JSONParseException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.io.PrintWriter;
@@ -28,6 +27,7 @@ import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.Document;
+import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.RequestContext;
@@ -130,7 +130,7 @@ public class ResponseHelper {
                     new BsonString(t.getClass().getName()));
 
             if (t.getMessage() != null) {
-                if (t instanceof JSONParseException) {
+                if (t instanceof JsonParseException) {
                     nrep.addProperty("exception message",
                             new BsonString("invalid json"));
                 } else {

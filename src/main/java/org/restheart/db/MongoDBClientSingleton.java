@@ -17,10 +17,12 @@
  */
 package org.restheart.db;
 
-import com.mongodb.CommandResult;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import java.net.UnknownHostException;
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.Document;
 import org.restheart.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +64,17 @@ public class MongoDBClientSingleton {
     public static boolean isInitialized() {
         return initialized;
     }
+    
+    /**
+     * @return the initialized
+     */
+    public static boolean isReplicaSet() {
+        if (!initialized) {
+            throw new IllegalStateException("mongodb client not initialized");
+        }
+        
+        return false;
+    }
 
     /**
      * @return the serverVersion
@@ -91,7 +104,9 @@ public class MongoDBClientSingleton {
         }
 
         try {
-            CommandResult res = mongoClient.getDB("admin").command("buildInfo");
+            Document res = mongoClient.getDatabase("admin")
+                    .runCommand(new BsonDocument("buildInfo", new BsonInt32(1)));
+            
             Object _version = res.get("version");
 
             if (_version != null && _version instanceof String) {
