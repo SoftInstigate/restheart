@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -150,11 +149,6 @@ public class Configuration {
      * the key for the direct-buffers property.
      */
     public static final String DIRECT_BUFFERS_KEY = "direct-buffers";
-
-    /**
-     * the key for the buffers-per-region property.
-     */
-    public static final String BUFFERS_PER_REGION_KEY = "buffers-per-region";
 
     /**
      * the key for the buffer-size property.
@@ -443,7 +437,6 @@ public class Configuration {
     private final int ioThreads;
     private final int workerThreads;
     private final int bufferSize;
-    private final int buffersPerRegion;
     private final boolean directBuffers;
     private final boolean forceGzipEncoding;
     private final boolean authTokenEnabled;
@@ -517,7 +510,6 @@ public class Configuration {
         ioThreads = 2;
         workerThreads = 32;
         bufferSize = 16384;
-        buffersPerRegion = 20;
         directBuffers = true;
 
         forceGzipEncoding = false;
@@ -640,7 +632,6 @@ public class Configuration {
         ioThreads = getAsIntegerOrDefault(conf, IO_THREADS_KEY, 2);
         workerThreads = getAsIntegerOrDefault(conf, WORKER_THREADS_KEY, 32);
         bufferSize = getAsIntegerOrDefault(conf, BUFFER_SIZE_KEY, 16384);
-        buffersPerRegion = getAsIntegerOrDefault(conf, BUFFERS_PER_REGION_KEY, 20);
         directBuffers = getAsBooleanOrDefault(conf, DIRECT_BUFFERS_KEY, true);
 
         forceGzipEncoding = getAsBooleanOrDefault(conf, FORCE_GZIP_ENCODING_KEY, false);
@@ -695,7 +686,6 @@ public class Configuration {
                 + ", ioThreads=" + ioThreads
                 + ", workerThreads=" + workerThreads
                 + ", bufferSize=" + bufferSize
-                + ", buffersPerRegion=" + buffersPerRegion
                 + ", directBuffers=" + directBuffers
                 + ", forceGzipEncoding=" + forceGzipEncoding
                 + ", authTokenEnabled=" + authTokenEnabled
@@ -1123,13 +1113,6 @@ public class Configuration {
      */
     public int getBufferSize() {
         return bufferSize;
-    }
-
-    /**
-     * @return the buffersPerRegion
-     */
-    public int getBuffersPerRegion() {
-        return buffersPerRegion;
     }
 
     /**

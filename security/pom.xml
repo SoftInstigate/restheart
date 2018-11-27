@@ -14,8 +14,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
         <checkstyle.file.path>checkstyle-checker.xml</checkstyle.file.path>
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <!-- By default skip integration tests. Use 'mvn verify -DskipITs=false' to run them. -->
@@ -221,6 +221,14 @@
                                 <exclude>META-INF/*.RSA</exclude>
                             </excludes>
                         </filter>
+                        <filter>
+                            <!-- removing overlapping classes, defined also in guava -->
+                            <artifact>com.google.guava:failureaccess</artifact>
+                            <excludes>
+                                <exclude>com/google/common/util/concurrent/internal/InternalFutureFailureAccess.class</exclude>
+                                <exclude>com/google/common/util/concurrent/internal/InternalFutures.class</exclude>
+                            </excludes>
+                        </filter>
                     </filters>
                 </configuration>
                 <executions>
@@ -288,7 +296,7 @@
                 <configuration>
                     <debug>true</debug>
                     <!--<compilerArgument>-Xlint</compilerArgument>-->
-                    <showDeprecation>false</showDeprecation>
+                    <showDeprecation>true</showDeprecation>
                 </configuration>
             </plugin>
 

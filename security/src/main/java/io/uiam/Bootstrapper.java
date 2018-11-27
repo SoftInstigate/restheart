@@ -395,9 +395,9 @@ public class Bootstrapper {
         // run initialized if defined
         if (configuration.getInitializerClass() != null) {
             try {
-
                 Object o = Class
                         .forName(configuration.getInitializerClass())
+                        .getDeclaredConstructor()
                         .newInstance();
 
                 if (o instanceof Initializer) {
@@ -412,7 +412,11 @@ public class Bootstrapper {
                                 t);
                     }
                 }
-            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException t) {
+            } catch (ClassNotFoundException
+                    | NoSuchMethodException
+                    | InvocationTargetException
+                    | InstantiationException
+                    | IllegalAccessException t) {
                 LOGGER.error(ansi().fg(RED).bold().a(
                         "Wrong configuration for intializer {}")
                         .reset().toString(),
@@ -601,7 +605,6 @@ public class Bootstrapper {
                 .setWorkerThreads(configuration.getWorkerThreads())
                 .setDirectBuffers(configuration.isDirectBuffers())
                 .setBufferSize(configuration.getBufferSize())
-                .setBuffersPerRegion(configuration.getBuffersPerRegion())
                 .setHandler(shutdownHandler);
 
         // starting undertow 1.4.23 URL become much stricter 
@@ -763,7 +766,7 @@ public class Bootstrapper {
         PathHandler paths = path();
 
         pipeApplicationLogicHandlers(configuration, paths, authenticationMechanism, identityManager, accessManager);
-        
+
         // plug the auth tokens invalidation handler
         paths.addPrefixPath("/_authtokens",
                 new RequestLoggerHandler(
@@ -774,7 +777,7 @@ public class Bootstrapper {
                                                 authenticationMechanism,
                                                 identityManager,
                                                 new FullAccessManager())))));
-        
+
         pipeResoruceMountsHandlers(configuration, paths, authenticationMechanism, identityManager, accessManager);
 
         return buildGracefulShutdownHandler(paths);
@@ -898,7 +901,6 @@ public class Bootstrapper {
         }
     }
 
-    
     /**
      * pipeResoruceMountsHandlers
      *
@@ -918,7 +920,7 @@ public class Bootstrapper {
                     + "any resource, are you just testing your IDM and AM?");
             return;
         }
-        
+
         conf.getProxyMounts().stream().forEachOrdered(m -> {
             String uri = (String) m.get(Configuration.PROXY_MOUNTS_URI_KEY);
             String resourceURL = (String) m.get(Configuration.PROXY_MOUNTS_URL_KEY);
@@ -966,6 +968,7 @@ public class Bootstrapper {
             }
         });
     }
+
     /**
      * getConfiguration
      *

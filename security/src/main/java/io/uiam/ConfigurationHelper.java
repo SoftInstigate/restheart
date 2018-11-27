@@ -43,12 +43,13 @@ public class ConfigurationHelper {
         UNDERTOW_OPTIONS.add(UndertowOptions.ALLOW_ENCODED_SLASH);
         UNDERTOW_OPTIONS.add(UndertowOptions.ALLOW_EQUALS_IN_COOKIE_VALUE);
         UNDERTOW_OPTIONS.add(UndertowOptions.ALLOW_UNKNOWN_PROTOCOLS);
+        UNDERTOW_OPTIONS.add(UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL);
         UNDERTOW_OPTIONS.add(UndertowOptions.ALWAYS_SET_DATE);
         UNDERTOW_OPTIONS.add(UndertowOptions.ALWAYS_SET_KEEP_ALIVE);
         UNDERTOW_OPTIONS.add(UndertowOptions.BUFFER_PIPELINED_DATA);
         UNDERTOW_OPTIONS.add(UndertowOptions.DECODE_URL);
         UNDERTOW_OPTIONS.add(UndertowOptions.ENABLE_HTTP2);
-        UNDERTOW_OPTIONS.add(UndertowOptions.ENABLE_SPDY);
+        UNDERTOW_OPTIONS.add(UndertowOptions.ENABLE_RFC6265_COOKIE_VALIDATION);
         UNDERTOW_OPTIONS.add(UndertowOptions.ENABLE_STATISTICS);
         UNDERTOW_OPTIONS.add(UndertowOptions.HTTP2_HUFFMAN_CACHE_SIZE);
         UNDERTOW_OPTIONS.add(UndertowOptions.HTTP2_SETTINGS_ENABLE_PUSH);
@@ -56,9 +57,10 @@ public class ConfigurationHelper {
         UNDERTOW_OPTIONS.add(UndertowOptions.HTTP2_SETTINGS_INITIAL_WINDOW_SIZE);
         UNDERTOW_OPTIONS.add(UndertowOptions.HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS);
         UNDERTOW_OPTIONS.add(UndertowOptions.HTTP2_SETTINGS_MAX_FRAME_SIZE);
-        UNDERTOW_OPTIONS.add(UndertowOptions.HTTP2_SETTINGS_MAX_HEADER_LIST_SIZE);
         UNDERTOW_OPTIONS.add(UndertowOptions.IDLE_TIMEOUT);
+        UNDERTOW_OPTIONS.add(UndertowOptions.MAX_AJP_PACKET_SIZE);
         UNDERTOW_OPTIONS.add(UndertowOptions.MAX_BUFFERED_REQUEST_SIZE);
+        UNDERTOW_OPTIONS.add(UndertowOptions.MAX_CACHED_HEADER_SIZE);
         UNDERTOW_OPTIONS.add(UndertowOptions.MAX_CONCURRENT_REQUESTS_PER_CONNECTION);
         UNDERTOW_OPTIONS.add(UndertowOptions.MAX_COOKIES);
         UNDERTOW_OPTIONS.add(UndertowOptions.MAX_HEADERS);
@@ -68,6 +70,9 @@ public class ConfigurationHelper {
         UNDERTOW_OPTIONS.add(UndertowOptions.NO_REQUEST_TIMEOUT);
         UNDERTOW_OPTIONS.add(UndertowOptions.RECORD_REQUEST_START_TIME);
         UNDERTOW_OPTIONS.add(UndertowOptions.REQUEST_PARSE_TIMEOUT);
+        UNDERTOW_OPTIONS.add(UndertowOptions.REQUIRE_HOST_HTTP11);
+        UNDERTOW_OPTIONS.add(UndertowOptions.SHUTDOWN_TIMEOUT);
+        UNDERTOW_OPTIONS.add(UndertowOptions.SSL_USER_CIPHER_SUITES_ORDER);
         UNDERTOW_OPTIONS.add(UndertowOptions.URL_CHARSET);
 
         LONG_UNDERTOW_OPTIONS = Sets.newHashSet();
