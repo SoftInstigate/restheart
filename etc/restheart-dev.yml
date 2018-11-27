@@ -26,7 +26,7 @@ ajp-port: 8009
 # The name of this restheart instance. displayed in log, also allows to implement instance specific custom code
 # For instance, an email notifier hook can send emails to a test email address in development environments
 
-instance-name: develop
+instance-name: development
 
 #### default representation format (PLAIN_JSON or HAL)
 
