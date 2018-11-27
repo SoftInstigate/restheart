@@ -1214,7 +1214,8 @@ public class Configuration {
             return (String) conf.get(key);
         } else {
             if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
+                LOGGER.error("wrong value for parameter {}: {}.}", key, conf.get(key));
+                System.exit(3);
             }
             return defaultValue;
         }
