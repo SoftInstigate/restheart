@@ -93,7 +93,7 @@ use-embedded-keystore: true
 
 auth-mechanisms:
     - implementation-class: io.uiam.plugins.authentication.impl.AuthTokenAuthenticationMechanism
-      args: uIAM x Realm
+      args: uIAM Realm
     - implementation-class: io.uiam.plugins.authentication.impl.BasicAuthenticationMechanism
       args: uIAM Realm
 #    - implementation-class: io.uiam.plugins.authentication.impl.IdentityAuthenticationMechanism
@@ -216,7 +216,7 @@ buffers-per-region: 20
 direct-buffers: true
 
 #### Connetction Options
-## see http://undertow.io/undertow-docs/undertow-docs-1.3.0/index.html#common-listener-options
+## see http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#common-listener-options
 
 connection-options:
     # The maximum size of a HTTP header block, in bytes. 
