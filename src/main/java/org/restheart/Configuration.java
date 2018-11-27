@@ -195,11 +195,6 @@ public class Configuration {
     public static final String DIRECT_BUFFERS_KEY = "direct-buffers";
 
     /**
-     * the key for the buffers-per-region property.
-     */
-    public static final String BUFFERS_PER_REGION_KEY = "buffers-per-region";
-
-    /**
      * the key for the buffer-size property.
      */
     public static final String BUFFER_SIZE_KEY = "buffer-size";
@@ -637,7 +632,6 @@ public class Configuration {
     private final int ioThreads;
     private final int workerThreads;
     private final int bufferSize;
-    private final int buffersPerRegion;
     private final boolean directBuffers;
     private final boolean forceGzipEncoding;
     private final int eagerPoolSize;
@@ -753,7 +747,6 @@ public class Configuration {
         ioThreads = 2;
         workerThreads = 32;
         bufferSize = 16384;
-        buffersPerRegion = 20;
         directBuffers = true;
 
         forceGzipEncoding = false;
@@ -928,7 +921,6 @@ public class Configuration {
         ioThreads = getAsIntegerOrDefault(conf, IO_THREADS_KEY, 2);
         workerThreads = getAsIntegerOrDefault(conf, WORKER_THREADS_KEY, 32);
         bufferSize = getAsIntegerOrDefault(conf, BUFFER_SIZE_KEY, 16384);
-        buffersPerRegion = getAsIntegerOrDefault(conf, BUFFERS_PER_REGION_KEY, 20);
         directBuffers = getAsBooleanOrDefault(conf, DIRECT_BUFFERS_KEY, true);
 
         forceGzipEncoding = getAsBooleanOrDefault(conf, FORCE_GZIP_ENCODING_KEY, false);
@@ -1030,7 +1022,74 @@ public class Configuration {
 
     @Override
     public String toString() {
-        return "Configuration{" + "silent=" + silent + ", httpsListener=" + httpsListener + ", httpsPort=" + httpsPort + ", httpsHost=" + httpsHost + ", httpListener=" + httpListener + ", httpPort=" + httpPort + ", httpHost=" + httpHost + ", ajpListener=" + ajpListener + ", ajpPort=" + ajpPort + ", ajpHost=" + ajpHost + ", instanceName=" + instanceName + ", defaultRepresentationFromat=" + defaultRepresentationFromat + ", useEmbeddedKeystore=" + useEmbeddedKeystore + ", keystoreFile=" + keystoreFile + ", keystorePassword=" + keystorePassword + ", certPassword=" + certPassword + ", mongoUri=" + mongoUri + ", mongoMounts=" + mongoMounts + ", staticResourcesMounts=" + staticResourcesMounts + ", applicationLogicMounts=" + applicationLogicMounts + ", metadataNamedSingletons=" + metadataNamedSingletons + ", idmImpl=" + idmImpl + ", idmArgs=" + idmArgs + ", authMechanismImpl=" + authMechanismImpl + ", authMechanismArgs=" + authMechanismArgs + ", amImpl=" + amImpl + ", amArgs=" + amArgs + ", logFilePath=" + logFilePath + ", logLevel=" + logLevel + ", logToConsole=" + logToConsole + ", logToFile=" + logToFile + ", traceHeaders=" + traceHeaders + ", localCacheEnabled=" + localCacheEnabled + ", localCacheTtl=" + localCacheTtl + ", schemaCacheEnabled=" + schemaCacheEnabled + ", schemaCacheTtl=" + schemaCacheTtl + ", requestsLimit=" + requestsLimit + ", ioThreads=" + ioThreads + ", workerThreads=" + workerThreads + ", bufferSize=" + bufferSize + ", buffersPerRegion=" + buffersPerRegion + ", directBuffers=" + directBuffers + ", forceGzipEncoding=" + forceGzipEncoding + ", eagerPoolSize=" + eagerPoolSize + ", eagerLinearSliceWidht=" + eagerLinearSliceWidht + ", eagerLinearSliceDelta=" + eagerLinearSliceDelta + ", eagerLinearSliceHeights=" + Arrays.toString(eagerLinearSliceHeights) + ", eagerRndSliceMinWidht=" + eagerRndSliceMinWidht + ", eagerRndMaxCursors=" + eagerRndMaxCursors + ", authTokenEnabled=" + authTokenEnabled + ", authTokenTtl=" + authTokenTtl + ", dbEtagCheckPolicy=" + dbEtagCheckPolicy + ", collEtagCheckPolicy=" + collEtagCheckPolicy + ", docEtagCheckPolicy=" + docEtagCheckPolicy + ", connectionOptions=" + connectionOptions + ", logExchangeDump=" + logExchangeDump + ", metricsGatheringLevel=" + metricsGatheringLevel + ", queryTimeLimit=" + queryTimeLimit + ", aggregationTimeLimit=" + aggregationTimeLimit + ", aggregationCheckOperators=" + aggregationCheckOperators + ", ansiConsole=" + ansiConsole + ", initializerClass=" + initializerClass + ", cursorBatchSize=" + cursorBatchSize + ", defaultPagesize=" + defaultPagesize + ", maxPagesize=" + maxPagesize + ", allowUnescapedCharactersInUrl=" + allowUnescapedCharactersInUrl + ", configurationFileMap=" + configurationFileMap + '}';
+        return "Configuration{" 
+                + "silent=" + silent 
+                + ", httpsListener=" + httpsListener 
+                + ", httpsPort=" + httpsPort 
+                + ", httpsHost=" + httpsHost 
+                + ", httpListener=" + httpListener 
+                + ", httpPort=" + httpPort 
+                + ", httpHost=" + httpHost 
+                + ", ajpListener=" + ajpListener 
+                + ", ajpPort=" + ajpPort 
+                + ", ajpHost=" + ajpHost 
+                + ", instanceName=" + instanceName 
+                + ", defaultRepresentationFromat=" + defaultRepresentationFromat 
+                + ", useEmbeddedKeystore=" + useEmbeddedKeystore 
+                + ", keystoreFile=" + keystoreFile 
+                + ", keystorePassword=" + keystorePassword 
+                + ", certPassword=" + certPassword 
+                + ", mongoUri=" + mongoUri 
+                + ", mongoMounts=" + mongoMounts 
+                + ", staticResourcesMounts=" + staticResourcesMounts 
+                + ", applicationLogicMounts=" + applicationLogicMounts 
+                + ", metadataNamedSingletons=" + metadataNamedSingletons 
+                + ", idmImpl=" + idmImpl 
+                + ", idmArgs=" + idmArgs 
+                + ", authMechanismImpl=" + authMechanismImpl 
+                + ", authMechanismArgs=" + authMechanismArgs 
+                + ", amImpl=" + amImpl 
+                + ", amArgs=" + amArgs 
+                + ", logFilePath=" + logFilePath 
+                + ", logLevel=" + logLevel
+                + ", logToConsole=" + logToConsole 
+                + ", logToFile=" + logToFile 
+                + ", traceHeaders=" + traceHeaders 
+                + ", localCacheEnabled=" + localCacheEnabled 
+                + ", localCacheTtl=" + localCacheTtl 
+                + ", schemaCacheEnabled=" + schemaCacheEnabled 
+                + ", schemaCacheTtl=" + schemaCacheTtl 
+                + ", requestsLimit=" + requestsLimit 
+                + ", ioThreads=" + ioThreads 
+                + ", workerThreads=" + workerThreads 
+                + ", bufferSize=" + bufferSize 
+                + ", directBuffers=" + directBuffers 
+                + ", forceGzipEncoding=" + forceGzipEncoding 
+                + ", eagerPoolSize=" + eagerPoolSize 
+                + ", eagerLinearSliceWidht=" + eagerLinearSliceWidht 
+                + ", eagerLinearSliceDelta=" + eagerLinearSliceDelta 
+                + ", eagerLinearSliceHeights=" + Arrays.toString(eagerLinearSliceHeights) 
+                + ", eagerRndSliceMinWidht=" + eagerRndSliceMinWidht 
+                + ", eagerRndMaxCursors=" + eagerRndMaxCursors 
+                + ", authTokenEnabled=" + authTokenEnabled 
+                + ", authTokenTtl=" + authTokenTtl 
+                + ", dbEtagCheckPolicy=" + dbEtagCheckPolicy 
+                + ", collEtagCheckPolicy=" + collEtagCheckPolicy 
+                + ", docEtagCheckPolicy=" + docEtagCheckPolicy 
+                + ", connectionOptions=" + connectionOptions 
+                + ", logExchangeDump=" + logExchangeDump 
+                + ", metricsGatheringLevel=" + metricsGatheringLevel 
+                + ", queryTimeLimit=" + queryTimeLimit 
+                + ", aggregationTimeLimit=" + aggregationTimeLimit 
+                + ", aggregationCheckOperators=" + aggregationCheckOperators 
+                + ", ansiConsole=" + ansiConsole 
+                + ", initializerClass=" + initializerClass 
+                + ", cursorBatchSize=" + cursorBatchSize 
+                + ", defaultPagesize=" + defaultPagesize 
+                + ", maxPagesize=" + maxPagesize 
+                + ", allowUnescapedCharactersInUrl=" + allowUnescapedCharactersInUrl 
+                + ", configurationFileMap=" + configurationFileMap 
+                + '}';
     }
 
     /**
@@ -1442,13 +1501,6 @@ public class Configuration {
      */
     public int getBufferSize() {
         return bufferSize;
-    }
-
-    /**
-     * @return the buffersPerRegion
-     */
-    public int getBuffersPerRegion() {
-        return buffersPerRegion;
     }
 
     /**
