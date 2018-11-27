@@ -273,10 +273,12 @@ public class Bootstrapper {
     }
 
     private static void logManifestInfo() {
-        if (MANIFEST_ENTRIES != null) {
-            LOGGER.debug("Build Information: {}", MANIFEST_ENTRIES.toString());
-        } else {
-            LOGGER.debug("Build Information: {}", "unknown, not packaged");
+        if (LOGGER.isDebugEnabled()) {
+            if (MANIFEST_ENTRIES != null) {
+                LOGGER.debug("Build Information: {}", MANIFEST_ENTRIES.toString());
+            } else {
+                LOGGER.debug("Build Information: {}", "unknown, not packaged");
+            }
         }
     }
 
@@ -424,7 +426,7 @@ public class Bootstrapper {
             LOGGER.info("MongoDB connection pool initialized");
             LOGGER.info("MongoDB version {}",
                     ansi().fg(MAGENTA).a(MongoDBClientSingleton.getServerVersion()).reset().toString());
-            
+
             if (MongoDBClientSingleton.isReplicaSet()) {
                 LOGGER.info("MongoDB is a replica set");
             } else {
