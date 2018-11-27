@@ -71,7 +71,7 @@ Restheart
 <th>Missing Classes</th></tr>
 <tr class="b">
 <td>247</td>
-<td>43</td>
+<td>47</td>
 <td>0</td>
 <td>0</td></tr></table></div>
 <div class="section">
@@ -82,10 +82,10 @@ Restheart
 <th>Bugs</th></tr>
 <tr class="b">
 <td><a href="#org.restheart.Bootstrapper">org.restheart.Bootstrapper</a></td>
-<td>1</td></tr>
+<td>4</td></tr>
 <tr class="a">
 <td><a href="#org.restheart.Configuration">org.restheart.Configuration</a></td>
-<td>1</td></tr>
+<td>2</td></tr>
 <tr class="b">
 <td><a href="#org.restheart.db.DocumentDAO">org.restheart.db.DocumentDAO</a></td>
 <td>1</td></tr>
@@ -165,25 +165,49 @@ Restheart
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="b">
+<td>Found reliance on default encoding in org.restheart.Bootstrapper.loadConfiguration(): new java.io.FileReader(File)</td>
+<td>I18N</td>
+<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
+<td>273</td>
+<td>High</td></tr>
+<tr class="a">
+<td>org.restheart.Bootstrapper.loadConfiguration() may fail to clean up java.io.Reader</td>
+<td>EXPERIMENTAL</td>
+<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#OBL_UNSATISFIED_OBLIGATION">OBL_UNSATISFIED_OBLIGATION</a></td>
+<td>273</td>
+<td>Medium</td></tr>
+<tr class="b">
+<td>org.restheart.Bootstrapper.loadConfiguration() may fail to close stream</td>
+<td>BAD_PRACTICE</td>
+<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#OS_OPEN_STREAM">OS_OPEN_STREAM</a></td>
+<td>273</td>
+<td>Medium</td></tr>
+<tr class="a">
 <td>Format string should use %n rather than \n in org.restheart.Bootstrapper.logWindowsStart()</td>
 <td>BAD_PRACTICE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#VA_FORMAT_STRING_USES_NEWLINE">VA_FORMAT_STRING_USES_NEWLINE</a></td>
-<td>259</td>
+<td>290</td>
 <td>Medium</td></tr></table></div><a name="org.restheart.Configuration"></a>
 <div class="section">
 <h3><a name="org.restheart.Configuration"></a>org.restheart.Configuration</h3>
 <table border="0" class="bodyTable">
-<tr class="a">
+<tr class="b">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
+<tr class="a">
+<td>org.restheart.Configuration.getAsStringOrDefault(Map, String, String) invokes System.exit(...), which shuts down the entire virtual machine</td>
+<td>BAD_PRACTICE</td>
+<td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#DM_EXIT">DM_EXIT</a></td>
+<td>1218</td>
+<td>Medium</td></tr>
 <tr class="b">
 <td>org.restheart.Configuration.getEagerLinearSliceHeights() may expose internal representation by returning Configuration.eagerLinearSliceHeights</td>
 <td>MALICIOUS_CODE</td>
 <td><a class="externalLink" href="http://findbugs.sourceforge.net/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
-<td>1657</td>
+<td>1658</td>
 <td>Medium</td></tr></table></div><a name="org.restheart.db.DocumentDAO"></a>
 <div class="section">
 <h3><a name="org.restheart.db.DocumentDAO"></a>org.restheart.db.DocumentDAO</h3>
