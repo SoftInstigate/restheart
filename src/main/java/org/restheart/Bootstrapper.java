@@ -20,6 +20,9 @@ package org.restheart;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
+import com.github.mustachejava.DefaultMustacheFactory;
+import com.github.mustachejava.Mustache;
+import com.github.mustachejava.MustacheFactory;
 import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.undertow.Handlers.path;
@@ -44,7 +47,9 @@ import io.undertow.util.HttpString;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -61,7 +66,9 @@ import java.security.cert.CertificateException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Set;
+import java.util.logging.Level;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -101,6 +108,7 @@ import org.restheart.utils.RHDaemon;
 import org.restheart.utils.ResourcesExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Yaml;
 
 /**
  *
@@ -117,15 +125,15 @@ public class Bootstrapper {
         @Parameter(names = "--fork", description = "Fork the process")
         private boolean isForked = false;
 
-        @Parameter(names = "--env", description = "Environment name")
-        private String env = null;
+        @Parameter(names = {"--envFile", "--envfile", "-e"}, description = "Environment file name")
+        private String envFile = null;
 
-        @Parameter(names = "--help", help = true)
+        @Parameter(names = {"--help", "-?"}, help = true)
         private boolean help;
     }
 
     private static boolean IS_FORKED;
-    private static String ENVIRONMENT;
+    private static String ENVIRONMENT_FILE;
     private static final Set<Entry<Object, Object>> MANIFEST_ENTRIES = FileUtils.findManifestInfo();
     private static String BUILD_TIME;
 
@@ -160,23 +168,29 @@ public class Bootstrapper {
         Args parameters = new Args();
         JCommander cmd = JCommander.newBuilder().addObject(parameters).build();
         cmd.setProgramName("java -Dfile.encoding=UTF-8 -jar -server restheart.jar");
-        cmd.parse(args);
-        if (parameters.help) {
+        try {
+            cmd.parse(args);
+            if (parameters.help) {
+                cmd.usage();
+                System.exit(0);
+            }
+            CONF_FILE_PATH = FileUtils.getFileAbsolutePath(parameters.configPath);
+            IS_FORKED = parameters.isForked;
+            ENVIRONMENT_FILE = parameters.envFile;
+        } catch (com.beust.jcommander.ParameterException ex) {
+            LOGGER.error(ex.getMessage());
             cmd.usage();
-            System.exit(0);
+            System.exit(1);
         }
-        CONF_FILE_PATH = FileUtils.getFileAbsolutePath(parameters.configPath);
-        IS_FORKED = parameters.isForked;
-        ENVIRONMENT = parameters.env;
     }
 
     private static void extractEnvironment() {
-        if (ENVIRONMENT == null) {
+        if (ENVIRONMENT_FILE == null) {
             // no --env parameter, try to read from OS environment
-            ENVIRONMENT = System.getenv("RESTHEART_ENV");
-            if (ENVIRONMENT == null) {
-                // no OS environment, set a default value
-                ENVIRONMENT = "default";
+            ENVIRONMENT_FILE = System.getenv("RESTHEART_ENVFILE");
+            if (ENVIRONMENT_FILE == null) {
+                // no OS environment, set to empty string
+                ENVIRONMENT_FILE = "";
             }
         }
     }
@@ -196,10 +210,7 @@ public class Bootstrapper {
 
     private static void run() {
         try {
-            // read configuration silently, to avoid logging before initializing the logger
-            configuration = CONF_FILE_PATH != null
-                    ? new Configuration(CONF_FILE_PATH, true)
-                    : new Configuration();
+            loadConfiguration();
 
             LOGGER.debug(configuration.toString());
 
@@ -255,6 +266,31 @@ public class Bootstrapper {
         }
     }
 
+    private static void loadConfiguration() throws ConfigurationException {
+        // read configuration silently, to avoid logging before initializing the logger
+        if (CONF_FILE_PATH == null) {
+            configuration = new Configuration();
+        } else if (ENVIRONMENT_FILE.isEmpty()) {
+            configuration = new Configuration(CONF_FILE_PATH, true);
+        } else {
+            try {
+                Properties p = new Properties();
+                p.load(new FileReader(new File(CONF_FILE_PATH.getParent() + File.separator + ENVIRONMENT_FILE)));
+                MustacheFactory mf = new DefaultMustacheFactory();
+                Mustache m = mf.compile(CONF_FILE_PATH.toString());
+                StringWriter writer = new StringWriter();
+                m.execute(writer, p);
+                writer.flush();
+                Yaml yaml = new Yaml();
+                Map<String, Object> obj = yaml.load(writer.toString());
+                configuration = new Configuration(obj, true);
+            } catch (IOException ex) {
+                LOGGER.error("Fatal error: \"{}\"", ex.getMessage());
+                System.exit(1);
+            }
+        }
+    }
+
     private static void logWindowsStart() {
         String info = String.format("  {\n"
                 + "    \"Version\": \"%s\",\n"
@@ -264,7 +300,7 @@ public class Bootstrapper {
                 + "  }",
                 ansi().fg(MAGENTA).a(RESTHEART_VERSION).reset().toString(),
                 ansi().fg(MAGENTA).a(getInstanceName()).reset().toString(),
-                ansi().fg(MAGENTA).a(ENVIRONMENT).reset().toString(),
+                ansi().fg(MAGENTA).a(ENVIRONMENT_FILE).reset().toString(),
                 ansi().fg(MAGENTA).a(BUILD_TIME != null
                         ? BUILD_TIME
                         : "unknown, not packaged").reset().toString());
