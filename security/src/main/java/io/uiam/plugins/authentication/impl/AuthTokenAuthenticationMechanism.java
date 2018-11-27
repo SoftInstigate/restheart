@@ -15,6 +15,7 @@
  */
 package io.uiam.plugins.authentication.impl;
 
+import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 import io.uiam.plugins.authentication.impl.AuthTokenIdentityManager;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
@@ -43,7 +44,9 @@ import java.util.List;
  * password
  *
  */
-public class AuthTokenAuthenticationMechanism extends BasicAuthenticationMechanism {
+public class AuthTokenAuthenticationMechanism 
+        extends BasicAuthenticationMechanism
+        implements PluggableAuthenticationMechanism {
 
     private static final Charset UTF_8 = Charset.forName("UTF-8");
 

@@ -75,41 +75,54 @@ use-embedded-keystore: true
 
 ### Security
 
-# The security is configured by setting:
+# uIAM security is pluggable, you can provide you own 
+# implementations of Authentication Mechanisms, Identity Manager 
+# and Access Manager
 
-# idm: the Identity Manager responsible of authentication
-# access-manager: the Access Manager responsible of authorization
-# auth-mechanism: the additional Authentication Mechanism to use 
-# The uIAM security is pluggable and you can provide you own 
-# implementation of both IDM and AM. the provided default 
-# implementations of IDM and AM are SimpleFileIdentityManager, 
-# and SimpleFileAccessManager.
-# conf-file paths are either absolute (starting with /) 
-# or relative to the uiam.jar directory
+# Identity Authentication Manager 
+# All requests are bound to the specified user
+
+## Authentication Mechanisms
+
+## Provied AMs are:
+## - BasicAuthenticationMechanism - basic authentication
+## - AuthTokenAuthenticationMechanism - uses the auth token to authenticate, 
+###   requires auth-token: true, 
+###   also add this before other AM that can authenticate the client and generate the auth token 
+## - IdentityAuthenticationMechanism - all requests are bound to the specified user
+
+auth-mechanisms:
+    - implementation-class: io.uiam.plugins.authentication.impl.AuthTokenAuthenticationMechanism
+      args: uIAM x Realm
+    - implementation-class: io.uiam.plugins.authentication.impl.BasicAuthenticationMechanism
+      args: uIAM Realm
+#    - implementation-class: io.uiam.plugins.authentication.impl.IdentityAuthenticationMechanism
+#      args:
+#        - username: a
+#          pwd: a
+
+## Identity Manager
+
+## Provied IMs are:
+## - SimpleFileIdentityManager - an IDM that uses a file as userbase storage
+### conf-file paths are either absolute (starting with /)
+## or relative to the uiam.jar directory
 
 idm:
     implementation-class: io.uiam.plugins.authentication.impl.SimpleFileIdentityManager
     conf-file: ../etc/security.yml
+
+## Access Manager
+
+## Provied AMs are:
+## - SimpleFileAccessManager  - an AM that uses a file as ACL storage
+### conf-file paths are either absolute (starting with /)
+## or relative to the uiam.jar directory
+
 access-manager:
     implementation-class: io.uiam.plugins.authorization.impl.SimpleFileAccessManager
     conf-file: ../etc/security.yml
  
- # ../../restheart/etc/security-integrationtest.yml
-    
-# uIAM uses the BasicAuthenticationMechanism by default. 
-# A different mechanism can be specified via the auth-mechanism configuration option
-# the implementation-class must specify a factory class implementing
-# the interface io.uiam.pligins.authentication.AuthenticationMechanismFactory
-# See http://undertow.io/undertow-docs/undertow-docs-1.4.0/index.html#security 
-# and IdentityAuthenticationManagerFactory for an example implementation
-
-# Identity Authentication Manager 
-# All requests are bound to the specified user
-#auth-mechanism:
-#    implementation-class: io.uiam.plugins.authentication.impl.IdentityAuthenticationManagerFactory
-#    username: a
-#    pwd: a
-
 # Authentication Token
 
 # Note: you need to pay attention to the authentitcation token in case of multi-node deployments (horizontal scalability).

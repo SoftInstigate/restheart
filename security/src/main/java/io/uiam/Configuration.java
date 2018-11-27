@@ -97,7 +97,7 @@ public class Configuration {
     /**
      * the key for the args property.
      */
-    public static final String HANDLER_MOUNT_ARGS_KEY = "args";
+    public static final String ARGS_KEY = "args";
 
     /**
      * the key for the what property.
@@ -124,11 +124,6 @@ public class Configuration {
      * default idm implementation class.
      */
     public static final String DEFAULT_IDM_IMPLEMENTATION_CLASS = null;
-
-    /**
-     * default authMechanism implementation class.
-     */
-    public static final String DEFAULT_AUTH_MECHANISM_IMPLEMENTATION_CLASS = null;
 
     /**
      * the key for the local-cache-enabled property.
@@ -218,8 +213,8 @@ public class Configuration {
     /**
      * the key for the auth Mechanism.
      */
-    public static final String AUTH_MECHANISM_KEY = "auth-mechanism";
-
+    public static final String AUTH_MECHANISMS_KEY = "auth-mechanisms";
+    
     /**
      * the key for the resource-mounts property.
      */
@@ -422,8 +417,7 @@ public class Configuration {
     private final List<Map<String, Object>> handlersMounts;
     private final String idmImpl;
     private final Map<String, Object> idmArgs;
-    private final String authMechanismImpl;
-    private final Map<String, Object> authMechanismArgs;
+    private final List<Map<String, Object>> authMechanisms;
     private final String amImpl;
     private final Map<String, Object> amArgs;
     private final String logFilePath;
@@ -488,8 +482,7 @@ public class Configuration {
         idmImpl = null;
         idmArgs = null;
 
-        authMechanismImpl = null;
-        authMechanismArgs = null;
+        authMechanisms = new ArrayList<>();
 
         amImpl = null;
         amArgs = null;
@@ -582,23 +575,19 @@ public class Configuration {
         keystorePassword = getAsStringOrDefault(conf, KEYSTORE_PASSWORD_KEY, null);
         certPassword = getAsStringOrDefault(conf, CERT_PASSWORD_KEY, null);
 
-        List<Map<String, Object>> proxyMountsDefault = new ArrayList<>();
-
-        proxyMounts = getAsListOfMaps(conf, PROXY_MOUNTS_KEY, proxyMountsDefault);
+        proxyMounts = getAsListOfMaps(conf, PROXY_MOUNTS_KEY, new ArrayList<>());
 
         handlersMounts = getAsListOfMaps(conf, HANDLER_MOUNTS_KEY, new ArrayList<>());
         
         namedPlugins = getAsListOfMaps(conf, NAMED_SINGLETONS_KEY, new ArrayList<>());
 
+        authMechanisms = getAsListOfMaps(conf, AUTH_MECHANISMS_KEY, new ArrayList<>());
+        
         Map<String, Object> idm = getAsMap(conf, IDM_KEY);
-        Map<String, Object> authMech = getAsMap(conf, AUTH_MECHANISM_KEY);
         Map<String, Object> am = getAsMap(conf, ACCESS_MANAGER_KEY);
 
         idmImpl = getAsStringOrDefault(idm, IMPLEMENTATION_CLASS_KEY, DEFAULT_IDM_IMPLEMENTATION_CLASS);
         idmArgs = idm;
-
-        authMechanismImpl = getAsStringOrDefault(authMech, IMPLEMENTATION_CLASS_KEY, DEFAULT_AUTH_MECHANISM_IMPLEMENTATION_CLASS);
-        authMechanismArgs = authMech;
 
         amImpl = getAsStringOrDefault(am, IMPLEMENTATION_CLASS_KEY, DEFAULT_AM_IMPLEMENTATION_CLASS);
         amArgs = am;
@@ -671,8 +660,7 @@ public class Configuration {
                 + ", metadataNamedSingletons=" + namedPlugins
                 + ", idmImpl=" + idmImpl
                 + ", idmArgs=" + idmArgs
-                + ", authMechanismImpl=" + authMechanismImpl
-                + ", authMechanismArgs=" + authMechanismArgs
+                + ", authMechanisms=" + authMechanisms
                 + ", amImpl=" + amImpl
                 + ", amArgs=" + amArgs
                 + ", logFilePath=" + logFilePath
@@ -1144,17 +1132,10 @@ public class Configuration {
     }
 
     /**
-     * @return the authentication Mechanism
+     * @return the authentication authMechanisms
      */
-    public String getAuthMechanism() {
-        return authMechanismImpl;
-    }
-
-    /**
-     * @return the idmArgs
-     */
-    public Map<String, Object> getAuthMechanismArgs() {
-        return Collections.unmodifiableMap(authMechanismArgs);
+    public List<Map<String, Object>> getAuthMechanisms() {
+        return authMechanisms;
     }
 
     /**

@@ -18,21 +18,10 @@
 package io.uiam.plugins.authentication;
 
 import io.undertow.security.api.AuthenticationMechanism;
-import io.undertow.security.idm.IdentityManager;
-import java.util.Map;
 
 /**
  *
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface AuthenticationMechanismFactory {
-
-    /**
-     *
-     * @param args arguments specified in the configuration file
-     * @param idm the identity manager
-     * 
-     * @return the AuthenticationMechanism
-     */
-    AuthenticationMechanism build(Map<String, Object> args, IdentityManager idm);
+public interface PluggableAuthenticationMechanism extends AuthenticationMechanism {
 }

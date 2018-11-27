@@ -22,8 +22,6 @@ import static io.undertow.Handlers.path;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.UndertowOptions;
-import io.undertow.security.api.AuthenticationMechanism;
-import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.handlers.AllowedMethodsHandler;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
@@ -65,11 +63,9 @@ import io.uiam.handlers.RequestLoggerHandler;
 import io.uiam.plugins.handlers.PluggableHandler;
 import io.uiam.handlers.injectors.RequestContextInjectorHandler;
 import io.uiam.init.Initializer;
-import io.uiam.plugins.authentication.AuthenticationMechanismFactory;
 import io.uiam.plugins.authorization.FullAccessManager;
 import io.uiam.handlers.security.AuthTokenHandler;
 import io.uiam.handlers.security.CORSHandler;
-import io.uiam.handlers.security.SecurityHandlerDispacher;
 import io.uiam.utils.FileUtils;
 import io.uiam.utils.LoggingInitializer;
 import io.uiam.utils.OSChecker;
@@ -81,6 +77,9 @@ import static io.uiam.Configuration.UIAM_VERSION;
 import io.uiam.handlers.PipedWrappingHandler;
 import io.uiam.handlers.injectors.AuthHeadersRemover;
 import io.uiam.handlers.injectors.XPoweredByInjector;
+import io.uiam.handlers.security.SecurityHandler;
+import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
+import io.uiam.plugins.authentication.PluggableIdentityManager;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
@@ -92,6 +91,8 @@ import org.xnio.SslClientAuthMode;
 import org.xnio.Xnio;
 import org.xnio.ssl.XnioSsl;
 import io.uiam.plugins.authorization.PluggableAccessManager;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -517,11 +518,11 @@ public class Bootstrapper {
             logErrorAndExit("No listener specified. exiting..", null, false, -1);
         }
 
-        final IdentityManager identityManager = loadIdentityManager();
+        final List<PluggableAuthenticationMechanism> authenticationMechanisms = loadAuthenticationMechanism();
+
+        final PluggableIdentityManager identityManager = loadIdentityManager();
 
         final PluggableAccessManager accessManager = loadAccessManager();
-
-        final AuthenticationMechanism authenticationMechanism = loadAuthenticationMechanism(identityManager);
 
         if (configuration.isAuthTokenEnabled()) {
             LOGGER.info("Token based authentication enabled with token TTL {} minutes", configuration.getAuthTokenTtl());
@@ -598,7 +599,7 @@ public class Bootstrapper {
             LOGGER.info("Local cache for db and collection properties not enabled");
         }
 
-        shutdownHandler = getHandlersPipe(authenticationMechanism, identityManager, accessManager);
+        shutdownHandler = getHandlersPipe(authenticationMechanisms, identityManager, accessManager);
 
         builder = builder
                 .setIoThreads(configuration.getIoThreads())
@@ -626,38 +627,55 @@ public class Bootstrapper {
      *
      * @return the AuthenticationMechanism
      */
-    private static AuthenticationMechanism loadAuthenticationMechanism(final IdentityManager identityManager) {
-        AuthenticationMechanism authMechanism = null;
-        if (configuration.getAuthMechanism() != null) {
-            try {
-                AuthenticationMechanismFactory am = (AuthenticationMechanismFactory) Class.forName(configuration.getAuthMechanism())
-                        .getConstructor()
-                        .newInstance();
+    private static List<PluggableAuthenticationMechanism> loadAuthenticationMechanism() {
+        var authMechanisms = new ArrayList<PluggableAuthenticationMechanism>();
 
-                authMechanism = am.build(configuration.getAuthMechanismArgs(), identityManager);
-                LOGGER.info("Authentication Mechanism {} enabled", configuration.getAuthMechanism());
-            } catch (ClassNotFoundException
-                    | IllegalAccessException
-                    | IllegalArgumentException
-                    | InstantiationException
-                    | NoSuchMethodException
-                    | SecurityException
-                    | InvocationTargetException ex) {
-                logErrorAndExit("Error configuring Authentication Mechanism implementation " + configuration.getAuthMechanism(), ex, false, -3);
-            }
+        if (configuration.getAuthMechanisms() != null
+                && !configuration.getAuthMechanisms().isEmpty()) {
+            configuration.getAuthMechanisms().stream().forEachOrdered(am -> {
+                String amImplClass = (String) am.get(Configuration.IMPLEMENTATION_CLASS_KEY);
+                Object amArgs = am.get(Configuration.ARGS_KEY);
+
+                try {
+                    Object _amInstance;
+
+                    if (amArgs == null) {
+                        _amInstance = Class.forName(amImplClass)
+                                .getDeclaredConstructor()
+                                .newInstance();
+                    } else {
+                        _amInstance = Class.forName(amImplClass)
+                                .getDeclaredConstructor(amArgs.getClass())
+                                .newInstance(amArgs);
+                    }
+
+                    authMechanisms.add((PluggableAuthenticationMechanism) _amInstance);
+
+                    LOGGER.info("Authentication Mechanism {} enabled", amImplClass);
+                } catch (NoSuchMethodException nsme) {
+                    var error = "Wrong arguments for Authentication Mechanism " 
+                            + amImplClass
+                            + " "
+                            + "";
+                    logErrorAndExit(error, nsme, false, -3);
+                } catch (Throwable t) {
+                    logErrorAndExit("Error configuring Authentication Mechanism implementation " + amImplClass, t, false, -3);
+                }
+            });
         } else {
-            LOGGER.info("Authentication Mechanism io.undertow.security.impl.BasicAuthenticationMechanism enabled");
+            LOGGER.warn("***** No Authentication Mechanism specified. Authentication disabled.");
         }
-        return authMechanism;
+
+        return authMechanisms;
     }
 
     /**
      * loadIdentityManager
      *
-     * @return the IdentityManager
+     * @return the PluggableIdentityManager
      */
-    private static IdentityManager loadIdentityManager() {
-        IdentityManager identityManager = null;
+    private static PluggableIdentityManager loadIdentityManager() {
+        PluggableIdentityManager identityManager = null;
         if (configuration.getIdmImpl() == null) {
             LOGGER.warn("***** No Identity Manager specified. Authentication disabled.");
         } else {
@@ -665,7 +683,7 @@ public class Bootstrapper {
                 Object idm = Class.forName(configuration.getIdmImpl())
                         .getConstructor(Map.class)
                         .newInstance(configuration.getIdmArgs());
-                identityManager = (IdentityManager) idm;
+                identityManager = (PluggableIdentityManager) idm;
 
                 LOGGER.info("Identity Manager {} enabled", configuration.getIdmImpl());
             } catch (ClassNotFoundException
@@ -760,25 +778,25 @@ public class Bootstrapper {
      * @return a GracefulShutdownHandler
      */
     private static GracefulShutdownHandler getHandlersPipe(
-            final AuthenticationMechanism authenticationMechanism,
-            final IdentityManager identityManager,
+            final List<PluggableAuthenticationMechanism> authenticationMechanisms,
+            final PluggableIdentityManager identityManager,
             final PluggableAccessManager accessManager) {
         PathHandler paths = path();
 
-        pipeApplicationLogicHandlers(configuration, paths, authenticationMechanism, identityManager, accessManager);
+        pipeApplicationLogicHandlers(configuration, paths, authenticationMechanisms, identityManager, accessManager);
 
         // plug the auth tokens invalidation handler
         paths.addPrefixPath("/_authtokens",
                 new RequestLoggerHandler(
                         new CORSHandler(
                                 new XPoweredByInjector(
-                                        new SecurityHandlerDispacher(
+                                        new SecurityHandler(
                                                 new AuthTokenHandler(),
-                                                authenticationMechanism,
+                                                authenticationMechanisms,
                                                 identityManager,
                                                 new FullAccessManager())))));
 
-        pipeResoruceMountsHandlers(configuration, paths, authenticationMechanism, identityManager, accessManager);
+        pipeResoruceMountsHandlers(configuration, paths, authenticationMechanisms, identityManager, accessManager);
 
         return buildGracefulShutdownHandler(paths);
     }
@@ -816,14 +834,15 @@ public class Bootstrapper {
      *
      * @param conf
      * @param paths
-     * @param authenticationMechanism
+     * @param authenticationMechanisms
      * @param identityManager
      * @param accessManager
      */
     private static void pipeApplicationLogicHandlers(
             final Configuration conf,
             final PathHandler paths,
-            AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager,
+            final List<PluggableAuthenticationMechanism> authenticationMechanisms,
+            final PluggableIdentityManager identityManager,
             final PluggableAccessManager accessManager) {
         if (!conf.getHandlersMounts().isEmpty()) {
             conf.getHandlersMounts().stream().forEach((Map<String, Object> al) -> {
@@ -831,7 +850,7 @@ public class Bootstrapper {
                     String clazz = (String) al.get(Configuration.HANDLER_MOUNT_WHAT_KEY);
                     String where = (String) al.get(Configuration.HANDLER_MOUNT_WHERE_KEY);
                     boolean secured = (Boolean) al.get(Configuration.HANDLER_MOUNT_SECURED_KEY);
-                    Object args = al.get(Configuration.HANDLER_MOUNT_ARGS_KEY);
+                    Object args = al.get(Configuration.ARGS_KEY);
 
                     if (where == null || !where.startsWith("/")) {
                         LOGGER.error("Cannot plug handler {}. Parameter 'where' must start with /", where);
@@ -862,9 +881,9 @@ public class Bootstrapper {
                                     new RequestLoggerHandler(
                                             new CORSHandler(
                                                     new XPoweredByInjector(
-                                                            new SecurityHandlerDispacher(
+                                                            new SecurityHandler(
                                                                     handler,
-                                                                    authenticationMechanism,
+                                                                    authenticationMechanisms,
                                                                     identityManager,
                                                                     accessManager)))));
                         } else {
@@ -872,9 +891,9 @@ public class Bootstrapper {
                                     new RequestLoggerHandler(
                                             new CORSHandler(
                                                     new XPoweredByInjector(
-                                                            new SecurityHandlerDispacher(
+                                                            new SecurityHandler(
                                                                     handler,
-                                                                    authenticationMechanism,
+                                                                    authenticationMechanisms,
                                                                     identityManager,
                                                                     new FullAccessManager())))));
                         }
@@ -906,14 +925,15 @@ public class Bootstrapper {
      *
      * @param conf
      * @param paths
-     * @param authenticationMechanism
+     * @param authenticationMechanisms
      * @param identityManager
      * @param accessManager
      */
     private static void pipeResoruceMountsHandlers(
             final Configuration conf,
             final PathHandler paths,
-            AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager,
+            final List<PluggableAuthenticationMechanism> authenticationMechanisms,
+            final PluggableIdentityManager identityManager,
             final PluggableAccessManager accessManager) {
         if (conf.getProxyMounts() == null || conf.getProxyMounts().isEmpty()) {
             LOGGER.warn("No proxy-mounts specified. The uIAM is not protecting "
@@ -955,10 +975,10 @@ public class Bootstrapper {
 
                 paths.addPrefixPath(uri,
                         new RequestLoggerHandler(
-                                new SecurityHandlerDispacher(
+                                new SecurityHandler(
                                         new AuthHeadersRemover(
                                                 wrappedProxyHandler),
-                                        authenticationMechanism,
+                                        authenticationMechanisms,
                                         identityManager,
                                         accessManager)));
 

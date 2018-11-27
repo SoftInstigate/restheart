@@ -21,12 +21,12 @@ package io.uiam.handlers.security;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
+import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 
 /**
  * This is the PipedHttpHandler version of
@@ -37,14 +37,15 @@ import io.uiam.handlers.RequestContext;
  */
 public class AuthenticationMechanismsHandler extends PipedHttpHandler {
 
-    private final List<AuthenticationMechanism> authenticationMechanisms;
+    private final List<PluggableAuthenticationMechanism> authenticationMechanisms;
 
-    public AuthenticationMechanismsHandler(final PipedHttpHandler next, final List<AuthenticationMechanism> authenticationMechanisms) {
+    public AuthenticationMechanismsHandler(final PipedHttpHandler next, 
+            final List<PluggableAuthenticationMechanism> authenticationMechanisms) {
         super(next);
         this.authenticationMechanisms = authenticationMechanisms;
     }
 
-    public AuthenticationMechanismsHandler(final List<AuthenticationMechanism> authenticationHandlers) {
+    public AuthenticationMechanismsHandler(final List<PluggableAuthenticationMechanism> authenticationHandlers) {
         this.authenticationMechanisms = authenticationHandlers;
     }
 
@@ -52,6 +53,7 @@ public class AuthenticationMechanismsHandler extends PipedHttpHandler {
     @SuppressWarnings("deprecation")
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         final SecurityContext sc = exchange.getSecurityContext();
+        
         if (sc != null) {
             authenticationMechanisms.forEach((mechanism) -> {
                 sc.addAuthenticationMechanism(mechanism);

@@ -23,13 +23,5 @@ import io.undertow.security.idm.IdentityManager;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public abstract class PluggableIdentityManager implements IdentityManager {
-
-    /**
-     *
-     */
-    public static final String UIAM_REALM = "uIAM Realm";
-
-    private PluggableIdentityManager() {
-    }
+public interface PluggableIdentityManager extends IdentityManager {
 }

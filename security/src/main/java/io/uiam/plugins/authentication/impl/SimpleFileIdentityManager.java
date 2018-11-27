@@ -18,9 +18,9 @@
 package io.uiam.plugins.authentication.impl;
 
 import io.uiam.plugins.AbstractConfigurationFileConsumer;
+import io.uiam.plugins.authentication.PluggableIdentityManager;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
-import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
@@ -37,7 +37,9 @@ import java.util.function.Consumer;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class SimpleFileIdentityManager extends AbstractConfigurationFileConsumer implements IdentityManager {
+public class SimpleFileIdentityManager 
+        extends AbstractConfigurationFileConsumer 
+        implements PluggableIdentityManager {
 
     private final Map<String, SimpleAccount> accounts = new HashMap<>();
 

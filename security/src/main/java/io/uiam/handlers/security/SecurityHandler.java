@@ -15,17 +15,12 @@
  */
 package io.uiam.handlers.security;
 
-import io.undertow.security.api.AuthenticationMechanism;
-import io.undertow.security.idm.IdentityManager;
-import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpServerExchange;
-import java.util.ArrayList;
 import java.util.List;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
-import io.uiam.plugins.authentication.impl.AuthTokenAuthenticationMechanism;
-import io.uiam.plugins.authentication.SilentBasicAuthenticationMechanism;
-import static io.uiam.plugins.authentication.PluggableIdentityManager.UIAM_REALM;
+import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
+import io.uiam.plugins.authentication.PluggableIdentityManager;
 import io.uiam.plugins.authorization.PluggableAccessManager;
 
 /**
@@ -34,23 +29,15 @@ import io.uiam.plugins.authorization.PluggableAccessManager;
  */
 public class SecurityHandler extends PipedHttpHandler {
 
-    private static PipedHttpHandler getSecurityHandlerChain(final PipedHttpHandler next, AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager, final PluggableAccessManager accessManager, final boolean challenging) {
+    private static PipedHttpHandler getSecurityHandlerChain(final PipedHttpHandler next, 
+            final List<PluggableAuthenticationMechanism> authenticationMechanisms,
+            final PluggableIdentityManager identityManager, 
+            final PluggableAccessManager accessManager) {
         if (identityManager != null) {
-            final List<AuthenticationMechanism> mechanisms = new ArrayList<>();
-
-            if (authenticationMechanism != null) {
-                mechanisms.add(authenticationMechanism);
-            }
-
-            mechanisms.add(new AuthTokenAuthenticationMechanism(UIAM_REALM));
-
-            if (challenging) {
-                mechanisms.add(new BasicAuthenticationMechanism(UIAM_REALM));
-            } else {
-                mechanisms.add(new SilentBasicAuthenticationMechanism(UIAM_REALM));
-            }
-
-            return buildSecurityHandlerChain(next, accessManager, identityManager, mechanisms);
+            return buildSecurityHandlerChain(next, 
+                    authenticationMechanisms, 
+                    accessManager, 
+                    identityManager);
         } else {
             return next;
         }
@@ -59,14 +46,19 @@ public class SecurityHandler extends PipedHttpHandler {
     /**
      *
      * @param next
-     * @param authenticationMechanism
+     * @param authenticationMechanisms
      * @param identityManager
      * @param accessManager
-     * @param challenging false if never challenge for authentication (don't
-     * sent the WWW-Authenticate response header)
      */
-    public SecurityHandler(final PipedHttpHandler next, AuthenticationMechanism authenticationMechanism, final IdentityManager identityManager, final PluggableAccessManager accessManager, final boolean challenging) {
-        super(getSecurityHandlerChain(next, authenticationMechanism, identityManager, accessManager, challenging));
+    public SecurityHandler(final PipedHttpHandler next, 
+            final List<PluggableAuthenticationMechanism> authenticationMechanisms,
+            final PluggableIdentityManager identityManager, 
+            final PluggableAccessManager accessManager) {
+        
+        super(getSecurityHandlerChain(next, 
+                authenticationMechanisms, 
+                identityManager, 
+                accessManager));
     }
 
     @Override

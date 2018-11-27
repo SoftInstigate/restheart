@@ -1,6 +1,5 @@
 package io.uiam.handlers;
 
-import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.AuthenticationMode;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpHandler;
@@ -12,6 +11,7 @@ import io.uiam.handlers.security.AuthenticationCallHandler;
 import io.uiam.handlers.security.AuthenticationConstraintHandler;
 import io.uiam.handlers.security.AuthenticationMechanismsHandler;
 import io.uiam.handlers.security.SecurityInitialHandler;
+import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 import io.uiam.plugins.authorization.PluggableAccessManager;
 
 /**
@@ -24,9 +24,9 @@ public abstract class PipedHttpHandler implements HttpHandler {
 
     protected static PipedHttpHandler buildSecurityHandlerChain(
             PipedHttpHandler next,
+            final List<PluggableAuthenticationMechanism> mechanisms,
             final PluggableAccessManager accessManager,
-            final IdentityManager identityManager,
-            final List<AuthenticationMechanism> mechanisms) {
+            final IdentityManager identityManager) {
         PipedHttpHandler handler;
 
         if (accessManager == null) {
