@@ -68,7 +68,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
-import java.util.logging.Level;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -128,7 +127,7 @@ public class Bootstrapper {
         @Parameter(names = {"--envFile", "--envfile", "-e"}, description = "Environment file name")
         private String envFile = null;
 
-        @Parameter(names = {"--help", "-?"}, help = true)
+        @Parameter(names = {"--help", "-?"}, help = true, description = "This help message")
         private boolean help;
     }
 
