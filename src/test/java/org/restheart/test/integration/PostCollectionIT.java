@@ -80,7 +80,7 @@ public class PostCollectionIT extends HttpClientAbstactIT {
 
         response = adminExecutor.execute(Request.Get(createdDocUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
-        JsonObject content = JsonObject.readFrom(response.returnContent().asString());
+        JsonObject content = Json.parse(response.returnContent().asString()).asObject();
         assertNotNull("check created doc content", content.get("_id"));
         assertNotNull("check created doc content", content.get("_etag"));
         assertNotNull("check created doc content", content.get("a"));

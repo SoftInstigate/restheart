@@ -17,6 +17,7 @@
  */
 package org.restheart.test.integration;
 
+import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import io.undertow.util.Headers;
 import org.apache.http.client.fluent.Request;
@@ -66,7 +67,7 @@ public class PatchCollectionIT extends HttpClientAbstactIT {
 
         resp = adminExecutor.execute(Request.Get(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
-        JsonObject content = JsonObject.readFrom(resp.returnContent().asString());
+        JsonObject content = Json.parse(resp.returnContent().asString()).asObject();
 
         String etag = content.get("_etag").asObject().get("$oid").asString();
 
@@ -76,7 +77,7 @@ public class PatchCollectionIT extends HttpClientAbstactIT {
 
         resp = adminExecutor.execute(Request.Get(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
-        content = JsonObject.readFrom(resp.returnContent().asString());
+        content = Json.parse(resp.returnContent().asString()).asObject();
         assertNotNull("check patched content", content.get("a"));
         assertNotNull("check patched content", content.get("b"));
         assertTrue("check patched content", content.get("a").asInt() == 1 && content.get("b").asInt() == 2);
@@ -84,7 +85,7 @@ public class PatchCollectionIT extends HttpClientAbstactIT {
 
         // try to patch reserved field name
         resp = adminExecutor.execute(Request.Patch(collectionTmpUri).bodyString("{'_embedded':'a', 'a': 1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
-        content = JsonObject.readFrom(resp.returnContent().asString());
+        content = Json.parse(resp.returnContent().asString()).asObject();
         assertNotNull("check patched content", content.get("_embedded").asObject().get("rh:warnings").asArray());
 
     }

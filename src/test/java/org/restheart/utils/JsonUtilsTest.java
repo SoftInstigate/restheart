@@ -80,7 +80,7 @@ public class JsonUtilsTest {
 
         Assert.assertEquals(minified, JsonUtils.minify(json));
     }
-
+    
     @Test
     public void testGetPropFromPath() throws Exception {
         String _json1 = "{a: {b:1, c: {d:{\"$oid\": \"550c6e62c2e62b5640673e93\"}, e:3}}, f: null}";

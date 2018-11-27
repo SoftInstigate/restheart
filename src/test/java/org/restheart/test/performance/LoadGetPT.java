@@ -26,10 +26,9 @@ package org.restheart.test.performance;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
 import com.mongodb.client.MongoCollection;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -128,7 +127,7 @@ public class LoadGetPT extends AbstractPT {
      */
     public void dbdirectdoc() {
         final Database dbDao = new DbsDAO();
-        DBCollection dbcoll = dbDao.getCollectionLegacy(db, coll);
+        MongoCollection<BsonDocument> dbcoll = dbDao.getCollection(db, coll);
 
         ObjectId oid;
         String sid;
@@ -150,10 +149,10 @@ public class LoadGetPT extends AbstractPT {
             query = new BasicDBObject("_id", sid);
         }
 
-        DBObject data;
+        BsonDocument data;
 
         try {
-            data = dbcoll.findOne(query);
+            data = dbcoll.find(query).limit(1).first();
         } catch (Exception e) {
             return;
         }
@@ -208,7 +207,7 @@ public class LoadGetPT extends AbstractPT {
         JsonObject json = null;
 
         try {
-            json = JsonObject.readFrom(content);
+            json = Json.parse(content).asObject();
         } catch (Throwable t) {
             fail("parsing received json");
         }

@@ -349,7 +349,7 @@
                 <configuration>
                     <debug>true</debug>
                     <!--<compilerArgument>-Xlint</compilerArgument>-->
-                    <showDeprecation>false</showDeprecation>
+                    <showDeprecation>true</showDeprecation>
                 </configuration>
             </plugin>
 

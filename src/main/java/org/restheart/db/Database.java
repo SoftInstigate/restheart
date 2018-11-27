@@ -17,15 +17,13 @@
  */
 package org.restheart.db;
 
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.util.JSONParseException;
 import java.util.ArrayList;
 import java.util.List;
 import org.bson.BsonDocument;
+import org.bson.json.JsonParseException;
 import org.restheart.handlers.IllegalQueryParamenterException;
 
 /**
@@ -83,16 +81,6 @@ public interface Database {
      * @param collectionName
      * @return A Collection
      */
-    DBCollection getCollectionLegacy(
-            String dbName,
-            String collectionName);
-
-    /**
-     *
-     * @param dbName
-     * @param collectionName
-     * @return A Collection
-     */
     MongoCollection<BsonDocument> getCollection(
             String dbName,
             String collectionName);
@@ -137,13 +125,6 @@ public interface Database {
     long getCollectionSize(
             final MongoCollection<BsonDocument> collection,
             BsonDocument filters);
-
-    /**
-     *
-     * @param dbName
-     * @return the Mongo DB
-     */
-    DB getDBLegacy(String dbName);
 
     /**
      *
@@ -278,12 +259,12 @@ public interface Database {
      * query conditions.
      * @param keys
      * @return
-     * @throws JSONParseException
+     * @throws JsonParseException
      */
     FindIterable<BsonDocument> getFindIterable(
             MongoCollection<BsonDocument> collection,
             BsonDocument sortBy,
             BsonDocument filters,
             BsonDocument keys)
-            throws JSONParseException;
+            throws JsonParseException;
 }

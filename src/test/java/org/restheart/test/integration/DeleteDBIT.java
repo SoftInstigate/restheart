@@ -17,6 +17,7 @@
  */
 package org.restheart.test.integration;
 
+import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import io.undertow.util.Headers;
 import org.apache.http.client.fluent.Request;
@@ -54,7 +55,7 @@ public class DeleteDBIT extends HttpClientAbstactIT {
         resp = adminExecutor.execute(Request.Get(dbTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         //check("getting etag of tmp doc", resp, HttpStatus.SC_OK);
 
-        JsonObject content = JsonObject.readFrom(resp.returnContent().asString());
+        JsonObject content = Json.parse(resp.returnContent().asString()).asObject();
 
         String etag = content.get("_etag").asObject().get("$oid").asString();
 

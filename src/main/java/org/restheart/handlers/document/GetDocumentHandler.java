@@ -105,7 +105,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
             keys.stream().forEach((String f) -> {
                 BsonDocument keyQuery = BsonDocument.parse(f);
 
-                fieldsToReturn.putAll(keyQuery);  // this can throw JSONParseException for invalid filter parameters
+                fieldsToReturn.putAll(keyQuery);  // this can throw JsonParseException for invalid filter parameters
             });
         }
 

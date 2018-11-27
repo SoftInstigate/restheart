@@ -100,16 +100,6 @@ public class DbsDAO implements Database {
     /**
      *
      * @param dbName
-     * @return
-     */
-    @Override
-    public DB getDBLegacy(String dbName) {
-        return client.getDB(dbName);
-    }
-
-    /**
-     *
-     * @param dbName
      * @return the MongoDatabase
      */
     @Override
@@ -428,13 +418,6 @@ public class DbsDAO implements Database {
         return collectionDAO.getCollectionProps(
                 dbName,
                 collName);
-    }
-
-    @Override
-    public DBCollection getCollectionLegacy(
-            String dbName,
-            String collName) {
-        return collectionDAO.getCollectionLegacy(dbName, collName);
     }
 
     @Override

@@ -25,6 +25,7 @@ import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.FindOneAndReplaceOptions;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
+import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.model.UpdateOneModel;
 import com.mongodb.client.model.UpdateOptions;
@@ -83,6 +84,9 @@ public class DAOUtils {
             .upsert(true);
 
     public final static UpdateOptions U_NOT_UPSERT_OPS = new UpdateOptions()
+            .upsert(false);
+    
+    public final static ReplaceOptions R_NOT_UPSERT_OPS = new ReplaceOptions()
             .upsert(false);
 
     public final static BulkWriteOptions BWO_NOT_ORDERED = new BulkWriteOptions()
@@ -314,7 +318,7 @@ public class DAOUtils {
             query = and(query, shardKeys);
         }
 
-        UpdateResult result = coll.replaceOne(query, data, U_NOT_UPSERT_OPS);
+        UpdateResult result = coll.replaceOne(query, data, R_NOT_UPSERT_OPS);
 
         if (result.isModifiedCountAvailable()) {
             return result.getModifiedCount() == 1;

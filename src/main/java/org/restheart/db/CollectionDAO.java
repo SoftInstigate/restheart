@@ -25,7 +25,6 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
-import com.mongodb.util.JSONParseException;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -115,7 +114,7 @@ class CollectionDAO {
      * @return true if the commection is empty
      */
     public boolean isCollectionEmpty(final MongoCollection<BsonDocument> coll) {
-        return coll.count() == 0;
+        return coll.countDocuments() == 0;
     }
 
     /**
@@ -131,7 +130,7 @@ class CollectionDAO {
     public long getCollectionSize(
             final MongoCollection<BsonDocument> coll,
             final BsonDocument filters) {
-        return coll.count(filters);
+        return coll.countDocuments(filters);
     }
 
     /**
@@ -167,7 +166,7 @@ class CollectionDAO {
             final BsonDocument filters,
             final BsonDocument keys,
             CursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager)
-            throws JSONParseException {
+            throws JsonParseException {
 
         ArrayList<BsonDocument> ret = new ArrayList<>();
 

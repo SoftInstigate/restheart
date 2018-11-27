@@ -17,7 +17,6 @@
  */
 package org.restheart.handlers.injectors;
 
-import com.mongodb.util.JSONParseException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.form.FormData;
 import io.undertow.server.handlers.form.FormDataParser;
@@ -198,7 +197,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      */
     protected static BsonDocument extractMetadata(
             final FormData formData)
-            throws JSONParseException {
+            throws JsonParseException {
         BsonDocument metadata = new BsonDocument();
 
         final String metadataString;
@@ -225,7 +224,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     private static String extractFileField(final FormData formData) {
         String fileField = null;
         for (String f : formData) {
-            if (formData.getFirst(f) != null && formData.getFirst(f).isFile()) {
+            if (formData.getFirst(f) != null && formData.getFirst(f).isFileItem()) {
                 fileField = f;
                 break;
             }
@@ -328,7 +327,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
             try {
                 content = extractMetadata(formData);
-            } catch (JSONParseException | IllegalArgumentException ex) {
+            } catch (JsonParseException | IllegalArgumentException ex) {
                 String errMsg = "Invalid data: "
                         + "'properties' field is not a valid JSON";
 
@@ -356,7 +355,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                 return;
             }
 
-            final Path path = formData.getFirst(fileField).getPath();
+            final Path path = formData.getFirst(fileField).getFileItem().getFile();
 
             context.setFilePath(path);
 

@@ -78,7 +78,7 @@ public class PutDocumentIT extends HttpClientAbstactIT {
 
         response = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
-        JsonObject content = JsonObject.readFrom(response.returnContent().asString());
+        JsonObject content = Json.parse(response.returnContent().asString()).asObject();
 
         String etag = content.get("_etag").asObject().get("$oid").asString();
 
@@ -88,7 +88,7 @@ public class PutDocumentIT extends HttpClientAbstactIT {
 
         response = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
 
-        content = JsonObject.readFrom(response.returnContent().asString());
+        content = Json.parse(response.returnContent().asString()).asObject();
         assertNull("check put content", content.get("a"));
         assertNotNull("check put content", content.get("b"));
         assertTrue("check put content", content.get("b").asInt() == 2);
