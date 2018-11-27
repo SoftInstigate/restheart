@@ -37,7 +37,8 @@ public class MongoDBClientSingleton {
 
     private static MongoClientURI mongoUri;
 
-    private static String serverVersion;
+    private static String serverVersion = null;
+    private static Boolean replicaSet = null;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoDBClientSingleton.class);
 
@@ -64,16 +65,12 @@ public class MongoDBClientSingleton {
     public static boolean isInitialized() {
         return initialized;
     }
-    
+
     /**
      * @return the initialized
      */
-    public static boolean isReplicaSet() {
-        if (!initialized) {
-            throw new IllegalStateException("mongodb client not initialized");
-        }
-        
-        return false;
+    public static Boolean isReplicaSet() {
+        return replicaSet;
     }
 
     /**
@@ -82,6 +79,7 @@ public class MongoDBClientSingleton {
     public static String getServerVersion() {
         return serverVersion;
     }
+
     private MongoClient mongoClient;
 
     private MongoDBClientSingleton() {
@@ -103,10 +101,13 @@ public class MongoDBClientSingleton {
             mongoClient = new MongoClient(mongoUri);
         }
 
+        // get the db version
         try {
             Document res = mongoClient.getDatabase("admin")
-                    .runCommand(new BsonDocument("buildInfo", new BsonInt32(1)));
-            
+                    .runCommand(
+                            new BsonDocument("buildInfo",
+                                    new BsonInt32(1)));
+
             Object _version = res.get("version");
 
             if (_version != null && _version instanceof String) {
@@ -118,6 +119,17 @@ public class MongoDBClientSingleton {
         } catch (Throwable t) {
             LOGGER.warn("Cannot get the MongoDb version.");
             serverVersion = "?";
+        }
+
+        // check if db is configured as replica set
+        try {
+            // this throws an exception if not running as replica set
+            mongoClient.getDatabase("admin")
+                    .runCommand(new BsonDocument("replSetGetStatus",
+                            new BsonInt32(1)));
+            replicaSet = true;
+        } catch (Throwable t) {
+            replicaSet = false;
         }
     }
 

@@ -182,11 +182,15 @@ public class Bootstrapper {
     }
 
     private static void extractBuildTime() {
-        for (Entry<Object, Object> entry : MANIFEST_ENTRIES) {
-            if (entry.getKey().toString().equals("Build-Time")) {
-                BUILD_TIME = (String) entry.getValue();
-                break;
+        if (MANIFEST_ENTRIES != null) {
+            for (Entry<Object, Object> entry : MANIFEST_ENTRIES) {
+                if (entry.getKey().toString().equals("Build-Time")) {
+                    BUILD_TIME = (String) entry.getValue();
+                    break;
+                }
             }
+        } else {
+            BUILD_TIME = null;
         }
     }
 
@@ -261,13 +265,19 @@ public class Bootstrapper {
                 ansi().fg(MAGENTA).a(RESTHEART_VERSION).reset().toString(),
                 ansi().fg(MAGENTA).a(getInstanceName()).reset().toString(),
                 ansi().fg(MAGENTA).a(ENVIRONMENT).reset().toString(),
-                ansi().fg(MAGENTA).a(BUILD_TIME).reset().toString());
+                ansi().fg(MAGENTA).a(BUILD_TIME != null
+                        ? BUILD_TIME
+                        : "unknown, not packaged").reset().toString());
 
         LOGGER.info("Starting {}\n{}", ansi().fg(RED).a(RESTHEART).reset().toString(), info);
     }
 
     private static void logManifestInfo() {
-        LOGGER.debug("Build Information: {}", MANIFEST_ENTRIES.toString());
+        if (MANIFEST_ENTRIES != null) {
+            LOGGER.debug("Build Information: {}", MANIFEST_ENTRIES.toString());
+        } else {
+            LOGGER.debug("Build Information: {}", "unknown, not packaged");
+        }
     }
 
     /**
@@ -412,8 +422,15 @@ public class Bootstrapper {
             //force setup
             MongoDBClientSingleton.getInstance();
             LOGGER.info("MongoDB connection pool initialized");
-            LOGGER.info("MongoDB version {}",
+            LOGGER.info("MongoDB version {} {} instance",
                     ansi().fg(MAGENTA).a(MongoDBClientSingleton.getServerVersion()).reset().toString());
+            
+            if (MongoDBClientSingleton.isReplicaSet()) {
+                LOGGER.info("MongoDB instance is a replica set");
+            } else {
+                LOGGER.warn("MongoDB instance is not a replica set");
+            }
+
         } catch (Throwable t) {
             logErrorAndExit("Error connecting to MongoDB. exiting..", t, false, !pidFileAlreadyExists, -1);
         }
