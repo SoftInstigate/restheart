@@ -422,13 +422,13 @@ public class Bootstrapper {
             //force setup
             MongoDBClientSingleton.getInstance();
             LOGGER.info("MongoDB connection pool initialized");
-            LOGGER.info("MongoDB version {} {} instance",
+            LOGGER.info("MongoDB version {}",
                     ansi().fg(MAGENTA).a(MongoDBClientSingleton.getServerVersion()).reset().toString());
             
             if (MongoDBClientSingleton.isReplicaSet()) {
-                LOGGER.info("MongoDB instance is a replica set");
+                LOGGER.info("MongoDB is a replica set");
             } else {
-                LOGGER.warn("MongoDB instance is not a replica set");
+                LOGGER.warn("MongoDB is a standalone instance, use a replica set in production");
             }
 
         } catch (Throwable t) {
