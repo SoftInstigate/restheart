@@ -72,7 +72,7 @@ use-embedded-keystore: true
 #
 # More information at http://api.mongodb.org/java/current/com/mongodb/MongoClientURI.html
 
-mongo-uri: mongodb://127.0.0.1
+mongo-uri: {{mongouri}}
 
 # Use mongo-mounts to bind URls to mongodb resources using the out-of-the-box URL rewrite feature.
 # The where URI can be an absolute path (eg. /api) or path template (eg. /{foo}/bar/*). 
