@@ -188,10 +188,6 @@ public class Bootstrapper {
         if (ENVIRONMENT_FILE == null) {
             // no --env parameter, try to read from OS environment
             ENVIRONMENT_FILE = System.getenv("RESTHEART_ENVFILE");
-            if (ENVIRONMENT_FILE == null) {
-                // no OS environment, set to empty string
-                ENVIRONMENT_FILE = "";
-            }
         }
     }
 
@@ -270,8 +266,8 @@ public class Bootstrapper {
         // read configuration silently, to avoid logging before initializing the logger
         if (CONF_FILE_PATH == null) {
             configuration = new Configuration();
-        } else if (ENVIRONMENT_FILE.isEmpty()) {
-            configuration = new Configuration(CONF_FILE_PATH, true);
+        } else if (ENVIRONMENT_FILE == null) {
+            configuration = new Configuration(CONF_FILE_PATH, false);
         } else {
             try {
                 Properties p = new Properties();
@@ -283,10 +279,10 @@ public class Bootstrapper {
                 writer.flush();
                 Yaml yaml = new Yaml();
                 Map<String, Object> obj = yaml.load(writer.toString());
-                configuration = new Configuration(obj, true);
+                configuration = new Configuration(obj, false);
             } catch (IOException ex) {
                 LOGGER.error("Fatal error: \"{}\"", ex.getMessage());
-                System.exit(1);
+                System.exit(2);
             }
         }
     }
@@ -295,11 +291,13 @@ public class Bootstrapper {
         String info = String.format("  {\n"
                 + "    \"Version\": \"%s\",\n"
                 + "    \"Instance-Name\": \"%s\",\n"
+                + "    \"Configuration\": \"%s\",\n"
                 + "    \"Environment\": \"%s\",\n"
                 + "    \"Build-Time\": \"%s\"\n"
                 + "  }",
                 ansi().fg(MAGENTA).a(RESTHEART_VERSION).reset().toString(),
                 ansi().fg(MAGENTA).a(getInstanceName()).reset().toString(),
+                ansi().fg(MAGENTA).a(CONF_FILE_PATH).reset().toString(),
                 ansi().fg(MAGENTA).a(ENVIRONMENT_FILE).reset().toString(),
                 ansi().fg(MAGENTA).a(BUILD_TIME != null
                         ? BUILD_TIME
