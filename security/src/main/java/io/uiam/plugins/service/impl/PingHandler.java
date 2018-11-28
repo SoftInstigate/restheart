@@ -15,21 +15,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.uiam.plugins.handlers.impl;
+package io.uiam.plugins.service.impl;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
 import io.uiam.handlers.RequestContext.METHOD;
-import io.uiam.plugins.handlers.PluggableHandler;
+import io.uiam.plugins.service.PluggableService;
 import io.uiam.utils.HttpStatus;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class PingHandler extends PluggableHandler {
+public class PingHandler extends PluggableService {
 
     private final String msg;
 

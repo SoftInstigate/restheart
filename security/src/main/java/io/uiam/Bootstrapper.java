@@ -60,9 +60,8 @@ import io.uiam.handlers.GzipEncodingHandler;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
 import io.uiam.handlers.RequestLoggerHandler;
-import io.uiam.plugins.handlers.PluggableHandler;
+import io.uiam.plugins.service.PluggableService;
 import io.uiam.handlers.injectors.RequestContextInjectorHandler;
-import io.uiam.init.Initializer;
 import io.uiam.plugins.authorization.FullAccessManager;
 import io.uiam.handlers.security.AuthTokenHandler;
 import io.uiam.handlers.security.CORSHandler;
@@ -93,6 +92,7 @@ import org.xnio.ssl.XnioSsl;
 import io.uiam.plugins.authorization.PluggableAccessManager;
 import java.util.ArrayList;
 import java.util.List;
+import io.uiam.plugins.init.PluggableInitializer;
 
 /**
  *
@@ -401,9 +401,9 @@ public class Bootstrapper {
                         .getDeclaredConstructor()
                         .newInstance();
 
-                if (o instanceof Initializer) {
+                if (o instanceof PluggableInitializer) {
                     try {
-                        ((Initializer) o).init();
+                        ((PluggableInitializer) o).init();
                         LOGGER.info(
                                 "initializer {} executed",
                                 configuration.getInitializerClass());
@@ -867,8 +867,8 @@ public class Bootstrapper {
                             .getConstructor(PipedHttpHandler.class, Map.class)
                             .newInstance(null, (Map) args);
 
-                    if (o instanceof PluggableHandler) {
-                        PluggableHandler alHandler = (PluggableHandler) o;
+                    if (o instanceof PluggableService) {
+                        PluggableService alHandler = (PluggableService) o;
 
                         PipedHttpHandler handler
                                 = new RequestContextInjectorHandler(

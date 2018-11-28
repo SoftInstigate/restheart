@@ -15,21 +15,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.uiam.init.impl;
+package io.uiam.plugins.init.impl;
 
 import io.uiam.RequestContextPredicate;
 import io.uiam.handlers.RequestContext;
 import io.uiam.handlers.security.AccessManagerHandler;
-import io.uiam.init.Initializer;
 import io.undertow.server.HttpServerExchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.uiam.plugins.init.PluggableInitializer;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class TestInitializer implements Initializer {
+public class TestInitializer implements PluggableInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestInitializer.class);
 
     @Override

@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
- * Implementations of Authentication Mechanisms and Identity Managers
+ * Implementations of PluggableInitializer
  * 
 * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-package io.uiam.plugins.authentication.impl;
+package io.uiam.plugins.init.impl;

@@ -21,6 +21,8 @@ import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 import static io.undertow.util.StatusCodes.UNAUTHORIZED;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -29,6 +31,8 @@ import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 public class BasicAuthenticationMechanism
         extends io.undertow.security.impl.BasicAuthenticationMechanism
         implements PluggableAuthenticationMechanism {
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(BasicAuthenticationMechanism.class);
     
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
@@ -43,6 +47,20 @@ public class BasicAuthenticationMechanism
             return new ChallengeResult(true, UNAUTHORIZED);
         } else {
             return super.sendChallenge(exchange, securityContext); 
+        }
+    }
+    
+    @Override
+    public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange, SecurityContext securityContext) {
+        AuthenticationMechanismOutcome ret = super.authenticate(exchange, securityContext);
+        
+        LOGGER.debug("return: " + ret);
+        
+        if (AuthenticationMechanismOutcome.NOT_AUTHENTICATED.equals(ret)) {
+            return AuthenticationMechanismOutcome.NOT_ATTEMPTED;
+        } else {
+        
+        return ret;
         }
     }
 }

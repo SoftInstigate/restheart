@@ -15,9 +15,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package io.uiam.plugins.service;
+
+import java.util.Map;
+import io.uiam.handlers.PipedHttpHandler;
+
 /**
- * Implementations of Authentication Mechanisms and Identity Managers
- * 
-* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ *
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-package io.uiam.plugins.authentication.impl;
+public abstract class PluggableService extends PipedHttpHandler {
+
+    /**
+     * The configuration properties passed to this handler.
+     */
+    protected final Map<String, Object> args;
+
+    /**
+     * Creates a new instance of the ApplicationLogicHandler
+     *
+     * @param next
+     * @param args
+     */
+    public PluggableService(PipedHttpHandler next, Map<String, Object> args) {
+        super(next);
+        this.args = args;
+    }
+}

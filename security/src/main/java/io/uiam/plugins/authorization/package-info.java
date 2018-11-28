@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
- * Main classes for authotization
+ * Main classes for authorization
  * 
 * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */

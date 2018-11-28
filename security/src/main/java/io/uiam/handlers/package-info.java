@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
- * Handlers for an HTTP request.
+ * Handlers for HTTP requests.
  * 
 * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */

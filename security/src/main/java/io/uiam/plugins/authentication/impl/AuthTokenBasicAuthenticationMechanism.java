@@ -44,7 +44,7 @@ import java.util.List;
  * password
  *
  */
-public class AuthTokenAuthenticationMechanism 
+public class AuthTokenBasicAuthenticationMechanism 
         extends BasicAuthenticationMechanism
         implements PluggableAuthenticationMechanism {
 
@@ -65,7 +65,7 @@ public class AuthTokenAuthenticationMechanism
      *
      * @param realmName
      */
-    public AuthTokenAuthenticationMechanism(String realmName) {
+    public AuthTokenBasicAuthenticationMechanism(String realmName) {
         super(realmName, "TOKEN", true);
     }
 

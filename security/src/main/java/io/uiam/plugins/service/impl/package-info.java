@@ -15,30 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.uiam.plugins.handlers;
-
-import java.util.Map;
-import io.uiam.handlers.PipedHttpHandler;
-
 /**
- *
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * Implementations of PluggableService
+ * 
+* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public abstract class PluggableHandler extends PipedHttpHandler {
-
-    /**
-     * The configuration properties passed to this handler.
-     */
-    protected final Map<String, Object> args;
-
-    /**
-     * Creates a new instance of the ApplicationLogicHandler
-     *
-     * @param next
-     * @param args
-     */
-    public PluggableHandler(PipedHttpHandler next, Map<String, Object> args) {
-        super(next);
-        this.args = args;
-    }
-}
+package io.uiam.plugins.service.impl;

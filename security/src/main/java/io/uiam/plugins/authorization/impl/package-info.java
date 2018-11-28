@@ -15,12 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.uiam.init;
-
 /**
- *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * Implementations of Access Manager
+ * 
+* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public interface Initializer {
-    public void init();
-}
+package io.uiam.plugins.authorization.impl;

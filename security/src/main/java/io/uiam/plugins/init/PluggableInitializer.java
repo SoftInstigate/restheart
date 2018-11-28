@@ -15,9 +15,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package io.uiam.plugins.init;
+
 /**
- * Implementations of Authentication Mechanisms and Identity Managers
- * 
-* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ *
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-package io.uiam.plugins.authentication.impl;
+public interface PluggableInitializer {
+    public void init();
+}

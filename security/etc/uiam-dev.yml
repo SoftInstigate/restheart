@@ -86,13 +86,13 @@ use-embedded-keystore: true
 
 ## Provied AMs are:
 ## - BasicAuthenticationMechanism - basic authentication
-## - AuthTokenAuthenticationMechanism - uses the auth token to authenticate, 
+## - AuthTokenBasicAuthenticationMechanism - uses the auth token to authenticate, 
 ###   requires auth-token: true, 
-###   also add this before other AM that can authenticate the client and generate the auth token 
+###   must be declared before the BasicAuthenticationMechanism that authenticates the client to generate the auth token 
 ## - IdentityAuthenticationMechanism - all requests are bound to the specified user
 
 auth-mechanisms:
-    - implementation-class: io.uiam.plugins.authentication.impl.AuthTokenAuthenticationMechanism
+    - implementation-class: io.uiam.plugins.authentication.impl.AuthTokenBasicAuthenticationMechanism
       args: uIAM Realm
     - implementation-class: io.uiam.plugins.authentication.impl.BasicAuthenticationMechanism
       args: uIAM Realm
@@ -144,12 +144,12 @@ auth-token-ttl: 15
 # GetRoleHandler bound to /roles that returns the current user authentication status and eventually its roles
 
 handler-mounts:
-    - what: io.uiam.plugins.handlers.impl.PingHandler
+    - what: io.uiam.plugins.service.impl.PingHandler
       where: /ping
       secured: false
       args:
           msg: "ciao from the uIAM team"
-    - what: io.uiam.plugins.handlers.impl.GetRoleHandler
+    - what: io.uiam.plugins.service.impl.GetRoleHandler
       where: /roles
       secured: false
       args:

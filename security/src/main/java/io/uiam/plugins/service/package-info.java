@@ -16,9 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
- * Abstract handler to define custom application logic services and some generic
- * example implementations
+ * Main classes to define custom services
  * 
 * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-package io.uiam.plugins.handlers;
+package io.uiam.plugins.service;

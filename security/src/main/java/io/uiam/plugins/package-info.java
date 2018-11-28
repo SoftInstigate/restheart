@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
- * Base package for classes concerning metadata properties
+ * Base package for pluggable classes
  * 
 * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
