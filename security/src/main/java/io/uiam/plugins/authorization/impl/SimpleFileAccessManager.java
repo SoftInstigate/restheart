@@ -17,7 +17,7 @@
  */
 package io.uiam.plugins.authorization.impl;
 
-import io.uiam.plugins.AbstractConfigurationFileConsumer;
+import io.uiam.plugins.AbstractConfiFileConsumer;
 import static com.google.common.collect.Sets.newHashSet;
 import io.undertow.predicate.Predicate;
 import static io.undertow.predicate.Predicate.PREDICATE_CONTEXT;
@@ -39,7 +39,7 @@ import io.uiam.plugins.authorization.PluggableAccessManager;
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class SimpleFileAccessManager extends AbstractConfigurationFileConsumer implements PluggableAccessManager {
+public class SimpleFileAccessManager extends AbstractConfiFileConsumer implements PluggableAccessManager {
 
     private final HashMap<String, Set<Predicate>> acl = new HashMap<>();
 

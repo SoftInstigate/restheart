@@ -17,6 +17,7 @@
  */
 package io.uiam.plugins.authentication;
 
+import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
 
 /**
@@ -24,4 +25,13 @@ import io.undertow.security.idm.IdentityManager;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface PluggableIdentityManager extends IdentityManager {
+    /**
+     * call this method from a PluggableAuthenticationMechanism that doeds not
+     * rely on a PluggableIdentityManager to build the Account
+     *
+     * @returns back the passed account
+     */
+    default public Account verify(Account account) {
+        return account;
+    }
 }

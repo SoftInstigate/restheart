@@ -34,11 +34,11 @@ import org.yaml.snakeyaml.Yaml;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-abstract public class AbstractConfigurationFileConsumer {
+abstract public class AbstractConfiFileConsumer {
 
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(AbstractConfigurationFileConsumer.class);
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(AbstractConfiFileConsumer.class);
 
-    public AbstractConfigurationFileConsumer() {
+    public AbstractConfiFileConsumer() {
     }
 
     abstract public Consumer<? super Map<String, Object>> consumeConfiguration();

@@ -17,7 +17,7 @@
  */
 package io.uiam.plugins.authentication.impl;
 
-import io.uiam.plugins.AbstractConfigurationFileConsumer;
+import io.uiam.plugins.AbstractConfiFileConsumer;
 import io.uiam.plugins.authentication.PluggableIdentityManager;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
@@ -37,9 +37,8 @@ import java.util.function.Consumer;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class SimpleFileIdentityManager 
-        extends AbstractConfigurationFileConsumer 
-        implements PluggableIdentityManager {
+public class SimpleFileIdentityManager
+        extends AbstractConfiFileConsumer implements PluggableIdentityManager {
 
     private final Map<String, SimpleAccount> accounts = new HashMap<>();
 
@@ -89,11 +88,6 @@ public class SimpleFileIdentityManager
 
             this.accounts.put(userid, a);
         };
-    }
-
-    @Override
-    public Account verify(Account account) {
-        return account;
     }
 
     @Override
