@@ -142,7 +142,7 @@ $ java -jar target/uiam.jar etc/uiam-dev.yml
 
 > work in progress
 
-# Test your installation
+# Tutorial
 
 You need [httpie](https://httpie.org) a modern command line HTTP client.
 
