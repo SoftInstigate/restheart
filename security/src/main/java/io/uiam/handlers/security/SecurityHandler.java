@@ -24,26 +24,14 @@ import io.uiam.handlers.RequestContext;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 import io.uiam.plugins.authentication.PluggableIdentityManager;
 import io.uiam.plugins.authorization.PluggableAccessManager;
+import io.undertow.security.api.AuthenticationMode;
+import io.undertow.security.idm.IdentityManager;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SecurityHandler extends PipedHttpHandler {
-
-    private static PipedHttpHandler getSecurityHandlerChain(final PipedHttpHandler next, 
-            final List<PluggableAuthenticationMechanism> authenticationMechanisms,
-            final PluggableIdentityManager identityManager, 
-            final PluggableAccessManager accessManager) {
-        if (identityManager != null) {
-            return buildSecurityHandlerChain(next, 
-                    authenticationMechanisms, 
-                    accessManager, 
-                    identityManager);
-        } else {
-            return next;
-        }
-    }
 
     /**
      *
@@ -52,20 +40,52 @@ public class SecurityHandler extends PipedHttpHandler {
      * @param identityManager
      * @param accessManager
      */
-    public SecurityHandler(final PipedHttpHandler next, 
+    public SecurityHandler(final PipedHttpHandler next,
             final List<PluggableAuthenticationMechanism> authenticationMechanisms,
-            final PluggableIdentityManager identityManager, 
+            final PluggableIdentityManager identityManager,
             final PluggableAccessManager accessManager) {
-        
-        super(getSecurityHandlerChain(next, 
-                authenticationMechanisms, 
-                identityManager, 
-                accessManager));
+
+        super(buildSecurityHandlersChain(next,
+                authenticationMechanisms,
+                accessManager,
+                identityManager));
     }
 
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         next(exchange, context);
+    }
+
+    private static PipedHttpHandler buildSecurityHandlersChain(
+            PipedHttpHandler next,
+            final List<PluggableAuthenticationMechanism> mechanisms,
+            final PluggableAccessManager accessManager,
+            final IdentityManager identityManager) {
+        if (identityManager != null) {
+            PipedHttpHandler handler;
+
+            if (accessManager == null) {
+                throw new IllegalArgumentException("Error, accessManager cannot "
+                        + "be null. "
+                        + "Eventually use FullAccessManager "
+                        + "that gives full access power ");
+            }
+
+            handler = new AuthTokenInjecterHandler(
+                    new AccessManagerHandler(accessManager, next));
+
+            handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE,
+                    identityManager,
+                    new AuthenticationMechanismsHandler(
+                            new AuthenticationConstraintHandler(
+                                    new AuthenticationCallHandler(handler),
+                                    accessManager),
+                            mechanisms));
+
+            return handler;
+        } else {
+            return next;
+        }
     }
 
 }
