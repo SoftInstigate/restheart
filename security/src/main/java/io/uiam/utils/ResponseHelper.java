@@ -25,6 +25,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 import io.uiam.handlers.RequestContext;
+import io.undertow.util.Headers;
 
 /**
  *
@@ -66,6 +67,8 @@ public class ResponseHelper {
         String httpStatusText = HttpStatus.getStatusText(code);
 
         context.setInError(true);
+        
+        exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "application/json");
 
         context.setResponseContent(
                 getErrorJsonDocument(
@@ -119,7 +122,7 @@ public class ResponseHelper {
 
         if (t != null) {
             nrep.add(
-                    "exception",
+                    "class",
                     new JsonPrimitive(t.getClass().getName()));
 
             if (includeStackTrace) {
@@ -130,7 +133,7 @@ public class ResponseHelper {
                 }
             }
 
-            resp.add(":exception", nrep);
+            resp.add("exception", nrep);
         }
 
         return resp;

@@ -60,7 +60,7 @@ public class ErrorHandler implements HttpHandler {
             LOGGER.error("Error handling the request", t);
 
             RequestContext errorContext = new RequestContext(exchange, "/", "_error");
-
+            
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     errorContext,
