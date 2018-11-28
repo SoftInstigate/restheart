@@ -17,10 +17,11 @@
  */
 package io.uiam.handlers.injectors;
 
-import com.google.common.net.HttpHeaders;
 import io.undertow.server.HttpServerExchange;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
+import io.uiam.plugins.authentication.impl.SimpleAccount;
+import io.undertow.security.idm.Account;
 import io.undertow.util.HttpString;
 
 /**
@@ -29,13 +30,13 @@ import io.undertow.util.HttpString;
  *
  * It injects the X-Powered-By response header
  */
-public class XPoweredByInjector extends PipedHttpHandler {
+public class AccountHeadersInjector extends PipedHttpHandler {
     /**
      * Creates a new instance of XPoweredByInjector
      *
      * @param next
      */
-    public XPoweredByInjector(PipedHttpHandler next) {
+    public AccountHeadersInjector(PipedHttpHandler next) {
         super(next);
     }
 
@@ -43,7 +44,7 @@ public class XPoweredByInjector extends PipedHttpHandler {
      * Creates a new instance of XPoweredByInjector
      *
      */
-    public XPoweredByInjector() {
+    public AccountHeadersInjector() {
         super(null);
     }
 
@@ -55,12 +56,46 @@ public class XPoweredByInjector extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        exchange.getResponseHeaders().add(
-                HttpString.tryFromString(HttpHeaders.X_POWERED_BY), 
-                "uIAM.io");
-        
+        if (exchange != null
+                && exchange.getSecurityContext() != null
+                && exchange.getSecurityContext()
+                        .getAuthenticatedAccount() != null) {
+            Account a = exchange
+                    .getSecurityContext()
+                    .getAuthenticatedAccount();
+
+            if (a.getPrincipal() != null) {
+                exchange.getRequestHeaders().add(
+                        getHeaderForPrincipalName(),
+                        a.getPrincipal().getName());
+            }
+
+            StringBuffer rolesBS = new StringBuffer();
+
+            if (a instanceof SimpleAccount
+                    && ((SimpleAccount) a).getRoles() != null) {
+
+                ((SimpleAccount) a).getRoles().stream()
+                        .forEachOrdered(role -> rolesBS.append(role.concat(",")));
+
+                if (rolesBS.length() > 1) {
+                    exchange.getRequestHeaders().add(
+                            getHeaderForPrincipalRoles(),
+                            rolesBS.substring(0, rolesBS.length() - 1));
+                }
+            }
+        }
+
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }
+    }
+
+    private HttpString getHeaderForPrincipalName() {
+        return HttpString.tryFromString("X-Forwarded-Account-Id");
+    }
+
+    private HttpString getHeaderForPrincipalRoles() {
+        return HttpString.tryFromString("X-Forwarded-Account-Roles");
     }
 }

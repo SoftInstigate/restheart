@@ -38,7 +38,7 @@ import io.uiam.utils.URLUtils;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class GetRoleHandler extends PluggableService {
+public class GetRoleService extends PluggableService {
 
     /**
      * the key for the url property.
@@ -54,7 +54,7 @@ public class GetRoleHandler extends PluggableService {
      * @param args
      * @throws Exception
      */
-    public GetRoleHandler(PipedHttpHandler next, Map<String, Object> args) throws Exception {
+    public GetRoleService(PipedHttpHandler next, Map<String, Object> args) throws Exception {
         super(next, args);
 
         if (args == null) {

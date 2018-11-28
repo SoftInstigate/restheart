@@ -17,34 +17,24 @@
  */
 package io.uiam.handlers.injectors;
 
-import com.google.common.net.HttpHeaders;
 import io.undertow.server.HttpServerExchange;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
-import io.undertow.util.HttpString;
 
 /**
  *
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * injects the context authenticatedAccount
  *
- * It injects the X-Powered-By response header
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class XPoweredByInjector extends PipedHttpHandler {
+public class AccountInjector extends PipedHttpHandler {
     /**
-     * Creates a new instance of XPoweredByInjector
+     * Creates a new instance of AccountInjectorHandler
      *
      * @param next
      */
-    public XPoweredByInjector(PipedHttpHandler next) {
+    public AccountInjector(PipedHttpHandler next) {
         super(next);
-    }
-
-    /**
-     * Creates a new instance of XPoweredByInjector
-     *
-     */
-    public XPoweredByInjector() {
-        super(null);
     }
 
     /**
@@ -54,13 +44,15 @@ public class XPoweredByInjector extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        exchange.getResponseHeaders().add(
-                HttpString.tryFromString(HttpHeaders.X_POWERED_BY), 
-                "uIAM.io");
-        
-        if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
+    public void handleRequest(
+            final HttpServerExchange exchange,
+            final RequestContext context)
+            throws Exception {
+        // inject authenticatedAccount
+        if (exchange.getSecurityContext() != null) {
+            context.setAuthenticatedAccount(exchange.getSecurityContext().getAuthenticatedAccount());
         }
+        
+        next(exchange, context);
     }
 }

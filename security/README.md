@@ -64,7 +64,7 @@ The two hosts in private network `10.0.1.0/24` are:
 We proxy them as follows:
 
 ```yml
-proxy-mounts:
+proxies:
     - internal-uri: /api
       external-url: https://10.0.0.1/api
     - internal-uri: /

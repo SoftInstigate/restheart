@@ -61,7 +61,7 @@ import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
 import io.uiam.handlers.RequestLoggerHandler;
 import io.uiam.plugins.service.PluggableService;
-import io.uiam.handlers.injectors.RequestContextInjectorHandler;
+import io.uiam.handlers.injectors.RequestContextInjector;
 import io.uiam.plugins.authorization.FullAccessManager;
 import io.uiam.handlers.security.AuthTokenHandler;
 import io.uiam.handlers.security.CORSHandler;
@@ -75,6 +75,7 @@ import org.slf4j.LoggerFactory;
 import static io.uiam.Configuration.UIAM_VERSION;
 import io.uiam.handlers.PipedWrappingHandler;
 import io.uiam.handlers.injectors.AuthHeadersRemover;
+import io.uiam.handlers.injectors.AccountHeadersInjector;
 import io.uiam.handlers.injectors.XPoweredByInjector;
 import io.uiam.handlers.security.SecurityHandler;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
@@ -539,7 +540,6 @@ public class Bootstrapper {
             KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
 
             if (getConfiguration().isUseEmbeddedKeystore()) {
-                //TODO change certificate and password
                 char[] storepass = "uiamuiam".toCharArray();
                 char[] keypass = "uiamuiam".toCharArray();
 
@@ -588,15 +588,6 @@ public class Bootstrapper {
         if (configuration.isAjpListener()) {
             builder.addAjpListener(configuration.getAjpPort(), configuration.getAjpHost());
             LOGGER.info("Ajp listener bound at {}:{}", configuration.getAjpHost(), configuration.getAjpPort());
-        }
-
-        //LocalCachesSingleton.init(configuration);
-        if (configuration.isLocalCacheEnabled()) {
-            LOGGER.info("Local cache for db and collection properties enabled with TTL {} msecs",
-                    configuration.getLocalCacheTtl() < 0 ? "∞"
-                    : configuration.getLocalCacheTtl());
-        } else {
-            LOGGER.info("Local cache for db and collection properties not enabled");
         }
 
         shutdownHandler = getHandlersPipe(authenticationMechanisms, identityManager, accessManager);
@@ -653,7 +644,7 @@ public class Bootstrapper {
 
                     LOGGER.info("Authentication Mechanism {} enabled", amImplClass);
                 } catch (NoSuchMethodException nsme) {
-                    var error = "Wrong arguments for Authentication Mechanism " 
+                    var error = "Wrong arguments for Authentication Mechanism "
                             + amImplClass
                             + " "
                             + "";
@@ -783,7 +774,7 @@ public class Bootstrapper {
             final PluggableAccessManager accessManager) {
         PathHandler paths = path();
 
-        pipeApplicationLogicHandlers(configuration, paths, authenticationMechanisms, identityManager, accessManager);
+        plugServices(configuration, paths, authenticationMechanisms, identityManager, accessManager);
 
         // plug the auth tokens invalidation handler
         paths.addPrefixPath("/_authtokens",
@@ -796,7 +787,7 @@ public class Bootstrapper {
                                                 identityManager,
                                                 new FullAccessManager())))));
 
-        pipeResoruceMountsHandlers(configuration, paths, authenticationMechanisms, identityManager, accessManager);
+        proxyResource(configuration, paths, authenticationMechanisms, identityManager, accessManager);
 
         return buildGracefulShutdownHandler(paths);
     }
@@ -809,7 +800,7 @@ public class Bootstrapper {
      */
     private static GracefulShutdownHandler buildGracefulShutdownHandler(PathHandler paths) {
         return new GracefulShutdownHandler(
-                new RequestLimitingHandler(new RequestLimit(configuration.getRequestLimit()),
+                new RequestLimitingHandler(new RequestLimit(configuration.getRequestsLimit()),
                         new AllowedMethodsHandler(
                                 new BlockingHandler(
                                         new GzipEncodingHandler(
@@ -830,7 +821,7 @@ public class Bootstrapper {
     }
 
     /**
-     * pipeApplicationLogicHandlers
+     * plugServices
      *
      * @param conf
      * @param paths
@@ -838,28 +829,28 @@ public class Bootstrapper {
      * @param identityManager
      * @param accessManager
      */
-    private static void pipeApplicationLogicHandlers(
+    private static void plugServices(
             final Configuration conf,
             final PathHandler paths,
             final List<PluggableAuthenticationMechanism> authenticationMechanisms,
             final PluggableIdentityManager identityManager,
             final PluggableAccessManager accessManager) {
-        if (!conf.getHandlersMounts().isEmpty()) {
-            conf.getHandlersMounts().stream().forEach((Map<String, Object> al) -> {
+        if (!conf.getServices().isEmpty()) {
+            conf.getServices().stream().forEach((Map<String, Object> al) -> {
                 try {
-                    String clazz = (String) al.get(Configuration.HANDLER_MOUNT_WHAT_KEY);
-                    String where = (String) al.get(Configuration.HANDLER_MOUNT_WHERE_KEY);
-                    boolean secured = (Boolean) al.get(Configuration.HANDLER_MOUNT_SECURED_KEY);
+                    String clazz = (String) al.get(Configuration.IMPLEMENTATION_CLASS_KEY);
+                    String uri = (String) al.get(Configuration.SERVICE_URI_KEY);
+                    boolean secured = (Boolean) al.get(Configuration.SERVICE_SECURED_KEY);
                     Object args = al.get(Configuration.ARGS_KEY);
 
-                    if (where == null || !where.startsWith("/")) {
-                        LOGGER.error("Cannot plug handler {}. Parameter 'where' must start with /", where);
+                    if (uri == null || !uri.startsWith("/")) {
+                        LOGGER.error("Cannot plug service {}. Parameter 'uri' must start with /", uri);
                         return;
                     }
 
                     if (args != null && !(args instanceof Map)) {
-                        LOGGER.error("Cannot plug handler {}."
-                                + "Args are not defined as a map. It is a ", where, where.getClass());
+                        LOGGER.error("Cannot plug service {}."
+                                + "args is not a map. actual class is ", uri, uri.getClass());
                         return;
                     }
 
@@ -868,16 +859,16 @@ public class Bootstrapper {
                             .newInstance(null, (Map) args);
 
                     if (o instanceof PluggableService) {
-                        PluggableService alHandler = (PluggableService) o;
+                        PluggableService srv = (PluggableService) o;
 
                         PipedHttpHandler handler
-                                = new RequestContextInjectorHandler(
+                                = new RequestContextInjector(
                                         "/",
                                         "/",
-                                        alHandler);
+                                        srv);
 
                         if (secured) {
-                            paths.addPrefixPath(where,
+                            paths.addPrefixPath(uri,
                                     new RequestLoggerHandler(
                                             new CORSHandler(
                                                     new XPoweredByInjector(
@@ -887,7 +878,7 @@ public class Bootstrapper {
                                                                     identityManager,
                                                                     accessManager)))));
                         } else {
-                            paths.addPrefixPath(where,
+                            paths.addPrefixPath(uri,
                                     new RequestLoggerHandler(
                                             new CORSHandler(
                                                     new XPoweredByInjector(
@@ -898,11 +889,11 @@ public class Bootstrapper {
                                                                     new FullAccessManager())))));
                         }
 
-                        LOGGER.info("URL {} bound to handler {}."
-                                + " Access manager: {}", where, clazz, secured);
+                        LOGGER.info("URL {} bound to service {}."
+                                + " Access manager: {}", uri, clazz, secured);
                     } else {
-                        LOGGER.error("Cannot plug handler {}."
-                                + " Class {} does not extend ApplicationLogicHandler", where, clazz);
+                        LOGGER.error("Cannot plug service {}."
+                                + " Class {} does not extend PluggableService", uri, clazz);
                     }
 
                 } catch (ClassNotFoundException
@@ -912,8 +903,8 @@ public class Bootstrapper {
                         | NoSuchMethodException
                         | SecurityException
                         | InvocationTargetException t) {
-                    LOGGER.error("Cannot plug handler {}",
-                            al.get(Configuration.HANDLER_MOUNT_WHERE_KEY), t);
+                    LOGGER.error("Cannot plug service {}",
+                            al.get(Configuration.SERVICE_URI_KEY), t);
                 }
             }
             );
@@ -921,7 +912,7 @@ public class Bootstrapper {
     }
 
     /**
-     * pipeResoruceMountsHandlers
+     * proxyResource
      *
      * @param conf
      * @param paths
@@ -929,21 +920,20 @@ public class Bootstrapper {
      * @param identityManager
      * @param accessManager
      */
-    private static void pipeResoruceMountsHandlers(
+    private static void proxyResource(
             final Configuration conf,
             final PathHandler paths,
             final List<PluggableAuthenticationMechanism> authenticationMechanisms,
             final PluggableIdentityManager identityManager,
             final PluggableAccessManager accessManager) {
-        if (conf.getProxyMounts() == null || conf.getProxyMounts().isEmpty()) {
-            LOGGER.warn("No proxy-mounts specified. The uIAM is not protecting "
-                    + "any resource, are you just testing your IDM and AM?");
+        if (conf.getProxies() == null || conf.getProxies().isEmpty()) {
+            LOGGER.info("No {} specified", Configuration.PROXY_KEY);
             return;
         }
 
-        conf.getProxyMounts().stream().forEachOrdered(m -> {
-            String uri = (String) m.get(Configuration.PROXY_MOUNTS_URI_KEY);
-            String resourceURL = (String) m.get(Configuration.PROXY_MOUNTS_URL_KEY);
+        conf.getProxies().stream().forEachOrdered(m -> {
+            String uri = (String) m.get(Configuration.PROXY_URI_KEY);
+            String resourceURL = (String) m.get(Configuration.PROXY_URL_KEY);
 
             //TODO make this static
             final Xnio xnio = Xnio.getInstance();
@@ -968,10 +958,13 @@ public class Bootstrapper {
                 ProxyHandler proxyHandler = ProxyHandler.builder()
                         .setRewriteHostHeader(true)
                         .setProxyClient(proxyClient)
+                        .setNext(new AccountHeadersInjector())
                         .build();
 
                 PipedHttpHandler wrappedProxyHandler
-                        = new PipedWrappingHandler(new XPoweredByInjector(), proxyHandler);
+                        = new AccountHeadersInjector(
+                                new PipedWrappingHandler(
+                                        new XPoweredByInjector(), proxyHandler));
 
                 paths.addPrefixPath(uri,
                         new RequestLoggerHandler(
@@ -984,7 +977,7 @@ public class Bootstrapper {
 
                 LOGGER.info("URI {} bound to resource {}", uri, resourceURL);
             } catch (URISyntaxException ex) {
-                LOGGER.warn("Invalid URI {}, resource {} not mounted ", uri, resourceURL);
+                LOGGER.warn("Invalid URI {}, resource {} not proxied ", uri, resourceURL);
             }
         });
     }

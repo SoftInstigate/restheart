@@ -29,7 +29,7 @@ import io.uiam.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class PingHandler extends PluggableService {
+public class PingService extends PluggableService {
 
     private final String msg;
 
@@ -38,7 +38,7 @@ public class PingHandler extends PluggableService {
      * @param next
      * @param args
      */
-    public PingHandler(PipedHttpHandler next, Map<String, Object> args) {
+    public PingService(PipedHttpHandler next, Map<String, Object> args) {
         super(next, args);
 
         this.msg = (String) args.get("msg");

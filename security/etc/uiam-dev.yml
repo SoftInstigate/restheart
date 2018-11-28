@@ -28,12 +28,13 @@ ajp-port: 8009
 
 instance-name: develop
 
-# Use proxy-mounts to proxy external resources
+# Use proxies to proxy external resources
 # internal-uri is an absolute path (eg. /uiam)
 # external-url is a resource URL (eg. https://uiam.io)
-proxy-mounts:
-    - internal-uri: /foo
-      external-url: http://127.0.0.1:18080/
+# TODO allow adding more hosts for load balancing
+proxies:
+    - internal-uri: /pdump
+      external-url: http://127.0.0.1:8080/dump
     - internal-uri: /restheart
       external-url: https://restheart.org
 
@@ -132,28 +133,30 @@ access-manager:
 auth-token-enabled: true
 auth-token-ttl: 15
 
-#### Handlers
+#### Services
 
-# uIAM has a pluggable architecture where specialized undertow handlers are chained to serve requests.
-# In order to provide additional handlers, custom hanlders pipes can be bound under the /_logic URL.
-# The pluggable hanlder must extends the io.uiam.plugins.handlers.PluggableHandler class
-# Use handler-mounts option to plug handlers.
+# uIAM allows exposing custom services
+# The servuce class must extend the io.uiam.plugins.service.PluggableService
+# and can be bound to an URI via the service option
 
-# In the following example two built-in handlers are defined:
-# PingHandler bound to /ping that implements a simple ping service
-# GetRoleHandler bound to /roles that returns the current user authentication status and eventually its roles
+# Two built-in services are defined:
+# - PingService bound to /ping that implements a simple ping service
+# - GetRoleService bound to /roles that returns the user authentication status and eventually its roles
 
-handler-mounts:
-    - what: io.uiam.plugins.service.impl.PingHandler
-      where: /ping
+services:
+    - implementation-class: io.uiam.plugins.service.impl.PingService
+      uri: /ping
       secured: false
       args:
           msg: "ciao from the uIAM team"
-    - what: io.uiam.plugins.service.impl.GetRoleHandler
-      where: /roles
+    - implementation-class: io.uiam.plugins.service.impl.GetRoleService
+      uri: /roles
       secured: false
       args:
           url: /roles
+    - implementation-class: io.uiam.plugins.service.impl.RequestDumperService
+      uri: /dump
+      secured: false
 
 #### Logging
 

@@ -52,15 +52,6 @@ public class BasicAuthenticationMechanism
     
     @Override
     public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange, SecurityContext securityContext) {
-        AuthenticationMechanismOutcome ret = super.authenticate(exchange, securityContext);
-        
-        LOGGER.debug("return: " + ret);
-        
-        if (AuthenticationMechanismOutcome.NOT_AUTHENTICATED.equals(ret)) {
-            return AuthenticationMechanismOutcome.NOT_ATTEMPTED;
-        } else {
-        
-        return ret;
-        }
+        return super.authenticate(exchange, securityContext);
     }
 }

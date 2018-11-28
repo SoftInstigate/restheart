@@ -90,9 +90,9 @@ public class Configuration {
     public static final String DEFAULT_INSTANCE_NAME = "default";
 
 /**
-     * the key for the handler-mounts property.
+     * the key for the services property.
      */
-    public static final String HANDLER_MOUNTS_KEY = "handler-mounts";  
+    public static final String SERVICES_KEY = "services";  
     
     /**
      * the key for the args property.
@@ -100,20 +100,14 @@ public class Configuration {
     public static final String ARGS_KEY = "args";
 
     /**
-     * the key for the what property.
+     * the key for the uri property.
      */
-    public static final String HANDLER_MOUNT_WHAT_KEY = "what";
-
-    /**
-     * the key for the where property.
-     */
-    public static final String HANDLER_MOUNT_WHERE_KEY = "where";
+    public static final String SERVICE_URI_KEY = "uri";
 
     /**
      * the key for the secured property.
      */
-    public static final String HANDLER_MOUNT_SECURED_KEY = "secured";
-
+    public static final String SERVICE_SECURED_KEY = "secured";
     
     /**
      * default am implementation class.
@@ -216,19 +210,19 @@ public class Configuration {
     public static final String AUTH_MECHANISMS_KEY = "auth-mechanisms";
     
     /**
-     * the key for the resource-mounts property.
+     * the key for the proxies property.
      */
-    public static final String PROXY_MOUNTS_KEY = "proxy-mounts";
+    public static final String PROXY_KEY = "proxies";
 
     /**
      * the key for the uri property.
      */
-    public static final String PROXY_MOUNTS_URI_KEY = "internal-uri";
+    public static final String PROXY_URI_KEY = "internal-uri";
 
     /**
      * the key for the url property.
      */
-    public static final String PROXY_MOUNTS_URL_KEY = "external-url";
+    public static final String PROXY_URL_KEY = "external-url";
     
     /**
      * the key for the auth-db property.
@@ -412,9 +406,9 @@ public class Configuration {
     private final String keystoreFile;
     private final String keystorePassword;
     private final String certPassword;
-    private final List<Map<String, Object>> proxyMounts;
+    private final List<Map<String, Object>> proxies;
     private final List<Map<String, Object>> namedPlugins;
-    private final List<Map<String, Object>> handlersMounts;
+    private final List<Map<String, Object>> services;
     private final String idmImpl;
     private final Map<String, Object> idmArgs;
     private final List<Map<String, Object>> authMechanisms;
@@ -425,8 +419,6 @@ public class Configuration {
     private final boolean logToConsole;
     private final boolean logToFile;
     private final List<String> traceHeaders;
-    private final boolean localCacheEnabled;
-    private final long localCacheTtl;
     private final int requestsLimit;
     private final int ioThreads;
     private final int workerThreads;
@@ -473,9 +465,9 @@ public class Configuration {
         keystorePassword = null;
         certPassword = null;
         
-        proxyMounts = new ArrayList<>();
+        proxies = new ArrayList<>();
 
-        handlersMounts = new ArrayList<>();
+        services = new ArrayList<>();
         
         namedPlugins = new ArrayList<>();
 
@@ -494,9 +486,6 @@ public class Configuration {
         logToFile = true;
         logLevel = Level.INFO;
         traceHeaders = Collections.emptyList();
-
-        localCacheEnabled = true;
-        localCacheTtl = 1000;
 
         requestsLimit = 100;
 
@@ -575,9 +564,9 @@ public class Configuration {
         keystorePassword = getAsStringOrDefault(conf, KEYSTORE_PASSWORD_KEY, null);
         certPassword = getAsStringOrDefault(conf, CERT_PASSWORD_KEY, null);
 
-        proxyMounts = getAsListOfMaps(conf, PROXY_MOUNTS_KEY, new ArrayList<>());
+        proxies = getAsListOfMaps(conf, PROXY_KEY, new ArrayList<>());
 
-        handlersMounts = getAsListOfMaps(conf, HANDLER_MOUNTS_KEY, new ArrayList<>());
+        services = getAsListOfMaps(conf, SERVICES_KEY, new ArrayList<>());
         
         namedPlugins = getAsListOfMaps(conf, NAMED_SINGLETONS_KEY, new ArrayList<>());
 
@@ -614,9 +603,6 @@ public class Configuration {
         logLevel = level;
 
         requestsLimit = getAsIntegerOrDefault(conf, REQUESTS_LIMIT_KEY, 100);
-
-        localCacheEnabled = getAsBooleanOrDefault(conf, LOCAL_CACHE_ENABLED_KEY, true);
-        localCacheTtl = getAsLongOrDefault(conf, LOCAL_CACHE_TTL_KEY, (long) 1000);
 
         ioThreads = getAsIntegerOrDefault(conf, IO_THREADS_KEY, 2);
         workerThreads = getAsIntegerOrDefault(conf, WORKER_THREADS_KEY, 32);
@@ -655,8 +641,8 @@ public class Configuration {
                 + ", keystoreFile=" + keystoreFile
                 + ", keystorePassword=" + keystorePassword
                 + ", certPassword=" + certPassword
-                + ", resourceMounts=" + proxyMounts
-                + ", applicationLogicMounts=" + handlersMounts
+                + ", proxies=" + proxies
+                + ", services=" + services
                 + ", metadataNamedSingletons=" + namedPlugins
                 + ", idmImpl=" + idmImpl
                 + ", idmArgs=" + idmArgs
@@ -668,8 +654,6 @@ public class Configuration {
                 + ", logToConsole=" + logToConsole
                 + ", logToFile=" + logToFile
                 + ", traceHeaders=" + traceHeaders
-                + ", localCacheEnabled=" + localCacheEnabled
-                + ", localCacheTtl=" + localCacheTtl
                 + ", requestsLimit=" + requestsLimit
                 + ", ioThreads=" + ioThreads
                 + ", workerThreads=" + workerThreads
@@ -687,10 +671,10 @@ public class Configuration {
     }
     
     /**
-     * @return the proxyMounts
+     * @return the proxies
      */
-    public List<Map<String, Object>> getProxyMounts() {
-        return proxyMounts;
+    public List<Map<String, Object>> getProxies() {
+        return proxies;
     }
 
     /**
@@ -1155,27 +1139,6 @@ public class Configuration {
     /**
      * @return the requestsLimit
      */
-    public int getRequestLimit() {
-        return getRequestsLimit();
-    }
-
-    /**
-     * @return the localCacheEnabled
-     */
-    public boolean isLocalCacheEnabled() {
-        return localCacheEnabled;
-    }
-
-    /**
-     * @return the localCacheTtl
-     */
-    public long getLocalCacheTtl() {
-        return localCacheTtl;
-    }
-
-    /**
-     * @return the requestsLimit
-     */
     public int getRequestsLimit() {
         return requestsLimit;
     }
@@ -1188,10 +1151,10 @@ public class Configuration {
     }
     
     /**
-     * @return the handlersMounts
+     * @return the services
      */
-    public List<Map<String, Object>> getHandlersMounts() {
-        return Collections.unmodifiableList(handlersMounts);
+    public List<Map<String, Object>> getServices() {
+        return Collections.unmodifiableList(services);
     }
 
     /**

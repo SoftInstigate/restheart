@@ -27,9 +27,9 @@ import io.uiam.utils.URLUtils;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestContextInjectorHandler extends PipedHttpHandler {
+public class RequestContextInjector extends PipedHttpHandler {
 
-    private static final Logger LOG = Logger.getLogger(RequestContextInjectorHandler.class.getName());
+    private static final Logger LOG = Logger.getLogger(RequestContextInjector.class.getName());
 
     private final String uri;
     private final String resourceUrl;
@@ -40,7 +40,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
      * @param resourceUrl
      * @param next
      */
-    public RequestContextInjectorHandler(String uri, String resourceUrl, PipedHttpHandler next) {
+    public RequestContextInjector(String uri, String resourceUrl, PipedHttpHandler next) {
         super(next);
 
         if (uri == null) {
