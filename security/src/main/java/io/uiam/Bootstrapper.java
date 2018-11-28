@@ -787,7 +787,7 @@ public class Bootstrapper {
                                                 identityManager,
                                                 new FullAccessManager())))));
 
-        proxyResource(configuration, paths, authenticationMechanisms, identityManager, accessManager);
+        proxyResources(configuration, paths, authenticationMechanisms, identityManager, accessManager);
 
         return buildGracefulShutdownHandler(paths);
     }
@@ -912,7 +912,7 @@ public class Bootstrapper {
     }
 
     /**
-     * proxyResource
+     * proxyResources
      *
      * @param conf
      * @param paths
@@ -920,7 +920,7 @@ public class Bootstrapper {
      * @param identityManager
      * @param accessManager
      */
-    private static void proxyResource(
+    private static void proxyResources(
             final Configuration conf,
             final PathHandler paths,
             final List<PluggableAuthenticationMechanism> authenticationMechanisms,
