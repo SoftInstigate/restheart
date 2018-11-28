@@ -18,10 +18,19 @@
 package io.uiam.plugins.authentication;
 
 import io.undertow.security.api.AuthenticationMechanism;
+import io.undertow.security.api.SecurityContext;
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public interface PluggableAuthenticationMechanism extends AuthenticationMechanism {
+    @Override
+    public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange,
+            SecurityContext sc);
+
+    @Override
+    public ChallengeResult sendChallenge(HttpServerExchange exchange,
+            SecurityContext sc);
 }

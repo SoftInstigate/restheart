@@ -18,6 +18,7 @@
 package io.uiam.plugins.authentication;
 
 import io.undertow.security.idm.Account;
+import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
 
 /**
@@ -34,4 +35,10 @@ public interface PluggableIdentityManager extends IdentityManager {
     default public Account verify(Account account) {
         return account;
     }
+    
+    @Override
+    public Account verify(String id, Credential credential);
+
+    @Override
+    public Account verify(Credential credential);
 }
