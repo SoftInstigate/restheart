@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.uiam.plugins.authorization;
+package io.uiam.plugins.authorization.impl;
 
 import io.undertow.server.HttpServerExchange;
 import io.uiam.handlers.RequestContext;
@@ -26,11 +26,13 @@ import io.uiam.plugins.authorization.PluggableAccessManager;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class FullAccessManager implements PluggableAccessManager {
+    private boolean authenticationRequired;
 
     /**
      * this access manager allows any operation to any user
      */
-    public FullAccessManager() {
+    public FullAccessManager(boolean authenticationRequired) {
+        this.authenticationRequired = authenticationRequired;
     }
     
     @Override
@@ -41,6 +43,6 @@ public class FullAccessManager implements PluggableAccessManager {
 
     @Override
     public boolean isAuthenticationRequired(HttpServerExchange exchange) {
-        return false;
+        return authenticationRequired;
     }
 }

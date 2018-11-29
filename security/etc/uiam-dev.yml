@@ -98,12 +98,12 @@ auth-mechanisms:
       class: io.uiam.plugins.authentication.impl.AuthTokenBasicAuthenticationMechanism
       args: 
         realm: uIAM Realm
-#    - name: digestAuthenticationMechanism
-#      class: io.uiam.plugins.authentication.impl.DigestAuthenticationMechanism
-#      args: 
-#        realm: uIAM Realm
-#        domain: mrest.io
-#        idm: simpleFileIdentityManager
+    - name: digestAuthenticationMechanism
+      class: io.uiam.plugins.authentication.impl.DigestAuthenticationMechanism
+      args: 
+        realm: uIAM Realm
+        domain: localhost
+        idm: simpleFileIdentityManager
     - name: basicAuthenticationMechanism
       class: io.uiam.plugins.authentication.impl.BasicAuthenticationMechanism
       args:
@@ -168,7 +168,7 @@ services:
           msg: "ciao from the uIAM team"
     - class: io.uiam.plugins.service.impl.GetRoleService
       uri: /roles
-      secured: false
+      secured: true
       args:
           url: /roles
     - class: io.uiam.plugins.service.impl.RequestDumperService

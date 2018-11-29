@@ -21,9 +21,14 @@ import io.uiam.plugins.AbstractConfiFileConsumer;
 import io.uiam.plugins.authentication.PluggableIdentityManager;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
+import io.undertow.security.idm.DigestCredential;
 import io.undertow.security.idm.PasswordCredential;
+import io.undertow.util.HexConverter;
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -89,7 +94,7 @@ public class SimpleFileIdentityManager
             this.accounts.put(userid, a);
         };
     }
-    
+
     @Override
     public Account verify(Account account) {
         return account;
@@ -108,12 +113,45 @@ public class SimpleFileIdentityManager
     }
 
     private boolean verifyCredential(Account account, Credential credential) {
-        if (credential instanceof PasswordCredential && account instanceof SimpleAccount) {
-            char[] password = ((PasswordCredential) credential).getPassword();
-            char[] expectedPassword = accounts.get(account.getPrincipal().getName()).getCredentials().getPassword();
-
-            return Arrays.equals(password, expectedPassword);
+        if (account instanceof SimpleAccount) {
+            if (credential instanceof PasswordCredential) {
+                return verifyPasswordCredential(account, credential);
+            } else if (credential instanceof DigestCredential) {
+                return verifyDigestCredential(account, credential);
+            }
         }
+
         return false;
+    }
+
+    private boolean verifyPasswordCredential(Account account, Credential credential) {
+        char[] password = ((PasswordCredential) credential).getPassword();
+        char[] expectedPassword = accounts.get(account.getPrincipal().getName()).getCredentials().getPassword();
+
+        return Arrays.equals(password, expectedPassword);
+    }
+
+    private boolean verifyDigestCredential(Account account, Credential credential) {
+        try {
+            DigestCredential dc = (DigestCredential) credential;
+
+            MessageDigest digest = dc.getAlgorithm().getMessageDigest();
+
+            String expectedPassword = new String(accounts
+                    .get(account.getPrincipal().getName())
+                    .getCredentials().getPassword());
+
+            digest.update(account.getPrincipal().getName().getBytes(UTF_8));
+            digest.update((byte) ':');
+            digest.update(dc.getRealm().getBytes(UTF_8));
+            digest.update((byte) ':');
+            digest.update(expectedPassword.getBytes(UTF_8));
+
+            byte[] ha1 = HexConverter.convertToHexBytes(digest.digest());
+
+            return dc.verifyHA1(ha1);
+        } catch (NoSuchAlgorithmException ne) {
+            return false;
+        }
     }
 }

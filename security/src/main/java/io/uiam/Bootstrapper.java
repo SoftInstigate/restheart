@@ -62,7 +62,7 @@ import io.uiam.handlers.RequestContext;
 import io.uiam.handlers.RequestLoggerHandler;
 import io.uiam.plugins.service.PluggableService;
 import io.uiam.handlers.injectors.RequestContextInjector;
-import io.uiam.plugins.authorization.FullAccessManager;
+import io.uiam.plugins.authorization.impl.FullAccessManager;
 import io.uiam.handlers.security.AuthTokenHandler;
 import io.uiam.handlers.security.CORSHandler;
 import io.uiam.utils.FileUtils;
@@ -647,7 +647,12 @@ public class Bootstrapper {
     private static PluggableAccessManager loadAccessManager() {
         if (configuration.getAmClass() == null) {
             LOGGER.warn("***** No Access Manager specified. All requests are allowed.");
-            return new FullAccessManager();
+            if (configuration.getAuthMechanisms() != null
+                    && configuration.getAuthMechanisms().size() > 1) {
+                return new FullAccessManager(true);
+            } else {
+                return new FullAccessManager(false);
+            }
         } else {
             try {
                 return PluginsFactory.getAccessManager(configuration.getAmClass(),
@@ -723,7 +728,7 @@ public class Bootstrapper {
                                         new SecurityHandler(
                                                 new AuthTokenHandler(),
                                                 authenticationMechanisms,
-                                                new FullAccessManager())))));
+                                                new FullAccessManager(true))))));
 
         proxyResources(configuration,
                 paths,
@@ -830,7 +835,7 @@ public class Bootstrapper {
                                                             new SecurityHandler(
                                                                     handler,
                                                                     authenticationMechanisms,
-                                                                    new FullAccessManager())))));
+                                                                    new FullAccessManager(false))))));
                         }
 
                         LOGGER.info("URL {} bound to service {}."
