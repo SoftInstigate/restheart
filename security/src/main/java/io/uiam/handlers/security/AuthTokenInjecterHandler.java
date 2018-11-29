@@ -91,7 +91,7 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
         
         AuthTokenIdentityManager idm = (AuthTokenIdentityManager) IDMCacheSingleton
                 .getInstance()
-                .getIdentityManager("authTokenIdentityManager");
+                .getIdentityManager(AuthTokenIdentityManager.NAME);
 
         Optional<SimpleAccount> cachedTokenAccount
                 = idm.getCachedAccounts().get(id);

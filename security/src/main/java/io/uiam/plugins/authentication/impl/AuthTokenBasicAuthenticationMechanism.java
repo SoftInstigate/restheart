@@ -96,11 +96,7 @@ public class AuthTokenBasicAuthenticationMechanism
     }
 
     private static String identityManagerName(Map<String, Object> args) throws PluginConfigurationException {
-        if (args == null || !args.containsKey("idm") || !(args.get("idm") instanceof String)) {
-            throw new PluginConfigurationException("AuthTokenBasicAuthenticationMechanism requires string argument 'idm'");
-        } else {
-            return (String) args.get("idm");
-        }
+        return AuthTokenIdentityManager.NAME;
     }
 
     @Override

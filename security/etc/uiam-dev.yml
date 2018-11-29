@@ -88,15 +88,15 @@ use-embedded-keystore: true
 ## Provied AMs are:
 ## - BasicAuthenticationMechanism - basic authentication
 ## - AuthTokenBasicAuthenticationMechanism - uses the auth token to authenticate, 
-###   requires auth-token: true, 
+###   requires auth-token: true
 ###   must be declared before the BasicAuthenticationMechanism that authenticates the client to generate the auth token 
+###   the IDM used by AuthTokenBasicAuthenticationMechanism must be named 'authTokenIdentityManager'
 ## - IdentityAuthenticationMechanism - all requests are bound to the specified user
 
 auth-mechanisms:
     - name: authTokenBasicAuthenticationMechanism
       class: io.uiam.plugins.authentication.impl.AuthTokenBasicAuthenticationMechanism
       args: 
-        idm: authTokenIdentityManager
         realm: uIAM Realm
     - name: basicAuthenticationMechanism
       class: io.uiam.plugins.authentication.impl.BasicAuthenticationMechanism

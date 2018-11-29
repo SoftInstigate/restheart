@@ -32,6 +32,8 @@ import io.uiam.plugins.authentication.PluggableIdentityManager;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class AuthTokenIdentityManager implements PluggableIdentityManager {
+    
+    public static final String NAME = "authTokenIdentityManager";
 
     private static final long TTL = Bootstrapper.getConfiguration().getAuthTokenTtl();
     private static final boolean ENABLED = Bootstrapper.getConfiguration().isAuthTokenEnabled();

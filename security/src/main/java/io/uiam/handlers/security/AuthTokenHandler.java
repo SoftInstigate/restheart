@@ -99,7 +99,7 @@ public class AuthTokenHandler extends PipedHttpHandler {
             exchange.endExchange();
         } else if (Methods.DELETE.equals(exchange.getRequestMethod())) {
             ((AuthTokenIdentityManager)IDMCacheSingleton.getInstance()
-                    .getIdentityManager("authTokenIdentityManager"))
+                    .getIdentityManager(AuthTokenIdentityManager.NAME))
                     .getCachedAccounts()
                     .invalidate(exchange
                             .getSecurityContext()
