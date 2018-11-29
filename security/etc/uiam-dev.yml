@@ -102,7 +102,7 @@ auth-mechanisms:
       class: io.uiam.plugins.authentication.impl.BasicAuthenticationMechanism
       args:
         idm: simpleFileIdentityManager
-        realm: uIAM Real
+        realm: uIAM Realm
 #    - name: identityAuthenticationMechanism
 #      class: io.uiam.plugins.authentication.impl.IdentityAuthenticationMechanism
 #      args:

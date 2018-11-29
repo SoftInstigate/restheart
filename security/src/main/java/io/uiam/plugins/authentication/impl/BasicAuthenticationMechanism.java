@@ -21,7 +21,6 @@ import io.uiam.plugins.IDMCacheSingleton;
 import io.uiam.plugins.PluginConfigurationException;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
-import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpServerExchange;
 import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 import java.util.Map;
