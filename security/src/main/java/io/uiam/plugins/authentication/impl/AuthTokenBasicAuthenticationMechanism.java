@@ -17,8 +17,9 @@
  */
 package io.uiam.plugins.authentication.impl;
 
+import io.uiam.plugins.IDMCacheSingleton;
+import io.uiam.plugins.PluginConfigurationException;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
-import io.uiam.plugins.authentication.impl.AuthTokenIdentityManager;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
@@ -33,6 +34,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -46,7 +48,7 @@ import java.util.List;
  * password
  *
  */
-public class AuthTokenBasicAuthenticationMechanism 
+public class AuthTokenBasicAuthenticationMechanism
         extends BasicAuthenticationMechanism
         implements PluggableAuthenticationMechanism {
 
@@ -55,20 +57,50 @@ public class AuthTokenBasicAuthenticationMechanism
     private static final String BASIC_PREFIX = BASIC + " ";
     private static final int PREFIX_LENGTH = BASIC_PREFIX.length();
     private static final String COLON = ":";
+    
+    private final String mechanismName;
+    
+    private IdentityManager identityManager = null;
 
     private static void clear(final char[] array) {
         for (int i = 0; i < array.length; i++) {
             array[i] = 0x00;
         }
     }
-    private final static String mechanismName = "TOKEN";
-
+    
     /**
      *
      * @param realmName
      */
-    public AuthTokenBasicAuthenticationMechanism(String realmName) {
-        super(realmName, "TOKEN", true);
+    public AuthTokenBasicAuthenticationMechanism(String mechanismName, Map args)
+            throws PluginConfigurationException {
+        super(realmName(args),
+                mechanismName,
+                true, 
+                IDMCacheSingleton
+                        .getInstance()
+                        .getIdentityManager(identityManagerName(args)));
+        
+        this.mechanismName = mechanismName;
+        this.identityManager = IDMCacheSingleton
+                        .getInstance()
+                        .getIdentityManager(identityManagerName(args));
+    }
+
+    private static String realmName(Map<String, Object> args) throws PluginConfigurationException {
+        if (args == null || !args.containsKey("realm") || !(args.get("realm") instanceof String)) {
+            throw new PluginConfigurationException("AuthTokenBasicAuthenticationMechanism requires string argument 'realm'");
+        } else {
+            return (String) args.get("realm");
+        }
+    }
+
+    private static String identityManagerName(Map<String, Object> args) throws PluginConfigurationException {
+        if (args == null || !args.containsKey("idm") || !(args.get("idm") instanceof String)) {
+            throw new PluginConfigurationException("AuthTokenBasicAuthenticationMechanism requires string argument 'idm'");
+        } else {
+            return (String) args.get("idm");
+        }
     }
 
     @Override
@@ -90,13 +122,11 @@ public class AuthTokenBasicAuthenticationMechanism
                         String userName = plainChallenge.substring(0, colonPos);
                         char[] password = plainChallenge.substring(colonPos + 1).toCharArray();
 
-                        // this is where the token cache comes into play
-                        IdentityManager idm = AuthTokenIdentityManager.getInstance();
-
                         PasswordCredential credential = new PasswordCredential(password);
                         try {
                             final AuthenticationMechanismOutcome result;
-                            Account account = idm.verify(userName, credential);
+                            // this is where the token cache comes into play
+                            Account account = identityManager.verify(userName, credential);
                             if (account != null) {
                                 securityContext.authenticationComplete(account, mechanismName, false);
                                 result = AuthenticationMechanismOutcome.AUTHENTICATED;

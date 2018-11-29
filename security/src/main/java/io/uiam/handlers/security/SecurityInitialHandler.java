@@ -40,10 +40,14 @@ import io.uiam.handlers.RequestContext;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@SuppressWarnings("deprecation")
-public class SecurityInitialHandler extends PipedHttpHandler {
 
-    static void setSecurityContext(final HttpServerExchange exchange,
+public class SecurityInitialHandler extends PipedHttpHandler {
+    private final AuthenticationMode authenticationMode;
+    private final String programaticMechName;
+    private final SecurityContextFactoryImpl contextFactory;
+
+    static void setSecurityContext(
+            final HttpServerExchange exchange,
             final SecurityContext securityContext) {
         if (System.getSecurityManager() == null) {
             exchange.setSecurityContext(securityContext);
@@ -55,19 +59,13 @@ public class SecurityInitialHandler extends PipedHttpHandler {
         }
     }
 
-    private final AuthenticationMode authenticationMode;
-    private final IdentityManager identityManager;
-    private final String programaticMechName;
-    private final SecurityContextFactoryImpl contextFactory;
-
-    public SecurityInitialHandler(final AuthenticationMode authenticationMode,
-            final IdentityManager identityManager,
+    public SecurityInitialHandler(
+            final AuthenticationMode authenticationMode,
             final String programaticMechName,
             final SecurityContextFactoryImpl contextFactory,
             final PipedHttpHandler next) {
         super(next);
         this.authenticationMode = authenticationMode;
-        this.identityManager = identityManager;
         this.programaticMechName = programaticMechName;
         this.contextFactory = contextFactory;
     }
@@ -76,29 +74,32 @@ public class SecurityInitialHandler extends PipedHttpHandler {
             final IdentityManager identityManager,
             final String programaticMechName, final PipedHttpHandler next) {
         this(authenticationMode,
-                identityManager,
                 programaticMechName,
                 (SecurityContextFactoryImpl) SecurityContextFactoryImpl.INSTANCE,
                 next);
     }
 
-    public SecurityInitialHandler(final AuthenticationMode authenticationMode,
-            final IdentityManager identityManager,
+    public SecurityInitialHandler(
+            final AuthenticationMode authenticationMode,
             final PipedHttpHandler next) {
         this(authenticationMode,
-                identityManager,
                 null,
                 (SecurityContextFactoryImpl) SecurityContextFactoryImpl.INSTANCE,
                 next);
     }
 
+    // in questo punto fissiamo l'identityManager nel security context
+    // l'implementazione di BasicAuthenticationMechanism di undertow utilizza questa
+    // BasicAuthenticationMechanism.getIdentityManager() --> sc.getIdentityManager()
+    // dobbiamo cambiare, non è detto che un AuthenticationMechanism richieda un IDM
+    // l'idm deve essere una opzione dell'AuthenticationMechanism 
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context)
             throws Exception {
         SecurityContext newContext = this.contextFactory
                 .createSecurityContext(exchange,
                         authenticationMode,
-                        identityManager,
+                        null,
                         programaticMechName);
 
         setSecurityContext(exchange, newContext);

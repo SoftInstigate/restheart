@@ -30,6 +30,8 @@ import io.uiam.handlers.RequestContext;
 import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_HEADER;
 import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
 import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_VALID_HEADER;
+import io.uiam.plugins.IDMCacheSingleton;
+import io.uiam.plugins.PluginConfigurationException;
 import io.uiam.plugins.authentication.impl.AuthTokenIdentityManager;
 import io.uiam.plugins.authentication.impl.SimpleAccount;
 import org.slf4j.Logger;
@@ -84,11 +86,15 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
         exchange.getResponseHeaders().add(AUTH_TOKEN_LOCATION_HEADER, "/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
     }
 
-    private char[] cacheSessionToken(Account authenticatedAccount) {
+    private char[] cacheSessionToken(Account authenticatedAccount) throws PluginConfigurationException {
         String id = authenticatedAccount.getPrincipal().getName();
-        Optional<SimpleAccount> cachedTokenAccount 
-                = AuthTokenIdentityManager.getInstance()
-                        .getCachedAccounts().get(id);
+        
+        AuthTokenIdentityManager idm = (AuthTokenIdentityManager) IDMCacheSingleton
+                .getInstance()
+                .getIdentityManager("authTokenIdentityManager");
+
+        Optional<SimpleAccount> cachedTokenAccount
+                = idm.getCachedAccounts().get(id);
 
         if (cachedTokenAccount == null) {
             char[] token = nextToken();
@@ -97,9 +103,7 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
                     token,
                     authenticatedAccount.getRoles());
 
-            AuthTokenIdentityManager.getInstance()
-                    .getCachedAccounts()
-                    .put(id, newCachedTokenAccount);
+            idm.getCachedAccounts().put(id, newCachedTokenAccount);
 
             return token;
         } else {

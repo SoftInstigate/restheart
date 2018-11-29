@@ -98,6 +98,11 @@ public class Configuration {
      * the key for the args property.
      */
     public static final String ARGS_KEY = "args";
+    
+    /**
+     * the key for the name property.
+     */
+    public static final String NAME_KEY = "name";
 
     /**
      * the key for the uri property.
@@ -190,9 +195,9 @@ public class Configuration {
     public static final String REQUESTS_LOG_TRACE_HEADERS_KEY = "requests-log-trace-headers";
 
     /**
-     * the key for the implementation-class property.
+     * the key for the class property.
      */
-    public static final String IMPLEMENTATION_CLASS_KEY = "implementation-class";
+    public static final String CLASS_KEY = "class";
 
     /**
      * the key for the access-manager property.
@@ -202,7 +207,7 @@ public class Configuration {
     /**
      * the key for the idm property.
      */
-    public static final String IDM_KEY = "idm";
+    public static final String IDMS_KEY = "idms";
 
     /**
      * the key for the auth Mechanism.
@@ -407,12 +412,10 @@ public class Configuration {
     private final String keystorePassword;
     private final String certPassword;
     private final List<Map<String, Object>> proxies;
-    private final List<Map<String, Object>> namedPlugins;
     private final List<Map<String, Object>> services;
-    private final String idmImpl;
-    private final Map<String, Object> idmArgs;
     private final List<Map<String, Object>> authMechanisms;
-    private final String amImpl;
+    private final List<Map<String, Object>> idms;
+    private final String amClass;
     private final Map<String, Object> amArgs;
     private final String logFilePath;
     private final Level logLevel;
@@ -469,14 +472,11 @@ public class Configuration {
 
         services = new ArrayList<>();
         
-        namedPlugins = new ArrayList<>();
-
-        idmImpl = null;
-        idmArgs = null;
-
         authMechanisms = new ArrayList<>();
+        
+        idms = new ArrayList<>();
 
-        amImpl = null;
+        amClass = null;
         amArgs = null;
 
         logFilePath = URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
@@ -568,17 +568,14 @@ public class Configuration {
 
         services = getAsListOfMaps(conf, SERVICES_KEY, new ArrayList<>());
         
-        namedPlugins = getAsListOfMaps(conf, NAMED_SINGLETONS_KEY, new ArrayList<>());
-
         authMechanisms = getAsListOfMaps(conf, AUTH_MECHANISMS_KEY, new ArrayList<>());
         
-        Map<String, Object> idm = getAsMap(conf, IDM_KEY);
+        Map<String, Object> idm = getAsMap(conf, IDMS_KEY);
         Map<String, Object> am = getAsMap(conf, ACCESS_MANAGER_KEY);
 
-        idmImpl = getAsStringOrDefault(idm, IMPLEMENTATION_CLASS_KEY, DEFAULT_IDM_IMPLEMENTATION_CLASS);
-        idmArgs = idm;
+        idms = getAsListOfMaps(conf, IDMS_KEY, new ArrayList<>());
 
-        amImpl = getAsStringOrDefault(am, IMPLEMENTATION_CLASS_KEY, DEFAULT_AM_IMPLEMENTATION_CLASS);
+        amClass = getAsStringOrDefault(am, CLASS_KEY, DEFAULT_AM_IMPLEMENTATION_CLASS);
         amArgs = am;
 
         logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH_KEY,
@@ -643,11 +640,9 @@ public class Configuration {
                 + ", certPassword=" + certPassword
                 + ", proxies=" + proxies
                 + ", services=" + services
-                + ", metadataNamedSingletons=" + namedPlugins
-                + ", idmImpl=" + idmImpl
-                + ", idmArgs=" + idmArgs
                 + ", authMechanisms=" + authMechanisms
-                + ", amImpl=" + amImpl
+                + ", idms=" + idms
+                + ", amImpl=" + amClass
                 + ", amArgs=" + amArgs
                 + ", logFilePath=" + logFilePath
                 + ", logLevel=" + logLevel
@@ -1102,31 +1097,24 @@ public class Configuration {
     }
 
     /**
-     * @return the idmImpl
-     */
-    public String getIdmImpl() {
-        return idmImpl;
-    }
-
-    /**
-     * @return the idmArgs
-     */
-    public Map<String, Object> getIdmArgs() {
-        return Collections.unmodifiableMap(idmArgs);
-    }
-
-    /**
-     * @return the authentication authMechanisms
+     * @return the authMechanisms
      */
     public List<Map<String, Object>> getAuthMechanisms() {
         return authMechanisms;
     }
+    
+    /**
+     * @return the idms
+     */
+    public List<Map<String, Object>> getIdms() {
+        return idms;
+    }
 
     /**
-     * @return the amImpl
+     * @return the amClass
      */
-    public String getAmImpl() {
-        return amImpl;
+    public String getAmClass() {
+        return amClass;
     }
 
     /**
@@ -1143,13 +1131,6 @@ public class Configuration {
         return requestsLimit;
     }
 
-    /**
-     * @return the namedPlugins
-     */
-    public List<Map<String, Object>> getNamedPlugins() {
-        return Collections.unmodifiableList(namedPlugins);
-    }
-    
     /**
      * @return the services
      */

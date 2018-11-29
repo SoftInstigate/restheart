@@ -19,38 +19,30 @@ package io.uiam.plugins.authentication.impl;
 
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
-import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
 import java.util.Arrays;
 import java.util.Optional;
 import io.uiam.Bootstrapper;
 import io.uiam.cache.Cache;
 import io.uiam.cache.CacheFactory;
-import io.uiam.plugins.authentication.impl.SimpleAccount;
+import io.uiam.plugins.authentication.PluggableIdentityManager;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class AuthTokenIdentityManager implements IdentityManager {
+public class AuthTokenIdentityManager implements PluggableIdentityManager {
 
     private static final long TTL = Bootstrapper.getConfiguration().getAuthTokenTtl();
     private static final boolean ENABLED = Bootstrapper.getConfiguration().isAuthTokenEnabled();
 
-    /**
-     *
-     * @return
-     */
-    public static AuthTokenIdentityManager getInstance() {
-        return SessionTokenIdentityManagerHolder.INSTANCE;
-    }
     private final Cache<String, SimpleAccount> cachedAccounts;
 
     /**
      *
      * @param next
      */
-    private AuthTokenIdentityManager() {
+    public AuthTokenIdentityManager() {
         this.cachedAccounts = CacheFactory.createLocalCache(Long.MAX_VALUE, Cache.EXPIRE_POLICY.AFTER_READ, TTL * 60 * 1_000);
     }
 
@@ -91,13 +83,5 @@ public class AuthTokenIdentityManager implements IdentityManager {
 
     public Cache<String, SimpleAccount> getCachedAccounts() {
         return cachedAccounts;
-    }
-
-    private static class SessionTokenIdentityManagerHolder {
-
-        private static final AuthTokenIdentityManager INSTANCE = new AuthTokenIdentityManager();
-
-        private SessionTokenIdentityManagerHolder() {
-        }
     }
 }

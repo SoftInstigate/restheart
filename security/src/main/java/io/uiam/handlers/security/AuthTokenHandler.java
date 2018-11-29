@@ -30,6 +30,7 @@ import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
 import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_HEADER;
 import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_VALID_HEADER;
+import io.uiam.plugins.IDMCacheSingleton;
 import io.uiam.plugins.authentication.impl.AuthTokenIdentityManager;
 import io.uiam.utils.HttpStatus;
 
@@ -97,8 +98,14 @@ public class AuthTokenHandler extends PipedHttpHandler {
             exchange.getResponseSender().send(resp.toString());
             exchange.endExchange();
         } else if (Methods.DELETE.equals(exchange.getRequestMethod())) {
-            AuthTokenIdentityManager.getInstance().getCachedAccounts()
-                    .invalidate(exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
+            ((AuthTokenIdentityManager)IDMCacheSingleton.getInstance()
+                    .getIdentityManager("authTokenIdentityManager"))
+                    .getCachedAccounts()
+                    .invalidate(exchange
+                            .getSecurityContext()
+                            .getAuthenticatedAccount()
+                            .getPrincipal()
+                            .getName());
             removeAuthTokens(exchange);
             exchange.setStatusCode(HttpStatus.SC_NO_CONTENT);
             exchange.endExchange();

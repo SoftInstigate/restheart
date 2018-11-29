@@ -93,11 +93,18 @@ use-embedded-keystore: true
 ## - IdentityAuthenticationMechanism - all requests are bound to the specified user
 
 auth-mechanisms:
-    - implementation-class: io.uiam.plugins.authentication.impl.AuthTokenBasicAuthenticationMechanism
-      args: uIAM Realm
-    - implementation-class: io.uiam.plugins.authentication.impl.BasicAuthenticationMechanism
-      args: uIAM Realm
-#    - implementation-class: io.uiam.plugins.authentication.impl.IdentityAuthenticationMechanism
+    - name: authTokenBasicAuthenticationMechanism
+      class: io.uiam.plugins.authentication.impl.AuthTokenBasicAuthenticationMechanism
+      args: 
+        idm: authTokenIdentityManager
+        realm: uIAM Realm
+    - name: basicAuthenticationMechanism
+      class: io.uiam.plugins.authentication.impl.BasicAuthenticationMechanism
+      args:
+        idm: simpleFileIdentityManager
+        realm: uIAM Real
+#    - name: identityAuthenticationMechanism
+#      class: io.uiam.plugins.authentication.impl.IdentityAuthenticationMechanism
 #      args:
 #        - username: a
 #          pwd: a
@@ -107,21 +114,25 @@ auth-mechanisms:
 ## Provied IMs are:
 ## - SimpleFileIdentityManager - an IDM that uses a file as userbase storage
 ### conf-file paths are either absolute (starting with /)
-## or relative to the uiam.jar directory
+### or relative to the uiam.jar directory
 
-idm:
-    implementation-class: io.uiam.plugins.authentication.impl.SimpleFileIdentityManager
-    conf-file: ../etc/security.yml
+idms:
+    - name: simpleFileIdentityManager
+      class: io.uiam.plugins.authentication.impl.SimpleFileIdentityManager
+      args:
+        conf-file: ../etc/security.yml
+    - name: authTokenIdentityManager
+      class: io.uiam.plugins.authentication.impl.AuthTokenIdentityManager
 
 ## Access Manager
 
 ## Provied AMs are:
 ## - SimpleFileAccessManager  - an AM that uses a file as ACL storage
 ### conf-file paths are either absolute (starting with /)
-## or relative to the uiam.jar directory
+### or relative to the uiam.jar directory
 
 access-manager:
-    implementation-class: io.uiam.plugins.authorization.impl.SimpleFileAccessManager
+    class: io.uiam.plugins.authorization.impl.SimpleFileAccessManager
     conf-file: ../etc/security.yml
  
 # Authentication Token
@@ -144,17 +155,17 @@ auth-token-ttl: 15
 # - GetRoleService bound to /roles that returns the user authentication status and eventually its roles
 
 services:
-    - implementation-class: io.uiam.plugins.service.impl.PingService
+    - class: io.uiam.plugins.service.impl.PingService
       uri: /ping
       secured: false
       args:
           msg: "ciao from the uIAM team"
-    - implementation-class: io.uiam.plugins.service.impl.GetRoleService
+    - class: io.uiam.plugins.service.impl.GetRoleService
       uri: /roles
       secured: false
       args:
           url: /roles
-    - implementation-class: io.uiam.plugins.service.impl.RequestDumperService
+    - class: io.uiam.plugins.service.impl.RequestDumperService
       uri: /dump
       secured: false
 

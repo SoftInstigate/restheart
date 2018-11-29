@@ -79,7 +79,6 @@ import io.uiam.handlers.injectors.AccountHeadersInjector;
 import io.uiam.handlers.injectors.XPoweredByInjector;
 import io.uiam.handlers.security.SecurityHandler;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
-import io.uiam.plugins.authentication.PluggableIdentityManager;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
@@ -94,6 +93,8 @@ import io.uiam.plugins.authorization.PluggableAccessManager;
 import java.util.ArrayList;
 import java.util.List;
 import io.uiam.plugins.init.PluggableInitializer;
+import io.uiam.plugins.PluginConfigurationException;
+import io.uiam.plugins.PluginsFactory;
 
 /**
  *
@@ -519,9 +520,7 @@ public class Bootstrapper {
             logErrorAndExit("No listener specified. exiting..", null, false, -1);
         }
 
-        final List<PluggableAuthenticationMechanism> authenticationMechanisms = loadAuthenticationMechanism();
-
-        final PluggableIdentityManager identityManager = loadIdentityManager();
+        final List<PluggableAuthenticationMechanism> authenticationMechanisms = loadAuthenticationMechanisms();
 
         final PluggableAccessManager accessManager = loadAccessManager();
 
@@ -590,7 +589,7 @@ public class Bootstrapper {
             LOGGER.info("Ajp listener bound at {}:{}", configuration.getAjpHost(), configuration.getAjpPort());
         }
 
-        shutdownHandler = getHandlersPipe(authenticationMechanisms, identityManager, accessManager);
+        shutdownHandler = getHandlersPipe(authenticationMechanisms, accessManager);
 
         builder = builder
                 .setIoThreads(configuration.getIoThreads())
@@ -614,43 +613,23 @@ public class Bootstrapper {
     }
 
     /**
-     * loadAuthenticationMechanism
+     * loadAuthenticationMechanisms
      *
-     * @return the AuthenticationMechanism
+     * @return the AuthenticationMechanisms
      */
-    private static List<PluggableAuthenticationMechanism> loadAuthenticationMechanism() {
+    private static List<PluggableAuthenticationMechanism> loadAuthenticationMechanisms() {
         var authMechanisms = new ArrayList<PluggableAuthenticationMechanism>();
 
         if (configuration.getAuthMechanisms() != null
                 && !configuration.getAuthMechanisms().isEmpty()) {
             configuration.getAuthMechanisms().stream().forEachOrdered(am -> {
-                String amImplClass = (String) am.get(Configuration.IMPLEMENTATION_CLASS_KEY);
-                Object amArgs = am.get(Configuration.ARGS_KEY);
 
                 try {
-                    Object _amInstance;
-
-                    if (amArgs == null) {
-                        _amInstance = Class.forName(amImplClass)
-                                .getDeclaredConstructor()
-                                .newInstance();
-                    } else {
-                        _amInstance = Class.forName(amImplClass)
-                                .getDeclaredConstructor(amArgs.getClass())
-                                .newInstance(amArgs);
-                    }
-
-                    authMechanisms.add((PluggableAuthenticationMechanism) _amInstance);
-
-                    LOGGER.info("Authentication Mechanism {} enabled", amImplClass);
-                } catch (NoSuchMethodException nsme) {
-                    var error = "Wrong arguments for Authentication Mechanism "
-                            + amImplClass
-                            + " "
-                            + "";
-                    logErrorAndExit(error, nsme, false, -3);
-                } catch (Throwable t) {
-                    logErrorAndExit("Error configuring Authentication Mechanism implementation " + amImplClass, t, false, -3);
+                    authMechanisms.add(PluginsFactory
+                            .getAutenticationMechanism(am));
+                    LOGGER.info("Authentication Mechanism {} enabled", am.get(Configuration.NAME_KEY));
+                } catch (PluginConfigurationException pcex) {
+                    logErrorAndExit(pcex.getMessage(), pcex, false, -3);
                 }
             });
         } else {
@@ -661,65 +640,29 @@ public class Bootstrapper {
     }
 
     /**
-     * loadIdentityManager
-     *
-     * @return the PluggableIdentityManager
-     */
-    private static PluggableIdentityManager loadIdentityManager() {
-        PluggableIdentityManager identityManager = null;
-        if (configuration.getIdmImpl() == null) {
-            LOGGER.warn("***** No Identity Manager specified. Authentication disabled.");
-        } else {
-            try {
-                Object idm = Class.forName(configuration.getIdmImpl())
-                        .getConstructor(Map.class)
-                        .newInstance(configuration.getIdmArgs());
-                identityManager = (PluggableIdentityManager) idm;
-
-                LOGGER.info("Identity Manager {} enabled", configuration.getIdmImpl());
-            } catch (ClassNotFoundException
-                    | IllegalAccessException
-                    | IllegalArgumentException
-                    | InstantiationException
-                    | NoSuchMethodException
-                    | SecurityException
-                    | InvocationTargetException ex) {
-                logErrorAndExit("Error configuring Identity Manager implementation " + configuration.getIdmImpl(), ex, false, -3);
-            }
-        }
-        return identityManager;
-    }
-
-    /**
      * loadAccessManager
      *
      * @return the PluggableAccessManager
      */
     private static PluggableAccessManager loadAccessManager() {
-        PluggableAccessManager accessManager = new FullAccessManager();
-        if (configuration.getAmImpl() == null && configuration.getIdmImpl() != null) {
-            LOGGER.warn("***** no access manager specified. authenticated users can do anything.");
-        } else if (configuration.getAmImpl() == null && configuration.getIdmImpl() == null) {
-            LOGGER.warn("***** No access manager specified. users can do anything.");
+        if (configuration.getAmClass() == null) {
+            if (configuration.getAuthMechanisms() != null
+                    && configuration.getAuthMechanisms().size() > 0) {
+                LOGGER.warn("***** no access manager specified. authenticated users can do anything.");
+            } else if (configuration.getAuthMechanisms() == null
+                    || configuration.getAuthMechanisms().isEmpty()) {
+                LOGGER.warn("***** No access manager specified. users can do anything.");
+            }
         } else {
             try {
-                Object am = Class.forName(configuration.getAmImpl())
-                        .getConstructor(Map.class)
-                        .newInstance(configuration.getAmArgs());
-
-                LOGGER.info("Access Manager {} enabled", configuration.getAmImpl());
-                accessManager = (PluggableAccessManager) am;
-            } catch (ClassNotFoundException
-                    | IllegalAccessException
-                    | IllegalArgumentException
-                    | InstantiationException
-                    | NoSuchMethodException
-                    | SecurityException
-                    | InvocationTargetException ex) {
-                logErrorAndExit("Error configuring Access Manager implementation " + configuration.getAmImpl(), ex, false, -3);
+                PluginsFactory.getAccessManager(configuration.getAmClass(),
+                        configuration.getAmArgs());
+            } catch (PluginConfigurationException ex) {
+                logErrorAndExit("Error configuring Access Manager implementation " + configuration.getAmClass(), ex, false, -3);
             }
         }
-        return accessManager;
+
+        return new FullAccessManager();
     }
 
     /**
@@ -770,11 +713,13 @@ public class Bootstrapper {
      */
     private static GracefulShutdownHandler getHandlersPipe(
             final List<PluggableAuthenticationMechanism> authenticationMechanisms,
-            final PluggableIdentityManager identityManager,
             final PluggableAccessManager accessManager) {
         PathHandler paths = path();
 
-        plugServices(configuration, paths, authenticationMechanisms, identityManager, accessManager);
+        plugServices(configuration,
+                paths,
+                authenticationMechanisms,
+                accessManager);
 
         // plug the auth tokens invalidation handler
         paths.addPrefixPath("/_authtokens",
@@ -784,10 +729,12 @@ public class Bootstrapper {
                                         new SecurityHandler(
                                                 new AuthTokenHandler(),
                                                 authenticationMechanisms,
-                                                identityManager,
                                                 new FullAccessManager())))));
 
-        proxyResources(configuration, paths, authenticationMechanisms, identityManager, accessManager);
+        proxyResources(configuration,
+                paths,
+                authenticationMechanisms,
+                accessManager);
 
         return buildGracefulShutdownHandler(paths);
     }
@@ -798,15 +745,19 @@ public class Bootstrapper {
      * @param paths
      * @return
      */
-    private static GracefulShutdownHandler buildGracefulShutdownHandler(PathHandler paths) {
+    private static GracefulShutdownHandler
+            buildGracefulShutdownHandler(PathHandler paths) {
         return new GracefulShutdownHandler(
-                new RequestLimitingHandler(new RequestLimit(configuration.getRequestsLimit()),
+                new RequestLimitingHandler(new RequestLimit(configuration
+                        .getRequestsLimit()),
                         new AllowedMethodsHandler(
                                 new BlockingHandler(
                                         new GzipEncodingHandler(
                                                 new ErrorHandler(
-                                                        new HttpContinueAcceptingHandler(paths)
-                                                ), configuration.isForceGzipEncoding()
+                                                        new HttpContinueAcceptingHandler(paths
+                                                        )
+                                                ), configuration
+                                                        .isForceGzipEncoding()
                                         )
                                 ), // allowed methods
                                 HttpString.tryFromString(RequestContext.METHOD.GET.name()),
@@ -818,6 +769,7 @@ public class Bootstrapper {
                         )
                 )
         );
+
     }
 
     /**
@@ -833,12 +785,11 @@ public class Bootstrapper {
             final Configuration conf,
             final PathHandler paths,
             final List<PluggableAuthenticationMechanism> authenticationMechanisms,
-            final PluggableIdentityManager identityManager,
             final PluggableAccessManager accessManager) {
         if (!conf.getServices().isEmpty()) {
             conf.getServices().stream().forEach((Map<String, Object> al) -> {
                 try {
-                    String clazz = (String) al.get(Configuration.IMPLEMENTATION_CLASS_KEY);
+                    String clazz = (String) al.get(Configuration.CLASS_KEY);
                     String uri = (String) al.get(Configuration.SERVICE_URI_KEY);
                     boolean secured = (Boolean) al.get(Configuration.SERVICE_SECURED_KEY);
                     Object args = al.get(Configuration.ARGS_KEY);
@@ -852,6 +803,7 @@ public class Bootstrapper {
                         LOGGER.error("Cannot plug service {}."
                                 + "args is not a map. actual class is ", uri, uri.getClass());
                         return;
+
                     }
 
                     Object o = Class.forName(clazz)
@@ -875,7 +827,6 @@ public class Bootstrapper {
                                                             new SecurityHandler(
                                                                     handler,
                                                                     authenticationMechanisms,
-                                                                    identityManager,
                                                                     accessManager)))));
                         } else {
                             paths.addPrefixPath(uri,
@@ -885,7 +836,6 @@ public class Bootstrapper {
                                                             new SecurityHandler(
                                                                     handler,
                                                                     authenticationMechanisms,
-                                                                    identityManager,
                                                                     new FullAccessManager())))));
                         }
 
@@ -924,7 +874,6 @@ public class Bootstrapper {
             final Configuration conf,
             final PathHandler paths,
             final List<PluggableAuthenticationMechanism> authenticationMechanisms,
-            final PluggableIdentityManager identityManager,
             final PluggableAccessManager accessManager) {
         if (conf.getProxies() == null || conf.getProxies().isEmpty()) {
             LOGGER.info("No {} specified", Configuration.PROXY_KEY);
@@ -972,7 +921,6 @@ public class Bootstrapper {
                                         new AuthHeadersRemover(
                                                 wrappedProxyHandler),
                                         authenticationMechanisms,
-                                        identityManager,
                                         accessManager)));
 
                 LOGGER.info("URI {} bound to resource {}", uri, resourceURL);
@@ -980,6 +928,7 @@ public class Bootstrapper {
                 LOGGER.warn("Invalid URI {}, resource {} not proxied ", uri, resourceURL);
             }
         });
+
     }
 
     /**

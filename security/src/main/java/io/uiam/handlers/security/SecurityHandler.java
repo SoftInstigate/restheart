@@ -22,10 +22,8 @@ import java.util.List;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
-import io.uiam.plugins.authentication.PluggableIdentityManager;
 import io.uiam.plugins.authorization.PluggableAccessManager;
 import io.undertow.security.api.AuthenticationMode;
-import io.undertow.security.idm.IdentityManager;
 
 /**
  *
@@ -42,13 +40,11 @@ public class SecurityHandler extends PipedHttpHandler {
      */
     public SecurityHandler(final PipedHttpHandler next,
             final List<PluggableAuthenticationMechanism> authenticationMechanisms,
-            final PluggableIdentityManager identityManager,
             final PluggableAccessManager accessManager) {
 
         super(buildSecurityHandlersChain(next,
                 authenticationMechanisms,
-                accessManager,
-                identityManager));
+                accessManager));
     }
 
     @Override
@@ -59,9 +55,8 @@ public class SecurityHandler extends PipedHttpHandler {
     private static PipedHttpHandler buildSecurityHandlersChain(
             PipedHttpHandler next,
             final List<PluggableAuthenticationMechanism> mechanisms,
-            final PluggableAccessManager accessManager,
-            final IdentityManager identityManager) {
-        if (identityManager != null) {
+            final PluggableAccessManager accessManager) {
+        if (mechanisms != null && mechanisms.size() > 0) {
             PipedHttpHandler handler;
 
             if (accessManager == null) {
@@ -75,7 +70,6 @@ public class SecurityHandler extends PipedHttpHandler {
                     new AccessManagerHandler(accessManager, next));
 
             handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE,
-                    identityManager,
                     new AuthenticationMechanismsHandler(
                             new AuthenticationConstraintHandler(
                                     new AuthenticationCallHandler(handler),
