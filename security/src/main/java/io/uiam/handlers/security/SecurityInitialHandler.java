@@ -88,11 +88,6 @@ public class SecurityInitialHandler extends PipedHttpHandler {
                 next);
     }
 
-    // in questo punto fissiamo l'identityManager nel security context
-    // l'implementazione di BasicAuthenticationMechanism di undertow utilizza questa
-    // BasicAuthenticationMechanism.getIdentityManager() --> sc.getIdentityManager()
-    // dobbiamo cambiare, non è detto che un AuthenticationMechanism richieda un IDM
-    // l'idm deve essere una opzione dell'AuthenticationMechanism 
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context)
             throws Exception {

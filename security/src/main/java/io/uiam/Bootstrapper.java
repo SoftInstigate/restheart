@@ -646,23 +646,17 @@ public class Bootstrapper {
      */
     private static PluggableAccessManager loadAccessManager() {
         if (configuration.getAmClass() == null) {
-            if (configuration.getAuthMechanisms() != null
-                    && configuration.getAuthMechanisms().size() > 0) {
-                LOGGER.warn("***** no access manager specified. authenticated users can do anything.");
-            } else if (configuration.getAuthMechanisms() == null
-                    || configuration.getAuthMechanisms().isEmpty()) {
-                LOGGER.warn("***** No access manager specified. users can do anything.");
-            }
+            LOGGER.warn("***** No Access Manager specified. All requests are allowed.");
+            return new FullAccessManager();
         } else {
             try {
-                PluginsFactory.getAccessManager(configuration.getAmClass(),
+                return PluginsFactory.getAccessManager(configuration.getAmClass(),
                         configuration.getAmArgs());
             } catch (PluginConfigurationException ex) {
                 logErrorAndExit("Error configuring Access Manager implementation " + configuration.getAmClass(), ex, false, -3);
+                return null;
             }
         }
-
-        return new FullAccessManager();
     }
 
     /**

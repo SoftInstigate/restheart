@@ -29,18 +29,18 @@ import java.util.Map;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class BasicAuthenticationMechanism
-        extends io.undertow.security.impl.BasicAuthenticationMechanism
+public class DigestAuthenticationMechanism
+        extends io.undertow.security.impl.DigestAuthenticationMechanism
         implements PluggableAuthenticationMechanism {
 
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
 
-    public BasicAuthenticationMechanism(String mechanismName,
+    public DigestAuthenticationMechanism(String mechanismName,
             Map<String, Object> args) throws PluginConfigurationException {
         super(realmName(args),
+                domain(args),
                 mechanismName,
-                false,
                 IDMCacheSingleton
                         .getInstance()
                         .getIdentityManager(identityManagerName(args)));
@@ -52,8 +52,21 @@ public class BasicAuthenticationMechanism
                 || !args.containsKey("realm")
                 || !(args.get("realm") instanceof String)) {
             throw new PluginConfigurationException(
-                    "BasicAuthenticationMechanism"
+                    "DigestAuthenticationMechanism"
                     + " requires string argument 'realm'");
+        } else {
+            return (String) args.get("realm");
+        }
+    }
+    
+    private static String domain(Map<String, Object> args)
+            throws PluginConfigurationException {
+        if (args == null
+                || !args.containsKey("domain")
+                || !(args.get("domain") instanceof String)) {
+            throw new PluginConfigurationException(
+                    "DigestAuthenticationMechanism"
+                    + " requires string argument 'domain'");
         } else {
             return (String) args.get("realm");
         }
@@ -65,7 +78,7 @@ public class BasicAuthenticationMechanism
                 || !args.containsKey("idm")
                 || !(args.get("idm") instanceof String)) {
             throw new PluginConfigurationException(
-                    "BasicAuthenticationMechanism requires string argument 'idm'");
+                    "DigestAuthenticationMechanism requires string argument 'idm'");
         } else {
             return (String) args.get("idm");
         }
@@ -86,6 +99,10 @@ public class BasicAuthenticationMechanism
     @Override
     public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange,
             SecurityContext securityContext) {
-        return super.authenticate(exchange, securityContext);
+        AuthenticationMechanismOutcome outcome = super.authenticate(exchange, securityContext);
+        
+        Object a = securityContext.getAuthenticatedAccount();
+        
+        return outcome;
     }
 }

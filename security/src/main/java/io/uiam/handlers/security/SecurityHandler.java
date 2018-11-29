@@ -35,7 +35,6 @@ public class SecurityHandler extends PipedHttpHandler {
      *
      * @param next
      * @param authenticationMechanisms
-     * @param identityManager
      * @param accessManager
      */
     public SecurityHandler(final PipedHttpHandler next,

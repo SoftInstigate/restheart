@@ -41,22 +41,26 @@ public class IDMCacheSingleton {
                     -1,
                     name -> {
                         var idmsConf = Bootstrapper.getConfiguration().getIdms();
-                        
+
                         var idmConf = idmsConf.stream()
                                 .filter(idm -> name.equals(idm.get("name")))
                                 .findFirst();
-                        
+
                         if (idmConf.isPresent()) {
                             try {
                                 return PluginsFactory.getIdentityManager(idmConf.get());
-                            } catch(PluginConfigurationException pcex) {
-                                LOGGER.error("Error configuring Identity Manager", pcex);
-                                return null;
+                            } catch (PluginConfigurationException pcex) {
+                                throw new IllegalStateException(pcex.getMessage(), 
+                                        pcex);
                             }
                         } else {
-                            throw null;
+                            var errorMsg = "Identity Manager " + name
+                            + " not found.";
+                            
+                            throw new IllegalStateException(errorMsg,
+                                    new PluginConfigurationException(errorMsg));
                         }
-            });
+                    });
 
     private static IDMCacheSingleton HOLDER;
 

@@ -89,6 +89,11 @@ public class SimpleFileIdentityManager
             this.accounts.put(userid, a);
         };
     }
+    
+    @Override
+    public Account verify(Account account) {
+        return account;
+    }
 
     @Override
     public Account verify(String id, Credential credential) {

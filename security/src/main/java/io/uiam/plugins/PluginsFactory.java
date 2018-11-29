@@ -17,11 +17,9 @@
  */
 package io.uiam.plugins;
 
-import io.uiam.plugins.PluginConfigurationException;
 import io.uiam.Configuration;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 import io.uiam.plugins.authentication.PluggableIdentityManager;
-import io.uiam.plugins.authorization.FullAccessManager;
 import io.uiam.plugins.authorization.PluggableAccessManager;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
@@ -87,7 +85,7 @@ public class PluginsFactory {
                 | NoSuchMethodException
                 | SecurityException
                 | InvocationTargetException ex) {
-            throw new PluginConfigurationException("Error configuring Authentication Mechanism " + "", ex);
+            throw new PluginConfigurationException("Error configuring Authentication Mechanism", ex);
         }
     }
 

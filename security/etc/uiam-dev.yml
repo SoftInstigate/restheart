@@ -98,11 +98,17 @@ auth-mechanisms:
       class: io.uiam.plugins.authentication.impl.AuthTokenBasicAuthenticationMechanism
       args: 
         realm: uIAM Realm
+#    - name: digestAuthenticationMechanism
+#      class: io.uiam.plugins.authentication.impl.DigestAuthenticationMechanism
+#      args: 
+#        realm: uIAM Realm
+#        domain: mrest.io
+#        idm: simpleFileIdentityManager
     - name: basicAuthenticationMechanism
       class: io.uiam.plugins.authentication.impl.BasicAuthenticationMechanism
       args:
-        idm: simpleFileIdentityManager
         realm: uIAM Realm
+        idm: simpleFileIdentityManager
 #    - name: identityAuthenticationMechanism
 #      class: io.uiam.plugins.authentication.impl.IdentityAuthenticationMechanism
 #      args:
