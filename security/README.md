@@ -43,7 +43,7 @@ The following diagram shows &#181;IAM used as a sidecar proxy within each contai
 
 ## &#181;IAM embedded
 
-The following diagram shows &#181;IAM used to implement a simple microservice using application logic extensions.
+The following diagram shows &#181;IAM used to implement a simple microservice using service extensions.
 
 ![Alt text](readme-assets/uiam-embedded.png?raw=true "uIAM embedded")
 
