@@ -130,11 +130,6 @@ public class Configuration {
     public static final String LOCAL_CACHE_ENABLED_KEY = "local-cache-enabled";
 
     /**
-     * the key for the local-cache-ttl property.
-     */
-    public static final String LOCAL_CACHE_TTL_KEY = "local-cache-ttl";
-
-    /**
      * the key for the force-gzip-encoding property.
      */
     public static final String FORCE_GZIP_ENCODING_KEY = "force-gzip-encoding";
@@ -165,11 +160,6 @@ public class Configuration {
     public static final String REQUESTS_LIMIT_KEY = "requests-limit";
 
     /**
-     * the key for the query-time-limit property.
-     */
-    public static final String QUERY_TIME_LIMIT_KEY = "query-time-limit";
-
-    /**
      * the key for the enable-log-file property.
      */
     public static final String ENABLE_LOG_FILE_KEY = "enable-log-file";
@@ -188,11 +178,6 @@ public class Configuration {
      * the key for the log-file-path property.
      */
     public static final String LOG_FILE_PATH_KEY = "log-file-path";
-
-    /**
-     * the key for the requests-log-tracing-headers property.
-     */
-    public static final String REQUESTS_LOG_TRACE_HEADERS_KEY = "requests-log-trace-headers";
 
     /**
      * the key for the class property.
@@ -421,7 +406,6 @@ public class Configuration {
     private final Level logLevel;
     private final boolean logToConsole;
     private final boolean logToFile;
-    private final List<String> traceHeaders;
     private final int requestsLimit;
     private final int ioThreads;
     private final int workerThreads;
@@ -485,7 +469,6 @@ public class Configuration {
         logToConsole = true;
         logToFile = true;
         logLevel = Level.INFO;
-        traceHeaders = Collections.emptyList();
 
         requestsLimit = 100;
 
@@ -584,7 +567,6 @@ public class Configuration {
         String _logLevel = getAsStringOrDefault(conf, LOG_LEVEL_KEY, "INFO");
         logToConsole = getAsBooleanOrDefault(conf, ENABLE_LOG_CONSOLE_KEY, true);
         logToFile = getAsBooleanOrDefault(conf, ENABLE_LOG_FILE_KEY, true);
-        traceHeaders = getAsListOfStrings(conf, REQUESTS_LOG_TRACE_HEADERS_KEY, Collections.emptyList());
 
         Level level;
 
@@ -648,7 +630,6 @@ public class Configuration {
                 + ", logLevel=" + logLevel
                 + ", logToConsole=" + logToConsole
                 + ", logToFile=" + logToFile
-                + ", traceHeaders=" + traceHeaders
                 + ", requestsLimit=" + requestsLimit
                 + ", ioThreads=" + ioThreads
                 + ", workerThreads=" + workerThreads
@@ -1055,10 +1036,6 @@ public class Configuration {
      */
     public boolean isLogToFile() {
         return logToFile;
-    }
-
-    public List<String> getTraceHeaders() {
-        return traceHeaders;
     }
 
     /**

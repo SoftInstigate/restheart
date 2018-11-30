@@ -325,7 +325,7 @@ auth-token-ttl: 15
 
 ### Access Managers
 
-- **SimpleAccessManager** allows defining roles permissions in a simple yml configuration file. See the example [security.yml](https://github.com/SoftInstigate/uiam/blob/master/etc/security.yml).
+- **RequestPredicatesAccessManager** allows defining roles permissions in the form of request predicates in a yml configuration file. See the example [security.yml](https://github.com/SoftInstigate/uiam/blob/master/etc/security.yml).
 
 ### Services
 

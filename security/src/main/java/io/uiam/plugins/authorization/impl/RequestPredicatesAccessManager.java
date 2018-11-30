@@ -39,7 +39,7 @@ import io.uiam.plugins.authorization.PluggableAccessManager;
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class SimpleFileAccessManager extends AbstractConfiFileConsumer implements PluggableAccessManager {
+public class RequestPredicatesAccessManager extends AbstractConfiFileConsumer implements PluggableAccessManager {
 
     private final HashMap<String, Set<Predicate>> acl = new HashMap<>();
 
@@ -48,7 +48,7 @@ public class SimpleFileAccessManager extends AbstractConfiFileConsumer implement
      * @throws java.io.FileNotFoundException
      * @throws java.io.UnsupportedEncodingException
      */
-    public SimpleFileAccessManager(Map<String, Object> configuration) throws FileNotFoundException, UnsupportedEncodingException {
+    public RequestPredicatesAccessManager(Map<String, Object> configuration) throws FileNotFoundException, UnsupportedEncodingException {
         init(configuration, "permissions");
     }
 
