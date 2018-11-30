@@ -22,8 +22,8 @@ users:
 
 ## Configuration for SimpleFileAccessManager
 
-## Look at undertow documentation for information about predictates syntax
-## http://undertow.io/undertow-docs/undertow-docs-1.3.0/index.html#predicates-attributes-and-handlers
+## Look at undertow documentation for information about predictates language syntax
+## http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#textual-representation
 ## The special role $unauthenticated allows to give permissions without requiring authentication
 permissions:
 # Users with role 'admin' can do anything
