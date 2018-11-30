@@ -72,9 +72,11 @@ public class AuthTokenHandler extends PipedHttpHandler {
         if (exchange.getSecurityContext() == null
                 || exchange.getSecurityContext().getAuthenticatedAccount() == null
                 || exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null
-                || !(("/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName())
+                || !(("/_authtokens/" + exchange.getSecurityContext()
+                        .getAuthenticatedAccount().getPrincipal().getName())
                         .equals(exchange.getRequestURI())
-                || !(ESCAPER.escape("/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName()))
+                || !(ESCAPER.escape("/_authtokens/" + exchange.getSecurityContext()
+                        .getAuthenticatedAccount().getPrincipal().getName()))
                         .equals(exchange.getRequestURI()))) {
             exchange.setStatusCode(HttpStatus.SC_FORBIDDEN);
             exchange.endExchange();
@@ -83,7 +85,7 @@ public class AuthTokenHandler extends PipedHttpHandler {
 
         if (Methods.GET.equals(exchange.getRequestMethod())) {
             JsonObject resp = new JsonObject();
-            
+
             resp.add("auth_token",
                     new JsonPrimitive(exchange.getResponseHeaders()
                             .get(AUTH_TOKEN_HEADER).getFirst()));
@@ -98,7 +100,7 @@ public class AuthTokenHandler extends PipedHttpHandler {
             exchange.getResponseSender().send(resp.toString());
             exchange.endExchange();
         } else if (Methods.DELETE.equals(exchange.getRequestMethod())) {
-            ((AuthTokenIdentityManager)IDMCacheSingleton.getInstance()
+            ((AuthTokenIdentityManager) IDMCacheSingleton.getInstance()
                     .getIdentityManager(AuthTokenIdentityManager.NAME))
                     .getCachedAccounts()
                     .invalidate(exchange

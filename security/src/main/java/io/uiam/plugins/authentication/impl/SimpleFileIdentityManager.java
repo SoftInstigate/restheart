@@ -17,6 +17,7 @@
  */
 package io.uiam.plugins.authentication.impl;
 
+import com.google.common.collect.Sets;
 import io.uiam.plugins.AbstractConfiFileConsumer;
 import io.uiam.plugins.authentication.PluggableIdentityManager;
 import io.undertow.security.idm.Account;
@@ -32,10 +33,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.SortedSet;
 import java.util.function.Consumer;
 
 /**
@@ -49,7 +49,7 @@ import java.util.function.Consumer;
 public class SimpleFileIdentityManager
         extends AbstractConfiFileConsumer implements PluggableIdentityManager {
 
-    private final Map<String, RolesAccount> accounts = new HashMap<>();
+    private final Map<String, PwdCredentialAccount> accounts = new HashMap<>();
 
     /**
      *
@@ -91,9 +91,9 @@ public class SimpleFileIdentityManager
                 throw new IllegalArgumentException("wrong configuration file format. a roles entry is wrong. they all must be strings");
             }
 
-            Set<String> roles = new HashSet<>((Collection) _roles);
+            SortedSet<String> roles = Sets.newTreeSet((Collection) _roles);
 
-            RolesAccount a = new RolesAccount(userid, password, roles);
+            PwdCredentialAccount a = new PwdCredentialAccount(userid, password, roles);
 
             this.accounts.put(userid, a);
         };
@@ -117,7 +117,7 @@ public class SimpleFileIdentityManager
     }
 
     private boolean verifyCredential(Account account, Credential credential) {
-        if (account instanceof RolesAccount) {
+        if (account instanceof PwdCredentialAccount) {
             if (credential instanceof PasswordCredential) {
                 return verifyPasswordCredential(account, credential);
             } else if (credential instanceof DigestCredential) {
@@ -130,7 +130,8 @@ public class SimpleFileIdentityManager
 
     private boolean verifyPasswordCredential(Account account, Credential credential) {
         char[] password = ((PasswordCredential) credential).getPassword();
-        char[] expectedPassword = accounts.get(account.getPrincipal().getName()).getCredentials().getPassword();
+        char[] expectedPassword = accounts.get(account.getPrincipal().getName())
+                .getCredentials().getPassword();
 
         return Arrays.equals(password, expectedPassword);
     }

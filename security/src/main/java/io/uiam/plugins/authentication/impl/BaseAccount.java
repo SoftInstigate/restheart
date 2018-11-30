@@ -17,30 +17,52 @@
  */
 package io.uiam.plugins.authentication.impl;
 
+import com.google.common.collect.Sets;
+import io.undertow.security.idm.Account;
 import java.security.Principal;
+import java.util.Collections;
+import java.util.SortedSet;
 
 /**
- *
+ * Base concrete Account implementation
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class NamedPrincipal implements Principal {
-
-    private String name;
+public class BaseAccount implements Account {
+    final private Principal principal;
+    final private SortedSet<String> roles;
 
     /**
      *
      * @param name
+     * @param roles
      */
-    public NamedPrincipal(String name) {
+    public BaseAccount(final String name, 
+            final SortedSet<String> roles) {
         if (name == null) {
-            throw new IllegalArgumentException("argument name cannot be null");
+            throw new IllegalArgumentException("argument principal cannot be null");
         }
 
-        this.name = name;
+        if (roles == null || roles.isEmpty()) {
+            this.roles = Sets.newTreeSet();
+        } else {
+            this.roles = roles;
+        }
+
+        this.principal = new BasePrincipal(name);
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public Principal getPrincipal() {
+        return principal;
     }
 
     @Override
-    public String getName() {
-        return name;
+    public SortedSet<String> getRoles() {
+        return Collections.unmodifiableSortedSet(roles);
     }
 }

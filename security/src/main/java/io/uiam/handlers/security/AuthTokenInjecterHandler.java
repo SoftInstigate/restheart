@@ -17,6 +17,7 @@
  */
 package io.uiam.handlers.security;
 
+import com.google.common.collect.Sets;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import java.math.BigInteger;
@@ -33,7 +34,7 @@ import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_VALID_HEADER;
 import io.uiam.plugins.IDMCacheSingleton;
 import io.uiam.plugins.PluginConfigurationException;
 import io.uiam.plugins.authentication.impl.AuthTokenIdentityManager;
-import io.uiam.plugins.authentication.impl.RolesAccount;
+import io.uiam.plugins.authentication.impl.PwdCredentialAccount;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,26 +83,30 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
 
     private void injectTokenHeaders(HttpServerExchange exchange, char[] token) {
         exchange.getResponseHeaders().add(AUTH_TOKEN_HEADER, new String(token));
-        exchange.getResponseHeaders().add(AUTH_TOKEN_VALID_HEADER, Instant.now().plus(TTL, ChronoUnit.MINUTES).toString());
-        exchange.getResponseHeaders().add(AUTH_TOKEN_LOCATION_HEADER, "/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
+        exchange.getResponseHeaders().add(AUTH_TOKEN_VALID_HEADER,
+                Instant.now().plus(TTL, ChronoUnit.MINUTES).toString());
+        exchange.getResponseHeaders().add(AUTH_TOKEN_LOCATION_HEADER,
+                "/_authtokens/"
+                + exchange.getSecurityContext().getAuthenticatedAccount()
+                        .getPrincipal().getName());
     }
 
     private char[] cacheSessionToken(Account authenticatedAccount) throws PluginConfigurationException {
         String id = authenticatedAccount.getPrincipal().getName();
-        
+
         AuthTokenIdentityManager idm = (AuthTokenIdentityManager) IDMCacheSingleton
                 .getInstance()
                 .getIdentityManager(AuthTokenIdentityManager.NAME);
 
-        Optional<RolesAccount> cachedTokenAccount
+        Optional<PwdCredentialAccount> cachedTokenAccount
                 = idm.getCachedAccounts().get(id);
 
         if (cachedTokenAccount == null) {
             char[] token = nextToken();
-            RolesAccount newCachedTokenAccount = new RolesAccount(
+            PwdCredentialAccount newCachedTokenAccount = new PwdCredentialAccount(
                     id,
                     token,
-                    authenticatedAccount.getRoles());
+                    Sets.newTreeSet(authenticatedAccount.getRoles()));
 
             idm.getCachedAccounts().put(id, newCachedTokenAccount);
 

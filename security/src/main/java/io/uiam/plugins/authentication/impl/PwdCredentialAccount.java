@@ -17,24 +17,16 @@
  */
 package io.uiam.plugins.authentication.impl;
 
-import com.google.common.collect.Sets;
-import io.undertow.security.idm.Account;
 import io.undertow.security.idm.PasswordCredential;
-import java.security.Principal;
-import java.util.Collections;
-import java.util.Set;
+import java.util.SortedSet;
 
 /**
- *
+ * Account implementation that holds PasswordCredential
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RolesAccount implements Account {
-    
-    private final static long serialVersionUID = 5146445L;
-
-    final private Principal principal;
-    final private PasswordCredential credential;
-    final private Set<String> roles;
+public class PwdCredentialAccount extends BaseAccount {
+    final transient private PasswordCredential credential;
 
     /**
      *
@@ -42,31 +34,16 @@ public class RolesAccount implements Account {
      * @param password
      * @param roles
      */
-    public RolesAccount(String name, char[] password, Set<String> roles) {
-        if (name == null) {
-            throw new IllegalArgumentException("argument principal cannot be null");
-        }
+    public PwdCredentialAccount(final String name,
+            final char[] password,
+            final SortedSet<String> roles) {
+        super(name, roles);
 
         if (password == null) {
             throw new IllegalArgumentException("argument password cannot be null");
         }
 
-        if (roles == null || roles.isEmpty()) {
-            roles = Sets.newHashSet();
-        }
-
-        this.principal = new NamedPrincipal(name);
         this.credential = new PasswordCredential(password);
-        this.roles = roles;
-    }
-
-    /**
-     *
-     * @return
-     */
-    @Override
-    public Principal getPrincipal() {
-        return principal;
     }
 
     /**
@@ -75,10 +52,5 @@ public class RolesAccount implements Account {
      */
     public PasswordCredential getCredentials() {
         return credential;
-    }
-
-    @Override
-    public Set<String> getRoles() {
-        return Collections.unmodifiableSet(roles);
     }
 }

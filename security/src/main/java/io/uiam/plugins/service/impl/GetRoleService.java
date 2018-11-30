@@ -80,12 +80,13 @@ public class GetRoleService extends PluggableService {
             exchange.endExchange();
         } else if (context.isGet()) {
             exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "application/json");
-            
+
             if ((exchange.getSecurityContext() == null
                     || exchange.getSecurityContext().getAuthenticatedAccount() == null
                     || exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null)
-                    || !(context.getMappedRequestUri().equals(URLUtils.removeTrailingSlashes(url) + "/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName()))) {
-
+                    || !(context.getMappedRequestUri().equals(URLUtils.removeTrailingSlashes(url)
+                            + "/"
+                            + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName()))) {
                 {
                     exchange.setStatusCode(HttpStatus.SC_FORBIDDEN);
 
@@ -100,7 +101,7 @@ public class GetRoleService extends PluggableService {
 
             } else {
                 JsonObject root = new JsonObject();
-                
+
                 Set<String> _roles = exchange.getSecurityContext().getAuthenticatedAccount().getRoles();
 
                 JsonArray roles = new JsonArray();
@@ -111,7 +112,7 @@ public class GetRoleService extends PluggableService {
 
                 root.add("authenticated", new JsonPrimitive(true));
                 root.add("roles", roles);
-                
+
                 exchange.getResponseSender().send(root.toString());
             }
 

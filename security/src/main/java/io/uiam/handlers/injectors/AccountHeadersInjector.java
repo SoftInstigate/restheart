@@ -20,7 +20,8 @@ package io.uiam.handlers.injectors;
 import io.undertow.server.HttpServerExchange;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
-import io.uiam.plugins.authentication.impl.RolesAccount;
+import io.uiam.plugins.authentication.impl.BaseAccount;
+import io.uiam.plugins.authentication.impl.PwdCredentialAccount;
 import io.undertow.security.idm.Account;
 import io.undertow.util.HttpString;
 
@@ -55,7 +56,8 @@ public class AccountHeadersInjector extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context)
+            throws Exception {
         if (exchange != null
                 && exchange.getSecurityContext() != null
                 && exchange.getSecurityContext()
@@ -72,10 +74,10 @@ public class AccountHeadersInjector extends PipedHttpHandler {
 
             StringBuffer rolesBS = new StringBuffer();
 
-            if (a instanceof RolesAccount
-                    && ((RolesAccount) a).getRoles() != null) {
+            if (a instanceof BaseAccount
+                    && ((BaseAccount) a).getRoles() != null) {
 
-                ((RolesAccount) a).getRoles().stream()
+                ((BaseAccount) a).getRoles().stream()
                         .forEachOrdered(role -> rolesBS.append(role.concat(",")));
 
                 if (rolesBS.length() > 1) {

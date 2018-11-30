@@ -38,7 +38,7 @@ public class AuthTokenIdentityManager implements PluggableIdentityManager {
     private static final long TTL = Bootstrapper.getConfiguration().getAuthTokenTtl();
     private static final boolean ENABLED = Bootstrapper.getConfiguration().isAuthTokenEnabled();
 
-    private final Cache<String, RolesAccount> cachedAccounts;
+    private final Cache<String, PwdCredentialAccount> cachedAccounts;
 
     /**
      *
@@ -63,7 +63,7 @@ public class AuthTokenIdentityManager implements PluggableIdentityManager {
             return null;
         }
 
-        final Optional<RolesAccount> _account = cachedAccounts.get(id);
+        final Optional<PwdCredentialAccount> _account = cachedAccounts.get(id);
 
         return _account != null && _account.isPresent() && verifyToken(_account.get(), credential) ? _account.get() : null;
     }
@@ -74,16 +74,17 @@ public class AuthTokenIdentityManager implements PluggableIdentityManager {
     }
 
     private boolean verifyToken(final Account account, final Credential credential) {
-        if (credential instanceof PasswordCredential && account instanceof RolesAccount) {
+        if (credential instanceof PasswordCredential && account instanceof PwdCredentialAccount) {
             char[] token = ((PasswordCredential) credential).getPassword();
-            char[] expectedToken = cachedAccounts.get(account.getPrincipal().getName()).get().getCredentials().getPassword();
+            char[] expectedToken = cachedAccounts.get(account.getPrincipal()
+                    .getName()).get().getCredentials().getPassword();
 
             return Arrays.equals(token, expectedToken);
         }
         return false;
     }
 
-    public Cache<String, RolesAccount> getCachedAccounts() {
+    public Cache<String, PwdCredentialAccount> getCachedAccounts() {
         return cachedAccounts;
     }
 }
