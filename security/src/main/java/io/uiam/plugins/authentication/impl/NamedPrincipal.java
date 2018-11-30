@@ -23,7 +23,7 @@ import java.security.Principal;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class SimplePrincipal implements Principal {
+public class NamedPrincipal implements Principal {
 
     private String name;
 
@@ -31,7 +31,7 @@ public class SimplePrincipal implements Principal {
      *
      * @param name
      */
-    public SimplePrincipal(String name) {
+    public NamedPrincipal(String name) {
         if (name == null) {
             throw new IllegalArgumentException("argument name cannot be null");
         }

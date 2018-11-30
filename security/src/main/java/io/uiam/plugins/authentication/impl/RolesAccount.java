@@ -28,7 +28,7 @@ import java.util.Set;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class SimpleAccount implements Account {
+public class RolesAccount implements Account {
     
     private final static long serialVersionUID = 5146445L;
 
@@ -42,7 +42,7 @@ public class SimpleAccount implements Account {
      * @param password
      * @param roles
      */
-    public SimpleAccount(String name, char[] password, Set<String> roles) {
+    public RolesAccount(String name, char[] password, Set<String> roles) {
         if (name == null) {
             throw new IllegalArgumentException("argument principal cannot be null");
         }
@@ -55,7 +55,7 @@ public class SimpleAccount implements Account {
             roles = Sets.newHashSet();
         }
 
-        this.principal = new SimplePrincipal(name);
+        this.principal = new NamedPrincipal(name);
         this.credential = new PasswordCredential(password);
         this.roles = roles;
     }

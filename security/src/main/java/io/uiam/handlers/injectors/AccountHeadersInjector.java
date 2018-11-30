@@ -20,7 +20,7 @@ package io.uiam.handlers.injectors;
 import io.undertow.server.HttpServerExchange;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
-import io.uiam.plugins.authentication.impl.SimpleAccount;
+import io.uiam.plugins.authentication.impl.RolesAccount;
 import io.undertow.security.idm.Account;
 import io.undertow.util.HttpString;
 
@@ -72,10 +72,10 @@ public class AccountHeadersInjector extends PipedHttpHandler {
 
             StringBuffer rolesBS = new StringBuffer();
 
-            if (a instanceof SimpleAccount
-                    && ((SimpleAccount) a).getRoles() != null) {
+            if (a instanceof RolesAccount
+                    && ((RolesAccount) a).getRoles() != null) {
 
-                ((SimpleAccount) a).getRoles().stream()
+                ((RolesAccount) a).getRoles().stream()
                         .forEachOrdered(role -> rolesBS.append(role.concat(",")));
 
                 if (rolesBS.length() > 1) {

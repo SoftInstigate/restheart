@@ -33,7 +33,7 @@ import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_VALID_HEADER;
 import io.uiam.plugins.IDMCacheSingleton;
 import io.uiam.plugins.PluginConfigurationException;
 import io.uiam.plugins.authentication.impl.AuthTokenIdentityManager;
-import io.uiam.plugins.authentication.impl.SimpleAccount;
+import io.uiam.plugins.authentication.impl.RolesAccount;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,12 +93,12 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
                 .getInstance()
                 .getIdentityManager(AuthTokenIdentityManager.NAME);
 
-        Optional<SimpleAccount> cachedTokenAccount
+        Optional<RolesAccount> cachedTokenAccount
                 = idm.getCachedAccounts().get(id);
 
         if (cachedTokenAccount == null) {
             char[] token = nextToken();
-            SimpleAccount newCachedTokenAccount = new SimpleAccount(
+            RolesAccount newCachedTokenAccount = new RolesAccount(
                     id,
                     token,
                     authenticatedAccount.getRoles());

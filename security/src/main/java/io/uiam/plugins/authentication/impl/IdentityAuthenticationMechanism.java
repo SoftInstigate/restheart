@@ -55,7 +55,7 @@ public class IdentityAuthenticationMechanism
     public AuthenticationMechanism.AuthenticationMechanismOutcome authenticate(
             HttpServerExchange exchange,
             SecurityContext securityContext) {
-        Account sa = new SimpleAccount(username, new char[0],
+        Account sa = new RolesAccount(username, new char[0],
                 Sets.newLinkedHashSet(roles));
 
         securityContext.authenticationComplete(sa,

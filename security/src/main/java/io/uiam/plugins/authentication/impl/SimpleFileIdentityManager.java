@@ -40,12 +40,16 @@ import java.util.function.Consumer;
 
 /**
  *
+ * Identity Manager with RolesAccounts defined in a yml configuration file
+ *
+ * supports PasswordCredentials and DigestCredentials
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SimpleFileIdentityManager
         extends AbstractConfiFileConsumer implements PluggableIdentityManager {
 
-    private final Map<String, SimpleAccount> accounts = new HashMap<>();
+    private final Map<String, RolesAccount> accounts = new HashMap<>();
 
     /**
      *
@@ -89,7 +93,7 @@ public class SimpleFileIdentityManager
 
             Set<String> roles = new HashSet<>((Collection) _roles);
 
-            SimpleAccount a = new SimpleAccount(userid, password, roles);
+            RolesAccount a = new RolesAccount(userid, password, roles);
 
             this.accounts.put(userid, a);
         };
@@ -113,7 +117,7 @@ public class SimpleFileIdentityManager
     }
 
     private boolean verifyCredential(Account account, Credential credential) {
-        if (account instanceof SimpleAccount) {
+        if (account instanceof RolesAccount) {
             if (credential instanceof PasswordCredential) {
                 return verifyPasswordCredential(account, credential);
             } else if (credential instanceof DigestCredential) {
