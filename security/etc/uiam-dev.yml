@@ -2,12 +2,12 @@
 ---
 #### Listeners
 
-# Listeners allow to specify the protocol, ip, port and to use.
-# The supported protocols are: http, https and ajp. You can setup a listener per protocol (up to 3).
+ # Listeners allow to specify the protocol, ip, port and to use.
+ # The supported protocols are: http, https and ajp. 
+ # You can setup a listener per protocol (up to 3).
 
-# WARNING: uIAM uses basic authentication; usernames and passwords are sent over the net on each request.
-# Using the http listener is not secure: users credentials can be sniffed by a man-in-the-middle attack.
-# Use the http listener only on trusted environments.
+ # WARNING: Using the http listener is not secure with basic authentication:
+ # credentials can be sniffed by a man-in-the-middle attack.
 
 https-listener: true
 https-host: 0.0.0.0
@@ -23,45 +23,36 @@ ajp-port: 8009
 
 #### Instance name
 
-# The name of this uIAM instance. displayed in log, also allows to implement instance specific custom code
-# For instance, an email notifier hook can send emails to a test email address in development environments
+ # The name of this uIAM instance. 
+ # Displayed in log, also allows to implement instance specific custom code
 
 instance-name: develop
 
-# Use proxies to proxy external resources
-# internal-uri is an absolute path (eg. /uiam)
-# external-url is a resource URL (eg. https://uiam.io)
-# TODO allow adding more hosts for load balancing
+### Proxied resources
+
+ # internal-uri is an absolute path (eg. /uiam)
+ # external-url is a resource URL (eg. https://uiam.io)
+ # TODO allow adding more hosts for load balancing
 proxies:
     - internal-uri: /pdump
       external-url: http://127.0.0.1:8080/dump
     - internal-uri: /restheart
       external-url: https://restheart.org
 
-#### use Ansi console for logging. Default to 'true' if parameter missing, for backward compatibility
-
-ansi-console: true
-
-#### Allow unescaped characters in URL
-# Starting with Undertow 1.4.23 URLs validation became much stricter.
-# However, this is breaking existing clients. Now you can decide which behaviour you prefer
-
-allow-unescaped-characters-in-url: true
-
 #### SSL Configuration
 
-# Configure the keystore to enable the https listener.
+ # Configure the keystore to enable the https listener.
 
-# uIAM comes with a self-signed certificate that makes straightforward enabling https.
-# Specify use-embedded-keystore: true to use it (this is the default setting).
-# Using the self-signed certificate leads to issues with some clients;
-# for instance, with curl you need to specify the "--insecure" option or you'll get an error message.
+ # uIAM comes with a self-signed certificate that makes straightforward enabling https.
+ # Specify use-embedded-keystore: true to use it (this is the default setting).
+ # Using the self-signed certificate leads to issues with some clients;
+ # for instance, with curl you need to specify the "--insecure" option or you'll get an error message.
 
 use-embedded-keystore: true
 
-# To use your own certificate you need to import it (and eventually the CA certificates chain) into a java keystore
-# and specify use-embedded-keystore: false and the keystore-file,keystore-password and certpassword configuration properties.
-# Refer to the java keystore documentation for that.
+ # To use your own certificate you need to import it (and eventually the CA certificates chain) into a java keystore
+ # and specify use-embedded-keystore: false and the keystore-file,keystore-password and certpassword configuration properties.
+ # Refer to the java keystore documentation for that.
 
 #keystore-file: /path/to/keystore/file
 #keystore-password: password
@@ -69,16 +60,16 @@ use-embedded-keystore: true
 
 ### Initializer
 
-# A custom initializer implmenting the io.uiam.init.Initializer interface
-# Can be used to inizialize data or add global transformers, checkers or security predicates
+ # A custom initializer implmenting the io.uiam.init.Initializer interface
+ # Can be used to inizialize data or add global transformers, checkers or security predicates
 
 #initializer-class: io.uiam.init.impl.TestInitializer
 
 ### Security
 
-# uIAM security is pluggable, you can provide you own 
-# implementations of Authentication Mechanisms, Identity Manager 
-# and Access Manager
+ # uIAM security is pluggable, you can provide you own 
+ # implementations of Authentication Mechanisms, Identity Manager 
+ # and Access Manager
 
 ## Authentication Mechanisms
 
@@ -87,7 +78,7 @@ use-embedded-keystore: true
  # successfully authenticates the incoming request or the list of mechanisms is
  # exhausted.
 
-## See README.md for the list of available Authentication Mechanisms
+ # See README.md for the list of available Authentication Mechanisms
 
 auth-mechanisms:
     - name: authTokenBasicAuthenticationMechanism
@@ -115,10 +106,9 @@ auth-mechanisms:
 
 ## Identity Manager
 
-## Provied IMs are:
-## - SimpleFileIdentityManager - an IDM that uses a file as userbase storage
-### conf-file paths are either absolute (starting with /)
-### or relative to the uiam.jar directory
+ # IDM verifies user credential and are used by Authentication Machanisms
+
+ # See README.md for the list of available Identity Managers
 
 idms:
     - name: simpleFileIdentityManager
@@ -130,33 +120,32 @@ idms:
 
 ## Access Manager
 
-## Provied AMs are:
-## - SimpleFileAccessManager  - an AM that uses a file as ACL storage
-### conf-file paths are either absolute (starting with /)
-### or relative to the uiam.jar directory
+ # The Access Manager is responsible of authorizing the authenticated request
+ 
+ # See README.md for the list of available Access Managers
 
 access-manager:
-    class: io.uiam.plugins.authorization.impl.SimpleFileAccessManager
+    class: io.uiam.plugins.authorization.impl.RequestPredicatesAccessManager
     conf-file: ../etc/security.yml
  
 # Authentication Token
 
-# Note: you need to pay attention to the authentitcation token in case of multi-node deployments (horizontal scalability).
-# In this case, you need to either disable it or use a load balancer with the sticky session option
-# or use a distributed auth token cache implementation (not provided in the current version).
+ # Required by the AuthTokenBasicAuthenticationMechanism
+ # Note: you need to pay attention to the authentitcation token in case of 
+ # multi-node deployments (horizontal scalability). yu need to either disable it or
+ # use a load balancer with the sticky session option or use a distributed 
+ # auth token cache implementation (not provided in the current version).
 
 auth-token-enabled: true
 auth-token-ttl: 15
 
-#### Services
+## Services
 
-# uIAM allows exposing custom services
-# The servuce class must extend the io.uiam.plugins.service.PluggableService
-# and can be bound to an URI via the service option
+ # uIAM allows exposing custom services
+ # The servuce class must extend the io.uiam.plugins.service.PluggableService
+ # and can be bound to an URI via the service option
 
-# Two built-in services are defined:
-# - PingService bound to /ping that implements a simple ping service
-# - GetRoleService bound to /roles that returns the user authentication status and eventually its roles
+ # See README.md for the list of available Services
 
 services:
     - class: io.uiam.plugins.service.impl.PingService
@@ -175,66 +164,51 @@ services:
 
 #### Logging
 
-# enable-log-console: true => log messages to the console (default value: true)
-# enable-log-file: true => log messages to a file (default value: true)
-# log-file-path: to specify the log file path (default value: uiam.log in system temporary directory)
-# log-level: to set the log level. Value can be OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. (default value is INFO)
-# requests-log-level: log the request-response. 0 => no log, 1 => light log, 2 => detailed dump
-# requests-log-trace-headers: add the HTTP headers you want to be put on the MDC for logback. Use with %X{header-name} in logback.xml.
-#                             Useful for tracing support in the logs. Leave empty to deactivate this feature.
-# metrics-gathering-level: metrics gathering for which level? OFF => no gathering, ROOT => gathering at root level,
-#                          DATABASE => at db level, COLLECTION => at collection level
-# WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
+ # enable-log-console: true => log messages to the console (default value: true)
+ # enable-log-file: true => log messages to a file (default value: true)
+ # log-file-path: to specify the log file path (default value: uiam.log in system temporary directory)
+ # log-level: to set the log level. Value can be OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. (default value is INFO)
+ # requests-log-level: log the request-response. 0 => no log, 1 => light log, 2 => detailed dump
+ # ansi-console: use Ansi console for logging. 
+ # WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
 
 enable-log-file: true
 log-file-path: /var/log/uiam.log
 enable-log-console: true
 log-level: DEBUG
 requests-log-level: 1
-requests-log-trace-headers:
+requests-log-trace-headers: ciap
+    
 
-#### Performace Settings
+ansi-console: true
 
-# In order to save bandwitdth uIAM can force requests to support the giz encoding (if not, requests will be rejected)
+#### Performance Options
+
+ # In order to save bandwitdth uIAM can force requests to support the giz encoding (if not, requests will be rejected)
 force-gzip-encoding: false
 
-# local-cache allows to cache the db and collection properties to drammatically improve performaces.
-# Without caching, a GET on a document would requires two additional queries to retrieve the db and the collection properties.
-# Pay attention to local caching only in case of multi-node deployments (horizontal scalability).
-# In this case a change in a db or collection properties would reflect on other nodes at worst after the TTL (cache entries time to live).
-# In most of the cases Dbs and collections properties only change at development time.
-
-local-cache-enabled: true
-# TTL in milliseconds; specify a value < 0 to never expire cached entries
-local-cache-ttl: 1000
-
-schema-cache-enabled: true
-# TTL in milliseconds; specify a value < 0 to never expire cached entries
-schema-cache-ttl: 60000
-
-# Limit for the maximum number of concurrent requests being served
+ # Limit for the maximum number of concurrent requests being served
 requests-limit: 1000
 
-# Time limit in milliseconds for processing queries on the server (without network latency). 0 means no time limit
-query-time-limit: 0
-
-# Time limit in milliseconds for processing aggregations on the server (without network latency). 0 means no time limit
-aggregation-time-limit: 0
-
-# Number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
+ # Number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
 io-threads: 2
 
-# Number of threads created for blocking tasks (such as ones involving db access). suggested value: core*16
+ # Number of threads created for blocking tasks (such as ones involving db access). suggested value: core*16
 worker-threads: 8
 
-# Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
+ # Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
 buffer-size: 16384
 buffers-per-region: 20
-# Should the buffer pool use direct buffers, this instructs the JVM to use native (if possible) I/O operations on the buffers
+ # Should the buffer pool use direct buffers, this instructs the JVM to use native (if possible) I/O operations on the buffers
 direct-buffers: true
 
 #### Connetction Options
-## see http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#common-listener-options
+
+ # Allow unescaped characters in URL
+
+allow-unescaped-characters-in-url: true
+
+ # see http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#common-listener-options
 
 connection-options:
     # The maximum size of a HTTP header block, in bytes. 
