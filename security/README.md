@@ -256,6 +256,10 @@ An example is BasicAuthenticationMechanism that handles the Basic Authentication
 
 A different example would be an Authentication Mechanism for the JWT (JSON Web Token) scheme. With JWT the user properties are defined in a digitally signed JSON object passed via a request header. This Authentication Mechanism can  just verify the token and built the Account without requiring an Identity Manager.
 
+ &#181;IAM allows defining several mechanism. As an in-bound request is received the `authenticate()` method is called on each mechanism in turn until one of the following occurs: 
+ - A mechanism successfully authenticates the incoming request &#8594; the request proceeds to Authorization phase;
+ - The list of mechanisms is exhausted &#8594; the request fails with code `401 Unauthorized`.
+
 The **Identity Manager** verifies the credentials extracted from the request by Authentication Mechanism. For instance, the BasicAuthenticationMechanism extracts the credentials from the request in the form of id and password. The IDM can check these credentials against a database or and LDAP server. Note that some Authentication Mechanisms don't actually rely on the IDM to build the Account.
 
 The **Access Manager** is responsible of checking if the user can actually perform the request against an Access Control List. For instance a simple AM might check if the request is allowed checking it against a set of whitelisted URIs.
@@ -339,15 +343,15 @@ auth-token-ttl: 15
 
 > work in progress
 
+## Develop an Authentication Manager
+
+> work in progress
+
 ## Develop an Identity Manager
 
 > work in progress
 
 ## Develop an Access Manager
-
-> work in progress
-
-## Develop an Authentication Manager
 
 > work in progress
 
