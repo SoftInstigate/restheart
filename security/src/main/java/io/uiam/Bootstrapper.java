@@ -813,10 +813,7 @@ public class Bootstrapper {
                         PluggableService srv = (PluggableService) o;
 
                         PipedHttpHandler handler
-                                = new RequestContextInjector(
-                                        "/",
-                                        "/",
-                                        srv);
+                                = new RequestContextInjector(srv);
 
                         if (secured) {
                             paths.addPrefixPath(uri,

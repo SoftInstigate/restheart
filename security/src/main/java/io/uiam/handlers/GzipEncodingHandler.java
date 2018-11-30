@@ -62,7 +62,7 @@ public class GzipEncodingHandler extends EncodingHandler {
                 }
             }
 
-            RequestContext errorContext = new RequestContext(exchange, "/", "_error");
+            RequestContext errorContext = new RequestContext(exchange);
 
             ResponseHelper.endExchangeWithMessage(
                     exchange,

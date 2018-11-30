@@ -84,7 +84,7 @@ public class GetRoleService extends PluggableService {
             if ((exchange.getSecurityContext() == null
                     || exchange.getSecurityContext().getAuthenticatedAccount() == null
                     || exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null)
-                    || !(context.getMappedRequestUri().equals(URLUtils.removeTrailingSlashes(url)
+                    || !(exchange.getRequestURI().equals(URLUtils.removeTrailingSlashes(url)
                             + "/"
                             + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName()))) {
                 {

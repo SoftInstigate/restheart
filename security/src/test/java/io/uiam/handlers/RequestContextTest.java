@@ -17,8 +17,6 @@
  */
 package io.uiam.handlers;
 
-import io.uiam.handlers.RequestContext;
-import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -30,8 +28,6 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,91 +75,5 @@ public class RequestContextTest {
 
         _method = new HttpString("PATCH");
         assertEquals(RequestContext.METHOD.PATCH, RequestContext.selectRequestMethod(_method));
-    }
-
-    @Test
-    public void testGetMappedRequestUri() {
-        HttpServerExchange ex = mock(HttpServerExchange.class);
-        when(ex.getRequestPath()).thenReturn("/");
-        when(ex.getRequestMethod()).thenReturn(HttpString.EMPTY);
-
-        String whatUri = "/db/mycollection";
-        String whereUri = "/";
-
-        RequestContext context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/mycollection", context.getUnmappedRequestUri());
-
-        whatUri = "*";
-        whereUri = "/";
-
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/", context.getUnmappedRequestUri());
-
-        whatUri = "*";
-        whereUri = "/data";
-
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/", context.getUnmappedRequestUri());
-
-        whatUri = "/data";
-        whereUri = "/";
-
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/data", context.getUnmappedRequestUri());
-
-        whatUri = "/db/coll";
-        whereUri = "/";
-
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/coll", context.getUnmappedRequestUri());
-
-        whatUri = "/db/coll/doc";
-        whereUri = "/";
-
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/coll/doc", context.getUnmappedRequestUri());
-
-        whatUri = "/db/coll/";
-        whereUri = "/";
-
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/coll", context.getUnmappedRequestUri());
-
-        whatUri = "/db/coll////";
-        whereUri = "/";
-
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/coll", context.getUnmappedRequestUri());
-    }
-
-    @Test
-    public void testGetMappedRequestUri2() {
-        HttpServerExchange ex = mock(HttpServerExchange.class);
-        when(ex.getRequestPath()).thenReturn("/x");
-        when(ex.getRequestMethod()).thenReturn(HttpString.EMPTY);
-
-        String whatUri = "/db/mycollection";
-        String whereUri = "/";
-
-        RequestContext context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/mycollection/x", context.getUnmappedRequestUri());
-
-        whatUri = "*";
-        whereUri = "/";
-
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/x", context.getUnmappedRequestUri());
-
-        whatUri = "db";
-        whereUri = "/";
-
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/x", context.getUnmappedRequestUri());
-
-        whatUri = "db/coll";
-        whereUri = "/";
-
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/coll/x", context.getUnmappedRequestUri());
     }
 }

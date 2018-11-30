@@ -21,7 +21,6 @@ import io.undertow.server.HttpServerExchange;
 import java.util.logging.Logger;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
-import io.uiam.utils.URLUtils;
 
 /**
  *
@@ -31,35 +30,12 @@ public class RequestContextInjector extends PipedHttpHandler {
 
     private static final Logger LOG = Logger.getLogger(RequestContextInjector.class.getName());
 
-    private final String uri;
-    private final String resourceUrl;
-
     /**
      *
-     * @param uri
-     * @param resourceUrl
      * @param next
      */
-    public RequestContextInjector(String uri, String resourceUrl, PipedHttpHandler next) {
+    public RequestContextInjector(PipedHttpHandler next) {
         super(next);
-
-        if (uri == null) {
-            throw new IllegalArgumentException("URI cannot be null. check your resource-mounts configuration option.");
-        }
-
-        if (!uri.startsWith("/")) {
-            throw new IllegalArgumentException("URI must start with \"/\". check your resource-mounts configuration option.");
-        }
-
-        if (resourceUrl == null ||
-                (!resourceUrl.startsWith("http://") && 
-                !resourceUrl.startsWith("https://") &&
-                !resourceUrl.startsWith("/"))) {
-            throw new IllegalArgumentException("URL must start with \"/\", \"http://\" or \"https://\". check your resource-mounts configuration option.");
-        }
-
-        this.uri = URLUtils.removeTrailingSlashes(uri);
-        this.resourceUrl = resourceUrl;
     }
 
     /**
@@ -70,7 +46,7 @@ public class RequestContextInjector extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        RequestContext rcontext = new RequestContext(exchange, uri, resourceUrl);
+        RequestContext rcontext = new RequestContext(exchange);
 
         if (getNext() != null) {
             next(exchange, rcontext);
@@ -79,6 +55,6 @@ public class RequestContextInjector extends PipedHttpHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        handleRequest(exchange, new RequestContext(exchange, uri, resourceUrl));
+        handleRequest(exchange, new RequestContext(exchange));
     }
 }
