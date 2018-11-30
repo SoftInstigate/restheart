@@ -20,6 +20,7 @@ package io.uiam.plugins.authentication.impl;
 import io.uiam.plugins.IDMCacheSingleton;
 import io.uiam.plugins.PluginConfigurationException;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
+import static io.uiam.plugins.authentication.PluggableAuthenticationMechanism.argValue;
 import static io.undertow.UndertowMessages.MESSAGES;
 import io.undertow.security.api.NonceManager;
 import io.undertow.security.api.SecurityContext;
@@ -70,52 +71,14 @@ public class DigestAuthenticationMechanism
     
     private static final Logger LOGGER = LoggerFactory.getLogger(DigestAuthenticationMechanism.class);
 
-    public DigestAuthenticationMechanism(String mechanismName,
+    public DigestAuthenticationMechanism(final String mechanismName,
             Map<String, Object> args) throws PluginConfigurationException {
-        this(realmName(args),
-                domain(args),
+        this(argValue(args, "realm"),
+                argValue(args, "domain"),
                 mechanismName,
                 IDMCacheSingleton
                         .getInstance()
-                        .getIdentityManager(identityManagerName(args)));
-    }
-
-    private static String realmName(Map<String, Object> args)
-            throws PluginConfigurationException {
-        if (args == null
-                || !args.containsKey("realm")
-                || !(args.get("realm") instanceof String)) {
-            throw new PluginConfigurationException(
-                    "DigestAuthenticationMechanism"
-                    + " requires string argument 'realm'");
-        } else {
-            return (String) args.get("realm");
-        }
-    }
-
-    private static String domain(Map<String, Object> args)
-            throws PluginConfigurationException {
-        if (args == null
-                || !args.containsKey("domain")
-                || !(args.get("domain") instanceof String)) {
-            throw new PluginConfigurationException(
-                    "DigestAuthenticationMechanism"
-                    + " requires string argument 'domain'");
-        } else {
-            return (String) args.get("domain");
-        }
-    }
-
-    private static String identityManagerName(Map<String, Object> args)
-            throws PluginConfigurationException {
-        if (args == null
-                || !args.containsKey("idm")
-                || !(args.get("idm") instanceof String)) {
-            throw new PluginConfigurationException(
-                    "DigestAuthenticationMechanism requires string argument 'idm'");
-        } else {
-            return (String) args.get("idm");
-        }
+                        .getIdentityManager(argValue(args,"idm")));
     }
 
     @Override
@@ -130,7 +93,6 @@ public class DigestAuthenticationMechanism
         }
     }
 
-    private static final String DEFAULT_NAME = "DIGEST";
     private static final String DIGEST_PREFIX = DIGEST + " ";
     private static final int PREFIX_LENGTH = DIGEST_PREFIX.length();
     private static final String OPAQUE_VALUE = "00000000000000000000000000000000";
@@ -168,9 +130,11 @@ public class DigestAuthenticationMechanism
     // Maybe even support registration of a session so it can be invalidated?
     // 2013-05-29 - Session keys will be cached, where a cached key is used the IdentityManager is still given the
     //              opportunity to check the Account is still valid.
-    public DigestAuthenticationMechanism(final List<DigestAlgorithm> supportedAlgorithms, final List<DigestQop> supportedQops,
+    public DigestAuthenticationMechanism(
+            final String mechanismName,
+            final List<DigestAlgorithm> supportedAlgorithms, final List<DigestQop> supportedQops,
             final String realmName, final String domain, final NonceManager nonceManager) {
-        this(supportedAlgorithms, supportedQops, realmName, domain, nonceManager, DEFAULT_NAME);
+        this(supportedAlgorithms, supportedQops, realmName, domain, nonceManager, mechanismName);
     }
 
     public DigestAuthenticationMechanism(final List<DigestAlgorithm> supportedAlgorithms, final List<DigestQop> supportedQops,
@@ -206,7 +170,7 @@ public class DigestAuthenticationMechanism
     }
 
     public DigestAuthenticationMechanism(final String realmName, final String domain, final String mechanismName, final IdentityManager identityManager) {
-        this(Collections.singletonList(DigestAlgorithm.MD5), Collections.singletonList(DigestQop.AUTH), realmName, domain, new SimpleNonceManager(), DEFAULT_NAME, identityManager);
+        this(Collections.singletonList(DigestAlgorithm.MD5), Collections.singletonList(DigestQop.AUTH), realmName, domain, new SimpleNonceManager(), mechanismName, identityManager);
     }
 
     @SuppressWarnings("deprecation")
@@ -365,7 +329,7 @@ public class DigestAuthenticationMechanism
         if (account == null) {
             // Authentication has failed, this could either be caused by the user not-existing or it
             // could be caused due to an invalid hash.
-            securityContext.authenticationFailed(MESSAGES.authenticationFailed(userName), mechanismName);
+            securityContext.authenticationFailed(MESSAGES.authenticationFailed(userName), getMechanismName());
             return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
         }
 
@@ -383,7 +347,7 @@ public class DigestAuthenticationMechanism
 
         // We have authenticated the remote user.
         sendAuthenticationInfoHeader(exchange);
-        securityContext.authenticationComplete(account, mechanismName, false);
+        securityContext.authenticationComplete(account, getMechanismName(), false);
         return AuthenticationMechanismOutcome.AUTHENTICATED;
 
         // Step 4 - Set up any QOP related requirements.
@@ -693,5 +657,12 @@ public class DigestAuthenticationMechanism
 
             return response;
         }
+    }
+
+    /**
+     * @return the mechanismName
+     */
+    public String getMechanismName() {
+        return mechanismName;
     }
 }

@@ -17,13 +17,16 @@
  */
 package io.uiam.plugins.authentication.impl;
 
+import com.google.common.collect.Sets;
+import io.uiam.plugins.PluginConfigurationException;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
+import static io.uiam.plugins.authentication.PluggableAuthenticationMechanism.argValue;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
-import io.undertow.security.idm.IdentityManager;
-import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
+import java.util.List;
+import java.util.Map;
 
 /**
  * a simple IdentityAuthenticationMechanism to demonstrate how to plug a custom
@@ -34,37 +37,43 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class IdentityAuthenticationMechanism implements PluggableAuthenticationMechanism {
-    private final IdentityManager idm;
+public class IdentityAuthenticationMechanism
+        implements PluggableAuthenticationMechanism {
+    private final String mechanismName;
     private final String username;
-    private final String pwd;
+    private final List<String> roles;
 
-    public IdentityAuthenticationMechanism(IdentityManager idm, String username, String pwd) {
-        this.idm = idm;
-        this.username = username;
-        this.pwd = pwd;
+    public IdentityAuthenticationMechanism(String mechanismName,
+            Map<String, Object> args) throws PluginConfigurationException {
+        this.mechanismName = mechanismName;
+        this.username = argValue(args, "username");
+        this.roles = argValue(args, "roles");
+
     }
 
     @Override
-    public AuthenticationMechanism.AuthenticationMechanismOutcome authenticate(HttpServerExchange hse, SecurityContext sc) {
-        // verify the credentials against the configured IdentityManager
-        Account sa = idm.verify(username, new PasswordCredential(pwd.toCharArray()));
+    public AuthenticationMechanism.AuthenticationMechanismOutcome authenticate(
+            HttpServerExchange exchange,
+            SecurityContext securityContext) {
+        Account sa = new SimpleAccount(username, new char[0],
+                Sets.newLinkedHashSet(roles));
 
-        if (sa != null) {
-            sc.authenticationComplete(sa,
-                    "IdentityAuthenticationManager", false);
-            return AuthenticationMechanism.AuthenticationMechanismOutcome.AUTHENTICATED;
-        } else {
-            // by returning NOT_ATTEMPTED, in case the provided credentials
-            // don't match any user of the IdentityManager, the authentication
-            // will fallback to the default authentication manager (BasicAuthenticationManager)
-            // to make it failing, return NOT_AUTHENTICATED
-            return AuthenticationMechanism.AuthenticationMechanismOutcome.NOT_ATTEMPTED;
-        }
+        securityContext.authenticationComplete(sa,
+                "IdentityAuthenticationManager", true);
+        return AuthenticationMechanism.AuthenticationMechanismOutcome.AUTHENTICATED;
     }
 
     @Override
-    public AuthenticationMechanism.ChallengeResult sendChallenge(HttpServerExchange hse, SecurityContext sc) {
+    public AuthenticationMechanism.ChallengeResult sendChallenge(
+            HttpServerExchange exchange,
+            SecurityContext securityContext) {
         return new AuthenticationMechanism.ChallengeResult(true, 200);
+    }
+
+    /**
+     * @return the mechanismName
+     */
+    public String getMechanismName() {
+        return mechanismName;
     }
 }

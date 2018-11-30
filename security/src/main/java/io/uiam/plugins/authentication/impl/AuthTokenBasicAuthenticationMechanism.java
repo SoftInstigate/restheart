@@ -20,6 +20,7 @@ package io.uiam.plugins.authentication.impl;
 import io.uiam.plugins.IDMCacheSingleton;
 import io.uiam.plugins.PluginConfigurationException;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
+import static io.uiam.plugins.authentication.PluggableAuthenticationMechanism.argValue;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
@@ -57,9 +58,9 @@ public class AuthTokenBasicAuthenticationMechanism
     private static final String BASIC_PREFIX = BASIC + " ";
     private static final int PREFIX_LENGTH = BASIC_PREFIX.length();
     private static final String COLON = ":";
-    
+
     private final String mechanismName;
-    
+
     private IdentityManager identityManager = null;
 
     private static void clear(final char[] array) {
@@ -67,40 +68,32 @@ public class AuthTokenBasicAuthenticationMechanism
             array[i] = 0x00;
         }
     }
-    
+
     /**
      *
      * @param realmName
      */
-    public AuthTokenBasicAuthenticationMechanism(String mechanismName, Map args)
+    public AuthTokenBasicAuthenticationMechanism(final String mechanismName,
+            final Map<String, Object> args)
             throws PluginConfigurationException {
-        super(realmName(args),
+        super(
+                argValue(args, "realm"),
                 mechanismName,
-                true, 
+                true,
                 IDMCacheSingleton
                         .getInstance()
-                        .getIdentityManager(identityManagerName(args)));
-        
+                        .getIdentityManager(AuthTokenIdentityManager.NAME));
+
         this.mechanismName = mechanismName;
         this.identityManager = IDMCacheSingleton
-                        .getInstance()
-                        .getIdentityManager(identityManagerName(args));
-    }
-
-    private static String realmName(Map<String, Object> args) throws PluginConfigurationException {
-        if (args == null || !args.containsKey("realm") || !(args.get("realm") instanceof String)) {
-            throw new PluginConfigurationException("AuthTokenBasicAuthenticationMechanism requires string argument 'realm'");
-        } else {
-            return (String) args.get("realm");
-        }
-    }
-
-    private static String identityManagerName(Map<String, Object> args) throws PluginConfigurationException {
-        return AuthTokenIdentityManager.NAME;
+                .getInstance()
+                .getIdentityManager(AuthTokenIdentityManager.NAME);
     }
 
     @Override
-    public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange, SecurityContext securityContext) {
+    public AuthenticationMechanismOutcome authenticate(
+            final HttpServerExchange exchange,
+            final SecurityContext securityContext) {
 
         List<String> authHeaders = exchange.getRequestHeaders().get(AUTHORIZATION);
         if (authHeaders != null) {
@@ -124,7 +117,7 @@ public class AuthTokenBasicAuthenticationMechanism
                             // this is where the token cache comes into play
                             Account account = identityManager.verify(userName, credential);
                             if (account != null) {
-                                securityContext.authenticationComplete(account, mechanismName, false);
+                                securityContext.authenticationComplete(account, getMechanismName(), false);
                                 result = AuthenticationMechanismOutcome.AUTHENTICATED;
                             } else {
                                 result = AuthenticationMechanismOutcome.NOT_ATTEMPTED;
@@ -144,7 +137,8 @@ public class AuthTokenBasicAuthenticationMechanism
     }
 
     @Override
-    public ChallengeResult sendChallenge(HttpServerExchange exchange, SecurityContext securityContext) {
+    public ChallengeResult sendChallenge(final HttpServerExchange exchange,
+            final SecurityContext securityContext) {
         String authHeader = exchange.getRequestHeaders().getFirst(AUTHORIZATION);
 
         if (authHeader == null) {
@@ -152,5 +146,12 @@ public class AuthTokenBasicAuthenticationMechanism
         } else {
             return new ChallengeResult(true, UNAUTHORIZED);
         }
+    }
+
+    /**
+     * @return the mechanismName
+     */
+    public String getMechanismName() {
+        return mechanismName;
     }
 }

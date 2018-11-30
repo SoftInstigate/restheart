@@ -39,7 +39,7 @@ public class AuthenticationMechanismsHandler extends PipedHttpHandler {
 
     private final List<PluggableAuthenticationMechanism> authenticationMechanisms;
 
-    public AuthenticationMechanismsHandler(final PipedHttpHandler next, 
+    public AuthenticationMechanismsHandler(final PipedHttpHandler next,
             final List<PluggableAuthenticationMechanism> authenticationMechanisms) {
         super(next);
         this.authenticationMechanisms = authenticationMechanisms;
@@ -56,7 +56,8 @@ public class AuthenticationMechanismsHandler extends PipedHttpHandler {
 
         if (sc != null) {
             authenticationMechanisms.forEach((mechanism) -> {
-                sc.addAuthenticationMechanism(mechanism);
+                sc.addAuthenticationMechanism(new AuthenticationMechanism(
+                        mechanism));
             });
         }
 

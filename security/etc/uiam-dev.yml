@@ -80,40 +80,38 @@ use-embedded-keystore: true
 # implementations of Authentication Mechanisms, Identity Manager 
 # and Access Manager
 
-# Identity Authentication Manager 
-# All requests are bound to the specified user
-
 ## Authentication Mechanisms
 
-## Provied AMs are:
-## - BasicAuthenticationMechanism - basic authentication
-## - AuthTokenBasicAuthenticationMechanism - uses the auth token to authenticate, 
-###   requires auth-token: true
-###   must be declared before the BasicAuthenticationMechanism that authenticates the client to generate the auth token 
-###   the IDM used by AuthTokenBasicAuthenticationMechanism must be named 'authTokenIdentityManager'
-## - IdentityAuthenticationMechanism - all requests are bound to the specified user
+ # As an in-bound request is received the authenticate method is called on each
+ # mechanism in turn until one of the following occurs: A mechanism
+ # successfully authenticates the incoming request or the list of mechanisms is
+ # exhausted.
+
+## See README.md for the list of available Authentication Mechanisms
 
 auth-mechanisms:
     - name: authTokenBasicAuthenticationMechanism
       class: io.uiam.plugins.authentication.impl.AuthTokenBasicAuthenticationMechanism
       args: 
         realm: uIAM Realm
+    - name: basicAuthenticationMechanism
+      class: io.uiam.plugins.authentication.impl.BasicAuthenticationMechanism
+      args:
+        realm: uIAM Realm
+        idm: simpleFileIdentityManager
     - name: digestAuthenticationMechanism
       class: io.uiam.plugins.authentication.impl.DigestAuthenticationMechanism
       args: 
         realm: uIAM Realm
         domain: localhost
         idm: simpleFileIdentityManager
-    - name: basicAuthenticationMechanism
-      class: io.uiam.plugins.authentication.impl.BasicAuthenticationMechanism
-      args:
-        realm: uIAM Realm
-        idm: simpleFileIdentityManager
 #    - name: identityAuthenticationMechanism
 #      class: io.uiam.plugins.authentication.impl.IdentityAuthenticationMechanism
 #      args:
-#        - username: a
-#          pwd: a
+#        username: admin
+#        roles:
+#            - admin
+#            - user
 
 ## Identity Manager
 

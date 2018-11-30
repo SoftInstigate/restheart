@@ -49,7 +49,7 @@ public class AuthTokenIdentityManager implements PluggableIdentityManager {
     }
 
     @Override
-    public Account verify(Account account) {
+    public Account verify(final Account account) {
         if (!ENABLED) {
             return null;
         }
@@ -58,7 +58,7 @@ public class AuthTokenIdentityManager implements PluggableIdentityManager {
     }
 
     @Override
-    public Account verify(String id, Credential credential) {
+    public Account verify(final String id, final Credential credential) {
         if (!ENABLED) {
             return null;
         }
@@ -69,11 +69,11 @@ public class AuthTokenIdentityManager implements PluggableIdentityManager {
     }
 
     @Override
-    public Account verify(Credential credential) {
+    public Account verify(final Credential credential) {
         return null;
     }
 
-    private boolean verifyToken(Account account, Credential credential) {
+    private boolean verifyToken(final Account account, final Credential credential) {
         if (credential instanceof PasswordCredential && account instanceof SimpleAccount) {
             char[] token = ((PasswordCredential) credential).getPassword();
             char[] expectedToken = cachedAccounts.get(account.getPrincipal().getName()).get().getCredentials().getPassword();

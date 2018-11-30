@@ -20,6 +20,7 @@ package io.uiam.plugins.authentication.impl;
 import io.uiam.plugins.IDMCacheSingleton;
 import io.uiam.plugins.PluginConfigurationException;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
+import static io.uiam.plugins.authentication.PluggableAuthenticationMechanism.argValue;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 import static io.undertow.util.StatusCodes.UNAUTHORIZED;
@@ -33,47 +34,26 @@ public class BasicAuthenticationMechanism
         extends io.undertow.security.impl.BasicAuthenticationMechanism
         implements PluggableAuthenticationMechanism {
 
+    private final String mechanismName;
+    
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
 
-    public BasicAuthenticationMechanism(String mechanismName,
-            Map<String, Object> args) throws PluginConfigurationException {
-        super(realmName(args),
+    public BasicAuthenticationMechanism(final String mechanismName,
+            final Map<String, Object> args) throws PluginConfigurationException {
+        super(argValue(args,"realm"),
                 mechanismName,
                 false,
                 IDMCacheSingleton
                         .getInstance()
-                        .getIdentityManager(identityManagerName(args)));
-    }
-
-    private static String realmName(Map<String, Object> args)
-            throws PluginConfigurationException {
-        if (args == null
-                || !args.containsKey("realm")
-                || !(args.get("realm") instanceof String)) {
-            throw new PluginConfigurationException(
-                    "BasicAuthenticationMechanism"
-                    + " requires string argument 'realm'");
-        } else {
-            return (String) args.get("realm");
-        }
-    }
-
-    private static String identityManagerName(Map<String, Object> args)
-            throws PluginConfigurationException {
-        if (args == null
-                || !args.containsKey("idm")
-                || !(args.get("idm") instanceof String)) {
-            throw new PluginConfigurationException(
-                    "BasicAuthenticationMechanism requires string argument 'idm'");
-        } else {
-            return (String) args.get("idm");
-        }
+                        .getIdentityManager(argValue(args,"idm")));
+        
+        this.mechanismName = mechanismName;
     }
 
     @Override
-    public ChallengeResult sendChallenge(HttpServerExchange exchange,
-            SecurityContext securityContext) {
+    public ChallengeResult sendChallenge(final HttpServerExchange exchange,
+            final SecurityContext securityContext) {
         if (exchange.getRequestHeaders().contains(SILENT_HEADER_KEY)
                 || exchange.getQueryParameters()
                         .containsKey(SILENT_QUERY_PARAM_KEY)) {
@@ -84,8 +64,14 @@ public class BasicAuthenticationMechanism
     }
 
     @Override
-    public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange,
-            SecurityContext securityContext) {
+    public AuthenticationMechanismOutcome authenticate(
+            final HttpServerExchange exchange,
+            final SecurityContext securityContext) {
         return super.authenticate(exchange, securityContext);
+    }
+
+    @Override
+    public String getMechanismName() {
+        return mechanismName;
     }
 }

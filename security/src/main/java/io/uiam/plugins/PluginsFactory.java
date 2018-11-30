@@ -85,7 +85,9 @@ public class PluginsFactory {
                 | NoSuchMethodException
                 | SecurityException
                 | InvocationTargetException ex) {
-            throw new PluginConfigurationException("Error configuring Authentication Mechanism", ex);
+            throw new PluginConfigurationException("Error configuring Authentication Mechanism "
+                    + (_name != null ? _name : ""),
+                     ex);
         }
     }
 
