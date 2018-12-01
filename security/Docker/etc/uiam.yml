@@ -26,7 +26,7 @@ ajp-port: 8009
  # The name of this uIAM instance. 
  # Displayed in log, also allows to implement instance specific custom code
 
-instance-name: develop
+instance-name: uiam-docker
 
 ### Proxied resources
 
@@ -36,8 +36,8 @@ instance-name: develop
 proxies:
     - internal-uri: /pdump
       external-url: http://127.0.0.1:8080/dump
-    - internal-uri: /restheart
-      external-url: https://restheart.org
+    - internal-uri: /
+      external-url: http://restheart:8080
 
 #### SSL Configuration
 
@@ -114,7 +114,7 @@ idms:
     - name: simpleFileIdentityManager
       class: io.uiam.plugins.authentication.impl.SimpleFileIdentityManager
       args:
-        conf-file: ../etc/security.yml
+        conf-file: /opt/uiam/etc/security.yml
     - name: authTokenIdentityManager
       class: io.uiam.plugins.authentication.impl.AuthTokenIdentityManager
 
@@ -126,7 +126,7 @@ idms:
 
 access-manager:
     class: io.uiam.plugins.authorization.impl.RequestPredicatesAccessManager
-    conf-file: ../etc/security.yml
+    conf-file: /opt/uiam/etc//security.yml
  
 # Authentication Token
 
@@ -172,7 +172,7 @@ services:
  # ansi-console: use Ansi console for logging. 
  # WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
 
-enable-log-file: true
+enable-log-file: false
 log-file-path: /var/log/uiam.log
 enable-log-console: true
 log-level: DEBUG
