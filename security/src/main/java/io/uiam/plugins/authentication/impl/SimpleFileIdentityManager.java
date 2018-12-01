@@ -35,7 +35,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -91,7 +91,7 @@ public class SimpleFileIdentityManager
                 throw new IllegalArgumentException("wrong configuration file format. a roles entry is wrong. they all must be strings");
             }
 
-            SortedSet<String> roles = Sets.newTreeSet((Collection) _roles);
+            Set<String> roles = Sets.newLinkedHashSet((Collection) _roles);
 
             PwdCredentialAccount a = new PwdCredentialAccount(userid, password, roles);
 

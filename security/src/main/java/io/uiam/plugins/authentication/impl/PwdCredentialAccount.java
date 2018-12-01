@@ -18,7 +18,7 @@
 package io.uiam.plugins.authentication.impl;
 
 import io.undertow.security.idm.PasswordCredential;
-import java.util.SortedSet;
+import java.util.Set;
 
 /**
  * Account implementation that holds PasswordCredential
@@ -36,7 +36,7 @@ public class PwdCredentialAccount extends BaseAccount {
      */
     public PwdCredentialAccount(final String name,
             final char[] password,
-            final SortedSet<String> roles) {
+            final Set<String> roles) {
         super(name, roles);
 
         if (password == null) {

@@ -20,8 +20,8 @@ package io.uiam.plugins.authentication.impl;
 import com.google.common.collect.Sets;
 import io.undertow.security.idm.Account;
 import java.security.Principal;
-import java.util.Collections;
-import java.util.SortedSet;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * Base concrete Account implementation
@@ -30,7 +30,7 @@ import java.util.SortedSet;
  */
 public class BaseAccount implements Account {
     final private Principal principal;
-    final private SortedSet<String> roles;
+    final private LinkedHashSet<String> roles;
 
     /**
      *
@@ -38,15 +38,15 @@ public class BaseAccount implements Account {
      * @param roles
      */
     public BaseAccount(final String name, 
-            final SortedSet<String> roles) {
+            final Set<String> roles) {
         if (name == null) {
             throw new IllegalArgumentException("argument principal cannot be null");
         }
 
         if (roles == null || roles.isEmpty()) {
-            this.roles = Sets.newTreeSet();
+            this.roles = Sets.newLinkedHashSet();
         } else {
-            this.roles = roles;
+            this.roles = Sets.newLinkedHashSet(roles);
         }
 
         this.principal = new BasePrincipal(name);
@@ -62,7 +62,7 @@ public class BaseAccount implements Account {
     }
 
     @Override
-    public SortedSet<String> getRoles() {
-        return Collections.unmodifiableSortedSet(roles);
+    public Set<String> getRoles() {
+        return roles;
     }
 }
