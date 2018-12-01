@@ -721,14 +721,16 @@ public class Bootstrapper {
                 accessManager);
 
         // plug the auth tokens invalidation handler
-        paths.addPrefixPath("/_authtokens",
-                new RequestLoggerHandler(
-                        new CORSHandler(
-                                new XPoweredByInjector(
-                                        new SecurityHandler(
-                                                new AuthTokenHandler(),
-                                                authenticationMechanisms,
-                                                new FullAccessManager(true))))));
+        if (configuration.isAuthTokenEnabled()) {
+            paths.addPrefixPath("/_authtokens",
+                    new RequestLoggerHandler(
+                            new CORSHandler(
+                                    new XPoweredByInjector(
+                                            new SecurityHandler(
+                                                    new AuthTokenHandler(),
+                                                    authenticationMechanisms,
+                                                    new FullAccessManager(true))))));
+        }
 
         proxyResources(configuration,
                 paths,
@@ -753,8 +755,7 @@ public class Bootstrapper {
                                 new BlockingHandler(
                                         new GzipEncodingHandler(
                                                 new ErrorHandler(
-                                                        new HttpContinueAcceptingHandler(paths
-                                                        )
+                                                        new HttpContinueAcceptingHandler(paths)
                                                 ), configuration
                                                         .isForceGzipEncoding()
                                         )
@@ -909,7 +910,8 @@ public class Bootstrapper {
                 PipedHttpHandler wrappedProxyHandler
                         = new AccountHeadersInjector(
                                 new PipedWrappingHandler(
-                                        new XPoweredByInjector(), proxyHandler));
+                                        new XPoweredByInjector(),
+                                        proxyHandler));
 
                 paths.addPrefixPath(uri,
                         new RequestLoggerHandler(
