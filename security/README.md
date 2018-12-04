@@ -249,14 +249,14 @@ We can note that &#181;IAM:
 
 # Understanding &#181;IAM
 
-In &#181;IAM everything is a plugin including Authentication Mechanisms,  Identity Managers, Authentication Managers and Services.
+In &#181;IAM everything is a plugin including Authentication Mechanisms, Identity Managers, Authentication Managers and Services.
 
 ![uIAM explained](readme-assets/uiam-explained.png?raw=true "uIAM explained")
 
 Different **Authentication Mechanism** manage different authentication schemes. 
 An example is BasicAuthenticationMechanism that handles the Basic Authentication scheme. It extracts the credentials from a request header and passes them to the an Identity Manager for verification.
 
-A different example would be an Authentication Mechanism for the JWT (JSON Web Token) scheme. With JWT the user properties are defined in a digitally signed JSON object passed via a request header. This Authentication Mechanism can  just verify the token and built the Account without requiring an Identity Manager.
+A different example is the IdentityAuthenticationMechanism the binds the request to a configured identity. This Authentication Mechanism does not require an Identity Manage to build the account.
 
  &#181;IAM allows defining several mechanism. As an in-bound request is received the `authenticate()` method is called on each mechanism in turn until one of the following occurs: 
  - A mechanism successfully authenticates the incoming request &#8594; the request proceeds to Authorization phase;
@@ -264,9 +264,9 @@ A different example would be an Authentication Mechanism for the JWT (JSON Web T
 
 The **Identity Manager** verifies the credentials extracted from the request by Authentication Mechanism. For instance, the BasicAuthenticationMechanism extracts the credentials from the request in the form of id and password. The IDM can check these credentials against a database or and LDAP server. Note that some Authentication Mechanisms don't actually rely on the IDM to build the Account.
 
-The **Access Manager** is responsible of checking if the user can actually perform the request against an Access Control List. For instance a simple AM might check if the request is allowed checking it against a set of whitelisted URIs.
+The **Access Manager** is responsible of checking if the user can actually perform the request against an Access Control List. For instance the RequestPredicatesAccessManager checks if the request is allowed by looking at the role based permissions defined using the undertow predicate definition language.
 
-A **Service** is a quick way of implementing a Web Service. This allows &#181;IAM to expose additional custom logic.
+A **Service** is a quick way of implementing Web Services to expose additional custom logic.
 
 ## Available Plugin Implementations
 
@@ -309,7 +309,7 @@ auth-token-enabled: true
 auth-token-ttl: 15
 ```
 
-- **IdentityAuthenticationMechanism** just authenticates any request building an [BaseAccount](https://github.com/SoftInstigate/uiam/blob/master/src/main/java/io/uiam/plugins/authentication/impl/BaseAccount.java) with *username* and *roles* specified in the configuration. Useful for testing purposes.
+- **IdentityAuthenticationMechanism** just authenticates any request building an [BaseAccount](https://github.com/SoftInstigate/uiam/blob/master/src/main/java/io/uiam/plugins/authentication/impl/BaseAccount.java) with the *username* and *roles* specified in the configuration. Useful for testing purposes.
 
 ```yml
     - name: identityAuthenticationMechanism
