@@ -33,19 +33,19 @@ It acts as a reverse proxy for resources to be protected providing Authenticatio
 
 The following diagram shows a single instance of &#181;IAM placed on the network layer in front of the resources to be protected. It acts as a centralized security policy enforcer.
 
-![Alt text](readme-assets/uiam-on-network-layer.png?raw=true "uIAM on the network layer")
+![uIAM on the network layer](readme-assets/uiam-on-network-layer.png?raw=true "uIAM on the network layer")
 
 ## &#181;IAM within containers
 
 The following diagram shows &#181;IAM used as a sidecar proxy within each container pod. Each microservice is protected by an instance of &#181;IAM with its own security policy.
 
-![Alt text](readme-assets/uiam-within-containers.png?raw=true "uIAM within containers")
+![uIAM within containers](readme-assets/uiam-within-containers.png?raw=true "uIAM within containers")
 
 ## &#181;IAM embedded
 
 The following diagram shows &#181;IAM used to implement a simple microservice using service extensions.
 
-![Alt text](readme-assets/uiam-embedded.png?raw=true "uIAM embedded")
+![uIAM embedded](readme-assets/uiam-embedded.png?raw=true "uIAM embedded")
 
 # How it works
 
@@ -250,6 +250,8 @@ We can note that &#181;IAM:
 # Understanding &#181;IAM
 
 In &#181;IAM everything is a plugin including Authentication Mechanisms,  Identity Managers, Authentication Managers and Services.
+
+![uIAM explained](readme-assets/uiam-explained.png?raw=true "uIAM explained")
 
 Different **Authentication Mechanism** manage different authentication schemes. 
 An example is BasicAuthenticationMechanism that handles the Basic Authentication scheme. It extracts the credentials from a request header and passes them to the an Identity Manager for verification.
