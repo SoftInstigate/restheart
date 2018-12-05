@@ -645,7 +645,7 @@ public class Bootstrapper {
      * @return the PluggableAccessManager
      */
     private static PluggableAccessManager loadAccessManager() {
-        if (configuration.getAmClass() == null) {
+        if (configuration.getAccessManager() == null) {
             LOGGER.warn("***** No Access Manager specified. All requests are allowed.");
             if (configuration.getAuthMechanisms() != null
                     && configuration.getAuthMechanisms().size() > 1) {
@@ -655,10 +655,11 @@ public class Bootstrapper {
             }
         } else {
             try {
-                return PluginsFactory.getAccessManager(configuration.getAmClass(),
-                        configuration.getAmArgs());
+                return PluginsFactory.getAccessManager(
+                        configuration.getAccessManager());
             } catch (PluginConfigurationException ex) {
-                logErrorAndExit("Error configuring Access Manager implementation " + configuration.getAmClass(), ex, false, -3);
+                logErrorAndExit("Error configuring Access Manager implementation "
+                        + configuration.getAccessManager(), ex, false, -3);
                 return null;
             }
         }
@@ -787,74 +788,40 @@ public class Bootstrapper {
             final List<PluggableAuthenticationMechanism> authenticationMechanisms,
             final PluggableAccessManager accessManager) {
         if (!conf.getServices().isEmpty()) {
-            conf.getServices().stream().forEach((Map<String, Object> al) -> {
+            conf.getServices().stream().forEach((Map<String, Object> serviceConf) -> {
                 try {
-                    String clazz = (String) al.get(Configuration.CLASS_KEY);
-                    String uri = (String) al.get(Configuration.SERVICE_URI_KEY);
-                    boolean secured = (Boolean) al.get(Configuration.SERVICE_SECURED_KEY);
-                    Object args = al.get(Configuration.ARGS_KEY);
+                    PluggableService srv = PluginsFactory.getService(serviceConf);
 
-                    if (uri == null || !uri.startsWith("/")) {
-                        LOGGER.error("Cannot plug service {}. Parameter 'uri' must start with /", uri);
-                        return;
-                    }
+                    PipedHttpHandler handler
+                            = new RequestContextInjector(srv);
 
-                    if (args != null && !(args instanceof Map)) {
-                        LOGGER.error("Cannot plug service {}."
-                                + "args is not a map. actual class is ", uri, uri.getClass());
-                        return;
-
-                    }
-
-                    Object o = Class.forName(clazz)
-                            .getConstructor(PipedHttpHandler.class, Map.class)
-                            .newInstance(null, (Map) args);
-
-                    if (o instanceof PluggableService) {
-                        PluggableService srv = (PluggableService) o;
-
-                        PipedHttpHandler handler
-                                = new RequestContextInjector(srv);
-
-                        if (secured) {
-                            paths.addPrefixPath(uri,
-                                    new RequestLoggerHandler(
-                                            new CORSHandler(
-                                                    new XPoweredByInjector(
-                                                            new SecurityHandler(
-                                                                    handler,
-                                                                    authenticationMechanisms,
-                                                                    accessManager)))));
-                        } else {
-                            paths.addPrefixPath(uri,
-                                    new RequestLoggerHandler(
-                                            new CORSHandler(
-                                                    new XPoweredByInjector(
-                                                            new SecurityHandler(
-                                                                    handler,
-                                                                    authenticationMechanisms,
-                                                                    new FullAccessManager(false))))));
-                        }
-
-                        LOGGER.info("URL {} bound to service {}."
-                                + " Access manager: {}", uri, clazz, secured);
+                    if (srv.getSecured()) {
+                        paths.addPrefixPath(srv.getUri(),
+                                new RequestLoggerHandler(
+                                        new CORSHandler(
+                                                new XPoweredByInjector(
+                                                        new SecurityHandler(
+                                                                handler,
+                                                                authenticationMechanisms,
+                                                                accessManager)))));
                     } else {
-                        LOGGER.error("Cannot plug service {}."
-                                + " Class {} does not extend PluggableService", uri, clazz);
+                        paths.addPrefixPath(srv.getUri(),
+                                new RequestLoggerHandler(
+                                        new CORSHandler(
+                                                new XPoweredByInjector(
+                                                        new SecurityHandler(
+                                                                handler,
+                                                                authenticationMechanisms,
+                                                                new FullAccessManager(false))))));
                     }
 
-                } catch (ClassNotFoundException
-                        | IllegalAccessException
-                        | IllegalArgumentException
-                        | InstantiationException
-                        | NoSuchMethodException
-                        | SecurityException
-                        | InvocationTargetException t) {
-                    LOGGER.error("Cannot plug service {}",
-                            al.get(Configuration.SERVICE_URI_KEY), t);
+                    LOGGER.info("URI {} bound to service {}."
+                            + " secured: {}", srv.getUri(), srv.getName(), srv.getSecured());
+
+                } catch (PluginConfigurationException pce) {
+                    LOGGER.error("Error pluggin service", pce);
                 }
-            }
-            );
+            });
         }
     }
 

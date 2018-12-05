@@ -125,8 +125,10 @@ idms:
  # See README.md for the list of available Access Managers
 
 access-manager:
+    name: requestPredicatesAccessManager
     class: io.uiam.plugins.authorization.impl.RequestPredicatesAccessManager
-    conf-file: ../etc/security.yml
+    args:
+        conf-file: ../etc/security.yml
  
 # Authentication Token
 
@@ -148,17 +150,20 @@ auth-token-ttl: 15
  # See README.md for the list of available Services
 
 services:
-    - class: io.uiam.plugins.service.impl.PingService
+    - name: ping
+      class: io.uiam.plugins.service.impl.PingService
       uri: /ping
       secured: false
       args:
           msg: "ciao from the uIAM team"
-    - class: io.uiam.plugins.service.impl.GetRoleService
+    - name: getRoles
+      class: io.uiam.plugins.service.impl.GetRoleService
       uri: /roles
       secured: true
       args:
           url: /roles
-    - class: io.uiam.plugins.service.impl.RequestDumperService
+    - name: requestDumper
+      class: io.uiam.plugins.service.impl.RequestDumperService
       uri: /dump
       secured: false
 

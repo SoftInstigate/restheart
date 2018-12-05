@@ -22,6 +22,7 @@ import java.util.Map;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
 import io.uiam.handlers.RequestContext.METHOD;
+import static io.uiam.plugins.ConfigurablePlugin.argValue;
 import io.uiam.plugins.service.PluggableService;
 import io.uiam.utils.HttpStatus;
 
@@ -38,10 +39,14 @@ public class PingService extends PluggableService {
      * @param next
      * @param args
      */
-    public PingService(PipedHttpHandler next, Map<String, Object> args) {
-        super(next, args);
-
-        this.msg = (String) args.get("msg");
+    public PingService(PipedHttpHandler next,
+            String name,
+            String uri,
+            Boolean secured,
+            Map<String, Object> args)
+            throws Exception {
+        super(next, name, uri, secured, args);
+        this.msg = argValue(args, "msg");
     }
 
     /**

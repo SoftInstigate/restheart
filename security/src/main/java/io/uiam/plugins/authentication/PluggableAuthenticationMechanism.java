@@ -17,17 +17,16 @@
  */
 package io.uiam.plugins.authentication;
 
-import io.uiam.plugins.PluginConfigurationException;
+import io.uiam.plugins.ConfigurablePlugin;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
-import java.util.Map;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface PluggableAuthenticationMechanism extends AuthenticationMechanism {
+public interface PluggableAuthenticationMechanism extends AuthenticationMechanism, ConfigurablePlugin {
     @Override
     public AuthenticationMechanismOutcome authenticate(
             final HttpServerExchange exchange,
@@ -38,30 +37,4 @@ public interface PluggableAuthenticationMechanism extends AuthenticationMechanis
             final SecurityContext securityContext);
 
     public String getMechanismName();
-
-    /**
-     *
-     * @param args
-     * @param argKey
-     * @return the string arg value of argKey from args
-     * @throws PluginConfigurationException
-     */
-    public static <V extends Object> V argValue(final Map<String, Object> args,
-            final String argKey)
-            throws PluginConfigurationException {
-        if (args == null
-                || !args.containsKey(argKey)) {
-            throw new PluginConfigurationException(
-                    "The AuthenticationMechanism"
-                    + " requires the argument '" + argKey + "'");
-        } else {
-            try {
-                return (V) args.get(argKey);
-            } catch (ClassCastException cce) {
-                throw new PluginConfigurationException(
-                        "Wrong type for AuthenticationMechanism"
-                        + " argument '" + argKey + "'", cce);
-            }
-        }
-    }
 }

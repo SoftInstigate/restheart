@@ -18,7 +18,6 @@
 package io.uiam.plugins.service.impl;
 
 import io.undertow.server.HttpServerExchange;
-import java.util.Map;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
 import io.uiam.plugins.service.PluggableService;
@@ -35,8 +34,11 @@ public class RequestDumperService extends PluggableService {
      * @param next
      * @param args
      */
-    public RequestDumperService(PipedHttpHandler next, Map<String, Object> args) {
-        super(next, args);
+    public RequestDumperService(PipedHttpHandler next,
+            String name,
+            String uri,
+            Boolean secured) {
+        super(next, name, uri, secured, null);
     }
 
     /**
@@ -50,23 +52,23 @@ public class RequestDumperService extends PluggableService {
         exchange.setStatusCode(HttpStatus.SC_OK);
 
         var msg = new StringBuffer();
-        
+
         msg.append("Method: ");
         msg.append(exchange.getRequestMethod().toString());
         msg.append("\n");
-        
+
         msg.append("URL: ");
         msg.append(exchange.getRequestURL());
         msg.append("\n\n");
-        
+
         msg.append("Body\n");
-        
+
         msg.append(ChannelReader.read(exchange.getRequestChannel()));
-        
+
         msg.append("\n\n");
-        
+
         msg.append("Query Parameters\n");
-        
+
         exchange.getQueryParameters().forEach((name, values) -> {
             msg.append("\t");
             msg.append(name);
@@ -77,11 +79,11 @@ public class RequestDumperService extends PluggableService {
                 msg.append(",");
             });
 
-            msg.delete(msg.length()-1, msg.length());
-            
+            msg.delete(msg.length() - 1, msg.length());
+
             msg.append("\n");
         });
-        
+
         msg.append("\nHeaders\n");
 
         exchange.getRequestHeaders().forEach(header -> {
@@ -94,8 +96,8 @@ public class RequestDumperService extends PluggableService {
                 msg.append(",");
             });
 
-            msg.delete(msg.length()-1, msg.length());
-            
+            msg.delete(msg.length() - 1, msg.length());
+
             msg.append("\n");
         });
 

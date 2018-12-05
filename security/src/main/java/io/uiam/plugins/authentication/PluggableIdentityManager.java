@@ -17,6 +17,7 @@
  */
 package io.uiam.plugins.authentication;
 
+import io.uiam.plugins.ConfigurablePlugin;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
@@ -25,7 +26,7 @@ import io.undertow.security.idm.IdentityManager;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public interface PluggableIdentityManager extends IdentityManager {
+public interface PluggableIdentityManager extends IdentityManager, ConfigurablePlugin {
     @Override
     public Account verify(Account account);
     

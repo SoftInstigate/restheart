@@ -19,26 +19,72 @@ package io.uiam.plugins.service;
 
 import java.util.Map;
 import io.uiam.handlers.PipedHttpHandler;
+import io.uiam.plugins.ConfigurablePlugin;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public abstract class PluggableService extends PipedHttpHandler {
+public abstract class PluggableService extends PipedHttpHandler
+        implements ConfigurablePlugin {
+
+    private final String name;
+
+    private final String uri;
+
+    private final Boolean secured;
 
     /**
      * The configuration properties passed to this handler.
      */
-    protected final Map<String, Object> args;
+    private final Map<String, Object> args;
 
     /**
      * Creates a new instance of the ApplicationLogicHandler
      *
      * @param next
+     * @param name
+     * @param uri
+     * @param secured
      * @param args
      */
-    public PluggableService(PipedHttpHandler next, Map<String, Object> args) {
+    public PluggableService(PipedHttpHandler next,
+            String name,
+            String uri,
+            Boolean secured,
+            Map<String, Object> args) {
         super(next);
+        this.name = name;
+        this.uri = uri;
+        this.secured = secured;
         this.args = args;
+    }
+
+    /**
+     * @return the name
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * @return the uri
+     */
+    public String getUri() {
+        return uri;
+    }
+
+    /**
+     * @return the secured
+     */
+    public Boolean getSecured() {
+        return secured;
+    }
+
+    /**
+     * @return the args
+     */
+    public Map<String, Object> getArgs() {
+        return args;
     }
 }

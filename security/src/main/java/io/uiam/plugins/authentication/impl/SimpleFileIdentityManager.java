@@ -56,7 +56,7 @@ public class SimpleFileIdentityManager
      * @param arguments
      * @throws java.io.FileNotFoundException
      */
-    public SimpleFileIdentityManager(Map<String, Object> arguments) throws FileNotFoundException, UnsupportedEncodingException {
+    public SimpleFileIdentityManager(String name, Map<String, Object> arguments) throws FileNotFoundException, UnsupportedEncodingException {
         init(arguments, "users");
     }
 

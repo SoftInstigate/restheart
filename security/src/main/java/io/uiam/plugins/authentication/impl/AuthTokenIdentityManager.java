@@ -44,7 +44,7 @@ public class AuthTokenIdentityManager implements PluggableIdentityManager {
      *
      * @param next
      */
-    public AuthTokenIdentityManager() {
+    public AuthTokenIdentityManager(String name) {
         this.cachedAccounts = CacheFactory.createLocalCache(Long.MAX_VALUE, Cache.EXPIRE_POLICY.AFTER_READ, TTL * 60 * 1_000);
     }
 

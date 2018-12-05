@@ -18,9 +18,11 @@
 package io.uiam.plugins;
 
 import io.uiam.Configuration;
+import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 import io.uiam.plugins.authentication.PluggableIdentityManager;
 import io.uiam.plugins.authorization.PluggableAccessManager;
+import io.uiam.plugins.service.PluggableService;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
@@ -87,7 +89,7 @@ public class PluginsFactory {
                 | InvocationTargetException ex) {
             throw new PluginConfigurationException("Error configuring Authentication Mechanism "
                     + (_name != null ? _name : ""),
-                     ex);
+                    ex);
         }
     }
 
@@ -124,8 +126,8 @@ public class PluginsFactory {
             if (_args == null) {
                 return (PluggableIdentityManager) Class
                         .forName((String) _clazz)
-                        .getDeclaredConstructor()
-                        .newInstance();
+                        .getDeclaredConstructor(String.class)
+                        .newInstance((String) _name);
             } else {
                 if (!(_args instanceof Map)) {
                     throw new PluginConfigurationException("Error configuring Identity Manager "
@@ -136,8 +138,8 @@ public class PluginsFactory {
                 } else {
                     return (PluggableIdentityManager) Class
                             .forName((String) _clazz)
-                            .getDeclaredConstructor(Map.class)
-                            .newInstance((Map) _args);
+                            .getDeclaredConstructor(String.class, Map.class)
+                            .newInstance((String) _name, (Map) _args);
                 }
             }
         } catch (ClassNotFoundException
@@ -156,20 +158,33 @@ public class PluginsFactory {
      *
      * @return the PluggableAccessManager
      */
-    public static PluggableAccessManager getAccessManager(Object _clazz, Object _args)
+    public static PluggableAccessManager getAccessManager(Map<String, Object> conf)
             throws PluginConfigurationException {
+        Object _name = conf.get(Configuration.NAME_KEY);
+
+        if (_name == null || !(_name instanceof String)) {
+            throw new PluginConfigurationException("Error configuring Access Manager "
+                    + "missing "
+                    + Configuration.NAME_KEY
+                    + " property");
+        }
+
+        Object _clazz = conf.get(Configuration.CLASS_KEY);
+
         if (!(_clazz instanceof String)) {
-            throw new PluginConfigurationException("Error configuring Identity Manager "
+            throw new PluginConfigurationException("Error configuring Access Manager "
                     + Configuration.CLASS_KEY
                     + " property is not a String");
         }
+
+        Object _args = conf.get(Configuration.ARGS_KEY);
 
         try {
             if (_args == null) {
                 return (PluggableAccessManager) Class
                         .forName((String) _clazz)
-                        .getDeclaredConstructor()
-                        .newInstance();
+                        .getDeclaredConstructor(String.class)
+                        .newInstance((String) _name);
             } else {
                 if (!(_args instanceof Map)) {
                     throw new PluginConfigurationException("Error configuring Access Manager "
@@ -179,8 +194,8 @@ public class PluginsFactory {
                 } else {
                     return (PluggableAccessManager) Class
                             .forName((String) _clazz)
-                            .getDeclaredConstructor(Map.class)
-                            .newInstance((Map) _args);
+                            .getDeclaredConstructor(String.class, Map.class)
+                            .newInstance((String) _name, (Map) _args);
                 }
             }
         } catch (ClassNotFoundException
@@ -191,6 +206,99 @@ public class PluginsFactory {
                 | SecurityException
                 | InvocationTargetException ex) {
             throw new PluginConfigurationException("Error configuring Access Manager " + "", ex);
+        }
+    }
+
+    /**
+     * getService
+     *
+     * @return the PluggableService
+     */
+    public static PluggableService getService(Map<String, Object> conf)
+            throws PluginConfigurationException {
+        Object _name = conf.get(Configuration.NAME_KEY);
+
+        if (_name == null || !(_name instanceof String)) {
+            throw new PluginConfigurationException("Error configuring Service "
+                    + "missing "
+                    + Configuration.NAME_KEY
+                    + " property");
+        }
+
+        Object _secured = conf.get(Configuration.SERVICE_SECURED_KEY);
+
+        if (_secured == null || !(_secured instanceof Boolean)) {
+            throw new PluginConfigurationException("Error configuring Service "
+                    + "missing "
+                    + Configuration.SERVICE_SECURED_KEY
+                    + " property");
+        }
+
+        Object _uri = conf.get(Configuration.SERVICE_URI_KEY);
+
+        if (_uri == null
+                || !(_uri instanceof String)
+                || !((String) _uri).startsWith("/")) {
+            throw new PluginConfigurationException("Error configuring Service "
+                    + "missing "
+                    + Configuration.SERVICE_URI_KEY
+                    + " property");
+        }
+
+        Object _clazz = conf.get(Configuration.CLASS_KEY);
+
+        if (!(_clazz instanceof String)) {
+            throw new PluginConfigurationException("Error configuring Service "
+                    + Configuration.CLASS_KEY
+                    + " property is not a String");
+        }
+
+        Object _args = conf.get(Configuration.ARGS_KEY);
+
+        try {
+            if (_args == null) {
+                return (PluggableService) Class
+                        .forName((String) _clazz)
+                        .getDeclaredConstructor(
+                                PipedHttpHandler.class,
+                                String.class,
+                                String.class,
+                                Boolean.class
+                        )
+                        .newInstance(null,
+                                (String) _name,
+                                (String) _uri,
+                                (Boolean) _secured);
+            } else {
+                if (!(_args instanceof Map)) {
+                    throw new PluginConfigurationException("Error configuring Service "
+                            + Configuration.ARGS_KEY
+                            + " property"
+                            + " is not a map");
+                } else {
+                    return (PluggableService) Class
+                            .forName((String) _clazz)
+                            .getDeclaredConstructor(
+                                    PipedHttpHandler.class,
+                                    String.class,
+                                    String.class,
+                                    Boolean.class,
+                                    Map.class)
+                            .newInstance(null,
+                                    (String) _name,
+                                    (String) _uri,
+                                    (Boolean) _secured,
+                                    (Map) _args);
+                }
+            }
+        } catch (ClassNotFoundException
+                | IllegalAccessException
+                | IllegalArgumentException
+                | InstantiationException
+                | NoSuchMethodException
+                | SecurityException
+                | InvocationTargetException ex) {
+            throw new PluginConfigurationException("Error configuring Service " + "", ex);
         }
     }
 }

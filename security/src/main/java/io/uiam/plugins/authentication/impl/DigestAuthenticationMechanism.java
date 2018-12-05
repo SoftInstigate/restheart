@@ -19,8 +19,8 @@ package io.uiam.plugins.authentication.impl;
 
 import io.uiam.plugins.IDMCacheSingleton;
 import io.uiam.plugins.PluginConfigurationException;
+import static io.uiam.plugins.ConfigurablePlugin.argValue;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
-import static io.uiam.plugins.authentication.PluggableAuthenticationMechanism.argValue;
 import static io.undertow.UndertowMessages.MESSAGES;
 import io.undertow.security.api.NonceManager;
 import io.undertow.security.api.SecurityContext;

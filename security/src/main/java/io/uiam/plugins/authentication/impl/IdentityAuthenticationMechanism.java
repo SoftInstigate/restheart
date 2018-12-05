@@ -19,8 +19,8 @@ package io.uiam.plugins.authentication.impl;
 
 import com.google.common.collect.Sets;
 import io.uiam.plugins.PluginConfigurationException;
+import static io.uiam.plugins.ConfigurablePlugin.argValue;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
-import static io.uiam.plugins.authentication.PluggableAuthenticationMechanism.argValue;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;

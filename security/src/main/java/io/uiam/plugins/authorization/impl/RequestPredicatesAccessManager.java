@@ -48,7 +48,9 @@ public class RequestPredicatesAccessManager extends AbstractConfiFileConsumer im
      * @throws java.io.FileNotFoundException
      * @throws java.io.UnsupportedEncodingException
      */
-    public RequestPredicatesAccessManager(Map<String, Object> configuration) throws FileNotFoundException, UnsupportedEncodingException {
+    public RequestPredicatesAccessManager(String name,
+            Map<String, Object> configuration)
+            throws FileNotFoundException, UnsupportedEncodingException {
         init(configuration, "permissions");
     }
 

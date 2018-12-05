@@ -39,14 +39,6 @@ import io.uiam.utils.URLUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GetRoleService extends PluggableService {
-
-    /**
-     * the key for the url property.
-     */
-    public static final String URL_KEY = "url";
-
-    private String url;
-
     /**
      * Creates a new instance of GetRoleHandler
      *
@@ -54,14 +46,17 @@ public class GetRoleService extends PluggableService {
      * @param args
      * @throws Exception
      */
-    public GetRoleService(PipedHttpHandler next, Map<String, Object> args) throws Exception {
-        super(next, args);
+    public GetRoleService(PipedHttpHandler next,
+            String name,
+            String uri,
+            Boolean secured,
+            Map<String, Object> args)
+            throws Exception {
+        super(next, name, uri, secured, args);
 
         if (args == null) {
             throw new IllegalArgumentException("args cannot be null");
         }
-
-        this.url = (String) args.get(URL_KEY);
     }
 
     /**
@@ -84,7 +79,7 @@ public class GetRoleService extends PluggableService {
             if ((exchange.getSecurityContext() == null
                     || exchange.getSecurityContext().getAuthenticatedAccount() == null
                     || exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null)
-                    || !(exchange.getRequestURI().equals(URLUtils.removeTrailingSlashes(url)
+                    || !(exchange.getRequestURI().equals(URLUtils.removeTrailingSlashes(getUri())
                             + "/"
                             + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName()))) {
                 {

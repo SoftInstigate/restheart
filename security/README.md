@@ -376,9 +376,10 @@ public interface PluggableAuthenticationMechanism extends AuthenticationMechanis
 ### Configuration
 
 The Authentication Manager must be declared in the yml configuration file. 
-Of course the Authentication Manager class must be add the the java classpath.
+Of course the implementation class must be in the java classpath.
 
 ```yml
+auth-mechanisms:
     - name: <name-of-mechansim>
       class: <full-class-name>
       args:
@@ -390,6 +391,8 @@ Of course the Authentication Manager class must be add the the java classpath.
 
 The Authentication Manager class must have the following constructor:
 
+If the property `args` is specified in configuration:
+
 ```java
 public MyAuthenticationMechanism(final String mechanismName,
             final Map<String, Object> args) throws PluginConfigurationException {
@@ -397,6 +400,13 @@ public MyAuthenticationMechanism(final String mechanismName,
   // use argValue() helper method to get the arguments specified in the configuration file
   Integer _number = argValue(args, "number");
   String _string = argValue(args, "string");
+}
+```
+
+If the property `args` is not specified in configuration:
+
+```java
+public MyAuthenticationMechanism(final String mechanismName) throws PluginConfigurationException {
 }
 ```
 
@@ -459,7 +469,57 @@ Account account = idm.verify(id, credential);
 
 ## Develop an Identity Manager
 
-> work in progress
+The Identity Manager class must implement the `io.uiam.plugins.authentication.PluggableIdentityManager` interface. 
+
+```java
+public interface PluggableIdentityManager extends IdentityManager {
+    @Override
+    public Account verify(Account account);
+    
+    @Override
+    public Account verify(String id, Credential credential);
+
+    @Override
+    public Account verify(Credential credential);
+}
+```
+
+### Configuration
+
+The Identity Manager must be declared in the yml configuration file. 
+Of course the implementation class must be in the java classpath.
+
+```yml
+idms:
+    - name: <name-of-idm>
+      class: <full-class-name>
+      args:
+        number: 10
+        string: a string
+```
+
+### Constructor
+
+The Identity Manager class must have the following constructor:
+
+If the property `args` is specified in configuration:
+
+```java
+public MyIdm(final String idmName,
+            final Map<String, Object> args) throws PluginConfigurationException {
+
+  // use argValue() helper method to get the arguments specified in the configuration file
+  Integer _number = argValue(args, "number");
+  String _string = argValue(args, "string");
+}
+```
+
+If the property `args` is not specified in configuration:
+
+```java
+public MyIdm(final String idmName) throws PluginConfigurationException {
+}
+```
 
 ## Develop an Access Manager
 

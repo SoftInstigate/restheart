@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import io.uiam.utils.URLUtils;
+import java.util.HashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
@@ -114,16 +115,6 @@ public class Configuration {
      */
     public static final String SERVICE_SECURED_KEY = "secured";
     
-    /**
-     * default am implementation class.
-     */
-    public static final String DEFAULT_AM_IMPLEMENTATION_CLASS = null;
-
-    /**
-     * default idm implementation class.
-     */
-    public static final String DEFAULT_IDM_IMPLEMENTATION_CLASS = null;
-
     /**
      * the key for the local-cache-enabled property.
      */
@@ -400,8 +391,7 @@ public class Configuration {
     private final List<Map<String, Object>> services;
     private final List<Map<String, Object>> authMechanisms;
     private final List<Map<String, Object>> idms;
-    private final String amClass;
-    private final Map<String, Object> amArgs;
+    private final Map<String, Object> accessManager;
     private final String logFilePath;
     private final Level logLevel;
     private final boolean logToConsole;
@@ -460,8 +450,7 @@ public class Configuration {
         
         idms = new ArrayList<>();
 
-        amClass = null;
-        amArgs = null;
+        accessManager = null;
 
         logFilePath = URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
                 .concat(File.separator + "uiam.log");
@@ -558,8 +547,7 @@ public class Configuration {
 
         idms = getAsListOfMaps(conf, IDMS_KEY, new ArrayList<>());
 
-        amClass = getAsStringOrDefault(am, CLASS_KEY, DEFAULT_AM_IMPLEMENTATION_CLASS);
-        amArgs = am;
+        accessManager = getAsMap(conf, ACCESS_MANAGER_KEY);
 
         logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH_KEY,
                 URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
@@ -624,8 +612,7 @@ public class Configuration {
                 + ", services=" + services
                 + ", authMechanisms=" + authMechanisms
                 + ", idms=" + idms
-                + ", amImpl=" + amClass
-                + ", amArgs=" + amArgs
+                + ", accessManager=" + getAccessManager()
                 + ", logFilePath=" + logFilePath
                 + ", logLevel=" + logLevel
                 + ", logToConsole=" + logToConsole
@@ -1090,15 +1077,8 @@ public class Configuration {
     /**
      * @return the amClass
      */
-    public String getAmClass() {
-        return amClass;
-    }
-
-    /**
-     * @return the amArgs
-     */
-    public Map<String, Object> getAmArgs() {
-        return Collections.unmodifiableMap(amArgs);
+    public Map<String, Object> getAm() {
+        return getAccessManager();
     }
 
     /**
@@ -1167,6 +1147,13 @@ public class Configuration {
 
     public boolean isAllowUnescapedCharactersInUrl() {
         return allowUnescapedCharactersInUrl;
+    }
+
+    /**
+     * @return the accessManager
+     */
+    public Map<String, Object> getAccessManager() {
+        return accessManager;
     }
 
 }
