@@ -31,11 +31,11 @@ public interface PluggableAuthenticationMechanism extends AuthenticationMechanis
     @Override
     public AuthenticationMechanismOutcome authenticate(
             final HttpServerExchange exchange,
-            final SecurityContext sc);
+            final SecurityContext securityContext);
 
     @Override
     public ChallengeResult sendChallenge(final HttpServerExchange exchange,
-            final SecurityContext sc);
+            final SecurityContext securityContext);
 
     public String getMechanismName();
 
