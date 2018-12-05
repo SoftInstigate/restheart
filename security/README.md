@@ -254,17 +254,17 @@ In &#181;IAM everything is a plugin including Authentication Mechanisms, Identit
 ![uIAM explained](readme-assets/uiam-explained.png?raw=true "uIAM explained")
 
 Different **Authentication Mechanism** manage different authentication schemes. 
-An example is BasicAuthenticationMechanism that handles the Basic Authentication scheme. It extracts the credentials from a request header and passes them to the an Identity Manager for verification.
+An example is *BasicAuthenticationMechanism* that handles the Basic Authentication scheme. It extracts the credentials from a request header and passes them to the an Identity Manager for verification.
 
-A different example is the IdentityAuthenticationMechanism the binds the request to a configured identity. This Authentication Mechanism does not require an Identity Manage to build the account.
+A different example is the *IdentityAuthenticationMechanism* the binds the request to a configured identity. This Authentication Mechanism does not require an Identity Manage to build the account.
 
  &#181;IAM allows defining several mechanism. As an in-bound request is received the `authenticate()` method is called on each mechanism in turn until one of the following occurs: 
  - A mechanism successfully authenticates the incoming request &#8594; the request proceeds to Authorization phase;
  - The list of mechanisms is exhausted &#8594; the request fails with code `401 Unauthorized`.
 
-The **Identity Manager** verifies the credentials extracted from the request by Authentication Mechanism. For instance, the BasicAuthenticationMechanism extracts the credentials from the request in the form of id and password. The IDM can check these credentials against a database or and LDAP server. Note that some Authentication Mechanisms don't actually rely on the IDM to build the Account.
+The **Identity Manager** verifies the credentials extracted from the request by Authentication Mechanism. For instance, the *BasicAuthenticationMechanism* extracts the credentials from the request in the form of id and password. The IDM can check these credentials against a database or and LDAP server. Note that some Authentication Mechanisms don't actually rely on the IDM to build the Account.
 
-The **Access Manager** is responsible of checking if the user can actually perform the request against an Access Control List. For instance the RequestPredicatesAccessManager checks if the request is allowed by looking at the role based permissions defined using the undertow predicate definition language.
+The **Access Manager** is responsible of checking if the user can actually perform the request against an Access Control List. For instance the *RequestPredicatesAccessManager* checks if the request is allowed by looking at the role based permissions defined using the undertow predicate definition language.
 
 A **Service** is a quick way of implementing Web Services to expose additional custom logic.
 
@@ -281,6 +281,20 @@ A **Service** is a quick way of implementing Web Services to expose additional c
         realm: uIAM Realm
         idm: simpleFileIdentityManager
 ```
+
+#### How to avoid the browser to open the login popop window
+
+The Basic and Digest Authentication protocols requireì responding with a challenge when the request cannot be authenticated as follows:
+
+```
+WWW-Authenticate: Basic realm="uIAM Realm"
+WWW-Authenticate: Digest realm="uIAM Realm",domain="localhost",nonce="Toez71bBUPoNMTU0NDAwNDMzNjEwMXBY+Jp7YX/GVMcxAd61FpY=",opaque="00000000000000000000000000000000",algorithm=MD5,qop="auth"
+```
+
+In browsers this leads to the login popup windows. In our web applications we might want to redirect to a fancy login page when 401 Unauthorized response code. 
+
+To avoid the popup window just add to the request the `noauthchallenge` query parameter or the header `No-Auth-Challenge`. This will skip the challenge response.zx
+
 
 - **DigestAuthenticationMechanism** manages the Digest Authentication method. The configuration allows specifying the Identity Manager that will be used to verify the credentials.
 
@@ -341,13 +355,107 @@ auth-token-ttl: 15
 
 # Plugin development
 
-## Package code
-
-> work in progress
-
 ## Develop an Authentication Manager
 
-> work in progress
+The Authentication Manager class must implement the `io.uiam.plugins.authentication.PluggableAuthenticationMechanism` interface. 
+
+```java
+public interface PluggableAuthenticationMechanism extends AuthenticationMechanism {
+    @Override
+    public AuthenticationMechanismOutcome authenticate(
+            final HttpServerExchange exchange,
+            final SecurityContext securityContext);
+
+    @Override
+    public ChallengeResult sendChallenge(final HttpServerExchange exchange,
+            final SecurityContext securityContext);
+
+    public String getMechanismName();
+```
+
+### Configuration
+
+The Authentication Manager must be declared in the yml configuration file. 
+Of course the Authentication Manager class must be add the the java classpath.
+
+```yml
+    - name: <name-of-mechansim>
+      class: <full-class-name>
+      args:
+        number: 10
+        string: a string
+```
+
+### Constructor
+
+The Authentication Manager class must have the following constructor:
+
+```java
+public MyAuthenticationMechanism(final String mechanismName,
+            final Map<String, Object> args) throws PluginConfigurationException {
+
+  // use argValue() helper method to get the arguments specified in the configuration file
+  Integer _number = argValue(args, "number");
+  String _string = argValue(args, "string");
+}
+```
+
+### authenticate()
+
+The method `authenticate()` must return:
+
+- NOT_ATTEMPTED: the request cannot be authenticated because it doesn't fulfill the authentication mechanism requirements. An example is *BasicAuthenticationMechanism* when the request does not include the header `Authotization` or its value does not start by `Basic `
+- NOT_AUTHENTICATED: the Authentication Manager handled the request but could not authenticate the client, for instance because of wrong credentials.
+- AUTHENTICATED: the Authentication Manager successfully authenticated the request. In this case the fo
+
+To mark the authentication as failed in `authenticate()`:
+
+```java
+securityContext.authenticationFailed("authentication failed", getMechanismName());
+return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
+```
+
+To mark the authentication as successful in `authenticate()`:
+
+```java
+// build the account
+final Account account;
+
+securityContext.authenticationComplete(account, getMechanismName(), false);
+        return AuthenticationMechanismOutcome.AUTHENTICATED;
+```
+
+### sendChallenge()
+
+`sendChallenge()` is executed when the authentication fails.
+
+An example is *BasicAuthenticationMechanism* that sends the `401 Not Authenticated` response with the following challenge header:
+
+```
+WWW-Authenticate: Basic realm="uIAM Realm"
+```
+
+### Build the Account
+
+To build the account, the Authentication Mechanism can use a configurable Identity Manager. This allows to extends the Authentication Manager with different IDM implementations. For instance the *BasicAuthenticationMechanism* can use different IDM implementations that hold accounts information in a DB or in an LDAP server. 
+
+Tip: Pass the idm name as an argument and use the `IDMCacheSingleton` class to instantiate the IDM.
+
+```java
+// get the name of the idm form the arguments
+String idmName = argValue(args,"idm");
+
+PluggableIdentityManager idm = IDMCacheSingleton
+                                .getInstance()
+                                .getIdentityManager(idmName);
+
+// get the client id and credential from the request
+String id;
+Credential credential;
+
+
+Account account = idm.verify(id, credential);
+```
 
 ## Develop an Identity Manager
 
