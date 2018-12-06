@@ -34,8 +34,8 @@ instance-name: uiam-docker
  # external-url is a resource URL (eg. https://uiam.io)
  # TODO allow adding more hosts for load balancing
 proxies:
-    - internal-uri: /pdump
-      external-url: http://127.0.0.1:8080/dump
+    - internal-uri: /secho
+      external-url: http://127.0.0.1:8080/echo
     - internal-uri: /
       external-url: http://restheart:8080
 
@@ -125,8 +125,10 @@ idms:
  # See README.md for the list of available Access Managers
 
 access-manager:
+    name: requestPredicatesAccessManager
     class: io.uiam.plugins.authorization.impl.RequestPredicatesAccessManager
-    conf-file: /opt/uiam/etc//security.yml
+    args:
+        conf-file: /opt/uiam/etc/security.yml
  
 # Authentication Token
 
@@ -148,18 +150,21 @@ auth-token-ttl: 15
  # See README.md for the list of available Services
 
 services:
-    - class: io.uiam.plugins.service.impl.PingService
+    - name: ping
+      class: io.uiam.plugins.service.impl.PingService
       uri: /ping
       secured: false
       args:
           msg: "ciao from the uIAM team"
-    - class: io.uiam.plugins.service.impl.GetRoleService
+    - name: getRoles
+      class: io.uiam.plugins.service.impl.GetRoleService
       uri: /roles
       secured: true
       args:
           url: /roles
-    - class: io.uiam.plugins.service.impl.RequestDumperService
-      uri: /dump
+    - name: requestEchoer
+      class: io.uiam.plugins.service.impl.EchoService
+      uri: /echo
       secured: false
 
 #### Logging

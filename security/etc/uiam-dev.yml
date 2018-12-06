@@ -162,11 +162,11 @@ services:
       secured: true
       args:
           url: /roles
-    - name: requestDumper
+    - name: requestEchoer
       class: io.uiam.plugins.service.impl.EchoService
       uri: /echo
       secured: false
-
+      
 #### Logging
 
  # enable-log-console: true => log messages to the console (default value: true)
