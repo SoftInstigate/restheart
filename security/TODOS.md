@@ -1,4 +1,4 @@
-# process automation
+# continuous delivery
 
 - build on push (github actions or travis-ci)
 - publish to maven central
@@ -11,3 +11,4 @@
 # features
 
 - allows specifying auth token generation implementation class
+- parametric conf file
