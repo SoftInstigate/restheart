@@ -34,8 +34,8 @@ instance-name: develop
  # external-url is a resource URL (eg. https://uiam.io)
  # TODO allow adding more hosts for load balancing
 proxies:
-    - internal-uri: /pdump
-      external-url: http://127.0.0.1:8080/dump
+    - internal-uri: /secho
+      external-url: http://127.0.0.1:8080/echo
     - internal-uri: /restheart
       external-url: https://restheart.org
 
@@ -163,8 +163,8 @@ services:
       args:
           url: /roles
     - name: requestDumper
-      class: io.uiam.plugins.service.impl.RequestDumperService
-      uri: /dump
+      class: io.uiam.plugins.service.impl.EchoService
+      uri: /echo
       secured: false
 
 #### Logging

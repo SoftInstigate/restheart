@@ -28,13 +28,15 @@ import io.uiam.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestDumperService extends PluggableService {
+public class EchoService extends PluggableService {
     /**
      *
      * @param next
-     * @param args
+     * @param name
+     * @param uri
+     * @param secured
      */
-    public RequestDumperService(PipedHttpHandler next,
+    public EchoService(PipedHttpHandler next,
             String name,
             String uri,
             Boolean secured) {

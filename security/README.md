@@ -148,27 +148,27 @@ You need [httpie](https://httpie.org) a modern command line HTTP client.
 Run &#181;IAM with the default configuration file, this way it is bound to port 8080 and proxies two example resources:
 
 - https://restheart.org web site at URI /restheart
-- the service /dump implemented by &#181;IAM itself at URI /pdump. This service just send back the request URL, query parameters, body and headers.
+- the service /echo implemented by &#181;IAM itself at URI /secho. This service just echoes back the request (URL, query parameters, body and headers).
 
-Let's fist invoke the /dump service directly. This is defined in the configuration file as follows:
+Let's fist invoke the /echo service directly. This is defined in the configuration file as follows:
 
 ```
 services:
-    - implementation-class: io.uiam.plugins.service.impl.RequestDumperService
-      uri: /dump
+    - implementation-class: io.uiam.plugins.service.impl.EchoService
+      uri: /echo
       secured: false
 ```
 
-Note that /dump is not secured and can be invoked without restrictions.
+Note that /echo is not secured and can be invoked without restrictions.
 
 ```bash
-$ http -f 127.0.0.1:8080/dump?qparam=value header:value a=1 b=2
+$ http -f 127.0.0.1:8080/echo?qparam=value header:value a=1 b=2
 HTTP/1.1 200 OK
 (other headers omitted)
 X-Powered-By: uIAM.io
 
 Method: POST
-URL: http://127.0.0.1:8080/dump
+URL: http://127.0.0.1:8080/echo
 
 Body
 a=1&b=2
@@ -187,10 +187,10 @@ Headers
 	Host: 127.0.0.1:8080
 ```
 
-Let's try now to invoke /pdump without passing authentication credentials. This will fail with 401 Unauthorized response HTTP status.
+Let's try now to invoke /secho without passing authentication credentials. This will fail with 401 Unauthorized response HTTP status.
 
 ```bash
-$ http -f 127.0.0.1:8080/pdump?qparam=value header:value a=1 b=2
+$ http -f 127.0.0.1:8080/secho?qparam=value header:value a=1 b=2
 HTTP/1.1 401 Unauthorized
 Connection: keep-alive
 Content-Length: 0
@@ -201,7 +201,7 @@ WWW-Authenticate: Basic realm="uIAM Realm
 Let's try now to pass credentials via basic authentication. The user `admin` is defined in the `security.yml` file.
 
 ```bash
-$ http -a admin:changeit -f 127.0.0.1:8080/pdump?qparam=value header:value a=1 b=2
+$ http -a admin:changeit -f 127.0.0.1:8080/secho?qparam=value header:value a=1 b=2
 HTTP/1.1 200 OK
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Origin: *
@@ -214,7 +214,7 @@ Auth-Token-Valid-Until: 2018-11-28T14:59:44.081609Z
 X-Powered-By: uIAM.io
 
 Method: POST
-URL: http://127.0.0.1:8080/dump
+URL: http://127.0.0.1:8080/secho
 
 Body
 a=1&b=2
@@ -347,7 +347,7 @@ auth-token-ttl: 15
 
 - **PingService** a simple ping service that responds with a greetings message.
 - **GetRoleService** allows to get the roles of the authenticated user. Useful as the endpoint to check the credentials of the user. Note that in case of success the auth token is included in the response; the browser can store it and use for the subsequent requests.
-- **RequestDumperService** responds with a dump of the request. Useful for testing purposes.
+- **EchoService** responds with an echo of the request. Useful for testing purposes.
 
 # Configuration
 
