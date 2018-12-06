@@ -249,7 +249,7 @@ We can note that &#181;IAM:
 
 # Understanding &#181;IAM
 
-In &#181;IAM everything is a plugin including Authentication Mechanisms, Identity Managers, Authentication Managers and Services.
+In &#181;IAM everything is a plugin including Authentication Mechanisms, Identity Managers, Access Managers and Services.
 
 ![uIAM explained](readme-assets/uiam-explained.png?raw=true "uIAM explained")
 
@@ -262,7 +262,7 @@ A different example is the *IdentityAuthenticationMechanism* the binds the reque
  - A mechanism successfully authenticates the incoming request &#8594; the request proceeds to Authorization phase;
  - The list of mechanisms is exhausted &#8594; the request fails with code `401 Unauthorized`.
 
-The **Identity Manager** verifies the credentials extracted from the request by Authentication Mechanism. For instance, the *BasicAuthenticationMechanism* extracts the credentials from the request in the form of id and password. The IDM can check these credentials against a database or and LDAP server. Note that some Authentication Mechanisms don't actually rely on the IDM to build the Account.
+The **Identity Manager** verifies the credentials extracted from the request by Authentication Mechanism. For instance, the *BasicAuthenticationMechanism* extracts the credentials from the request in the form of id and password. The IDM can check these credentials against a database or a LDAP server. Note that some Authentication Mechanisms don't actually rely on the IDM to build the Account.
 
 The **Access Manager** is responsible of checking if the user can actually perform the request against an Access Control List. For instance the *RequestPredicatesAccessManager* checks if the request is allowed by looking at the role based permissions defined using the undertow predicate definition language.
 
@@ -355,9 +355,9 @@ auth-token-ttl: 15
 
 # Plugin development
 
-## Develop an Authentication Manager
+## Develop an Authentication Mechanism
 
-The Authentication Manager class must implement the `io.uiam.plugins.authentication.PluggableAuthenticationMechanism` interface. 
+The Authentication Mechanism class must implement the `io.uiam.plugins.authentication.PluggableAuthenticationMechanism` interface. 
 
 ```java
 public interface PluggableAuthenticationMechanism extends AuthenticationMechanism {
@@ -375,7 +375,7 @@ public interface PluggableAuthenticationMechanism extends AuthenticationMechanis
 
 ### Configuration
 
-The Authentication Manager must be declared in the yml configuration file. 
+The Authentication Mechanism must be declared in the yml configuration file. 
 Of course the implementation class must be in the java classpath.
 
 ```yml
@@ -389,7 +389,7 @@ auth-mechanisms:
 
 ### Constructor
 
-The Authentication Manager class must have the following constructor:
+The Authentication Mechanism class must have the following constructor:
 
 If the property `args` is specified in configuration:
 
@@ -415,8 +415,8 @@ public MyAuthenticationMechanism(final String mechanismName) throws PluginConfig
 The method `authenticate()` must return:
 
 - NOT_ATTEMPTED: the request cannot be authenticated because it doesn't fulfill the authentication mechanism requirements. An example is *BasicAuthenticationMechanism* when the request does not include the header `Authotization` or its value does not start by `Basic `
-- NOT_AUTHENTICATED: the Authentication Manager handled the request but could not authenticate the client, for instance because of wrong credentials.
-- AUTHENTICATED: the Authentication Manager successfully authenticated the request. In this case the fo
+- NOT_AUTHENTICATED: the Authentication Mechanism handled the request but could not authenticate the client, for instance because of wrong credentials.
+- AUTHENTICATED: the Authentication Mechanism successfully authenticated the request. In this case the fo
 
 To mark the authentication as failed in `authenticate()`:
 
@@ -447,7 +447,7 @@ WWW-Authenticate: Basic realm="uIAM Realm"
 
 ### Build the Account
 
-To build the account, the Authentication Mechanism can use a configurable Identity Manager. This allows to extends the Authentication Manager with different IDM implementations. For instance the *BasicAuthenticationMechanism* can use different IDM implementations that hold accounts information in a DB or in an LDAP server. 
+To build the account, the Authentication Mechanism can use a configurable Identity Manager. This allows to extends the Authentication Mechanism with different IDM implementations. For instance the *BasicAuthenticationMechanism* can use different IDM implementations that hold accounts information in a DB or in a LDAP server. 
 
 Tip: Pass the idm name as an argument and use the `IDMCacheSingleton` class to instantiate the IDM.
 
