@@ -4,6 +4,10 @@
 - publish to maven central
 - build docker image
 
-# itegration tests
+# integration tests
 
 - create integration tests (reusing restheart integration tests)
+
+# features
+
+- allows specifying auth token generation implementation class
