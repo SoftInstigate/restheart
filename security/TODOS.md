@@ -12,3 +12,4 @@
 
 - allows specifying auth token generation implementation class
 - parametric conf file
+- allow adding more hosts for load balancing
