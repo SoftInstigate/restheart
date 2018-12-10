@@ -52,7 +52,7 @@ public class EchoService extends PluggableService {
 
         var msg = new StringBuffer();
 
-        msg.append("xxxMethod: ");
+        msg.append("Method: ");
         msg.append(exchange.getRequestMethod().toString());
         msg.append("\n");
 
