@@ -6,7 +6,7 @@
         {
             "label": "package",
             "type": "shell",
-            "command": "mvn -B package",
+            "command": "mvn package",
             "group": "build"
         },
         {

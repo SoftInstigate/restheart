@@ -2,17 +2,15 @@
     "configurations": [
         {
             "jdkPath": "${env:JAVA_HOME}/bin",
-            
             "type": "java",
-            "name": "Launch uIAM",
+            "name": "Debug (Launch)",
             "request": "launch",
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
             "stopOnEntry": false,
             "mainClass": "io.uiam.Bootstrapper",
             "vmArgs": "--illegal-access=deny -Dfile.encoding=UTF-8 -server",
-            "args": "etc/uiam-dev.yml",
-            "projectName": "uiam"
+            "args":  "etc/uiam-dev.yml",
         }
     ]
 }
