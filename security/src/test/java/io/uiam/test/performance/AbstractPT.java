@@ -21,11 +21,8 @@ import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import io.uiam.Configuration;
-import io.uiam.ConfigurationException;
 import org.yaml.snakeyaml.Yaml;
 
 /**
@@ -52,20 +49,16 @@ public abstract class AbstractPT {
 
         Yaml yaml = new Yaml();
 
-        Map<String, Object> configuration = (Map<String, Object>) yaml.load(ymlSB.toString());
+        yaml.load(ymlSB.toString());
 
         // for perf test better to disable the uiam security
         if (url != null && id != null && pwd != null) {
-            String host = "127.0.0.1";
-            int port = 8080;
-            String scheme = "http";
-
             try {
                 URI uri = new URI(url);
 
-                host = uri.getHost();
-                port = uri.getPort();
-                scheme = uri.getScheme();
+                uri.getHost();
+                uri.getPort();
+                uri.getScheme();
             } catch (URISyntaxException ex) {
                 Logger.getLogger(LoadGetPT.class.getName()).log(Level.SEVERE, null, ex);
             }

@@ -31,7 +31,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import io.uiam.utils.URLUtils;
-import java.util.HashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
@@ -181,7 +180,7 @@ public class Configuration {
     public static final String ACCESS_MANAGER_KEY = "access-manager";
 
     /**
-     * the key for the idm property.
+     * the key for the idms property.
      */
     public static final String IDMS_KEY = "idms";
 
@@ -541,9 +540,6 @@ public class Configuration {
         services = getAsListOfMaps(conf, SERVICES_KEY, new ArrayList<>());
         
         authMechanisms = getAsListOfMaps(conf, AUTH_MECHANISMS_KEY, new ArrayList<>());
-        
-        Map<String, Object> idm = getAsMap(conf, IDMS_KEY);
-        Map<String, Object> am = getAsMap(conf, ACCESS_MANAGER_KEY);
 
         idms = getAsListOfMaps(conf, IDMS_KEY, new ArrayList<>());
 

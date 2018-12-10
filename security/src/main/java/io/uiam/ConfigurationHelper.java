@@ -36,7 +36,7 @@ public class ConfigurationHelper {
 
     private static final Set<Option> UNDERTOW_OPTIONS;
 
-    private static final Set<Option> LONG_UNDERTOW_OPTIONS;
+    private static final Set<Option<Long>> LONG_UNDERTOW_OPTIONS;
 
     static {
         UNDERTOW_OPTIONS = Sets.newHashSet();

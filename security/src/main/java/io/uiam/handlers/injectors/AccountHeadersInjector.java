@@ -21,7 +21,6 @@ import io.undertow.server.HttpServerExchange;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
 import io.uiam.plugins.authentication.impl.BaseAccount;
-import io.uiam.plugins.authentication.impl.PwdCredentialAccount;
 import io.undertow.security.idm.Account;
 import io.undertow.util.HttpString;
 
