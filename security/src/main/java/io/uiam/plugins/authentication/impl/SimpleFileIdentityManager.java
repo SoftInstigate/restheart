@@ -99,7 +99,7 @@ public class SimpleFileIdentityManager extends AbstractConfiFileConsumer impleme
                         "wrong configuration file format. a roles entry is wrong. they all must be strings");
             }
 
-            Set<String> roles = Sets.newLinkedHashSet((Collection) _roles);
+            Set<String> roles = Sets.newLinkedHashSet((Collection<String>) _roles);
 
             PwdCredentialAccount a = new PwdCredentialAccount(userid, password, roles);
 

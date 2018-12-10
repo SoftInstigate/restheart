@@ -31,6 +31,7 @@ public interface ConfigurablePlugin {
      * @return the string arg value of argKey from args
      * @throws PluginConfigurationException
      */
+    @SuppressWarnings("unchecked")
     public static <V extends Object> V argValue(final Map<String, Object> args, final String argKey)
             throws PluginConfigurationException {
         if (args == null || !args.containsKey(argKey)) {

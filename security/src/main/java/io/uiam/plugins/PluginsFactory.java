@@ -66,7 +66,7 @@ public class PluginsFactory {
                             + (String) _name + Configuration.ARGS_KEY + " property" + " is not a map");
                 } else {
                     return (PluggableAuthenticationMechanism) Class.forName((String) _clazz)
-                            .getDeclaredConstructor(String.class, Map.class).newInstance((String) _name, (Map) _args);
+                            .getDeclaredConstructor(String.class, Map.class).newInstance((String) _name, (Map<?,?>) _args);
                 }
             }
         } catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InstantiationException

@@ -515,26 +515,26 @@ public class Configuration {
 
         this.silent = silent;
 
-        ansiConsole = getAsBooleanOrDefault(conf, ANSI_CONSOLE_KEY, true);
+        ansiConsole = getOrDefault(conf, ANSI_CONSOLE_KEY, true);
 
-        httpsListener = getAsBooleanOrDefault(conf, HTTPS_LISTENER, true);
-        httpsPort = getAsIntegerOrDefault(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
-        httpsHost = getAsStringOrDefault(conf, HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
+        httpsListener = getOrDefault(conf, HTTPS_LISTENER, true);
+        httpsPort = getOrDefault(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
+        httpsHost = getOrDefault(conf, HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
 
-        httpListener = getAsBooleanOrDefault(conf, HTTP_LISTENER_KEY, false);
-        httpPort = getAsIntegerOrDefault(conf, HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
-        httpHost = getAsStringOrDefault(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
+        httpListener = getOrDefault(conf, HTTP_LISTENER_KEY, false);
+        httpPort = getOrDefault(conf, HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
+        httpHost = getOrDefault(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
 
-        ajpListener = getAsBooleanOrDefault(conf, AJP_LISTENER_KEY, false);
-        ajpPort = getAsIntegerOrDefault(conf, AJP_PORT_KEY, DEFAULT_AJP_PORT);
-        ajpHost = getAsStringOrDefault(conf, AJP_HOST_KEY, DEFAULT_AJP_HOST);
+        ajpListener = getOrDefault(conf, AJP_LISTENER_KEY, false);
+        ajpPort = getOrDefault(conf, AJP_PORT_KEY, DEFAULT_AJP_PORT);
+        ajpHost = getOrDefault(conf, AJP_HOST_KEY, DEFAULT_AJP_HOST);
 
-        instanceName = getAsStringOrDefault(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
+        instanceName = getOrDefault(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
 
-        useEmbeddedKeystore = getAsBooleanOrDefault(conf, USE_EMBEDDED_KEYSTORE_KEY, true);
-        keystoreFile = getAsStringOrDefault(conf, KEYSTORE_FILE_KEY, null);
-        keystorePassword = getAsStringOrDefault(conf, KEYSTORE_PASSWORD_KEY, null);
-        certPassword = getAsStringOrDefault(conf, CERT_PASSWORD_KEY, null);
+        useEmbeddedKeystore = getOrDefault(conf, USE_EMBEDDED_KEYSTORE_KEY, true);
+        keystoreFile = getOrDefault(conf, KEYSTORE_FILE_KEY, null);
+        keystorePassword = getOrDefault(conf, KEYSTORE_PASSWORD_KEY, null);
+        certPassword = getOrDefault(conf, CERT_PASSWORD_KEY, null);
 
         proxies = getAsListOfMaps(conf, PROXY_KEY, new ArrayList<>());
 
@@ -546,11 +546,11 @@ public class Configuration {
 
         accessManager = getAsMap(conf, ACCESS_MANAGER_KEY);
 
-        logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH_KEY, URLUtils
+        logFilePath = getOrDefault(conf, LOG_FILE_PATH_KEY, URLUtils
                 .removeTrailingSlashes(System.getProperty("java.io.tmpdir")).concat(File.separator + "uiam.log"));
-        String _logLevel = getAsStringOrDefault(conf, LOG_LEVEL_KEY, "INFO");
-        logToConsole = getAsBooleanOrDefault(conf, ENABLE_LOG_CONSOLE_KEY, true);
-        logToFile = getAsBooleanOrDefault(conf, ENABLE_LOG_FILE_KEY, true);
+        String _logLevel = getOrDefault(conf, LOG_LEVEL_KEY, "INFO");
+        logToConsole = getOrDefault(conf, ENABLE_LOG_CONSOLE_KEY, true);
+        logToFile = getOrDefault(conf, ENABLE_LOG_FILE_KEY, true);
 
         Level level;
 
@@ -566,25 +566,25 @@ public class Configuration {
 
         logLevel = level;
 
-        requestsLimit = getAsIntegerOrDefault(conf, REQUESTS_LIMIT_KEY, 100);
+        requestsLimit = getOrDefault(conf, REQUESTS_LIMIT_KEY, 100);
 
-        ioThreads = getAsIntegerOrDefault(conf, IO_THREADS_KEY, 2);
-        workerThreads = getAsIntegerOrDefault(conf, WORKER_THREADS_KEY, 32);
-        bufferSize = getAsIntegerOrDefault(conf, BUFFER_SIZE_KEY, 16384);
-        directBuffers = getAsBooleanOrDefault(conf, DIRECT_BUFFERS_KEY, true);
+        ioThreads = getOrDefault(conf, IO_THREADS_KEY, 2);
+        workerThreads = getOrDefault(conf, WORKER_THREADS_KEY, 32);
+        bufferSize = getOrDefault(conf, BUFFER_SIZE_KEY, 16384);
+        directBuffers = getOrDefault(conf, DIRECT_BUFFERS_KEY, true);
 
-        forceGzipEncoding = getAsBooleanOrDefault(conf, FORCE_GZIP_ENCODING_KEY, false);
+        forceGzipEncoding = getOrDefault(conf, FORCE_GZIP_ENCODING_KEY, false);
 
-        authTokenEnabled = getAsBooleanOrDefault(conf, AUTH_TOKEN_ENABLED, true);
-        authTokenTtl = getAsIntegerOrDefault(conf, AUTH_TOKEN_TTL, 15);
+        authTokenEnabled = getOrDefault(conf, AUTH_TOKEN_ENABLED, true);
+        authTokenTtl = getOrDefault(conf, AUTH_TOKEN_TTL, 15);
 
-        logExchangeDump = getAsIntegerOrDefault(conf, LOG_REQUESTS_LEVEL_KEY, 0);
+        logExchangeDump = getOrDefault(conf, LOG_REQUESTS_LEVEL_KEY, 0);
 
         connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY);
 
-        initializerClass = getAsStringOrDefault(conf, INITIALIZER_CLASS_KEY, null);
+        initializerClass = getOrDefault(conf, INITIALIZER_CLASS_KEY, null);
 
-        allowUnescapedCharactersInUrl = getAsBooleanOrDefault(conf, ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
+        allowUnescapedCharactersInUrl = getOrDefault(conf, ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
     }
 
     @Override
@@ -686,203 +686,23 @@ public class Configuration {
      * @param defaultValue
      * @return
      */
-    private Boolean getAsBooleanOrDefault(final Map<String, Object> conf, final String key,
-            final Boolean defaultValue) {
-        if (conf == null) {
-            if (!silent) {
-                LOGGER.debug("tried to get paramenter {} from a null configuration map. using its default value {}",
-                        key, defaultValue);
-            }
-            return defaultValue;
-        }
-
-        Object o = conf.get(key);
-
-        if (o == null) {
-            // if default value is null there is no default value actually
-            if (defaultValue && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key,
-                        defaultValue);
-            }
-            return defaultValue;
-        } else if (o instanceof Boolean) {
-            if (!silent) {
-                LOGGER.debug("paramenter {} set to {}", key, o);
-            }
-            return (Boolean) o;
-        } else {
-            if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, o, defaultValue);
-            }
-            return defaultValue;
-        }
-    }
-
-    /**
-     *
-     * @param conf
-     * @param key
-     * @param defaultValue
-     * @return
-     */
-    private String getAsStringOrDefault(final Map<String, Object> conf, final String key, final String defaultValue) {
-
-        if (conf == null || conf.get(key) == null) {
-            // if default value is null there is no default value actually
-            if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key,
-                        defaultValue);
-            }
-            return defaultValue;
-        } else if (conf.get(key) instanceof String) {
-            if (!silent) {
-                LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
-            }
-            return (String) conf.get(key);
-        } else {
-            if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key),
-                        defaultValue);
-            }
-            return defaultValue;
-        }
-    }
-
-    /**
-     *
-     * @param conf
-     * @param key
-     * @param defaultValue
-     * @return
-     */
-    private Integer getAsIntegerOrDefault(final Map<String, Object> conf, final String key,
-            final Integer defaultValue) {
-        if (conf == null || conf.get(key) == null) {
-            // if default value is null there is no default value actually
-            if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key,
-                        defaultValue);
-            }
-            return defaultValue;
-        } else if (conf.get(key) instanceof Integer) {
-            if (!silent) {
-                LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
-            }
-            return (Integer) conf.get(key);
-        } else {
-            if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key),
-                        defaultValue);
-            }
-            return defaultValue;
-        }
-    }
-
-    /**
-     *
-     * @param conf
-     * @param key
-     * @param defaultValue
-     * @return
-     */
-    private Long getAsLongOrDefault(final Map<String, Object> conf, final String key, final Long defaultValue) {
-        if (conf == null || conf.get(key) == null) {
-            // if default value is null there is no default value actually
-            if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key,
-                        defaultValue);
-            }
-            return defaultValue;
-        } else if (conf.get(key) instanceof Number) {
-            if (!silent) {
-                LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
-            }
-            try {
-                return Long.parseLong(conf.get(key).toString());
-            } catch (NumberFormatException nfe) {
-                if (!silent) {
-                    LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key),
-                            defaultValue);
-                }
-                return defaultValue;
-            }
-        } else {
-            if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key),
-                        defaultValue);
-            }
-            return defaultValue;
-        }
-    }
-
-    /**
-     *
-     * @param conf
-     * @param key
-     * @param defaultValue
-     * @return
-     */
     @SuppressWarnings("unchecked")
-    private int[] getAsArrayOfInts(final Map<String, Object> conf, final String key, final int[] defaultValue) {
+    private <V extends Object> V getOrDefault(final Map<String, Object> conf, final String key, final V defaultValue) {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
             if (defaultValue != null && !silent) {
                 LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key,
-                        defaultValue);
-            }
-            return defaultValue;
-        } else if (conf.get(key) instanceof List) {
-            if (!silent) {
-                LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
-            }
-
-            int ret[] = convertListToIntArray((List<Object>) conf.get(key));
-
-            if (ret.length == 0) {
-                if (!silent) {
-                    LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key),
-                            defaultValue);
-                }
-                return defaultValue;
-            } else {
-                return ret;
-            }
-        } else {
-            if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key),
                         defaultValue);
             }
             return defaultValue;
         }
-    }
 
-    @SuppressWarnings("unchecked")
-    private List<String> getAsListOfStrings(final Map<String, Object> conf, final String key,
-            final List<String> defaultValue) {
-        if (conf == null || conf.get(key) == null) {
-            // if default value is null there is no default value actually
-            if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key,
-                        defaultValue);
-            }
-            return defaultValue;
-        } else if (conf.get(key) instanceof List) {
+        try {
             if (!silent) {
                 LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
             }
-
-            List<String> ret = ((List<String>) conf.get(key));
-
-            if (ret.isEmpty()) {
-                if (!silent) {
-                    LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key),
-                            defaultValue);
-                }
-                return defaultValue;
-            } else {
-                return ret;
-            }
-        } else {
+            return (V) conf.get(key);
+        } catch (ClassCastException cce) {
             if (!silent) {
                 LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key),
                         defaultValue);
