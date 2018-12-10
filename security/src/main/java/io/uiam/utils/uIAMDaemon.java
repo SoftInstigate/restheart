@@ -24,7 +24,6 @@ package io.uiam.utils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 import com.sun.akuma.Daemon;
-import static com.sun.akuma.Daemon.getCurrentExecutable;
 import com.sun.akuma.JavaVMArguments;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

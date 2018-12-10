@@ -672,14 +672,6 @@ public class Bootstrapper {
         System.exit(status);
     }
 
-    private static boolean isPathTemplate(final String url) {
-        if (url == null) {
-            return false;
-        } else {
-            return url.contains("{") && url.contains("}");
-        }
-    }
-
     /**
      * getHandlersPipe
      *

@@ -31,6 +31,7 @@ import io.undertow.security.idm.Account;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BaseAccount implements Account {
+    private static final long serialVersionUID = 4199620709967413442L;
     final private Principal principal;
     final private LinkedHashSet<String> roles;
 

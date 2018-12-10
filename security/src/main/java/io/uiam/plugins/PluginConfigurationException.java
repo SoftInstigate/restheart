@@ -22,6 +22,8 @@ package io.uiam.plugins;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class PluginConfigurationException extends Exception {
+    private static final long serialVersionUID = -107523180700714817L;
+
     public PluginConfigurationException() {
         super();
     }

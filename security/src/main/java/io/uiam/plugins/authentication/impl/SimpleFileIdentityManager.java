@@ -94,7 +94,7 @@ public class SimpleFileIdentityManager extends AbstractConfiFileConsumer impleme
             String userid = (String) _userid;
             char[] password = ((String) _password).toCharArray();
 
-            if (((Collection) _roles).stream().anyMatch(i -> !(i instanceof String))) {
+            if (((Collection<?>) _roles).stream().anyMatch(i -> !(i instanceof String))) {
                 throw new IllegalArgumentException(
                         "wrong configuration file format. a roles entry is wrong. they all must be strings");
             }

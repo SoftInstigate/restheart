@@ -105,12 +105,13 @@ public class PluginsFactory {
                 return (PluggableIdentityManager) Class.forName((String) _clazz).getDeclaredConstructor(String.class)
                         .newInstance((String) _name);
             } else {
-                if (!(_args instanceof Map)) {
+                if (!(_args instanceof Map<?, ?>)) {
                     throw new PluginConfigurationException("Error configuring Identity Manager " + (String) _name
                             + Configuration.ARGS_KEY + " property" + " is not a map");
                 } else {
                     return (PluggableIdentityManager) Class.forName((String) _clazz)
-                            .getDeclaredConstructor(String.class, Map.class).newInstance((String) _name, (Map) _args);
+                            .getDeclaredConstructor(String.class, Map.class)
+                            .newInstance((String) _name, (Map<?, ?>) _args);
                 }
             }
         } catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InstantiationException
@@ -152,7 +153,8 @@ public class PluginsFactory {
                             + " property" + " is not a map");
                 } else {
                     return (PluggableAccessManager) Class.forName((String) _clazz)
-                            .getDeclaredConstructor(String.class, Map.class).newInstance((String) _name, (Map) _args);
+                            .getDeclaredConstructor(String.class, Map.class)
+                            .newInstance((String) _name, (Map<?, ?>) _args);
                 }
             }
         } catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InstantiationException
@@ -210,7 +212,7 @@ public class PluginsFactory {
                     return (PluggableService) Class.forName((String) _clazz)
                             .getDeclaredConstructor(PipedHttpHandler.class, String.class, String.class, Boolean.class,
                                     Map.class)
-                            .newInstance(null, (String) _name, (String) _uri, (Boolean) _secured, (Map) _args);
+                            .newInstance(null, (String) _name, (String) _uri, (Boolean) _secured, (Map<?, ?>) _args);
                 }
             }
         } catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InstantiationException

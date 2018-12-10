@@ -17,8 +17,6 @@
  */
 package io.uiam.handlers.injectors;
 
-import java.util.logging.Logger;
-
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
@@ -28,8 +26,6 @@ import io.undertow.server.HttpServerExchange;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestContextInjector extends PipedHttpHandler {
-
-    private static final Logger LOG = Logger.getLogger(RequestContextInjector.class.getName());
 
     /**
      *

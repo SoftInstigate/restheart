@@ -64,7 +64,7 @@ public class AccessManagerHandler extends PipedHttpHandler {
     }
 
     private boolean checkGlobalPredicates(HttpServerExchange hse, RequestContext context) {
-        return this.getGlobalSecurityPredicates().stream().allMatch(predicate -> predicate.resolve(hse, context));
+        return getGlobalSecurityPredicates().stream().allMatch(predicate -> predicate.resolve(hse, context));
     }
 
     /**

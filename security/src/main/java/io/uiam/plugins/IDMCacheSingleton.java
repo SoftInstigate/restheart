@@ -19,9 +19,6 @@ package io.uiam.plugins;
 
 import java.util.Optional;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.uiam.Bootstrapper;
 import io.uiam.cache.Cache;
 import io.uiam.cache.CacheFactory;
@@ -34,7 +31,6 @@ import io.uiam.plugins.authentication.PluggableIdentityManager;
  */
 public class IDMCacheSingleton {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(IDMCacheSingleton.class);
 
     private static final LoadingCache<String, PluggableIdentityManager> IDENTITY_MANAGERS_CACHE = CacheFactory
             .createLocalLoadingCache(Integer.MAX_VALUE, Cache.EXPIRE_POLICY.NEVER, -1, name -> {
@@ -65,7 +61,6 @@ public class IDMCacheSingleton {
         return HOLDER;
     }
 
-    @SuppressWarnings("unchecked")
     private IDMCacheSingleton() {
     }
 

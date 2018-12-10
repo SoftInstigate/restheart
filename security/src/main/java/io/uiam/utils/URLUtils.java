@@ -17,12 +17,11 @@
  */
 package io.uiam.utils;
 
-import io.undertow.server.HttpServerExchange;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.Deque;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -30,10 +29,8 @@ import org.slf4j.LoggerFactory;
  */
 public class URLUtils {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(URLUtils.class);
-
-     /** given string /ciao/this/has/trailings///// returns
-     * /ciao/this/has/trailings
+    /**
+     * given string /ciao/this/has/trailings///// returns /ciao/this/has/trailings
      *
      * @param s
      * @return the string s without the trailing slashes
@@ -58,8 +55,7 @@ public class URLUtils {
      */
     static public String decodeQueryString(String qs) {
         try {
-            return URLDecoder.decode(
-                    qs.replace("+", "%2B"), "UTF-8").replace("%2B", "+");
+            return URLDecoder.decode(qs.replace("+", "%2B"), "UTF-8").replace("%2B", "+");
         } catch (UnsupportedEncodingException ex) {
             return null;
         }
@@ -78,11 +74,11 @@ public class URLUtils {
         int lastSlashPos = path.lastIndexOf('/');
 
         if (lastSlashPos > 0) {
-            return path.substring(0, lastSlashPos); //strip off the slash
+            return path.substring(0, lastSlashPos); // strip off the slash
         } else if (lastSlashPos == 0) {
             return "/";
         } else {
-            return ""; //we expect people to add  + "/somedir on their own
+            return ""; // we expect people to add + "/somedir on their own
         }
     }
 
@@ -92,10 +88,8 @@ public class URLUtils {
      * @return
      */
     static public String getPrefixUrl(HttpServerExchange exchange) {
-        return exchange.getRequestURL()
-                .replaceAll(exchange.getRelativePath(), "");
+        return exchange.getRequestURL().replaceAll(exchange.getRelativePath(), "");
     }
-
 
     /**
      *

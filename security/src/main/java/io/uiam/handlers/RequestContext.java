@@ -19,9 +19,6 @@ package io.uiam.handlers;
 
 import com.google.gson.JsonObject;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
@@ -32,8 +29,6 @@ import io.undertow.util.Methods;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestContext {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(RequestContext.class);
 
     // other constants
     public static final String SLASH = "/";

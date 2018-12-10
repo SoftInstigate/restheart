@@ -24,7 +24,6 @@ import java.util.function.Consumer;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalNotification;
 
 /**
  *
@@ -37,7 +36,7 @@ public class GuavaCache<K, V> implements io.uiam.cache.Cache<K, V> {
     private final Cache<K, Optional<V>> wrapped;
 
     public GuavaCache(long size, EXPIRE_POLICY expirePolicy, long ttl) {
-        CacheBuilder builder = CacheBuilder.newBuilder();
+        CacheBuilder<Object, Object> builder = CacheBuilder.newBuilder();
 
         builder.maximumSize(size);
 
@@ -61,7 +60,7 @@ public class GuavaCache<K, V> implements io.uiam.cache.Cache<K, V> {
             builder.expireAfterAccess(ttl, TimeUnit.MILLISECONDS);
         }
 
-        wrapped = builder.removalListener((RemovalNotification notification) -> {
+        wrapped = builder.removalListener(notification -> {
             remover.accept(notification);
         }).build();
     }

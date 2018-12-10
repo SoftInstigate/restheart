@@ -31,12 +31,11 @@ import java.util.function.Function;
  * @param <K> the class of the keys.
  * @param <V> the class of the values (is Optional-ized).
  */
-@SuppressWarnings("unchecked")
 public class GuavaLoadingCache<K, V> implements io.uiam.cache.LoadingCache<K, V> {
     private final LoadingCache<K, Optional<V>> wrapped;
 
     public GuavaLoadingCache(long size, EXPIRE_POLICY expirePolicy, long ttl, Function<K, V> loader) {
-        CacheBuilder builder = CacheBuilder.newBuilder();
+        CacheBuilder<Object, Object> builder = CacheBuilder.newBuilder();
 
         builder.maximumSize(size);
 

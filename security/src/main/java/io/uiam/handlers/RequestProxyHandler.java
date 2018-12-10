@@ -20,8 +20,6 @@ package io.uiam.handlers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.uiam.Bootstrapper;
-import io.uiam.Configuration;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
@@ -32,8 +30,6 @@ import io.undertow.server.HttpServerExchange;
 public class RequestProxyHandler extends PipedHttpHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestProxyHandler.class);
-
-    private final Configuration configuration = Bootstrapper.getConfiguration();
 
     /**
      * Creates a new instance of RequestLoggerHandler

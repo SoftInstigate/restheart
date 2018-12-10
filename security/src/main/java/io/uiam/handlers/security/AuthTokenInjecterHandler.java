@@ -29,9 +29,6 @@ import java.util.Optional;
 
 import com.google.common.collect.Sets;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.uiam.Bootstrapper;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
@@ -49,8 +46,6 @@ import io.undertow.server.HttpServerExchange;
 public class AuthTokenInjecterHandler extends PipedHttpHandler {
     private static final boolean enabled = Bootstrapper.getConfiguration().isAuthTokenEnabled();
     private static final long TTL = Bootstrapper.getConfiguration().getAuthTokenTtl();
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(AuthTokenInjecterHandler.class);
 
     private static SecureRandom RND_GENERATOR = new SecureRandom();
 
