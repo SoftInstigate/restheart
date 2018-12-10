@@ -17,14 +17,16 @@
  */
 package io.uiam.plugins.authentication.impl;
 
+import static io.uiam.plugins.ConfigurablePlugin.argValue;
+import static io.undertow.util.StatusCodes.UNAUTHORIZED;
+
+import java.util.Map;
+
 import io.uiam.plugins.IDMCacheSingleton;
 import io.uiam.plugins.PluginConfigurationException;
-import static io.uiam.plugins.ConfigurablePlugin.argValue;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
-import static io.undertow.util.StatusCodes.UNAUTHORIZED;
-import java.util.Map;
 
 /**
  *

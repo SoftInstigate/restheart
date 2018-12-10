@@ -17,11 +17,13 @@
  */
 package io.uiam.plugins.authentication.impl;
 
-import com.google.common.collect.Sets;
-import io.undertow.security.idm.Account;
 import java.security.Principal;
 import java.util.LinkedHashSet;
 import java.util.Set;
+
+import com.google.common.collect.Sets;
+
+import io.undertow.security.idm.Account;
 
 /**
  * Base concrete Account implementation

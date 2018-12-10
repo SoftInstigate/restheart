@@ -17,14 +17,15 @@
  */
 package io.uiam.handlers.security;
 
-import io.undertow.server.HttpServerExchange;
 import java.util.HashSet;
 import java.util.Set;
+
+import io.uiam.RequestContextPredicate;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
-import io.uiam.RequestContextPredicate;
-import io.uiam.utils.HttpStatus;
 import io.uiam.plugins.authorization.PluggableAccessManager;
+import io.uiam.utils.HttpStatus;
+import io.undertow.server.HttpServerExchange;
 
 /**
  *

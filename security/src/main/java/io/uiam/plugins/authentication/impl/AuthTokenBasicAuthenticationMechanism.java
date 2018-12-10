@@ -17,9 +17,19 @@
  */
 package io.uiam.plugins.authentication.impl;
 
+import static io.uiam.plugins.ConfigurablePlugin.argValue;
+import static io.undertow.util.Headers.AUTHORIZATION;
+import static io.undertow.util.Headers.BASIC;
+import static io.undertow.util.StatusCodes.UNAUTHORIZED;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.util.List;
+import java.util.Map;
+
 import io.uiam.plugins.IDMCacheSingleton;
 import io.uiam.plugins.PluginConfigurationException;
-import static io.uiam.plugins.ConfigurablePlugin.argValue;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
@@ -28,25 +38,17 @@ import io.undertow.security.idm.PasswordCredential;
 import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.FlexBase64;
-import static io.undertow.util.Headers.AUTHORIZATION;
-import static io.undertow.util.Headers.BASIC;
-import static io.undertow.util.StatusCodes.UNAUTHORIZED;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.util.List;
-import java.util.Map;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
- * this extends the undertow BasicAuthenticationMechanism and authenticate the
- * request using the AuthTokenIdentityManager.
+ *         this extends the undertow BasicAuthenticationMechanism and
+ *         authenticate the request using the AuthTokenIdentityManager.
  *
- * if user already authenticated via a different mechanism, that a token is
- * generated so that later calls can be use the token instead of the actual
- * password
+ *         if user already authenticated via a different mechanism, that a token
+ *         is generated so that later calls can be use the token instead of the
+ *         actual password
  *
  */
 public class AuthTokenBasicAuthenticationMechanism

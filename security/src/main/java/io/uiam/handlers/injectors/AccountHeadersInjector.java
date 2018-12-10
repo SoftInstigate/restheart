@@ -17,18 +17,18 @@
  */
 package io.uiam.handlers.injectors;
 
-import io.undertow.server.HttpServerExchange;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
 import io.uiam.plugins.authentication.impl.BaseAccount;
 import io.undertow.security.idm.Account;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
- * It injects the X-Powered-By response header
+ *         It injects the X-Powered-By response header
  */
 public class AccountHeadersInjector extends PipedHttpHandler {
     /**

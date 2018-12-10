@@ -17,12 +17,15 @@
  */
 package io.uiam;
 
-import com.sun.akuma.CLibrary;
 import java.nio.file.Path;
-import io.uiam.utils.FileUtils;
-import io.uiam.utils.OSChecker;
+
+import com.sun.akuma.CLibrary;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.uiam.utils.FileUtils;
+import io.uiam.utils.OSChecker;
 
 /**
  *

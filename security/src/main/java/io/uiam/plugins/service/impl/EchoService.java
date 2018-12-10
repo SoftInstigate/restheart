@@ -17,12 +17,12 @@
  */
 package io.uiam.plugins.service.impl;
 
-import io.undertow.server.HttpServerExchange;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
 import io.uiam.plugins.service.PluggableService;
 import io.uiam.utils.ChannelReader;
 import io.uiam.utils.HttpStatus;
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -55,7 +55,7 @@ public class EchoService extends PluggableService {
 
         var msg = new StringBuffer();
 
-        msg.append("Method: ");
+        msg.append("xxxMethod: ");
         msg.append(exchange.getRequestMethod().toString());
         msg.append("\n");
 

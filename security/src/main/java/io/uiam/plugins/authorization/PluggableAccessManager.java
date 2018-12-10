@@ -17,8 +17,8 @@
  */
 package io.uiam.plugins.authorization;
 
-import io.undertow.server.HttpServerExchange;
 import io.uiam.handlers.RequestContext;
+import io.undertow.server.HttpServerExchange;
 
 /**
  *

@@ -17,14 +17,15 @@
  */
 package io.uiam.plugins;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.Map;
+
 import io.uiam.Configuration;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 import io.uiam.plugins.authentication.PluggableIdentityManager;
 import io.uiam.plugins.authorization.PluggableAccessManager;
 import io.uiam.plugins.service.PluggableService;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Map;
 
 /**
  *

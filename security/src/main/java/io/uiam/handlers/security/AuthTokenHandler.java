@@ -17,22 +17,24 @@
  */
 package io.uiam.handlers.security;
 
+import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_HEADER;
+import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_VALID_HEADER;
+
 import com.google.common.escape.Escaper;
 import com.google.common.net.UrlEscapers;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+
+import io.uiam.Bootstrapper;
+import io.uiam.handlers.PipedHttpHandler;
+import io.uiam.handlers.RequestContext;
+import io.uiam.plugins.IDMCacheSingleton;
+import io.uiam.plugins.authentication.impl.AuthTokenIdentityManager;
+import io.uiam.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
-import io.uiam.Bootstrapper;
-import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.RequestContext;
-import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_HEADER;
-import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_VALID_HEADER;
-import io.uiam.plugins.IDMCacheSingleton;
-import io.uiam.plugins.authentication.impl.AuthTokenIdentityManager;
-import io.uiam.utils.HttpStatus;
 
 /**
  *

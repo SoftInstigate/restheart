@@ -17,14 +17,16 @@
  */
 package io.uiam.plugins.service.impl;
 
-import io.undertow.server.HttpServerExchange;
+import static io.uiam.plugins.ConfigurablePlugin.argValue;
+
 import java.util.Map;
+
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
 import io.uiam.handlers.RequestContext.METHOD;
-import static io.uiam.plugins.ConfigurablePlugin.argValue;
 import io.uiam.plugins.service.PluggableService;
 import io.uiam.utils.HttpStatus;
+import io.undertow.server.HttpServerExchange;
 
 /**
  *

@@ -17,17 +17,10 @@
  */
 package io.uiam.plugins.authentication.impl;
 
-import com.google.common.collect.Sets;
-import io.uiam.plugins.AbstractConfiFileConsumer;
-import io.uiam.plugins.authentication.PluggableIdentityManager;
-import io.undertow.security.idm.Account;
-import io.undertow.security.idm.Credential;
-import io.undertow.security.idm.DigestCredential;
-import io.undertow.security.idm.PasswordCredential;
-import io.undertow.util.HexConverter;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -38,6 +31,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import com.google.common.collect.Sets;
+
+import io.uiam.plugins.AbstractConfiFileConsumer;
+import io.uiam.plugins.authentication.PluggableIdentityManager;
+import io.undertow.security.idm.Account;
+import io.undertow.security.idm.Credential;
+import io.undertow.security.idm.DigestCredential;
+import io.undertow.security.idm.PasswordCredential;
+import io.undertow.util.HexConverter;
+
 /**
  *
  * Identity Manager with RolesAccounts defined in a yml configuration file
@@ -46,8 +49,7 @@ import java.util.function.Consumer;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class SimpleFileIdentityManager
-        extends AbstractConfiFileConsumer implements PluggableIdentityManager {
+public class SimpleFileIdentityManager extends AbstractConfiFileConsumer implements PluggableIdentityManager {
 
     private final Map<String, PwdCredentialAccount> accounts = new HashMap<>();
 

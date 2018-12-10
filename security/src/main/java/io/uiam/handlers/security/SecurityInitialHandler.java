@@ -17,15 +17,16 @@
  */
 package io.uiam.handlers.security;
 
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+
+import io.uiam.handlers.PipedHttpHandler;
+import io.uiam.handlers.RequestContext;
 import io.undertow.security.api.AuthenticationMode;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.impl.SecurityContextFactoryImpl;
 import io.undertow.server.HttpServerExchange;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.RequestContext;
 
 /**
  * This is the PipedHttpHandler version of

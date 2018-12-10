@@ -17,11 +17,12 @@
  */
 package io.uiam.handlers.security;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * log PluggableAuthenticationMechanism outcomes and makes sure that the wrapped

@@ -18,9 +18,10 @@
 package io.uiam.handlers.injectors;
 
 import com.google.common.net.HttpHeaders;
-import io.undertow.server.HttpServerExchange;
+
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 
 /**

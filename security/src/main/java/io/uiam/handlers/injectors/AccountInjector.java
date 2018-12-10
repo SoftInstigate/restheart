@@ -17,9 +17,9 @@
  */
 package io.uiam.handlers.injectors;
 
-import io.undertow.server.HttpServerExchange;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
+import io.undertow.server.HttpServerExchange;
 
 /**
  *

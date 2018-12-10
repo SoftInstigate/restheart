@@ -1,6 +1,8 @@
 {
     "configurations": [
         {
+            "jdkPath": "${env:JAVA_HOME}/bin",
+            
             "type": "java",
             "name": "Launch uIAM",
             "request": "launch",

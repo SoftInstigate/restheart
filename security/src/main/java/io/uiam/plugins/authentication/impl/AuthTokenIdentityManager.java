@@ -17,15 +17,16 @@
  */
 package io.uiam.plugins.authentication.impl;
 
-import io.undertow.security.idm.Account;
-import io.undertow.security.idm.Credential;
-import io.undertow.security.idm.PasswordCredential;
 import java.util.Arrays;
 import java.util.Optional;
+
 import io.uiam.Bootstrapper;
 import io.uiam.cache.Cache;
 import io.uiam.cache.CacheFactory;
 import io.uiam.plugins.authentication.PluggableIdentityManager;
+import io.undertow.security.idm.Account;
+import io.undertow.security.idm.Credential;
+import io.undertow.security.idm.PasswordCredential;
 
 /**
  *

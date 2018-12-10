@@ -17,6 +17,19 @@
  */
 package io.uiam.handlers;
 
+import static org.fusesource.jansi.Ansi.ansi;
+import static org.fusesource.jansi.Ansi.Color.GREEN;
+import static org.fusesource.jansi.Ansi.Color.RED;
+
+import java.util.Deque;
+import java.util.Iterator;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.uiam.Bootstrapper;
+import io.uiam.Configuration;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.ExchangeCompletionListener;
 import io.undertow.server.HttpHandler;
@@ -25,16 +38,6 @@ import io.undertow.server.handlers.Cookie;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.LocaleUtils;
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.Map;
-import static org.fusesource.jansi.Ansi.Color.GREEN;
-import static org.fusesource.jansi.Ansi.Color.RED;
-import static org.fusesource.jansi.Ansi.ansi;
-import io.uiam.Bootstrapper;
-import io.uiam.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *

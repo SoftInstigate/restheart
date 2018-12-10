@@ -17,16 +17,19 @@
  */
 package io.uiam.plugins.authentication.impl;
 
-import com.google.common.collect.Sets;
-import io.uiam.plugins.PluginConfigurationException;
 import static io.uiam.plugins.ConfigurablePlugin.argValue;
+
+import java.util.List;
+import java.util.Map;
+
+import com.google.common.collect.Sets;
+
+import io.uiam.plugins.PluginConfigurationException;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
-import java.util.List;
-import java.util.Map;
 
 /**
  * a simple IdentityAuthenticationMechanism to demonstrate how to plug a custom

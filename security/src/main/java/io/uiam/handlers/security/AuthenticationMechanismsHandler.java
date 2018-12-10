@@ -17,16 +17,13 @@
  */
 package io.uiam.handlers.security;
 
-/**
- *
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- */
-import io.undertow.security.api.SecurityContext;
-import io.undertow.server.HttpServerExchange;
 import java.util.List;
+
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
+import io.undertow.security.api.SecurityContext;
+import io.undertow.server.HttpServerExchange;
 
 /**
  * This is the PipedHttpHandler version of

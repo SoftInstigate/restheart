@@ -17,30 +17,31 @@
  */
 package io.uiam.handlers.security;
 
-import com.google.common.net.HttpHeaders;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
-import static io.undertow.util.Headers.LOCATION_STRING;
-import static io.undertow.util.Headers.ORIGIN;
-import io.undertow.util.HttpString;
-import static java.lang.Boolean.TRUE;
-import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.RequestContext;
 import static io.uiam.handlers.security.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_CREDENTIAL;
 import static io.uiam.handlers.security.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static io.uiam.handlers.security.CORSHandler.CORSHeaders.ACCESS_CONTROL_EXPOSE_HEADERS;
 import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_HEADER;
 import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
 import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_VALID_HEADER;
+import static io.undertow.util.Headers.LOCATION_STRING;
+import static io.undertow.util.Headers.ORIGIN;
+
+import com.google.common.net.HttpHeaders;
+
+import io.uiam.handlers.PipedHttpHandler;
+import io.uiam.handlers.RequestContext;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderMap;
+import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
- * The Access-Control-Expose-Headers header indicates which headers are safe to
- * expose to the API of a CORS API specification.
+ *         The Access-Control-Expose-Headers header indicates which headers are
+ *         safe to expose to the API of a CORS API specification.
  * 
  */
 public class CORSHandler extends PipedHttpHandler {

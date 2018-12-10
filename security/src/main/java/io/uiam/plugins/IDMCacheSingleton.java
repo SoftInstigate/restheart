@@ -17,14 +17,16 @@
  */
 package io.uiam.plugins;
 
-import io.uiam.Bootstrapper;
 import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.uiam.Bootstrapper;
 import io.uiam.cache.Cache;
 import io.uiam.cache.CacheFactory;
 import io.uiam.cache.LoadingCache;
 import io.uiam.plugins.authentication.PluggableIdentityManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *

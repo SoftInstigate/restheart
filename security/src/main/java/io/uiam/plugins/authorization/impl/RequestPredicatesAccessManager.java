@@ -17,13 +17,9 @@
  */
 package io.uiam.plugins.authorization.impl;
 
-import io.uiam.plugins.AbstractConfiFileConsumer;
 import static com.google.common.collect.Sets.newHashSet;
-import io.undertow.predicate.Predicate;
 import static io.undertow.predicate.Predicate.PREDICATE_CONTEXT;
-import io.undertow.predicate.PredicateParser;
-import io.undertow.security.idm.Account;
-import io.undertow.server.HttpServerExchange;
+
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
 import java.security.Principal;
@@ -33,8 +29,14 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+
 import io.uiam.handlers.RequestContext;
+import io.uiam.plugins.AbstractConfiFileConsumer;
 import io.uiam.plugins.authorization.PluggableAccessManager;
+import io.undertow.predicate.Predicate;
+import io.undertow.predicate.PredicateParser;
+import io.undertow.security.idm.Account;
+import io.undertow.server.HttpServerExchange;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}

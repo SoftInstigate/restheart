@@ -18,7 +18,73 @@
 package io.uiam;
 
 import static com.sun.akuma.CLibrary.LIBC;
+import static io.uiam.Configuration.UIAM_VERSION;
 import static io.undertow.Handlers.path;
+import static org.fusesource.jansi.Ansi.ansi;
+import static org.fusesource.jansi.Ansi.Color.GREEN;
+import static org.fusesource.jansi.Ansi.Color.MAGENTA;
+import static org.fusesource.jansi.Ansi.Color.RED;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.GeneralSecurityException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+
+import org.fusesource.jansi.AnsiConsole;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xnio.OptionMap;
+import org.xnio.Options;
+import org.xnio.SslClientAuthMode;
+import org.xnio.Xnio;
+import org.xnio.ssl.XnioSsl;
+
+import io.uiam.handlers.ErrorHandler;
+import io.uiam.handlers.GzipEncodingHandler;
+import io.uiam.handlers.PipedHttpHandler;
+import io.uiam.handlers.PipedWrappingHandler;
+import io.uiam.handlers.RequestContext;
+import io.uiam.handlers.RequestLoggerHandler;
+import io.uiam.handlers.injectors.AccountHeadersInjector;
+import io.uiam.handlers.injectors.AuthHeadersRemover;
+import io.uiam.handlers.injectors.RequestContextInjector;
+import io.uiam.handlers.injectors.XPoweredByInjector;
+import io.uiam.handlers.security.AuthTokenHandler;
+import io.uiam.handlers.security.CORSHandler;
+import io.uiam.handlers.security.SecurityHandler;
+import io.uiam.plugins.PluginConfigurationException;
+import io.uiam.plugins.PluginsFactory;
+import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
+import io.uiam.plugins.authorization.PluggableAccessManager;
+import io.uiam.plugins.authorization.impl.FullAccessManager;
+import io.uiam.plugins.init.PluggableInitializer;
+import io.uiam.plugins.service.PluggableService;
+import io.uiam.utils.FileUtils;
+import io.uiam.utils.LoggingInitializer;
+import io.uiam.utils.OSChecker;
+import io.uiam.utils.ResourcesExtractor;
+import io.uiam.utils.uIAMDaemon;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.UndertowOptions;
@@ -29,72 +95,10 @@ import io.undertow.server.handlers.HttpContinueAcceptingHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.RequestLimit;
 import io.undertow.server.handlers.RequestLimitingHandler;
-import io.undertow.util.HttpString;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.net.URISyntaxException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-import java.util.HashMap;
-import java.util.Map;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
-import static org.fusesource.jansi.Ansi.Color.GREEN;
-import static org.fusesource.jansi.Ansi.Color.MAGENTA;
-import static org.fusesource.jansi.Ansi.Color.RED;
-import static org.fusesource.jansi.Ansi.ansi;
-import org.fusesource.jansi.AnsiConsole;
-import io.uiam.handlers.ErrorHandler;
-import io.uiam.handlers.GzipEncodingHandler;
-import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.RequestContext;
-import io.uiam.handlers.RequestLoggerHandler;
-import io.uiam.plugins.service.PluggableService;
-import io.uiam.handlers.injectors.RequestContextInjector;
-import io.uiam.plugins.authorization.impl.FullAccessManager;
-import io.uiam.handlers.security.AuthTokenHandler;
-import io.uiam.handlers.security.CORSHandler;
-import io.uiam.utils.FileUtils;
-import io.uiam.utils.LoggingInitializer;
-import io.uiam.utils.OSChecker;
-import io.uiam.utils.uIAMDaemon;
-import io.uiam.utils.ResourcesExtractor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import static io.uiam.Configuration.UIAM_VERSION;
-import io.uiam.handlers.PipedWrappingHandler;
-import io.uiam.handlers.injectors.AuthHeadersRemover;
-import io.uiam.handlers.injectors.AccountHeadersInjector;
-import io.uiam.handlers.injectors.XPoweredByInjector;
-import io.uiam.handlers.security.SecurityHandler;
-import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
-import java.net.URI;
-import java.security.GeneralSecurityException;
-import org.xnio.OptionMap;
-import org.xnio.Options;
-import org.xnio.SslClientAuthMode;
-import org.xnio.Xnio;
-import org.xnio.ssl.XnioSsl;
-import io.uiam.plugins.authorization.PluggableAccessManager;
-import java.util.ArrayList;
-import java.util.List;
-import io.uiam.plugins.init.PluggableInitializer;
-import io.uiam.plugins.PluginConfigurationException;
-import io.uiam.plugins.PluginsFactory;
+import io.undertow.util.HttpString;
 
 /**
  *
@@ -137,9 +141,7 @@ public class Bootstrapper {
             LOGGER.info("ANSI colored console: "
                     + ansi().fg(RED).bold().a(configuration.isAnsiConsole()).reset().toString());
         } catch (ConfigurationException ex) {
-            LOGGER.info(STARTING
-                    + ansi().fg(RED).bold().a(UIAM).reset().toString()
-                    + INSTANCE
+            LOGGER.info(STARTING + ansi().fg(RED).bold().a(UIAM).reset().toString() + INSTANCE
                     + ansi().fg(RED).bold().a(UNDEFINED).reset().toString());
 
             if (UIAM_VERSION != null) {
@@ -164,11 +166,11 @@ public class Bootstrapper {
             }
 
             // uIAMDaemon only works on POSIX OSes
-            final boolean isPosix = FileSystems.getDefault()
-                    .supportedFileAttributeViews().contains("posix");
+            final boolean isPosix = FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
 
             if (!isPosix) {
-                logErrorAndExit("Unable to fork process, this is only supported on POSIX compliant OSes", null, false, -1);
+                logErrorAndExit("Unable to fork process, this is only supported on POSIX compliant OSes", null, false,
+                        -1);
             }
 
             uIAMDaemon d = new uIAMDaemon();
@@ -189,9 +191,7 @@ public class Bootstrapper {
                 try {
                     String instanceName = getInstanceName();
 
-                    LOGGER.info(STARTING
-                            + ansi().fg(RED).bold().a(UIAM).reset().toString()
-                            + INSTANCE
+                    LOGGER.info(STARTING + ansi().fg(RED).bold().a(UIAM).reset().toString() + INSTANCE
                             + ansi().fg(RED).bold().a(instanceName).reset().toString());
 
                     if (UIAM_VERSION != null) {
@@ -211,9 +211,7 @@ public class Bootstrapper {
     private static void logWindowsStart() {
         String instanceName = getInstanceName();
 
-        LOGGER.info(STARTING
-                + ansi().fg(RED).bold().a(UIAM).reset().toString()
-                + INSTANCE
+        LOGGER.info(STARTING + ansi().fg(RED).bold().a(UIAM).reset().toString() + INSTANCE
                 + ansi().fg(RED).bold().a(instanceName).reset().toString());
 
         if (UIAM_VERSION != null) {
@@ -234,12 +232,11 @@ public class Bootstrapper {
 
         // pid file name include the hash of the configuration file so that
         // for each configuration we can have just one instance running
-        Path pidFilePath = FileUtils.getPidFilePath(
-                FileUtils.getFileAbsoultePathHash(confFilePath));
+        Path pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsoultePathHash(confFilePath));
 
         if (Files.exists(pidFilePath)) {
-            LOGGER.warn("Found pid file! If this instance is already "
-                    + "running, startup will fail with a BindException");
+            LOGGER.warn(
+                    "Found pid file! If this instance is already " + "running, startup will fail with a BindException");
 
             return true;
         }
@@ -321,7 +318,8 @@ public class Bootstrapper {
         }
 
         if (configuration.isLogToFile()) {
-            LOGGER.info("Logging to file {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
+            LOGGER.info("Logging to file {} with level {}", configuration.getLogFilePath(),
+                    configuration.getLogLevel());
         }
 
         if (!fork) {
@@ -361,8 +359,7 @@ public class Bootstrapper {
     private static void startServer(boolean fork) {
         logWindowsStart();
 
-        Path pidFilePath = FileUtils.getPidFilePath(
-                FileUtils.getFileAbsoultePathHash(CONF_FILE_PATH));
+        Path pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsoultePathHash(CONF_FILE_PATH));
 
         boolean pidFileAlreadyExists = false;
 
@@ -398,33 +395,20 @@ public class Bootstrapper {
         // run initialized if defined
         if (configuration.getInitializerClass() != null) {
             try {
-                Object o = Class
-                        .forName(configuration.getInitializerClass())
-                        .getDeclaredConstructor()
-                        .newInstance();
+                Object o = Class.forName(configuration.getInitializerClass()).getDeclaredConstructor().newInstance();
 
                 if (o instanceof PluggableInitializer) {
                     try {
                         ((PluggableInitializer) o).init();
-                        LOGGER.info(
-                                "initializer {} executed",
-                                configuration.getInitializerClass());
+                        LOGGER.info("initializer {} executed", configuration.getInitializerClass());
                     } catch (Throwable t) {
-                        LOGGER.error("Error executing intializer {}",
-                                configuration.getInitializerClass(),
-                                t);
+                        LOGGER.error("Error executing intializer {}", configuration.getInitializerClass(), t);
                     }
                 }
-            } catch (ClassNotFoundException
-                    | NoSuchMethodException
-                    | InvocationTargetException
-                    | InstantiationException
+            } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException
                     | IllegalAccessException t) {
-                LOGGER.error(ansi().fg(RED).bold().a(
-                        "Wrong configuration for intializer {}")
-                        .reset().toString(),
-                        configuration.getInitializerClass(),
-                        t);
+                LOGGER.error(ansi().fg(RED).bold().a("Wrong configuration for intializer {}").reset().toString(),
+                        configuration.getInitializerClass(), t);
             }
         }
 
@@ -432,11 +416,8 @@ public class Bootstrapper {
     }
 
     private static String getInstanceName() {
-        return configuration == null
-                ? UNDEFINED
-                : configuration.getInstanceName() == null
-                ? UNDEFINED
-                : configuration.getInstanceName();
+        return configuration == null ? UNDEFINED
+                : configuration.getInstanceName() == null ? UNDEFINED : configuration.getInstanceName();
     }
 
     /**
@@ -472,8 +453,7 @@ public class Bootstrapper {
             }
         }
 
-        Path pidFilePath = FileUtils.getPidFilePath(
-                FileUtils.getFileAbsoultePathHash(CONF_FILE_PATH));
+        Path pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsoultePathHash(CONF_FILE_PATH));
 
         if (removePid && pidFilePath != null) {
             if (!silent) {
@@ -525,7 +505,8 @@ public class Bootstrapper {
         final PluggableAccessManager accessManager = loadAccessManager();
 
         if (configuration.isAuthTokenEnabled()) {
-            LOGGER.info("Token based authentication enabled with token TTL {} minutes", configuration.getAuthTokenTtl());
+            LOGGER.info("Token based authentication enabled with token TTL {} minutes",
+                    configuration.getAuthTokenTtl());
         }
 
         SSLContext sslContext = null;
@@ -546,30 +527,33 @@ public class Bootstrapper {
 
                 ks.load(Bootstrapper.class.getClassLoader().getResourceAsStream(storename), storepass);
                 kmf.init(ks, keypass);
-            } else if (configuration.getKeystoreFile() != null
-                    && configuration.getKeystorePassword() != null
+            } else if (configuration.getKeystoreFile() != null && configuration.getKeystorePassword() != null
                     && configuration.getCertPassword() != null) {
                 try (FileInputStream fis = new FileInputStream(new File(configuration.getKeystoreFile()))) {
                     ks.load(fis, configuration.getKeystorePassword().toCharArray());
                     kmf.init(ks, configuration.getCertPassword().toCharArray());
                 }
             } else {
-                LOGGER.error("The keystore is not configured. Check the keystore-file, keystore-password and certpassword options.");
+                LOGGER.error(
+                        "The keystore is not configured. Check the keystore-file, keystore-password and certpassword options.");
             }
 
             tmf.init(ks);
 
             sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-        } catch (KeyManagementException
-                | NoSuchAlgorithmException
-                | KeyStoreException
-                | CertificateException
+        } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | CertificateException
                 | UnrecoverableKeyException ex) {
-            logErrorAndExit("Couldn't start uIAM, error with specified keystore. Check the keystore-file, keystore-password and certpassword options. Exiting..", ex, false, -1);
+            logErrorAndExit(
+                    "Couldn't start uIAM, error with specified keystore. Check the keystore-file, keystore-password and certpassword options. Exiting..",
+                    ex, false, -1);
         } catch (FileNotFoundException ex) {
-            logErrorAndExit("Couldn't start uIAM, keystore file not found. Check the keystore-file, keystore-password and certpassword options. Exiting..", ex, false, -1);
+            logErrorAndExit(
+                    "Couldn't start uIAM, keystore file not found. Check the keystore-file, keystore-password and certpassword options. Exiting..",
+                    ex, false, -1);
         } catch (IOException ex) {
-            logErrorAndExit("Couldn't start uIAM, error reading the keystore file. Check the keystore-file, keystore-password and certpassword options. Exiting..", ex, false, -1);
+            logErrorAndExit(
+                    "Couldn't start uIAM, error reading the keystore file. Check the keystore-file, keystore-password and certpassword options. Exiting..",
+                    ex, false, -1);
         }
 
         Builder builder = Undertow.builder();
@@ -591,18 +575,14 @@ public class Bootstrapper {
 
         shutdownHandler = getHandlersPipe(authenticationMechanisms, accessManager);
 
-        builder = builder
-                .setIoThreads(configuration.getIoThreads())
-                .setWorkerThreads(configuration.getWorkerThreads())
-                .setDirectBuffers(configuration.isDirectBuffers())
-                .setBufferSize(configuration.getBufferSize())
+        builder = builder.setIoThreads(configuration.getIoThreads()).setWorkerThreads(configuration.getWorkerThreads())
+                .setDirectBuffers(configuration.isDirectBuffers()).setBufferSize(configuration.getBufferSize())
                 .setHandler(shutdownHandler);
 
-        // starting undertow 1.4.23 URL become much stricter 
+        // starting undertow 1.4.23 URL become much stricter
         // (undertow commit 09d40a13089dbff37f8c76d20a41bf0d0e600d9d)
         // allow unescaped chars in URL (otherwise not allowed by default)
-        builder.setServerOption(
-                UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL,
+        builder.setServerOption(UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL,
                 configuration.isAllowUnescapedCharactersInUrl());
         LOGGER.info("Allow unescaped characters in URL: {}", configuration.isAllowUnescapedCharactersInUrl());
 
@@ -620,13 +600,11 @@ public class Bootstrapper {
     private static List<PluggableAuthenticationMechanism> loadAuthenticationMechanisms() {
         var authMechanisms = new ArrayList<PluggableAuthenticationMechanism>();
 
-        if (configuration.getAuthMechanisms() != null
-                && !configuration.getAuthMechanisms().isEmpty()) {
+        if (configuration.getAuthMechanisms() != null && !configuration.getAuthMechanisms().isEmpty()) {
             configuration.getAuthMechanisms().stream().forEachOrdered(am -> {
 
                 try {
-                    authMechanisms.add(PluginsFactory
-                            .getAutenticationMechanism(am));
+                    authMechanisms.add(PluginsFactory.getAutenticationMechanism(am));
                     LOGGER.info("Authentication Mechanism {} enabled", am.get(Configuration.NAME_KEY));
                 } catch (PluginConfigurationException pcex) {
                     logErrorAndExit(pcex.getMessage(), pcex, false, -3);
@@ -647,19 +625,17 @@ public class Bootstrapper {
     private static PluggableAccessManager loadAccessManager() {
         if (configuration.getAccessManager() == null) {
             LOGGER.warn("***** No Access Manager specified. All requests are allowed.");
-            if (configuration.getAuthMechanisms() != null
-                    && configuration.getAuthMechanisms().size() > 1) {
+            if (configuration.getAuthMechanisms() != null && configuration.getAuthMechanisms().size() > 1) {
                 return new FullAccessManager(true);
             } else {
                 return new FullAccessManager(false);
             }
         } else {
             try {
-                return PluginsFactory.getAccessManager(
-                        configuration.getAccessManager());
+                return PluginsFactory.getAccessManager(configuration.getAccessManager());
             } catch (PluginConfigurationException ex) {
-                logErrorAndExit("Error configuring Access Manager implementation "
-                        + configuration.getAccessManager(), ex, false, -3);
+                logErrorAndExit("Error configuring Access Manager implementation " + configuration.getAccessManager(),
+                        ex, false, -3);
                 return null;
             }
         }
@@ -716,27 +692,17 @@ public class Bootstrapper {
             final PluggableAccessManager accessManager) {
         PathHandler paths = path();
 
-        plugServices(configuration,
-                paths,
-                authenticationMechanisms,
-                accessManager);
+        plugServices(configuration, paths, authenticationMechanisms, accessManager);
 
         // plug the auth tokens invalidation handler
         if (configuration.isAuthTokenEnabled()) {
             paths.addPrefixPath("/_authtokens",
                     new RequestLoggerHandler(
-                            new CORSHandler(
-                                    new XPoweredByInjector(
-                                            new SecurityHandler(
-                                                    new AuthTokenHandler(),
-                                                    authenticationMechanisms,
-                                                    new FullAccessManager(true))))));
+                            new CORSHandler(new XPoweredByInjector(new SecurityHandler(new AuthTokenHandler(),
+                                    authenticationMechanisms, new FullAccessManager(true))))));
         }
 
-        proxyResources(configuration,
-                paths,
-                authenticationMechanisms,
-                accessManager);
+        proxyResources(configuration, paths, authenticationMechanisms, accessManager);
 
         return buildGracefulShutdownHandler(paths);
     }
@@ -747,29 +713,19 @@ public class Bootstrapper {
      * @param paths
      * @return
      */
-    private static GracefulShutdownHandler
-            buildGracefulShutdownHandler(PathHandler paths) {
-        return new GracefulShutdownHandler(
-                new RequestLimitingHandler(new RequestLimit(configuration
-                        .getRequestsLimit()),
-                        new AllowedMethodsHandler(
-                                new BlockingHandler(
-                                        new GzipEncodingHandler(
-                                                new ErrorHandler(
-                                                        new HttpContinueAcceptingHandler(paths)
-                                                ), configuration
-                                                        .isForceGzipEncoding()
-                                        )
-                                ), // allowed methods
-                                HttpString.tryFromString(RequestContext.METHOD.GET.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.POST.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.PUT.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.DELETE.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.PATCH.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.OPTIONS.name())
-                        )
-                )
-        );
+    private static GracefulShutdownHandler buildGracefulShutdownHandler(PathHandler paths) {
+        return new GracefulShutdownHandler(new RequestLimitingHandler(
+                new RequestLimit(configuration.getRequestsLimit()),
+                new AllowedMethodsHandler(
+                        new BlockingHandler(
+                                new GzipEncodingHandler(new ErrorHandler(new HttpContinueAcceptingHandler(paths)),
+                                        configuration.isForceGzipEncoding())), // allowed methods
+                        HttpString.tryFromString(RequestContext.METHOD.GET.name()),
+                        HttpString.tryFromString(RequestContext.METHOD.POST.name()),
+                        HttpString.tryFromString(RequestContext.METHOD.PUT.name()),
+                        HttpString.tryFromString(RequestContext.METHOD.DELETE.name()),
+                        HttpString.tryFromString(RequestContext.METHOD.PATCH.name()),
+                        HttpString.tryFromString(RequestContext.METHOD.OPTIONS.name()))));
 
     }
 
@@ -782,9 +738,7 @@ public class Bootstrapper {
      * @param identityManager
      * @param accessManager
      */
-    private static void plugServices(
-            final Configuration conf,
-            final PathHandler paths,
+    private static void plugServices(final Configuration conf, final PathHandler paths,
             final List<PluggableAuthenticationMechanism> authenticationMechanisms,
             final PluggableAccessManager accessManager) {
         if (!conf.getServices().isEmpty()) {
@@ -792,31 +746,21 @@ public class Bootstrapper {
                 try {
                     PluggableService srv = PluginsFactory.getService(serviceConf);
 
-                    PipedHttpHandler handler
-                            = new RequestContextInjector(srv);
+                    PipedHttpHandler handler = new RequestContextInjector(srv);
 
                     if (srv.getSecured()) {
                         paths.addPrefixPath(srv.getUri(),
-                                new RequestLoggerHandler(
-                                        new CORSHandler(
-                                                new XPoweredByInjector(
-                                                        new SecurityHandler(
-                                                                handler,
-                                                                authenticationMechanisms,
-                                                                accessManager)))));
+                                new RequestLoggerHandler(new CORSHandler(new XPoweredByInjector(
+                                        new SecurityHandler(handler, authenticationMechanisms, accessManager)))));
                     } else {
                         paths.addPrefixPath(srv.getUri(),
                                 new RequestLoggerHandler(
-                                        new CORSHandler(
-                                                new XPoweredByInjector(
-                                                        new SecurityHandler(
-                                                                handler,
-                                                                authenticationMechanisms,
-                                                                new FullAccessManager(false))))));
+                                        new CORSHandler(new XPoweredByInjector(new SecurityHandler(handler,
+                                                authenticationMechanisms, new FullAccessManager(false))))));
                     }
 
-                    LOGGER.info("URI {} bound to service {}."
-                            + " secured: {}", srv.getUri(), srv.getName(), srv.getSecured());
+                    LOGGER.info("URI {} bound to service {}." + " secured: {}", srv.getUri(), srv.getName(),
+                            srv.getSecured());
 
                 } catch (PluginConfigurationException pce) {
                     LOGGER.error("Error pluggin service", pce);
@@ -834,9 +778,7 @@ public class Bootstrapper {
      * @param identityManager
      * @param accessManager
      */
-    private static void proxyResources(
-            final Configuration conf,
-            final PathHandler paths,
+    private static void proxyResources(final Configuration conf, final PathHandler paths,
             final List<PluggableAuthenticationMechanism> authenticationMechanisms,
             final PluggableAccessManager accessManager) {
         if (conf.getProxies() == null || conf.getProxies().isEmpty()) {
@@ -848,10 +790,9 @@ public class Bootstrapper {
             String uri = (String) m.get(Configuration.PROXY_URI_KEY);
             String resourceURL = (String) m.get(Configuration.PROXY_URL_KEY);
 
-            //TODO make this static
+            // TODO make this static
             final Xnio xnio = Xnio.getInstance();
-            final OptionMap optionMap = OptionMap.create(
-                    Options.SSL_CLIENT_AUTH_MODE, SslClientAuthMode.REQUIRED,
+            final OptionMap optionMap = OptionMap.create(Options.SSL_CLIENT_AUTH_MODE, SslClientAuthMode.REQUIRED,
                     Options.SSL_STARTTLS, true);
 
             XnioSsl sslProvider = null;
@@ -863,30 +804,19 @@ public class Bootstrapper {
             }
 
             try {
-                //TODO allow adding more hosts for load balancing
-                ProxyClient proxyClient = new LoadBalancingProxyClient()
-                        .addHost(new URI(resourceURL), sslProvider)
+                // TODO allow adding more hosts for load balancing
+                ProxyClient proxyClient = new LoadBalancingProxyClient().addHost(new URI(resourceURL), sslProvider)
                         .setConnectionsPerThread(20);
 
-                ProxyHandler proxyHandler = ProxyHandler.builder()
-                        .setRewriteHostHeader(true)
-                        .setProxyClient(proxyClient)
-                        .setNext(new AccountHeadersInjector())
-                        .build();
+                ProxyHandler proxyHandler = ProxyHandler.builder().setRewriteHostHeader(true)
+                        .setProxyClient(proxyClient).setNext(new AccountHeadersInjector()).build();
 
-                PipedHttpHandler wrappedProxyHandler
-                        = new AccountHeadersInjector(
-                                new PipedWrappingHandler(
-                                        new XPoweredByInjector(),
-                                        proxyHandler));
+                PipedHttpHandler wrappedProxyHandler = new AccountHeadersInjector(
+                        new PipedWrappingHandler(new XPoweredByInjector(), proxyHandler));
 
                 paths.addPrefixPath(uri,
-                        new RequestLoggerHandler(
-                                new SecurityHandler(
-                                        new AuthHeadersRemover(
-                                                wrappedProxyHandler),
-                                        authenticationMechanisms,
-                                        accessManager)));
+                        new RequestLoggerHandler(new SecurityHandler(new AuthHeadersRemover(wrappedProxyHandler),
+                                authenticationMechanisms, accessManager)));
 
                 LOGGER.info("URI {} bound to resource {}", uri, resourceURL);
             } catch (URISyntaxException ex) {

@@ -22,6 +22,7 @@ package io.uiam;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ConfigurationException extends Exception {
+    private static final long serialVersionUID = 1685800316196830204L;
 
     public ConfigurationException() {
         super();

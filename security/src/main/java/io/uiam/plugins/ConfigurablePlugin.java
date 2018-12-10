@@ -17,7 +17,6 @@
  */
 package io.uiam.plugins;
 
-import io.uiam.plugins.PluginConfigurationException;
 import java.util.Map;
 
 /**

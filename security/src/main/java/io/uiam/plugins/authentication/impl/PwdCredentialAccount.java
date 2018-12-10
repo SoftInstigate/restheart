@@ -17,8 +17,9 @@
  */
 package io.uiam.plugins.authentication.impl;
 
-import io.undertow.security.idm.PasswordCredential;
 import java.util.Set;
+
+import io.undertow.security.idm.PasswordCredential;
 
 /**
  * Account implementation that holds PasswordCredential

@@ -17,12 +17,13 @@
  */
 package io.uiam.handlers;
 
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.uiam.Bootstrapper;
-import io.uiam.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.uiam.Bootstrapper;
+import io.uiam.Configuration;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 
 /**
  *

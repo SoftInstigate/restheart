@@ -17,26 +17,30 @@
  */
 package io.uiam.handlers.security;
 
-import com.google.common.collect.Sets;
-import io.undertow.security.idm.Account;
-import io.undertow.server.HttpServerExchange;
+import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_HEADER;
+import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
+import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_VALID_HEADER;
+
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
+
+import com.google.common.collect.Sets;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.uiam.Bootstrapper;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.RequestContext;
-import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_HEADER;
-import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
-import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_VALID_HEADER;
 import io.uiam.plugins.IDMCacheSingleton;
 import io.uiam.plugins.PluginConfigurationException;
 import io.uiam.plugins.authentication.impl.AuthTokenIdentityManager;
 import io.uiam.plugins.authentication.impl.PwdCredentialAccount;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.undertow.security.idm.Account;
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -46,8 +50,7 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
     private static final boolean enabled = Bootstrapper.getConfiguration().isAuthTokenEnabled();
     private static final long TTL = Bootstrapper.getConfiguration().getAuthTokenTtl();
 
-    private static final Logger LOGGER
-            = LoggerFactory.getLogger(AuthTokenInjecterHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthTokenInjecterHandler.class);
 
     private static SecureRandom RND_GENERATOR = new SecureRandom();
 

@@ -17,13 +17,14 @@
  */
 package io.uiam.plugins.init.impl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.uiam.RequestContextPredicate;
 import io.uiam.handlers.RequestContext;
 import io.uiam.handlers.security.AccessManagerHandler;
-import io.undertow.server.HttpServerExchange;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.uiam.plugins.init.PluggableInitializer;
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
