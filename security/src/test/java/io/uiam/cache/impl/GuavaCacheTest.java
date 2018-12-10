@@ -17,10 +17,15 @@
  */
 package io.uiam.cache.impl;
 
-import io.uiam.cache.impl.GuavaCache;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import java.util.Optional;
-import static org.junit.Assert.*;
+
 import org.junit.Test;
+
 import io.uiam.cache.Cache;
 
 /**
@@ -34,8 +39,8 @@ public class GuavaCacheTest {
 
     @Test
     public void testGet() {
-        Object key = "A";
-        GuavaCache instance = new GuavaCache(100, Cache.EXPIRE_POLICY.AFTER_WRITE, 10000);
+        String key = "A";
+        GuavaCache<String, Integer> instance = new GuavaCache(100, Cache.EXPIRE_POLICY.AFTER_WRITE, 10000);
         instance.put(key, 1);
         Optional<Integer> result = instance.get(key);
         assertTrue(result.isPresent());
@@ -44,7 +49,7 @@ public class GuavaCacheTest {
 
     @Test
     public void getNonExistent() {
-        GuavaCache instance = new GuavaCache(100, Cache.EXPIRE_POLICY.AFTER_WRITE, 10000);
+        GuavaCache<String, Integer> instance = new GuavaCache(100, Cache.EXPIRE_POLICY.AFTER_WRITE, 10000);
         Optional<Integer> result = instance.get("A");
         assertNull(result);
     }
@@ -52,11 +57,10 @@ public class GuavaCacheTest {
     @Test
     public void testPutNull() {
         String key = "B";
-        Object value = null;
-        GuavaCache instance = new GuavaCache(100, Cache.EXPIRE_POLICY.AFTER_WRITE, 10000);
+        Integer value = null;
+        GuavaCache<String, Integer> instance = new GuavaCache(100, Cache.EXPIRE_POLICY.AFTER_WRITE, 10000);
         instance.put(key, value);
         Optional<Integer> result = instance.get(key);
         assertFalse(result.isPresent());
     }
-
 }

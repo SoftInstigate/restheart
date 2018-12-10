@@ -17,10 +17,10 @@
  */
 package io.uiam.handlers;
 
-import io.undertow.util.HttpString;
+import static org.junit.Assert.assertEquals;
+
 import org.junit.After;
 import org.junit.AfterClass;
-import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -31,13 +31,16 @@ import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
+
 /**
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class RequestContextTest {
+public class ExchangeHelperTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RequestContextTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ExchangeHelperTest.class);
 
     @BeforeClass
     public static void setUpClass() {
@@ -46,6 +49,7 @@ public class RequestContextTest {
     @AfterClass
     public static void tearDownClass() {
     }
+
     @Rule
     public TestRule watcher = new TestWatcher() {
         @Override
@@ -54,7 +58,7 @@ public class RequestContextTest {
         }
     };
 
-    public RequestContextTest() {
+    public ExchangeHelperTest() {
     }
 
     @Before
@@ -67,13 +71,16 @@ public class RequestContextTest {
 
     @Test
     public void testSelectRequestMethod() {
-        HttpString _method = new HttpString("UNKNOWN");
-        assertEquals(RequestContext.METHOD.OTHER, RequestContext.selectRequestMethod(_method));
+        var ex = new HttpServerExchange();
+        var hex = new ExchangeHelper(ex);
 
-        _method = new HttpString("GET");
-        assertEquals(RequestContext.METHOD.GET, RequestContext.selectRequestMethod(_method));
+        ex.setRequestMethod(new HttpString("UNKNOWN"));
+        assertEquals(ExchangeHelper.METHOD.OTHER, hex.getMethod());
 
-        _method = new HttpString("PATCH");
-        assertEquals(RequestContext.METHOD.PATCH, RequestContext.selectRequestMethod(_method));
+        ex.setRequestMethod(new HttpString("GET"));
+        assertEquals(ExchangeHelper.METHOD.GET, hex.getMethod());
+
+        ex.setRequestMethod(new HttpString("PATCH"));
+        assertEquals(ExchangeHelper.METHOD.PATCH, hex.getMethod());
     }
 }
