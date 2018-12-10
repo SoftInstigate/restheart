@@ -45,7 +45,8 @@ abstract public class AbstractConfiFileConsumer {
     abstract public Consumer<? super Map<String, Object>> consumeConfiguration();
 
     @SuppressWarnings("unchecked")
-    public void init(Map<String, Object> arguments, String type) throws FileNotFoundException, UnsupportedEncodingException {
+    public void init(Map<String, Object> arguments, String type)
+            throws FileNotFoundException, UnsupportedEncodingException {
         InputStream is = null;
         try {
             final String confFilePath = extractConfigFilePath(arguments);
@@ -54,7 +55,8 @@ abstract public class AbstractConfiFileConsumer {
             List<Map<String, Object>> confItems = extractConfItems(conf, type);
             confItems.stream().forEach(consumeConfiguration());
         } catch (FileNotFoundException | UnsupportedEncodingException ex) {
-            LOGGER.error("*** cannot find the file {} specified in the configuration.", extractConfigFilePath(arguments));
+            LOGGER.error("*** cannot find the file {} specified in the configuration.",
+                    extractConfigFilePath(arguments));
             LOGGER.error("*** note that the path must be either absolute or relative"
                     + " to the directory containing the uIAM jar file.");
             throw ex;
@@ -79,7 +81,8 @@ abstract public class AbstractConfiFileConsumer {
         }
         String confFilePath = (String) _confFilePath;
         if (!confFilePath.startsWith("/")) {
-            // this is to allow specifying the configuration file path relative to the jar (also working when running from classes)
+            // this is to allow specifying the configuration file path relative to the jar
+            // (also working when running from classes)
             URL location = this.getClass().getProtectionDomain().getCodeSource().getLocation();
             File locationFile = new File(location.getPath());
             confFilePath = locationFile.getParent() + File.separator + confFilePath;
@@ -88,10 +91,12 @@ abstract public class AbstractConfiFileConsumer {
     }
 
     @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> extractConfItems(final Map<String, Object> conf, String type) throws IllegalArgumentException {
+    private List<Map<String, Object>> extractConfItems(final Map<String, Object> conf, String type)
+            throws IllegalArgumentException {
         Object _users = conf.get(type);
         if (_users == null || !(_users instanceof List)) {
-            throw new IllegalArgumentException("wrong configuration file format. missing mandatory '" + type + "' section.");
+            throw new IllegalArgumentException(
+                    "wrong configuration file format. missing mandatory '" + type + "' section.");
         }
         List<Map<String, Object>> users = (List<Map<String, Object>>) _users;
         return users;

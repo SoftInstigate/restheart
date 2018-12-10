@@ -34,10 +34,7 @@ public abstract class PipedHttpHandler implements HttpHandler {
      * @param context
      * @throws Exception
      */
-    public abstract void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception;
+    public abstract void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception;
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {

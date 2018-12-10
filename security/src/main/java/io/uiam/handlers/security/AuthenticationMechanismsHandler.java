@@ -53,8 +53,7 @@ public class AuthenticationMechanismsHandler extends PipedHttpHandler {
 
         if (sc != null) {
             authenticationMechanisms.forEach((mechanism) -> {
-                sc.addAuthenticationMechanism(new AuthenticationMechanism(
-                        mechanism));
+                sc.addAuthenticationMechanism(new AuthenticationMechanism(mechanism));
             });
         }
 

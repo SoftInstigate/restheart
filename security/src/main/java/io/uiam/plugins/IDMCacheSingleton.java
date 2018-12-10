@@ -36,33 +36,24 @@ public class IDMCacheSingleton {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IDMCacheSingleton.class);
 
-    private static final LoadingCache<String, PluggableIdentityManager> IDENTITY_MANAGERS_CACHE
-            = CacheFactory.createLocalLoadingCache(
-                    Integer.MAX_VALUE,
-                    Cache.EXPIRE_POLICY.NEVER,
-                    -1,
-                    name -> {
-                        var idmsConf = Bootstrapper.getConfiguration().getIdms();
+    private static final LoadingCache<String, PluggableIdentityManager> IDENTITY_MANAGERS_CACHE = CacheFactory
+            .createLocalLoadingCache(Integer.MAX_VALUE, Cache.EXPIRE_POLICY.NEVER, -1, name -> {
+                var idmsConf = Bootstrapper.getConfiguration().getIdms();
 
-                        var idmConf = idmsConf.stream()
-                                .filter(idm -> name.equals(idm.get("name")))
-                                .findFirst();
+                var idmConf = idmsConf.stream().filter(idm -> name.equals(idm.get("name"))).findFirst();
 
-                        if (idmConf.isPresent()) {
-                            try {
-                                return PluginsFactory.getIdentityManager(idmConf.get());
-                            } catch (PluginConfigurationException pcex) {
-                                throw new IllegalStateException(pcex.getMessage(), 
-                                        pcex);
-                            }
-                        } else {
-                            var errorMsg = "Identity Manager " + name
-                            + " not found.";
-                            
-                            throw new IllegalStateException(errorMsg,
-                                    new PluginConfigurationException(errorMsg));
-                        }
-                    });
+                if (idmConf.isPresent()) {
+                    try {
+                        return PluginsFactory.getIdentityManager(idmConf.get());
+                    } catch (PluginConfigurationException pcex) {
+                        throw new IllegalStateException(pcex.getMessage(), pcex);
+                    }
+                } else {
+                    var errorMsg = "Identity Manager " + name + " not found.";
+
+                    throw new IllegalStateException(errorMsg, new PluginConfigurationException(errorMsg));
+                }
+            });
 
     private static IDMCacheSingleton HOLDER;
 

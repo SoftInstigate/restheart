@@ -61,11 +61,9 @@ public class GuavaCache<K, V> implements io.uiam.cache.Cache<K, V> {
             builder.expireAfterAccess(ttl, TimeUnit.MILLISECONDS);
         }
 
-        wrapped = builder
-                .removalListener((RemovalNotification notification) -> {
-                    remover.accept(notification);
-                })
-                .build();
+        wrapped = builder.removalListener((RemovalNotification notification) -> {
+            remover.accept(notification);
+        }).build();
     }
 
     @Override

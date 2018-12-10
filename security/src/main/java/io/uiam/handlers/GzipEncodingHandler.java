@@ -43,7 +43,7 @@ public class GzipEncodingHandler extends EncodingHandler {
      *
      * @param next
      * @param forceCompression if true requests without gzip encoding in
-     * Accept-Encoding header will be rejected
+     *                         Accept-Encoding header will be rejected
      */
     public GzipEncodingHandler(HttpHandler next, boolean forceCompression) {
         super(next, new ContentEncodingRepository().addEncodingHandler("gzip", new GzipEncodingProvider(), 50));
@@ -64,10 +64,7 @@ public class GzipEncodingHandler extends EncodingHandler {
 
             RequestContext errorContext = new RequestContext(exchange);
 
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    errorContext,
-                    HttpStatus.SC_BAD_REQUEST,
+            ResponseHelper.endExchangeWithMessage(exchange, errorContext, HttpStatus.SC_BAD_REQUEST,
                     "Accept-Encoding header must include gzip");
 
             sender.handleRequest(exchange, errorContext);

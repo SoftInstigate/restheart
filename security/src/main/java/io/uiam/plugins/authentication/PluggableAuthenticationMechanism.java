@@ -27,14 +27,12 @@ import io.undertow.server.HttpServerExchange;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public interface PluggableAuthenticationMechanism extends AuthenticationMechanism, ConfigurablePlugin {
-    @Override
-    public AuthenticationMechanismOutcome authenticate(
-            final HttpServerExchange exchange,
-            final SecurityContext securityContext);
+        @Override
+        public AuthenticationMechanismOutcome authenticate(final HttpServerExchange exchange,
+                        final SecurityContext securityContext);
 
-    @Override
-    public ChallengeResult sendChallenge(final HttpServerExchange exchange,
-            final SecurityContext securityContext);
+        @Override
+        public ChallengeResult sendChallenge(final HttpServerExchange exchange, final SecurityContext securityContext);
 
-    public String getMechanismName();
+        public String getMechanismName();
 }

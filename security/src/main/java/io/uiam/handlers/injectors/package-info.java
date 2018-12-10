@@ -18,6 +18,6 @@
 /**
  * Handlers in charge of injecting data in the request context.
  * 
-* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 package io.uiam.handlers.injectors;

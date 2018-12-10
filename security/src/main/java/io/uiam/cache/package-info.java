@@ -16,8 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
- * Cache abstraction layer classes that makes possible injecting the actual cache implementation via configuration.
+ * Cache abstraction layer classes that makes possible injecting the actual
+ * cache implementation via configuration.
  * 
-* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 package io.uiam.cache;

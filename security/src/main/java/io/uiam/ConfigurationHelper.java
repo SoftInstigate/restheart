@@ -84,9 +84,7 @@ public class ConfigurationHelper {
     }
 
     @SuppressWarnings("unchecked")
-    public static void setConnectionOptions(
-            Builder builder,
-            Configuration configuration) {
+    public static void setConnectionOptions(Builder builder, Configuration configuration) {
 
         Map<String, Object> options = configuration.getConnectionOptions();
 

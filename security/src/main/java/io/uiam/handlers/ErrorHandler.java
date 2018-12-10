@@ -34,7 +34,7 @@ public class ErrorHandler implements HttpHandler {
     private final HttpHandler next;
 
     private final PipedHttpHandler sender = new ResponseSenderHandler(null);
-    
+
     private final Logger LOGGER = LoggerFactory.getLogger(ErrorHandler.class);
 
     /**
@@ -52,22 +52,17 @@ public class ErrorHandler implements HttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange)
-            throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         try {
             next.handleRequest(exchange);
         } catch (Exception t) {
             LOGGER.error("Error handling the request", t);
 
             RequestContext errorContext = new RequestContext(exchange);
-            
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    errorContext,
-                    HttpStatus.SC_INTERNAL_SERVER_ERROR,
+
+            ResponseHelper.endExchangeWithMessage(exchange, errorContext, HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "Error handling the request, see log for more information", t);
-            
+
             sender.handleRequest(exchange, errorContext);
         }
     }

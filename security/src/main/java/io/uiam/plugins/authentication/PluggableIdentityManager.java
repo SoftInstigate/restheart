@@ -29,7 +29,7 @@ import io.undertow.security.idm.IdentityManager;
 public interface PluggableIdentityManager extends IdentityManager, ConfigurablePlugin {
     @Override
     public Account verify(Account account);
-    
+
     @Override
     public Account verify(String id, Credential credential);
 

@@ -47,16 +47,13 @@ public class ResponseSenderHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (!exchange.isResponseStarted()) {
             exchange.setStatusCode(context.getResponseStatusCode());
         }
 
         JsonObject responseContent = context.getResponseContent();
-        
+
         if (responseContent != null) {
             exchange.getResponseSender().send(responseContent.toString());
         }

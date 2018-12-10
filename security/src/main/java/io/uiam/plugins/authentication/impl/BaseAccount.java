@@ -39,8 +39,7 @@ public class BaseAccount implements Account {
      * @param name
      * @param roles
      */
-    public BaseAccount(final String name, 
-            final Set<String> roles) {
+    public BaseAccount(final String name, final Set<String> roles) {
         if (name == null) {
             throw new IllegalArgumentException("argument principal cannot be null");
         }

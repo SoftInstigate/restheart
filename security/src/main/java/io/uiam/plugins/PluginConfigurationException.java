@@ -22,15 +22,15 @@ package io.uiam.plugins;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class PluginConfigurationException extends Exception {
-   public PluginConfigurationException() {
-       super();
-   }
-   
-   public PluginConfigurationException(String message) {
-       super(message);
-   }
-    
-   public PluginConfigurationException(String message, Throwable t) {
-       super(message, t);
-   }
+    public PluginConfigurationException() {
+        super();
+    }
+
+    public PluginConfigurationException(String message) {
+        super(message);
+    }
+
+    public PluginConfigurationException(String message, Throwable t) {
+        super(message, t);
+    }
 }

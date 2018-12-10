@@ -50,8 +50,7 @@ public class RequestPredicatesAccessManager extends AbstractConfiFileConsumer im
      * @throws java.io.FileNotFoundException
      * @throws java.io.UnsupportedEncodingException
      */
-    public RequestPredicatesAccessManager(String name,
-            Map<String, Object> configuration)
+    public RequestPredicatesAccessManager(String name, Map<String, Object> configuration)
             throws FileNotFoundException, UnsupportedEncodingException {
         init(configuration, "permissions");
     }
@@ -63,13 +62,15 @@ public class RequestPredicatesAccessManager extends AbstractConfiFileConsumer im
             Object _predicate = u.get("predicate");
 
             if (_role == null || !(_role instanceof String)) {
-                throw new IllegalArgumentException("wrong configuration file format. a permission entry is missing the role");
+                throw new IllegalArgumentException(
+                        "wrong configuration file format. a permission entry is missing the role");
             }
 
             String role = (String) _role;
 
             if (_predicate == null || !(_predicate instanceof String)) {
-                throw new IllegalArgumentException("wrong configuration file format. a permission entry is missing the predicate");
+                throw new IllegalArgumentException(
+                        "wrong configuration file format. a permission entry is missing the predicate");
             }
 
             Predicate predicate = null;
@@ -106,10 +107,7 @@ public class RequestPredicatesAccessManager extends AbstractConfiFileConsumer im
         // see https://issues.jboss.org/browse/UNDERTOW-1317
         exchange.setRelativePath(exchange.getRequestPath());
 
-        return roles(exchange).anyMatch(
-                role -> aclForRole(role).stream()
-                        .anyMatch(
-                                p -> p.resolve(exchange)));
+        return roles(exchange).anyMatch(role -> aclForRole(role).stream().anyMatch(p -> p.resolve(exchange)));
     }
 
     @Override

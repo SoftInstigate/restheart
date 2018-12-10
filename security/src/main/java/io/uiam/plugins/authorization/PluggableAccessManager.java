@@ -33,7 +33,7 @@ public interface PluggableAccessManager {
      * @return true if request is allowed
      */
     boolean isAllowed(HttpServerExchange exchange, RequestContext context);
-    
+
     /**
      *
      * @param exchange

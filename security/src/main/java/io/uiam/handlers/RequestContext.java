@@ -33,8 +33,7 @@ import io.undertow.util.Methods;
  */
 public class RequestContext {
 
-    private static final Logger LOGGER
-            = LoggerFactory.getLogger(RequestContext.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequestContext.class);
 
     // other constants
     public static final String SLASH = "/";
@@ -43,7 +42,7 @@ public class RequestContext {
     private static final String NUL = Character.toString('\0');
 
     private final METHOD method;
-    
+
     private String rawContent;
 
     private int responseStatusCode;
@@ -60,7 +59,7 @@ public class RequestContext {
     public RequestContext(HttpServerExchange exchange) {
         this.method = selectRequestMethod(exchange.getRequestMethod());
     }
-    
+
     static METHOD selectRequestMethod(HttpString _method) {
         METHOD method;
         if (Methods.GET.equals(_method)) {
@@ -116,7 +115,7 @@ public class RequestContext {
     public void setResponseStatusCode(int responseStatusCode) {
         this.responseStatusCode = responseStatusCode;
     }
-    
+
     /**
      * @return the responseContent
      */
@@ -144,7 +143,6 @@ public class RequestContext {
     public void setResponseContentType(String responseContentType) {
         this.responseContentType = responseContentType;
     }
-
 
     public long getRequestStartTime() {
         return requestStartTime;
@@ -179,15 +177,9 @@ public class RequestContext {
     }
 
     public enum METHOD {
-        GET,
-        POST,
-        PUT,
-        DELETE,
-        PATCH,
-        OPTIONS,
-        OTHER
+        GET, POST, PUT, DELETE, PATCH, OPTIONS, OTHER
     }
-    
+
     /**
      * helper method to check request method
      *

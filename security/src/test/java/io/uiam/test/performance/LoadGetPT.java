@@ -44,8 +44,7 @@ public class LoadGetPT extends AbstractPT {
     private boolean printData = false;
     private String doc;
 
-    private final ConcurrentHashMap<Long, Integer> threadPages
-            = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, Integer> threadPages = new ConcurrentHashMap<>();
 
     /**
      *
@@ -53,10 +52,9 @@ public class LoadGetPT extends AbstractPT {
     public void get() throws IOException {
         URLConnection connection = new URL(url).openConnection();
 
-        //connection.setRequestProperty("Accept-Encoding", "gzip");
+        // connection.setRequestProperty("Accept-Encoding", "gzip");
         InputStream stream = connection.getInputStream();
-        try (BufferedReader in = new BufferedReader(
-                new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
             String data = in.readLine();
 
             while (data != null) {
@@ -76,7 +74,8 @@ public class LoadGetPT extends AbstractPT {
     }
 
     /**
-    /**
+     * /**
+     * 
      * @return the doc
      */
     public String getDoc() {

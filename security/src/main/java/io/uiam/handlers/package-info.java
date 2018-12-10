@@ -18,6 +18,6 @@
 /**
  * Handlers for HTTP requests.
  * 
-* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 package io.uiam.handlers;

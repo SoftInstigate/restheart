@@ -85,12 +85,11 @@ public class CORSHandler extends PipedHttpHandler {
             next(exchange, context);
         }
     }
-    
 
     private void injectAccessControlAllowHeaders(HttpServerExchange exchange) {
         HeaderMap requestHeaders = exchange.getRequestHeaders();
         HeaderMap responseHeaders = exchange.getResponseHeaders();
-        
+
         if (requestHeaders.contains(ORIGIN)) {
             responseHeaders.add(ACCESS_CONTROL_ALLOW_ORIGIN, requestHeaders.get(ORIGIN).getFirst());
         } else {
@@ -101,12 +100,9 @@ public class CORSHandler extends PipedHttpHandler {
 
         responseHeaders.add(ACCESS_CONTROL_EXPOSE_HEADERS, LOCATION_STRING);
         responseHeaders.add(ACCESS_CONTROL_EXPOSE_HEADERS,
-                LOCATION_STRING + ", "
-                + Headers.ETAG + ", "
-                + AUTH_TOKEN_HEADER.toString() + ", "
-                + AUTH_TOKEN_VALID_HEADER.toString() + ", "
-                + AUTH_TOKEN_LOCATION_HEADER.toString() + ", "
-                + HttpHeaders.X_POWERED_BY);
+                LOCATION_STRING + ", " + Headers.ETAG + ", " + AUTH_TOKEN_HEADER.toString() + ", "
+                        + AUTH_TOKEN_VALID_HEADER.toString() + ", " + AUTH_TOKEN_LOCATION_HEADER.toString() + ", "
+                        + HttpHeaders.X_POWERED_BY);
     }
 
     interface CORSHeaders {

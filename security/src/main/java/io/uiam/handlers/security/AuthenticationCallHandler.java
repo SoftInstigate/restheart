@@ -43,12 +43,10 @@ public class AuthenticationCallHandler extends PipedHttpHandler {
      * authentication is not required.
      *
      * @throws java.lang.Exception
-     * @see
-     * io.undertow.server.HttpHandler#handleRequest(io.undertow.server.HttpServerExchange)
+     * @see io.undertow.server.HttpHandler#handleRequest(io.undertow.server.HttpServerExchange)
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context)
-            throws Exception {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (exchange.isInIoThread()) {
             exchange.dispatch(this);
             return;

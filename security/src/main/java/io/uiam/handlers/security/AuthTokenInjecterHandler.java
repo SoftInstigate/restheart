@@ -89,26 +89,20 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
         exchange.getResponseHeaders().add(AUTH_TOKEN_VALID_HEADER,
                 Instant.now().plus(TTL, ChronoUnit.MINUTES).toString());
         exchange.getResponseHeaders().add(AUTH_TOKEN_LOCATION_HEADER,
-                "/_authtokens/"
-                + exchange.getSecurityContext().getAuthenticatedAccount()
-                        .getPrincipal().getName());
+                "/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
     }
 
     private char[] cacheSessionToken(Account authenticatedAccount) throws PluginConfigurationException {
         String id = authenticatedAccount.getPrincipal().getName();
 
-        AuthTokenIdentityManager idm = (AuthTokenIdentityManager) IDMCacheSingleton
-                .getInstance()
+        AuthTokenIdentityManager idm = (AuthTokenIdentityManager) IDMCacheSingleton.getInstance()
                 .getIdentityManager(AuthTokenIdentityManager.NAME);
 
-        Optional<PwdCredentialAccount> cachedTokenAccount
-                = idm.getCachedAccounts().get(id);
+        Optional<PwdCredentialAccount> cachedTokenAccount = idm.getCachedAccounts().get(id);
 
         if (cachedTokenAccount == null) {
             char[] token = nextToken();
-            PwdCredentialAccount newCachedTokenAccount = new PwdCredentialAccount(
-                    id,
-                    token,
+            PwdCredentialAccount newCachedTokenAccount = new PwdCredentialAccount(id, token,
                     Sets.newTreeSet(authenticatedAccount.getRoles()));
 
             idm.getCachedAccounts().put(id, newCachedTokenAccount);
@@ -120,8 +114,6 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
     }
 
     private static char[] nextToken() {
-        return new BigInteger(256, RND_GENERATOR)
-                .toString(Character.MAX_RADIX)
-                .toCharArray();
+        return new BigInteger(256, RND_GENERATOR).toString(Character.MAX_RADIX).toCharArray();
     }
 }

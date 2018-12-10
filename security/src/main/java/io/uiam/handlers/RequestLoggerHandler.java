@@ -100,7 +100,7 @@ public class RequestLoggerHandler extends PipedHttpHandler {
      * @param exchange the HttpServerExchange
      * @param logLevel it can be 0, 1 or 2
      */
-    protected void dumpExchange(HttpServerExchange exchange, RequestContext context,  Integer logLevel) {
+    protected void dumpExchange(HttpServerExchange exchange, RequestContext context, Integer logLevel) {
         if (logLevel < 1) {
             return;
         }
@@ -109,8 +109,7 @@ public class RequestLoggerHandler extends PipedHttpHandler {
         final long start = context != null ? context.getRequestStartTime() : System.currentTimeMillis();
 
         if (logLevel == 1) {
-            sb.append(exchange.getRequestMethod()).append(" ")
-                    .append(exchange.getRequestURL());
+            sb.append(exchange.getRequestMethod()).append(" ").append(exchange.getRequestURL());
 
             if (exchange.getQueryString() != null && !exchange.getQueryString().isEmpty()) {
                 sb.append("?").append(exchange.getQueryString());
@@ -120,22 +119,28 @@ public class RequestLoggerHandler extends PipedHttpHandler {
         } else if (logLevel >= 2) {
             sb.append("\n----------------------------REQUEST---------------------------\n");
             sb.append("               URI=").append(exchange.getRequestURI()).append("\n");
-            sb.append(" characterEncoding=").append(exchange.getRequestHeaders().get(Headers.CONTENT_ENCODING)).append("\n");
+            sb.append(" characterEncoding=").append(exchange.getRequestHeaders().get(Headers.CONTENT_ENCODING))
+                    .append("\n");
             sb.append("     contentLength=").append(exchange.getRequestContentLength()).append("\n");
-            sb.append("       contentType=").append(exchange.getRequestHeaders().get(Headers.CONTENT_TYPE)).append("\n");
+            sb.append("       contentType=").append(exchange.getRequestHeaders().get(Headers.CONTENT_TYPE))
+                    .append("\n");
 
             Map<String, Cookie> cookies = exchange.getRequestCookies();
             if (cookies != null) {
                 cookies.entrySet().stream().map((entry) -> entry.getValue()).forEach((cookie) -> {
-                    sb.append("            cookie=").append(cookie.getName()).append("=").append(cookie.getValue()).append("\n");
+                    sb.append("            cookie=").append(cookie.getName()).append("=").append(cookie.getValue())
+                            .append("\n");
                 });
             }
             for (HeaderValues header : exchange.getRequestHeaders()) {
                 header.stream().forEach((value) -> {
-                    sb.append("            header=").append(header.getHeaderName()).append("=").append(value).append("\n");
+                    sb.append("            header=").append(header.getHeaderName()).append("=").append(value)
+                            .append("\n");
                 });
             }
-            sb.append("            locale=").append(LocaleUtils.getLocalesFromHeader(exchange.getRequestHeaders().get(Headers.ACCEPT_LANGUAGE))).append("\n");
+            sb.append("            locale=")
+                    .append(LocaleUtils.getLocalesFromHeader(exchange.getRequestHeaders().get(Headers.ACCEPT_LANGUAGE)))
+                    .append("\n");
             sb.append("            method=").append(exchange.getRequestMethod()).append("\n");
             Map<String, Deque<String>> pnames = exchange.getQueryParameters();
             pnames.entrySet().stream().map((entry) -> {
@@ -167,75 +172,81 @@ public class RequestLoggerHandler extends PipedHttpHandler {
         addExchangeCompleteListener(exchange, logLevel, sb, start);
     }
 
-    private void addExchangeCompleteListener(HttpServerExchange exchange, Integer logLevel, final StringBuilder sb, final long start) {
-        exchange.addExchangeCompleteListener((final HttpServerExchange exchange1, final ExchangeCompletionListener.NextListener nextListener) -> {
-            if (logLevel < 1) {
-                return;
-            }
-
-            // note sc is always null if this handler is chained before SecurityHandlerDispacher
-            final SecurityContext sc = exchange1.getSecurityContext();
-
-            if (logLevel == 1) {
-                sb.append(" =>").append(" status=");
-
-                if (exchange.getStatusCode() >= 300
-                        && exchange.getStatusCode() != 304) {
-                    sb.append(ansi().fg(RED).bold().a(exchange.getStatusCode()).reset().toString());
-                } else {
-                    sb.append(ansi().fg(GREEN).bold().a(exchange.getStatusCode()).reset().toString());
-                }
-
-                sb.append(" elapsed=")
-                        .append(System.currentTimeMillis() - start)
-                        .append("ms")
-                        .append(" contentLength=").append(exchange1.getResponseContentLength());
-
-                if (sc != null && sc.getAuthenticatedAccount() != null) {
-                    sb.append(" username=").append(sc.getAuthenticatedAccount().getPrincipal().getName())
-                            .append(" roles=").append(sc.getAuthenticatedAccount().getRoles());
-                }
-            } else if (logLevel >= 2) {
-                sb.append("--------------------------RESPONSE--------------------------\n");
-                if (sc != null) {
-                    if (sc.isAuthenticated()) {
-                        sb.append("          authType=").append(sc.getMechanismName()).append("\n");
-                        sb.append("          username=").append(sc.getAuthenticatedAccount().getPrincipal().getName()).append("\n");
-                        sb.append("             roles=").append(sc.getAuthenticatedAccount().getRoles()).append("\n");
-                    } else {
-                        sb.append("          authType=none" + "\n");
+    private void addExchangeCompleteListener(HttpServerExchange exchange, Integer logLevel, final StringBuilder sb,
+            final long start) {
+        exchange.addExchangeCompleteListener(
+                (final HttpServerExchange exchange1, final ExchangeCompletionListener.NextListener nextListener) -> {
+                    if (logLevel < 1) {
+                        return;
                     }
-                }
 
-                sb.append("     contentLength=").append(exchange1.getResponseContentLength()).append("\n");
-                sb.append("       contentType=").append(exchange1.getResponseHeaders().getFirst(Headers.CONTENT_TYPE)).append("\n");
-                Map<String, Cookie> cookies1 = exchange1.getResponseCookies();
-                if (cookies1 != null) {
-                    cookies1.values().stream().forEach((cookie) -> {
-                        sb.append("            cookie=").append(cookie.getName()).append("=").append(cookie.getValue()).append("; domain=").append(cookie.getDomain()).append("; path=").append(cookie.getPath()).append("\n");
-                    });
-                }
-                for (HeaderValues header : exchange1.getResponseHeaders()) {
-                    header.stream().forEach((value) -> {
-                        sb.append("            header=").append(header.getHeaderName()).append("=").append(value).append("\n");
-                    });
-                }
-                sb.append("            status=");
+                    // note sc is always null if this handler is chained before
+                    // SecurityHandlerDispacher
+                    final SecurityContext sc = exchange1.getSecurityContext();
 
-                if (exchange.getStatusCode() >= 300) {
-                    sb.append(ansi().fg(RED).bold().a(exchange1.getStatusCode()).reset().toString());
-                } else {
-                    sb.append(ansi().fg(GREEN).bold().a(exchange1.getStatusCode()).reset().toString());
-                }
+                    if (logLevel == 1) {
+                        sb.append(" =>").append(" status=");
 
-                sb.append("\n");
+                        if (exchange.getStatusCode() >= 300 && exchange.getStatusCode() != 304) {
+                            sb.append(ansi().fg(RED).bold().a(exchange.getStatusCode()).reset().toString());
+                        } else {
+                            sb.append(ansi().fg(GREEN).bold().a(exchange.getStatusCode()).reset().toString());
+                        }
 
-                sb.append("           elapsed=").append(System.currentTimeMillis() - start).append("ms\n");
-                sb.append("==============================================================");
-            }
+                        sb.append(" elapsed=").append(System.currentTimeMillis() - start).append("ms")
+                                .append(" contentLength=").append(exchange1.getResponseContentLength());
 
-            nextListener.proceed();
-            LOGGER.info(sb.toString());
-        });
+                        if (sc != null && sc.getAuthenticatedAccount() != null) {
+                            sb.append(" username=").append(sc.getAuthenticatedAccount().getPrincipal().getName())
+                                    .append(" roles=").append(sc.getAuthenticatedAccount().getRoles());
+                        }
+                    } else if (logLevel >= 2) {
+                        sb.append("--------------------------RESPONSE--------------------------\n");
+                        if (sc != null) {
+                            if (sc.isAuthenticated()) {
+                                sb.append("          authType=").append(sc.getMechanismName()).append("\n");
+                                sb.append("          username=")
+                                        .append(sc.getAuthenticatedAccount().getPrincipal().getName()).append("\n");
+                                sb.append("             roles=").append(sc.getAuthenticatedAccount().getRoles())
+                                        .append("\n");
+                            } else {
+                                sb.append("          authType=none" + "\n");
+                            }
+                        }
+
+                        sb.append("     contentLength=").append(exchange1.getResponseContentLength()).append("\n");
+                        sb.append("       contentType=")
+                                .append(exchange1.getResponseHeaders().getFirst(Headers.CONTENT_TYPE)).append("\n");
+                        Map<String, Cookie> cookies1 = exchange1.getResponseCookies();
+                        if (cookies1 != null) {
+                            cookies1.values().stream().forEach((cookie) -> {
+                                sb.append("            cookie=").append(cookie.getName()).append("=")
+                                        .append(cookie.getValue()).append("; domain=").append(cookie.getDomain())
+                                        .append("; path=").append(cookie.getPath()).append("\n");
+                            });
+                        }
+                        for (HeaderValues header : exchange1.getResponseHeaders()) {
+                            header.stream().forEach((value) -> {
+                                sb.append("            header=").append(header.getHeaderName()).append("=")
+                                        .append(value).append("\n");
+                            });
+                        }
+                        sb.append("            status=");
+
+                        if (exchange.getStatusCode() >= 300) {
+                            sb.append(ansi().fg(RED).bold().a(exchange1.getStatusCode()).reset().toString());
+                        } else {
+                            sb.append(ansi().fg(GREEN).bold().a(exchange1.getStatusCode()).reset().toString());
+                        }
+
+                        sb.append("\n");
+
+                        sb.append("           elapsed=").append(System.currentTimeMillis() - start).append("ms\n");
+                        sb.append("==============================================================");
+                    }
+
+                    nextListener.proceed();
+                    LOGGER.info(sb.toString());
+                });
     }
 }

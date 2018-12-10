@@ -42,9 +42,7 @@ public class SecurityHandler extends PipedHttpHandler {
             final List<PluggableAuthenticationMechanism> authenticationMechanisms,
             final PluggableAccessManager accessManager) {
 
-        super(buildSecurityHandlersChain(next,
-                authenticationMechanisms,
-                accessManager));
+        super(buildSecurityHandlersChain(next, authenticationMechanisms, accessManager));
     }
 
     @Override
@@ -52,28 +50,21 @@ public class SecurityHandler extends PipedHttpHandler {
         next(exchange, context);
     }
 
-    private static PipedHttpHandler buildSecurityHandlersChain(
-            PipedHttpHandler next,
-            final List<PluggableAuthenticationMechanism> mechanisms,
-            final PluggableAccessManager accessManager) {
+    private static PipedHttpHandler buildSecurityHandlersChain(PipedHttpHandler next,
+            final List<PluggableAuthenticationMechanism> mechanisms, final PluggableAccessManager accessManager) {
         if (mechanisms != null && mechanisms.size() > 0) {
             PipedHttpHandler handler;
 
             if (accessManager == null) {
-                throw new IllegalArgumentException("Error, accessManager cannot "
-                        + "be null. "
-                        + "Eventually use FullAccessManager "
-                        + "that gives full access power ");
+                throw new IllegalArgumentException("Error, accessManager cannot " + "be null. "
+                        + "Eventually use FullAccessManager " + "that gives full access power ");
             }
 
-            handler = new AuthTokenInjecterHandler(
-                    new AccessManagerHandler(accessManager, next));
+            handler = new AuthTokenInjecterHandler(new AccessManagerHandler(accessManager, next));
 
             handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE,
                     new AuthenticationMechanismsHandler(
-                            new AuthenticationConstraintHandler(
-                                    new AuthenticationCallHandler(handler),
-                                    accessManager),
+                            new AuthenticationConstraintHandler(new AuthenticationCallHandler(handler), accessManager),
                             mechanisms));
 
             return handler;

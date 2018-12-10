@@ -34,12 +34,11 @@ public class FullAccessManager implements PluggableAccessManager {
     public FullAccessManager(boolean authenticationRequired) {
         this.authenticationRequired = authenticationRequired;
     }
-    
+
     @Override
     public boolean isAllowed(HttpServerExchange exchange, RequestContext context) {
         return true;
     }
-
 
     @Override
     public boolean isAuthenticationRequired(HttpServerExchange exchange) {

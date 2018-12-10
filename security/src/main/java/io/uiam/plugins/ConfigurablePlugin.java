@@ -24,30 +24,26 @@ import java.util.Map;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public interface ConfigurablePlugin {
-     /**
+    /**
      *
      * @param args
      * @param argKey
      * @return the string arg value of argKey from args
      * @throws PluginConfigurationException
      */
-    public static <V extends Object> V argValue(final Map<String, Object> args,
-            final String argKey)
+    public static <V extends Object> V argValue(final Map<String, Object> args, final String argKey)
             throws PluginConfigurationException {
-        if (args == null
-                || !args.containsKey(argKey)) {
+        if (args == null || !args.containsKey(argKey)) {
             throw new PluginConfigurationException(
-                    "The AuthenticationMechanism"
-                    + " requires the argument '" + argKey + "'");
+                    "The AuthenticationMechanism" + " requires the argument '" + argKey + "'");
         } else {
             try {
                 return (V) args.get(argKey);
             } catch (ClassCastException cce) {
                 throw new PluginConfigurationException(
-                        "Wrong type for AuthenticationMechanism"
-                        + " argument '" + argKey + "'", cce);
+                        "Wrong type for AuthenticationMechanism" + " argument '" + argKey + "'", cce);
             }
         }
     }
-    
+
 }

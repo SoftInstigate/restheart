@@ -53,10 +53,8 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class AuthenticationMechanism
-        implements PluggableAuthenticationMechanism {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(AuthenticationMechanism.class);
+public class AuthenticationMechanism implements PluggableAuthenticationMechanism {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationMechanism.class);
 
     private final PluggableAuthenticationMechanism wrapped;
 
@@ -65,24 +63,21 @@ public class AuthenticationMechanism
     }
 
     @Override
-    public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange,
-            SecurityContext securityContext) {
-        AuthenticationMechanismOutcome outcome = wrapped
-                .authenticate(exchange, securityContext);
+    public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange, SecurityContext securityContext) {
+        AuthenticationMechanismOutcome outcome = wrapped.authenticate(exchange, securityContext);
 
         LOGGER.debug(wrapped.getMechanismName() + " -> " + outcome.name());
 
         switch (outcome) {
-            case NOT_AUTHENTICATED:
-                return AuthenticationMechanismOutcome.NOT_ATTEMPTED;
-            default:
-                return outcome;
+        case NOT_AUTHENTICATED:
+            return AuthenticationMechanismOutcome.NOT_ATTEMPTED;
+        default:
+            return outcome;
         }
     }
 
     @Override
-    public ChallengeResult sendChallenge(HttpServerExchange exchange,
-            SecurityContext securityContext) {
+    public ChallengeResult sendChallenge(HttpServerExchange exchange, SecurityContext securityContext) {
         return wrapped.sendChallenge(exchange, securityContext);
     }
 

@@ -58,7 +58,8 @@ public class SimpleFileIdentityManager extends AbstractConfiFileConsumer impleme
      * @param arguments
      * @throws java.io.FileNotFoundException
      */
-    public SimpleFileIdentityManager(String name, Map<String, Object> arguments) throws FileNotFoundException, UnsupportedEncodingException {
+    public SimpleFileIdentityManager(String name, Map<String, Object> arguments)
+            throws FileNotFoundException, UnsupportedEncodingException {
         init(arguments, "users");
     }
 
@@ -71,26 +72,31 @@ public class SimpleFileIdentityManager extends AbstractConfiFileConsumer impleme
             Object _roles = u.get("roles");
 
             if (_userid == null || !(_userid instanceof String)) {
-                throw new IllegalArgumentException("wrong configuration file format. a user entry is missing the userid");
+                throw new IllegalArgumentException(
+                        "wrong configuration file format. a user entry is missing the userid");
             }
 
             if (_password == null || !(_password instanceof String)) {
-                throw new IllegalArgumentException("wrong configuration file format. a user entry is missing the password");
+                throw new IllegalArgumentException(
+                        "wrong configuration file format. a user entry is missing the password");
             }
 
             if (_roles == null) {
-                throw new IllegalArgumentException("wrong configuration file format. a user entry is missing the roles");
+                throw new IllegalArgumentException(
+                        "wrong configuration file format. a user entry is missing the roles");
             }
 
             if (!(_roles instanceof List)) {
-                throw new IllegalArgumentException("wrong configuration file format. a user entry roles argument is not an array");
+                throw new IllegalArgumentException(
+                        "wrong configuration file format. a user entry roles argument is not an array");
             }
 
             String userid = (String) _userid;
             char[] password = ((String) _password).toCharArray();
 
             if (((Collection) _roles).stream().anyMatch(i -> !(i instanceof String))) {
-                throw new IllegalArgumentException("wrong configuration file format. a roles entry is wrong. they all must be strings");
+                throw new IllegalArgumentException(
+                        "wrong configuration file format. a roles entry is wrong. they all must be strings");
             }
 
             Set<String> roles = Sets.newLinkedHashSet((Collection) _roles);
@@ -132,8 +138,7 @@ public class SimpleFileIdentityManager extends AbstractConfiFileConsumer impleme
 
     private boolean verifyPasswordCredential(Account account, Credential credential) {
         char[] password = ((PasswordCredential) credential).getPassword();
-        char[] expectedPassword = accounts.get(account.getPrincipal().getName())
-                .getCredentials().getPassword();
+        char[] expectedPassword = accounts.get(account.getPrincipal().getName()).getCredentials().getPassword();
 
         return Arrays.equals(password, expectedPassword);
     }
@@ -144,9 +149,8 @@ public class SimpleFileIdentityManager extends AbstractConfiFileConsumer impleme
 
             MessageDigest digest = dc.getAlgorithm().getMessageDigest();
 
-            String expectedPassword = new String(accounts
-                    .get(account.getPrincipal().getName())
-                    .getCredentials().getPassword());
+            String expectedPassword = new String(
+                    accounts.get(account.getPrincipal().getName()).getCredentials().getPassword());
 
             digest.update(account.getPrincipal().getName().getBytes(UTF_8));
             digest.update((byte) ':');

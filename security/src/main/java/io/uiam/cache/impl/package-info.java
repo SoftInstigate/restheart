@@ -18,6 +18,6 @@
 /**
  * Wrappers of actual caches implementations.
  * 
-* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 package io.uiam.cache.impl;

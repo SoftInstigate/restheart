@@ -46,7 +46,6 @@ public abstract class AbstractPT {
 
         StringBuilder ymlSB = new StringBuilder();
 
-
         Yaml yaml = new Yaml();
 
         yaml.load(ymlSB.toString());
@@ -71,6 +70,7 @@ public abstract class AbstractPT {
     public void setUrl(String url) {
         this.url = url;
     }
+
     /**
      * @param id the id to set
      */

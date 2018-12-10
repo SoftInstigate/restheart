@@ -57,10 +57,12 @@ public class Shutdowner {
         if (FileUtils.getConfigurationFilePath(args) == null) {
             LOGGER.info("Shutting down the uIAM instance run without configuration file");
         } else {
-            LOGGER.info("Shutting down the uIAM instance run with configuration file {}", FileUtils.getConfigurationFilePath(args).toString());
+            LOGGER.info("Shutting down the uIAM instance run with configuration file {}",
+                    FileUtils.getConfigurationFilePath(args).toString());
         }
 
-        Path pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsoultePathHash(FileUtils.getConfigurationFilePath(args)));
+        Path pidFilePath = FileUtils
+                .getPidFilePath(FileUtils.getFileAbsoultePathHash(FileUtils.getConfigurationFilePath(args)));
 
         int pid = FileUtils.getPidFromFile(pidFilePath);
 

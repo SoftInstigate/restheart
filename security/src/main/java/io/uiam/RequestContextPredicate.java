@@ -25,5 +25,5 @@ import io.undertow.server.HttpServerExchange;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public interface RequestContextPredicate {
-    public boolean resolve(HttpServerExchange hse, RequestContext context);    
+    public boolean resolve(HttpServerExchange hse, RequestContext context);
 }

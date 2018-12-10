@@ -34,8 +34,7 @@ import io.undertow.server.HttpServerExchange;
 public class AccessManagerHandler extends PipedHttpHandler {
 
     private final PluggableAccessManager accessManager;
-    private static Set<RequestContextPredicate> globalSecurityPredicates
-            = new HashSet<>();
+    private static Set<RequestContextPredicate> globalSecurityPredicates = new HashSet<>();
 
     /**
      * Creates a new instance of AccessManagerHandler
@@ -55,10 +54,8 @@ public class AccessManagerHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange hse,
-            RequestContext context) throws Exception {
-        if (accessManager.isAllowed(hse, context)
-                && checkGlobalPredicates(hse, context)) {
+    public void handleRequest(HttpServerExchange hse, RequestContext context) throws Exception {
+        if (accessManager.isAllowed(hse, context) && checkGlobalPredicates(hse, context)) {
             next(hse, context);
         } else {
             hse.setStatusCode(HttpStatus.SC_FORBIDDEN);
@@ -66,16 +63,13 @@ public class AccessManagerHandler extends PipedHttpHandler {
         }
     }
 
-    private boolean checkGlobalPredicates(HttpServerExchange hse,
-            RequestContext context) {
-        return this.getGlobalSecurityPredicates()
-                .stream()
-                .allMatch(predicate -> predicate.resolve(hse, context));
+    private boolean checkGlobalPredicates(HttpServerExchange hse, RequestContext context) {
+        return this.getGlobalSecurityPredicates().stream().allMatch(predicate -> predicate.resolve(hse, context));
     }
 
     /**
-     * @return the globalSecurityPredicates allow to get and set the global
-     * security predicates to apply to all requests
+     * @return the globalSecurityPredicates allow to get and set the global security
+     *         predicates to apply to all requests
      */
     public static Set<RequestContextPredicate> getGlobalSecurityPredicates() {
         return globalSecurityPredicates;

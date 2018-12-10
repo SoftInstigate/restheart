@@ -40,14 +40,13 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class IdentityAuthenticationMechanism
-        implements PluggableAuthenticationMechanism {
+public class IdentityAuthenticationMechanism implements PluggableAuthenticationMechanism {
     private final String mechanismName;
     private final String username;
     private final List<String> roles;
 
-    public IdentityAuthenticationMechanism(String mechanismName,
-            Map<String, Object> args) throws PluginConfigurationException {
+    public IdentityAuthenticationMechanism(String mechanismName, Map<String, Object> args)
+            throws PluginConfigurationException {
         this.mechanismName = mechanismName;
         this.username = argValue(args, "username");
         this.roles = argValue(args, "roles");
@@ -55,19 +54,16 @@ public class IdentityAuthenticationMechanism
     }
 
     @Override
-    public AuthenticationMechanism.AuthenticationMechanismOutcome authenticate(
-            HttpServerExchange exchange,
+    public AuthenticationMechanism.AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange,
             SecurityContext securityContext) {
         Account sa = new BaseAccount(username, Sets.newTreeSet(roles));
 
-        securityContext.authenticationComplete(sa,
-                "IdentityAuthenticationManager", true);
+        securityContext.authenticationComplete(sa, "IdentityAuthenticationManager", true);
         return AuthenticationMechanism.AuthenticationMechanismOutcome.AUTHENTICATED;
     }
 
     @Override
-    public AuthenticationMechanism.ChallengeResult sendChallenge(
-            HttpServerExchange exchange,
+    public AuthenticationMechanism.ChallengeResult sendChallenge(HttpServerExchange exchange,
             SecurityContext securityContext) {
         return new AuthenticationMechanism.ChallengeResult(true, 200);
     }

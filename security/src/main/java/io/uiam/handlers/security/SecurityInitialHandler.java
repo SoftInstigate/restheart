@@ -47,9 +47,7 @@ public class SecurityInitialHandler extends PipedHttpHandler {
     private final String programaticMechName;
     private final SecurityContextFactoryImpl contextFactory;
 
-    static void setSecurityContext(
-            final HttpServerExchange exchange,
-            final SecurityContext securityContext) {
+    static void setSecurityContext(final HttpServerExchange exchange, final SecurityContext securityContext) {
         if (System.getSecurityManager() == null) {
             exchange.setSecurityContext(securityContext);
         } else {
@@ -60,43 +58,28 @@ public class SecurityInitialHandler extends PipedHttpHandler {
         }
     }
 
-    public SecurityInitialHandler(
-            final AuthenticationMode authenticationMode,
-            final String programaticMechName,
-            final SecurityContextFactoryImpl contextFactory,
-            final PipedHttpHandler next) {
+    public SecurityInitialHandler(final AuthenticationMode authenticationMode, final String programaticMechName,
+            final SecurityContextFactoryImpl contextFactory, final PipedHttpHandler next) {
         super(next);
         this.authenticationMode = authenticationMode;
         this.programaticMechName = programaticMechName;
         this.contextFactory = contextFactory;
     }
 
-    public SecurityInitialHandler(final AuthenticationMode authenticationMode,
-            final IdentityManager identityManager,
+    public SecurityInitialHandler(final AuthenticationMode authenticationMode, final IdentityManager identityManager,
             final String programaticMechName, final PipedHttpHandler next) {
-        this(authenticationMode,
-                programaticMechName,
-                (SecurityContextFactoryImpl) SecurityContextFactoryImpl.INSTANCE,
+        this(authenticationMode, programaticMechName, (SecurityContextFactoryImpl) SecurityContextFactoryImpl.INSTANCE,
                 next);
     }
 
-    public SecurityInitialHandler(
-            final AuthenticationMode authenticationMode,
-            final PipedHttpHandler next) {
-        this(authenticationMode,
-                null,
-                (SecurityContextFactoryImpl) SecurityContextFactoryImpl.INSTANCE,
-                next);
+    public SecurityInitialHandler(final AuthenticationMode authenticationMode, final PipedHttpHandler next) {
+        this(authenticationMode, null, (SecurityContextFactoryImpl) SecurityContextFactoryImpl.INSTANCE, next);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context)
-            throws Exception {
-        SecurityContext newContext = this.contextFactory
-                .createSecurityContext(exchange,
-                        authenticationMode,
-                        null,
-                        programaticMechName);
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        SecurityContext newContext = this.contextFactory.createSecurityContext(exchange, authenticationMode, null,
+                programaticMechName);
 
         setSecurityContext(exchange, newContext);
         next(exchange, context);

@@ -18,6 +18,6 @@
 /**
  * Base package for pluggable classes
  * 
-* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 package io.uiam.plugins;

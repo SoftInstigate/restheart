@@ -25,10 +25,10 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 
 /**
- *
+ * It injects the X-Powered-By response header
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
- *         It injects the X-Powered-By response header
  */
 public class AccountHeadersInjector extends PipedHttpHandler {
     /**
@@ -55,33 +55,23 @@ public class AccountHeadersInjector extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context)
-            throws Exception {
-        if (exchange != null
-                && exchange.getSecurityContext() != null
-                && exchange.getSecurityContext()
-                        .getAuthenticatedAccount() != null) {
-            Account a = exchange
-                    .getSecurityContext()
-                    .getAuthenticatedAccount();
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (exchange != null && exchange.getSecurityContext() != null
+                && exchange.getSecurityContext().getAuthenticatedAccount() != null) {
+            Account a = exchange.getSecurityContext().getAuthenticatedAccount();
 
             if (a.getPrincipal() != null) {
-                exchange.getRequestHeaders().add(
-                        getHeaderForPrincipalName(),
-                        a.getPrincipal().getName());
+                exchange.getRequestHeaders().add(getHeaderForPrincipalName(), a.getPrincipal().getName());
             }
 
             StringBuffer rolesBS = new StringBuffer();
 
-            if (a instanceof BaseAccount
-                    && ((BaseAccount) a).getRoles() != null) {
+            if (a instanceof BaseAccount && ((BaseAccount) a).getRoles() != null) {
 
-                ((BaseAccount) a).getRoles().stream()
-                        .forEachOrdered(role -> rolesBS.append(role.concat(",")));
+                ((BaseAccount) a).getRoles().stream().forEachOrdered(role -> rolesBS.append(role.concat(",")));
 
                 if (rolesBS.length() > 1) {
-                    exchange.getRequestHeaders().add(
-                            getHeaderForPrincipalRoles(),
+                    exchange.getRequestHeaders().add(getHeaderForPrincipalRoles(),
                             rolesBS.substring(0, rolesBS.length() - 1));
                 }
             }

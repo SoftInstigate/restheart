@@ -51,8 +51,7 @@ import io.undertow.util.FlexBase64;
  *         actual password
  *
  */
-public class AuthTokenBasicAuthenticationMechanism
-        extends BasicAuthenticationMechanism
+public class AuthTokenBasicAuthenticationMechanism extends BasicAuthenticationMechanism
         implements PluggableAuthenticationMechanism {
 
     private static final Charset UTF_8 = Charset.forName("UTF-8");
@@ -75,26 +74,17 @@ public class AuthTokenBasicAuthenticationMechanism
      *
      * @param realmName
      */
-    public AuthTokenBasicAuthenticationMechanism(final String mechanismName,
-            final Map<String, Object> args)
+    public AuthTokenBasicAuthenticationMechanism(final String mechanismName, final Map<String, Object> args)
             throws PluginConfigurationException {
-        super(
-                argValue(args, "realm"),
-                mechanismName,
-                true,
-                IDMCacheSingleton
-                        .getInstance()
-                        .getIdentityManager(AuthTokenIdentityManager.NAME));
+        super(argValue(args, "realm"), mechanismName, true,
+                IDMCacheSingleton.getInstance().getIdentityManager(AuthTokenIdentityManager.NAME));
 
         this.mechanismName = mechanismName;
-        this.identityManager = IDMCacheSingleton
-                .getInstance()
-                .getIdentityManager(AuthTokenIdentityManager.NAME);
+        this.identityManager = IDMCacheSingleton.getInstance().getIdentityManager(AuthTokenIdentityManager.NAME);
     }
 
     @Override
-    public AuthenticationMechanismOutcome authenticate(
-            final HttpServerExchange exchange,
+    public AuthenticationMechanismOutcome authenticate(final HttpServerExchange exchange,
             final SecurityContext securityContext) {
 
         List<String> authHeaders = exchange.getRequestHeaders().get(AUTHORIZATION);
@@ -139,8 +129,7 @@ public class AuthTokenBasicAuthenticationMechanism
     }
 
     @Override
-    public ChallengeResult sendChallenge(final HttpServerExchange exchange,
-            final SecurityContext securityContext) {
+    public ChallengeResult sendChallenge(final HttpServerExchange exchange, final SecurityContext securityContext) {
         String authHeader = exchange.getRequestHeaders().getFirst(AUTHORIZATION);
 
         if (authHeader == null) {

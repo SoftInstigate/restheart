@@ -18,6 +18,6 @@
 /**
  * Main classes for authentication
  * 
-* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 package io.uiam.plugins.authentication;

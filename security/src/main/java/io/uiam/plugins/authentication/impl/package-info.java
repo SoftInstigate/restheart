@@ -18,6 +18,6 @@
 /**
  * Implementations of Authentication Mechanisms and Identity Managers
  * 
-* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 package io.uiam.plugins.authentication.impl;

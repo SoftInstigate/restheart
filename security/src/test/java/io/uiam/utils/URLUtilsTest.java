@@ -47,6 +47,7 @@ public class URLUtilsTest {
     @AfterClass
     public static void tearDownClass() {
     }
+
     @Rule
     public TestRule watcher = new TestWatcher() {
         @Override

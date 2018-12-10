@@ -43,7 +43,7 @@ public class RequestProxyHandler extends PipedHttpHandler {
     public RequestProxyHandler() {
         super(null);
     }
-    
+
     /**
      * Creates a new instance of RequestLoggerHandler
      *
@@ -71,7 +71,7 @@ public class RequestProxyHandler extends PipedHttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         LOGGER.info("should proxy request {}", exchange.getRequestURI());
-        
+
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }

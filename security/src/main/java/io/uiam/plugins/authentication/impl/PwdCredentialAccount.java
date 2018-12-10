@@ -27,6 +27,7 @@ import io.undertow.security.idm.PasswordCredential;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PwdCredentialAccount extends BaseAccount {
+    private static final long serialVersionUID = -5840334837968478775L;
     final transient private PasswordCredential credential;
 
     /**
@@ -35,9 +36,7 @@ public class PwdCredentialAccount extends BaseAccount {
      * @param password
      * @param roles
      */
-    public PwdCredentialAccount(final String name,
-            final char[] password,
-            final Set<String> roles) {
+    public PwdCredentialAccount(final String name, final char[] password, final Set<String> roles) {
         super(name, roles);
 
         if (password == null) {

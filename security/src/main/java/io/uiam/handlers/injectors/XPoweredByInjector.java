@@ -28,7 +28,7 @@ import io.undertow.util.HttpString;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
- * It injects the X-Powered-By response header
+ *         It injects the X-Powered-By response header
  */
 public class XPoweredByInjector extends PipedHttpHandler {
     /**
@@ -56,10 +56,8 @@ public class XPoweredByInjector extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        exchange.getResponseHeaders().add(
-                HttpString.tryFromString(HttpHeaders.X_POWERED_BY), 
-                "uIAM.io");
-        
+        exchange.getResponseHeaders().add(HttpString.tryFromString(HttpHeaders.X_POWERED_BY), "uIAM.io");
+
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }

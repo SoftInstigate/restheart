@@ -44,15 +44,12 @@ public class AccountInjector extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            final HttpServerExchange exchange,
-            final RequestContext context)
-            throws Exception {
+    public void handleRequest(final HttpServerExchange exchange, final RequestContext context) throws Exception {
         // inject authenticatedAccount
         if (exchange.getSecurityContext() != null) {
             context.setAuthenticatedAccount(exchange.getSecurityContext().getAuthenticatedAccount());
         }
-        
+
         next(exchange, context);
     }
 }

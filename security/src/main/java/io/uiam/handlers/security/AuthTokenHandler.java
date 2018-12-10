@@ -59,27 +59,25 @@ public class AuthTokenHandler extends PipedHttpHandler {
             return;
         }
 
-        if (exchange.getRequestPath().startsWith("/_authtokens/")
-                && exchange.getRequestPath().length() > 13
+        if (exchange.getRequestPath().startsWith("/_authtokens/") && exchange.getRequestPath().length() > 13
                 && Methods.OPTIONS.equals(exchange.getRequestMethod())) {
-            exchange.getResponseHeaders()
-                    .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, DELETE")
-                    .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+            exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, DELETE")
+                    .put(HttpString.tryFromString("Access-Control-Allow-Headers"),
+                            "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
 
             exchange.setStatusCode(HttpStatus.SC_OK);
             exchange.endExchange();
             return;
         }
 
-        if (exchange.getSecurityContext() == null
-                || exchange.getSecurityContext().getAuthenticatedAccount() == null
+        if (exchange.getSecurityContext() == null || exchange.getSecurityContext().getAuthenticatedAccount() == null
                 || exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null
-                || !(("/_authtokens/" + exchange.getSecurityContext()
-                        .getAuthenticatedAccount().getPrincipal().getName())
-                        .equals(exchange.getRequestURI())
-                || !(ESCAPER.escape("/_authtokens/" + exchange.getSecurityContext()
-                        .getAuthenticatedAccount().getPrincipal().getName()))
-                        .equals(exchange.getRequestURI()))) {
+                || !(("/_authtokens/"
+                        + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName())
+                                .equals(exchange.getRequestURI())
+                        || !(ESCAPER.escape("/_authtokens/"
+                                + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName()))
+                                        .equals(exchange.getRequestURI()))) {
             exchange.setStatusCode(HttpStatus.SC_FORBIDDEN);
             exchange.endExchange();
             return;
@@ -88,28 +86,20 @@ public class AuthTokenHandler extends PipedHttpHandler {
         if (Methods.GET.equals(exchange.getRequestMethod())) {
             JsonObject resp = new JsonObject();
 
-            resp.add("auth_token",
-                    new JsonPrimitive(exchange.getResponseHeaders()
-                            .get(AUTH_TOKEN_HEADER).getFirst()));
+            resp.add("auth_token", new JsonPrimitive(exchange.getResponseHeaders().get(AUTH_TOKEN_HEADER).getFirst()));
 
             resp.add("auth_token_valid_until",
-                    new JsonPrimitive(exchange.getResponseHeaders()
-                            .get(AUTH_TOKEN_VALID_HEADER).getFirst()));
+                    new JsonPrimitive(exchange.getResponseHeaders().get(AUTH_TOKEN_VALID_HEADER).getFirst()));
 
             exchange.setStatusCode(HttpStatus.SC_OK);
-            //TODO use static var for content type
+            // TODO use static var for content type
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
             exchange.getResponseSender().send(resp.toString());
             exchange.endExchange();
         } else if (Methods.DELETE.equals(exchange.getRequestMethod())) {
             ((AuthTokenIdentityManager) IDMCacheSingleton.getInstance()
-                    .getIdentityManager(AuthTokenIdentityManager.NAME))
-                    .getCachedAccounts()
-                    .invalidate(exchange
-                            .getSecurityContext()
-                            .getAuthenticatedAccount()
-                            .getPrincipal()
-                            .getName());
+                    .getIdentityManager(AuthTokenIdentityManager.NAME)).getCachedAccounts().invalidate(
+                            exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
             removeAuthTokens(exchange);
             exchange.setStatusCode(HttpStatus.SC_NO_CONTENT);
             exchange.endExchange();

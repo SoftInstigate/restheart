@@ -36,10 +36,7 @@ public class EchoService extends PluggableService {
      * @param uri
      * @param secured
      */
-    public EchoService(PipedHttpHandler next,
-            String name,
-            String uri,
-            Boolean secured) {
+    public EchoService(PipedHttpHandler next, String name, String uri, Boolean secured) {
         super(next, name, uri, secured, null);
     }
 

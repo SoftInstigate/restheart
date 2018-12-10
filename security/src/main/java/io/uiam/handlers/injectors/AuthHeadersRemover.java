@@ -39,15 +39,13 @@ public class AuthHeadersRemover extends PipedHttpHandler {
 
     /**
      * before proxyng the request the authentication headers are removed
+     * 
      * @param exchange
      * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            final HttpServerExchange exchange,
-            final RequestContext context)
-            throws Exception {
+    public void handleRequest(final HttpServerExchange exchange, final RequestContext context) throws Exception {
         exchange.getRequestHeaders().remove("Authorization");
 
         if (getNext() != null) {

@@ -26,14 +26,16 @@ import java.util.Optional;
  * @param <K> the class of the keys
  * @param <V> the class of the values
  */
-public interface Cache<K,V> {
-    public enum EXPIRE_POLICY { NEVER, AFTER_WRITE, AFTER_READ };
-    
+public interface Cache<K, V> {
+    public enum EXPIRE_POLICY {
+        NEVER, AFTER_WRITE, AFTER_READ
+    };
+
     public Optional<V> get(K key);
-    
+
     public void put(K key, V value);
-    
+
     public void invalidate(K key);
-    
+
     public Map<K, Optional<V>> asMap();
 }
