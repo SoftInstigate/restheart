@@ -17,7 +17,6 @@
  */
 package io.uiam.plugins.authorization.impl;
 
-import io.uiam.handlers.RequestContext;
 import io.uiam.plugins.authorization.PluggableAccessManager;
 import io.undertow.server.HttpServerExchange;
 
@@ -36,7 +35,7 @@ public class FullAccessManager implements PluggableAccessManager {
     }
 
     @Override
-    public boolean isAllowed(HttpServerExchange exchange, RequestContext context) {
+    public boolean isAllowed(HttpServerExchange exchange) {
         return true;
     }
 

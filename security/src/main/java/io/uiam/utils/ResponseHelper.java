@@ -17,14 +17,15 @@
  */
 package io.uiam.utils;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import io.undertow.server.HttpServerExchange;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import io.uiam.handlers.RequestContext;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+
+import io.uiam.handlers.ExchangeHelper;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 
 /**
@@ -36,48 +37,33 @@ public class ResponseHelper {
     /**
      *
      * @param exchange
-     * @param context
      * @param code
      * @param message
      */
-    public static void endExchangeWithMessage(
-            HttpServerExchange exchange,
-            RequestContext context,
-            int code,
-            String message) {
-        endExchangeWithMessage(exchange, context, code, message, null);
+    public static void endExchangeWithMessage(HttpServerExchange exchange, int code, String message) {
+        endExchangeWithMessage(exchange, code, message, null);
     }
 
     /**
      *
      * @param exchange
-     * @param context might be null
      * @param code
      * @param message
      * @param t
      */
-    public static void endExchangeWithMessage(
-            HttpServerExchange exchange,
-            RequestContext context,
-            int code,
-            String message,
-            Throwable t) {
-        context.setResponseStatusCode(code);
+    public static void endExchangeWithMessage(HttpServerExchange exchange, int code, String message, Throwable t) {
+        var hex = new ExchangeHelper(exchange);
+
+        hex.setResponseStatusCode(code);
 
         String httpStatusText = HttpStatus.getStatusText(code);
 
-        context.setInError(true);
-        
+        hex.setInError(true);
+
         exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "application/json");
 
-        context.setResponseContent(
-                getErrorJsonDocument(
-                        exchange.getRequestPath(),
-                        code,
-                        context,
-                        httpStatusText,
-                        message,
-                        t, false));
+        hex.setResponseContent(
+                getErrorJsonDocument(exchange.getRequestPath(), code, httpStatusText, message, t, false));
     }
 
     /**
@@ -88,42 +74,29 @@ public class ResponseHelper {
      * @param body
      * @param t
      */
-    public static void endExchangeWithRepresentation(
-            HttpServerExchange exchange,
-            RequestContext context,
-            int code,
-            JsonObject body) {
-        context.setResponseStatusCode(code);
+    public static void endExchangeWithRepresentation(HttpServerExchange exchange, int code, JsonObject body) {
+        var hex = new ExchangeHelper(exchange);
 
-        context.setInError(true);
-        context.setResponseContent(body);
+        hex.setResponseStatusCode(code);
+
+        hex.setInError(true);
+        hex.setResponseContent(body);
     }
 
-    public static JsonObject getErrorJsonDocument(String href,
-            int code,
-            RequestContext context,
-            String httpStatusText,
-            String message,
-            Throwable t,
-            boolean includeStackTrace) {
+    public static JsonObject getErrorJsonDocument(String href, int code, String httpStatusText, String message,
+            Throwable t, boolean includeStackTrace) {
         JsonObject resp = new JsonObject();
 
-        resp.add("http status code",
-                new JsonPrimitive(code));
-        resp.add("http status description",
-                new JsonPrimitive(httpStatusText));
+        resp.add("http status code", new JsonPrimitive(code));
+        resp.add("http status description", new JsonPrimitive(httpStatusText));
         if (message != null) {
-            resp.add(
-                    "message",
-                    new JsonPrimitive(avoidEscapedChars(message)));
+            resp.add("message", new JsonPrimitive(avoidEscapedChars(message)));
         }
 
         JsonObject nrep = new JsonObject();
 
         if (t != null) {
-            nrep.add(
-                    "class",
-                    new JsonPrimitive(t.getClass().getName()));
+            nrep.add("class", new JsonPrimitive(t.getClass().getName()));
 
             if (includeStackTrace) {
                 JsonArray stackTrace = getStackTraceJson(t);
@@ -161,11 +134,7 @@ public class ResponseHelper {
     }
 
     private static String avoidEscapedChars(String s) {
-        return s == null
-                ? null
-                : s
-                        .replaceAll("\"", "'")
-                        .replaceAll("\t", "  ");
+        return s == null ? null : s.replaceAll("\"", "'").replaceAll("\t", "  ");
     }
 
     private ResponseHelper() {

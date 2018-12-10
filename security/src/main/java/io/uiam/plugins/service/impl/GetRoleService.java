@@ -28,8 +28,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
+import io.uiam.handlers.ExchangeHelper;
 import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.RequestContext;
 import io.uiam.plugins.service.PluggableService;
 import io.uiam.utils.HttpStatus;
 import io.uiam.utils.URLUtils;
@@ -66,15 +66,17 @@ public class GetRoleService extends PluggableService {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.isOptions()) {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var hex = new ExchangeHelper(exchange);
+
+        if (hex.isOptions()) {
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET");
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"),
                     "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge, "
                             + AUTH_TOKEN_HEADER + ", " + AUTH_TOKEN_VALID_HEADER + ", " + AUTH_TOKEN_LOCATION_HEADER);
             exchange.setStatusCode(HttpStatus.SC_OK);
             exchange.endExchange();
-        } else if (context.isGet()) {
+        } else if (hex.isGet()) {
             exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "application/json");
 
             if ((exchange.getSecurityContext() == null

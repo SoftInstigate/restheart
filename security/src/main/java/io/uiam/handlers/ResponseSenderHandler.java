@@ -47,12 +47,14 @@ public class ResponseSenderHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var hex = new ExchangeHelper(exchange);
+        
         if (!exchange.isResponseStarted()) {
-            exchange.setStatusCode(context.getResponseStatusCode());
+            exchange.setStatusCode(hex.getResponseStatusCode());
         }
 
-        JsonObject responseContent = context.getResponseContent();
+        JsonObject responseContent = hex.getResponseJsonContent();
 
         if (responseContent != null) {
             exchange.getResponseSender().send(responseContent.toString());
@@ -60,6 +62,6 @@ public class ResponseSenderHandler extends PipedHttpHandler {
 
         exchange.endExchange();
 
-        next(exchange, context);
+        next(exchange);
     }
 }

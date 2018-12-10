@@ -18,7 +18,6 @@
 package io.uiam.handlers.injectors;
 
 import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.RequestContext;
 import io.uiam.plugins.authentication.impl.BaseAccount;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
@@ -55,7 +54,7 @@ public class AccountHeadersInjector extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         if (exchange != null && exchange.getSecurityContext() != null
                 && exchange.getSecurityContext().getAuthenticatedAccount() != null) {
             Account a = exchange.getSecurityContext().getAuthenticatedAccount();
@@ -78,7 +77,7 @@ public class AccountHeadersInjector extends PipedHttpHandler {
         }
 
         if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
+            getNext().handleRequest(exchange);
         }
     }
 

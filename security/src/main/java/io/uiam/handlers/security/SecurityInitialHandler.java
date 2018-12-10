@@ -21,7 +21,6 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 
 import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.RequestContext;
 import io.undertow.security.api.AuthenticationMode;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.IdentityManager;
@@ -77,11 +76,11 @@ public class SecurityInitialHandler extends PipedHttpHandler {
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         SecurityContext newContext = this.contextFactory.createSecurityContext(exchange, authenticationMode, null,
                 programaticMechName);
 
         setSecurityContext(exchange, newContext);
-        next(exchange, context);
+        next(exchange);
     }
 }

@@ -30,7 +30,6 @@ import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import io.uiam.handlers.RequestContext;
 import io.uiam.plugins.AbstractConfiFileConsumer;
 import io.uiam.plugins.authorization.PluggableAccessManager;
 import io.undertow.predicate.Predicate;
@@ -91,7 +90,7 @@ public class RequestPredicatesAccessManager extends AbstractConfiFileConsumer im
      * @return
      */
     @Override
-    public boolean isAllowed(HttpServerExchange exchange, RequestContext context) {
+    public boolean isAllowed(HttpServerExchange exchange) {
         if (noAclDefined()) {
             return false;
         }

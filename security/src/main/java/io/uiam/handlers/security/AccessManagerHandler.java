@@ -20,11 +20,10 @@ package io.uiam.handlers.security;
 import java.util.HashSet;
 import java.util.Set;
 
-import io.uiam.RequestContextPredicate;
 import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.RequestContext;
 import io.uiam.plugins.authorization.PluggableAccessManager;
 import io.uiam.utils.HttpStatus;
+import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 
 /**
@@ -34,7 +33,7 @@ import io.undertow.server.HttpServerExchange;
 public class AccessManagerHandler extends PipedHttpHandler {
 
     private final PluggableAccessManager accessManager;
-    private static Set<RequestContextPredicate> globalSecurityPredicates = new HashSet<>();
+    private static Set<Predicate> globalSecurityPredicates = new HashSet<>();
 
     /**
      * Creates a new instance of AccessManagerHandler
@@ -54,24 +53,24 @@ public class AccessManagerHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange hse, RequestContext context) throws Exception {
-        if (accessManager.isAllowed(hse, context) && checkGlobalPredicates(hse, context)) {
-            next(hse, context);
+    public void handleRequest(HttpServerExchange hse) throws Exception {
+        if (accessManager.isAllowed(hse) && checkGlobalPredicates(hse)) {
+            next(hse);
         } else {
             hse.setStatusCode(HttpStatus.SC_FORBIDDEN);
             hse.endExchange();
         }
     }
 
-    private boolean checkGlobalPredicates(HttpServerExchange hse, RequestContext context) {
-        return getGlobalSecurityPredicates().stream().allMatch(predicate -> predicate.resolve(hse, context));
+    private boolean checkGlobalPredicates(HttpServerExchange hse) {
+        return getGlobalSecurityPredicates().stream().allMatch(predicate -> predicate.resolve(hse));
     }
 
     /**
      * @return the globalSecurityPredicates allow to get and set the global security
      *         predicates to apply to all requests
      */
-    public static Set<RequestContextPredicate> getGlobalSecurityPredicates() {
+    public static Set<Predicate> getGlobalSecurityPredicates() {
         return globalSecurityPredicates;
     }
 }

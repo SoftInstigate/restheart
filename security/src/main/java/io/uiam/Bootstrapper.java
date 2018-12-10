@@ -61,14 +61,13 @@ import org.xnio.Xnio;
 import org.xnio.ssl.XnioSsl;
 
 import io.uiam.handlers.ErrorHandler;
+import io.uiam.handlers.ExchangeHelper.METHOD;
 import io.uiam.handlers.GzipEncodingHandler;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.PipedWrappingHandler;
-import io.uiam.handlers.RequestContext;
 import io.uiam.handlers.RequestLoggerHandler;
 import io.uiam.handlers.injectors.AccountHeadersInjector;
 import io.uiam.handlers.injectors.AuthHeadersRemover;
-import io.uiam.handlers.injectors.RequestContextInjector;
 import io.uiam.handlers.injectors.XPoweredByInjector;
 import io.uiam.handlers.security.AuthTokenHandler;
 import io.uiam.handlers.security.CORSHandler;
@@ -712,12 +711,12 @@ public class Bootstrapper {
                         new BlockingHandler(
                                 new GzipEncodingHandler(new ErrorHandler(new HttpContinueAcceptingHandler(paths)),
                                         configuration.isForceGzipEncoding())), // allowed methods
-                        HttpString.tryFromString(RequestContext.METHOD.GET.name()),
-                        HttpString.tryFromString(RequestContext.METHOD.POST.name()),
-                        HttpString.tryFromString(RequestContext.METHOD.PUT.name()),
-                        HttpString.tryFromString(RequestContext.METHOD.DELETE.name()),
-                        HttpString.tryFromString(RequestContext.METHOD.PATCH.name()),
-                        HttpString.tryFromString(RequestContext.METHOD.OPTIONS.name()))));
+                        HttpString.tryFromString(METHOD.GET.name()),
+                        HttpString.tryFromString(METHOD.POST.name()),
+                        HttpString.tryFromString(METHOD.PUT.name()),
+                        HttpString.tryFromString(METHOD.DELETE.name()),
+                        HttpString.tryFromString(METHOD.PATCH.name()),
+                        HttpString.tryFromString(METHOD.OPTIONS.name()))));
 
     }
 
@@ -738,16 +737,14 @@ public class Bootstrapper {
                 try {
                     PluggableService srv = PluginsFactory.getService(serviceConf);
 
-                    PipedHttpHandler handler = new RequestContextInjector(srv);
-
                     if (srv.getSecured()) {
                         paths.addPrefixPath(srv.getUri(),
                                 new RequestLoggerHandler(new CORSHandler(new XPoweredByInjector(
-                                        new SecurityHandler(handler, authenticationMechanisms, accessManager)))));
+                                        new SecurityHandler(srv, authenticationMechanisms, accessManager)))));
                     } else {
                         paths.addPrefixPath(srv.getUri(),
                                 new RequestLoggerHandler(
-                                        new CORSHandler(new XPoweredByInjector(new SecurityHandler(handler,
+                                        new CORSHandler(new XPoweredByInjector(new SecurityHandler(srv,
                                                 authenticationMechanisms, new FullAccessManager(false))))));
                     }
 

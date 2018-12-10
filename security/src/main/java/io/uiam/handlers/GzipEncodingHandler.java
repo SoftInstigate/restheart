@@ -17,6 +17,10 @@
  */
 package io.uiam.handlers;
 
+import java.util.Arrays;
+
+import io.uiam.utils.HttpStatus;
+import io.uiam.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
@@ -24,9 +28,6 @@ import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
-import java.util.Arrays;
-import io.uiam.utils.HttpStatus;
-import io.uiam.utils.ResponseHelper;
 
 /**
  *
@@ -62,12 +63,10 @@ public class GzipEncodingHandler extends EncodingHandler {
                 }
             }
 
-            RequestContext errorContext = new RequestContext(exchange);
-
-            ResponseHelper.endExchangeWithMessage(exchange, errorContext, HttpStatus.SC_BAD_REQUEST,
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
                     "Accept-Encoding header must include gzip");
 
-            sender.handleRequest(exchange, errorContext);
+            sender.handleRequest(exchange);
         } else {
             super.handleRequest(exchange);
         }

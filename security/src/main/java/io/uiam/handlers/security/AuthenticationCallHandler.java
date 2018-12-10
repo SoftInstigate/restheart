@@ -18,7 +18,6 @@
 package io.uiam.handlers.security;
 
 import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.RequestContext;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -46,7 +45,7 @@ public class AuthenticationCallHandler extends PipedHttpHandler {
      * @see io.undertow.server.HttpHandler#handleRequest(io.undertow.server.HttpServerExchange)
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         if (exchange.isInIoThread()) {
             exchange.dispatch(this);
             return;
@@ -54,7 +53,7 @@ public class AuthenticationCallHandler extends PipedHttpHandler {
         SecurityContext rcontext = exchange.getSecurityContext();
         if (rcontext.authenticate()) {
             if (!exchange.isComplete()) {
-                next(exchange, context);
+                next(exchange);
             }
         } else {
             exchange.endExchange();

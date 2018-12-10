@@ -31,7 +31,6 @@ import com.google.common.collect.Sets;
 
 import io.uiam.Bootstrapper;
 import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.RequestContext;
 import io.uiam.plugins.IDMCacheSingleton;
 import io.uiam.plugins.PluginConfigurationException;
 import io.uiam.plugins.authentication.impl.AuthTokenIdentityManager;
@@ -65,7 +64,7 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         if (enabled) {
             if (exchange.getSecurityContext() != null && exchange.getSecurityContext().isAuthenticated()) {
                 Account authenticatedAccount = exchange.getSecurityContext().getAuthenticatedAccount();
@@ -76,7 +75,7 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
             }
         }
 
-        next(exchange, context);
+        next(exchange);
     }
 
     private void injectTokenHeaders(HttpServerExchange exchange, char[] token) {

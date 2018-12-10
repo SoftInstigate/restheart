@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.AttachmentKey;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 
@@ -28,51 +29,43 @@ import io.undertow.util.Methods;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestContext {
+public class ExchangeHelper {
 
     // other constants
     public static final String SLASH = "/";
     public static final String PATCH = "PATCH";
     public static final String UNDERSCORE = "_";
-    private static final String NUL = Character.toString('\0');
 
-    private final METHOD method;
+    private final HttpServerExchange wrapped;
 
-    private String rawContent;
+    private static final AttachmentKey<String> RAW_CONTENT_KEY = AttachmentKey.create(String.class);
+    private static final AttachmentKey<Integer> RESPONSE_STATUS_CODE_KEY = AttachmentKey.create(Integer.class);
+    private static final AttachmentKey<String> RESPONSE_CONTENT_TYPE_KEY = AttachmentKey.create(String.class);
+    private static final AttachmentKey<JsonObject> RESPONSE_JSON_CONTENT_KEY = AttachmentKey.create(JsonObject.class);
+    private static final AttachmentKey<Boolean> IN_ERROR_KEY = AttachmentKey.create(Boolean.class);
+    private static final AttachmentKey<Long> REQUEST_START_TIME_KEY = AttachmentKey.create(Long.class);
 
-    private int responseStatusCode;
-
-    private String responseContentType;
-    private JsonObject responseContent;
-
-    private boolean inError = false;
-
-    private Account authenticatedAccount = null;
-
-    private final long requestStartTime = System.currentTimeMillis();
-
-    public RequestContext(HttpServerExchange exchange) {
-        this.method = selectRequestMethod(exchange.getRequestMethod());
+    
+    public ExchangeHelper(HttpServerExchange exchange) {
+        this.wrapped = exchange;
     }
 
-    static METHOD selectRequestMethod(HttpString _method) {
-        METHOD method;
+    private static METHOD selectRequestMethod(HttpString _method) {
         if (Methods.GET.equals(_method)) {
-            method = METHOD.GET;
+            return METHOD.GET;
         } else if (Methods.POST.equals(_method)) {
-            method = METHOD.POST;
+            return METHOD.POST;
         } else if (Methods.PUT.equals(_method)) {
-            method = METHOD.PUT;
+            return METHOD.PUT;
         } else if (Methods.DELETE.equals(_method)) {
-            method = METHOD.DELETE;
+            return METHOD.DELETE;
         } else if (PATCH.equals(_method.toString())) {
-            method = METHOD.PATCH;
+            return METHOD.PATCH;
         } else if (Methods.OPTIONS.equals(_method)) {
-            method = METHOD.OPTIONS;
+            return METHOD.OPTIONS;
         } else {
-            method = METHOD.OTHER;
+            return METHOD.OTHER;
         }
-        return method;
     }
 
     /**
@@ -80,95 +73,98 @@ public class RequestContext {
      * @return method
      */
     public METHOD getMethod() {
-        return method;
+        return selectRequestMethod(wrapped.getRequestMethod());
     }
 
     /**
      * @return the rawContent
      */
     public String getRawContent() {
-        return rawContent;
+        return wrapped.getAttachment(RAW_CONTENT_KEY);
     }
 
     /**
      * @param rawContent the rawContent to set
      */
     public void setRawContent(String rawContent) {
-        this.rawContent = rawContent;
+        wrapped.putAttachment(RAW_CONTENT_KEY, rawContent);
     }
 
     /**
      * @return the responseStatusCode
      */
     public int getResponseStatusCode() {
-        return responseStatusCode;
+        return wrapped.getAttachment(RESPONSE_STATUS_CODE_KEY);
     }
 
     /**
      * @param responseStatusCode the responseStatusCode to set
      */
     public void setResponseStatusCode(int responseStatusCode) {
-        this.responseStatusCode = responseStatusCode;
+        wrapped.putAttachment(RESPONSE_STATUS_CODE_KEY, responseStatusCode);
     }
 
     /**
-     * @return the responseContent
+     * @return the responseJsonContent
      */
-    public JsonObject getResponseContent() {
-        return responseContent;
+    public JsonObject getResponseJsonContent() {
+        return wrapped.getAttachment(RESPONSE_JSON_CONTENT_KEY);
     }
 
     /**
-     * @param responseContentType the responseContent to set
+     * @param responseJsonContent the responseJsonContent to set
      */
-    public void setResponseContent(JsonObject responseContent) {
-        this.responseContent = responseContent;
+    public void setResponseContent(JsonObject responseJsonContent) {
+        wrapped.putAttachment(RESPONSE_JSON_CONTENT_KEY, responseJsonContent);
     }
 
     /**
      * @return the responseContentType
      */
     public String getResponseContentType() {
-        return responseContentType;
+        return wrapped.getAttachment(RESPONSE_CONTENT_TYPE_KEY);
     }
 
     /**
      * @param responseContentType the responseContentType to set
      */
     public void setResponseContentType(String responseContentType) {
-        this.responseContentType = responseContentType;
+        wrapped.putAttachment(RESPONSE_CONTENT_TYPE_KEY, responseContentType);
     }
 
-    public long getRequestStartTime() {
-        return requestStartTime;
+    /**
+     * @return the requestStartTime
+     */
+    public Long getRequestStartTime() {
+        return wrapped.getAttachment(REQUEST_START_TIME_KEY);
+    }
+
+    /**
+     * @param requestStartTime the requestStartTime to set
+     */
+    public void setRequestStartTime(Long requestStartTime) {
+        wrapped.putAttachment(REQUEST_START_TIME_KEY, requestStartTime);
     }
 
     /**
      * @return the inError
      */
     public boolean isInError() {
-        return inError;
+        return wrapped.getAttachment(IN_ERROR_KEY);
     }
 
     /**
      * @param inError the inError to set
      */
     public void setInError(boolean inError) {
-        this.inError = inError;
+        wrapped.putAttachment(IN_ERROR_KEY, inError);
     }
 
     /**
      * @return the authenticatedAccount
      */
     public Account getAuthenticatedAccount() {
-        return authenticatedAccount;
-    }
-
-    /**
-     * @param authenticatedAccount the authenticatedAccount to set
-     */
-    public void setAuthenticatedAccount(Account authenticatedAccount) {
-        this.authenticatedAccount = authenticatedAccount;
+        return this.wrapped.getSecurityContext().getAuthenticatedAccount();
     }
 
     public enum METHOD {
@@ -181,7 +177,7 @@ public class RequestContext {
      * @return true if method is METHOD.DELETE
      */
     public boolean isDelete() {
-        return this.method == METHOD.DELETE;
+        return getMethod() == METHOD.DELETE;
     }
 
     /**
@@ -190,7 +186,7 @@ public class RequestContext {
      * @return true if method is METHOD.GET
      */
     public boolean isGet() {
-        return this.method == METHOD.GET;
+        return getMethod() == METHOD.GET;
     }
 
     /**
@@ -199,7 +195,7 @@ public class RequestContext {
      * @return true if method is METHOD.OPTIONS
      */
     public boolean isOptions() {
-        return this.method == METHOD.OPTIONS;
+        return getMethod() == METHOD.OPTIONS;
     }
 
     /**
@@ -208,7 +204,7 @@ public class RequestContext {
      * @return true if method is METHOD.PATCH
      */
     public boolean isPatch() {
-        return this.method == METHOD.PATCH;
+        return getMethod() == METHOD.PATCH;
     }
 
     /**
@@ -217,7 +213,7 @@ public class RequestContext {
      * @return true if method is METHOD.POST
      */
     public boolean isPost() {
-        return this.method == METHOD.POST;
+        return getMethod() == METHOD.POST;
     }
 
     /**
@@ -226,6 +222,6 @@ public class RequestContext {
      * @return true if method is METHOD.PUT
      */
     public boolean isPut() {
-        return this.method == METHOD.PUT;
+        return getMethod() == METHOD.PUT;
     }
 }

@@ -20,7 +20,6 @@ package io.uiam.handlers.security;
 import java.util.List;
 
 import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.RequestContext;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 import io.uiam.plugins.authorization.PluggableAccessManager;
 import io.undertow.security.api.AuthenticationMode;
@@ -46,8 +45,8 @@ public class SecurityHandler extends PipedHttpHandler {
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        next(exchange);
     }
 
     private static PipedHttpHandler buildSecurityHandlersChain(PipedHttpHandler next,

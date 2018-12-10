@@ -31,15 +31,10 @@ public abstract class PipedHttpHandler implements HttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
-    public abstract void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception;
+    public abstract void handleRequest(HttpServerExchange exchange) throws Exception;
 
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-        handleRequest(exchange, null);
-    }
 
     /**
      * @return the next PipedHttpHandler
@@ -48,9 +43,9 @@ public abstract class PipedHttpHandler implements HttpHandler {
         return next;
     }
 
-    protected void next(HttpServerExchange exchange, RequestContext context) throws Exception {
+    protected void next(HttpServerExchange exchange) throws Exception {
         if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
+            getNext().handleRequest(exchange);
         }
     }
 }

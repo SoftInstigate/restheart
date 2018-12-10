@@ -58,12 +58,10 @@ public class ErrorHandler implements HttpHandler {
         } catch (Exception t) {
             LOGGER.error("Error handling the request", t);
 
-            RequestContext errorContext = new RequestContext(exchange);
-
-            ResponseHelper.endExchangeWithMessage(exchange, errorContext, HttpStatus.SC_INTERNAL_SERVER_ERROR,
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "Error handling the request, see log for more information", t);
 
-            sender.handleRequest(exchange, errorContext);
+            sender.handleRequest(exchange);
         }
     }
 }

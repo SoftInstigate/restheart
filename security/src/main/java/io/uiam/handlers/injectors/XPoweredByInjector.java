@@ -20,7 +20,6 @@ package io.uiam.handlers.injectors;
 import com.google.common.net.HttpHeaders;
 
 import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 
@@ -55,11 +54,11 @@ public class XPoweredByInjector extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         exchange.getResponseHeaders().add(HttpString.tryFromString(HttpHeaders.X_POWERED_BY), "uIAM.io");
 
         if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
+            getNext().handleRequest(exchange);
         }
     }
 }

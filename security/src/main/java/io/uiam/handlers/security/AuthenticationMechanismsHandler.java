@@ -20,7 +20,6 @@ package io.uiam.handlers.security;
 import java.util.List;
 
 import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.RequestContext;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
@@ -48,7 +47,7 @@ public class AuthenticationMechanismsHandler extends PipedHttpHandler {
 
     @Override
     @SuppressWarnings("deprecation")
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         final SecurityContext sc = exchange.getSecurityContext();
 
         if (sc != null) {
@@ -57,6 +56,6 @@ public class AuthenticationMechanismsHandler extends PipedHttpHandler {
             });
         }
 
-        next(exchange, context);
+        next(exchange);
     }
 }

@@ -29,7 +29,6 @@ import static io.undertow.util.Headers.ORIGIN;
 import com.google.common.net.HttpHeaders;
 
 import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.RequestContext;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderMap;
@@ -76,13 +75,13 @@ public class CORSHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         injectAccessControlAllowHeaders(exchange);
 
         if (noPipedNext != null) {
             noPipedNext.handleRequest(exchange);
         } else {
-            next(exchange, context);
+            next(exchange);
         }
     }
 

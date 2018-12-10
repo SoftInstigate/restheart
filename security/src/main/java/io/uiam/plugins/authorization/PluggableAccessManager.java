@@ -17,7 +17,6 @@
  */
 package io.uiam.plugins.authorization;
 
-import io.uiam.handlers.RequestContext;
 import io.undertow.server.HttpServerExchange;
 
 /**
@@ -32,7 +31,7 @@ public interface PluggableAccessManager {
      * @param context
      * @return true if request is allowed
      */
-    boolean isAllowed(HttpServerExchange exchange, RequestContext context);
+    boolean isAllowed(HttpServerExchange exchange);
 
     /**
      *

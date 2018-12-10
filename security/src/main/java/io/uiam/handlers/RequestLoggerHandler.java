@@ -78,13 +78,13 @@ public class RequestLoggerHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         if (configuration.logExchangeDump() > 0) {
-            dumpExchange(exchange, context, configuration.logExchangeDump());
+            dumpExchange(exchange, configuration.logExchangeDump());
         }
 
         if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
+            getNext().handleRequest(exchange);
         }
 
         if (handler != null) {
@@ -100,13 +100,15 @@ public class RequestLoggerHandler extends PipedHttpHandler {
      * @param exchange the HttpServerExchange
      * @param logLevel it can be 0, 1 or 2
      */
-    protected void dumpExchange(HttpServerExchange exchange, RequestContext context, Integer logLevel) {
+    protected void dumpExchange(HttpServerExchange exchange, Integer logLevel) {
         if (logLevel < 1) {
             return;
         }
 
+        var hex = new ExchangeHelper(exchange);
+
         final StringBuilder sb = new StringBuilder();
-        final long start = context != null ? context.getRequestStartTime() : System.currentTimeMillis();
+        final long start = hex.getRequestStartTime() != null ? hex.getRequestStartTime() : System.currentTimeMillis();
 
         if (logLevel == 1) {
             sb.append(exchange.getRequestMethod()).append(" ").append(exchange.getRequestURL());

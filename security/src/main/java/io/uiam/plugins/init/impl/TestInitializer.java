@@ -20,10 +20,10 @@ package io.uiam.plugins.init.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.uiam.RequestContextPredicate;
-import io.uiam.handlers.RequestContext;
+import io.uiam.handlers.ExchangeHelper;
 import io.uiam.handlers.security.AccessManagerHandler;
 import io.uiam.plugins.init.PluggableInitializer;
+import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 
 /**
@@ -37,11 +37,13 @@ public class TestInitializer implements PluggableInitializer {
     public void init() {
         LOGGER.info("Testing initializer allows GET requests to /foo/bar");
 
-        AccessManagerHandler.getGlobalSecurityPredicates().add(new RequestContextPredicate() {
+        AccessManagerHandler.getGlobalSecurityPredicates().add(new Predicate() {
+
             @Override
-            public boolean resolve(HttpServerExchange hse, RequestContext context) {
-                return context.isGet()
-                        && "/foo/bar".equals(hse.getRequestPath());
+            public boolean resolve(HttpServerExchange hse) {
+                var hex = new ExchangeHelper(hse);
+
+                return hex.isGet() && "/foo/bar".equals(hse.getRequestPath());
             }
         });
     }

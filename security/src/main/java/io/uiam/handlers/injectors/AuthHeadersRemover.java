@@ -17,9 +17,8 @@
  */
 package io.uiam.handlers.injectors;
 
-import io.undertow.server.HttpServerExchange;
 import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.RequestContext;
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -45,11 +44,11 @@ public class AuthHeadersRemover extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(final HttpServerExchange exchange, final RequestContext context) throws Exception {
+    public void handleRequest(final HttpServerExchange exchange) throws Exception {
         exchange.getRequestHeaders().remove("Authorization");
 
         if (getNext() != null) {
-            next(exchange, context);
+            next(exchange);
         }
     }
 }

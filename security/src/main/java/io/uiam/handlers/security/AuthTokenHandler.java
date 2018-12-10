@@ -27,7 +27,6 @@ import com.google.gson.JsonPrimitive;
 
 import io.uiam.Bootstrapper;
 import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.RequestContext;
 import io.uiam.plugins.IDMCacheSingleton;
 import io.uiam.plugins.authentication.impl.AuthTokenIdentityManager;
 import io.uiam.utils.HttpStatus;
@@ -54,7 +53,7 @@ public class AuthTokenHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         if (!ENABLED) {
             return;
         }

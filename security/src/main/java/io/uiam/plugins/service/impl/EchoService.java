@@ -18,7 +18,6 @@
 package io.uiam.plugins.service.impl;
 
 import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.RequestContext;
 import io.uiam.plugins.service.PluggableService;
 import io.uiam.utils.ChannelReader;
 import io.uiam.utils.HttpStatus;
@@ -47,7 +46,7 @@ public class EchoService extends PluggableService {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         exchange.setStatusCode(HttpStatus.SC_OK);
 
         var msg = new StringBuffer();

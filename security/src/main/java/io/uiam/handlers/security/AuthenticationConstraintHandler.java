@@ -18,7 +18,6 @@
 package io.uiam.handlers.security;
 
 import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.RequestContext;
 import io.uiam.plugins.authorization.PluggableAccessManager;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
@@ -46,12 +45,12 @@ public class AuthenticationConstraintHandler extends PipedHttpHandler {
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         if (isAuthenticationRequired(exchange)) {
             SecurityContext scontext = exchange.getSecurityContext();
             scontext.setAuthenticationRequired();
         }
 
-        next(exchange, context);
+        next(exchange);
     }
 }
