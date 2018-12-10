@@ -10,7 +10,7 @@
             "stopOnEntry": false,
             "mainClass": "io.uiam.Bootstrapper",
             "vmArgs": "--illegal-access=deny -Dfile.encoding=UTF-8 -server",
-            "args":  "etc/uiam-dev.yml",
+            "args":  "etc/uiam-dev.yml"
         }
     ]
 }
