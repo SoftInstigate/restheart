@@ -337,7 +337,7 @@ To avoid the popup window just add to the request the `noauthchallenge` query pa
 
 - **RequestPredicatesAccessManager** allows defining roles permissions in a yml configuration file using the [Undertows predicate language](http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#textual-representation). See [security.yml](https://github.com/SoftInstigate/uiam/blob/master/etc/security.yml) for some examples.
 
-### Token Manager
+### Token Managers
 
 - **RndTokenManager** generates an auth token using a random number generator. It has one argument, `ttl`, which is the tokens Time To Live in minutes.
 
@@ -529,6 +529,10 @@ public MyIdm(final String idmName) throws PluginConfigurationException {
 ```
 
 ## Develop an Access Manager
+
+> work in progress
+
+## Develop a Token Manager
 
 > work in progress
 
