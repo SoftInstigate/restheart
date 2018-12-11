@@ -24,14 +24,15 @@ import io.uiam.cache.Cache;
 import io.uiam.cache.CacheFactory;
 import io.uiam.cache.LoadingCache;
 import io.uiam.plugins.authentication.PluggableIdentityManager;
+import io.uiam.plugins.authentication.PluggableTokenManager;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class IDMCacheSingleton {
-
-
+    private static final String AUTH_TOKEN_MANAGER_NAME = "@@authTokenManager";
+    
     private static final LoadingCache<String, PluggableIdentityManager> IDENTITY_MANAGERS_CACHE = CacheFactory
             .createLocalLoadingCache(Integer.MAX_VALUE, Cache.EXPIRE_POLICY.NEVER, -1, name -> {
                 var idmsConf = Bootstrapper.getConfiguration().getIdms();
@@ -75,6 +76,23 @@ public class IDMCacheSingleton {
             return op.get();
         } else {
             throw new PluginConfigurationException("No Identity Manager configured with name: " + name);
+        }
+    }
+    
+    public PluggableTokenManager getAuthTokenManager() throws PluginConfigurationException {
+        Optional<PluggableIdentityManager> op = IDENTITY_MANAGERS_CACHE.get(AUTH_TOKEN_MANAGER_NAME);
+
+        if (op == null) {
+            PluggableIdentityManager atm = PluginsFactory.getTokenManager(Bootstrapper.getConfiguration().getTokenManager());
+        
+            IDENTITY_MANAGERS_CACHE.put(AUTH_TOKEN_MANAGER_NAME, atm);
+            return (PluggableTokenManager) atm;
+        }
+
+        if (op.isPresent()) {
+            return (PluggableTokenManager) op.get();
+        } else {
+            throw new PluginConfigurationException("No Auth Token Manager configured");
         }
     }
 }

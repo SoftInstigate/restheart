@@ -43,15 +43,16 @@ import io.undertow.util.FlexBase64;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
- *         this extends the undertow BasicAuthenticationMechanism and
- *         authenticate the request using the AuthTokenIdentityManager.
+ * this extends the undertow BasicAuthenticationMechanism and authenticate the
+ * request using the AuthTokenIdentityManager.
  *
- *         if user already authenticated via a different mechanism, that a token
- *         is generated so that later calls can be use the token instead of the
- *         actual password
+ * if user already authenticated via a different mechanism, that a token is
+ * generated so that later calls can be use the token instead of the actual
+ * password
  *
  */
-public class AuthTokenBasicAuthenticationMechanism extends BasicAuthenticationMechanism
+public class AuthTokenBasicAuthenticationMechanism
+        extends BasicAuthenticationMechanism
         implements PluggableAuthenticationMechanism {
 
     private static final Charset UTF_8 = Charset.forName("UTF-8");
@@ -74,13 +75,18 @@ public class AuthTokenBasicAuthenticationMechanism extends BasicAuthenticationMe
      *
      * @param realmName
      */
-    public AuthTokenBasicAuthenticationMechanism(final String mechanismName, final Map<String, Object> args)
+    public AuthTokenBasicAuthenticationMechanism(final String mechanismName,
+            final Map<String, Object> args)
             throws PluginConfigurationException {
-        super(argValue(args, "realm"), mechanismName, true,
-                IDMCacheSingleton.getInstance().getIdentityManager(AuthTokenIdentityManager.NAME));
+
+        super(argValue(args, "realm"),
+                mechanismName,
+                true,
+                IDMCacheSingleton.getInstance().getAuthTokenManager());
 
         this.mechanismName = mechanismName;
-        this.identityManager = IDMCacheSingleton.getInstance().getIdentityManager(AuthTokenIdentityManager.NAME);
+        
+        this.identityManager = IDMCacheSingleton.getInstance().getAuthTokenManager();
     }
 
     @Override

@@ -20,15 +20,14 @@ package io.uiam.handlers.security;
 import static io.uiam.handlers.security.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_CREDENTIAL;
 import static io.uiam.handlers.security.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static io.uiam.handlers.security.CORSHandler.CORSHeaders.ACCESS_CONTROL_EXPOSE_HEADERS;
-import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_HEADER;
-import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
-import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_VALID_HEADER;
 import static io.undertow.util.Headers.LOCATION_STRING;
 import static io.undertow.util.Headers.ORIGIN;
 
 import com.google.common.net.HttpHeaders;
 
 import io.uiam.handlers.PipedHttpHandler;
+import static io.uiam.plugins.authentication.PluggableTokenManager.AUTH_TOKEN_HEADER;
+import static io.uiam.plugins.authentication.PluggableTokenManager.AUTH_TOKEN_VALID_HEADER;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderMap;
@@ -100,7 +99,7 @@ public class CORSHandler extends PipedHttpHandler {
         responseHeaders.add(ACCESS_CONTROL_EXPOSE_HEADERS, LOCATION_STRING);
         responseHeaders.add(ACCESS_CONTROL_EXPOSE_HEADERS,
                 LOCATION_STRING + ", " + Headers.ETAG + ", " + AUTH_TOKEN_HEADER.toString() + ", "
-                        + AUTH_TOKEN_VALID_HEADER.toString() + ", " + AUTH_TOKEN_LOCATION_HEADER.toString() + ", "
+                        + AUTH_TOKEN_VALID_HEADER.toString() + ", "
                         + HttpHeaders.X_POWERED_BY);
     }
 

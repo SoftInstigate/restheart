@@ -69,12 +69,13 @@ import io.uiam.handlers.RequestLoggerHandler;
 import io.uiam.handlers.injectors.AccountHeadersInjector;
 import io.uiam.handlers.injectors.AuthHeadersRemover;
 import io.uiam.handlers.injectors.XPoweredByInjector;
-import io.uiam.handlers.security.AuthTokenHandler;
+import io.uiam.plugins.service.impl.RndTokenService;
 import io.uiam.handlers.security.CORSHandler;
 import io.uiam.handlers.security.SecurityHandler;
 import io.uiam.plugins.PluginConfigurationException;
 import io.uiam.plugins.PluginsFactory;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
+import io.uiam.plugins.authentication.PluggableTokenManager;
 import io.uiam.plugins.authorization.PluggableAccessManager;
 import io.uiam.plugins.authorization.impl.FullAccessManager;
 import io.uiam.plugins.init.PluggableInitializer;
@@ -95,7 +96,6 @@ import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.RequestLimit;
 import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
-import io.undertow.server.handlers.proxy.ProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.util.HttpString;
 
@@ -499,22 +499,21 @@ public class Bootstrapper {
             logErrorAndExit("No listener specified. exiting..", null, false, -1);
         }
 
+        final PluggableTokenManager tokenManager = loadTokenManager();;
+
         final List<PluggableAuthenticationMechanism> authenticationMechanisms = loadAuthenticationMechanisms();
 
         final PluggableAccessManager accessManager = loadAccessManager();
-
-        if (configuration.isAuthTokenEnabled()) {
-            LOGGER.info("Token based authentication enabled with token TTL {} minutes",
-                    configuration.getAuthTokenTtl());
-        }
 
         SSLContext sslContext = null;
 
         try {
             sslContext = SSLContext.getInstance("TLS");
 
-            KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            KeyManagerFactory kmf = KeyManagerFactory
+                    .getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            TrustManagerFactory tmf = TrustManagerFactory
+                    .getInstance(TrustManagerFactory.getDefaultAlgorithm());
 
             KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
 
@@ -524,66 +523,94 @@ public class Bootstrapper {
 
                 String storename = "sskeystore.jks";
 
-                ks.load(Bootstrapper.class.getClassLoader().getResourceAsStream(storename), storepass);
+                ks.load(Bootstrapper.class.getClassLoader()
+                        .getResourceAsStream(storename), storepass);
                 kmf.init(ks, keypass);
-            } else if (configuration.getKeystoreFile() != null && configuration.getKeystorePassword() != null
+            } else if (configuration.getKeystoreFile() != null
+                    && configuration.getKeystorePassword() != null
                     && configuration.getCertPassword() != null) {
-                try (FileInputStream fis = new FileInputStream(new File(configuration.getKeystoreFile()))) {
+                try (FileInputStream fis = new FileInputStream(
+                        new File(configuration.getKeystoreFile()))) {
                     ks.load(fis, configuration.getKeystorePassword().toCharArray());
                     kmf.init(ks, configuration.getCertPassword().toCharArray());
                 }
             } else {
                 LOGGER.error(
-                        "The keystore is not configured. Check the keystore-file, keystore-password and certpassword options.");
+                        "The keystore is not configured. "
+                        + "Check the keystore-file, "
+                        + "keystore-password and certpassword options.");
             }
 
             tmf.init(ks);
 
             sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-        } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | CertificateException
+        } catch (KeyManagementException
+                | NoSuchAlgorithmException
+                | KeyStoreException
+                | CertificateException
                 | UnrecoverableKeyException ex) {
             logErrorAndExit(
-                    "Couldn't start uIAM, error with specified keystore. Check the keystore-file, keystore-password and certpassword options. Exiting..",
+                    "Couldn't start uIAM, error with specified keystore. "
+                    + "Check the keystore-file, "
+                    + "keystore-password and certpassword options. Exiting..",
                     ex, false, -1);
         } catch (FileNotFoundException ex) {
             logErrorAndExit(
-                    "Couldn't start uIAM, keystore file not found. Check the keystore-file, keystore-password and certpassword options. Exiting..",
+                    "Couldn't start uIAM, keystore file not found. "
+                    + "Check the keystore-file, "
+                    + "keystore-password and certpassword options. Exiting..",
                     ex, false, -1);
         } catch (IOException ex) {
             logErrorAndExit(
-                    "Couldn't start uIAM, error reading the keystore file. Check the keystore-file, keystore-password and certpassword options. Exiting..",
+                    "Couldn't start uIAM, error reading the keystore file. "
+                    + "Check the keystore-file, "
+                    + "keystore-password and certpassword options. Exiting..",
                     ex, false, -1);
         }
 
         Builder builder = Undertow.builder();
 
         if (configuration.isHttpsListener()) {
-            builder.addHttpsListener(configuration.getHttpsPort(), configuration.getHttpHost(), sslContext);
-            LOGGER.info("HTTPS listener bound at {}:{}", configuration.getHttpsHost(), configuration.getHttpsPort());
+            builder.addHttpsListener(configuration.getHttpsPort(),
+                    configuration.getHttpHost(),
+                    sslContext);
+            LOGGER.info("HTTPS listener bound at {}:{}",
+                    configuration.getHttpsHost(),
+                    configuration.getHttpsPort());
         }
 
         if (configuration.isHttpListener()) {
-            builder.addHttpListener(configuration.getHttpPort(), configuration.getHttpsHost());
-            LOGGER.info("HTTP listener bound at {}:{}", configuration.getHttpHost(), configuration.getHttpPort());
+            builder.addHttpListener(configuration.getHttpPort(),
+                    configuration.getHttpsHost());
+            LOGGER.info("HTTP listener bound at {}:{}",
+                    configuration.getHttpHost(),
+                    configuration.getHttpPort());
         }
 
         if (configuration.isAjpListener()) {
-            builder.addAjpListener(configuration.getAjpPort(), configuration.getAjpHost());
-            LOGGER.info("Ajp listener bound at {}:{}", configuration.getAjpHost(), configuration.getAjpPort());
+            builder.addAjpListener(configuration.getAjpPort(),
+                    configuration.getAjpHost());
+            LOGGER.info("Ajp listener bound at {}:{}",
+                    configuration.getAjpHost(),
+                    configuration.getAjpPort());
         }
 
-        shutdownHandler = getHandlersPipe(authenticationMechanisms, accessManager);
+        shutdownHandler = getHandlersPipe(authenticationMechanisms, accessManager, tokenManager);
 
-        builder = builder.setIoThreads(configuration.getIoThreads()).setWorkerThreads(configuration.getWorkerThreads())
-                .setDirectBuffers(configuration.isDirectBuffers()).setBufferSize(configuration.getBufferSize())
+        builder = builder.setIoThreads(configuration.getIoThreads())
+                .setWorkerThreads(configuration.getWorkerThreads())
+                .setDirectBuffers(configuration.isDirectBuffers())
+                .setBufferSize(configuration.getBufferSize())
                 .setHandler(shutdownHandler);
 
-        // starting undertow 1.4.23 URL become much stricter
+        // starting undertow 1.4.23 URL checks become much stricter
         // (undertow commit 09d40a13089dbff37f8c76d20a41bf0d0e600d9d)
         // allow unescaped chars in URL (otherwise not allowed by default)
         builder.setServerOption(UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL,
                 configuration.isAllowUnescapedCharactersInUrl());
-        LOGGER.info("Allow unescaped characters in URL: {}", configuration.isAllowUnescapedCharactersInUrl());
+
+        LOGGER.info("Allow unescaped characters in URL: {}",
+                configuration.isAllowUnescapedCharactersInUrl());
 
         ConfigurationHelper.setConnectionOptions(builder, configuration);
 
@@ -676,24 +703,21 @@ public class Bootstrapper {
      *
      * @param identityManager
      * @param accessManager
+     * @param tokenManager
      * @return a GracefulShutdownHandler
      */
     private static GracefulShutdownHandler getHandlersPipe(
             final List<PluggableAuthenticationMechanism> authenticationMechanisms,
-            final PluggableAccessManager accessManager) {
+            final PluggableAccessManager accessManager,
+            final PluggableTokenManager tokenManager
+    ) {
         PathHandler paths = path();
 
-        plugServices(configuration, paths, authenticationMechanisms, accessManager);
+        plugServices(configuration, paths,
+                authenticationMechanisms, accessManager, tokenManager);
 
-        // plug the auth tokens invalidation handler
-        if (configuration.isAuthTokenEnabled()) {
-            paths.addPrefixPath("/_authtokens",
-                    new RequestLoggerHandler(
-                            new CORSHandler(new XPoweredByInjector(new SecurityHandler(new AuthTokenHandler(),
-                                    authenticationMechanisms, new FullAccessManager(true))))));
-        }
-
-        proxyResources(configuration, paths, authenticationMechanisms, accessManager);
+        proxyResources(configuration, paths,
+                authenticationMechanisms, accessManager, tokenManager);
 
         return buildGracefulShutdownHandler(paths);
     }
@@ -729,7 +753,8 @@ public class Bootstrapper {
      */
     private static void plugServices(final Configuration conf, final PathHandler paths,
             final List<PluggableAuthenticationMechanism> authenticationMechanisms,
-            final PluggableAccessManager accessManager) {
+            final PluggableAccessManager accessManager,
+            final PluggableTokenManager tokenManager) {
         if (!conf.getServices().isEmpty()) {
             conf.getServices().stream().forEach((Map<String, Object> serviceConf) -> {
                 try {
@@ -737,12 +762,22 @@ public class Bootstrapper {
 
                     if (srv.getSecured()) {
                         paths.addPrefixPath(srv.getUri(),
-                                new RequestLoggerHandler(new CORSHandler(new XPoweredByInjector(
-                                        new SecurityHandler(srv, authenticationMechanisms, accessManager)))));
+                                new RequestLoggerHandler(
+                                        new CORSHandler(
+                                                new XPoweredByInjector(
+                                                        new SecurityHandler(srv,
+                                                                authenticationMechanisms,
+                                                                accessManager,
+                                                                tokenManager)))));
                     } else {
                         paths.addPrefixPath(srv.getUri(),
-                                new RequestLoggerHandler(new CORSHandler(new XPoweredByInjector(new SecurityHandler(srv,
-                                        authenticationMechanisms, new FullAccessManager(false))))));
+                                new RequestLoggerHandler(
+                                        new CORSHandler(
+                                                new XPoweredByInjector(
+                                                        new SecurityHandler(srv,
+                                                                authenticationMechanisms,
+                                                                new FullAccessManager(false),
+                                                                tokenManager)))));
                     }
 
                     LOGGER.info("URI {} bound to service {}." + " secured: {}", srv.getUri(), srv.getName(),
@@ -752,6 +787,26 @@ public class Bootstrapper {
                     LOGGER.error("Error pluggin service", pce);
                 }
             });
+        }
+    }
+
+    /**
+     * loadTokenManager
+     *
+     * @return the PluggableTokenManager, or null if it is not configured
+     */
+    private static PluggableTokenManager loadTokenManager() {
+        final Map<String, Object> tokenManager = configuration.getTokenManager();
+
+        if (tokenManager == null || tokenManager.isEmpty()) {
+            return null;
+        }
+
+        try {
+            return PluginsFactory.getTokenManager(tokenManager);
+        } catch (PluginConfigurationException pce) {
+            LOGGER.error("Error configuring token manager", pce);
+            return null;
         }
     }
 
@@ -766,7 +821,8 @@ public class Bootstrapper {
      */
     private static void proxyResources(final Configuration conf, final PathHandler paths,
             final List<PluggableAuthenticationMechanism> authenticationMechanisms,
-            final PluggableAccessManager accessManager) {
+            final PluggableAccessManager accessManager,
+            final PluggableTokenManager tokenManager) {
         if (conf.getProxies() == null || conf.getProxies().isEmpty()) {
             LOGGER.info("No {} specified", Configuration.PROXY_KEY);
             return;
@@ -775,15 +831,19 @@ public class Bootstrapper {
         conf.getProxies().stream().forEachOrdered(m -> {
             String uri = Configuration.getOrDefault(m, Configuration.PROXY_URI_KEY, null, true);
             Object _resourceURL = Configuration.getOrDefault(m, Configuration.PROXY_URL_KEY, null, true);
-            
+
             // The number of connections to create per thread
-            Integer connectionsPerThread = Configuration.getOrDefault(m, Configuration.PROXY_CONNECTIONS_PER_THREAD, 10, true);
+            Integer connectionsPerThread = Configuration.getOrDefault(m, Configuration.PROXY_CONNECTIONS_PER_THREAD, 10,
+                    true);
             Integer maxQueueSize = Configuration.getOrDefault(m, Configuration.PROXY_MAX_QUEUE_SIZE, 0, true);
-            Integer softMaxConnectionsPerThread = Configuration.getOrDefault(m, Configuration.PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD, 5, true);;
+            Integer softMaxConnectionsPerThread = Configuration.getOrDefault(m,
+                    Configuration.PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD, 5, true);
+            ;
             Integer ttl = Configuration.getOrDefault(m, Configuration.PROXY_TTL, -1, true);
 
             // Time in seconds between retries for problem server
-            Integer problemServerRetry = Configuration.getOrDefault(m, Configuration.PROXY_PROBLEM_SERVER_RETRY, 10, true);
+            Integer problemServerRetry = Configuration.getOrDefault(m, Configuration.PROXY_PROBLEM_SERVER_RETRY, 10,
+                    true);
 
             final Xnio xnio = Xnio.getInstance();
             final OptionMap optionMap = OptionMap.create(Options.SSL_CLIENT_AUTH_MODE, SslClientAuthMode.REQUIRED,
@@ -799,16 +859,14 @@ public class Bootstrapper {
 
             try {
                 LoadBalancingProxyClient proxyClient = new LoadBalancingProxyClient()
-                    .setConnectionsPerThread(connectionsPerThread)
-                    .setSoftMaxConnectionsPerThread(softMaxConnectionsPerThread)
-                    .setMaxQueueSize(maxQueueSize)
-                    .setProblemServerRetry(problemServerRetry)
-                    .setTtl(ttl);
-                    
+                        .setConnectionsPerThread(connectionsPerThread)
+                        .setSoftMaxConnectionsPerThread(softMaxConnectionsPerThread).setMaxQueueSize(maxQueueSize)
+                        .setProblemServerRetry(problemServerRetry).setTtl(ttl);
+
                 if (_resourceURL instanceof String) {
                     proxyClient = proxyClient.addHost(new URI((String) _resourceURL), sslProvider);
                 } else if (_resourceURL instanceof List) {
-                    for (Object resourceURL: ((List<?>) _resourceURL)) {
+                    for (Object resourceURL : ((List<?>) _resourceURL)) {
                         if (resourceURL instanceof String) {
                             proxyClient = proxyClient.addHost(new URI((String) resourceURL), sslProvider);
                         } else {
@@ -823,23 +881,20 @@ public class Bootstrapper {
                         .setProxyClient(proxyClient).setNext(new AccountHeadersInjector()).build();
 
                 PipedHttpHandler wrappedProxyHandler = new AccountHeadersInjector(
-                        new PipedWrappingHandler(new XPoweredByInjector(), proxyHandler));
+                        new PipedWrappingHandler(
+                                new XPoweredByInjector(), proxyHandler));
 
                 paths.addPrefixPath(uri,
-                        new RequestLoggerHandler(new SecurityHandler(new AuthHeadersRemover(wrappedProxyHandler),
-                                authenticationMechanisms, accessManager)));
+                        new RequestLoggerHandler(
+                                new SecurityHandler(
+                                        new AuthHeadersRemover(wrappedProxyHandler),
+                                        authenticationMechanisms, accessManager, tokenManager)));
 
                 LOGGER.info("URI {} bound to {}", uri, _resourceURL);
             } catch (URISyntaxException ex) {
                 LOGGER.warn("Invalid URI {}, resources {} not proxied ", uri, _resourceURL);
             }
         });
-    }
-
-    private static void bindResource(XnioSsl sslProvider, String resourceURL, String uri, final PathHandler paths,
-            final List<PluggableAuthenticationMechanism> authenticationMechanisms,
-            final PluggableAccessManager accessManager) {
-
     }
 
     /**

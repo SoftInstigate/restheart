@@ -135,16 +135,19 @@ access-manager:
     args:
         conf-file: /opt/uiam/etc/security.yml
  
-# Authentication Token
+## Token Manager
 
- # Required by the AuthTokenBasicAuthenticationMechanism
- # Note: you need to pay attention to the authentitcation token in case of 
- # multi-node deployments (horizontal scalability). yu need to either disable it or
- # use a load balancer with the sticky session option or use a distributed 
- # auth token cache implementation (not provided in the current version).
+ # If a token-manager is configured, uIAM will use it to generate and verify token
+ # The token is returned to the caller via auth-token header when the user autheticates succesfully.
+ # The token can thern be used by other Authentication Mechanisms d.
 
-auth-token-enabled: true
-auth-token-ttl: 15
+ # See README.md for the list of available Token Generators
+
+token-manager:
+    name: rndTokenManager
+    class: io.uiam.plugins.authentication.impl.RndTokenManager
+    args:
+      ttl: 15
 
 ## Services
 
@@ -155,6 +158,10 @@ auth-token-ttl: 15
  # See README.md for the list of available Services
 
 services:
+    - name: rndTokenManager
+      class: io.uiam.plugins.service.impl.RndTokenService
+      uri: /tokens
+      secured: false
     - name: ping
       class: io.uiam.plugins.service.impl.PingService
       uri: /ping

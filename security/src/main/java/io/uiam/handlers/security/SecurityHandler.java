@@ -21,6 +21,7 @@ import java.util.List;
 
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
+import io.uiam.plugins.authentication.PluggableTokenManager;
 import io.uiam.plugins.authorization.PluggableAccessManager;
 import io.undertow.security.api.AuthenticationMode;
 import io.undertow.server.HttpServerExchange;
@@ -39,9 +40,11 @@ public class SecurityHandler extends PipedHttpHandler {
      */
     public SecurityHandler(final PipedHttpHandler next,
             final List<PluggableAuthenticationMechanism> authenticationMechanisms,
-            final PluggableAccessManager accessManager) {
+            final PluggableAccessManager accessManager,
+            final PluggableTokenManager tokenManager) {
 
-        super(buildSecurityHandlersChain(next, authenticationMechanisms, accessManager));
+        super(buildSecurityHandlersChain(next,
+                authenticationMechanisms, accessManager, tokenManager));
     }
 
     @Override
@@ -49,21 +52,31 @@ public class SecurityHandler extends PipedHttpHandler {
         next(exchange);
     }
 
-    private static PipedHttpHandler buildSecurityHandlersChain(PipedHttpHandler next,
-            final List<PluggableAuthenticationMechanism> mechanisms, final PluggableAccessManager accessManager) {
+    private static PipedHttpHandler buildSecurityHandlersChain(
+            PipedHttpHandler next,
+            final List<PluggableAuthenticationMechanism> mechanisms,
+            final PluggableAccessManager accessManager,
+            final PluggableTokenManager tokenManager) {
         if (mechanisms != null && mechanisms.size() > 0) {
             PipedHttpHandler handler;
 
             if (accessManager == null) {
-                throw new IllegalArgumentException("Error, accessManager cannot " + "be null. "
-                        + "Eventually use FullAccessManager " + "that gives full access power ");
+                throw new IllegalArgumentException("Error, accessManager cannot "
+                        + "be null. "
+                        + "Eventually use FullAccessManager "
+                        + "that gives full access power ");
             }
 
-            handler = new AuthTokenInjecterHandler(new AccessManagerHandler(accessManager, next));
+            handler = new AuthTokenInjecterHandler(
+                    new AccessManagerHandler(accessManager, next),
+                    tokenManager);
 
-            handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE,
+            handler = new SecurityInitialHandler(
+                    AuthenticationMode.PRO_ACTIVE,
                     new AuthenticationMechanismsHandler(
-                            new AuthenticationConstraintHandler(new AuthenticationCallHandler(handler), accessManager),
+                            new AuthenticationConstraintHandler(
+                                    new AuthenticationCallHandler(handler),
+                                    accessManager),
                             mechanisms));
 
             return handler;

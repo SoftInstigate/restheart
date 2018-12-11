@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -313,14 +314,9 @@ public class Configuration {
     public static final String INSTANCE_NAME_KEY = "instance-name";
 
     /**
-     * the key for the auth-token-enabled property.
+     * the key for the tokenManager property.
      */
-    public static final String AUTH_TOKEN_ENABLED = "auth-token-enabled";
-
-    /**
-     * the key for the auth-token-ttl property.
-     */
-    public static final String AUTH_TOKEN_TTL = "auth-token-ttl";
+    public static final String AUTH_TOKEN = "token-manager";
 
     /**
      * Force http requests logging even if DEBUG is not set
@@ -418,6 +414,7 @@ public class Configuration {
     private final List<Map<String, Object>> authMechanisms;
     private final List<Map<String, Object>> idms;
     private final Map<String, Object> accessManager;
+    private final Map<String, Object> tokenManager;
     private final String logFilePath;
     private final Level logLevel;
     private final boolean logToConsole;
@@ -428,8 +425,6 @@ public class Configuration {
     private final int bufferSize;
     private final boolean directBuffers;
     private final boolean forceGzipEncoding;
-    private final boolean authTokenEnabled;
-    private final int authTokenTtl;
     private final Map<String, Object> connectionOptions;
     private final Integer logExchangeDump;
     private final boolean ansiConsole;
@@ -478,6 +473,8 @@ public class Configuration {
 
         accessManager = null;
 
+        tokenManager = new HashMap<>();
+
         logFilePath = URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
                 .concat(File.separator + "uiam.log");
 
@@ -493,9 +490,6 @@ public class Configuration {
         directBuffers = true;
 
         forceGzipEncoding = false;
-
-        authTokenEnabled = true;
-        authTokenTtl = 15; // minutes
 
         logExchangeDump = 0;
 
@@ -572,6 +566,8 @@ public class Configuration {
 
         accessManager = getAsMap(conf, ACCESS_MANAGER_KEY);
 
+        tokenManager  = getAsMap(conf, AUTH_TOKEN);
+
         logFilePath = getOrDefault(conf, LOG_FILE_PATH_KEY, URLUtils
                 .removeTrailingSlashes(System.getProperty("java.io.tmpdir")).concat(File.separator + "uiam.log"));
         String _logLevel = getOrDefault(conf, LOG_LEVEL_KEY, "INFO");
@@ -601,9 +597,6 @@ public class Configuration {
 
         forceGzipEncoding = getOrDefault(conf, FORCE_GZIP_ENCODING_KEY, false);
 
-        authTokenEnabled = getOrDefault(conf, AUTH_TOKEN_ENABLED, true);
-        authTokenTtl = getOrDefault(conf, AUTH_TOKEN_TTL, 15);
-
         logExchangeDump = getOrDefault(conf, LOG_REQUESTS_LEVEL_KEY, 0);
 
         connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY);
@@ -625,7 +618,7 @@ public class Configuration {
                 + logFilePath + ", logLevel=" + logLevel + ", logToConsole=" + logToConsole + ", logToFile=" + logToFile
                 + ", requestsLimit=" + requestsLimit + ", ioThreads=" + ioThreads + ", workerThreads=" + workerThreads
                 + ", bufferSize=" + bufferSize + ", directBuffers=" + directBuffers + ", forceGzipEncoding="
-                + forceGzipEncoding + ", authTokenEnabled=" + authTokenEnabled + ", authTokenTtl=" + authTokenTtl
+                + forceGzipEncoding + ", authToken=" + tokenManager
                 + ", connectionOptions=" + connectionOptions + ", logExchangeDump=" + logExchangeDump + ", ansiConsole="
                 + ansiConsole + ", initializerClass=" + initializerClass + ", cursorBatchSize="
                 + allowUnescapedCharactersInUrl + ", configurationFileMap=" + configurationFileMap + '}';
@@ -947,17 +940,10 @@ public class Configuration {
     }
 
     /**
-     * @return the authTokenEnabled
+     * @return the authToken
      */
-    public boolean isAuthTokenEnabled() {
-        return authTokenEnabled;
-    }
-
-    /**
-     * @return the authTokenTtl
-     */
-    public int getAuthTokenTtl() {
-        return authTokenTtl;
+    public Map<String, Object> getTokenManager() {
+        return tokenManager;
     }
 
     /**

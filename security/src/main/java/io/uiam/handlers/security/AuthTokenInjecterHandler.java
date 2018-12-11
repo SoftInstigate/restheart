@@ -17,25 +17,10 @@
  */
 package io.uiam.handlers.security;
 
-import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_HEADER;
-import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
-import static io.uiam.handlers.security.IAuthToken.AUTH_TOKEN_VALID_HEADER;
-
-import java.math.BigInteger;
-import java.security.SecureRandom;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Optional;
-
-import com.google.common.collect.Sets;
-
-import io.uiam.Bootstrapper;
 import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.plugins.IDMCacheSingleton;
-import io.uiam.plugins.PluginConfigurationException;
-import io.uiam.plugins.authentication.impl.AuthTokenIdentityManager;
-import io.uiam.plugins.authentication.impl.PwdCredentialAccount;
+import io.uiam.plugins.authentication.PluggableTokenManager;
 import io.undertow.security.idm.Account;
+import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
 
 /**
@@ -43,18 +28,17 @@ import io.undertow.server.HttpServerExchange;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class AuthTokenInjecterHandler extends PipedHttpHandler {
-    private static final boolean enabled = Bootstrapper.getConfiguration().isAuthTokenEnabled();
-    private static final long TTL = Bootstrapper.getConfiguration().getAuthTokenTtl();
-
-    private static SecureRandom RND_GENERATOR = new SecureRandom();
+    private final PluggableTokenManager tokenManager;
 
     /**
      * Creates a new instance of AuthTokenInjecterHandler
      *
      * @param next
+     * @param tokenManager
      */
-    public AuthTokenInjecterHandler(PipedHttpHandler next) {
+    public AuthTokenInjecterHandler(PipedHttpHandler next, PluggableTokenManager tokenManager) {
         super(next);
+        this.tokenManager = tokenManager;
     }
 
     /**
@@ -65,49 +49,17 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        if (enabled) {
-            if (exchange.getSecurityContext() != null && exchange.getSecurityContext().isAuthenticated()) {
-                Account authenticatedAccount = exchange.getSecurityContext().getAuthenticatedAccount();
+        if (this.tokenManager != null
+                && exchange.getSecurityContext() != null
+                && exchange.getSecurityContext().isAuthenticated()) {
+            Account authenticatedAccount = exchange
+                    .getSecurityContext().getAuthenticatedAccount();
 
-                char[] token = cacheSessionToken(authenticatedAccount);
+            PasswordCredential token = tokenManager.get(authenticatedAccount);
 
-                injectTokenHeaders(exchange, token);
-            }
+            tokenManager.injectTokenHeaders(exchange, token);
         }
 
         next(exchange);
-    }
-
-    private void injectTokenHeaders(HttpServerExchange exchange, char[] token) {
-        exchange.getResponseHeaders().add(AUTH_TOKEN_HEADER, new String(token));
-        exchange.getResponseHeaders().add(AUTH_TOKEN_VALID_HEADER,
-                Instant.now().plus(TTL, ChronoUnit.MINUTES).toString());
-        exchange.getResponseHeaders().add(AUTH_TOKEN_LOCATION_HEADER,
-                "/_authtokens/" + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
-    }
-
-    private char[] cacheSessionToken(Account authenticatedAccount) throws PluginConfigurationException {
-        String id = authenticatedAccount.getPrincipal().getName();
-
-        AuthTokenIdentityManager idm = (AuthTokenIdentityManager) IDMCacheSingleton.getInstance()
-                .getIdentityManager(AuthTokenIdentityManager.NAME);
-
-        Optional<PwdCredentialAccount> cachedTokenAccount = idm.getCachedAccounts().get(id);
-
-        if (cachedTokenAccount == null) {
-            char[] token = nextToken();
-            PwdCredentialAccount newCachedTokenAccount = new PwdCredentialAccount(id, token,
-                    Sets.newTreeSet(authenticatedAccount.getRoles()));
-
-            idm.getCachedAccounts().put(id, newCachedTokenAccount);
-
-            return token;
-        } else {
-            return cachedTokenAccount.get().getCredentials().getPassword();
-        }
-    }
-
-    private static char[] nextToken() {
-        return new BigInteger(256, RND_GENERATOR).toString(Character.MAX_RADIX).toCharArray();
     }
 }
