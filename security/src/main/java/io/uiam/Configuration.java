@@ -197,14 +197,40 @@ public class Configuration {
     public static final String PROXY_KEY = "proxies";
 
     /**
-     * the key for the uri property.
+     * the key for the internal-uri property.
      */
     public static final String PROXY_URI_KEY = "internal-uri";
 
     /**
-     * the key for the url property.
+     * the key for the external-url property.
      */
     public static final String PROXY_URL_KEY = "external-url";
+
+    /**
+     * the key for the connections-per-thread property.
+     */
+    public static final String PROXY_CONNECTIONS_PER_THREAD = "connections-per-thread";
+
+    /**
+     * the key for the max-queue-size property.
+     */
+    public static final String PROXY_MAX_QUEUE_SIZE = "max-queue-size";
+
+    /**
+     * the key for the soft-max-connections-per-thread property.
+     */
+    public static final String PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD = "soft-max-connections-per-thread";
+
+    /**
+     * the key for the connections-ttl property.
+     */
+    public static final String PROXY_TTL = "connections-ttl";
+
+
+    /**
+     * the key for the problem-server-retry property.
+     */
+    public static final String PROXY_PROBLEM_SERVER_RETRY = "problem-server-retry";
 
     /**
      * the key for the auth-db property.
@@ -684,10 +710,11 @@ public class Configuration {
      * @param conf
      * @param key
      * @param defaultValue
+     * @param silent
      * @return
      */
     @SuppressWarnings("unchecked")
-    private <V extends Object> V getOrDefault(final Map<String, Object> conf, final String key, final V defaultValue) {
+    public static <V extends Object> V getOrDefault(final Map<String, Object> conf, final String key, final V defaultValue, boolean silent) {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
             if (defaultValue != null && !silent) {
@@ -709,6 +736,17 @@ public class Configuration {
             }
             return defaultValue;
         }
+    }
+
+    /**
+     *
+     * @param conf
+     * @param key
+     * @param defaultValue
+     * @return
+     */
+    private <V extends Object> V getOrDefault(final Map<String, Object> conf, final String key, final V defaultValue) {
+        return getOrDefault(conf, key, defaultValue, this.silent);
     }
 
     /**

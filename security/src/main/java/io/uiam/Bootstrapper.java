@@ -711,10 +711,8 @@ public class Bootstrapper {
                         new BlockingHandler(
                                 new GzipEncodingHandler(new ErrorHandler(new HttpContinueAcceptingHandler(paths)),
                                         configuration.isForceGzipEncoding())), // allowed methods
-                        HttpString.tryFromString(METHOD.GET.name()),
-                        HttpString.tryFromString(METHOD.POST.name()),
-                        HttpString.tryFromString(METHOD.PUT.name()),
-                        HttpString.tryFromString(METHOD.DELETE.name()),
+                        HttpString.tryFromString(METHOD.GET.name()), HttpString.tryFromString(METHOD.POST.name()),
+                        HttpString.tryFromString(METHOD.PUT.name()), HttpString.tryFromString(METHOD.DELETE.name()),
                         HttpString.tryFromString(METHOD.PATCH.name()),
                         HttpString.tryFromString(METHOD.OPTIONS.name()))));
 
@@ -743,9 +741,8 @@ public class Bootstrapper {
                                         new SecurityHandler(srv, authenticationMechanisms, accessManager)))));
                     } else {
                         paths.addPrefixPath(srv.getUri(),
-                                new RequestLoggerHandler(
-                                        new CORSHandler(new XPoweredByInjector(new SecurityHandler(srv,
-                                                authenticationMechanisms, new FullAccessManager(false))))));
+                                new RequestLoggerHandler(new CORSHandler(new XPoweredByInjector(new SecurityHandler(srv,
+                                        authenticationMechanisms, new FullAccessManager(false))))));
                     }
 
                     LOGGER.info("URI {} bound to service {}." + " secured: {}", srv.getUri(), srv.getName(),
@@ -776,10 +773,18 @@ public class Bootstrapper {
         }
 
         conf.getProxies().stream().forEachOrdered(m -> {
-            String uri = (String) m.get(Configuration.PROXY_URI_KEY);
-            String resourceURL = (String) m.get(Configuration.PROXY_URL_KEY);
+            String uri = Configuration.getOrDefault(m, Configuration.PROXY_URI_KEY, null, true);
+            Object _resourceURL = Configuration.getOrDefault(m, Configuration.PROXY_URL_KEY, null, true);
+            
+            // The number of connections to create per thread
+            Integer connectionsPerThread = Configuration.getOrDefault(m, Configuration.PROXY_CONNECTIONS_PER_THREAD, 10, true);
+            Integer maxQueueSize = Configuration.getOrDefault(m, Configuration.PROXY_MAX_QUEUE_SIZE, 0, true);
+            Integer softMaxConnectionsPerThread = Configuration.getOrDefault(m, Configuration.PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD, 5, true);;
+            Integer ttl = Configuration.getOrDefault(m, Configuration.PROXY_TTL, -1, true);
 
-            // TODO make this static
+            // Time in seconds between retries for problem server
+            Integer problemServerRetry = Configuration.getOrDefault(m, Configuration.PROXY_PROBLEM_SERVER_RETRY, 10, true);
+
             final Xnio xnio = Xnio.getInstance();
             final OptionMap optionMap = OptionMap.create(Options.SSL_CLIENT_AUTH_MODE, SslClientAuthMode.REQUIRED,
                     Options.SSL_STARTTLS, true);
@@ -793,9 +798,26 @@ public class Bootstrapper {
             }
 
             try {
-                // TODO allow adding more hosts for load balancing
-                ProxyClient proxyClient = new LoadBalancingProxyClient().addHost(new URI(resourceURL), sslProvider)
-                        .setConnectionsPerThread(20);
+                LoadBalancingProxyClient proxyClient = new LoadBalancingProxyClient()
+                    .setConnectionsPerThread(connectionsPerThread)
+                    .setSoftMaxConnectionsPerThread(softMaxConnectionsPerThread)
+                    .setMaxQueueSize(maxQueueSize)
+                    .setProblemServerRetry(problemServerRetry)
+                    .setTtl(ttl);
+                    
+                if (_resourceURL instanceof String) {
+                    proxyClient = proxyClient.addHost(new URI((String) _resourceURL), sslProvider);
+                } else if (_resourceURL instanceof List) {
+                    for (Object resourceURL: ((List<?>) _resourceURL)) {
+                        if (resourceURL instanceof String) {
+                            proxyClient = proxyClient.addHost(new URI((String) resourceURL), sslProvider);
+                        } else {
+                            LOGGER.warn("Invalid URI {}, resource {} not proxied ", uri, resourceURL);
+                        }
+                    }
+                } else {
+                    LOGGER.warn("Invalid URI {}, resource {} not proxied ", uri, _resourceURL);
+                }
 
                 ProxyHandler proxyHandler = ProxyHandler.builder().setRewriteHostHeader(true)
                         .setProxyClient(proxyClient).setNext(new AccountHeadersInjector()).build();
@@ -807,11 +829,16 @@ public class Bootstrapper {
                         new RequestLoggerHandler(new SecurityHandler(new AuthHeadersRemover(wrappedProxyHandler),
                                 authenticationMechanisms, accessManager)));
 
-                LOGGER.info("URI {} bound to resource {}", uri, resourceURL);
+                LOGGER.info("URI {} bound to {}", uri, _resourceURL);
             } catch (URISyntaxException ex) {
-                LOGGER.warn("Invalid URI {}, resource {} not proxied ", uri, resourceURL);
+                LOGGER.warn("Invalid URI {}, resources {} not proxied ", uri, _resourceURL);
             }
         });
+    }
+
+    private static void bindResource(XnioSsl sslProvider, String resourceURL, String uri, final PathHandler paths,
+            final List<PluggableAuthenticationMechanism> authenticationMechanisms,
+            final PluggableAccessManager accessManager) {
 
     }
 
