@@ -11,7 +11,7 @@ networks:
 # This makes much easier to identify where the mongodb data is stored on host
 # See: https://docs.docker.com/engine/userguide/containers/dockervolumes/#mount-a-shared-storage-volume-as-a-data-volume
 volumes:
-   uiam-rh-datadb:
+   uiam-testdb:
 
 services:
    uiam:
@@ -23,6 +23,8 @@ services:
          - backend
       ports:
          - "18080:8080"
+      volumes:
+         - ./uiam/etc:/opt/uiam/etc:ro
 
    restheart:
       image: softinstigate/restheart
@@ -34,22 +36,16 @@ services:
       ### Uncoment below if you want to mount a local configuration folder
       ### to overwrite default restheart.yml and/or security.yml
       volumes:
-         - ./etc/restheart/restheart.yml:/opt/restheart/etc/restheart.yml:ro
+         - ./restheart/etc/restheart.yml:/opt/restheart/etc/restheart.yml:ro
 
    mongodb:
       image: mongo:3.6
       container_name: restheart-mongo
-      #environment:
-            # Be sure this credentials match with those in etc/restheart.yml
-            # $ mongo --username restheart --password R3ste4rt! --authenticationDatabase admin
-            # These aren't needed if connecting to an existing database instance
-      #      MONGO_INITDB_ROOT_USERNAME: restheart
-      #      MONGO_INITDB_ROOT_PASSWORD: R3ste4rt!
       command: --bind_ip_all
       volumes:
-         - uiam-rh-datadb:/data/db
+         - uiam-testdb:/data/db
       networks:
          - backend
-      ### Uncoment below if you want to map mongodb port
+      ### mongodb port must be mapped for the test to run
       ports:
          - "27017:27017"

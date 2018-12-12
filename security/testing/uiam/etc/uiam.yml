@@ -30,7 +30,7 @@ instance-name: uiam-docker
 
 ### Proxied resources
 
- # internal-uri (required) The URI where the proxied resource must be bound.
+# internal-uri (required) The URI where the proxied resource must be bound.
  # external-url (required) The URL of the resource to proxy. It can be an array of URLs for load balancing.
  # connections-per-thread (optional, default 10) Controls the number of connections to create per thread.
  # soft-max-connections-per-thread (optional, default 5) Controls the number of connections to create per thread.
@@ -38,10 +38,8 @@ instance-name: uiam-docker
  # connections-ttl (optional, default -1) Connections Time to Live in seconds.
  # problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
 proxies:
-    - internal-uri: /secho
-      external-url: http://127.0.0.1:8080/echo
-    - internal-uri: /restheart
-      external-url: https://restheart.org
+    - internal-uri: /
+      external-url: http://restheart:8080/
 
 #### SSL Configuration
 
@@ -118,7 +116,7 @@ idms:
     - name: simpleFileIdentityManager
       class: io.uiam.plugins.authentication.impl.SimpleFileIdentityManager
       args:
-        conf-file: ../etc/security.yml
+        conf-file: /opt/uiam/etc/security.yml
     - name: authTokenIdentityManager
       class: io.uiam.plugins.authentication.impl.AuthTokenIdentityManager
 
@@ -132,8 +130,8 @@ access-manager:
     name: requestPredicatesAccessManager
     class: io.uiam.plugins.authorization.impl.RequestPredicatesAccessManager
     args:
-        conf-file: ../etc/security.yml
-
+        conf-file: /opt/uiam/etc/security.yml
+ 
 ## Token Manager
 
  # If a token-manager is configured, uIAM will use it to generate and verify token
@@ -177,7 +175,7 @@ services:
       class: io.uiam.plugins.service.impl.EchoService
       uri: /echo
       secured: false
-      
+
 #### Logging
 
  # enable-log-console: true => log messages to the console (default value: true)
@@ -188,7 +186,7 @@ services:
  # ansi-console: use Ansi console for logging. 
  # WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
 
-enable-log-file: true
+enable-log-file: false
 log-file-path: /var/log/uiam.log
 enable-log-console: true
 log-level: DEBUG

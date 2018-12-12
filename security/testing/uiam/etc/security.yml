@@ -1,0 +1,52 @@
+## uIAM sample security configuration file.
+
+---
+## Configuration for SimpleFileIdentityManager
+users:
+    - userid: a
+      password: a
+      roles: [admin]
+
+    - userid: user
+      password: changeit
+      roles: [user]
+
+    - userid: user2
+      password: changeit
+      roles: [user]
+
+    - userid: admin
+      password: changeit
+      roles: [user, admin]
+      
+
+## Configuration for SimpleFileAccessManager
+
+## Look at undertow documentation for information about predictates language syntax
+## http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#textual-representation
+## The special role $unauthenticated allows to give permissions without requiring authentication
+permissions:
+# Users with role 'admin' can do anything
+    - role: admin
+      predicate: path-prefix[path="/"]
+
+# Not authenticated user can only GET any resource under the /plubic URI
+    - role: $unauthenticated
+      predicate: path-prefix[path="/plubic/"] and method[value="GET"]
+
+# Users with role 'user' can GET any resource with second level URIs (as /{first}/{second}) exluding /foo/bar )
+    - role: user
+      predicate: regex[pattern="/.*/.*", value="%R", full-match=true] and method[value="GET"] and not path-prefix[path="/foo/bar"]
+
+# Users with role 'user' can do anything on /public/{username} resource
+    - role: user
+      predicate: path-template[value="/public/{username}"] and equals[%u, "${username}"]
+
+# Users with role 'user' can do anything on /public/{username} child resource
+    - role: user
+      predicate: path-template[value="/public/{username}/{subpath}"] and equals[%u, "${username}"]
+
+# Same than previous one, but using regex predicate
+# Users with role 'user' can do anything on documents of the collection /public/{username}
+#    - role: user
+#      predicate: regex[pattern="/public/(.*?)/.*", value="%R", full-match=true] and equals[%u, "${1}"]
