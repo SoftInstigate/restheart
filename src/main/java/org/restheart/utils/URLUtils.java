@@ -459,7 +459,6 @@ public class URLUtils {
             return exchange.getRequestURL();
         } else {
             return removeTrailingSlashes(ibu)
-                    .concat("/")
                     .concat(exchange.getRelativePath());
         }
     }
