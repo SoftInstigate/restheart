@@ -30,6 +30,7 @@ import io.undertow.util.HttpString;
 public interface PluggableTokenManager extends PluggableIdentityManager {
     static final HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
     static final HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
+    static final HttpString AUTH_TOKEN_LOCATION_HEADER = HttpString.tryFromString("Auth-Token-Location");
 
     public PasswordCredential get(Account account);
 

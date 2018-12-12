@@ -27,6 +27,7 @@ import com.google.gson.JsonPrimitive;
 import io.uiam.handlers.ExchangeHelper;
 import io.uiam.handlers.PipedHttpHandler;
 import static io.uiam.plugins.authentication.PluggableTokenManager.AUTH_TOKEN_HEADER;
+import static io.uiam.plugins.authentication.PluggableTokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static io.uiam.plugins.authentication.PluggableTokenManager.AUTH_TOKEN_VALID_HEADER;
 import io.uiam.plugins.service.PluggableService;
 import io.uiam.utils.HttpStatus;
@@ -71,7 +72,9 @@ public class GetRoleService extends PluggableService {
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET");
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"),
                     "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge, "
-                            + AUTH_TOKEN_HEADER + ", " + AUTH_TOKEN_VALID_HEADER);
+                    + AUTH_TOKEN_HEADER
+                    + ", " + AUTH_TOKEN_VALID_HEADER
+                    + ", " + AUTH_TOKEN_LOCATION_HEADER);
             exchange.setStatusCode(HttpStatus.SC_OK);
             exchange.endExchange();
         } else if (hex.isGet()) {
@@ -88,6 +91,7 @@ public class GetRoleService extends PluggableService {
                     // REMOVE THE AUTH TOKEN HEADERS!!!!!!!!!!!
                     exchange.getResponseHeaders().remove(AUTH_TOKEN_HEADER);
                     exchange.getResponseHeaders().remove(AUTH_TOKEN_VALID_HEADER);
+                    exchange.getResponseHeaders().remove(AUTH_TOKEN_LOCATION_HEADER);
 
                     exchange.endExchange();
                     return;

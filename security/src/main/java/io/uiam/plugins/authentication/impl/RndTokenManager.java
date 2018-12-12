@@ -27,10 +27,12 @@ import java.util.Optional;
 import com.google.common.collect.Sets;
 import io.uiam.cache.Cache;
 import io.uiam.cache.CacheFactory;
+import io.uiam.handlers.ExchangeHelper;
 
 import io.uiam.plugins.ConfigurablePlugin;
 import io.uiam.plugins.PluginConfigurationException;
 import io.uiam.plugins.authentication.PluggableTokenManager;
+import io.uiam.utils.URLUtils;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.PasswordCredential;
@@ -44,10 +46,13 @@ public class RndTokenManager implements PluggableTokenManager {
     private static Cache<String, PwdCredentialAccount> CACHE;
 
     private final int ttl;
+    private final String srvURI;
 
     public RndTokenManager(String name, Map<String, Object> args)
             throws PluginConfigurationException {
         this.ttl = ConfigurablePlugin.argValue(args, "ttl");
+
+        this.srvURI = ConfigurablePlugin.argValue(args, "srv-uri");
 
         this.CACHE = CacheFactory.createLocalCache(Long.MAX_VALUE,
                 Cache.EXPIRE_POLICY.AFTER_READ,
@@ -124,6 +129,22 @@ public class RndTokenManager implements PluggableTokenManager {
 
         exchange.getResponseHeaders().add(AUTH_TOKEN_VALID_HEADER,
                 Instant.now().plus(ttl, ChronoUnit.MINUTES).toString());
+
+        ExchangeHelper eh = new ExchangeHelper(exchange);
+
+        if (eh.getAuthenticatedAccount() != null
+                && eh.getAuthenticatedAccount().getPrincipal() != null
+                && eh.getAuthenticatedAccount().getPrincipal().getName() != null) {
+            String cid = eh
+                    .getAuthenticatedAccount()
+                    .getPrincipal()
+                    .getName();
+
+            exchange.getResponseHeaders().add(AUTH_TOKEN_LOCATION_HEADER,
+                    URLUtils.removeTrailingSlashes(srvURI)
+                            .concat("/")
+                            .concat(cid));
+        }
     }
 
     private static char[] nextToken() {

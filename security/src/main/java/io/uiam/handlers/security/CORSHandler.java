@@ -27,6 +27,7 @@ import com.google.common.net.HttpHeaders;
 
 import io.uiam.handlers.PipedHttpHandler;
 import static io.uiam.plugins.authentication.PluggableTokenManager.AUTH_TOKEN_HEADER;
+import static io.uiam.plugins.authentication.PluggableTokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static io.uiam.plugins.authentication.PluggableTokenManager.AUTH_TOKEN_VALID_HEADER;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -98,8 +99,10 @@ public class CORSHandler extends PipedHttpHandler {
 
         responseHeaders.add(ACCESS_CONTROL_EXPOSE_HEADERS, LOCATION_STRING);
         responseHeaders.add(ACCESS_CONTROL_EXPOSE_HEADERS,
-                LOCATION_STRING + ", " + Headers.ETAG + ", " + AUTH_TOKEN_HEADER.toString() + ", "
+                LOCATION_STRING + ", " + Headers.ETAG + ", " 
+                        + AUTH_TOKEN_HEADER.toString() + ", "
                         + AUTH_TOKEN_VALID_HEADER.toString() + ", "
+                        + AUTH_TOKEN_LOCATION_HEADER.toString() + ", "
                         + HttpHeaders.X_POWERED_BY);
     }
 

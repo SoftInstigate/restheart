@@ -21,16 +21,21 @@ ajp-listener: false
 ajp-host: 0.0.0.0
 ajp-port: 8009
 
-#### Instance name
+#### Instance
 
 # The name of this restheart instance. displayed in log, also allows to implement instance specific custom code
 # For instance, an email notifier hook can send emails to a test email address in development environments
 
 instance-name: restheart-docker
 
+# Optional base URL for the instance. When RESTHeart is exposed via a reverse-proxy 
+# or an API gateway it allows mapping the Location header correctly.
+
+instance-base-url: http://127.0.0.1:18080
+
 #### default representation format (PLAIN_JSON or HAL)
 
-default-representation-format: PLAIN_JSON
+default-representation-format: HAL
 
 #### use Ansi console for logging. Default to 'true' if parameter missing, for backward compatibility
 

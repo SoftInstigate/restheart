@@ -150,6 +150,7 @@ token-manager:
     class: io.uiam.plugins.authentication.impl.RndTokenManager
     args:
       ttl: 15
+      srv-uri: /tokens
 
 ## Services
 
@@ -160,7 +161,7 @@ token-manager:
  # See README.md for the list of available Services
 
 services:
-    - name: rndTokenManager
+    - name: rndTokenService
       class: io.uiam.plugins.service.impl.RndTokenService
       uri: /tokens
       secured: false

@@ -18,7 +18,7 @@ TMPDIR=`mktemp -d`
 echo "temp dir  ->" $TMPDIR
 
 # this makes sure that temporary dir is removed and test stack is cleaned up on exit
-trap "rm -rf $TMPDIR; echo '###### stop test stack'; cd $SD; docker-compose down; cd $CD" EXIT
+trap "rm -rf $TMPDIR; echo '###### stop test stack'; cd $SD; docker-compose down -v; cd $CD" EXIT
 
 cd $TMPDIR
 git clone --depth=1 git@github.com:SoftInstigate/restheart.git

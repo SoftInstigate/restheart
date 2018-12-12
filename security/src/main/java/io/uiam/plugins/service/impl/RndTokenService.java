@@ -25,6 +25,7 @@ import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.plugins.IDMCacheSingleton;
 import io.uiam.plugins.PluginConfigurationException;
 import static io.uiam.plugins.authentication.PluggableTokenManager.AUTH_TOKEN_HEADER;
+import static io.uiam.plugins.authentication.PluggableTokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static io.uiam.plugins.authentication.PluggableTokenManager.AUTH_TOKEN_VALID_HEADER;
 import io.uiam.plugins.authentication.impl.BaseAccount;
 import io.uiam.plugins.authentication.impl.RndTokenManager;
@@ -125,7 +126,7 @@ public class RndTokenService extends PluggableService {
             resp.add("auth_token_valid_until",
                     new JsonPrimitive(exchange.getResponseHeaders()
                             .get(AUTH_TOKEN_VALID_HEADER).getFirst()));
-
+            
             exchange.setStatusCode(HttpStatus.SC_OK);
             // TODO use static var for content type
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
@@ -150,5 +151,6 @@ public class RndTokenService extends PluggableService {
     private void removeAuthTokens(HttpServerExchange exchange) {
         exchange.getResponseHeaders().remove(AUTH_TOKEN_HEADER);
         exchange.getResponseHeaders().remove(AUTH_TOKEN_VALID_HEADER);
+        exchange.getResponseHeaders().remove(AUTH_TOKEN_LOCATION_HEADER);
     }
 }

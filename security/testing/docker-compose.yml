@@ -33,6 +33,8 @@ services:
          - mongodb
       networks:
          - backend
+      ports:
+         - "8080:8080"
       ### Uncoment below if you want to mount a local configuration folder
       ### to overwrite default restheart.yml and/or security.yml
       volumes:
