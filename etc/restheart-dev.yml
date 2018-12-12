@@ -31,7 +31,7 @@ instance-name: development
 # Optional base URL for the instance. When RESTHeart is exposed via a reverse-proxy 
 # or an API gateway it allows mapping the Location header correctly.
 
-instance-base-url: http://localhost
+#instance-base-url: http://localhost
 
 #### default representation format (PLAIN_JSON or HAL)
 
