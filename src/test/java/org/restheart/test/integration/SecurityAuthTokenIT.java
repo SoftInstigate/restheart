@@ -30,6 +30,7 @@ import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.auth.Credentials;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.util.EntityUtils;
 import static org.junit.Assert.*;
 import org.junit.Test;
@@ -155,7 +156,9 @@ public class SecurityAuthTokenIT extends HttpClientAbstactIT {
         assertEquals("check auth token resource URI", HttpStatus.SC_OK, statusLine2.getStatusCode());
 
         assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", Representation.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
+        assertTrue("check content type",
+                entity.getContentType().getValue().equals(Representation.HAL_JSON_MEDIA_TYPE)
+                || entity.getContentType().getValue().equals(Representation.JSON_MEDIA_TYPE));
 
         String content = EntityUtils.toString(entity);
 
