@@ -40,6 +40,7 @@ import org.bson.BsonValue;
 import org.bson.types.MaxKey;
 import org.bson.types.MinKey;
 import org.bson.types.ObjectId;
+import org.restheart.Bootstrapper;
 import org.restheart.hal.UnsupportedDocumentIdException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
@@ -444,13 +445,23 @@ public class URLUtils {
     }
 
     /**
+     * returns the request URL taking into account the instance-base-url
+     * configuration option. When RESTHeart is exposed via a reverse-proxy or an
+     * API gateway it allows mapping the Location header correctly.
      *
      * @param exchange
      * @return
      */
-    static public String getPrefixUrl(HttpServerExchange exchange) {
-        return exchange.getRequestURL()
-                .replaceAll(exchange.getRelativePath(), "");
+    static public String getRemappedRequestURL(HttpServerExchange exchange) {
+        String ibu = Bootstrapper.getConfiguration().getInstanceBaseURL();
+
+        if (ibu == null) {
+            return exchange.getRequestURL();
+        } else {
+            return removeTrailingSlashes(ibu)
+                    .concat("/")
+                    .concat(exchange.getRelativePath());
+        }
     }
 
     /**

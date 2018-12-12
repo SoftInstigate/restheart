@@ -21,12 +21,17 @@ ajp-listener: false
 ajp-host: 0.0.0.0
 ajp-port: 8009
 
-#### Instance name
+#### Instance
 
 # The name of this restheart instance. displayed in log, also allows to implement instance specific custom code
 # For instance, an email notifier hook can send emails to a test email address in development environments
 
 instance-name: default
+
+# Optional base URL for the instance. When RESTHeart is exposed via a reverse-proxy 
+# or an API gateway it allows mapping the Location header correctly.
+
+#instance-base-url: http://localhost
 
 #### default representation format (PLAIN_JSON or HAL)
 

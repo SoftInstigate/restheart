@@ -30,6 +30,7 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
+import org.restheart.utils.URLUtils;
 import static org.restheart.utils.URLUtils.getReferenceLink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,7 +121,8 @@ public class PostBucketHandler extends PipedHttpHandler {
                 .add(HttpString.tryFromString("Location"),
                         getReferenceLink(
                                 context,
-                                exchange.getRequestURL(), result.getNewId()));
+                                URLUtils.getRemappedRequestURL(exchange), 
+                                result.getNewId()));
 
         context.setResponseStatusCode(result.getHttpCode());
 

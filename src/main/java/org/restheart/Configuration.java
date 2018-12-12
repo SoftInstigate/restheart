@@ -438,6 +438,11 @@ public class Configuration {
      * the key for the instance-name property.
      */
     public static final String INSTANCE_NAME_KEY = "instance-name";
+    
+    /**
+     * the key for the instance-base-url property.
+     */
+    public static final String INSTANCE_BASE_URL_KEY = "instance-base-url";
 
     /**
      * the key for the instance-name property.
@@ -603,6 +608,7 @@ public class Configuration {
     private final int ajpPort;
     private final String ajpHost;
     private final String instanceName;
+    private final String instanceBaseURL;
     private final RequestContext.REPRESENTATION_FORMAT defaultRepresentationFromat;
     private final boolean useEmbeddedKeystore;
     private final String keystoreFile;
@@ -684,6 +690,8 @@ public class Configuration {
         ajpHost = DEFAULT_AJP_HOST;
 
         instanceName = DEFAULT_INSTANCE_NAME;
+        
+        instanceBaseURL = null;
 
         defaultRepresentationFromat = DEFAULT_REPRESENTATION_FORMAT;
 
@@ -829,6 +837,8 @@ public class Configuration {
         ajpHost = getAsStringOrDefault(conf, AJP_HOST_KEY, DEFAULT_AJP_HOST);
 
         instanceName = getAsStringOrDefault(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
+        
+        instanceBaseURL = getAsStringOrDefault(conf, INSTANCE_BASE_URL_KEY, null);
 
         String _representationFormat = getAsStringOrDefault(conf,
                 REPRESENTATION_FORMAT_KEY, DEFAULT_REPRESENTATION_FORMAT.name());
@@ -1033,7 +1043,8 @@ public class Configuration {
                 + ", ajpListener=" + ajpListener 
                 + ", ajpPort=" + ajpPort 
                 + ", ajpHost=" + ajpHost 
-                + ", instanceName=" + instanceName 
+                + ", instanceName=" + instanceName
+                + ", instanceBaseURL=" + instanceBaseURL
                 + ", defaultRepresentationFromat=" + defaultRepresentationFromat 
                 + ", useEmbeddedKeystore=" + useEmbeddedKeystore 
                 + ", keystoreFile=" + keystoreFile 
@@ -1755,6 +1766,13 @@ public class Configuration {
      */
     public String getInstanceName() {
         return instanceName;
+    }
+    
+    /**
+     * @return the instanceBaseURL
+     */
+    public String getInstanceBaseURL() {
+        return instanceBaseURL;
     }
 
     /**
