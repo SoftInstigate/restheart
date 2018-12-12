@@ -29,6 +29,7 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
+import org.restheart.utils.URLUtils;
 import static org.restheart.utils.URLUtils.getReferenceLink;
 
 /**
@@ -178,7 +179,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
                     .add(HttpString.tryFromString("Location"),
                             getReferenceLink(
                                     context,
-                                    exchange.getRequestURL(),
+                                    URLUtils.getRemappedRequestURL(exchange),
                                     result.getNewData().get("_id")));
         }
 
