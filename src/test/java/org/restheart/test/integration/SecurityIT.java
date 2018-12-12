@@ -26,11 +26,11 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.junit.Assert;
 import static org.junit.Assert.*;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.restheart.hal.Representation;
 import org.restheart.security.handlers.SecurityHandlerDispacher;
 import static org.restheart.security.impl.JwtAuthenticationManagerFactory.JWT_AUTH_HEADER_PREFIX;
-import static org.restheart.test.integration.AbstactIT.url;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -309,6 +309,7 @@ public class SecurityIT extends HttpClientAbstactIT {
     }
 
     @Test
+    @Ignore
     public void testJwtAuthentication() throws Exception {
         com.mashape.unirest.http.HttpResponse<String> resp;
         
