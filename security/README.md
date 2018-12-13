@@ -147,8 +147,8 @@ To follow this tutorial you need [httpie](https://httpie.org), a modern command 
 
 Run &#181;IAM with the default configuration file, this way it is bound to port `8080` and proxies two example resources:
 
-- https://restheart.org web site at URI /restheart
-- the service /echo implemented by &#181;IAM itself at URI /secho. This service just echoes back the request (URL, query parameters, body and headers).
+- https://restheart.org web site at URI `/restheart`
+- the service `/echo` implemented by &#181;IAM itself at URI `/secho`. This service just echoes back the request (URL, query parameters, body and headers).
 
 Let's fist invoke the `/echo` service directly. This is defined in the configuration file as follows:
 
