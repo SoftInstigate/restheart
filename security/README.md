@@ -681,9 +681,9 @@ An example service implementation is. It sends the usual `Hello World` message, 
 
 ```java
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-      var msg = new StringBuffer();
+      var msg = new StringBuffer("Hello ");
       
-      msg.append("Hello ");
+      var _name = exchange.getQueryParameters().get("name");
       
       if (_name == null || _name.isEmpty()) {
           msg.append("World");
