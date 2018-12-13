@@ -42,7 +42,6 @@ public class EchoService extends PluggableService {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
