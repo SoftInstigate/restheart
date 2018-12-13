@@ -145,14 +145,27 @@ $ java -jar target/uiam.jar etc/uiam-dev.yml
 
 To follow this tutorial you need [httpie](https://httpie.org), a modern command line HTTP client made in Python which is easy to use and produces a colorized and indented output.
 
-Run &#181;IAM with the default configuration file, this way it is bound to port `8080` and proxies two example resources:
+Run &#181;IAM with the [default configuration file](etc/uiam-dev.yml). It is bound to port `8080` and proxies two example resources:
 
 - https://restheart.org web site at URI `/restheart`
-- the service `/echo` implemented by &#181;IAM itself at URI `/secho`. This service just echoes back the request (URL, query parameters, body and headers).
+- the service `/echo` implemented by &#181;IAM itself at URI `/secho`. It just echoes back the request (URL, query parameters, body and headers).
 
-Let's fist invoke the `/echo` service directly. This is defined in the configuration file as follows:
+Below the mentioned configuration's fragment:
 
+```yaml
+proxies:
+    - internal-uri: /secho
+      external-url: 
+        - http://127.0.0.1:8080/echo
+        - http://localhost:8080/echo
+      connections-per-thread: 20
+    - internal-uri: /restheart
+      external-url: https://restheart.org
 ```
+
+Let's fist invoke the `/echo` service directly. This is defined in the [configuration file](etc/uiam-dev.yml) as follows:
+
+```yaml
 services:
     - implementation-class: io.uiam.plugins.service.impl.EchoService
       uri: /echo
