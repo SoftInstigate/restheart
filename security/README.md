@@ -396,7 +396,7 @@ auth-mechanisms:
 
 ### Constructor
 
-The Authentication Mechanism class must have the following constructor:
+The Authentication Mechanism implementation class must have the following constructor:
 
 If the property `args` is specified in configuration:
 
@@ -507,7 +507,7 @@ idms:
 
 ### Constructor
 
-The Identity Manager class must have the following constructor:
+The Identity Manager implementation class must have the following constructor:
 
 If the property `args` is specified in configuration:
 
@@ -530,15 +530,137 @@ public MyIdm(final String idmName) throws PluginConfigurationException {
 
 ## Develop an Access Manager
 
-> work in progress
+The Access Manager implementation class must implement the `io.uiam.plugins.authorization.PluggableAccessManager` interface. 
+
+```java
+public interface PluggableAccessManager {
+
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @return true if request is allowed
+     */
+    boolean isAllowed(HttpServerExchange exchange);
+
+    /**
+     *
+     * @param exchange
+     * @return true if not authenticated user won't be allowed
+     */
+    boolean isAuthenticationRequired(final HttpServerExchange exchange);
+}
+```
+
+### Configuration
+
+The Access Manager must be declared in the yml configuration file. 
+Of course the implementation class must be in the java classpath.
+
+```yml
+access-manager:
+      name: <name-of-idm>
+      class: <full-class-name>
+      args:
+        number: 10
+        string: a string
+```
+
+### Constructor
+
+The Access Manager implementation class must have the following constructor:
+
+If the property `args` is specified in configuration:
+
+```java
+public MyAM(final String amName,
+            final Map<String, Object> args) throws PluginConfigurationException {
+
+  // use argValue() helper method to get the arguments specified in the configuration file
+  Integer _number = argValue(args, "number");
+  String _string = argValue(args, "string");
+}
+```
+
+If the property `args` is not specified in configuration:
+
+```java
+public MyAM(final String amName) throws PluginConfigurationException {
+}
+```
 
 ## Develop a Token Manager
 
-> work in progress
+The Token Manager implementation class must implement the `io.uiam.plugins.authentication.PluggableTokenManager` interface. 
 
-## Develop a Service
+Note that PluggableTokenManager extends PluggableIdentityManager for token verification methods.
 
-> work in progress
+```java
+public interface PluggableTokenManager extends PluggableIdentityManager {
+    static final HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
+    static final HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
+    static final HttpString AUTH_TOKEN_LOCATION_HEADER = HttpString.tryFromString("Auth-Token-Location");
+
+    /**
+     * retrieves of generate a token valid for the account
+     * @param account
+     * @return the token for the account
+     */
+    public PasswordCredential get(Account account);
+
+    /**
+     * invalidates a token
+     * @param account
+     * @param token 
+     */
+    public void invalidate(Account account, PasswordCredential token);
+
+    /**
+     * injects the token headers in the response
+     * 
+     * @param exchange
+     * @param token 
+     */
+    public void injectTokenHeaders(HttpServerExchange exchange, PasswordCredential token);
+}
+```
+
+### Configuration
+
+The Token Manager must be declared in the yml configuration file. 
+Of course the implementation class must be in the java classpath.
+
+```yml
+token-manager:
+    name: <name-of-idm>
+      class: <full-class-name>
+      args:
+        number: 10
+        string: a string
+```
+
+### Constructor
+
+The Access Manager implementation class must have the following constructor:
+
+If the property `args` is specified in configuration:
+
+```java
+public MyTM(final String tmName,
+            final Map<String, Object> args) throws PluginConfigurationException {
+
+  // use argValue() helper method to get the arguments specified in the configuration file
+  Integer _number = argValue(args, "number");
+  String _string = argValue(args, "string");
+}
+```
+
+If the property `args` is not specified in configuration:
+
+```java
+public MyTM(final String tmName) throws PluginConfigurationException {
+}
+```
 
 <hr>
 
