@@ -677,6 +677,26 @@ The Service implementation class must extend the `io.uiam.plugins.service.Plugga
 }
 ```
 
+An example service implementation is. It sends the usual `Hello World` message, however if the request specifies `?name=Bob` it responds with `Hello Bob`.
+
+```java
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+      var msg = new StringBuffer();
+      
+      msg.append("Hello ");
+      
+      if (_name == null || _name.isEmpty()) {
+          msg.append("World");
+      } else {
+          msg.append(_name.getFirst());
+      }
+      
+      exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+      exchange.getResponseSender().send(msg.toString());
+      exchange.endExchange();
+    }
+```
+
 ### Configuration
 
 The Token Manager must be declared in the yml configuration file. 
