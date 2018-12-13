@@ -41,7 +41,7 @@ public abstract class PluggableService extends PipedHttpHandler
     private final Map<String, Object> args;
 
     /**
-     * Creates a new instance of the ApplicationLogicHandler
+     * Creates a new instance of the PluggableService
      *
      * @param next
      * @param name
