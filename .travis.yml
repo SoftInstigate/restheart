@@ -1,6 +1,8 @@
 language: java
 jdk:
     - openjdk11
+git:
+  depth: 3
 
 sudo: false
 
