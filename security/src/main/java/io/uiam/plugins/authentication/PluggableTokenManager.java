@@ -32,9 +32,25 @@ public interface PluggableTokenManager extends PluggableIdentityManager {
     static final HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
     static final HttpString AUTH_TOKEN_LOCATION_HEADER = HttpString.tryFromString("Auth-Token-Location");
 
+    /**
+     * retrieves of generate a token valid for the account
+     * @param account
+     * @return the token for the account
+     */
     public PasswordCredential get(Account account);
 
+    /**
+     * invalidates a token
+     * @param account
+     * @param token 
+     */
     public void invalidate(Account account, PasswordCredential token);
 
+    /**
+     * injects the token headers in the response
+     * 
+     * @param exchange
+     * @param token 
+     */
     public void injectTokenHeaders(HttpServerExchange exchange, PasswordCredential token);
 }
