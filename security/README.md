@@ -720,7 +720,7 @@ With `secured: true` the service request goes thought the uIAM authentication an
 
 ### Constructor
 
-The Service abstract class implements the following constructor Manager
+The Service abstract class implements the following constructor:
 
 ```java
 public PluggableService(PipedHttpHandler next,
