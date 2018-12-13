@@ -74,7 +74,6 @@ public class RequestLoggerHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override

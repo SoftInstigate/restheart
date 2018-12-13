@@ -76,7 +76,6 @@ public class RndTokenService extends PluggableService {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override

@@ -31,7 +31,7 @@ import io.undertow.util.HttpString;
  */
 public class AccountHeadersInjector extends PipedHttpHandler {
     /**
-     * Creates a new instance of XPoweredByInjector
+     * Creates a new instance of AccountHeadersInjector
      *
      * @param next
      */
@@ -40,7 +40,7 @@ public class AccountHeadersInjector extends PipedHttpHandler {
     }
 
     /**
-     * Creates a new instance of XPoweredByInjector
+     * Creates a new instance of AccountHeadersInjector
      *
      */
     public AccountHeadersInjector() {
@@ -50,7 +50,6 @@ public class AccountHeadersInjector extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override

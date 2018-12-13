@@ -49,16 +49,15 @@ public class AccessManagerHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange hse) throws Exception {
-        if (accessManager.isAllowed(hse) && checkGlobalPredicates(hse)) {
-            next(hse);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        if (accessManager.isAllowed(exchange) && checkGlobalPredicates(exchange)) {
+            next(exchange);
         } else {
-            hse.setStatusCode(HttpStatus.SC_FORBIDDEN);
-            hse.endExchange();
+            exchange.setStatusCode(HttpStatus.SC_FORBIDDEN);
+            exchange.endExchange();
         }
     }
 

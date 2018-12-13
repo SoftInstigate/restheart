@@ -32,16 +32,15 @@ public class RequestProxyHandler extends PipedHttpHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestProxyHandler.class);
 
     /**
-     * Creates a new instance of RequestLoggerHandler
+     * Creates a new instance of RequestProxyHandler
      *
-     * @param next
      */
     public RequestProxyHandler() {
         super(null);
     }
 
     /**
-     * Creates a new instance of RequestLoggerHandler
+     * Creates a new instance of RequestProxyHandler
      *
      * @param next
      */
@@ -50,7 +49,7 @@ public class RequestProxyHandler extends PipedHttpHandler {
     }
 
     /**
-     * Creates a new instance of RequestLoggerHandler
+     * Creates a new instance of RequestProxyHandler
      *
      * @param handler
      */
@@ -61,7 +60,6 @@ public class RequestProxyHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override

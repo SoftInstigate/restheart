@@ -44,7 +44,6 @@ public class AuthTokenInjecterHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override

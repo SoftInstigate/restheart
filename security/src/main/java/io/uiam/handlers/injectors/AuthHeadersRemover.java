@@ -28,7 +28,7 @@ import io.undertow.server.HttpServerExchange;
  */
 public class AuthHeadersRemover extends PipedHttpHandler {
     /**
-     * Creates a new instance of AccountInjectorHandler
+     * Creates a new instance of AuthHeadersRemover
      *
      * @param next
      */
@@ -40,7 +40,6 @@ public class AuthHeadersRemover extends PipedHttpHandler {
      * before proxyng the request the authentication headers are removed
      * 
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override

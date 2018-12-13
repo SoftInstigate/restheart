@@ -50,7 +50,6 @@ public class XPoweredByInjector extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override

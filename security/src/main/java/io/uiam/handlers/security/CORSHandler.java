@@ -59,7 +59,7 @@ public class CORSHandler extends PipedHttpHandler {
     }
 
     /**
-     * Creates a new instance of GetRootHandler
+     * Creates a new instance of CORSHandler
      *
      * @param next
      */
@@ -71,7 +71,6 @@ public class CORSHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override

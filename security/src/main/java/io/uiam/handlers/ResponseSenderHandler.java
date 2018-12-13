@@ -27,7 +27,7 @@ import io.undertow.server.HttpServerExchange;
  */
 public class ResponseSenderHandler extends PipedHttpHandler {
     /**
-     * @param next
+     * 
      */
     public ResponseSenderHandler() {
         super(null);
@@ -43,7 +43,6 @@ public class ResponseSenderHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override

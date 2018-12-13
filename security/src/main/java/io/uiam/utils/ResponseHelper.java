@@ -69,10 +69,8 @@ public class ResponseHelper {
     /**
      *
      * @param exchange
-     * @param context
      * @param code
      * @param body
-     * @param t
      */
     public static void endExchangeWithRepresentation(HttpServerExchange exchange, int code, JsonObject body) {
         var hex = new ExchangeHelper(exchange);

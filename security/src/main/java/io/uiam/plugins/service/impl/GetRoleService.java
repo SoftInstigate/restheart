@@ -42,13 +42,17 @@ import io.undertow.util.HttpString;
  */
 public class GetRoleService extends PluggableService {
     /**
-     * Creates a new instance of GetRoleHandler
+     * Creates a new instance of GetRoleService
      *
      * @param next
      * @param args
      * @throws Exception
      */
-    public GetRoleService(PipedHttpHandler next, String name, String uri, Boolean secured, Map<String, Object> args)
+    public GetRoleService(PipedHttpHandler next, 
+            String name, 
+            String uri, 
+            Boolean secured, 
+            Map<String, Object> args)
             throws Exception {
         super(next, name, uri, secured, args);
 
@@ -61,7 +65,6 @@ public class GetRoleService extends PluggableService {
      * Handles the request.
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
