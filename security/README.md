@@ -633,10 +633,10 @@ Of course the implementation class must be in the java classpath.
 ```yml
 token-manager:
     name: <name-of-idm>
-      class: <full-class-name>
-      args:
-        number: 10
-        string: a string
+    class: <full-class-name>
+    args:
+      number: 10
+      string: a string
 ```
 
 ### Constructor
@@ -660,6 +660,54 @@ If the property `args` is not specified in configuration:
 ```java
 public MyTM(final String tmName) throws PluginConfigurationException {
 }
+```
+
+## Develop a Service
+
+The Service implementation class must extend the `io.uiam.plugins.service.PluggableService` abstract class, implementing the following method
+
+
+```java
+    /**
+     *
+     * @param exchange
+     * @throws Exception
+     */
+    public abstract void handleRequest(HttpServerExchange exchange) throws Exception;
+}
+```
+
+### Configuration
+
+The Token Manager must be declared in the yml configuration file. 
+Of course the implementation class must be in the java classpath.
+
+```yml
+services:
+    - name: <name-of-idm>
+      class: <full-class-name>
+      uri: <the-service-uri>
+      secured: <boolean>
+      args:
+        number: 10
+        string: a string
+```
+
+The *uri* property allows to bind the service under the specified path. E.g., with `uri: /mysrv` the service responds at URL `https://domain.io/mysrv`
+
+
+With `secured: true` the service request goes thought the uIAM authentication and authorization phases. With `secured: false` the service is fully open. 
+
+### Constructor
+
+The Service abstract class implements the following constructor Manager
+
+```java
+public PluggableService(PipedHttpHandler next,
+            String name,
+            String uri,
+            Boolean secured,
+            Map<String, Object> args);
 ```
 
 <hr>
