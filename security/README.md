@@ -4,25 +4,25 @@
 
 &#181;IAM (micro-IAM) is a micro-gateway for **Identity and Access Management** designed for microservices architectures.
 
-It acts as a reverse proxy for resources to be protected providing Authentication and Authorization services.
+It acts as a reverse proxy for resources to be protected, providing __Authentication__ and __Authorization__ services.
 
- &#181;IAM enables developers to configure security policies in standardized micro-gateway instances that are external to APIs and microservices implementation avoiding coding security functions and a centralized gateway where scalability is a key concern.
+ &#181;IAM enables developers to configure security policies in standardized micro-gateway instances that are external to API and microservices implementations, avoiding coding security functions and a centralized gateway where scalability is a key concern.
 
-> Think about &#181;IAM as the brick that you put in front of your APIs and microservices to protect them. 
+> Think about &#181;IAM as the "brick" that you put in front of your API and microservices to protect them. 
 
-&#181;IAM is built around a pluggable architecture. It comes with a strong security implementation but you can easily extend it by implementing plugins. 
+&#181;IAM is built around a __pluggable architecture__. It comes with a strong security implementation but you can easily extend it by implementing plugins. 
 
-> Implement a plugin is as easy as implementing a simple interface and set it up the configuration file. Plugins also allow to quickly implement and deploy secured Web Services.
+> Building a plugin is as easy as implementing a simple interface and edit a configuration file. Plugins also allow to quickly implement and deploy secure Web Services.
 
 # Main features
 
-- Identity and Access Management at HTTP protocol level.
-- Placement within the container, on the network layer and embeddable in java applications.
+- Identity and Access Management at __HTTP protocol level__.
+- Placement within __Docker containers__, on the network layer and embeddable in Java applications.
 - Extensible via easy-to-implement plugins.
 - Allows to quickly implement secured Web Services.
-- Basic, Digest and Token Authentication. Other authentication methods can be added with plugins.
-- Roles based Authorization with a powerful permission definition language. Other authorization methods can be added with plugins.
-- Solid multi-threaded, no blocking architecture.
+- __Basic__, __Digest__ and __Token Authentication__. Other authentication methods can be added with plugins.
+- __Roles__ based Authorization with a powerful permission definition language. Other authorization methods can be added with plugins.
+- Solid multi-threading, non-blocking architecture.
 - High performance.
 - Small memory footprint.
 - Straightforward configuration.
@@ -31,13 +31,13 @@ It acts as a reverse proxy for resources to be protected providing Authenticatio
 
 ## &#181;IAM on the network layer
 
-The following diagram shows a single instance of &#181;IAM placed on the network layer in front of the resources to be protected. It acts as a centralized security policy enforcer.
+The following diagram shows a single instance of &#181;IAM placed on the network layer, in front of the resources to be protected. It acts as a centralized __security policy enforcer__.
 
 ![uIAM on the network layer](readme-assets/uiam-on-network-layer.png?raw=true "uIAM on the network layer")
 
 ## &#181;IAM within containers
 
-The following diagram shows &#181;IAM used as a sidecar proxy within each container pod. Each microservice is protected by an instance of &#181;IAM with its own security policy.
+The following diagram shows &#181;IAM used as a sidecar proxy within each container pod. Each microservice is protected by an instance of &#181;IAM with its own dedicated security policy.
 
 ![uIAM within containers](readme-assets/uiam-within-containers.png?raw=true "uIAM within containers")
 
@@ -51,9 +51,9 @@ The following diagram shows &#181;IAM used to implement a simple microservice us
 
 The `uiam.yml` configuration file allows defining listeners and proxied resources.
 
-As an example we will securely expose the web resources of two hosts running on a private network.
+As an example, we securely expose the web resources of two hosts running on a private network.
 
-The following options set a HTTPS listener bound to the public ip of domain.io.
+The following options set a HTTPS listener bound to the public ip of `domain.io`.
 
 ```yml
 https-listener: true
@@ -118,7 +118,7 @@ HTTP/1.1 200 OK
 
 ## From releases
 
-You need java 11 and to download the latest available release from [releases page](https://github.com/SoftInstigate/uiam/releases).
+You need __Java 11__ and must download the latest release from [releases page](https://github.com/SoftInstigate/uiam/releases).
 
 ```
 $ tar -xzf uiam-XX.tar.gz
@@ -126,9 +126,9 @@ $ cd uiam
 $ java -jar uiam.jar etc/uiam-dev.yml
 ```
 
-## From source
+## Building from source
 
-You need git, java 11 and maven.
+You need Git, Java 11 and Maven.
 
 ```
 $ git clone git@github.com:SoftInstigate/uiam.git
@@ -143,14 +143,14 @@ $ java -jar target/uiam.jar etc/uiam-dev.yml
 
 # Tutorial
 
-You need [httpie](https://httpie.org) a modern command line HTTP client.
+To follow this tutorial you need [httpie](https://httpie.org), a modern command line HTTP client made in Python which is easy to use and produces a colorized and indented output.
 
-Run &#181;IAM with the default configuration file, this way it is bound to port 8080 and proxies two example resources:
+Run &#181;IAM with the default configuration file, this way it is bound to port `8080` and proxies two example resources:
 
 - https://restheart.org web site at URI /restheart
 - the service /echo implemented by &#181;IAM itself at URI /secho. This service just echoes back the request (URL, query parameters, body and headers).
 
-Let's fist invoke the /echo service directly. This is defined in the configuration file as follows:
+Let's fist invoke the `/echo` service directly. This is defined in the configuration file as follows:
 
 ```
 services:
@@ -159,7 +159,7 @@ services:
       secured: false
 ```
 
-Note that /echo is not secured and can be invoked without restrictions.
+Note that `/echo` is not secured and can be invoked without restrictions.
 
 ```bash
 $ http -f 127.0.0.1:8080/echo?qparam=value header:value a=1 b=2
@@ -187,7 +187,7 @@ Headers
 	Host: 127.0.0.1:8080
 ```
 
-Let's try now to invoke /secho without passing authentication credentials. This will fail with 401 Unauthorized response HTTP status.
+Let's try now to invoke `/secho` (please note the leading 's') without passing authentication credentials. This will fail with `401 Unauthorized` HTTP response.
 
 ```bash
 $ http -f 127.0.0.1:8080/secho?qparam=value header:value a=1 b=2
@@ -244,7 +244,7 @@ We can note that &#181;IAM:
 - has checked the credential passed via Basic Authentication and proxied the request
 - has determined the account roles. The proxied request includes the headers `X-Forwarded-Account-Id` and `X-Forwarded-Account-Roles`.
 - has checked the permission specified in `security.yml` for the account roles and determined that the request could be executed.
-- the response headers include the header `Auth-Token`. Its value can be used in place of the actual password in the Basic Authentication until its expiration. This is useful in web application to store in the browser the less sensitive auth token.
+- the response headers include the header `Auth-Token`. Its value can be used in place of the actual password in the Basic Authentication until its expiration. This is useful in Web Applications, for storing in the browser the less sensitive auth token instead of full username and password.
 
 # Understanding &#181;IAM
 
