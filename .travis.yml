@@ -34,6 +34,7 @@ before_script:
 script:
   - docker ps
   - mvn clean verify -DskipITs=false
+  - ./bin/fossa.sh
 
 after_success:
   - if [[ "$MAVEN_DEPLOY" == true ]]; then ./bin/maven-deploy.sh; fi
