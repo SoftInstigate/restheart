@@ -270,7 +270,7 @@ public class Bootstrapper {
         } else {
             try {
                 Properties p = new Properties();
-                p.load(new FileReader(new File(CONF_FILE_PATH.getParent() + File.separator + ENVIRONMENT_FILE)));
+                p.load(new FileReader(new File(ENVIRONMENT_FILE)));
                 MustacheFactory mf = new DefaultMustacheFactory();
                 Mustache m = mf.compile(CONF_FILE_PATH.toString());
                 StringWriter writer = new StringWriter();
