@@ -438,7 +438,7 @@ public class Configuration {
      * the key for the instance-name property.
      */
     public static final String INSTANCE_NAME_KEY = "instance-name";
-    
+
     /**
      * the key for the instance-base-url property.
      */
@@ -690,7 +690,7 @@ public class Configuration {
         ajpHost = DEFAULT_AJP_HOST;
 
         instanceName = DEFAULT_INSTANCE_NAME;
-        
+
         instanceBaseURL = null;
 
         defaultRepresentationFromat = DEFAULT_REPRESENTATION_FORMAT;
@@ -837,7 +837,7 @@ public class Configuration {
         ajpHost = getAsStringOrDefault(conf, AJP_HOST_KEY, DEFAULT_AJP_HOST);
 
         instanceName = getAsStringOrDefault(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
-        
+
         instanceBaseURL = getAsStringOrDefault(conf, INSTANCE_BASE_URL_KEY, null);
 
         String _representationFormat = getAsStringOrDefault(conf,
@@ -909,7 +909,8 @@ public class Configuration {
             level = Level.valueOf(_logLevel);
         } catch (Exception e) {
             if (!silent) {
-                LOGGER.info("wrong value for parameter {}: {}. using its default value {}", "log-level", _logLevel, "INFO");
+                LOGGER.info("wrong value for parameter {}: {}. "
+                        + "Using its default value {}", "log-level", _logLevel, "INFO");
             }
             level = Level.INFO;
         }
@@ -1032,74 +1033,74 @@ public class Configuration {
 
     @Override
     public String toString() {
-        return "Configuration{" 
-                + "silent=" + silent 
-                + ", httpsListener=" + httpsListener 
-                + ", httpsPort=" + httpsPort 
-                + ", httpsHost=" + httpsHost 
-                + ", httpListener=" + httpListener 
-                + ", httpPort=" + httpPort 
-                + ", httpHost=" + httpHost 
-                + ", ajpListener=" + ajpListener 
-                + ", ajpPort=" + ajpPort 
-                + ", ajpHost=" + ajpHost 
+        return "Configuration{"
+                + "silent=" + silent
+                + ", httpsListener=" + httpsListener
+                + ", httpsPort=" + httpsPort
+                + ", httpsHost=" + httpsHost
+                + ", httpListener=" + httpListener
+                + ", httpPort=" + httpPort
+                + ", httpHost=" + httpHost
+                + ", ajpListener=" + ajpListener
+                + ", ajpPort=" + ajpPort
+                + ", ajpHost=" + ajpHost
                 + ", instanceName=" + instanceName
                 + ", instanceBaseURL=" + instanceBaseURL
-                + ", defaultRepresentationFromat=" + defaultRepresentationFromat 
-                + ", useEmbeddedKeystore=" + useEmbeddedKeystore 
-                + ", keystoreFile=" + keystoreFile 
-                + ", keystorePassword=" + keystorePassword 
-                + ", certPassword=" + certPassword 
-                + ", mongoUri=" + mongoUri 
-                + ", mongoMounts=" + mongoMounts 
-                + ", staticResourcesMounts=" + staticResourcesMounts 
-                + ", applicationLogicMounts=" + applicationLogicMounts 
-                + ", metadataNamedSingletons=" + metadataNamedSingletons 
-                + ", idmImpl=" + idmImpl 
-                + ", idmArgs=" + idmArgs 
-                + ", authMechanismImpl=" + authMechanismImpl 
-                + ", authMechanismArgs=" + authMechanismArgs 
-                + ", amImpl=" + amImpl 
-                + ", amArgs=" + amArgs 
-                + ", logFilePath=" + logFilePath 
+                + ", defaultRepresentationFromat=" + defaultRepresentationFromat
+                + ", useEmbeddedKeystore=" + useEmbeddedKeystore
+                + ", keystoreFile=" + keystoreFile
+                + ", keystorePassword=" + keystorePassword
+                + ", certPassword=" + certPassword
+                + ", mongoUri=" + mongoUri
+                + ", mongoMounts=" + mongoMounts
+                + ", staticResourcesMounts=" + staticResourcesMounts
+                + ", applicationLogicMounts=" + applicationLogicMounts
+                + ", metadataNamedSingletons=" + metadataNamedSingletons
+                + ", idmImpl=" + idmImpl
+                + ", idmArgs=" + idmArgs
+                + ", authMechanismImpl=" + authMechanismImpl
+                + ", authMechanismArgs=" + authMechanismArgs
+                + ", amImpl=" + amImpl
+                + ", amArgs=" + amArgs
+                + ", logFilePath=" + logFilePath
                 + ", logLevel=" + logLevel
-                + ", logToConsole=" + logToConsole 
-                + ", logToFile=" + logToFile 
-                + ", traceHeaders=" + traceHeaders 
-                + ", localCacheEnabled=" + localCacheEnabled 
-                + ", localCacheTtl=" + localCacheTtl 
-                + ", schemaCacheEnabled=" + schemaCacheEnabled 
-                + ", schemaCacheTtl=" + schemaCacheTtl 
-                + ", requestsLimit=" + requestsLimit 
-                + ", ioThreads=" + ioThreads 
-                + ", workerThreads=" + workerThreads 
-                + ", bufferSize=" + bufferSize 
-                + ", directBuffers=" + directBuffers 
-                + ", forceGzipEncoding=" + forceGzipEncoding 
-                + ", eagerPoolSize=" + eagerPoolSize 
-                + ", eagerLinearSliceWidht=" + eagerLinearSliceWidht 
-                + ", eagerLinearSliceDelta=" + eagerLinearSliceDelta 
-                + ", eagerLinearSliceHeights=" + Arrays.toString(eagerLinearSliceHeights) 
-                + ", eagerRndSliceMinWidht=" + eagerRndSliceMinWidht 
-                + ", eagerRndMaxCursors=" + eagerRndMaxCursors 
-                + ", authTokenEnabled=" + authTokenEnabled 
-                + ", authTokenTtl=" + authTokenTtl 
-                + ", dbEtagCheckPolicy=" + dbEtagCheckPolicy 
-                + ", collEtagCheckPolicy=" + collEtagCheckPolicy 
-                + ", docEtagCheckPolicy=" + docEtagCheckPolicy 
-                + ", connectionOptions=" + connectionOptions 
-                + ", logExchangeDump=" + logExchangeDump 
-                + ", metricsGatheringLevel=" + metricsGatheringLevel 
-                + ", queryTimeLimit=" + queryTimeLimit 
-                + ", aggregationTimeLimit=" + aggregationTimeLimit 
-                + ", aggregationCheckOperators=" + aggregationCheckOperators 
-                + ", ansiConsole=" + ansiConsole 
-                + ", initializerClass=" + initializerClass 
-                + ", cursorBatchSize=" + cursorBatchSize 
-                + ", defaultPagesize=" + defaultPagesize 
-                + ", maxPagesize=" + maxPagesize 
-                + ", allowUnescapedCharactersInUrl=" + allowUnescapedCharactersInUrl 
-                + ", configurationFileMap=" + configurationFileMap 
+                + ", logToConsole=" + logToConsole
+                + ", logToFile=" + logToFile
+                + ", traceHeaders=" + traceHeaders
+                + ", localCacheEnabled=" + localCacheEnabled
+                + ", localCacheTtl=" + localCacheTtl
+                + ", schemaCacheEnabled=" + schemaCacheEnabled
+                + ", schemaCacheTtl=" + schemaCacheTtl
+                + ", requestsLimit=" + requestsLimit
+                + ", ioThreads=" + ioThreads
+                + ", workerThreads=" + workerThreads
+                + ", bufferSize=" + bufferSize
+                + ", directBuffers=" + directBuffers
+                + ", forceGzipEncoding=" + forceGzipEncoding
+                + ", eagerPoolSize=" + eagerPoolSize
+                + ", eagerLinearSliceWidht=" + eagerLinearSliceWidht
+                + ", eagerLinearSliceDelta=" + eagerLinearSliceDelta
+                + ", eagerLinearSliceHeights=" + Arrays.toString(eagerLinearSliceHeights)
+                + ", eagerRndSliceMinWidht=" + eagerRndSliceMinWidht
+                + ", eagerRndMaxCursors=" + eagerRndMaxCursors
+                + ", authTokenEnabled=" + authTokenEnabled
+                + ", authTokenTtl=" + authTokenTtl
+                + ", dbEtagCheckPolicy=" + dbEtagCheckPolicy
+                + ", collEtagCheckPolicy=" + collEtagCheckPolicy
+                + ", docEtagCheckPolicy=" + docEtagCheckPolicy
+                + ", connectionOptions=" + connectionOptions
+                + ", logExchangeDump=" + logExchangeDump
+                + ", metricsGatheringLevel=" + metricsGatheringLevel
+                + ", queryTimeLimit=" + queryTimeLimit
+                + ", aggregationTimeLimit=" + aggregationTimeLimit
+                + ", aggregationCheckOperators=" + aggregationCheckOperators
+                + ", ansiConsole=" + ansiConsole
+                + ", initializerClass=" + initializerClass
+                + ", cursorBatchSize=" + cursorBatchSize
+                + ", defaultPagesize=" + defaultPagesize
+                + ", maxPagesize=" + maxPagesize
+                + ", allowUnescapedCharactersInUrl=" + allowUnescapedCharactersInUrl
+                + ", configurationFileMap=" + configurationFileMap
                 + '}';
     }
 
@@ -1122,7 +1123,8 @@ public class Configuration {
     private List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key, final List<Map<String, Object>> defaultValue) {
         if (conf == null) {
             if (!silent) {
-                LOGGER.debug("parameters group {} not specified in the configuration file. using its default value {}", key, defaultValue);
+                LOGGER.debug("parameters group {} not specified in the configuration file."
+                        + " Using its default value {}", key, defaultValue);
             }
 
             return defaultValue;
@@ -1134,7 +1136,8 @@ public class Configuration {
             return (List<Map<String, Object>>) o;
         } else {
             if (!silent) {
-                LOGGER.debug("parameters group {} not specified in the configuration file, using its default value {}", key, defaultValue);
+                LOGGER.debug("parameters group {} not specified in the configuration file."
+                        + " Using its default value {}", key, defaultValue);
             }
             return defaultValue;
         }
@@ -1169,15 +1172,35 @@ public class Configuration {
 
     /**
      *
+     * @param key
+     * @return the environment variable, if found
+     */
+    private String overriddenValueFromEnv(final String key) {
+        String shellKey = key.toUpperCase().replaceAll("-", "_");
+        String envValue = System.getenv(shellKey);
+        if (null != envValue) {
+            LOGGER.warn(">>> Overriding parameter '{}' with environment variable '{}={}' <<<", key, shellKey, envValue);
+        }
+        return envValue;
+    }
+
+    /**
+     *
      * @param conf
      * @param key
      * @param defaultValue
      * @return
      */
     private Boolean getAsBooleanOrDefault(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
+        String envValue = overriddenValueFromEnv(key);
+        if (envValue != null) {
+            return Boolean.valueOf(envValue);
+        }
+
         if (conf == null) {
             if (!silent) {
-                LOGGER.debug("tried to get paramenter {} from a null configuration map. using its default value {}", key, defaultValue);
+                LOGGER.debug("tried to get paramenter {} from a null configuration map."
+                        + " Using its default value {}", key, defaultValue);
             }
             return defaultValue;
         }
@@ -1187,7 +1210,8 @@ public class Configuration {
         if (o == null) {
             // if default value is null there is no default value actually
             if (defaultValue && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
+                LOGGER.debug("parameter {} not specified in the configuration file."
+                        + " Using its default value {}", key, defaultValue);
             }
             return defaultValue;
         } else if (o instanceof Boolean) {
@@ -1197,7 +1221,8 @@ public class Configuration {
             return (Boolean) o;
         } else {
             if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, o, defaultValue);
+                LOGGER.warn("wrong value for parameter {}: {}."
+                        + " Using its default value {}", key, o, defaultValue);
             }
             return defaultValue;
         }
@@ -1211,11 +1236,16 @@ public class Configuration {
      * @return
      */
     private String getAsStringOrDefault(final Map<String, Object> conf, final String key, final String defaultValue) {
+        String envValue = overriddenValueFromEnv(key);
+        if (envValue != null) {
+            return envValue;
+        }
 
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
             if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
+                LOGGER.debug("parameter {} not specified in the configuration file."
+                        + " Using its default value {}", key, defaultValue);
             }
             return defaultValue;
         } else if (conf.get(key) instanceof String) {
@@ -1240,10 +1270,16 @@ public class Configuration {
      * @return
      */
     private Integer getAsIntegerOrDefault(final Map<String, Object> conf, final String key, final Integer defaultValue) {
+        String envValue = overriddenValueFromEnv(key);
+        if (envValue != null) {
+            return Integer.valueOf(envValue);
+        }
+
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
             if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
+                LOGGER.debug("parameter {} not specified in the configuration file."
+                        + " Using its default value {}", key, defaultValue);
             }
             return defaultValue;
         } else if (conf.get(key) instanceof Integer) {
@@ -1253,7 +1289,8 @@ public class Configuration {
             return (Integer) conf.get(key);
         } else {
             if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
+                LOGGER.warn("wrong value for parameter {}: {}."
+                        + " Using its default value {}", key, conf.get(key), defaultValue);
             }
             return defaultValue;
         }
@@ -1267,10 +1304,16 @@ public class Configuration {
      * @return
      */
     private Long getAsLongOrDefault(final Map<String, Object> conf, final String key, final Long defaultValue) {
+        String envValue = overriddenValueFromEnv(key);
+        if (envValue != null) {
+            return Long.valueOf(envValue);
+        }
+
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
             if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
+                LOGGER.debug("parameter {} not specified in the configuration file."
+                        + " Using its default value {}", key, defaultValue);
             }
             return defaultValue;
         } else if (conf.get(key) instanceof Number) {
@@ -1281,14 +1324,15 @@ public class Configuration {
                 return Long.parseLong(conf.get(key).toString());
             } catch (NumberFormatException nfe) {
                 if (!silent) {
-                    LOGGER.warn("wrong value for parameter {}: {}. using its default value {}",
+                    LOGGER.warn("wrong value for parameter {}: {}. Using its default value {}",
                             key, conf.get(key), defaultValue);
                 }
                 return defaultValue;
             }
         } else {
             if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
+                LOGGER.warn("wrong value for parameter {}: {}."
+                        + " Using its default value {}", key, conf.get(key), defaultValue);
             }
             return defaultValue;
         }
@@ -1306,7 +1350,8 @@ public class Configuration {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
             if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
+                LOGGER.debug("parameter {} not specified in the configuration file."
+                        + " Using its default value {}", key, defaultValue);
             }
             return defaultValue;
         } else if (conf.get(key) instanceof List) {
@@ -1318,7 +1363,8 @@ public class Configuration {
 
             if (ret.length == 0) {
                 if (!silent) {
-                    LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
+                    LOGGER.warn("wrong value for parameter {}: {}."
+                            + " Using its default value {}", key, conf.get(key), defaultValue);
                 }
                 return defaultValue;
             } else {
@@ -1326,7 +1372,8 @@ public class Configuration {
             }
         } else {
             if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
+                LOGGER.warn("wrong value for parameter {}: {}."
+                        + " Using its default value {}", key, conf.get(key), defaultValue);
             }
             return defaultValue;
         }
@@ -1337,7 +1384,8 @@ public class Configuration {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
             if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key, defaultValue);
+                LOGGER.debug("parameter {} not specified in the configuration file."
+                        + " Using its default value {}", key, defaultValue);
             }
             return defaultValue;
         } else if (conf.get(key) instanceof List) {
@@ -1349,7 +1397,8 @@ public class Configuration {
 
             if (ret.isEmpty()) {
                 if (!silent) {
-                    LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
+                    LOGGER.warn("wrong value for parameter {}: {}."
+                            + " Using its default value {}", key, conf.get(key), defaultValue);
                 }
                 return defaultValue;
             } else {
@@ -1357,7 +1406,8 @@ public class Configuration {
             }
         } else {
             if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key), defaultValue);
+                LOGGER.warn("wrong value for parameter {}: {}."
+                        + " Using its default value {}", key, conf.get(key), defaultValue);
             }
             return defaultValue;
         }
@@ -1767,7 +1817,7 @@ public class Configuration {
     public String getInstanceName() {
         return instanceName;
     }
-    
+
     /**
      * @return the instanceBaseURL
      */
