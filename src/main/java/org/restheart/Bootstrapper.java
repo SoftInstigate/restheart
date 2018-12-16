@@ -115,22 +115,6 @@ import org.yaml.snakeyaml.Yaml;
  */
 public class Bootstrapper {
 
-    @Parameters
-    public static class Args {
-
-        @Parameter(description = "<Configuration file>")
-        private String configPath = null;
-
-        @Parameter(names = "--fork", description = "Fork the process")
-        private boolean isForked = false;
-
-        @Parameter(names = {"--envFile", "--envfile", "-e"}, description = "Environment file name")
-        private String envFile = null;
-
-        @Parameter(names = {"--help", "-?"}, help = true, description = "This help message")
-        private boolean help;
-    }
-
     private static boolean IS_FORKED;
     private static String ENVIRONMENT_FILE;
     private static final Set<Entry<Object, Object>> MANIFEST_ENTRIES = FileUtils.findManifestInfo();
@@ -152,18 +136,17 @@ public class Bootstrapper {
      * parameters method
      *
      * @param args command line arguments
+     * @throws org.restheart.ConfigurationException
+     * @throws java.io.IOException
      */
-    public static void main(final String[] args) {
-        extractCommandLineParameters(args);
-
-        extractEnvironment();
-
-        extractBuildTime();
-
+    public static void main(final String[] args) throws ConfigurationException, IOException {
+        parseCommandLineParameters(args);
+        BUILD_TIME = extractBuildTime();
+        configuration = loadConfiguration();
         run();
     }
 
-    private static void extractCommandLineParameters(final String[] args) {
+    private static void parseCommandLineParameters(final String[] args) {
         Args parameters = new Args();
         JCommander cmd = JCommander.newBuilder().addObject(parameters).build();
         cmd.setProgramName("java -Dfile.encoding=UTF-8 -jar -server restheart.jar");
@@ -175,7 +158,9 @@ public class Bootstrapper {
             }
             CONF_FILE_PATH = FileUtils.getFileAbsolutePath(parameters.configPath);
             IS_FORKED = parameters.isForked;
-            ENVIRONMENT_FILE = parameters.envFile;
+            ENVIRONMENT_FILE = (parameters.envFile == null)
+                    ? System.getenv("RESTHEART_ENVFILE")
+                    : parameters.envFile;
         } catch (com.beust.jcommander.ParameterException ex) {
             LOGGER.error(ex.getMessage());
             cmd.usage();
@@ -183,37 +168,41 @@ public class Bootstrapper {
         }
     }
 
-    private static void extractEnvironment() {
-        if (ENVIRONMENT_FILE == null) {
-            // no --env parameter, try to read from OS environment
-            ENVIRONMENT_FILE = System.getenv("RESTHEART_ENVFILE");
-        }
-    }
-
-    private static void extractBuildTime() {
+    private static String extractBuildTime() {
         if (MANIFEST_ENTRIES != null) {
             for (Entry<Object, Object> entry : MANIFEST_ENTRIES) {
                 if (entry.getKey().toString().equals("Build-Time")) {
-                    BUILD_TIME = (String) entry.getValue();
-                    break;
+                    return (String) entry.getValue();
                 }
             }
+        }
+        return null;
+    }
+
+    private static Configuration loadConfiguration() throws ConfigurationException, FileNotFoundException, IOException {
+        if (CONF_FILE_PATH == null) {
+            LOGGER.warn("No configuration file provided, starting with default values!");
+            return new Configuration();
+        } else if (ENVIRONMENT_FILE == null) {
+            return new Configuration(CONF_FILE_PATH, false);
         } else {
-            BUILD_TIME = null;
+            Properties p = new Properties();
+            p.load(new FileReader(new File(ENVIRONMENT_FILE)));
+            MustacheFactory mf = new DefaultMustacheFactory();
+            Mustache m = mf.compile(CONF_FILE_PATH.toString());
+            StringWriter writer = new StringWriter();
+            m.execute(writer, p);
+            writer.flush();
+            Yaml yaml = new Yaml();
+            Map<String, Object> obj = yaml.load(writer.toString());
+            return new Configuration(obj, false);
         }
     }
 
     private static void run() {
-        try {
-            loadConfiguration();
-
-            LOGGER.debug(configuration.toString());
-
-            if (!configuration.isAnsiConsole()) {
-                AnsiConsole.systemInstall();
-            }
-        } catch (ConfigurationException ex) {
-            logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
+        LOGGER.debug(configuration.toString());
+        if (!configuration.isAnsiConsole()) {
+            AnsiConsole.systemInstall();
         }
 
         if (!hasForkOption()) {
@@ -257,31 +246,6 @@ public class Bootstrapper {
                 } catch (Throwable t) {
                     logErrorAndExit("Error forking", t, false, false, -1);
                 }
-            }
-        }
-    }
-
-    private static void loadConfiguration() throws ConfigurationException {
-        // read configuration silently, to avoid logging before initializing the logger
-        if (CONF_FILE_PATH == null) {
-            configuration = new Configuration();
-        } else if (ENVIRONMENT_FILE == null) {
-            configuration = new Configuration(CONF_FILE_PATH, false);
-        } else {
-            try {
-                Properties p = new Properties();
-                p.load(new FileReader(new File(ENVIRONMENT_FILE)));
-                MustacheFactory mf = new DefaultMustacheFactory();
-                Mustache m = mf.compile(CONF_FILE_PATH.toString());
-                StringWriter writer = new StringWriter();
-                m.execute(writer, p);
-                writer.flush();
-                Yaml yaml = new Yaml();
-                Map<String, Object> obj = yaml.load(writer.toString());
-                configuration = new Configuration(obj, false);
-            } catch (IOException ex) {
-                LOGGER.error("Fatal error: \"{}\"", ex.getMessage());
-                System.exit(2);
             }
         }
     }
@@ -1220,5 +1184,21 @@ public class Bootstrapper {
     }
 
     private Bootstrapper() {
+    }
+
+    @Parameters
+    private static class Args {
+
+        @Parameter(description = "<Configuration file>")
+        private String configPath = null;
+
+        @Parameter(names = "--fork", description = "Fork the process")
+        private boolean isForked = false;
+
+        @Parameter(names = {"--envFile", "--envfile", "-e"}, description = "Environment file name")
+        private String envFile = null;
+
+        @Parameter(names = {"--help", "-?"}, help = true, description = "This help message")
+        private boolean help;
     }
 }
