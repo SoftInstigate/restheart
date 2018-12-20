@@ -128,6 +128,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
+            <!-- WARNING: v 27.0.1-jre fails integration tests, don't upgrade! -->
             <version>27.0-jre</version>
         </dependency>
 
