@@ -92,6 +92,7 @@ public interface Database {
      * @param pagesize
      * @param sortBy
      * @param filter
+     * @param hint
      * @param keys
      * @param cursorAllocationPolicy
      * @return Collection Data as ArrayList of BsonDocument
@@ -102,6 +103,7 @@ public interface Database {
             int pagesize,
             BsonDocument sortBy,
             BsonDocument filter,
+            BsonDocument hint,
             BsonDocument keys,
             CursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy);
 
@@ -257,6 +259,7 @@ public interface Database {
      * field name with - for descending sorting)
      * @param filters the filters to apply. it is a Deque collection of mongodb
      * query conditions.
+     * @param hint the index hint to apply.
      * @param keys
      * @return
      * @throws JsonParseException
@@ -265,6 +268,7 @@ public interface Database {
             MongoCollection<BsonDocument> collection,
             BsonDocument sortBy,
             BsonDocument filters,
+            BsonDocument hiny,
             BsonDocument keys)
             throws JsonParseException;
 }

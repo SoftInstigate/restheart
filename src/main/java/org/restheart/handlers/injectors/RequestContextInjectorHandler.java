@@ -36,6 +36,7 @@ import static org.restheart.handlers.RequestContext.EAGER_CURSOR_ALLOCATION_POLI
 import static org.restheart.handlers.RequestContext.FILTER_QPARAM_KEY;
 import org.restheart.handlers.RequestContext.HAL_MODE;
 import static org.restheart.handlers.RequestContext.HAL_QPARAM_KEY;
+import static org.restheart.handlers.RequestContext.HINT_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.KEYS_QPARAM_KEY;
 import org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.PAGESIZE_QPARAM_KEY;
@@ -58,11 +59,11 @@ import org.restheart.utils.URLUtils;
 public class RequestContextInjectorHandler extends PipedHttpHandler {
 
     private static final Logger LOG = Logger.getLogger(RequestContextInjectorHandler.class.getName());
-    
+
     private static final int DEFAULT_PAGESIZE = Bootstrapper
             .getConfiguration()
             .getDefaultPagesize();
-    
+
     private static final int MAX_PAGESIZE = Bootstrapper
             .getConfiguration()
             .getMaxPagesize();
@@ -180,7 +181,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 .get(PAGESIZE_QPARAM_KEY);
 
         int page = 1; // default page
-        
+
         int pagesize = DEFAULT_PAGESIZE;
 
         if (__pagesize != null && !(__pagesize.isEmpty())) {
@@ -202,8 +203,8 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                     exchange,
                     rcontext,
                     HttpStatus.SC_BAD_REQUEST,
-                    "illegal page parameter, pagesize must be >= 0 and <= " 
-                            + MAX_PAGESIZE);
+                    "illegal page parameter, pagesize must be >= 0 and <= "
+                    + MAX_PAGESIZE);
             next(exchange, rcontext);
             return;
         } else {
@@ -244,6 +245,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         if (__count != null) {
             rcontext.setCount(true);
         }
+
         // get and check sort_by parameter
         Deque<String> sort_by = null;
 
@@ -284,6 +286,30 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             }
 
             rcontext.setSortBy(sort_by);
+        }
+
+        // get and check hint parameter
+        Deque<String> hint = null;
+
+        if (exchange.getQueryParameters().containsKey(HINT_QPARAM_KEY)) {
+            hint = exchange.getQueryParameters().get(HINT_QPARAM_KEY);
+
+        } else if (exchange.getQueryParameters().containsKey(HINT_QPARAM_KEY)) {
+            hint = exchange.getQueryParameters().get(HINT_QPARAM_KEY);
+        }
+
+        if (hint != null) {
+            if (hint.stream().anyMatch(s -> s == null || s.isEmpty())) {
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        rcontext,
+                        HttpStatus.SC_BAD_REQUEST,
+                        "illegal hint paramenter");
+                next(exchange, rcontext);
+                return;
+            }
+
+            rcontext.setHint(hint);
         }
 
         Deque<String> keys = exchange.getQueryParameters().get(KEYS_QPARAM_KEY);

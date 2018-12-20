@@ -148,12 +148,14 @@ class CollectionDAO {
             final MongoCollection<BsonDocument> coll,
             final BsonDocument sortBy,
             final BsonDocument filters,
+            final BsonDocument hint,
             final BsonDocument keys) throws JsonParseException {
 
         return coll.find(filters)
                 .projection(keys)
                 .sort(sortBy)
                 .batchSize(BATCH_SIZE)
+                .hint(hint)
                 .maxTime(Bootstrapper.getConfiguration()
                         .getQueryTimeLimit(), TimeUnit.MILLISECONDS);
     }
@@ -164,6 +166,7 @@ class CollectionDAO {
             final int pagesize,
             final BsonDocument sortBy,
             final BsonDocument filters,
+            final BsonDocument hint,
             final BsonDocument keys,
             CursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager)
             throws JsonParseException {
@@ -181,6 +184,7 @@ class CollectionDAO {
                             coll,
                             sortBy,
                             filters,
+                            hint,
                             keys,
                             toskip,
                             0),
@@ -193,7 +197,7 @@ class CollectionDAO {
         FindIterable<BsonDocument> cursor;
 
         if (_cursor == null) {
-            cursor = getFindIterable(coll, sortBy, filters, keys);
+            cursor = getFindIterable(coll, sortBy, filters, hint, keys);
             cursor.skip(toskip);
 
             MongoCursor<BsonDocument> mc = cursor.iterator();
@@ -242,7 +246,7 @@ class CollectionDAO {
         // the pool is populated here because, skipping with cursor.next() is heavy operation
         // and we want to minimize the chances that pool cursors are allocated in parallel
         CursorPool.getInstance().populateCache(
-                new CursorPoolEntryKey(coll, sortBy, filters, keys, toskip, 0),
+                new CursorPoolEntryKey(coll, sortBy, filters, hint, keys, toskip, 0),
                 eager);
 
         return ret;

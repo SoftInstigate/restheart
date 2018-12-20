@@ -81,6 +81,7 @@ public class CursorPool {
     public static CursorPool getInstance() {
         return DBCursorPoolSingletonHolder.INSTANCE;
     }
+    
     private final DbsDAO dbsDAO;
 
     private final int SKIP_SLICE_LINEAR_DELTA
@@ -215,7 +216,8 @@ public class CursorPool {
                                     key.getCollection(),
                                     key.getSort(),
                                     key.getFilter(),
-                                    key.getFilter(),
+                                    key.getKeys(),
+                                    key.getHint(),
                                     sliceSkips,
                                     -1);
 
@@ -230,6 +232,7 @@ public class CursorPool {
                                         key.getCollection(),
                                         key.getSort(),
                                         key.getFilter(),
+                                        key.getHint(),
                                         key.getKeys());
 
                         cursor
@@ -242,6 +245,7 @@ public class CursorPool {
                                 key.getCollection(),
                                 key.getSort(),
                                 key.getFilter(),
+                                key.getHint(),
                                 key.getKeys(),
                                 sliceSkips,
                                 System.nanoTime());
@@ -286,12 +290,7 @@ public class CursorPool {
                 for (int slice = 1; slice < slices; slice++) {
                     int sliceSkips = slice * sliceWidht;
 
-                    CursorPoolEntryKey sliceKey = new CursorPoolEntryKey(
-                            key.getCollection(),
-                            key.getSort(),
-                            key.getFilter(),
-                            key.getKeys(),
-                            sliceSkips, -1);
+                    CursorPoolEntryKey sliceKey = new CursorPoolEntryKey(key);
 
                     LOGGER.debug("{} cursor in pool: {}",
                             ansi().fg(YELLOW).bold().a("new").reset()
@@ -306,6 +305,7 @@ public class CursorPool {
                                         key.getCollection(),
                                         key.getSort(),
                                         key.getFilter(),
+                                        key.getHint(),
                                         key.getKeys())
                                 .skip(sliceSkips);
 
@@ -316,6 +316,7 @@ public class CursorPool {
                                 key.getCollection(),
                                 key.getSort(),
                                 key.getFilter(),
+                                key.getHint(),
                                 key.getKeys(),
                                 sliceSkips,
                                 System.nanoTime());

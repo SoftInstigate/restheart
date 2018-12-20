@@ -32,6 +32,7 @@ public class CursorPoolEntryKey {
     private final BsonDocument sort;
     private final BsonDocument filter;
     private final BsonDocument keys;
+    private final BsonDocument hint;
     private final int skipped;
     private final long cursorId;
 
@@ -40,14 +41,26 @@ public class CursorPoolEntryKey {
             BsonDocument sort,
             BsonDocument filter,
             BsonDocument keys,
+            BsonDocument hint,
             int skipped,
             long cursorId) {
         this.collection = collection;
         this.filter = filter;
         this.keys = keys;
+        this.hint = hint;
         this.sort = sort;
         this.skipped = skipped;
         this.cursorId = cursorId;
+    }
+    
+    public CursorPoolEntryKey(CursorPoolEntryKey key) {
+        this.collection = key.collection;
+        this.filter = key.filter;
+        this.keys = key.keys;
+        this.hint = key.hint;
+        this.sort = key.sort;
+        this.skipped = key.skipped;
+        this.cursorId = key.cursorId;
     }
 
     /**
@@ -91,6 +104,13 @@ public class CursorPoolEntryKey {
     public BsonDocument getKeys() {
         return keys;
     }
+    
+    /**
+     * @return the hint
+     */
+    public BsonDocument getHint() {
+        return hint;
+    }
 
     @Override
     public int hashCode() {
@@ -115,6 +135,9 @@ public class CursorPoolEntryKey {
         if (!Objects.equals(this.keys, other.keys)) {
             return false;
         }
+        if (!Objects.equals(this.hint, other.hint)) {
+            return false;
+        }
         if (!Objects.equals(this.sort, other.sort)) {
             return false;
         }
@@ -132,6 +155,10 @@ public class CursorPoolEntryKey {
                 + "filter: "
                 + (filter == null ? "null" : filter.toString())
                 + ", "
+                + (keys == null ? "null" : keys.toString())
+                + ", "
+                + (hint == null ? "null" : hint.toString())
+                + ", "
                 + "sort: "
                 + (sort == null ? "null" : sort.toString())
                 + ", "
@@ -146,10 +173,11 @@ public class CursorPoolEntryKey {
 
             return (filter == null ? "no filter" : filter.toString())
                     + " - "
-                    + (sort == null ? "no sort_by" : sort.toString())
+                    + (sort == null ? "no sort" : sort.toString())
+                    + " - "
+                    + (hint == null ? "no hint" : hint.toString())
                     + " - "
                     + f.format("%10d", getSkipped());
         }
     }
-
 }
