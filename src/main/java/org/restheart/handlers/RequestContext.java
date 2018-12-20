@@ -839,7 +839,7 @@ public class RequestContext {
     public BsonDocument getHintDocument() throws JsonParseException {
         BsonDocument ret = new BsonDocument();
 
-        if (hint == null) {
+        if (hint == null || hint.isEmpty()) {
             return null;
         } else {
             hint.stream().forEach((s) -> {
