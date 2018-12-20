@@ -21,8 +21,6 @@ import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.mashape.unirest.http.Unirest;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
 import com.mongodb.client.MongoCollection;
 import java.net.URI;
 import java.net.URISyntaxException;

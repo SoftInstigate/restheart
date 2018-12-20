@@ -17,8 +17,6 @@
  */
 package org.restheart.db;
 
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -477,6 +475,7 @@ public class DbsDAO implements Database {
             int pagesize,
             BsonDocument sortBy,
             BsonDocument filter,
+            BsonDocument hint,
             BsonDocument keys,
             CursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
         return collectionDAO.getCollectionData(
@@ -485,6 +484,7 @@ public class DbsDAO implements Database {
                 pagesize,
                 sortBy,
                 filter,
+                hint,
                 keys,
                 cursorAllocationPolicy);
     }
@@ -515,11 +515,13 @@ public class DbsDAO implements Database {
             MongoCollection<BsonDocument> collection,
             BsonDocument sortBy,
             BsonDocument filters,
+            BsonDocument hint,
             BsonDocument keys) {
         return collectionDAO.getFindIterable(
                 collection,
                 sortBy,
                 filters,
+                hint,
                 keys);
     }
 

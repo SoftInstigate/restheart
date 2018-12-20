@@ -20,6 +20,8 @@ package org.restheart.test.integration;
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
+import com.eclipsesource.json.JsonValue;
+import com.mashape.unirest.http.Unirest;
 import java.net.URI;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -27,9 +29,14 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
+import org.json.JSONObject;
+import org.junit.Assert;
 import static org.junit.Assert.*;
+import org.junit.Before;
 import org.junit.Test;
 import org.restheart.hal.Representation;
+import static org.restheart.handlers.RequestContext.TYPE.SCHEMA_STORE;
+import static org.restheart.test.integration.AbstactIT.url;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -115,5 +122,214 @@ public class GetIndexesIT extends HttpClientAbstactIT {
 
         assertNotNull("check not null _embedded.rh:index[0]._id", rhindex0.get("_id"));
         assertNotNull("check not null _embedded.rh:index[0].key", rhindex0.get("key"));
+    }
+    
+    private final String DB = "-indexes-db";
+    private final String COLL = "coll";
+    
+    @Before
+    public void createTestData() throws Exception {
+        // create test db
+        com.mashape.unirest.http.HttpResponse resp = Unirest.put(url(DB))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .asString();
+
+        Assert.assertEquals("create db " + DB, org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+
+        // create collection
+        resp = Unirest.put(url(DB, COLL))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .asString();
+
+        Assert.assertEquals("create collection " + DB.concat("/").concat(COLL), org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+
+        // create indexes
+        
+        resp = Unirest.put(url(DB, COLL, "_indexes", "test_idx_pos"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{'keys': {'a':1}}")
+                .asString();
+        
+        Assert.assertEquals("create index " + DB.concat("/").concat(COLL).concat("/_indexes/test_idx_pos"), org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+        
+        resp = Unirest.put(url(DB, COLL, "_indexes", "test_idx_neg"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{'keys':{'a':-1}}")
+                .asString();
+        
+        Assert.assertEquals("create index " + DB.concat("/").concat(COLL).concat("/_indexes/test_idx_neg"), org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+        
+        // create docs
+        resp = Unirest.put(url(DB, COLL, "one"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{'a':1}")
+                .asString();
+
+        Assert.assertEquals("create doc one", org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+
+        resp = Unirest.put(url(DB, COLL, "two"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body("{'a':2}")
+                .asString();
+
+        Assert.assertEquals("create doc two", org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+    }
+    
+    @Test
+    public void testGetHintStringFormat() throws Exception {
+        com.mashape.unirest.http.HttpResponse resp = Unirest.get(url(DB, COLL))
+                .queryString("hint", "a")
+                .queryString("sort", "{}")
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .asString();
+
+        Assert.assertEquals("test get collection", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
+
+        JsonValue _rbody = Json.parse(resp.getBody().toString());
+
+        Assert.assertTrue("response body is a document", _rbody != null && _rbody.isObject());
+        
+        JsonObject rbody = _rbody.asObject();
+        
+        assertNotNull("check not null _embedded", rbody.get("_embedded"));
+
+        assertTrue("check _embedded to be a json object", (rbody.get("_embedded") instanceof JsonObject));
+
+        JsonObject embedded = (JsonObject) rbody.get("_embedded");
+
+        assertNotNull("check not null _embedded.rh:doc", embedded.get("rh:doc"));
+
+        assertTrue("check _embedded.rh:doc to be a json array", (embedded.get("rh:doc") instanceof JsonArray));
+
+        JsonArray rhdoc = (JsonArray) embedded.get("rh:doc");
+
+        assertNotNull("check not null _embedded.rh:doc[0]", rhdoc.get(0));
+
+        assertTrue("check _embedded.rh:coll[0] to be a json object", (rhdoc.get(0) instanceof JsonObject));
+
+        JsonObject doc = (JsonObject) rhdoc.get(0);
+        
+        JsonValue a = doc.get("a");
+        
+        Assert.assertTrue("doc prop a is a number", a.isNumber());
+        Assert.assertTrue("doc prop a equals 1", a.asInt() == 1);
+        
+        resp = Unirest.get(url(DB, COLL))
+                .queryString("hint", "-a")
+                .queryString("sort", "{}")
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .asString();
+
+        Assert.assertEquals("test get collection", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
+
+        _rbody = Json.parse(resp.getBody().toString());
+        
+        Assert.assertTrue("response body is a document", _rbody != null && _rbody.isObject());
+
+        rbody = _rbody.asObject();
+        
+        assertNotNull("check not null _embedded", rbody.get("_embedded"));
+
+        assertTrue("check _embedded to be a json object", (rbody.get("_embedded") instanceof JsonObject));
+
+        embedded = (JsonObject) rbody.get("_embedded");
+
+        assertNotNull("check not null _embedded.rh:doc", embedded.get("rh:doc"));
+
+        assertTrue("check _embedded.rh:doc to be a json array", (embedded.get("rh:doc") instanceof JsonArray));
+
+        rhdoc = (JsonArray) embedded.get("rh:doc");
+
+        assertNotNull("check not null _embedded.rh:doc[0]", rhdoc.get(0));
+
+        assertTrue("check _embedded.rh:coll[0] to be a json object", (rhdoc.get(0) instanceof JsonObject));
+
+        doc = (JsonObject) rhdoc.get(0);
+        
+        a = doc.get("a");
+        
+        Assert.assertTrue("doc prop a is a number", a.isNumber());
+        Assert.assertTrue("doc prop a equals 2", a.asInt() == 2);
+    }
+    
+    @Test
+    public void testGetHintObjectFormat() throws Exception {
+        com.mashape.unirest.http.HttpResponse resp = Unirest.get(url(DB, COLL))
+                .queryString("hint", "{'a':1}")
+                .queryString("sort", "{}")
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .asString();
+
+        Assert.assertEquals("test get collection", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
+
+        JsonValue _rbody = Json.parse(resp.getBody().toString());
+
+        Assert.assertTrue("response body is a document", _rbody != null && _rbody.isObject());
+        
+        JsonObject rbody = _rbody.asObject();
+        
+        assertNotNull("check not null _embedded", rbody.get("_embedded"));
+
+        assertTrue("check _embedded to be a json object", (rbody.get("_embedded") instanceof JsonObject));
+
+        JsonObject embedded = (JsonObject) rbody.get("_embedded");
+
+        assertNotNull("check not null _embedded.rh:doc", embedded.get("rh:doc"));
+
+        assertTrue("check _embedded.rh:doc to be a json array", (embedded.get("rh:doc") instanceof JsonArray));
+
+        JsonArray rhdoc = (JsonArray) embedded.get("rh:doc");
+
+        assertNotNull("check not null _embedded.rh:doc[0]", rhdoc.get(0));
+
+        assertTrue("check _embedded.rh:coll[0] to be a json object", (rhdoc.get(0) instanceof JsonObject));
+
+        JsonObject doc = (JsonObject) rhdoc.get(0);
+        
+        JsonValue a = doc.get("a");
+        
+        Assert.assertTrue("doc prop a is a number", a.isNumber());
+        Assert.assertTrue("doc prop a equals 1", a.asInt() == 1);
+        
+        resp = Unirest.get(url(DB, COLL))
+                .queryString("hint", "{'a':-1}")
+                .queryString("sort", "{}")
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .asString();
+
+        Assert.assertEquals("test get collection", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
+
+        _rbody = Json.parse(resp.getBody().toString());
+
+        Assert.assertTrue("response body is a document", _rbody != null && _rbody.isObject());
+
+        rbody = _rbody.asObject();
+        
+        assertNotNull("check not null _embedded", rbody.get("_embedded"));
+
+        assertTrue("check _embedded to be a json object", (rbody.get("_embedded") instanceof JsonObject));
+
+        embedded = (JsonObject) rbody.get("_embedded");
+
+        assertNotNull("check not null _embedded.rh:doc", embedded.get("rh:doc"));
+
+        assertTrue("check _embedded.rh:doc to be a json array", (embedded.get("rh:doc") instanceof JsonArray));
+
+        rhdoc = (JsonArray) embedded.get("rh:doc");
+
+        assertNotNull("check not null _embedded.rh:doc[0]", rhdoc.get(0));
+
+        assertTrue("check _embedded.rh:coll[0] to be a json object", (rhdoc.get(0) instanceof JsonObject));
+
+        doc = (JsonObject) rhdoc.get(0);
+        
+        a = doc.get("a");
+        
+        Assert.assertTrue("doc prop a is a number", a.isNumber());
+        Assert.assertTrue("doc prop a equals 2", a.asInt() == 2);
     }
 }

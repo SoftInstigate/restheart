@@ -62,6 +62,7 @@ public class RequestContext {
     public static final String SORT_BY_QPARAM_KEY = "sort_by";
     public static final String SORT_QPARAM_KEY = "sort";
     public static final String FILTER_QPARAM_KEY = "filter";
+    public static final String HINT_QPARAM_KEY = "hint";
     public static final String AGGREGATION_VARIABLES_QPARAM_KEY = "avars";
     public static final String KEYS_QPARAM_KEY = "keys";
     public static final String EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY = "eager";
@@ -304,6 +305,7 @@ public class RequestContext {
     private BsonDocument aggregationVars = null; // aggregation vars
     private Deque<String> keys = null;
     private Deque<String> sortBy = null;
+    private Deque<String> hint = null;
     private DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OID;
 
     private REPRESENTATION_FORMAT representationFormat;
@@ -762,6 +764,20 @@ public class RequestContext {
     public void setFilter(Deque<String> filter) {
         this.filter = filter;
     }
+    
+     /**
+     * @return the hint
+     */
+    public Deque<String> getHint() {
+        return hint;
+    }
+
+    /**
+     * @param hint the hint to set
+     */
+    public void setHint(Deque<String> hint) {
+        this.hint = hint;
+    }
 
     /**
      *
@@ -818,6 +834,37 @@ public class RequestContext {
         }
 
         return sort;
+    }
+    
+    public BsonDocument getHintDocument() throws JsonParseException {
+        BsonDocument ret = new BsonDocument();
+
+        if (hint == null) {
+            return null;
+        } else {
+            hint.stream().forEach((s) -> {
+
+                String _s = s.trim(); // the + sign is decoded into a space, in case remove it
+
+                // manage the case where hint is a json object
+                try {
+                    BsonDocument _hint = BsonDocument.parse(_s);
+
+                    ret.putAll(_hint);
+                } catch (JsonParseException e) {
+                    // ret is just a string, i.e. an index name
+                    if (_s.startsWith("-")) {
+                        ret.put(_s.substring(1), new BsonInt32(-1));
+                    } else if (_s.startsWith("+")) {
+                        ret.put(_s.substring(1), new BsonInt32(11));
+                    } else {
+                        ret.put(_s, new BsonInt32(1));
+                    }
+                }
+            });
+        }
+
+        return ret;
     }
 
     public BsonDocument getProjectionDocument() throws JsonParseException {

@@ -107,8 +107,9 @@ public class LoadGetPT extends AbstractPT {
             data = new DbsDAO().getCollectionData(dbcoll,
                     page,
                     pagesize,
-                    null,
+                    null,                    
                     BsonDocument.parse(filter),
+                    null,
                     null,
                     CursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE);
         } catch (Exception e) {

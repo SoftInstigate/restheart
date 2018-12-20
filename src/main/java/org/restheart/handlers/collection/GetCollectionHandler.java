@@ -95,6 +95,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
                         context.getPagesize(),
                         context.getSortByDocument(),
                         context.getFiltersDocument(),
+                        context.getHintDocument(),
                         context.getProjectionDocument(),
                         context.getCursorAllocationPolicy());
             } catch (JsonParseException jpe) {
