@@ -49,7 +49,7 @@ public class MetricsInstrumentationHandler extends PipedHttpHandler {
 
         if (!exchange.isComplete()) {
             exchange.addExchangeCompleteListener((httpServerExchange, nextListener) -> {
-                addMetrics(requestStartTime, exchange, context);
+                addMetrics(requestStartTime, httpServerExchange, context);
 
                 nextListener.proceed();
             });
