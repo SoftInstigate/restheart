@@ -10,7 +10,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xdock:name=RESTHeart -classpath %classpath org.restheart.Bootstrapper -e dev.properties etc/restheart-dev.yml</exec.args>
+                <exec.args>-Xdock:name=RESTHeart -classpath %classpath org.restheart.Bootstrapper -e etc/dev.properties etc/restheart-dev.yml</exec.args>
                 <exec.executable>java</exec.executable>
                 <jshell.run.enable>true</jshell.run.enable>
             </properties>
@@ -25,7 +25,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address} -Xdock:name=RESTHeart -classpath %classpath org.restheart.Bootstrapper -e dev.properties etc/restheart-dev.yml</exec.args>
+                <exec.args>-agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address} -Xdock:name=RESTHeart -classpath %classpath org.restheart.Bootstrapper -e etc/dev.properties etc/restheart-dev.yml</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
                 <jshell.run.enable>true</jshell.run.enable>
@@ -41,7 +41,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xdock:name=RESTHeart -classpath %classpath org.restheart.Bootstrapper -e dev.properties etc/restheart-dev.yml</exec.args>
+                <exec.args>-Xdock:name=RESTHeart -classpath %classpath org.restheart.Bootstrapper -e etc/dev.properties etc/restheart-dev.yml</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>
