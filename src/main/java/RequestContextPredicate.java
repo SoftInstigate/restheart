@@ -15,9 +15,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.restheart.security;
+
+import io.undertow.server.HttpServerExchange;
+import org.restheart.handlers.RequestContext;
+
 /**
- * Standard (and simple) implementation of the security model
- * 
-* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ *
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-package org.restheart.security.impl;
+public interface RequestContextPredicate {
+    public boolean resolve(HttpServerExchange hse, RequestContext context);    
+}

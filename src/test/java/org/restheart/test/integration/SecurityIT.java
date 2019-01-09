@@ -29,8 +29,6 @@ import static org.junit.Assert.*;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.restheart.hal.Representation;
-import org.restheart.security.handlers.SecurityHandlerDispacher;
-import static org.restheart.security.impl.JwtAuthenticationManagerFactory.JWT_AUTH_HEADER_PREFIX;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -38,6 +36,9 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SecurityIT extends HttpClientAbstactIT {
+    public static String JWT_AUTH_HEADER_PREFIX = "Bearer ";
+    public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
+    public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
 
     public SecurityIT() {
     }
@@ -82,10 +83,10 @@ public class SecurityIT extends HttpClientAbstactIT {
         check("check get doc2 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
 
         // *** GET root with silent authorization (no auth challenge must be sent)
-        resp = unauthExecutor.execute(Request.Get(rootUri).addHeader(SecurityHandlerDispacher.SILENT_HEADER_KEY, ""));
+        resp = unauthExecutor.execute(Request.Get(rootUri).addHeader(SILENT_HEADER_KEY, ""));
         check("check get root unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
 
-        resp = unauthExecutor.execute(Request.Get(rootUri).addHeader(SecurityHandlerDispacher.SILENT_HEADER_KEY, ""));
+        resp = unauthExecutor.execute(Request.Get(rootUri).addHeader(SILENT_HEADER_KEY, ""));
         HttpResponse httpResp = resp.returnResponse();
 
         assertTrue("check get root unauthorized silent", httpResp.getHeaders(Headers.WWW_AUTHENTICATE_STRING).length == 0);

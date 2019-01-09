@@ -43,9 +43,6 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.metadata.NamedSingletonsFactory;
 import org.restheart.metadata.transformers.Transformer;
-import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_HEADER;
-import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
-import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_VALID_HEADER;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -126,10 +123,7 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
                             "Accept, Accept-Encoding, Authorization, "
                             + "Content-Length, Content-Type, Host, Origin, "
                             + "X-Requested-With, User-Agent, "
-                            + "No-Auth-Challenge, "
-                            + AUTH_TOKEN_HEADER + ", "
-                            + AUTH_TOKEN_VALID_HEADER + ", "
-                            + AUTH_TOKEN_LOCATION_HEADER);
+                            + "No-Auth-Challenge");
             exchange.setStatusCode(HttpStatus.SC_OK);
             exchange.endExchange();
         } else {

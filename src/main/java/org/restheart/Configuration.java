@@ -335,11 +335,6 @@ public class Configuration {
     public static final String APPLICATION_LOGIC_MOUNT_WHERE_KEY = "where";
 
     /**
-     * the key for the secured property.
-     */
-    public static final String APPLICATION_LOGIC_MOUNT_SECURED_KEY = "secured";
-
-    /**
      * the key for the static-resources-mounts property.
      */
     public static final String STATIC_RESOURCES_MOUNTS_KEY = "static-resources-mounts";
@@ -364,10 +359,6 @@ public class Configuration {
      */
     public static final String STATIC_RESOURCES_MOUNT_EMBEDDED_KEY = "embedded";
 
-    /**
-     * the key for the secured property.
-     */
-    public static final String STATIC_RESOURCES_MOUNT_SECURED_KEY = "secured";
 
     /**
      * the key for the certpassword property.
@@ -619,12 +610,6 @@ public class Configuration {
     private final List<Map<String, Object>> staticResourcesMounts;
     private final List<Map<String, Object>> applicationLogicMounts;
     private final List<Map<String, Object>> metadataNamedSingletons;
-    private final String idmImpl;
-    private final Map<String, Object> idmArgs;
-    private final String authMechanismImpl;
-    private final Map<String, Object> authMechanismArgs;
-    private final String amImpl;
-    private final Map<String, Object> amArgs;
     private final String logFilePath;
     private final Level logLevel;
     private final boolean logToConsole;
@@ -719,19 +704,9 @@ public class Configuration {
         browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WHAT_KEY, "browser");
         browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WHERE_KEY, "/browser");
         browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY, "browser.html");
-        browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_SECURED_KEY, false);
         browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_EMBEDDED_KEY, true);
 
         staticResourcesMounts.add(browserStaticResourcesMountArgs);
-
-        idmImpl = null;
-        idmArgs = null;
-
-        authMechanismImpl = null;
-        authMechanismArgs = null;
-
-        amImpl = null;
-        amArgs = null;
 
         logFilePath = URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
                 .concat(File.separator + "restheart.log");
@@ -881,19 +856,6 @@ public class Configuration {
         staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, new ArrayList<>());
 
         metadataNamedSingletons = getAsListOfMaps(conf, METADATA_NAMED_SINGLETONS_KEY, new ArrayList<>());
-
-        Map<String, Object> idm = getAsMap(conf, IDM_KEY);
-        Map<String, Object> authMech = getAsMap(conf, AUTH_MECHANISM_KEY);
-        Map<String, Object> am = getAsMap(conf, ACCESS_MANAGER_KEY);
-
-        idmImpl = getAsStringOrDefault(idm, IMPLEMENTATION_CLASS_KEY, DEFAULT_IDM_IMPLEMENTATION_CLASS);
-        idmArgs = idm;
-
-        authMechanismImpl = getAsStringOrDefault(authMech, IMPLEMENTATION_CLASS_KEY, DEFAULT_AUTH_MECHANISM_IMPLEMENTATION_CLASS);
-        authMechanismArgs = authMech;
-
-        amImpl = getAsStringOrDefault(am, IMPLEMENTATION_CLASS_KEY, DEFAULT_AM_IMPLEMENTATION_CLASS);
-        amArgs = am;
 
         logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH_KEY,
                 URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
@@ -1056,12 +1018,6 @@ public class Configuration {
                 + ", staticResourcesMounts=" + staticResourcesMounts
                 + ", applicationLogicMounts=" + applicationLogicMounts
                 + ", metadataNamedSingletons=" + metadataNamedSingletons
-                + ", idmImpl=" + idmImpl
-                + ", idmArgs=" + idmArgs
-                + ", authMechanismImpl=" + authMechanismImpl
-                + ", authMechanismArgs=" + authMechanismArgs
-                + ", amImpl=" + amImpl
-                + ", amArgs=" + amArgs
                 + ", logFilePath=" + logFilePath
                 + ", logLevel=" + logLevel
                 + ", logToConsole=" + logToConsole
@@ -1577,48 +1533,6 @@ public class Configuration {
      */
     public boolean isForceGzipEncoding() {
         return forceGzipEncoding;
-    }
-
-    /**
-     * @return the idmImpl
-     */
-    public String getIdmImpl() {
-        return idmImpl;
-    }
-
-    /**
-     * @return the idmArgs
-     */
-    public Map<String, Object> getIdmArgs() {
-        return Collections.unmodifiableMap(idmArgs);
-    }
-
-    /**
-     * @return the authentication Mechanism
-     */
-    public String getAuthMechanism() {
-        return authMechanismImpl;
-    }
-
-    /**
-     * @return the idmArgs
-     */
-    public Map<String, Object> getAuthMechanismArgs() {
-        return Collections.unmodifiableMap(authMechanismArgs);
-    }
-
-    /**
-     * @return the amImpl
-     */
-    public String getAmImpl() {
-        return amImpl;
-    }
-
-    /**
-     * @return the amArgs
-     */
-    public Map<String, Object> getAmArgs() {
-        return Collections.unmodifiableMap(amArgs);
     }
 
     /**
