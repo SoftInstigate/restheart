@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.security.handlers;
+package org.restheart.handlers;
 
 import com.google.common.net.HttpHeaders;
 import io.undertow.server.HttpHandler;
@@ -27,12 +27,9 @@ import io.undertow.util.HttpString;
 import static java.lang.Boolean.TRUE;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import static org.restheart.security.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_CREDENTIAL;
-import static org.restheart.security.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
-import static org.restheart.security.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_EXPOSE_HEADERS;
-import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_HEADER;
-import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
-import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_VALID_HEADER;
+import static org.restheart.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_CREDENTIAL;
+import static org.restheart.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
+import static org.restheart.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_EXPOSE_HEADERS;
 
 /**
  *
@@ -107,9 +104,6 @@ public class CORSHandler extends PipedHttpHandler {
         headers.addResponseHeader(ACCESS_CONTROL_EXPOSE_HEADERS,
                 LOCATION_STRING + ", "
                 + Headers.ETAG + ", "
-                + AUTH_TOKEN_HEADER.toString() + ", "
-                + AUTH_TOKEN_VALID_HEADER.toString() + ", "
-                + AUTH_TOKEN_LOCATION_HEADER.toString() + ", "
                 + HttpHeaders.X_POWERED_BY);
     }
 

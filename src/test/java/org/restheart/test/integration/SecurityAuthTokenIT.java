@@ -19,6 +19,7 @@ package org.restheart.test.integration;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
+import io.undertow.util.HttpString;
 import java.net.URI;
 import java.security.Principal;
 import org.apache.http.Header;
@@ -30,14 +31,10 @@ import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.auth.Credentials;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
-import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.util.EntityUtils;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.restheart.hal.Representation;
-import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_HEADER;
-import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_LOCATION_HEADER;
-import static org.restheart.security.handlers.IAuthToken.AUTH_TOKEN_VALID_HEADER;
 import static org.restheart.test.integration.HttpClientAbstactIT.HTTP;
 import org.restheart.utils.HttpStatus;
 
@@ -47,6 +44,10 @@ import org.restheart.utils.HttpStatus;
  */
 public class SecurityAuthTokenIT extends HttpClientAbstactIT {
 
+    static final HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
+    static final HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
+    static final HttpString AUTH_TOKEN_LOCATION_HEADER = HttpString.tryFromString("Auth-Token-Location");
+    
     public SecurityAuthTokenIT() {
     }
 

@@ -16,13 +16,6 @@ import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.metadata.Relationship;
 import org.restheart.metadata.checkers.RequestChecker;
 import org.restheart.metadata.transformers.RequestTransformer;
-import org.restheart.security.AccessManager;
-import org.restheart.security.handlers.AccessManagerHandler;
-import org.restheart.security.handlers.AuthTokenInjecterHandler;
-import org.restheart.security.handlers.AuthenticationCallHandler;
-import org.restheart.security.handlers.AuthenticationConstraintHandler;
-import org.restheart.security.handlers.AuthenticationMechanismsHandler;
-import org.restheart.security.handlers.SecurityInitialHandler;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -38,35 +31,7 @@ public abstract class PipedHttpHandler implements HttpHandler {
     protected static final String CONTENT_TYPE = "contentType";
     protected static final String FILENAME = "filename";
 
-    protected static PipedHttpHandler buildSecurityHandlerChain(
-            PipedHttpHandler next,
-            final AccessManager accessManager,
-            final IdentityManager identityManager,
-            final List<AuthenticationMechanism> mechanisms) {
-        PipedHttpHandler handler;
-
-        if (accessManager == null) {
-            throw new IllegalArgumentException("Error, accessManager cannot "
-                    + "be null. "
-                    + "Eventually use FullAccessManager "
-                    + "that gives full access power ");
-        }
-
-        handler = new AuthTokenInjecterHandler(
-                new AccessManagerHandler(accessManager, next));
-
-        handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE,
-                identityManager,
-                new AuthenticationMechanismsHandler(
-                        new AuthenticationConstraintHandler(
-                                new AuthenticationCallHandler(handler),
-                                accessManager),
-                        mechanisms));
-
-        return handler;
-    }
-
-    private final Database dbsDAO;
+        private final Database dbsDAO;
     private final PipedHttpHandler next;
 
     /**
