@@ -1821,9 +1821,11 @@ public class RequestContext {
     }
 
     public enum REPRESENTATION_FORMAT {
-        PLAIN_JSON, // Plain Json
-        PJ, // Alias for plain json
-        HAL // Hypertext Application Language
+        NESTED, // Root, Dbs and Collections are objectes with props and _embedded
+        FLAT, //  Dbs and Collections are arrays of string names
+        HAL, // Hypertext Application Language
+        PLAIN_JSON, // Alias for NESTED
+        PJ, // Alias for NESTED
     }
 
     public enum HAL_MODE {

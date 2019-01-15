@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.metadata.transformers;
+package org.restheart.handlers.transformers;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonArray;
@@ -24,13 +24,14 @@ import org.bson.BsonValue;
 import org.restheart.Bootstrapper;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.RequestContext;
+import org.restheart.metadata.transformers.Transformer;
 import org.restheart.utils.HttpStatus;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class PlainJsonTransformer implements Transformer {
+public class RepresentationTransformer implements Transformer {
     @Override
     public void transform(
             HttpServerExchange exchange,
@@ -52,12 +53,15 @@ public class PlainJsonTransformer implements Transformer {
         }
 
         if (contentToTransform == null
-                || (rf
-                != RequestContext.REPRESENTATION_FORMAT.PJ
-                && rf
-                != RequestContext.REPRESENTATION_FORMAT.PLAIN_JSON)) {
+                || (rf != RequestContext.REPRESENTATION_FORMAT.NESTED
+                && rf != RequestContext.REPRESENTATION_FORMAT.PJ
+                && rf != RequestContext.REPRESENTATION_FORMAT.PLAIN_JSON
+                && rf != RequestContext.REPRESENTATION_FORMAT.FLAT)) {
             return;
         }
+
+        final boolean isFlat = context.getRepresentationFormat()
+                .equals(RequestContext.REPRESENTATION_FORMAT.FLAT);
 
         context.setResponseContentType(Representation.JSON_MEDIA_TYPE);
 
@@ -80,7 +84,7 @@ public class PlainJsonTransformer implements Transformer {
             transformRead(context, contentToTransform, responseContent);
 
             // add resource props if np is not specified
-            if (!context.isNoProps()) {
+            if (!context.isNoProps() && !isFlat) {
                 contentToTransform.asDocument().keySet().stream()
                         .filter(key -> !"_embedded".equals(key))
                         .forEach(key
@@ -91,12 +95,31 @@ public class PlainJsonTransformer implements Transformer {
                 context.setResponseContent(responseContent);
             } else {
                 // np specified, just return _embedded
-                if (responseContent.get("_embedded") != null) {
-                    context.setResponseContent(
-                            responseContent.get("_embedded"));
+                if (responseContent.containsKey("_embedded")
+                        && responseContent.get("_embedded").isArray()) {
+                    if (isFlat && (
+                            context.isRoot() ||
+                            context.isDb())) {
+                        BsonArray aresp = new BsonArray();
+                        
+                        responseContent.get("_embedded").asArray().stream()
+                                .filter(obj -> obj.isDocument())
+                                .map(obj -> obj.asDocument())
+                                .filter(doc -> doc.containsKey("_id"))
+                                .map(doc -> doc.get("_id"))
+                                .forEachOrdered(_id -> aresp.add(_id));
+                        
+                        context.setResponseContent(aresp);
+                    } else {
+                        context.setResponseContent(
+                                responseContent.get("_embedded"));
+                    }
                 } else {
                     context.setResponseContent(null);
                 }
+
+                BsonArray arrayResponse = responseContent.get("_embedded").asArray();
+
             }
         } else {
             transformWrite(contentToTransform, responseContent);

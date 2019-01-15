@@ -26,7 +26,7 @@ import io.undertow.server.HttpServerExchange;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.bulk.BulkResultRepresentationFactory;
 import org.restheart.handlers.metadata.TransformersListHandler;
-import org.restheart.metadata.transformers.PlainJsonTransformer;
+import org.restheart.handlers.transformers.RepresentationTransformer;
 import org.restheart.metadata.transformers.RequestTransformer.PHASE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -44,7 +44,7 @@ public class ErrorHandler implements HttpHandler {
     private final PipedHttpHandler sender = new TransformersListHandler(
             new ResponseSenderHandler(null),
             PHASE.RESPONSE,
-            new PlainJsonTransformer());
+            new RepresentationTransformer());
 
     private final Logger LOGGER = LoggerFactory.getLogger(ErrorHandler.class);
 
