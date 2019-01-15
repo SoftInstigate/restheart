@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -95,23 +95,25 @@ public class PostBucketHandler extends PipedHttpHandler {
                                 metadata,
                                 context.getFilePath());
             } else {
-                throw new RuntimeException("error. file data is null");
-            }
-        } catch (IOException | RuntimeException t) {
-            if (t instanceof DuplicateKeyException) {
-                // update not supported
-                String errMsg = "file resource update is not yet implemented";
-                LOGGER.error(errMsg, t);
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
                         context,
-                        HttpStatus.SC_NOT_IMPLEMENTED,
-                        errMsg);
+                        HttpStatus.SC_BAD_REQUEST,
+                        "POST file request is in a bad format");
                 next(exchange, context);
                 return;
             }
-
-            throw t;
+        } catch (DuplicateKeyException t) {
+            // update not supported
+            String errMsg = "file resource update is not yet implemented";
+            LOGGER.error(errMsg, t);
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_NOT_IMPLEMENTED,
+                    errMsg);
+            next(exchange, context);
+            return;
         }
 
         context.setDbOperationResult(result);
@@ -121,7 +123,7 @@ public class PostBucketHandler extends PipedHttpHandler {
                 .add(HttpString.tryFromString("Location"),
                         getReferenceLink(
                                 context,
-                                URLUtils.getRemappedRequestURL(exchange), 
+                                URLUtils.getRemappedRequestURL(exchange),
                                 result.getNewId()));
 
         context.setResponseStatusCode(result.getHttpCode());
