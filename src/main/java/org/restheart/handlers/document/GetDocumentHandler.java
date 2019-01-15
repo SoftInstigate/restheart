@@ -158,6 +158,22 @@ public class GetDocumentHandler extends PipedHttpHandler {
                     case SCHEMA:
                         errMsg = "schema".concat(errMsg);
                         break;
+                     case DB_META:
+                         errMsg = "resource _meta is not defined for "
+                                 + "this db.";
+                        break; 
+                     case COLLECTION_META:
+                         errMsg = "resource _meta is not defined for "
+                                 + "this collection.";
+                        break; 
+                     case SCHEMA_STORE_META:
+                         errMsg = "resource _meta is not defined for "
+                                 + "this schema store.";
+                        break; 
+                     case FILES_BUCKET_META:
+                        errMsg = "resource _meta is not defined for "
+                                + "this file bucket.";
+                        break; 
                     default:
                         errMsg = "resource".concat(errMsg);
                         break;
