@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
+import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.Bootstrapper;
@@ -83,9 +84,13 @@ public class RequestContext {
     public static final String ADMIN = "admin";
     public static final String _METRICS = "_metrics";
     public static final String _SIZE = "_size";
+    public static final String _META = "_meta";
 
     public static final String FS_CHUNKS_SUFFIX = ".chunks";
     public static final String FS_FILES_SUFFIX = ".files";
+    public static final String META_COLLNAME = "_properties";
+    public static final String DB_META_DOCID = "_properties";
+    public static final String COLL_META_DOCID_PREFIX = "_properties.";
 
     public static final String RESOURCES_WILDCARD_KEY = "*";
 
@@ -141,6 +146,18 @@ public class RequestContext {
                 type = TYPE.SCHEMA_STORE_SIZE;
             } else if (pathTokens.length == 4) {
                 type = TYPE.COLLECTION_SIZE;
+            } else {
+                type = TYPE.INVALID;
+            }
+        } else if (pathTokens.length > 2 && pathTokens[pathTokens.length - 1].equalsIgnoreCase(_META)) {
+            if (pathTokens.length == 3) {
+                type = TYPE.DB_META;
+            } else if (pathTokens.length == 4 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
+                type = TYPE.FILES_BUCKET_META;
+            } else if (pathTokens.length == 4 && pathTokens[2].endsWith(_SCHEMAS)) {
+                type = TYPE.SCHEMA_STORE_META;
+            } else if (pathTokens.length == 4) {
+                type = TYPE.COLLECTION_META;
             } else {
                 type = TYPE.INVALID;
             }
@@ -237,6 +254,7 @@ public class RequestContext {
         return collectionName != null
                 && !collectionName.equalsIgnoreCase(_SCHEMAS)
                 && !collectionName.equalsIgnoreCase(_METRICS)
+                && !collectionName.equalsIgnoreCase(_META)
                 && !collectionName.equalsIgnoreCase(_SIZE)
                 && (collectionName.startsWith(SYSTEM)
                 || collectionName.startsWith(UNDERSCORE)
@@ -263,6 +281,9 @@ public class RequestContext {
                 && !documentIdRaw.equalsIgnoreCase(_METRICS)
                 && !documentIdRaw.equalsIgnoreCase(_SIZE)
                 && !documentIdRaw.equalsIgnoreCase(_INDEXES)
+                && !documentIdRaw.equalsIgnoreCase(_META)
+                && !documentIdRaw.equalsIgnoreCase(DB_META_DOCID)
+                && !documentIdRaw.startsWith(COLL_META_DOCID_PREFIX)
                 && !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID)
                 && !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID)
                 && !documentIdRaw.equalsIgnoreCase(NULL_KEY_ID)
@@ -764,8 +785,8 @@ public class RequestContext {
     public void setFilter(Deque<String> filter) {
         this.filter = filter;
     }
-    
-     /**
+
+    /**
      * @return the hint
      */
     public Deque<String> getHint() {
@@ -835,7 +856,7 @@ public class RequestContext {
 
         return sort;
     }
-    
+
     public BsonDocument getHintDocument() throws JsonParseException {
         BsonDocument ret = new BsonDocument();
 
@@ -1070,7 +1091,13 @@ public class RequestContext {
      * @return the documentId
      */
     public BsonValue getDocumentId() {
-        return documentId;
+        if (isDbMeta()) {
+            return new BsonString(DB_META_DOCID);
+        } else if (isCollectionMeta()) {
+            return new BsonString(COLL_META_DOCID_PREFIX.concat(getPathTokenAt(2)));
+        } else {
+            return documentId;
+        }
     }
 
     /**
@@ -1621,10 +1648,28 @@ public class RequestContext {
     /**
      * helper method to check request resource type
      *
+     * @return true if type is TYPE.DB_META
+     */
+    public boolean isDbMeta() {
+        return this.type == TYPE.DB_META;
+    }
+
+    /**
+     * helper method to check request resource type
+     *
      * @return true if type is TYPE.COLLECTION_SIZE
      */
     public boolean isCollectionSize() {
         return this.type == TYPE.COLLECTION_SIZE;
+    }
+
+    /**
+     * helper method to check request resource type
+     *
+     * @return true if type is TYPE.COLLECTION_META
+     */
+    public boolean isCollectionMeta() {
+        return this.type == TYPE.COLLECTION_META;
     }
 
     /**
@@ -1639,10 +1684,28 @@ public class RequestContext {
     /**
      * helper method to check request resource type
      *
+     * @return true if type is TYPE.FILES_BUCKET_META
+     */
+    public boolean isFilesBucketMeta() {
+        return this.type == TYPE.FILES_BUCKET_META;
+    }
+
+    /**
+     * helper method to check request resource type
+     *
      * @return true if type is TYPE.SCHEMA_STORE_SIZE
      */
     public boolean isSchemaStoreSize() {
         return this.type == TYPE.SCHEMA_STORE_SIZE;
+    }
+
+    /**
+     * helper method to check request resource type
+     *
+     * @return true if type is TYPE.SCHEMA_STORE_SIZE
+     */
+    public boolean isSchemaStoreMeta() {
+        return this.type == TYPE.SCHEMA_STORE_META;
     }
 
     /**
@@ -1714,19 +1777,23 @@ public class RequestContext {
         ROOT_SIZE,
         DB,
         DB_SIZE,
+        DB_META,
         COLLECTION,
         COLLECTION_SIZE,
+        COLLECTION_META,
         DOCUMENT,
         COLLECTION_INDEXES,
         INDEX,
         FILES_BUCKET,
         FILES_BUCKET_SIZE,
+        FILES_BUCKET_META,
         FILE,
         FILE_BINARY,
         AGGREGATION,
         SCHEMA,
         SCHEMA_STORE,
         SCHEMA_STORE_SIZE,
+        SCHEMA_STORE_META,
         BULK_DOCUMENTS,
         METRICS
     }

@@ -15,12 +15,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.metadata.transformers;
+package org.restheart.handlers.transformers;
 
 import io.undertow.server.HttpServerExchange;
-import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
+import static org.restheart.handlers.RequestContext._META;
+import org.restheart.metadata.transformers.Transformer;
 
 /**
  *
@@ -31,15 +33,14 @@ import org.restheart.handlers.RequestContext;
  * just contain the _size property
  *
  */
-public class SizeRequestTransformer implements Transformer {
+public class MetaRequestTransformer implements Transformer {
 
     /**
      *
      * @param exchange
      * @param context
      * @param contentToTransform
-     * @param args properties to filter out as an array of strings (["prop1",
-     * "prop2"]
+     * @param args
      */
     @Override
     public void transform(
@@ -47,19 +48,11 @@ public class SizeRequestTransformer implements Transformer {
             final RequestContext context,
             BsonValue contentToTransform,
             final BsonValue args) {
-        // for request phase
-        context.setPagesize(0);
-
         // for response phase
-        if (context.getResponseContent() != null && 
-                context.getResponseContent().isDocument()
-                && context.getResponseContent().asDocument().containsKey("_size")) {
-
-            BsonDocument doc = context.getResponseContent().asDocument();
-
-            context.setResponseContent(new BsonDocument(
-                    "_size",
-                    doc.get("_size")));
+        if (context.getResponseContent() != null
+                && context.getResponseContent().isDocument()
+                && context.getResponseContent().asDocument().containsKey("_id")) {
+            context.getResponseContent().asDocument().put("_id", new BsonString(_META));
         }
     }
 }

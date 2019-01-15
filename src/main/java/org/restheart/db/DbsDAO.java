@@ -35,6 +35,8 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
+import static org.restheart.handlers.RequestContext.META_COLLNAME;
+import static org.restheart.handlers.RequestContext.DB_META_DOCID;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.utils.HttpStatus;
 
@@ -44,7 +46,7 @@ import org.restheart.utils.HttpStatus;
  */
 public class DbsDAO implements Database {
 
-    public static final Bson PROPS_QUERY = eq("_id", "_properties");
+    public static final Bson PROPS_QUERY = eq("_id", DB_META_DOCID);
 
     private static final Document FIELDS_TO_RETURN;
 
@@ -148,7 +150,7 @@ public class DbsDAO implements Database {
     @Override
     public BsonDocument getDatabaseProperties(final String dbName) {
         MongoCollection<BsonDocument> propsColl
-                = collectionDAO.getCollection(dbName, "_properties");
+                = collectionDAO.getCollection(dbName, META_COLLNAME);
 
         BsonDocument props = propsColl.find(PROPS_QUERY).limit(1).first();
 
@@ -272,10 +274,10 @@ public class DbsDAO implements Database {
 
         MongoDatabase mdb = client.getDatabase(dbName);
         MongoCollection<BsonDocument> mcoll
-                = mdb.getCollection("_properties", BsonDocument.class);
+                = mdb.getCollection(META_COLLNAME, BsonDocument.class);
 
         if (checkEtag && updating) {
-            BsonDocument oldProperties = mcoll.find(eq("_id", "_properties"))
+            BsonDocument oldProperties = mcoll.find(eq("_id", DB_META_DOCID))
                     .projection(FIELDS_TO_RETURN).first();
 
             if (oldProperties != null) {
@@ -336,7 +338,7 @@ public class DbsDAO implements Database {
         if (patching) {
             OperationResult ret = DAOUtils.updateDocument(
                     mcoll,
-                    "_properties",
+                    DB_META_DOCID,
                     null,
                     null,
                     dcontent,
@@ -347,7 +349,7 @@ public class DbsDAO implements Database {
         } else if (updating) {
             OperationResult ret = DAOUtils.updateDocument(
                     mcoll,
-                    "_properties",
+                    DB_META_DOCID,
                     null,
                     null,
                     dcontent,
@@ -358,7 +360,7 @@ public class DbsDAO implements Database {
         } else {
             OperationResult ret = DAOUtils.updateDocument(
                     mcoll,
-                    "_properties",
+                    DB_META_DOCID,
                     null,
                     null,
                     dcontent,
@@ -381,10 +383,10 @@ public class DbsDAO implements Database {
             final String requestEtag,
             final boolean checkEtag) {
         MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<Document> mcoll = mdb.getCollection("_properties");
+        MongoCollection<Document> mcoll = mdb.getCollection(META_COLLNAME);
 
         if (checkEtag) {
-            Document properties = mcoll.find(eq("_id", "_properties"))
+            Document properties = mcoll.find(eq("_id", DB_META_DOCID))
                     .projection(FIELDS_TO_RETURN).first();
 
             if (properties != null) {

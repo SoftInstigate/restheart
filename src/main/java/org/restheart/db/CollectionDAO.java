@@ -38,6 +38,8 @@ import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
 import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
+import static org.restheart.handlers.RequestContext.META_COLLNAME;
+import static org.restheart.handlers.RequestContext.COLL_META_DOCID_PREFIX;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -263,7 +265,7 @@ class CollectionDAO {
             final String dbName,
             final String collName) {
         MongoCollection<BsonDocument> propsColl
-                = getCollection(dbName, "_properties");
+                = getCollection(dbName, META_COLLNAME);
 
         BsonDocument props = propsColl
                 .find(new BsonDocument("_id",
@@ -358,11 +360,11 @@ class CollectionDAO {
 
         MongoDatabase mdb = client.getDatabase(dbName);
         MongoCollection<BsonDocument> mcoll
-                = mdb.getCollection("_properties", BsonDocument.class);
+                = mdb.getCollection(META_COLLNAME, BsonDocument.class);
 
         if (checkEtag && updating) {
             BsonDocument oldProperties
-                    = mcoll.find(eq("_id", "_properties.".concat(collName)))
+                    = mcoll.find(eq("_id", COLL_META_DOCID_PREFIX.concat(collName)))
                             .projection(FIELDS_TO_RETURN).first();
 
             if (oldProperties != null) {
@@ -474,11 +476,11 @@ class CollectionDAO {
             final String requestEtag,
             final boolean checkEtag) {
         MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<Document> mcoll = mdb.getCollection("_properties");
+        MongoCollection<Document> mcoll = mdb.getCollection(META_COLLNAME);
 
         if (checkEtag) {
             Document properties = mcoll.find(
-                    eq("_id", "_properties.".concat(collName)))
+                    eq("_id", COLL_META_DOCID_PREFIX.concat(collName)))
                     .projection(FIELDS_TO_RETURN).first();
 
             if (properties != null) {

@@ -73,7 +73,8 @@ public class PatchCollectionHandler extends PipedHttpHandler {
         }
 
         if (context.getCollectionName().isEmpty()
-                || context.getCollectionName().startsWith("_")) {
+                || (context.getCollectionName().startsWith("_")
+                && !context.getCollectionName().equals(RequestContext._SCHEMAS))) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     context,
