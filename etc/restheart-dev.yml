@@ -33,9 +33,9 @@ instance-name: development
 
 #instance-base-url: http://localhost
 
-#### default representation format (PLAIN_JSON or HAL)
+#### default representation format (FLAT, NESTED or HAL; PLAIN_JSON or HAL are aliases for NESTED
 
-default-representation-format: PLAIN_JSON
+default-representation-format: FLAT
 
 #### use Ansi console for logging. Default to 'true' if parameter missing, for backward compatibility
 
