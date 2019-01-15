@@ -23,6 +23,7 @@ import java.util.Deque;
 import java.util.Optional;
 import java.util.logging.Logger;
 import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.Bootstrapper;

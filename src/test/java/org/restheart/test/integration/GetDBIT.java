@@ -94,7 +94,7 @@ public class GetDBIT extends HttpClientAbstactIT {
         assertNotNull("check not null _total_pages", json.get("_total_pages"));
 
         assertEquals("check _returned value to be 1", 1, json.get("_returned").asInt());
-        assertEquals("check _size value to be 2", 3, json.get("_size").asInt());
+        assertEquals("check _size value to be 3", 3, json.get("_size").asInt());
         assertEquals("check _total_pages value to be 2", 3, json.get("_total_pages").asInt());
 
         JsonObject links = (JsonObject) json.get("_links");

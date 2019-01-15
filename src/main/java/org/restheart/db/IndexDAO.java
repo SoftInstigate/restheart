@@ -29,6 +29,7 @@ import org.bson.BsonInt32;
 import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import static org.restheart.handlers.RequestContext.DB_META_DOCID;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -38,7 +39,7 @@ import org.restheart.utils.HttpStatus;
 class IndexDAO {
 
     public static final Bson METADATA_QUERY
-            = eq("_id", "_properties");
+            = eq("_id", DB_META_DOCID);
 
     private static final BsonDocument FIELDS_TO_RETURN_INDEXES;
 

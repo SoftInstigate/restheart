@@ -24,10 +24,15 @@ import java.util.Deque;
 import java.util.HashSet;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
+import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.restheart.hal.Representation;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import static org.restheart.handlers.RequestContext.COLL_META_DOCID_PREFIX;
+import static org.restheart.handlers.RequestContext.DB_META_DOCID;
+import static org.restheart.handlers.RequestContext.META_COLLNAME;
 import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
@@ -76,7 +81,26 @@ public class GetDocumentHandler extends PipedHttpHandler {
             return;
         }
 
-        Bson query = eq("_id", context.getDocumentId());
+        final BsonValue docId;
+        final String collName;
+
+        // get collection name and doc id
+        // handling special case /_meta that is mapped to collName=_properties
+        // and docId=_properties (for db meta) 
+        // and docId=_properties.collName for (coll meta)
+        if (context.isDbMeta()) {
+            collName = META_COLLNAME;
+            docId = new BsonString(DB_META_DOCID);
+        } else if (context.isCollectionMeta()) {
+            collName = META_COLLNAME;
+            docId = new BsonString(COLL_META_DOCID_PREFIX.concat(
+                    context.getCollectionName()));
+        } else {
+            collName = context.getCollectionName();
+            docId = context.getDocumentId();
+        }
+
+        Bson query = eq("_id", docId);
 
         HashSet<Bson> terms = new HashSet<>();
 
@@ -111,7 +135,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
 
         BsonDocument document = getDatabase().getCollection(
                 context.getDBName(),
-                context.getCollectionName())
+                collName)
                 .find(query)
                 .projection(fieldsToReturn)
                 .first();
