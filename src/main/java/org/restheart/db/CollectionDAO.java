@@ -84,6 +84,7 @@ class CollectionDAO {
      * @param collName the collection name
      * @return the mongodb DBCollection object for the collection in db dbName
      */
+    @Deprecated
     DBCollection getCollectionLegacy(
             final String dbName,
             final String collName) {
