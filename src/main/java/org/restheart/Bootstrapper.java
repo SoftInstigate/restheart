@@ -31,8 +31,6 @@ import static io.undertow.Handlers.resource;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.UndertowOptions;
-import io.undertow.security.api.AuthenticationMechanism;
-import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.handlers.AllowedMethodsHandler;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
@@ -81,7 +79,6 @@ import org.restheart.handlers.GzipEncodingHandler;
 import org.restheart.handlers.MetricsInstrumentationHandler;
 import org.restheart.handlers.OptionsHandler;
 import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.PipedWrappingHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestDispatcherHandler;
 import org.restheart.handlers.RequestLoggerHandler;
@@ -458,6 +455,7 @@ public class Bootstrapper {
 
                 Object o = Class
                         .forName(configuration.getInitializerClass())
+                        .getConstructor()
                         .newInstance();
 
                 if (o instanceof Initializer) {
@@ -472,7 +470,11 @@ public class Bootstrapper {
                                 t);
                     }
                 }
-            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException t) {
+            } catch (ClassNotFoundException
+                    | InstantiationException
+                    | IllegalAccessException
+                    | InvocationTargetException
+                    | NoSuchMethodException t) {
                 LOGGER.error(ansi().fg(RED).a(
                         "Wrong configuration for intializer {}")
                         .reset().toString(),
