@@ -20,7 +20,7 @@ package org.restheart.metadata.transformers;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
-import org.restheart.security.RequestContextPredicate;
+import org.restheart.handlers.RequestContextPredicate;
 
 /**
  * wraps a transformer with args and confArgs to be added as a global
