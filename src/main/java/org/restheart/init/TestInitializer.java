@@ -23,7 +23,7 @@ import org.restheart.handlers.metadata.ResponseTransformerHandler;
 import org.restheart.metadata.transformers.GlobalTransformer;
 import org.restheart.metadata.transformers.RequestTransformer;
 import org.restheart.metadata.transformers.WriteResultTransformer;
-import org.restheart.security.RequestContextPredicate;
+import org.restheart.handlers.RequestContextPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
