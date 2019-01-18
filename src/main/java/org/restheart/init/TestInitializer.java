@@ -41,8 +41,9 @@ public class TestInitializer implements Initializer {
                         new RequestContextPredicate() {
                     @Override
                     public boolean resolve(HttpServerExchange hse, RequestContext context) {
-                        return context.isGet()
-                                && (context.isDb() || context.isCollection());
+                        return (context.isPost() && context.isCollection()) 
+                                || (context.isPatch()&& context.isDocument()) 
+                                || (context.isPut() && context.isDocument());
                     }
                 },
                         RequestTransformer.PHASE.RESPONSE,
