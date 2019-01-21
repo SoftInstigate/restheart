@@ -170,15 +170,15 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
     private static final String REMAPPEDREFCOLL1 = "/remappedrefcoll1";
 
     @BeforeClass
-    public static void setUpClass() throws Exception {
+    public static void setUpClass() throws URISyntaxException {
 
         createURIs();
 
-        final String host = MONGO_HOST;
-        final int port = conf.getHttpPort();
-        adminExecutor = Executor.newInstance().authPreemptive(new HttpHost(host, port, HTTP)).auth(new HttpHost(host), "admin", "changeit");
-        user1Executor = Executor.newInstance().authPreemptive(new HttpHost(host, port, HTTP)).auth(new HttpHost(host), "user1", "changeit");
-        user2Executor = Executor.newInstance().authPreemptive(new HttpHost(host, port, HTTP)).auth(new HttpHost(host), "user2", "changeit");
+        final HttpHost host = new HttpHost(HTTP_HOST.getHostName());
+
+        adminExecutor = Executor.newInstance().authPreemptive(HTTP_HOST).auth(host, "admin", "changeit");
+        user1Executor = Executor.newInstance().authPreemptive(HTTP_HOST).auth(host, "user1", "changeit");
+        user2Executor = Executor.newInstance().authPreemptive(HTTP_HOST).auth(host, "user2", "changeit");
         unauthExecutor = Executor.newInstance();
     }
 
@@ -372,8 +372,8 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
     private static URIBuilder createURIBuilder(String path) {
         return new URIBuilder()
                 .setScheme(HTTP)
-                .setHost(MONGO_HOST)
-                .setPort(conf.getHttpPort())
+                .setHost(HTTP_HOST.getHostName())
+                .setPort(HTTP_HOST.getPort())
                 .setPath(path);
     }
 
