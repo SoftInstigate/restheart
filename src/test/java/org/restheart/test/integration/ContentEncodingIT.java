@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -46,7 +46,8 @@ public class ContentEncodingIT extends HttpClientAbstactIT {
 
     @BeforeClass
     public static void init() throws Exception {
-        notDecompressingExecutor = Executor.newInstance(HttpClients.custom().disableContentCompression().build()).authPreemptive(new HttpHost("127.0.0.1", 8080, "http")).auth(new HttpHost("127.0.0.1"), "admin", "changeit");
+        notDecompressingExecutor = Executor.newInstance(HttpClients.custom().disableContentCompression().build())
+                .authPreemptive(HTTP_HOST).auth(new HttpHost(HTTP_HOST.getHostName()), "admin", "changeit");
     }
 
     public ContentEncodingIT() {
