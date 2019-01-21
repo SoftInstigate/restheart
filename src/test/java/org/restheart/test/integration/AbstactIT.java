@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -65,16 +65,12 @@ public abstract class AbstactIT {
      */
     protected static final String TEST_DB_PREFIX = "test";
 
-    protected static String BASE_URL;
+    protected static final String BASE_URL = "http://localhost:18080";
 
     @BeforeClass
     public static void setUpClass() throws Exception {
         conf = new Configuration(CONF_FILE_PATH);
-
-        BASE_URL = "http://" + conf.getHttpHost() + ":" + conf.getHttpPort();
-
         MongoDBClientSingleton.init(conf);
-
         mongoClient = MongoDBClientSingleton.getInstance().getClient();
     }
 
@@ -166,21 +162,19 @@ public abstract class AbstactIT {
         LOG.debug("test data deleted");
 
         // clear cache
-        if (conf.isLocalCacheEnabled()) {
-            deleted.stream().forEach(db -> {
-                HttpResponse resp;
-                try {
-                    resp = Unirest.post(BASE_URL + "/_logic/ic")
-                            .basicAuth(ADMIN_ID, ADMIN_PWD)
-                            .queryString("db", db)
-                            .asJson();
+        deleted.stream().forEach(db -> {
+            HttpResponse resp;
+            try {
+                resp = Unirest.post(BASE_URL + "/_logic/ic")
+                        .basicAuth(ADMIN_ID, ADMIN_PWD)
+                        .queryString("db", db)
+                        .asJson();
 
-                    LOG.debug("invalidating cache for {}, response {}", db, resp.getStatus());
-                } catch (UnirestException ex) {
-                    LOG.warn("error invalidating cache for delete db {}", db, ex);
-                }
-            });
-        }
+                LOG.debug("invalidating cache for {}, response {}", db, resp.getStatus());
+            } catch (UnirestException ex) {
+                LOG.warn("error invalidating cache for delete db {}", db, ex);
+            }
+        });
     }
 
 }
