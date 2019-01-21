@@ -26,16 +26,16 @@ ajp-port: 8009
 # The name of this restheart instance. displayed in log, also allows to implement instance specific custom code
 # For instance, an email notifier hook can send emails to a test email address in development environments
 
-instance-name: restheart-docker
+instance-name: {{ instance-name }}
 
-# Optional base URL for the instance. When RESTHeart is exposed via a reverse-proxy 
+# Optional base URL for the instance. When RESTHeart is exposed via a reverse-proxy
 # or an API gateway it allows mapping the Location header correctly.
 
 #instance-base-url: http://localhost
 
 #### default representation format (PLAIN_JSON or HAL)
 
-default-representation-format: PLAIN_JSON
+default-representation-format: {{ default-representation-format }}
 
 #### use Ansi console for logging. Default to 'true' if parameter missing, for backward compatibility
 
@@ -76,17 +76,17 @@ use-embedded-keystore: true
 # mongodb://user:secret@127.0.0.1/?authSource=authdb
 #
 # More information at http://api.mongodb.org/java/current/com/mongodb/MongoClientURI.html
-# Be sure that the following credentials match with the 
+# Be sure that the following credentials match with the
 # MONGO_INITDB_ROOT_USERNAME and MONGO_INITDB_ROOT_PASSWORD in docker-compose.yml
 # WARNING: change in both files the below default credentials!
-mongo-uri: mongodb://restheart:R3ste4rt!@mongodb
+mongo-uri: {{ mongo-uri }}
 
 # Use mongo-mounts to bind URls to mongodb resources using the out-of-the-box URL rewrite feature.
-# The where URI can be an absolute path (eg. /api) or path template (eg. /{foo}/bar/*). 
+# The where URI can be an absolute path (eg. /api) or path template (eg. /{foo}/bar/*).
 # The values of the path templates properties are available:
-# - in the what property (e.g. what: /{foo}_db/coll) 
+# - in the what property (e.g. what: /{foo}_db/coll)
 # - programmatically from RequestContext.getPathTemplateParamenters() method.
-# It is not possible to mix absolute paths and path templates: where URIs need to be 
+# It is not possible to mix absolute paths and path templates: where URIs need to be
 # either all absolute paths or all path templates.
 mongo-mounts:
     - what: "*"
@@ -181,8 +181,8 @@ metadata-named-singletons:
         - name: writeResult
           class: org.restheart.metadata.transformers.WriteResultTransformer
         - name: hashProperties
-          class: org.restheart.metadata.transformers.HashTransformer  
-          
+          class: org.restheart.metadata.transformers.HashTransformer
+
     # hooks group used by handler:
     # org.restheart.handlers.metadata.HookHandler
     # More information in hook javadoc
@@ -198,12 +198,12 @@ metadata-named-singletons:
 
 # idm: the Identity Manager responsible of authentication
 # access-manager: the Access Manager responsible of authorization
-# auth-mechanism: the additional Authentication Mechanism to use 
-# The RESTHeart security is pluggable and you can provide you own 
-# implementation of both IDM and AM. the provided default 
-# implementations of IDM and AM are SimpleFileIdentityManager, 
+# auth-mechanism: the additional Authentication Mechanism to use
+# The RESTHeart security is pluggable and you can provide you own
+# implementation of both IDM and AM. the provided default
+# implementations of IDM and AM are SimpleFileIdentityManager,
 # DbIdentityManager, JwtIdentityManager and SimpleAccessManager.
-# conf-file paths are either absolute (starting with /) 
+# conf-file paths are either absolute (starting with /)
 # or relative to the restheart.jar directory
 
 idm:
@@ -212,16 +212,16 @@ idm:
 access-manager:
     implementation-class: org.restheart.security.impl.SimpleAccessManager
     conf-file: ./etc/security.yml
-    
-# RESTHeart uses the BasicAuthenticationMechanism by default. 
+
+# RESTHeart uses the BasicAuthenticationMechanism by default.
 # A different mechanism can be specified via the auth-mechanism configuration option
 # the implementation-class must specify a factory class implementing
 # the interface org.restheart.security.AuthenticationMechanismFactory
-# See http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#security 
-# JwtAuthenticationManagerFactory and IdentityAuthenticationManagerFactory 
+# See http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#security
+# JwtAuthenticationManagerFactory and IdentityAuthenticationManagerFactory
 # for example implementations
 
-# Identity Authentication Manager 
+# Identity Authentication Manager
 # All requests are bound to the specified user
 
 #auth-mechanism:
@@ -229,13 +229,13 @@ access-manager:
 #    username: a
 #    pwd: a
 
-# Jwt Authentication Manager 
+# Jwt Authentication Manager
 # Authentication via Json Web Token https://jwt.io
 
 # algorithm: RSA (RS256 | RS384 |RS512) or HMAC (HS256 | HS384 | HS512)
 # key: for RSA the base64 encoded of the public key; for HMAC, the secret key
 # base64Encoded: set to true if the jwt token is base64 encoded. optional, default valud: false
-# usernameClaim: the claim that holds the username. optional, default value: 'sub' (jwt subject). 
+# usernameClaim: the claim that holds the username. optional, default value: 'sub' (jwt subject).
 # rolesClaim: the claim that holds the roles as string or array of strings
 # issuer: verify the issues (iss claim). optional, default value matches: null (don't check iss)
 # audience: verify the audience (aud claim). optional, default value matches: null (don't check aud)
@@ -256,10 +256,10 @@ access-manager:
 # In this case, you need to either disable it or use a load balancer with the sticky session option
 # or use a distributed auth token cache implementation (not provided in the current version).
 
-auth-token-enabled: true
-auth-token-ttl: 15
+auth-token-enabled: {{ auth-token-enabled }}
+auth-token-ttl: {{ auth-token-ttl }}
 
-# Check if aggregation variables use operators. allowing operators in aggregation variables 
+# Check if aggregation variables use operators. allowing operators in aggregation variables
 # is risky. requester can inject operators modifying the query
 aggregation-check-operators: true
 
@@ -306,10 +306,10 @@ etag-check-policy:
 
 ## Read Performance
 
-# default-pagesize is the number of documents returned when the pagesize query 
+# default-pagesize is the number of documents returned when the pagesize query
 # parameter is not specified
 # see https://restheart.org/learn/query-documents/#paging
-default-pagesize: 100
+default-pagesize: {{ default-pagesize }}
 
 # max-pagesize sets the maximum allowed value of the pagesize query parameter
 # generally, the greater the pagesize, the more json serializan overhead occurs
@@ -379,64 +379,64 @@ direct-buffers: true
 ## see http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#common-listener-options
 
 connection-options:
-    # The maximum size of a HTTP header block, in bytes. 
-    # If a client sends more data that this as part of the request header then the connection will be closed. 
+    # The maximum size of a HTTP header block, in bytes.
+    # If a client sends more data that this as part of the request header then the connection will be closed.
     # Defaults to 1Mbyte.
     MAX_HEADER_SIZE: 1048576
 
-    # The default maximum size of a request entity. 
+    # The default maximum size of a request entity.
     # Defaults to unlimited.
     MAX_ENTITY_SIZE: -1
-    
+
      #The default maximum size of the HTTP entity body when using the mutiltipart parser.
      # Generall this will be larger than MAX_ENTITY_SIZE
      # If this is not specified it will be the same as MAX_ENTITY_SIZE
     MULTIPART_MAX_ENTITY_SIZE: -1
-    
+
     # The idle timeout in milliseconds after which the channel will be closed.
-    # If the underlying channel already has a read or write timeout set 
+    # If the underlying channel already has a read or write timeout set
     # the smaller of the two values will be used for read/write timeouts.
     # Defaults to unlimited (-1).
     IDLE_TIMEOUT: -1
-    
+
     # The maximum allowed time of reading HTTP request in milliseconds.
     # -1 or missing value disables this functionality.
     REQUEST_PARSE_TIMEOUT: -1
-    
-    # The amount of time the connection can be idle with no current requests 
+
+    # The amount of time the connection can be idle with no current requests
     # before it is closed;
     # Defaults to unlimited (-1).
     NO_REQUEST_TIMEOUT: -1
 
-    # The maximum number of query parameters that are permitted in a request. 
-    # If a client sends more than this number the connection will be closed. 
-    # This limit is necessary to protect against hash based denial of service attacks. 
+    # The maximum number of query parameters that are permitted in a request.
+    # If a client sends more than this number the connection will be closed.
+    # This limit is necessary to protect against hash based denial of service attacks.
     # Defaults to 1000.
     MAX_PARAMETERS: 1000
 
-    # The maximum number of headers that are permitted in a request. 
-    # If a client sends more than this number the connection will be closed. 
-    # This limit is necessary to protect against hash based denial of service attacks. 
+    # The maximum number of headers that are permitted in a request.
+    # If a client sends more than this number the connection will be closed.
+    # This limit is necessary to protect against hash based denial of service attacks.
     # Defaults to 200.
     MAX_HEADERS: 200
 
-    # The maximum number of cookies that are permitted in a request. 
-    # If a client sends more than this number the connection will be closed. 
-    # This limit is necessary to protect against hash based denial of service attacks. 
+    # The maximum number of cookies that are permitted in a request.
+    # If a client sends more than this number the connection will be closed.
+    # This limit is necessary to protect against hash based denial of service attacks.
     # Defaults to 200.
     MAX_COOKIES: 200
 
-    # The charset to use to decode the URL and query parameters. 
+    # The charset to use to decode the URL and query parameters.
     # Defaults to UTF-8.
     URL_CHARSET: UTF-8
-    
-    # If this is true then a Connection: keep-alive header will be added to responses, 
+
+    # If this is true then a Connection: keep-alive header will be added to responses,
     # even when it is not strictly required by the specification.
     # Defaults to true
     ALWAYS_SET_KEEP_ALIVE: true
-    
-    # If this is true then a Date header will be added to all responses. 
-    # The HTTP spec says this header should be added to all responses, 
+
+    # If this is true then a Date header will be added to all responses.
+    # The HTTP spec says this header should be added to all responses,
     # unless the server does not have an accurate clock.
     # Defaults to true
     ALWAYS_SET_DATE: true
