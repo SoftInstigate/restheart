@@ -37,11 +37,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.restheart.Configuration;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.db.DocumentDAO;
-import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.hal.Representation;
 
 /**
@@ -173,11 +171,6 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        conf = new Configuration(CONF_FILE_PATH);
-        MongoDBClientSingleton.init(conf);
-        mongoClient = MongoDBClientSingleton.getInstance().getClient();
-
-        BASE_URL = "http://" + conf.getHttpHost() + ":" + conf.getHttpPort();
 
         createURIs();
 
