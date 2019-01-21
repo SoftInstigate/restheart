@@ -20,7 +20,6 @@ package org.restheart.handlers.files;
 import com.mongodb.DuplicateKeyException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
-import java.io.IOException;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.db.GridFsDAO;
