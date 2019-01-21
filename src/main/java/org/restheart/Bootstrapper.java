@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -262,9 +262,7 @@ public class Bootstrapper {
                 ansi().fg(MAGENTA).a(getInstanceName()).reset().toString(),
                 ansi().fg(MAGENTA).a(CONF_FILE_PATH).reset().toString(),
                 ansi().fg(MAGENTA).a(ENVIRONMENT_FILE).reset().toString(),
-                ansi().fg(MAGENTA).a(BUILD_TIME != null
-                        ? BUILD_TIME
-                        : "unknown, not packaged").reset().toString());
+                ansi().fg(MAGENTA).a(BUILD_TIME).reset().toString());
 
         LOGGER.info("Starting {}\n{}", ansi().fg(RED).a(RESTHEART).reset().toString(), info);
     }
@@ -684,7 +682,7 @@ public class Bootstrapper {
                 .setBufferSize(configuration.getBufferSize())
                 .setHandler(shutdownHandler);
 
-        // starting undertow 1.4.23 URL become much stricter 
+        // starting undertow 1.4.23 URL become much stricter
         // (undertow commit 09d40a13089dbff37f8c76d20a41bf0d0e600d9d)
         // allow unescaped chars in URL (otherwise not allowed by default)
         builder.setServerOption(
