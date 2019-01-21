@@ -1,8 +1,8 @@
-FROM openjdk:8u181-jre-alpine
+FROM openjdk:8u191-jre-alpine
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
-RUN apk upgrade --update
+#RUN apk upgrade --update
 RUN apk add --no-cache libstdc++ curl ca-certificates bash
 
 WORKDIR /opt/restheart
