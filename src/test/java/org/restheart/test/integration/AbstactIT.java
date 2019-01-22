@@ -20,7 +20,6 @@ package org.restheart.test.integration;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -65,7 +64,7 @@ public abstract class AbstactIT {
 
     static {
         LOG.info("BASE_URL=" + HTTP_HOST.toURI());
-        MongoDBClientSingleton.init(new Configuration(new File("etc/restheart-integrationtest.yml").toPath()));
+        MongoDBClientSingleton.init(new Configuration());
     }
 
     @BeforeClass
