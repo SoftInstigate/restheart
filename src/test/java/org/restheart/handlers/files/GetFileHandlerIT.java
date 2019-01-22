@@ -1,8 +1,24 @@
+/*
+ * RESTHeart - the Web API for MongoDB
+ * Copyright (C) SoftInstigate Srl
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.restheart.handlers.files;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
-import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -15,7 +31,6 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
 import org.bson.types.ObjectId;
-import org.junit.Assert;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import org.junit.Before;
@@ -26,6 +41,7 @@ import static org.restheart.hal.Representation.APPLICATION_PDF_TYPE;
 import static org.restheart.hal.Representation.HAL_JSON_MEDIA_TYPE;
 import org.restheart.utils.HttpStatus;
 import static org.restheart.utils.HttpStatus.SC_CREATED;
+import static org.restheart.utils.HttpStatus.SC_NOT_FOUND;
 import static org.restheart.utils.HttpStatus.SC_OK;
 
 /**
@@ -64,33 +80,16 @@ public class GetFileHandlerIT extends FileHandlerAbstractIT {
 
     @Test
     public void testGetNotExistingFile() throws IOException, UnirestException {
-        String bucketUlr = dbTmpUri.toString().concat("/").concat(BUCKET.concat(".files"));
+        final String url = dbTmpUri.toString().concat("/").concat(BUCKET.concat(".files"));
 
-        com.mashape.unirest.http.HttpResponse<String> resp = Unirest
-                .get(bucketUlr)
-                .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .asString();
+        this.check("Response is 200 OK",
+                adminExecutor.execute(Request.Get(url)), SC_OK);
 
-        Assert.assertEquals("bucket exists " + BUCKET,
-                org.apache.http.HttpStatus.SC_OK, resp.getStatus());
+        this.check("Response is 404 Not Found",
+                adminExecutor.execute(Request.Get(url.concat("/notexistingid"))), SC_NOT_FOUND);
 
-        // get not existing file metadata
-        resp = Unirest
-                .get(bucketUlr.concat("/notexistingid"))
-                .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .asString();
-
-        Assert.assertEquals("get not existing file metadata",
-                org.apache.http.HttpStatus.SC_NOT_FOUND, resp.getStatus());
-
-        // get not existing file binary
-        resp = Unirest
-                .get(bucketUlr.concat("/notexistingid/binary"))
-                .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .asString();
-
-        Assert.assertEquals("get not existing file binary",
-                org.apache.http.HttpStatus.SC_NOT_FOUND, resp.getStatus());
+        this.check("Response is 404 Not Found",
+                adminExecutor.execute(Request.Get(url.concat("/notexistingid/binary"))), SC_NOT_FOUND);
     }
 
     @Test
