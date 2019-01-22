@@ -1,7 +1,6 @@
 package org.restheart.test.performance;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
@@ -12,6 +11,8 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 import static org.restheart.db.CursorPool.MIN_SKIP_DISTANCE_PERCENTAGE;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
@@ -26,6 +27,7 @@ import org.restheart.utils.FileUtils;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@Ignore
 public class SkipTimeTest {
 
     private static final int N = 5;
@@ -54,7 +56,7 @@ public class SkipTimeTest {
     public void tearDown() {
     }
 
-    //@Test
+    @Test
     public void testSkip() {
 
         final Database dbsDAO = new DbsDAO();
@@ -69,7 +71,7 @@ public class SkipTimeTest {
                     .find()
                     .sort(new BasicDBObject("_id", -1))
                     .skip(REQUESTED_SKIPS);
-            
+
             docs.iterator().next();
 
             long end = System.nanoTime();
@@ -79,7 +81,7 @@ public class SkipTimeTest {
 
     }
 
-    //@Test
+    @Test
     public void testTwoSkips() {
 
         final Database dbsDAO = new DbsDAO();
@@ -104,7 +106,7 @@ public class SkipTimeTest {
             long start = System.nanoTime();
 
             MongoCursor<BsonDocument> cursor = docs.iterator();
-            
+
             for (int cont2 = 0; cont2 < REQUESTED_SKIPS - ACTUAL_POOL_SKIPS; cont2++) {
                 cursor.next();
             }
