@@ -1,4 +1,6 @@
 #!/bin/bash
+# Script to run Integration Tests with Maven and Junit.
+# MongoDB is executed in a ephemeral Docker container.
 set -e
 
 #make sure the docker stop is called anyways, even if the tests do not run successfully
