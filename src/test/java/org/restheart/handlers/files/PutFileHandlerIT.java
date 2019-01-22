@@ -48,6 +48,7 @@ public class PutFileHandlerIT extends FileHandlerAbstractIT {
 
     @Before
     public void init() throws Exception {
+        Thread.sleep(1000); // Sleep 1 second to avoid NoHttpResponseException
         createBucket();
     }
 
