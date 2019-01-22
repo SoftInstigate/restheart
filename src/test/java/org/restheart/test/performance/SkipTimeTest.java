@@ -4,8 +4,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
-import java.io.File;
-import java.nio.file.Path;
 import org.bson.BsonDocument;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -13,11 +11,11 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.restheart.Configuration;
 import static org.restheart.db.CursorPool.MIN_SKIP_DISTANCE_PERCENTAGE;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.utils.FileUtils;
 
 /**
  * this is to proof the advantage of dbcursor preallocation engine strategy it
@@ -34,11 +32,9 @@ public class SkipTimeTest {
     private static final int REQUESTED_SKIPS = 1500000;
     private static final int POOL_SKIPS = 1400000;
 
-    private static final Path CONF_FILE = new File("./etc/restheart-dev.yml").toPath();
-
     @BeforeClass
     public static void setUpClass() throws Exception {
-        MongoDBClientSingleton.init(FileUtils.getConfiguration(CONF_FILE, false));
+        MongoDBClientSingleton.init(new Configuration());
     }
 
     @AfterClass
