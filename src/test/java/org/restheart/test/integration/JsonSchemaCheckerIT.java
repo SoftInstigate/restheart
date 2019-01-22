@@ -266,7 +266,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
                 .body("{'n': 1, 's': 'string', 'obj': {} }")
                 .asString();
 
-        Assert.assertEquals("test create incomplate data with dot notation", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
+        Assert.assertEquals("test create incomplete data with dot notation", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
     }
 
     @Test
