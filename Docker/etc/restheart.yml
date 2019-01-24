@@ -26,7 +26,7 @@ ajp-port: 8009
 # The name of this restheart instance. displayed in log, also allows to implement instance specific custom code
 # For instance, an email notifier hook can send emails to a test email address in development environments
 
-instance-name: {{ instance-name }}
+instance-name: {{{ instance-name }}}
 
 # Optional base URL for the instance. When RESTHeart is exposed via a reverse-proxy
 # or an API gateway it allows mapping the Location header correctly.
@@ -35,7 +35,7 @@ instance-name: {{ instance-name }}
 
 #### default representation format (PLAIN_JSON or HAL)
 
-default-representation-format: {{ default-representation-format }}
+default-representation-format: {{{ default-representation-format }}}
 
 #### use Ansi console for logging. Default to 'true' if parameter missing, for backward compatibility
 
@@ -79,7 +79,7 @@ use-embedded-keystore: true
 # Be sure that the following credentials match with the
 # MONGO_INITDB_ROOT_USERNAME and MONGO_INITDB_ROOT_PASSWORD in docker-compose.yml
 # WARNING: change in both files the below default credentials!
-mongo-uri: {{ mongo-uri }}
+mongo-uri: {{{ mongo-uri }}}
 
 # Use mongo-mounts to bind URls to mongodb resources using the out-of-the-box URL rewrite feature.
 # The where URI can be an absolute path (eg. /api) or path template (eg. /{foo}/bar/*).
@@ -256,8 +256,8 @@ access-manager:
 # In this case, you need to either disable it or use a load balancer with the sticky session option
 # or use a distributed auth token cache implementation (not provided in the current version).
 
-auth-token-enabled: {{ auth-token-enabled }}
-auth-token-ttl: {{ auth-token-ttl }}
+auth-token-enabled: {{{ auth-token-enabled }}}
+auth-token-ttl: {{{ auth-token-ttl }}}
 
 # Check if aggregation variables use operators. allowing operators in aggregation variables
 # is risky. requester can inject operators modifying the query
@@ -309,7 +309,7 @@ etag-check-policy:
 # default-pagesize is the number of documents returned when the pagesize query
 # parameter is not specified
 # see https://restheart.org/learn/query-documents/#paging
-default-pagesize: {{ default-pagesize }}
+default-pagesize: {{{ default-pagesize }}}
 
 # max-pagesize sets the maximum allowed value of the pagesize query parameter
 # generally, the greater the pagesize, the more json serializan overhead occurs
