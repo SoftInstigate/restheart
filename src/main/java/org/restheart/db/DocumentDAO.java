@@ -69,8 +69,7 @@ public class DocumentDAO implements DocumentRepository {
                 .find(eq("_id", documentId))
                 .projection(new Document("_etag", 1));
 
-        return documents == null ? null
-                : documents.iterator().tryNext();
+        return documents.iterator().tryNext();
     }
 
     /**
