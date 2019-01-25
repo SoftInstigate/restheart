@@ -87,7 +87,8 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
             + "props=<props> optional (default: no props) additional props to add to each row, "
             + "values=<values> optional (default: no values) values of additional props to add to each row, "
             + "transformer=<tname> optional (default: no transformer). name (as defined in conf file) of a tranformer to apply to imported data, "
-            + "update=true optional (default: false). use data to update matching documents");
+            + "update=true optional (default: false). use data to update matching documents"
+            + "upsert=true optional (default: false). create new document if no documents match the row. ");
 
     private static final BsonString ERROR_CONTENT_TYPE = new BsonString(
             "Content-Type request header must be 'text/csv'");
@@ -100,6 +101,9 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
 
     private final static FindOneAndUpdateOptions FAU_NO_UPSERT_OPS = new FindOneAndUpdateOptions()
             .upsert(false);
+            
+    private final static FindOneAndUpdateOptions FAU_WITH_UPSERT_OPS = new FindOneAndUpdateOptions()
+            .upsert(true);
 
     /**
      * Creates a new instance of CsvLoaderHandler
@@ -154,6 +158,7 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
                                         .getCollection(params.coll, BsonDocument.class);
 
                                 if (params.update) {
+                                    
                                     documents.stream().forEach(document -> {
                                         BsonDocument updateQuery = new BsonDocument("_id", document.remove("_id"));
 
@@ -164,10 +169,16 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
                                         if (_filter != null && _filter.isDocument()) {
                                             updateQuery.putAll(_filter.asDocument());
                                         }
-
+                                        if( params.upsert){ 
                                         mcoll.findOneAndUpdate(updateQuery,
                                                 new BsonDocument("$set", document),
+                                                FAU_WITH_UPSERT_OPS);
+                                        } else {
+                                            
+                                            mcoll.findOneAndUpdate(updateQuery,
+                                                new BsonDocument("$set", document),
                                                 FAU_NO_UPSERT_OPS);
+                                        }
                                     });
                                 } else {
 
@@ -332,6 +343,7 @@ class CsvRequestParams {
     private static final String PROP_KEYS_NAME = "props";
     private static final String PROP_VALUES_NAME = "values";
     private static final String UPDATE_QPARAM_NAME = "update";
+    private static final String UPSERT_QPARAM_NAME = "upsert";
 
     public final int idIdx;
     public final String db;
@@ -339,6 +351,7 @@ class CsvRequestParams {
     public final String sep;
     public final Transformer transformer;
     public final boolean update;
+    public final boolean upsert;
 
     public final Deque<String> props;
     public final Deque<String> values;
@@ -350,6 +363,7 @@ class CsvRequestParams {
         Deque<String> _id = exchange.getQueryParameters().get(ID_IDX_QPARAM_NAME);
         Deque<String> _tranformer = exchange.getQueryParameters().get(TRANFORMER_QPARAM_NAME);
         Deque<String> _update = exchange.getQueryParameters().get(UPDATE_QPARAM_NAME);
+        Deque<String> _upsert = exchange.getQueryParameters().get(UPSERT_QPARAM_NAME);
 
         this.props = exchange.getQueryParameters().get(PROP_KEYS_NAME);
         this.values = exchange.getQueryParameters().get(PROP_VALUES_NAME);
@@ -385,5 +399,9 @@ class CsvRequestParams {
         update = _update != null
                 && (_update.isEmpty()
                 || "true".equalsIgnoreCase(_update.getFirst()));
+
+        upsert = _upsert != null
+                && (_upsert.isEmpty()
+                || "true".equalsIgnoreCase(_upsert.getFirst()));
     }
 }
