@@ -1,20 +1,3 @@
-/*
- * RESTHeart - the Web API for MongoDB
- * Copyright (C) SoftInstigate Srl
- * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- * 
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 package org.restheart.security.impl;
 
 import com.auth0.jwt.JWT;
@@ -35,10 +18,12 @@ import com.google.common.net.HttpHeaders;
 import io.undertow.util.HeaderValues;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -52,11 +37,11 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class JwtAuthenticationManagerFactory implements AuthenticationMechanismFactory {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthenticationManagerFactory.class);
 
+    public static final String JWT_AUTH_HEADER_PREFIX = "Bearer ";
     private JWTVerifier verifier;
-    
-    public static String JWT_AUTH_HEADER_PREFIX = "Bearer ";
 
     @Override
     public AuthenticationMechanism build(Map<String, Object> args, IdentityManager idm) {
@@ -74,7 +59,7 @@ public class JwtAuthenticationManagerFactory implements AuthenticationMechanismF
 
         try {
             _algorithm = getAlgorithm(algorithm, key);
-        } catch (CertificateException ex) {
+        } catch (CertificateException | UnsupportedEncodingException ex) {
             throw new IllegalArgumentException("wrong JWT configuration, cannot setup algorithm", ex);
         }
 
@@ -125,14 +110,12 @@ public class JwtAuthenticationManagerFactory implements AuthenticationMechanismF
 
                                 if (__roles != null) {
                                     rolesInitialized = true;
-                                    for (int idx = 0; idx < __roles.length; idx++) {
-                                        roles.add(__roles[idx]);
-                                    }
+                                    roles.addAll(Arrays.asList(__roles));
                                 }
                             } catch (JWTDecodeException ex) {
                                 LOGGER.warn("Jwt cannot get roles from claim {}, "
-                                        + "extepected an array of strings: {}", 
-                                        rolesClaim, 
+                                        + "extepected an array of strings: {}",
+                                        rolesClaim,
                                         _roles.toString());
                             }
 
@@ -160,8 +143,8 @@ public class JwtAuthenticationManagerFactory implements AuthenticationMechanismF
                     return AuthenticationMechanism.AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
                 }
 
-                // by returning NOT_ATTEMPTED, in case the provided credentials 
-                // don't match any user of the IdentityManager, the authentication 
+                // by returning NOT_ATTEMPTED, in case the provided credentials
+                // don't match any user of the IdentityManager, the authentication
                 // will fallback to the default authentication manager (BasicAuthenticationManager)
                 // to make it failing, return NOT_AUTHENTICATED
                 return AuthenticationMechanism.AuthenticationMechanismOutcome.NOT_ATTEMPTED;
@@ -190,11 +173,11 @@ public class JwtAuthenticationManagerFactory implements AuthenticationMechanismF
     }
 
     private Algorithm getAlgorithm(String name, String key)
-            throws CertificateException {
+            throws CertificateException, UnsupportedEncodingException {
         if (name == null || key == null) {
             throw new IllegalArgumentException("algorithm and key are required.");
         } else if (name.startsWith("HMAC") || name.startsWith("HS")) {
-            return getHMAC(name, key.getBytes());
+            return getHMAC(name, key.getBytes("UTF-8"));
         } else if (name.startsWith("RS")) {
             return getRSA(name, key);
         } else {
