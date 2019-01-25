@@ -7,11 +7,12 @@ function fn() {
   var config = {
     env: env,
 	myVarName: 'someValue'
-  }
-  if (env == 'dev') {
+  };
+  
+  if (env === 'dev') {
     // customize
     // e.g. config.foo = 'bar';
-  } else if (env == 'e2e') {
+  } else if (env === 'e2e') {
     // customize
   }
   return config;
