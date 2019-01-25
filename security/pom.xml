@@ -170,6 +170,19 @@
             <version>1.4.9</version>
             <scope>test</scope>
         </dependency>
+        
+        <dependency>
+            <groupId>com.intuit.karate</groupId>
+            <artifactId>karate-apache</artifactId>
+            <version>0.9.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.intuit.karate</groupId>
+            <artifactId>karate-junit4</artifactId>
+            <version>0.9.1</version>
+            <scope>test</scope>
+        </dependency>
         <!-- END Test dependencies -->
     </dependencies>
 
@@ -344,7 +357,7 @@
                             <skip>${skipITs}</skip>
                             <target>
                                 <exec dir="${basedir}" executable="${basedir}/bin/stop.sh">
-                                    <arg value="${basedir}/etc/uiam-integrationtest.yml"/>
+                                    <arg value="${basedir}/etc/uiam-dev.yml"/>
                                 </exec>
                             </target>
                         </configuration>
@@ -558,4 +571,15 @@
             </build>
         </profile>
     </profiles>
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <configuration>
+                    <configLocation>config/sun_checks.xml</configLocation>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
 </project>
