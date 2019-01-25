@@ -197,6 +197,14 @@
     </dependencies>
 
     <build>
+      <testResources>
+            <testResource>
+                <directory>src/test/java</directory>
+                <excludes>
+                    <exclude>**/*.java</exclude>
+                </excludes>
+            </testResource>
+        </testResources>
         <finalName>${project.artifactId}-${project.version}-nodeps</finalName>
         <plugins>
             <plugin>
