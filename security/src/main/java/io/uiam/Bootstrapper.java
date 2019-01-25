@@ -69,7 +69,6 @@ import io.uiam.handlers.RequestLoggerHandler;
 import io.uiam.handlers.injectors.AccountHeadersInjector;
 import io.uiam.handlers.injectors.AuthHeadersRemover;
 import io.uiam.handlers.injectors.XPoweredByInjector;
-import io.uiam.plugins.service.impl.RndTokenService;
 import io.uiam.handlers.security.CORSHandler;
 import io.uiam.handlers.security.SecurityHandler;
 import io.uiam.plugins.PluginConfigurationException;
