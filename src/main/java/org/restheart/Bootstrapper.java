@@ -47,9 +47,10 @@ import io.undertow.util.HttpString;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -179,7 +180,7 @@ public class Bootstrapper {
         return null;
     }
 
-    private static Configuration loadConfiguration() throws ConfigurationException, FileNotFoundException, IOException {
+    private static Configuration loadConfiguration() throws FileNotFoundException, UnsupportedEncodingException, IOException {
         if (CONF_FILE_PATH == null) {
             LOGGER.warn("No configuration file provided, starting with default values!");
             return new Configuration();
@@ -187,7 +188,9 @@ public class Bootstrapper {
             return new Configuration(CONF_FILE_PATH, false);
         } else {
             Properties p = new Properties();
-            p.load(new FileReader(new File(ENVIRONMENT_FILE)));
+            try (InputStreamReader reader = new InputStreamReader(new FileInputStream(ENVIRONMENT_FILE), "UTF-8")) {
+                p.load(reader);
+            }
             MustacheFactory mf = new DefaultMustacheFactory();
             Mustache m = mf.compile(CONF_FILE_PATH.toString());
             StringWriter writer = new StringWriter();
@@ -251,12 +254,12 @@ public class Bootstrapper {
     }
 
     private static void logWindowsStart() {
-        String info = String.format("  {\n"
-                + "    \"Version\": \"%s\",\n"
-                + "    \"Instance-Name\": \"%s\",\n"
-                + "    \"Configuration\": \"%s\",\n"
-                + "    \"Environment\": \"%s\",\n"
-                + "    \"Build-Time\": \"%s\"\n"
+        String info = String.format("  {%n"
+                + "    \"Version\": \"%s\",%n"
+                + "    \"Instance-Name\": \"%s\",%n"
+                + "    \"Configuration\": \"%s\",%n"
+                + "    \"Environment\": \"%s\",%n"
+                + "    \"Build-Time\": \"%s\"%n"
                 + "  }",
                 ansi().fg(MAGENTA).a(RESTHEART_VERSION).reset().toString(),
                 ansi().fg(MAGENTA).a(getInstanceName()).reset().toString(),

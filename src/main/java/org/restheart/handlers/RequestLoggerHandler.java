@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -95,9 +95,10 @@ public class RequestLoggerHandler extends PipedHttpHandler {
      * Log a complete dump of the HttpServerExchange (both Request and Response)
      *
      * @param exchange the HttpServerExchange
+     * @param context the RequestContext
      * @param logLevel it can be 0, 1 or 2
      */
-    protected void dumpExchange(HttpServerExchange exchange, RequestContext context,  Integer logLevel) {
+    protected void dumpExchange(HttpServerExchange exchange, RequestContext context, Integer logLevel) {
         if (logLevel < 1) {
             return;
         }
@@ -114,7 +115,7 @@ public class RequestLoggerHandler extends PipedHttpHandler {
             }
 
             sb.append(" from ").append(exchange.getSourceAddress());
-        } else if (logLevel >= 2) {
+        } else {
             sb.append("\n----------------------------REQUEST---------------------------\n");
             sb.append("               URI=").append(exchange.getRequestURI()).append("\n");
             sb.append(" characterEncoding=").append(exchange.getRequestHeaders().get(Headers.CONTENT_ENCODING)).append("\n");
@@ -124,7 +125,8 @@ public class RequestLoggerHandler extends PipedHttpHandler {
             Map<String, Cookie> cookies = exchange.getRequestCookies();
             if (cookies != null) {
                 cookies.entrySet().stream().map((entry) -> entry.getValue()).forEach((cookie) -> {
-                    sb.append("            cookie=").append(cookie.getName()).append("=").append(cookie.getValue()).append("\n");
+                    sb.append("            cookie=").append(cookie.getName()).append("=")
+                            .append(cookie.getValue()).append("\n");
                 });
             }
             for (HeaderValues header : exchange.getRequestHeaders()) {
@@ -132,7 +134,8 @@ public class RequestLoggerHandler extends PipedHttpHandler {
                     sb.append("            header=").append(header.getHeaderName()).append("=").append(value).append("\n");
                 });
             }
-            sb.append("            locale=").append(LocaleUtils.getLocalesFromHeader(exchange.getRequestHeaders().get(Headers.ACCEPT_LANGUAGE))).append("\n");
+            sb.append("            locale=").append(LocaleUtils.getLocalesFromHeader(exchange.getRequestHeaders()
+                    .get(Headers.ACCEPT_LANGUAGE))).append("\n");
             sb.append("            method=").append(exchange.getRequestMethod()).append("\n");
             Map<String, Deque<String>> pnames = exchange.getQueryParameters();
             pnames.entrySet().stream().map((entry) -> {
@@ -192,12 +195,13 @@ public class RequestLoggerHandler extends PipedHttpHandler {
                     sb.append(" username=").append(sc.getAuthenticatedAccount().getPrincipal().getName())
                             .append(" roles=").append(sc.getAuthenticatedAccount().getRoles());
                 }
-            } else if (logLevel >= 2) {
+            } else {
                 sb.append("--------------------------RESPONSE--------------------------\n");
                 if (sc != null) {
                     if (sc.isAuthenticated()) {
                         sb.append("          authType=").append(sc.getMechanismName()).append("\n");
-                        sb.append("          username=").append(sc.getAuthenticatedAccount().getPrincipal().getName()).append("\n");
+                        sb.append("          username=").append(sc.getAuthenticatedAccount().getPrincipal().getName())
+                                .append("\n");
                         sb.append("             roles=").append(sc.getAuthenticatedAccount().getRoles()).append("\n");
                     } else {
                         sb.append("          authType=none" + "\n");
@@ -205,16 +209,20 @@ public class RequestLoggerHandler extends PipedHttpHandler {
                 }
 
                 sb.append("     contentLength=").append(exchange1.getResponseContentLength()).append("\n");
-                sb.append("       contentType=").append(exchange1.getResponseHeaders().getFirst(Headers.CONTENT_TYPE)).append("\n");
+                sb.append("       contentType=").append(exchange1.getResponseHeaders().getFirst(Headers.CONTENT_TYPE))
+                        .append("\n");
                 Map<String, Cookie> cookies1 = exchange1.getResponseCookies();
                 if (cookies1 != null) {
                     cookies1.values().stream().forEach((cookie) -> {
-                        sb.append("            cookie=").append(cookie.getName()).append("=").append(cookie.getValue()).append("; domain=").append(cookie.getDomain()).append("; path=").append(cookie.getPath()).append("\n");
+                        sb.append("            cookie=").append(cookie.getName()).append("=").append(cookie.getValue())
+                                .append("; domain=").append(cookie.getDomain()).append("; path=")
+                                .append(cookie.getPath()).append("\n");
                     });
                 }
                 for (HeaderValues header : exchange1.getResponseHeaders()) {
                     header.stream().forEach((value) -> {
-                        sb.append("            header=").append(header.getHeaderName()).append("=").append(value).append("\n");
+                        sb.append("            header=").append(header.getHeaderName()).append("=")
+                                .append(value).append("\n");
                     });
                 }
                 sb.append("            status=");
