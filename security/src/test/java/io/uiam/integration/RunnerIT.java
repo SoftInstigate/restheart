@@ -25,6 +25,6 @@ import org.junit.runner.RunWith;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RunWith(Karate.class)
-public class BasicAuthenticationIT {
+public class RunnerIT {
     
 }
