@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -20,8 +20,6 @@ package org.restheart.test.integration;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
-import com.mongodb.MongoClient;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -30,8 +28,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.http.HttpHost;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
@@ -39,6 +39,7 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.restheart.Configuration;
 import org.restheart.db.MongoDBClientSingleton;
+import static org.restheart.test.integration.HttpClientAbstactIT.HTTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,12 +51,6 @@ public abstract class AbstactIT {
 
     protected static final Logger LOG = LoggerFactory.getLogger(AbstactIT.class);
 
-    protected static final String MONGO_HOST = System.getenv("MONGO_HOST") == null ? "127.0.0.1" : System.getenv("MONGO_HOST");
-    protected static final Path CONF_FILE_PATH = new File("etc/restheart-integrationtest.yml").toPath();
-
-    protected static MongoClient mongoClient;
-    protected static Configuration conf = null;
-
     protected static final String ADMIN_ID = "admin";
     protected static final String ADMIN_PWD = "changeit";
 
@@ -65,17 +60,15 @@ public abstract class AbstactIT {
      */
     protected static final String TEST_DB_PREFIX = "test";
 
-    protected static String BASE_URL;
+    protected static final HttpHost HTTP_HOST = new HttpHost("127.0.0.1", 18080, HTTP);
+
+    static {
+        LOG.info("BASE_URL=" + HTTP_HOST.toURI());
+        MongoDBClientSingleton.init(new Configuration());
+    }
 
     @BeforeClass
-    public static void setUpClass() throws Exception {
-        conf = new Configuration(CONF_FILE_PATH);
-
-        BASE_URL = "http://" + conf.getHttpHost() + ":" + conf.getHttpPort();
-
-        MongoDBClientSingleton.init(conf);
-
-        mongoClient = MongoDBClientSingleton.getInstance().getClient();
+    public static void setUpClass() throws URISyntaxException {
     }
 
     @AfterClass
@@ -113,7 +106,7 @@ public abstract class AbstactIT {
     protected static String url(String dbname, String... parts) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(BASE_URL);
+        sb.append(HTTP_HOST.toURI());
 
         if (dbname != null) {
             sb.append("/")
@@ -137,7 +130,8 @@ public abstract class AbstactIT {
         }
     };
 
-    public AbstactIT() {
+    @Before
+    public void setUp() {
     }
 
     @After
@@ -166,21 +160,18 @@ public abstract class AbstactIT {
         LOG.debug("test data deleted");
 
         // clear cache
-        if (conf.isLocalCacheEnabled()) {
-            deleted.stream().forEach(db -> {
-                HttpResponse resp;
-                try {
-                    resp = Unirest.post(BASE_URL + "/_logic/ic")
-                            .basicAuth(ADMIN_ID, ADMIN_PWD)
-                            .queryString("db", db)
-                            .asJson();
+        deleted.stream().forEach(db -> {
+            try {
+                HttpResponse resp = Unirest.post(HTTP_HOST.toURI() + "/_logic/ic")
+                        .basicAuth(ADMIN_ID, ADMIN_PWD)
+                        .queryString("db", db)
+                        .asJson();
 
-                    LOG.debug("invalidating cache for {}, response {}", db, resp.getStatus());
-                } catch (UnirestException ex) {
-                    LOG.warn("error invalidating cache for delete db {}", db, ex);
-                }
-            });
-        }
+                LOG.debug("invalidating cache for {}, response {}", db, resp.getStatus());
+            } catch (UnirestException ex) {
+                LOG.warn("error invalidating cache for delete db {}: {}", db, ex.getMessage());
+            }
+        });
     }
 
 }

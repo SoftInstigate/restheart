@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -45,9 +45,10 @@ import io.undertow.util.HttpString;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -171,7 +172,7 @@ public class Bootstrapper {
         return null;
     }
 
-    private static Configuration loadConfiguration() throws ConfigurationException, FileNotFoundException, IOException {
+    private static Configuration loadConfiguration() throws FileNotFoundException, UnsupportedEncodingException, IOException {
         if (CONF_FILE_PATH == null) {
             LOGGER.warn("No configuration file provided, starting with default values!");
             return new Configuration();
@@ -179,7 +180,9 @@ public class Bootstrapper {
             return new Configuration(CONF_FILE_PATH, false);
         } else {
             Properties p = new Properties();
-            p.load(new FileReader(new File(ENVIRONMENT_FILE)));
+            try (InputStreamReader reader = new InputStreamReader(new FileInputStream(ENVIRONMENT_FILE), "UTF-8")) {
+                p.load(reader);
+            }
             MustacheFactory mf = new DefaultMustacheFactory();
             Mustache m = mf.compile(CONF_FILE_PATH.toString());
             StringWriter writer = new StringWriter();
@@ -243,20 +246,18 @@ public class Bootstrapper {
     }
 
     private static void logWindowsStart() {
-        String info = String.format("  {\n"
-                + "    \"Version\": \"%s\",\n"
-                + "    \"Instance-Name\": \"%s\",\n"
-                + "    \"Configuration\": \"%s\",\n"
-                + "    \"Environment\": \"%s\",\n"
-                + "    \"Build-Time\": \"%s\"\n"
+        String info = String.format("  {%n"
+                + "    \"Version\": \"%s\",%n"
+                + "    \"Instance-Name\": \"%s\",%n"
+                + "    \"Configuration\": \"%s\",%n"
+                + "    \"Environment\": \"%s\",%n"
+                + "    \"Build-Time\": \"%s\"%n"
                 + "  }",
                 ansi().fg(MAGENTA).a(RESTHEART_VERSION).reset().toString(),
                 ansi().fg(MAGENTA).a(getInstanceName()).reset().toString(),
                 ansi().fg(MAGENTA).a(CONF_FILE_PATH).reset().toString(),
                 ansi().fg(MAGENTA).a(ENVIRONMENT_FILE).reset().toString(),
-                ansi().fg(MAGENTA).a(BUILD_TIME != null
-                        ? BUILD_TIME
-                        : "unknown, not packaged").reset().toString());
+                ansi().fg(MAGENTA).a(BUILD_TIME).reset().toString());
 
         LOGGER.info("Starting {}\n{}", ansi().fg(RED).a(RESTHEART).reset().toString(), info);
     }
@@ -672,7 +673,7 @@ public class Bootstrapper {
                 .setBufferSize(configuration.getBufferSize())
                 .setHandler(shutdownHandler);
 
-        // starting undertow 1.4.23 URL become much stricter 
+        // starting undertow 1.4.23 URL become much stricter
         // (undertow commit 09d40a13089dbff37f8c76d20a41bf0d0e600d9d)
         // allow unescaped chars in URL (otherwise not allowed by default)
         builder.setServerOption(

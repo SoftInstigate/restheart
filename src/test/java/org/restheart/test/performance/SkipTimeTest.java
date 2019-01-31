@@ -1,22 +1,21 @@
 package org.restheart.test.performance;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
-import java.io.File;
-import java.nio.file.Path;
 import org.bson.BsonDocument;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.restheart.Configuration;
 import static org.restheart.db.CursorPool.MIN_SKIP_DISTANCE_PERCENTAGE;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.utils.FileUtils;
 
 /**
  * this is to proof the advantage of dbcursor preallocation engine strategy it
@@ -26,17 +25,16 @@ import org.restheart.utils.FileUtils;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@Ignore
 public class SkipTimeTest {
 
     private static final int N = 5;
     private static final int REQUESTED_SKIPS = 1500000;
     private static final int POOL_SKIPS = 1400000;
 
-    private static final Path CONF_FILE = new File("./etc/restheart-dev.yml").toPath();
-
     @BeforeClass
     public static void setUpClass() throws Exception {
-        MongoDBClientSingleton.init(FileUtils.getConfiguration(CONF_FILE, false));
+        MongoDBClientSingleton.init(new Configuration());
     }
 
     @AfterClass
@@ -54,7 +52,7 @@ public class SkipTimeTest {
     public void tearDown() {
     }
 
-    //@Test
+    @Test
     public void testSkip() {
 
         final Database dbsDAO = new DbsDAO();
@@ -69,7 +67,7 @@ public class SkipTimeTest {
                     .find()
                     .sort(new BasicDBObject("_id", -1))
                     .skip(REQUESTED_SKIPS);
-            
+
             docs.iterator().next();
 
             long end = System.nanoTime();
@@ -79,7 +77,7 @@ public class SkipTimeTest {
 
     }
 
-    //@Test
+    @Test
     public void testTwoSkips() {
 
         final Database dbsDAO = new DbsDAO();
@@ -104,7 +102,7 @@ public class SkipTimeTest {
             long start = System.nanoTime();
 
             MongoCursor<BsonDocument> cursor = docs.iterator();
-            
+
             for (int cont2 = 0; cont2 < REQUESTED_SKIPS - ACTUAL_POOL_SKIPS; cont2++) {
                 cursor.next();
             }
