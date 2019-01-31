@@ -25,7 +25,7 @@ import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.restheart.hal.UnsupportedDocumentIdException;
+import org.restheart.representation.UnsupportedDocumentIdException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.handlers.schema.JsonSchemaCacheSingleton;

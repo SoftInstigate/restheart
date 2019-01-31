@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.restheart.db.Database;
-import org.restheart.hal.Representation;
+import org.restheart.representation.Resource;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
@@ -100,7 +100,7 @@ public class GetRootHandler extends PipedHttpHandler {
                 getRepresentation(exchange, context, data, size)
                 .asBsonDocument());
         
-        context.setResponseContentType(Representation.HAL_JSON_MEDIA_TYPE);
+        context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
         context.setResponseStatusCode(HttpStatus.SC_OK);
 
         next(exchange, context);

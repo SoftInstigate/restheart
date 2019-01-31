@@ -25,8 +25,8 @@ import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.Configuration;
-import org.restheart.hal.Link;
-import org.restheart.hal.Representation;
+import org.restheart.representation.Link;
+import org.restheart.representation.Resource;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.URLUtils;
@@ -50,7 +50,7 @@ public class IndexesRepresentationFactory {
      * @param size
      * @throws IllegalQueryParamenterException
      */
-    static public Representation getRepresentation(
+    static public Resource getRepresentation(
             HttpServerExchange exchange,
             RequestContext context,
             List<BsonDocument> embeddedData,
@@ -64,12 +64,12 @@ public class IndexesRepresentationFactory {
                         ? ""
                         : "?" + URLUtils.decodeQueryString(exchange.getQueryString());
 
-        Representation rep;
+        Resource rep;
 
         if (context.isFullHalMode()) {
-            rep = new Representation(requestPath + queryString);
+            rep = new Resource(requestPath + queryString);
         } else {
-            rep = new Representation();
+            rep = new Resource();
         }
 
         if (size >= 0) {
@@ -125,7 +125,7 @@ public class IndexesRepresentationFactory {
     private static void embeddedDocuments(
             List<BsonDocument> embeddedData,
             String requestPath,
-            Representation rep,
+            Resource rep,
             boolean isHalFull) {
         embeddedData.stream().forEach((d) -> {
             BsonValue _id = d.get("_id");
@@ -133,7 +133,7 @@ public class IndexesRepresentationFactory {
             if (_id != null
                     && (_id.isString()
                     || _id.isObjectId())) {
-                Representation nrep = new Representation();
+                Resource nrep = new Resource();
 
                 if (isHalFull) {
                     nrep.addProperty("_type",

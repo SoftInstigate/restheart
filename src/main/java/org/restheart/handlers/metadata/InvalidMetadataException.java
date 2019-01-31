@@ -17,13 +17,11 @@
  */
 package org.restheart.handlers.metadata;
 
-import org.restheart.hal.InvalidHalException;
-
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class InvalidMetadataException extends InvalidHalException {
+public class InvalidMetadataException extends Exception {
 
     /**
      *

@@ -17,13 +17,11 @@
  */
 package org.restheart.handlers.aggregation;
 
-import org.restheart.hal.InvalidHalException;
-
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class QueryVariableNotBoundException extends InvalidHalException {
+public class QueryVariableNotBoundException extends Exception {
 
     /**
      *

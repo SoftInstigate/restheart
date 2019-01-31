@@ -34,7 +34,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
-import org.restheart.hal.Representation;
+import org.restheart.representation.Resource;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.ChannelReader;
@@ -56,25 +56,25 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     static final Logger LOGGER = LoggerFactory.getLogger(BodyInjectorHandler.class);
 
     private static final String ERROR_INVALID_CONTENTTYPE = "Content-Type must be either: "
-            + Representation.HAL_JSON_MEDIA_TYPE
-            + " or " + Representation.JSON_MEDIA_TYPE;
+            + Resource.HAL_JSON_MEDIA_TYPE
+            + " or " + Resource.JSON_MEDIA_TYPE;
 
     private static final String ERROR_INVALID_CONTENTTYPE_FILE = "Content-Type must be either: "
-            + Representation.APP_FORM_URLENCODED_TYPE
-            + " or " + Representation.MULTIPART_FORM_DATA_TYPE;
+            + Resource.APP_FORM_URLENCODED_TYPE
+            + " or " + Resource.MULTIPART_FORM_DATA_TYPE;
 
     private static boolean isHalOrJson(final HeaderValues contentTypes) {
         return contentTypes != null
                 && !contentTypes.isEmpty()
-                && contentTypes.stream().anyMatch(ct -> ct.startsWith(Representation.HAL_JSON_MEDIA_TYPE)
-                || ct.startsWith(Representation.JSON_MEDIA_TYPE));
+                && contentTypes.stream().anyMatch(ct -> ct.startsWith(Resource.HAL_JSON_MEDIA_TYPE)
+                || ct.startsWith(Resource.JSON_MEDIA_TYPE));
     }
 
     private static boolean isFormOrMultipart(final HeaderValues contentTypes) {
         return contentTypes != null
                 && !contentTypes.isEmpty()
-                && contentTypes.stream().anyMatch(ct -> ct.startsWith(Representation.APP_FORM_URLENCODED_TYPE)
-                || ct.startsWith(Representation.MULTIPART_FORM_DATA_TYPE));
+                && contentTypes.stream().anyMatch(ct -> ct.startsWith(Resource.APP_FORM_URLENCODED_TYPE)
+                || ct.startsWith(Resource.MULTIPART_FORM_DATA_TYPE));
     }
 
     /**

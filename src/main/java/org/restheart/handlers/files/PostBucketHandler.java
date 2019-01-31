@@ -28,10 +28,10 @@ import org.restheart.db.GridFsRepository;
 import org.restheart.db.OperationResult;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.representation.RepUtils;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
-import static org.restheart.utils.URLUtils.getReferenceLink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,7 +119,7 @@ public class PostBucketHandler extends PipedHttpHandler {
         // insert the Location handler
         exchange.getResponseHeaders()
                 .add(HttpString.tryFromString("Location"),
-                        getReferenceLink(
+                        RepUtils.getReferenceLink(
                                 context,
                                 URLUtils.getRemappedRequestURL(exchange), 
                                 result.getNewId()));

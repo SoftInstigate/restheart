@@ -33,7 +33,7 @@ import org.junit.Assert;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
-import org.restheart.hal.Representation;
+import org.restheart.representation.Resource;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
 import static org.restheart.test.integration.AbstactIT.url;
@@ -59,13 +59,13 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         // *** PUT tmpdb
         Response resp1 = adminExecutor.execute(Request.Put(dbTmpUri)
                 .bodyString("{a:1}", halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
         check("check put mytmpdb", resp1, HttpStatus.SC_CREATED);
 
         // *** PUT tmpcoll
         Response resp2 = adminExecutor.execute(Request.Put(collectionTmpUri)
                 .bodyString("{a:1}", halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
         check("check put mytmpdb.tmpcoll", resp2, HttpStatus.SC_CREATED);
 
         URI collectionTmpUriInt = buildURI("/" + dbTmpName + "/" + collectionTmpName,
@@ -76,7 +76,7 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         // *** POST tmpcoll
         Response resp3 = adminExecutor.execute(Request.Post(collectionTmpUriInt)
                 .bodyString("{_id:100, a:1}", halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
         HttpResponse httpResp = check("check post coll1 again", resp3, HttpStatus.SC_CREATED);
 
         Header[] headers = httpResp.getHeaders(Headers.LOCATION_STRING);
@@ -92,7 +92,7 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         URI createdDocUri = URI.create(location);
 
         Response resp4 = adminExecutor.execute(Request.Get(createdDocUri)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
 
         JsonObject content = Json.parse(resp4.returnContent().asString()).asObject();
         assertTrue("check created doc content", content.get("_id").asInt() == 100);
@@ -105,13 +105,13 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         // *** PUT tmpdb
         Response resp1 = adminExecutor.execute(Request.Put(dbTmpUri)
                 .bodyString("{a:1}", halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
         check("check put mytmpdb", resp1, HttpStatus.SC_CREATED);
 
         // *** PUT tmpcoll
         Response resp2 = adminExecutor.execute(Request.Put(collectionTmpUri)
                 .bodyString("{a:1}", halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
         check("check put mytmpdb.tmpcoll", resp2, HttpStatus.SC_CREATED);
 
         URI collectionTmpUriInt = buildURI("/" + dbTmpName + "/" + collectionTmpName,
@@ -122,7 +122,7 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         // *** POST tmpcoll
         Response resp3 = adminExecutor.execute(Request.Post(collectionTmpUriInt)
                 .bodyString("{_id:{'$oid':'54c965cbc2e64568e235b711'}, a:1}", halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
         HttpResponse httpResp = check("check post coll1 again", resp3, HttpStatus.SC_CREATED);
 
         Header[] headers = httpResp.getHeaders(Headers.LOCATION_STRING);
@@ -137,7 +137,7 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         URI createdDocUri = URI.create(location);
 
         Response resp4 = adminExecutor.execute(Request.Get(createdDocUri)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
 
         JsonObject content = Json.parse(resp4.returnContent().asString()).asObject();
         assertTrue("check created doc content", content.get("_id").asObject().get("$oid").asString()
@@ -153,7 +153,7 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
                 });
 
         Response resp5 = adminExecutor.execute(Request.Get(collectionTmpUriSearch)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
 
         content = Json.parse(resp5.returnContent().asString()).asObject();
         assertTrue("check created doc content", content.get("_returned").asInt() == 0);
@@ -165,7 +165,7 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
                 });
 
         Response resp6 = adminExecutor.execute(Request.Get(collectionTmpUriSearch)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
 
         content = Json.parse(resp6.returnContent().asString()).asObject();
         assertTrue("check created doc content", content.get("_returned").asInt() == 1);

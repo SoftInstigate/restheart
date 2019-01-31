@@ -27,10 +27,10 @@ import org.restheart.db.OperationResult;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
+import org.restheart.representation.RepUtils;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
-import static org.restheart.utils.URLUtils.getReferenceLink;
 
 /**
  *
@@ -177,7 +177,7 @@ public class PostCollectionHandler extends PipedHttpHandler {
         if (result.getHttpCode() == HttpStatus.SC_CREATED) {
             exchange.getResponseHeaders()
                     .add(HttpString.tryFromString("Location"),
-                            getReferenceLink(
+                            RepUtils.getReferenceLink(
                                     context,
                                     URLUtils.getRemappedRequestURL(exchange),
                                     result.getNewData().get("_id")));

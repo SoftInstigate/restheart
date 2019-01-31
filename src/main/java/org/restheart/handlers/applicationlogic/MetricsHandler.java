@@ -43,6 +43,7 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.REPRESENTATION_FORMAT_KEY;
+import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.MetricsJsonGenerator;
 import org.restheart.utils.ResponseHelper;
@@ -395,8 +396,8 @@ public class MetricsHandler extends PipedHttpHandler {
         }
 
         public static ResponseType forQueryParameter(String rep) {
-            if (RequestContext.REPRESENTATION_FORMAT.PLAIN_JSON.name().equalsIgnoreCase(rep)
-                    || RequestContext.REPRESENTATION_FORMAT.PJ.name().equalsIgnoreCase(rep)) {
+            if (REPRESENTATION_FORMAT.PLAIN_JSON.name().equalsIgnoreCase(rep)
+                    || REPRESENTATION_FORMAT.PJ.name().equalsIgnoreCase(rep)) {
                 return ResponseType.JSON;
             } else {
                 return null;

@@ -35,7 +35,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.restheart.hal.UnsupportedDocumentIdException;
+import org.restheart.representation.UnsupportedDocumentIdException;
 import org.restheart.handlers.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

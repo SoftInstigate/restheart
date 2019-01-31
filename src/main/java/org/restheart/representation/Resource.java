@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.hal;
+package org.restheart.representation;
 
 import java.util.Objects;
 import org.bson.BsonArray;
@@ -28,7 +28,14 @@ import org.restheart.handlers.RequestContext;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class Representation {
+public class Resource {
+    public enum REPRESENTATION_FORMAT {
+        NESTED, // Root, Dbs and Collections are objectes with props and _embedded
+        FLAT, //  Dbs and Collections are arrays of string names
+        HAL, // Hypertext Application Language
+        PLAIN_JSON, // Alias for NESTED
+        PJ, // Alias for NESTED
+    }
 
     /**
      * Supported content types
@@ -49,7 +56,7 @@ public class Representation {
      *
      * @param href
      */
-    public Representation(String href) {
+    public Resource(String href) {
         properties = new BsonDocument();
         embedded = new BsonDocument();
         links = new BsonDocument();
@@ -62,7 +69,7 @@ public class Representation {
     /**
      *
      */
-    public Representation() {
+    public Resource() {
         this(null);
     }
 
@@ -162,7 +169,7 @@ public class Representation {
      * @param rel
      * @param rep
      */
-    public void addRepresentation(String rel, Representation rep) {
+    public void addRepresentation(String rel, Resource rep) {
         if (!embedded.containsKey(rel)) {
             embedded.append(rel, new BsonArray());
         }
@@ -173,7 +180,7 @@ public class Representation {
     }
 
     public void addWarning(String warning) {
-        Representation nrep = new Representation("#warnings");
+        Resource nrep = new Resource("#warnings");
         nrep.addProperty("message", new BsonString(warning));
         addRepresentation("rh:warnings", nrep);
     }
@@ -196,7 +203,7 @@ public class Representation {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final Representation other = (Representation) obj;
+        final Resource other = (Resource) obj;
         if (!Objects.equals(this.properties, other.properties)) {
             return false;
         }

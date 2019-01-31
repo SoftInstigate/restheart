@@ -25,7 +25,7 @@ import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
-import org.restheart.hal.Representation;
+import org.restheart.representation.Resource;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -142,7 +142,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
                     .getRepresentation(exchange, context, data, size)
                     .asBsonDocument());
 
-            context.setResponseContentType(Representation.HAL_JSON_MEDIA_TYPE);
+            context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
             context.setResponseStatusCode(HttpStatus.SC_OK);
 
             ResponseHelper

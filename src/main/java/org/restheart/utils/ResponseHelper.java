@@ -29,7 +29,7 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
-import org.restheart.hal.Representation;
+import org.restheart.representation.Resource;
 import org.restheart.handlers.RequestContext;
 
 /**
@@ -96,21 +96,21 @@ public class ResponseHelper {
             HttpServerExchange exchange,
             RequestContext context,
             int code,
-            Representation rep) {
+            Resource rep) {
         context.setResponseStatusCode(code);
 
         context.setInError(true);
         context.setResponseContent(rep.asBsonDocument());
     }
 
-    public static Representation getErrorJsonDocument(String href,
+    public static Resource getErrorJsonDocument(String href,
             int code,
             RequestContext context,
             String httpStatusText,
             String message,
             Throwable t,
             boolean includeStackTrace) {
-        Representation rep = new Representation(href);
+        Resource rep = new Resource(href);
 
         rep.addProperty("http status code",
                 new BsonInt32(code));
@@ -122,7 +122,7 @@ public class ResponseHelper {
                     new BsonString(avoidEscapedChars(message)));
         }
 
-        Representation nrep = new Representation();
+        Resource nrep = new Resource();
 
         if (t != null) {
             nrep.addProperty(

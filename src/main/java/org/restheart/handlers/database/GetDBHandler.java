@@ -22,7 +22,7 @@ import java.util.List;
 import org.bson.BsonDocument;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
-import org.restheart.hal.Representation;
+import org.restheart.representation.Resource;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
@@ -87,7 +87,7 @@ public class GetDBHandler extends PipedHttpHandler {
                                 .getDBSize(colls))
                 .asBsonDocument());
 
-        context.setResponseContentType(Representation.HAL_JSON_MEDIA_TYPE);
+        context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
         context.setResponseStatusCode(HttpStatus.SC_OK);
 
         ResponseHelper.injectEtagHeader(exchange, context.getDbProps());

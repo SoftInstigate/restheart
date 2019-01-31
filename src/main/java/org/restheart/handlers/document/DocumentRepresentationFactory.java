@@ -8,14 +8,15 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.Configuration;
-import org.restheart.hal.Link;
-import org.restheart.hal.Representation;
-import org.restheart.hal.UnsupportedDocumentIdException;
+import org.restheart.representation.Link;
+import org.restheart.representation.Resource;
+import org.restheart.representation.UnsupportedDocumentIdException;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.metadata.Relationship;
+import org.restheart.representation.RepUtils;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,7 @@ public class DocumentRepresentationFactory {
         return data.containsKey("filename") && data.containsKey("chunkSize");
     }
 
-    public static void addSpecialProperties(final Representation rep, RequestContext.TYPE type, BsonDocument data) {
+    public static void addSpecialProperties(final Resource rep, RequestContext.TYPE type, BsonDocument data) {
         rep.addProperty("_type", new BsonString(type.name()));
 
         Object etag = data.get("_etag");
@@ -54,7 +55,7 @@ public class DocumentRepresentationFactory {
         }
     }
 
-    private static void addRelationshipsLinks(Representation rep, RequestContext context, BsonDocument data) {
+    private static void addRelationshipsLinks(Resource rep, RequestContext context, BsonDocument data) {
         List<Relationship> rels = null;
 
         try {
@@ -94,16 +95,16 @@ public class DocumentRepresentationFactory {
      * @return
      * @throws IllegalQueryParamenterException
      */
-    public Representation getRepresentation(String href, HttpServerExchange exchange, RequestContext context, BsonDocument data)
+    public Resource getRepresentation(String href, HttpServerExchange exchange, RequestContext context, BsonDocument data)
             throws IllegalQueryParamenterException {
-        Representation rep;
+        Resource rep;
 
         BsonValue id = data.get("_id");
 
         if (context.isFullHalMode()) {
-            rep = new Representation(URLUtils.getReferenceLink(context, URLUtils.getParentPath(href), id));
+            rep = new Resource(RepUtils.getReferenceLink(context, URLUtils.getParentPath(href), id));
         } else {
-            rep = new Representation();
+            rep = new Resource();
         }
 
         data.keySet()

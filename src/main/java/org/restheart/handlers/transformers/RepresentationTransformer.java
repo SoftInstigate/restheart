@@ -22,9 +22,10 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.Bootstrapper;
-import org.restheart.hal.Representation;
+import org.restheart.representation.Resource;
 import org.restheart.handlers.RequestContext;
 import org.restheart.metadata.transformers.Transformer;
+import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -45,7 +46,7 @@ public class RepresentationTransformer implements Transformer {
             return;
         }
 
-        RequestContext.REPRESENTATION_FORMAT rf = context.getRepresentationFormat();
+        REPRESENTATION_FORMAT rf = context.getRepresentationFormat();
 
         // can be null if an error occurs before RequestContextInjectorHandler.handle()
         if (rf == null) {
@@ -53,17 +54,17 @@ public class RepresentationTransformer implements Transformer {
         }
 
         if (contentToTransform == null
-                || (rf != RequestContext.REPRESENTATION_FORMAT.NESTED
-                && rf != RequestContext.REPRESENTATION_FORMAT.PJ
-                && rf != RequestContext.REPRESENTATION_FORMAT.PLAIN_JSON
-                && rf != RequestContext.REPRESENTATION_FORMAT.FLAT)) {
+                || (rf != REPRESENTATION_FORMAT.NESTED
+                && rf != REPRESENTATION_FORMAT.PJ
+                && rf != REPRESENTATION_FORMAT.PLAIN_JSON
+                && rf != REPRESENTATION_FORMAT.FLAT)) {
             return;
         }
 
         final boolean isFlat = context.getRepresentationFormat()
-                .equals(RequestContext.REPRESENTATION_FORMAT.FLAT);
+                .equals(REPRESENTATION_FORMAT.FLAT);
 
-        context.setResponseContentType(Representation.JSON_MEDIA_TYPE);
+        context.setResponseContentType(Resource.JSON_MEDIA_TYPE);
 
         BsonDocument responseContent = new BsonDocument();
 

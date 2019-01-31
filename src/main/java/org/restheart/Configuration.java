@@ -35,7 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.ETAG_CHECK_POLICY;
-import org.restheart.handlers.RequestContext.REPRESENTATION_FORMAT;
+import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -600,7 +600,7 @@ public class Configuration {
     private final String ajpHost;
     private final String instanceName;
     private final String instanceBaseURL;
-    private final RequestContext.REPRESENTATION_FORMAT defaultRepresentationFromat;
+    private final REPRESENTATION_FORMAT defaultRepresentationFromat;
     private final boolean useEmbeddedKeystore;
     private final String keystoreFile;
     private final String keystorePassword;

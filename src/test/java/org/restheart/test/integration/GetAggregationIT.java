@@ -33,7 +33,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import static org.junit.Assert.*;
 import org.junit.Test;
-import org.restheart.hal.Representation;
+import org.restheart.representation.Resource;
 import org.restheart.handlers.RequestContext;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import org.restheart.utils.HttpStatus;
@@ -139,7 +139,7 @@ public class GetAggregationIT extends HttpClientAbstactIT {
 
         assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
         assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", Representation.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
+        assertEquals("check content type", Resource.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
 
         String content = EntityUtils.toString(entity);
 
@@ -219,16 +219,16 @@ public class GetAggregationIT extends HttpClientAbstactIT {
 
         assertEquals("check status code", HttpStatus.SC_BAD_REQUEST, statusLine.getStatusCode());
         assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", Representation.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
+        assertEquals("check content type", Resource.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
     }
 
     private void createTmpCollection() throws Exception {
-        Response resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+        Response resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
         check("check put tmp db", resp, HttpStatus.SC_CREATED);
 
         resp = adminExecutor.execute(Request.Put(collectionTmpUri)
                 .bodyString("{descr:\"temp coll\"}", halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
         check("check put tmp coll", resp, HttpStatus.SC_CREATED);
     }
 
@@ -257,7 +257,7 @@ public class GetAggregationIT extends HttpClientAbstactIT {
                     .execute(Request.Post(collectionTmpUri)
                             .bodyString(datum, halCT)
                             .addHeader(Headers.CONTENT_TYPE_STRING,
-                                    Representation.HAL_JSON_MEDIA_TYPE));
+                                    Resource.HAL_JSON_MEDIA_TYPE));
 
             check("check aggregation create test data",
                     resp, HttpStatus.SC_CREATED);
@@ -266,7 +266,7 @@ public class GetAggregationIT extends HttpClientAbstactIT {
         Response resp = adminExecutor
                 .execute(Request.Patch(collectionTmpUri)
                         .bodyString(aggregationsMetadata, halCT)
-                        .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE)
+                        .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE)
                         .addHeader(Headers.IF_MATCH_STRING, etag));
 
         check("check update collection with aggregations metadata",
@@ -289,7 +289,7 @@ public class GetAggregationIT extends HttpClientAbstactIT {
 
         assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
         assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", Representation.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
+        assertEquals("check content type", Resource.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
 
         String content = EntityUtils.toString(entity);
 
@@ -347,7 +347,7 @@ public class GetAggregationIT extends HttpClientAbstactIT {
 
         assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
         assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", Representation.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
+        assertEquals("check content type", Resource.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
 
         String content = EntityUtils.toString(entity);
 
