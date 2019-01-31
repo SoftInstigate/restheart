@@ -27,7 +27,7 @@ import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
-import org.restheart.hal.Representation;
+import org.restheart.representation.Resource;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import static org.restheart.handlers.RequestContext.COLL_META_DOCID_PREFIX;
@@ -225,7 +225,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
                         document)
                 .asBsonDocument());
 
-        context.setResponseContentType(Representation.HAL_JSON_MEDIA_TYPE);
+        context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
         context.setResponseStatusCode(HttpStatus.SC_OK);
 
         ResponseHelper.injectEtagHeader(exchange, etag);

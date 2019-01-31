@@ -26,11 +26,12 @@ import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.restheart.db.BulkOperationResult;
-import org.restheart.hal.AbstractRepresentationFactory;
-import org.restheart.hal.Link;
-import org.restheart.hal.Representation;
+import org.restheart.representation.AbstractRepresentationFactory;
+import org.restheart.representation.Link;
+import org.restheart.representation.Resource;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
+import org.restheart.representation.RepUtils;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
@@ -44,20 +45,20 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
     public BulkResultRepresentationFactory() {
     }
 
-    public Representation getRepresentation(HttpServerExchange exchange, RequestContext context, BulkOperationResult result)
+    public Resource getRepresentation(HttpServerExchange exchange, RequestContext context, BulkOperationResult result)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
-        final Representation rep = createRepresentation(exchange, context, null);
+        final Resource rep = createRepresentation(exchange, context, null);
 
         addBulkResult(result, context, rep, requestPath);
 
         return rep;
     }
 
-    public Representation getRepresentation(HttpServerExchange exchange, MongoBulkWriteException mbwe)
+    public Resource getRepresentation(HttpServerExchange exchange, MongoBulkWriteException mbwe)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
-        final Representation rep = createRepresentation(exchange, null, exchange.getRequestPath());
+        final Resource rep = createRepresentation(exchange, null, exchange.getRequestPath());
 
         addWriteResult(mbwe.getWriteResult(), rep, requestPath);
 
@@ -69,9 +70,9 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
     private void addBulkResult(
             final BulkOperationResult result,
             final RequestContext context,
-            final Representation rep,
+            final Resource rep,
             final String requestPath) {
-        Representation nrep = new Representation();
+        Resource nrep = new Resource();
 
         BulkWriteResult wr = result.getBulkResult();
 
@@ -85,7 +86,7 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
                         forEach(update -> {
                             nrep.addLink(
                                     new Link("rh:newdoc",
-                                            URLUtils
+                                            RepUtils
                                                     .getReferenceLink(
                                                             context,
                                                             requestPath,
@@ -111,9 +112,9 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
 
     private void addWriteResult(
             final BulkWriteResult wr,
-            final Representation rep,
+            final Resource rep,
             final String requestPath) {
-        Representation nrep = new Representation();
+        Resource nrep = new Resource();
 
         if (wr.wasAcknowledged()) {
             if (wr.getUpserts() != null) {
@@ -125,7 +126,7 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
                         forEach(update -> {
                             nrep.addLink(
                                     new Link("rh:newdoc",
-                                            URLUtils
+                                            RepUtils
                                                     .getReferenceLink(
                                                             requestPath,
                                                             update.getId())),
@@ -150,9 +151,9 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
 
     private void addWriteErrors(
             final List<BulkWriteError> wes,
-            final Representation rep) {
+            final Resource rep) {
         wes.stream().forEach(error -> {
-            Representation nrep = new Representation();
+            Resource nrep = new Resource();
 
             // error 11000 is duplicate key error
             // happens when the _id and a filter are specified,
@@ -183,7 +184,7 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
     }
 
     @Override
-    public Representation getRepresentation(HttpServerExchange exchange, RequestContext context, List<BsonDocument> embeddedData, long size) throws IllegalQueryParamenterException {
+    public Resource getRepresentation(HttpServerExchange exchange, RequestContext context, List<BsonDocument> embeddedData, long size) throws IllegalQueryParamenterException {
         throw new UnsupportedOperationException("Not supported."); //To change body of generated methods, choose Tools | Templates.
     }
 }

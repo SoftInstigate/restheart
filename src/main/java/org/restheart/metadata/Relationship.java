@@ -24,7 +24,7 @@ import java.util.Optional;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.hal.UnsupportedDocumentIdException;
+import org.restheart.representation.UnsupportedDocumentIdException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.utils.JsonUtils;
@@ -250,7 +250,7 @@ public class Relationship {
      * @param data
      * @return
      * @throws IllegalArgumentException
-     * @throws org.restheart.hal.UnsupportedDocumentIdException
+     * @throws org.restheart.representation.UnsupportedDocumentIdException
      */
     public String getRelationshipLink(
             RequestContext context,

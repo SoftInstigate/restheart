@@ -28,7 +28,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.bson.BsonDocument;
 import org.restheart.Bootstrapper;
-import org.restheart.hal.Representation;
+import org.restheart.representation.Resource;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -214,7 +214,7 @@ public class GetAggregationHandler extends PipedHttpHandler {
                             size)
                     .asBsonDocument());
 
-            context.setResponseContentType(Representation.HAL_JSON_MEDIA_TYPE);
+            context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
             context.setResponseStatusCode(HttpStatus.SC_OK);
 
             // call the ResponseTransformerMetadataHandler if piped in

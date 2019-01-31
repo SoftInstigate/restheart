@@ -20,7 +20,7 @@ package org.restheart.handlers.indexes;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.BsonDocument;
-import org.restheart.hal.Representation;
+import org.restheart.representation.Resource;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
@@ -77,7 +77,7 @@ public class GetIndexesHandler extends PipedHttpHandler {
                         indexes.size())
                 .asBsonDocument());
 
-        context.setResponseContentType(Representation.HAL_JSON_MEDIA_TYPE);
+        context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
         context.setResponseStatusCode(HttpStatus.SC_OK);
 
         next(exchange, context);

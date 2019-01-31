@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
- * Classes to deal with HAL documents
+ * Classes to deal with resource representations
  * 
 * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-package org.restheart.hal;
+package org.restheart.representation;

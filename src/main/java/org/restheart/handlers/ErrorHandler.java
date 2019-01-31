@@ -23,7 +23,7 @@ import com.mongodb.MongoExecutionTimeoutException;
 import com.mongodb.MongoTimeoutException;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.hal.Representation;
+import org.restheart.representation.Resource;
 import org.restheart.handlers.bulk.BulkResultRepresentationFactory;
 import org.restheart.handlers.metadata.TransformersListHandler;
 import org.restheart.handlers.transformers.RepresentationTransformer;
@@ -95,7 +95,7 @@ public class ErrorHandler implements HttpHandler {
 
             BulkResultRepresentationFactory rf = new BulkResultRepresentationFactory();
 
-            Representation rep = rf.getRepresentation(exchange, bmce);
+            Resource rep = rf.getRepresentation(exchange, bmce);
 
             RequestContext errorContext = new RequestContext(exchange, "/", "_error");
 

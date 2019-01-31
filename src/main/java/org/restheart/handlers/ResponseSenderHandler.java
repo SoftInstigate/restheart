@@ -23,7 +23,8 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.hal.Representation;
+import org.restheart.representation.Resource;
+import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.JsonUtils;
 
 /**
@@ -69,17 +70,17 @@ public class ResponseSenderHandler extends PipedHttpHandler {
             // add warnings, in hal o json format
             if (responseContent.isDocument()) {
                 if (context.getRepresentationFormat()
-                        == RequestContext.REPRESENTATION_FORMAT.PJ
+                        == REPRESENTATION_FORMAT.PJ
                         || context.getRepresentationFormat()
-                        == RequestContext.REPRESENTATION_FORMAT.PLAIN_JSON) {
-                    context.setResponseContentType(Representation.JSON_MEDIA_TYPE);
+                        == REPRESENTATION_FORMAT.PLAIN_JSON) {
+                    context.setResponseContentType(Resource.JSON_MEDIA_TYPE);
 
                     responseContent.asDocument().append("_warnings", warnings);
                     context.getWarnings().forEach(
                             w -> warnings.add(new BsonString(w)));
 
                 } else {
-                    context.setResponseContentType(Representation.HAL_JSON_MEDIA_TYPE);
+                    context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
 
                     BsonDocument _embedded;
                     if (responseContent.asDocument().get("_embedded") == null) {
@@ -102,12 +103,10 @@ public class ResponseSenderHandler extends PipedHttpHandler {
         }
 
         if (context.getRepresentationFormat()
-                == RequestContext.REPRESENTATION_FORMAT.HAL) {
-            exchange.getResponseHeaders().put(
-                    Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
+                == REPRESENTATION_FORMAT.HAL) {
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Resource.HAL_JSON_MEDIA_TYPE);
         } else {
-            exchange.getResponseHeaders().put(
-                    Headers.CONTENT_TYPE, Representation.JSON_MEDIA_TYPE);
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Resource.JSON_MEDIA_TYPE);
         }
 
         if (!exchange.isResponseStarted()) {
@@ -125,7 +124,7 @@ public class ResponseSenderHandler extends PipedHttpHandler {
     }
 
     private BsonDocument getWarningDoc(String warning) {
-        Representation nrep = new Representation("#warnings");
+        Resource nrep = new Resource("#warnings");
         nrep.addProperty("message", new BsonString(warning));
         return nrep.asBsonDocument();
     }

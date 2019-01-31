@@ -24,7 +24,7 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.junit.Before;
 import org.junit.Test;
-import org.restheart.hal.Representation;
+import org.restheart.representation.Resource;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import static org.restheart.test.integration.HttpClientAbstactIT.buildURI;
 import static org.restheart.test.integration.HttpClientAbstactIT.collectionTmpUri;
@@ -51,7 +51,7 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
         // *** PUT tmpdb
         resp = adminExecutor.execute(Request.Put(dbTmpUri)
                 .bodyString("{a:1}", halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
         check("check put mytmpdb", resp, HttpStatus.SC_CREATED);
 
         // *** PUT tmpcoll 
@@ -59,7 +59,7 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
         resp = adminExecutor.execute(Request.Put(collectionTmpUri)
                 .bodyString(METADATA, halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
         check("check put mytmpdb.tmpcoll", resp, HttpStatus.SC_CREATED);
     }
 
@@ -70,7 +70,7 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
         // *** test create invalid data
         resp = adminExecutor.execute(Request.Post(collectionTmpUri)
                 .bodyString("{a:1}", halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
 
         check("check post invalid data", resp, HttpStatus.SC_BAD_REQUEST);
 
@@ -79,14 +79,14 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
         resp = adminExecutor.execute(Request.Post(collectionTmpUri)
                 .bodyString(VALID_USER, halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
 
         check("check post valid data", resp, HttpStatus.SC_CREATED);
 
         // *** test update invalid data
         resp = adminExecutor.execute(Request.Post(collectionTmpUri)
                 .bodyString("{_id: \"a@si.com\", a:1}", halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
 
         check("check update post invalid data", resp, HttpStatus.SC_BAD_REQUEST);
     }
@@ -100,7 +100,7 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
         resp = adminExecutor.execute(Request.Post(collectionTmpUri)
                 .bodyString(VALID_USER_DN, halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
 
         check("check post valid data with dot notation", resp, HttpStatus.SC_CREATED);
     }
@@ -114,7 +114,7 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
         resp = adminExecutor.execute(Request.Post(collectionTmpUri)
                 .bodyString(VALID_USER_DN, halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
 
         check("check post valid data with dot notation", resp, HttpStatus.SC_BAD_REQUEST);
     }
@@ -128,7 +128,7 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
         resp = adminExecutor.execute(Request.Put(userURI)
                 .bodyString(VALID_USER_DN, halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
 
         check("check post valid data with dot notation", resp, HttpStatus.SC_CREATED);
     }
@@ -142,7 +142,7 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
         resp = adminExecutor.execute(Request.Post(collectionTmpUri)
                 .bodyString(VALID_USER, halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
 
         check("check post valid data", resp, HttpStatus.SC_CREATED);
 
@@ -151,7 +151,7 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
         resp = adminExecutor.execute(Request.Patch(userURI)
                 .bodyString(VALID_USER_DN, halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
 
         check("check patch valid data with dot notation", resp, HttpStatus.SC_OK);
 
@@ -160,7 +160,7 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
         resp = adminExecutor.execute(Request.Patch(userURI)
                 .bodyString(INVALID_KEY, halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
 
         check("check patch invalid key with dot notation", resp, HttpStatus.SC_BAD_REQUEST);
 
@@ -169,7 +169,7 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
         resp = adminExecutor.execute(Request.Patch(userURI)
                 .bodyString(INVALID_KEY_DN, halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
 
         check("check patch invalid key with dot notation", resp, HttpStatus.SC_BAD_REQUEST);
 
@@ -178,7 +178,7 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
         resp = adminExecutor.execute(Request.Patch(userURI)
                 .bodyString(INVALID_OBJ, halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
 
         check("check patch wrong type object data with dot notation", resp, HttpStatus.SC_BAD_REQUEST);
 
@@ -187,7 +187,7 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
         resp = adminExecutor.execute(Request.Patch(userURI)
                 .bodyString(INVALID_ARRAY, halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
 
         check("check patch invalid array data with dot notation", resp, HttpStatus.SC_BAD_REQUEST);
     }
@@ -206,7 +206,7 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
         resp = adminExecutor.execute(Request.Post(collectionTmpUri)
                 .bodyString(VALID_USER, halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
 
         check("check post valid data", resp, HttpStatus.SC_CREATED);
 
@@ -216,7 +216,7 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
         resp = adminExecutor.execute(Request.Patch(userURI)
                 .bodyString(INCOMPLETE_OBJ, halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
 
         check("check patch valid data with dot notation", resp, HttpStatus.SC_BAD_REQUEST);
     }

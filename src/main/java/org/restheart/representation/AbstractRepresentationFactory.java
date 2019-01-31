@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.hal;
+package org.restheart.representation;
 
 import io.undertow.server.HttpServerExchange;
 import static java.lang.Math.toIntExact;
@@ -42,7 +42,7 @@ public abstract class AbstractRepresentationFactory {
      * @return the resource HAL representation
      * @throws IllegalQueryParamenterException
      */
-    public abstract Representation getRepresentation(
+    public abstract Resource getRepresentation(
             HttpServerExchange exchange,
             RequestContext context,
             List<BsonDocument> embeddedData,
@@ -52,7 +52,7 @@ public abstract class AbstractRepresentationFactory {
     protected void addSizeAndTotalPagesProperties(
             final long size,
             final RequestContext context,
-            final Representation rep) {
+            final Resource rep) {
         if (size == 0) {
             rep.addProperty("_size", new BsonInt32(0));
 
@@ -80,13 +80,13 @@ public abstract class AbstractRepresentationFactory {
 
     protected void addReturnedProperty(
             final List<BsonDocument> embeddedData,
-            final Representation rep) {
+            final Resource rep) {
         long count = embeddedData == null ? 0 : embeddedData.size();
 
         rep.addProperty("_returned", new BsonInt32(toIntExact(count)));
     }
 
-    protected Representation createRepresentation(
+    protected Resource createRepresentation(
             final HttpServerExchange exchange,
             final RequestContext context,
             final String requestPath) {
@@ -97,12 +97,12 @@ public abstract class AbstractRepresentationFactory {
                 : "?" + URLUtils.decodeQueryString(
                         exchange.getQueryString());
 
-        Representation rep;
+        Resource rep;
 
         if (requestPath != null || context.isFullHalMode()) {
-            rep = new Representation(requestPath + queryString);
+            rep = new Resource(requestPath + queryString);
         } else {
-            rep = new Representation();
+            rep = new Resource();
         }
 
         return rep;
@@ -118,11 +118,11 @@ public abstract class AbstractRepresentationFactory {
             HttpServerExchange exchange,
             RequestContext context,
             long size,
-            final Representation rep)
+            final Resource rep)
             throws IllegalQueryParamenterException {
         if (context.getPagesize() > 0) {
             TreeMap<String, String> links;
-            links = HALUtils.getPaginationLinks(exchange, context, size);
+            links = RepUtils.getPaginationLinks(exchange, context, size);
             if (links != null) {
                 links.keySet().stream().forEach((k) -> {
                     rep.addLink(new Link(k, links.get(k)));

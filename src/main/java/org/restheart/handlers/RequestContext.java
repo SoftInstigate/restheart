@@ -43,6 +43,7 @@ import org.bson.json.JsonParseException;
 import org.restheart.Bootstrapper;
 import org.restheart.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.db.OperationResult;
+import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1818,14 +1819,6 @@ public class RequestContext {
         MAXKEY, // org.bson.types.MaxKey
         NULL, // null
         BOOLEAN     // boolean
-    }
-
-    public enum REPRESENTATION_FORMAT {
-        NESTED, // Root, Dbs and Collections are objectes with props and _embedded
-        FLAT, //  Dbs and Collections are arrays of string names
-        HAL, // Hypertext Application Language
-        PLAIN_JSON, // Alias for NESTED
-        PJ, // Alias for NESTED
     }
 
     public enum HAL_MODE {

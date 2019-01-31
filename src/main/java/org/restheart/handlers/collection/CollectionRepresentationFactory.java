@@ -27,10 +27,10 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.Configuration;
-import org.restheart.hal.AbstractRepresentationFactory;
-import org.restheart.hal.Link;
-import org.restheart.hal.Representation;
-import org.restheart.hal.UnsupportedDocumentIdException;
+import org.restheart.representation.AbstractRepresentationFactory;
+import org.restheart.representation.Link;
+import org.restheart.representation.Resource;
+import org.restheart.representation.UnsupportedDocumentIdException;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.TYPE;
@@ -39,6 +39,7 @@ import org.restheart.handlers.document.DocumentRepresentationFactory;
 import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.metadata.checkers.JsonSchemaChecker;
 import org.restheart.metadata.checkers.RequestChecker;
+import org.restheart.representation.RepUtils;
 import org.restheart.utils.URLUtils;
 
 /**
@@ -73,7 +74,7 @@ public class CollectionRepresentationFactory
     private static final String RHDOC = "rh:doc";
 
     public static void addSpecialProperties(
-            final Representation rep,
+            final Resource rep,
             final RequestContext.TYPE type,
             final BsonDocument data) {
         rep.addProperty(_TYPE, new BsonString(type.name()));
@@ -91,7 +92,7 @@ public class CollectionRepresentationFactory
     }
 
     private static void addSchemaLinks(
-            Representation rep,
+            Resource rep,
             RequestContext context) {
         try {
             List<RequestChecker> checkers
@@ -148,14 +149,14 @@ public class CollectionRepresentationFactory
      * @throws IllegalQueryParamenterException
      */
     @Override
-    public Representation getRepresentation(
+    public Resource getRepresentation(
             HttpServerExchange exchange,
             RequestContext context,
             List<BsonDocument> embeddedData,
             long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
-        final Representation rep;
+        final Resource rep;
 
         if (context.isFullHalMode()) {
             rep = createRepresentation(exchange, context, requestPath);
@@ -190,7 +191,7 @@ public class CollectionRepresentationFactory
     }
 
     private void addProperties(
-            final Representation rep,
+            final Resource rep,
             final RequestContext context) {
         // add the collection properties
         final BsonDocument collProps = context.getCollectionProps();
@@ -200,7 +201,7 @@ public class CollectionRepresentationFactory
 
     private void addEmbeddedData(
             List<BsonDocument> embeddedData,
-            final Representation rep,
+            final Resource rep,
             final String requestPath,
             final HttpServerExchange exchange,
             final RequestContext context)
@@ -223,7 +224,7 @@ public class CollectionRepresentationFactory
 
     private void addAggregationsLinks(
             final RequestContext context,
-            final Representation rep,
+            final Resource rep,
             final String requestPath) {
         BsonValue _aggregations = context
                 .getCollectionProps()
@@ -253,7 +254,7 @@ public class CollectionRepresentationFactory
 
     private void addLinkTemplates(
             final RequestContext context,
-            final Representation rep,
+            final Resource rep,
             final String requestPath) {
         // link templates and curies
         if (context.isParentAccessible()) {
@@ -302,7 +303,7 @@ public class CollectionRepresentationFactory
             String requestPath,
             HttpServerExchange exchange,
             RequestContext context,
-            Representation rep)
+            Resource rep)
             throws IllegalQueryParamenterException {
         for (BsonDocument d : embeddedData) {
             BsonValue _id = d.get(_ID);
@@ -314,7 +315,7 @@ public class CollectionRepresentationFactory
                         + requestPath + "/"
                         + _id.toString());
             } else {
-                Representation nrep;
+                Resource nrep;
 
                 if (_id == null) {
                     nrep = new DocumentRepresentationFactory()
@@ -326,7 +327,7 @@ public class CollectionRepresentationFactory
                 } else {
                     nrep = new DocumentRepresentationFactory()
                             .getRepresentation(
-                                    URLUtils.getReferenceLink(requestPath, _id),
+                                    RepUtils.getReferenceLink(requestPath, _id),
                                     exchange,
                                     context,
                                     d);

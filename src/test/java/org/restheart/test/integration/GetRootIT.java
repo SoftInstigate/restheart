@@ -30,7 +30,7 @@ import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
 import static org.junit.Assert.*;
 import org.junit.Test;
-import org.restheart.hal.Representation;
+import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -64,7 +64,7 @@ public class GetRootIT extends HttpClientAbstactIT {
 
         assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
         assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", Representation.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
+        assertEquals("check content type", Resource.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
 
         String content = EntityUtils.toString(entity);
 

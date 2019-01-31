@@ -24,9 +24,9 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.Configuration;
 import static org.restheart.Configuration.RESTHEART_VERSION;
-import org.restheart.hal.AbstractRepresentationFactory;
-import org.restheart.hal.Link;
-import org.restheart.hal.Representation;
+import org.restheart.representation.AbstractRepresentationFactory;
+import org.restheart.representation.Link;
+import org.restheart.representation.Resource;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.database.DBRepresentationFactory;
@@ -46,14 +46,14 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     @Override
-    public Representation getRepresentation(
+    public Resource getRepresentation(
             HttpServerExchange exchange,
             RequestContext context,
             List<BsonDocument> embeddedData,
             long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
-        final Representation rep;
+        final Resource rep;
 
         if (context.isFullHalMode()) {
             rep = createRepresentation(exchange, context, requestPath);
@@ -82,7 +82,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     private void addSpecialProperties(
-            final Representation rep,
+            final Resource rep,
             RequestContext context) {
         if (RESTHEART_VERSION == null) {
             rep.addProperty("_restheart_version",
@@ -98,7 +98,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
     private void addEmbeddedData(
             RequestContext context,
             List<BsonDocument> embeddedData,
-            final Representation rep,
+            final Resource rep,
             final String requestPath) {
         if (embeddedData != null) {
             addReturnedProperty(embeddedData, rep);
@@ -114,7 +114,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     private void addLinkTemplates(
-            final Representation rep,
+            final Resource rep,
             final String requestPath) {
         rep.addLink(new Link("rh:root", requestPath));
         rep.addLink(new Link("rh:db", requestPath + "{dbname}", true));
@@ -128,20 +128,20 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
             List<BsonDocument> embeddedData,
             boolean trailingSlash,
             String requestPath,
-            Representation rep) {
+            Resource rep) {
         embeddedData.stream().filter(d -> d != null).forEach((d) -> {
             BsonValue _id = d.get("_id");
 
             if (_id != null
                     && _id.isString()) {
-                final Representation nrep;
+                final Resource nrep;
 
                 if (context.isFullHalMode()) {
                     if (trailingSlash) {
-                        nrep = new Representation(requestPath
+                        nrep = new Resource(requestPath
                                 + _id.asString().getValue());
                     } else {
-                        nrep = new Representation(requestPath
+                        nrep = new Resource(requestPath
                                 + "/"
                                 + _id.asString().getValue());
                     }
@@ -151,7 +151,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
                             RequestContext.TYPE.DB,
                             d);
                 } else {
-                    nrep = new Representation();
+                    nrep = new Resource();
                 }
 
                 nrep.addProperties(d);

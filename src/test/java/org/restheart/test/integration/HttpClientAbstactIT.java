@@ -41,7 +41,7 @@ import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.db.DocumentDAO;
 import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.hal.Representation;
+import org.restheart.representation.Resource;
 
 /**
  *
@@ -126,7 +126,7 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
             + "{ \"rel\": \"mtm\", \"type\": \"MANY_TO_MANY\", \"role\": \"INVERSE\", \"target-coll\": \"refcoll1\", \"ref-field\": \"mtm\" }"
             + "]}";
 
-    protected static final ContentType halCT = ContentType.create(Representation.HAL_JSON_MEDIA_TYPE);
+    protected static final ContentType halCT = ContentType.create(Resource.HAL_JSON_MEDIA_TYPE);
 
     protected static String docsCollectionPropsStrings = "{}";
 

@@ -38,7 +38,7 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.hal.Representation;
+import org.restheart.representation.Resource;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.metadata.NamedSingletonsFactory;
@@ -127,8 +127,7 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
             exchange.setStatusCode(HttpStatus.SC_OK);
             exchange.endExchange();
         } else {
-            exchange.getResponseHeaders().put(
-                    Headers.CONTENT_TYPE, Representation.JSON_MEDIA_TYPE);
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Resource.JSON_MEDIA_TYPE);
             if (doesApply(context)) {
                 if (checkContentType(exchange)) {
                     try {
