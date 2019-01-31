@@ -35,6 +35,7 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@Ignore
 public class SecurityIT extends HttpClientAbstactIT {
     public static String JWT_AUTH_HEADER_PREFIX = "Bearer ";
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
