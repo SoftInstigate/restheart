@@ -386,15 +386,21 @@
                 <executions>
                     <execution>
                         <id>start-server</id>
+                        <!--
+                        NOTE: in order to execute the integration test suite you need to be on
+                        Linux, OSX or Solaris and have MongoDB started on default port without authentication.
+                        Simpler alternative:
+                            1) Start Docker
+                            2) Execute the bash script ./bin/integration-tests.sh
+                        -->
                         <phase>pre-integration-test</phase>
                         <configuration>
                             <skip>${skipITs}</skip>
                             <target>
-                                <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
-                                <echo>1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
-                                <echo>2 - mongodb already started on default port without authentication enabled (no --auth option)</echo>
+                                <echo>Running integration tests against a forked RESTHeart's instance...</echo>
                                 <exec dir="${basedir}" executable="${basedir}/bin/start.sh">
-                                    <arg value="${basedir}/etc/restheart-integrationtest.yml"/>
+                                    <arg value="${basedir}/etc/test/restheart-integrationtest.yml"/>
+                                    <arg value="--fork"/>
                                 </exec>
                             </target>
                         </configuration>
@@ -408,8 +414,9 @@
                         <configuration>
                             <skip>${skipITs}</skip>
                             <target>
+                                <echo>Stopping forked RESTHeart's instance...</echo>
                                 <exec dir="${basedir}" executable="${basedir}/bin/stop.sh">
-                                    <arg value="${basedir}/etc/restheart-integrationtest.yml"/>
+                                    <arg value="${basedir}/etc/test/restheart-integrationtest.yml"/>
                                 </exec>
                             </target>
                         </configuration>
@@ -477,7 +484,7 @@
                             <dependency>
                                 <groupId>com.puppycrawl.tools</groupId>
                                 <artifactId>checkstyle</artifactId>
-                                <version>8.14</version>
+                                <version>8.16</version>
                             </dependency>
                         </dependencies>
                         <configuration>

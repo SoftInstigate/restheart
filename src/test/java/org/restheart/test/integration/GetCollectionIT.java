@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -34,6 +34,7 @@ import org.bson.Document;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.restheart.representation.Resource;
+import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -416,29 +417,30 @@ public class GetCollectionIT extends HttpClientAbstactIT {
         assertNotNull("check not null _embedded.rh:doc[1].name", rhdoc1.get("name"));
         assertEquals("check _embedded.rh:doc[1].name value to be Nick", "Nick", rhdoc1.get("name").asString());
     }
-    
-    
+
+
     @Test
     public void testBinaryProperty() throws Exception {
         byte[] data = "DqnEq7hiWZ1jHoYf/YJpNHevlGrRmT5V9NGN7daoPYetiTvgeP4C9n4j8Gu5mduhEYzWDFK2a3gO+CvzrDgM3BBFG07fF6qabHXDsGTo92m93QohjGtqn8nkNP6KVnWIcbgBbw==".getBytes();
-        
-        MongoCollection<Document> coll = mongoClient.getDatabase(dbName).getCollection(collection1Name);
-        
+
+        MongoCollection<Document> coll = MongoDBClientSingleton.getInstance()
+                .getClient().getDatabase(dbName).getCollection(collection1Name);
+
         Document doc = new Document();
-        
+
         doc.append("_id", "bin");
         doc.append("data", data);
-        
+
         coll.insertOne(doc);
-        
+
         URI documentUri = buildURI("/" + dbName + "/" + collection1Name + "/bin");
-        
+
         String url = documentUri.toString();
-        
+
         com.mashape.unirest.http.HttpResponse<String> resp = Unirest.get(url)
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
-        
+
         assertEquals("get document with binary property", 200, resp.getStatus());
     }
 }

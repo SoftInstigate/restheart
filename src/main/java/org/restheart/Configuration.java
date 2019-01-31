@@ -1210,8 +1210,7 @@ public class Configuration {
             return (String) conf.get(key);
         } else {
             if (!silent) {
-                LOGGER.error("wrong value for parameter {}: {}.}", key, conf.get(key));
-                System.exit(3);
+                throw new IllegalArgumentException(String.format("Wrong value for parameter %s: %s.}", key, conf.get(key)));
             }
             return defaultValue;
         }

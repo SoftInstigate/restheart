@@ -3,7 +3,6 @@ package org.restheart.handlers.files;
 import com.mongodb.MongoException;
 import com.mongodb.MongoWriteException;
 import io.undertow.server.HttpServerExchange;
-import java.io.IOException;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.db.GridFsDAO;
@@ -100,9 +99,8 @@ public class PutFileHandler extends PipedHttpHandler {
                 next(exchange, context);
                 return;
             }
-        } catch (IOException | RuntimeException t) {
-            if (t instanceof MongoWriteException
-                    && ((MongoException) t).getCode() == 11000) {
+        } catch (MongoWriteException t) {
+            if (((MongoException) t).getCode() == 11000) {
 
                 // update not supported
                 String errMsg = "file resource update is not yet implemented";

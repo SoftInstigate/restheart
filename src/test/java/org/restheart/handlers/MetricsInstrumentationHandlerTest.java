@@ -15,7 +15,6 @@ public class MetricsInstrumentationHandlerTest {
 
     @Before
     public void setUp() {
-        MongoDBClientSingleton.init(new Configuration());
     }
 
     @Test

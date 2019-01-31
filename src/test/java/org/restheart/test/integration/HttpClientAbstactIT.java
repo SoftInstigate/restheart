@@ -1,22 +1,23 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.restheart.test.integration;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -36,12 +37,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.restheart.Configuration;
 import org.restheart.db.Database;
 import org.restheart.db.DbsDAO;
 import org.restheart.db.DocumentDAO;
-import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.representation.Resource;
+
 
 /**
  *
@@ -171,20 +171,15 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
     private static final String REMAPPEDREFCOLL1 = "/remappedrefcoll1";
 
     @BeforeClass
-    public static void setUpClass() throws Exception {
-        conf = new Configuration(CONF_FILE_PATH);
-        MongoDBClientSingleton.init(conf);
-        mongoClient = MongoDBClientSingleton.getInstance().getClient();
-
-        BASE_URL = "http://" + conf.getHttpHost() + ":" + conf.getHttpPort();
+    public static void setUpClass() throws URISyntaxException {
 
         createURIs();
 
-        final String host = MONGO_HOST;
-        final int port = conf.getHttpPort();
-        adminExecutor = Executor.newInstance().authPreemptive(new HttpHost(host, port, HTTP)).auth(new HttpHost(host), "admin", "changeit");
-        user1Executor = Executor.newInstance().authPreemptive(new HttpHost(host, port, HTTP)).auth(new HttpHost(host), "user1", "changeit");
-        user2Executor = Executor.newInstance().authPreemptive(new HttpHost(host, port, HTTP)).auth(new HttpHost(host), "user2", "changeit");
+        final HttpHost host = new HttpHost(HTTP_HOST.getHostName());
+
+        adminExecutor = Executor.newInstance().authPreemptive(HTTP_HOST).auth(host, "admin", "changeit");
+        user1Executor = Executor.newInstance().authPreemptive(HTTP_HOST).auth(host, "user1", "changeit");
+        user2Executor = Executor.newInstance().authPreemptive(HTTP_HOST).auth(host, "user2", "changeit");
         unauthExecutor = Executor.newInstance();
     }
 
@@ -378,8 +373,8 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
     private static URIBuilder createURIBuilder(String path) {
         return new URIBuilder()
                 .setScheme(HTTP)
-                .setHost(MONGO_HOST)
-                .setPort(conf.getHttpPort())
+                .setHost(HTTP_HOST.getHostName())
+                .setPort(HTTP_HOST.getPort())
                 .setPath(path);
     }
 
@@ -399,15 +394,12 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
         createTestData();
     }
 
-    protected HttpResponse check(String message, Response resp, int expectedCode) throws Exception {
+    protected HttpResponse check(String message, Response resp, int expectedCode) throws IOException {
         HttpResponse httpResp = resp.returnResponse();
         assertNotNull(httpResp);
-
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
-
         assertEquals(message, expectedCode, statusLine.getStatusCode());
-
         return httpResp;
     }
 

@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -391,11 +392,10 @@ public class MetricsHandler extends PipedHttpHandler {
          * sorts large q-values first, smaller ones later
          */
         static class AcceptHeaderEntryComparator
-                implements Comparator<AcceptHeaderEntry> {
-
+                implements Comparator<AcceptHeaderEntry>, Serializable {
             @Override
             public int compare(AcceptHeaderEntry one, AcceptHeaderEntry two) {
-                return -Double.compare(one.qValue, two.qValue);
+                return Double.compare(two.qValue, one.qValue);
             }
         }
 
