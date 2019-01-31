@@ -33,6 +33,7 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
 import static org.junit.Assert.*;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.restheart.representation.Resource;
 import static org.restheart.test.integration.HttpClientAbstactIT.HTTP;
@@ -42,6 +43,7 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@Ignore
 public class SecurityAuthTokenIT extends HttpClientAbstactIT {
 
     static final HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
