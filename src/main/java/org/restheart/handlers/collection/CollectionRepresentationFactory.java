@@ -341,7 +341,7 @@ public class CollectionRepresentationFactory
                                 d);
                     }
 
-                    rep.addRepresentation(RHDOC, nrep);
+                    rep.addChild(RHDOC, nrep);
                 } else {
                     switch (context.getType()) {
                         case FILES_BUCKET:
@@ -351,7 +351,7 @@ public class CollectionRepresentationFactory
                                         TYPE.FILE,
                                         d);
                             }
-                            rep.addRepresentation(RHFILE, nrep);
+                            rep.addChild(RHFILE, nrep);
                             break;
                         case SCHEMA_STORE:
                             if (context.isFullHalMode()) {
@@ -360,7 +360,7 @@ public class CollectionRepresentationFactory
                                         TYPE.SCHEMA,
                                         d);
                             }
-                            rep.addRepresentation(RHSCHEMA, nrep);
+                            rep.addChild(RHSCHEMA, nrep);
                             break;
                         default:
                             if (context.isFullHalMode()) {
@@ -369,7 +369,7 @@ public class CollectionRepresentationFactory
                                         TYPE.DOCUMENT,
                                         d);
                             }
-                            rep.addRepresentation(RHDOC, nrep);
+                            rep.addChild(RHDOC, nrep);
                             break;
                     }
                 }

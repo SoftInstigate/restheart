@@ -68,8 +68,7 @@ public class AggregationResultRepresentationFactory
 
         addEmbeddedData(embeddedData, rep);
 
-        if (context.getHalMode() == HAL_MODE.FULL
-                || context.getHalMode() == HAL_MODE.F) {
+        if (context.isFullHalMode()) {
 
             addPaginationLinks(exchange, context, size, rep);
 
@@ -113,7 +112,7 @@ public class AggregationResultRepresentationFactory
             nrep.addProperties(d);
             return nrep;
         }).forEach((nrep) -> {
-            rep.addRepresentation("rh:result", nrep);
+            rep.addChild("rh:result", nrep);
         });
     }
 }

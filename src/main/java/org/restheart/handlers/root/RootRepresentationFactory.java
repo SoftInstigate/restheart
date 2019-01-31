@@ -156,7 +156,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
 
                 nrep.addProperties(d);
 
-                rep.addRepresentation("rh:db", nrep);
+                rep.addChild("rh:db", nrep);
             } else {
                 // this shoudn't be possible
                 LOGGER.error("db missing string _id field", d);

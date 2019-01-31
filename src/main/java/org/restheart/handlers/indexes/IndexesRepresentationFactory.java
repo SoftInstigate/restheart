@@ -126,7 +126,7 @@ public class IndexesRepresentationFactory {
             List<BsonDocument> embeddedData,
             String requestPath,
             Resource rep,
-            boolean isHalFull) {
+            boolean isHal) {
         embeddedData.stream().forEach((d) -> {
             BsonValue _id = d.get("_id");
 
@@ -135,14 +135,14 @@ public class IndexesRepresentationFactory {
                     || _id.isObjectId())) {
                 Resource nrep = new Resource();
 
-                if (isHalFull) {
+                if (isHal) {
                     nrep.addProperty("_type",
                             new BsonString(RequestContext.TYPE.INDEX.name()));
                 }
 
                 nrep.addProperties(d);
 
-                rep.addRepresentation("rh:index", nrep);
+                rep.addChild("rh:index", nrep);
             } else {
                 rep.addWarning("index with _id "
                         + _id

@@ -33,9 +33,17 @@ instance-name: default
 
 #instance-base-url: http://localhost
 
-#### default representation format (PLAIN_JSON or HAL)
+#### Default representation format https://restheart.org/learn/representation-format/
 
-default-representation-format: PLAIN_JSON
+## STANDARD  root and dbs as an array of children's ids
+##           collection as arrays of document objects and documents as objects
+## HAL       Hypertext Application Language
+## SHAL      Simplified HAL with children as direct elements of _embedded array
+
+## PLAIN_JSON or HAL are aliases for SHAL
+## S is an alias for STANDARD
+
+default-representation-format: STANDARD
 
 #### use Ansi console for logging. Default to 'true' if parameter missing, for backward compatibility
 

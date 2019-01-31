@@ -134,7 +134,11 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 try {
                     rep = REPRESENTATION_FORMAT.valueOf(_rep.trim().toUpperCase());
                 } catch (IllegalArgumentException iae) {
-                    rcontext.addWarning("illegal rep parameter " + _rep + " (must be FLAT, NESTED or HAL; PLAIN_JSON, PJ are aliases for NESTED)");
+                    rcontext.addWarning("illegal rep parameter " 
+                            + _rep 
+                            + " (must be STANDARD, NESTED or HAL;"
+                                    + " S is an alias for STANDARD;"
+                                    + " PLAIN_JSON, PJ are aliases for NESTED)");
                 }
             }
         }

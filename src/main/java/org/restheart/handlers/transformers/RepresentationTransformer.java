@@ -30,6 +30,9 @@ import org.restheart.utils.HttpStatus;
 
 /**
  *
+ * internally contentToTransform is always in HAL format
+ * this transforms it to the target representation format
+ * 
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class RepresentationTransformer implements Transformer {
@@ -46,23 +49,22 @@ public class RepresentationTransformer implements Transformer {
             return;
         }
 
-        REPRESENTATION_FORMAT rf = context.getRepresentationFormat();
-
         // can be null if an error occurs before RequestContextInjectorHandler.handle()
-        if (rf == null) {
-            rf = Bootstrapper.getConfiguration().getDefaultRepresentationFormat();
-        }
+        REPRESENTATION_FORMAT rf = context.getRepresentationFormat() != null ?
+                context.getRepresentationFormat()
+                : Bootstrapper.getConfiguration().getDefaultRepresentationFormat();
+                        
+        final boolean isStandardRepresentation = 
+                rf == REPRESENTATION_FORMAT.STANDARD ||
+                rf == REPRESENTATION_FORMAT.S;
 
         if (contentToTransform == null
-                || (rf != REPRESENTATION_FORMAT.NESTED
-                && rf != REPRESENTATION_FORMAT.PJ
-                && rf != REPRESENTATION_FORMAT.PLAIN_JSON
-                && rf != REPRESENTATION_FORMAT.FLAT)) {
+                || (!isStandardRepresentation &&
+                rf != REPRESENTATION_FORMAT.SHAL &&
+                rf != REPRESENTATION_FORMAT.PLAIN_JSON &&
+                rf != REPRESENTATION_FORMAT.PJ)) {
             return;
         }
-
-        final boolean isFlat = context.getRepresentationFormat()
-                .equals(REPRESENTATION_FORMAT.FLAT);
 
         context.setResponseContentType(Resource.JSON_MEDIA_TYPE);
 
@@ -85,7 +87,7 @@ public class RepresentationTransformer implements Transformer {
             transformRead(context, contentToTransform, responseContent);
 
             // add resource props if np is not specified
-            if (!context.isNoProps() && !isFlat) {
+            if (!context.isNoProps() && !isStandardRepresentation) {
                 contentToTransform.asDocument().keySet().stream()
                         .filter(key -> !"_embedded".equals(key))
                         .forEach(key
@@ -98,7 +100,7 @@ public class RepresentationTransformer implements Transformer {
                 // np specified, just return _embedded
                 if (responseContent.containsKey("_embedded")
                         && responseContent.get("_embedded").isArray()) {
-                    if (isFlat && (
+                    if (isStandardRepresentation && (
                             context.isRoot() ||
                             context.isDb())) {
                         BsonArray aresp = new BsonArray();
@@ -118,9 +120,6 @@ public class RepresentationTransformer implements Transformer {
                 } else {
                     context.setResponseContent(null);
                 }
-
-                BsonArray arrayResponse = responseContent.get("_embedded").asArray();
-
             }
         } else {
             transformWrite(contentToTransform, responseContent);

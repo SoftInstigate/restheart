@@ -106,7 +106,7 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
             nrep.addProperty("matched",
                     new BsonInt32(wr.getMatchedCount()));
 
-            rep.addRepresentation("rh:result", nrep);
+            rep.addChild("rh:result", nrep);
         }
     }
 
@@ -145,7 +145,7 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
             nrep.addProperty("matched",
                     new BsonInt32(wr.getMatchedCount()));
 
-            rep.addRepresentation("rh:result", nrep);
+            rep.addChild("rh:result", nrep);
         }
     }
 
@@ -179,7 +179,7 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
                                         error.getCode())));
             }
 
-            rep.addRepresentation("rh:error", nrep);
+            rep.addChild("rh:error", nrep);
         });
     }
 

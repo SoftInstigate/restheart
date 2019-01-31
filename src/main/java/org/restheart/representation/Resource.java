@@ -30,11 +30,16 @@ import org.restheart.handlers.RequestContext;
  */
 public class Resource {
     public enum REPRESENTATION_FORMAT {
-        NESTED, // Root, Dbs and Collections are objectes with props and _embedded
-        FLAT, //  Dbs and Collections are arrays of string names
         HAL, // Hypertext Application Language
-        PLAIN_JSON, // Alias for NESTED
-        PJ, // Alias for NESTED
+        SHAL, // Simplified HAL with children as direct elements of _embedded array
+        
+        // root and dbs represeted as an array of children's ids,
+        // collection as arrays of document objects
+        // documents as objects
+        STANDARD, 
+
+        S, // Alias for STANDARD
+        PLAIN_JSON, PJ, // Aliases for SHAL
     }
 
     /**
@@ -169,7 +174,7 @@ public class Resource {
      * @param rel
      * @param rep
      */
-    public void addRepresentation(String rel, Resource rep) {
+    public void addChild(String rel, Resource rep) {
         if (!embedded.containsKey(rel)) {
             embedded.append(rel, new BsonArray());
         }
@@ -182,7 +187,7 @@ public class Resource {
     public void addWarning(String warning) {
         Resource nrep = new Resource("#warnings");
         nrep.addProperty("message", new BsonString(warning));
-        addRepresentation("rh:warnings", nrep);
+        addChild("rh:warnings", nrep);
     }
 
     @Override
@@ -211,5 +216,31 @@ public class Resource {
             return false;
         }
         return Objects.equals(this.links, other.links);
+    }
+
+    /**
+     * @return true if representationFormat == HAL
+     */
+    public static boolean isHALRep(RequestContext context) {
+        return context.getRepresentationFormat() == REPRESENTATION_FORMAT.HAL;
+    }
+
+    /**
+     * @return true if representationFormat == SHAL or PLAIN_JSON or PJ
+     */
+    public static boolean isSHALRep(RequestContext context) {
+        return context.getRepresentationFormat() == REPRESENTATION_FORMAT.SHAL
+                || context.getRepresentationFormat()
+                == REPRESENTATION_FORMAT.PLAIN_JSON
+                || context.getRepresentationFormat()
+                == REPRESENTATION_FORMAT.PJ;
+    }
+
+    /**
+     * @return true if representationFormat == STSNDARD or S
+     */
+    public static boolean isStandardRep(RequestContext context) {
+        return context.getRepresentationFormat() == REPRESENTATION_FORMAT.STANDARD
+                || context.getRepresentationFormat() == REPRESENTATION_FORMAT.S;
     }
 }

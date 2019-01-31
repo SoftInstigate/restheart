@@ -69,10 +69,8 @@ public class ResponseSenderHandler extends PipedHttpHandler {
 
             // add warnings, in hal o json format
             if (responseContent.isDocument()) {
-                if (context.getRepresentationFormat()
-                        == REPRESENTATION_FORMAT.PJ
-                        || context.getRepresentationFormat()
-                        == REPRESENTATION_FORMAT.PLAIN_JSON) {
+                if (Resource.isStandardRep(context)
+                        || Resource.isSHALRep(context)) {
                     context.setResponseContentType(Resource.JSON_MEDIA_TYPE);
 
                     responseContent.asDocument().append("_warnings", warnings);
@@ -85,7 +83,8 @@ public class ResponseSenderHandler extends PipedHttpHandler {
                     BsonDocument _embedded;
                     if (responseContent.asDocument().get("_embedded") == null) {
                         _embedded = new BsonDocument();
-                        responseContent.asDocument().append("_embedded", _embedded);
+                        responseContent.asDocument().append("_embedded",
+                                _embedded);
                     } else {
                         _embedded = responseContent
                                 .asDocument()
@@ -104,9 +103,11 @@ public class ResponseSenderHandler extends PipedHttpHandler {
 
         if (context.getRepresentationFormat()
                 == REPRESENTATION_FORMAT.HAL) {
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Resource.HAL_JSON_MEDIA_TYPE);
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
+                    Resource.HAL_JSON_MEDIA_TYPE);
         } else {
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Resource.JSON_MEDIA_TYPE);
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
+                    Resource.JSON_MEDIA_TYPE);
         }
 
         if (!exchange.isResponseStarted()) {
