@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -71,9 +71,9 @@ public class BeforeWriteCheckHandler extends CheckHandler {
                     context,
                     HttpStatus.SC_BAD_REQUEST,
                     "request check failed");
-        } 
-        
-        if (doesGlobalCheckersApply() 
+        }
+
+        if (doesGlobalCheckersApply()
                 && !applyGlobalCheckers(exchange, context)) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
@@ -81,7 +81,7 @@ public class BeforeWriteCheckHandler extends CheckHandler {
                     HttpStatus.SC_BAD_REQUEST,
                     "request check failed");
         }
-        
+
         next(exchange, context);
     }
 
@@ -136,14 +136,7 @@ public class BeforeWriteCheckHandler extends CheckHandler {
         // request and it is configured to fail in this case,
         // then the request fails.
         if (!checker.doesSupportRequests(context) && !skipNotSupported) {
-            LOGGER.debug("checker "
-                    + checker.getClass().getSimpleName()
-                    + " does not support this request. "
-                    + "check will "
-                    + (skipNotSupported
-                            ? "not fail"
-                            : "fail"));
-
+            LOGGER.debug("checker '{}' does not support this request. Check will fail", checker.getClass().getSimpleName());
             String noteMsg = "";
 
             if (CheckersUtils.doesRequestUsesDotNotation(
