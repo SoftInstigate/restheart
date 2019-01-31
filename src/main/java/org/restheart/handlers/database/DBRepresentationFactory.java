@@ -196,21 +196,21 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
                                 nrep, TYPE.FILES_BUCKET, d);
                     }
 
-                    rep.addRepresentation("rh:bucket", nrep);
+                    rep.addChild("rh:bucket", nrep);
                 } else if (RequestContext._SCHEMAS.equals(id)) {
                     if (context.isFullHalMode()) {
                         CollectionRepresentationFactory.addSpecialProperties(
                                 nrep, TYPE.SCHEMA_STORE, d);
                     }
 
-                    rep.addRepresentation("rh:schema-store", nrep);
+                    rep.addChild("rh:schema-store", nrep);
                 } else {
                     if (context.isFullHalMode()) {
                         CollectionRepresentationFactory.addSpecialProperties(
                                 nrep, TYPE.COLLECTION, d);
                     }
 
-                    rep.addRepresentation("rh:coll", nrep);
+                    rep.addChild("rh:coll", nrep);
                 }
             } else {
                 // this shoudn't be possible

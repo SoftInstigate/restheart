@@ -43,6 +43,7 @@ import org.bson.json.JsonParseException;
 import org.restheart.Bootstrapper;
 import org.restheart.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.db.OperationResult;
+import org.restheart.representation.Resource;
 import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;

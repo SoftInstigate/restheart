@@ -33,7 +33,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.ETAG_CHECK_POLICY;
 import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.URLUtils;
@@ -109,7 +108,7 @@ public class Configuration {
      * default represetation format
      */
     public static final REPRESENTATION_FORMAT DEFAULT_REPRESENTATION_FORMAT
-            = REPRESENTATION_FORMAT.PLAIN_JSON;
+            = REPRESENTATION_FORMAT.SHAL;
 
     /**
      * default am implementation class.
@@ -600,7 +599,7 @@ public class Configuration {
     private final String ajpHost;
     private final String instanceName;
     private final String instanceBaseURL;
-    private final REPRESENTATION_FORMAT defaultRepresentationFromat;
+    private final REPRESENTATION_FORMAT defaultRepresentationFormat;
     private final boolean useEmbeddedKeystore;
     private final String keystoreFile;
     private final String keystorePassword;
@@ -678,7 +677,7 @@ public class Configuration {
 
         instanceBaseURL = null;
 
-        defaultRepresentationFromat = DEFAULT_REPRESENTATION_FORMAT;
+        defaultRepresentationFormat = DEFAULT_REPRESENTATION_FORMAT;
 
         useEmbeddedKeystore = true;
         keystoreFile = null;
@@ -818,7 +817,7 @@ public class Configuration {
         String _representationFormat = getAsStringOrDefault(conf,
                 REPRESENTATION_FORMAT_KEY, DEFAULT_REPRESENTATION_FORMAT.name());
 
-        REPRESENTATION_FORMAT rf = REPRESENTATION_FORMAT.PLAIN_JSON;
+        REPRESENTATION_FORMAT rf = REPRESENTATION_FORMAT.SHAL;
 
         try {
             rf = REPRESENTATION_FORMAT.valueOf(_representationFormat);
@@ -827,9 +826,9 @@ public class Configuration {
                     + "setting it to {}",
                     REPRESENTATION_FORMAT_KEY,
                     REPRESENTATION_FORMAT.values(),
-                    REPRESENTATION_FORMAT.PLAIN_JSON);
+                    REPRESENTATION_FORMAT.SHAL);
         } finally {
-            defaultRepresentationFromat = rf;
+            defaultRepresentationFormat = rf;
         }
 
         useEmbeddedKeystore = getAsBooleanOrDefault(conf, USE_EMBEDDED_KEYSTORE_KEY, true);
@@ -1008,7 +1007,7 @@ public class Configuration {
                 + ", ajpHost=" + ajpHost
                 + ", instanceName=" + instanceName
                 + ", instanceBaseURL=" + instanceBaseURL
-                + ", defaultRepresentationFromat=" + defaultRepresentationFromat
+                + ", defaultRepresentationFromat=" + defaultRepresentationFormat
                 + ", useEmbeddedKeystore=" + useEmbeddedKeystore
                 + ", keystoreFile=" + keystoreFile
                 + ", keystorePassword=" + keystorePassword
@@ -1743,7 +1742,7 @@ public class Configuration {
      * @return the defaultRepresentationFromat
      */
     public REPRESENTATION_FORMAT getDefaultRepresentationFormat() {
-        return defaultRepresentationFromat;
+        return defaultRepresentationFormat;
     }
 
     /**

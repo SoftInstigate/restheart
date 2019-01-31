@@ -149,7 +149,7 @@ public class ResponseHelper {
                 }
             }
 
-            rep.addRepresentation("rh:exception", nrep);
+            rep.addChild("rh:exception", nrep);
         }
 
         // add warnings
