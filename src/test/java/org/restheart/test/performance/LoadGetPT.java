@@ -54,7 +54,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import org.restheart.db.CursorPool;
 import org.restheart.db.Database;
-import org.restheart.db.DbsDAO;
+import org.restheart.db.DatabaseImpl;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -98,13 +98,15 @@ public class LoadGetPT extends AbstractPT {
      *
      */
     public void dbdirect() {
-        final Database dbsDAO = new DbsDAO();
+        final Database dbsDAO = new DatabaseImpl();
         MongoCollection dbcoll = dbsDAO.getCollection(db, coll);
 
         ArrayList<BsonDocument> data;
 
         try {
-            data = new DbsDAO().getCollectionData(dbcoll,
+            data = new DatabaseImpl().getCollectionData(
+                    null, // no session
+                    dbcoll,
                     page,
                     pagesize,
                     null,                    
@@ -127,7 +129,7 @@ public class LoadGetPT extends AbstractPT {
      *
      */
     public void dbdirectdoc() {
-        final Database dbDao = new DbsDAO();
+        final Database dbDao = new DatabaseImpl();
         MongoCollection<BsonDocument> dbcoll = dbDao.getCollection(db, coll);
 
         ObjectId oid;

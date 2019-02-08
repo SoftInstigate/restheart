@@ -38,13 +38,14 @@ import org.restheart.handlers.RequestContext;
 import static org.restheart.handlers.RequestContext.META_COLLNAME;
 import static org.restheart.handlers.RequestContext.DB_META_DOCID;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
+import org.restheart.db.sessions.XClientSession;
 import org.restheart.utils.HttpStatus;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class DbsDAO implements Database {
+public class DatabaseImpl implements Database {
 
     public static final Bson PROPS_QUERY = eq("_id", DB_META_DOCID);
 
@@ -64,7 +65,7 @@ public class DbsDAO implements Database {
 
     private final MongoClient client;
 
-    public DbsDAO() {
+    public DatabaseImpl() {
         client = MongoDBClientSingleton.getInstance().getClient();
         this.collectionDAO = new CollectionDAO(client);
         this.indexDAO = new IndexDAO(client);
@@ -465,13 +466,15 @@ public class DbsDAO implements Database {
 
     @Override
     public long getCollectionSize(
+            final XClientSession session,
             final MongoCollection<BsonDocument> coll,
             BsonDocument filters) {
-        return collectionDAO.getCollectionSize(coll, filters);
+        return collectionDAO.getCollectionSize(session, coll, filters);
     }
 
     @Override
     public ArrayList<BsonDocument> getCollectionData(
+            final XClientSession session,
             MongoCollection<BsonDocument> coll,
             int page,
             int pagesize,
@@ -481,6 +484,7 @@ public class DbsDAO implements Database {
             BsonDocument keys,
             CursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
         return collectionDAO.getCollectionData(
+                session,
                 coll,
                 page,
                 pagesize,
@@ -514,12 +518,14 @@ public class DbsDAO implements Database {
 
     @Override
     public FindIterable<BsonDocument> getFindIterable(
+            XClientSession session,
             MongoCollection<BsonDocument> collection,
             BsonDocument sortBy,
             BsonDocument filters,
             BsonDocument hint,
             BsonDocument keys) {
         return collectionDAO.getFindIterable(
+                session,
                 collection,
                 sortBy,
                 filters,

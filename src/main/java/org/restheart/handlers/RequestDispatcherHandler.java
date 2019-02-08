@@ -65,6 +65,10 @@ import org.restheart.handlers.schema.JsonSchemaTransformer;
 import org.restheart.handlers.transformers.MetaRequestTransformer;
 import org.restheart.handlers.transformers.SizeRequestTransformer;
 import org.restheart.handlers.transformers.RepresentationTransformer;
+import org.restheart.handlers.txns.DeleteTxnHandler;
+import org.restheart.handlers.txns.PatchTxnHandler;
+import org.restheart.handlers.txns.PostTxnsHandler;
+import org.restheart.handlers.txns.TestTxnHandler;
 import org.restheart.metadata.transformers.RequestTransformer.PHASE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -412,6 +416,28 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
                 new RequestTransformerHandler(
                         new GetAggregationHandler(
                                 respTransformers())));
+        
+        // *** TXS handler
+        
+        putPipedHttpHandler(TYPE.TRANSACTIONS, METHOD.POST,
+                new RequestTransformerHandler(
+                        new PostTxnsHandler(
+                                        respTransformers())));
+        
+        putPipedHttpHandler(TYPE.TRANSACTION, METHOD.DELETE,
+                new RequestTransformerHandler(
+                        new DeleteTxnHandler(
+                                        respTransformers())));
+        
+        putPipedHttpHandler(TYPE.TRANSACTION, METHOD.PATCH,
+                new RequestTransformerHandler(
+                        new PatchTxnHandler(
+                                        respTransformers())));
+        
+        putPipedHttpHandler(TYPE.TRANSACTION, METHOD.PUT,
+                new RequestTransformerHandler(
+                        new TestTxnHandler(
+                                        respTransformers())));
 
         // *** SCHEMA handlers
         putPipedHttpHandler(TYPE.SCHEMA_STORE, METHOD.GET,

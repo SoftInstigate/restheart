@@ -25,7 +25,7 @@ import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.db.Database;
-import org.restheart.db.DbsDAO;
+import org.restheart.db.DatabaseImpl;
 
 /**
  *
@@ -71,7 +71,7 @@ public class LocalCachesSingleton {
     /**
      * Default ctor
      */
-    private LocalCachesSingleton(DbsDAO dbsDAO) {
+    private LocalCachesSingleton(DatabaseImpl dbsDAO) {
         this.dbsDAO = dbsDAO;
         setup();
     }
@@ -197,7 +197,7 @@ public class LocalCachesSingleton {
 
     private static class LocalCachesSingletonHolder {
 
-        private static final LocalCachesSingleton INSTANCE = new LocalCachesSingleton(new DbsDAO());
+        private static final LocalCachesSingleton INSTANCE = new LocalCachesSingleton(new DatabaseImpl());
 
         private LocalCachesSingletonHolder() {
         }

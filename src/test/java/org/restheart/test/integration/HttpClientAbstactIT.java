@@ -38,7 +38,7 @@ import static org.junit.Assert.assertNotNull;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.restheart.db.Database;
-import org.restheart.db.DbsDAO;
+import org.restheart.db.DatabaseImpl;
 import org.restheart.db.DocumentDAO;
 import org.restheart.representation.Resource;
 
@@ -384,7 +384,7 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
                 .addParameter("hal", "f")
                 .build();
     }
-    private final Database dbsDAO = new DbsDAO();
+    private final Database dbsDAO = new DatabaseImpl();
 
     public HttpClientAbstactIT() {
     }

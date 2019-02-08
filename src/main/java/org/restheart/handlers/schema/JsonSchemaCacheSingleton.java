@@ -11,7 +11,7 @@ import org.json.JSONObject;
 import org.restheart.Bootstrapper;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
-import org.restheart.db.DbsDAO;
+import org.restheart.db.DatabaseImpl;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -36,13 +36,13 @@ public class JsonSchemaCacheSingleton {
         return CachesSingletonHolder.INSTANCE;
 
     }
-    private final DbsDAO dbsDAO;
+    private final DatabaseImpl dbsDAO;
 
     private Cache<String, Schema> schemaCache = null;
     private Cache<String, BsonDocument> rawSchemaCache = null;
 
     JsonSchemaCacheSingleton() {
-        dbsDAO = new DbsDAO();
+        dbsDAO = new DatabaseImpl();
 
         if (Bootstrapper.getConfiguration().isSchemaCacheEnabled()) {
             this.schemaCache = CacheFactory.createLocalCache(MAX_CACHE_SIZE,

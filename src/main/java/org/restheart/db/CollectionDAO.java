@@ -25,6 +25,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
+import io.undertow.server.session.Session;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +41,7 @@ import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
 import static org.restheart.handlers.RequestContext.META_COLLNAME;
 import static org.restheart.handlers.RequestContext.COLL_META_DOCID_PREFIX;
+import org.restheart.db.sessions.XClientSession;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,6 +126,7 @@ class CollectionDAO {
      * Returns the number of documents in the given collection (taking into
      * account the filters in case).
      *
+     * @param cd the session id, can be null
      * @param coll the mongodb DBCollection object.
      * @param filters the filters to apply. it is a Deque collection of mongodb
      * query conditions.
@@ -131,15 +134,21 @@ class CollectionDAO {
      * account the filters in case)
      */
     public long getCollectionSize(
+            final XClientSession sid,
             final MongoCollection<BsonDocument> coll,
             final BsonDocument filters) {
-        return coll.countDocuments(filters);
+        if (sid == null) {
+            return coll.countDocuments(filters);
+        } else {
+            return coll.countDocuments(sid, filters);
+        }
     }
 
     /**
      * Returs the FindIterable<BsonDocument> of the collection applying sorting,
      * filtering and projection.
      *
+     * @param session the client session
      * @param sortBy the sort expression to use for sorting (prepend field name
      * with - for descending sorting)
      * @param filters the filters to apply.
@@ -148,14 +157,22 @@ class CollectionDAO {
      * @throws JsonParseException
      */
     FindIterable<BsonDocument> getFindIterable(
+            XClientSession session,
             final MongoCollection<BsonDocument> coll,
             final BsonDocument sortBy,
             final BsonDocument filters,
             final BsonDocument hint,
             final BsonDocument keys) throws JsonParseException {
 
-        return coll.find(filters)
-                .projection(keys)
+        FindIterable<BsonDocument> ret;
+
+        if (session == null) {
+            ret = coll.find(filters);
+        } else {
+            ret = coll.find(session, filters);
+        }
+
+        return ret.projection(keys)
                 .sort(sortBy)
                 .batchSize(BATCH_SIZE)
                 .hint(hint)
@@ -164,6 +181,7 @@ class CollectionDAO {
     }
 
     ArrayList<BsonDocument> getCollectionData(
+            XClientSession session,
             final MongoCollection<BsonDocument> coll,
             final int page,
             final int pagesize,
@@ -184,6 +202,7 @@ class CollectionDAO {
 
             _cursor = CursorPool.getInstance().get(
                     new CursorPoolEntryKey(
+                            session,
                             coll,
                             sortBy,
                             filters,
@@ -200,7 +219,7 @@ class CollectionDAO {
         FindIterable<BsonDocument> cursor;
 
         if (_cursor == null) {
-            cursor = getFindIterable(coll, sortBy, filters, hint, keys);
+            cursor = getFindIterable(session, coll, sortBy, filters, hint, keys);
             cursor.skip(toskip);
 
             MongoCursor<BsonDocument> mc = cursor.iterator();
@@ -249,7 +268,7 @@ class CollectionDAO {
         // the pool is populated here because, skipping with cursor.next() is heavy operation
         // and we want to minimize the chances that pool cursors are allocated in parallel
         CursorPool.getInstance().populateCache(
-                new CursorPoolEntryKey(coll, sortBy, filters, hint, keys, toskip, 0),
+                new CursorPoolEntryKey(session, coll, sortBy, filters, hint, keys, toskip, 0),
                 eager);
 
         return ret;

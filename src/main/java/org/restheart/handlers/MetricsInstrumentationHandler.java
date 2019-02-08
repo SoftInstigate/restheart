@@ -9,7 +9,7 @@ import org.restheart.Configuration;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.COLLECTION;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.DATABASE;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
-import org.restheart.db.DbsDAO;
+import org.restheart.db.DatabaseImpl;
 import org.restheart.utils.SharedMetricRegistryProxy;
 
 /**
@@ -39,7 +39,7 @@ public class MetricsInstrumentationHandler extends PipedHttpHandler {
     }
 
     @VisibleForTesting
-    MetricsInstrumentationHandler(PipedHttpHandler next, DbsDAO dbsDAO) {
+    MetricsInstrumentationHandler(PipedHttpHandler next, DatabaseImpl dbsDAO) {
         super(next, dbsDAO);
     }
 

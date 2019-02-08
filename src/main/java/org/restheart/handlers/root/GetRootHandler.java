@@ -35,7 +35,6 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GetRootHandler extends PipedHttpHandler {
-
     public GetRootHandler() {
         super();
     }
@@ -56,6 +55,11 @@ public class GetRootHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
+        }
+
         int size = 0;
 
         List<BsonDocument> data = new ArrayList<>();
@@ -99,7 +103,7 @@ public class GetRootHandler extends PipedHttpHandler {
         context.setResponseContent(new RootRepresentationFactory().
                 getRepresentation(exchange, context, data, size)
                 .asBsonDocument());
-        
+
         context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
         context.setResponseStatusCode(HttpStatus.SC_OK);
 

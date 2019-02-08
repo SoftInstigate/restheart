@@ -50,7 +50,8 @@ public class AccountInjectorHandler extends PipedHttpHandler {
             throws Exception {
         // inject authenticatedAccount
         if (exchange.getSecurityContext() != null) {
-            context.setAuthenticatedAccount(exchange.getSecurityContext().getAuthenticatedAccount());
+            context.setAuthenticatedAccount(exchange.getSecurityContext()
+                    .getAuthenticatedAccount());
         }
         
         next(exchange, context);
