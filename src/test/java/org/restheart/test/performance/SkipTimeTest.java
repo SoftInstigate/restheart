@@ -14,7 +14,7 @@ import org.junit.Test;
 import org.restheart.Configuration;
 import static org.restheart.db.CursorPool.MIN_SKIP_DISTANCE_PERCENTAGE;
 import org.restheart.db.Database;
-import org.restheart.db.DbsDAO;
+import org.restheart.db.DatabaseImpl;
 import org.restheart.db.MongoDBClientSingleton;
 
 /**
@@ -55,7 +55,7 @@ public class SkipTimeTest {
     @Test
     public void testSkip() {
 
-        final Database dbsDAO = new DbsDAO();
+        final Database dbsDAO = new DatabaseImpl();
         MongoCollection<BsonDocument> coll = dbsDAO.getCollection("test", "huge");
 
         long tot = 0;
@@ -80,7 +80,7 @@ public class SkipTimeTest {
     @Test
     public void testTwoSkips() {
 
-        final Database dbsDAO = new DbsDAO();
+        final Database dbsDAO = new DatabaseImpl();
         MongoCollection<BsonDocument> coll = dbsDAO.getCollection("test", "huge");
 
         long tot = 0;

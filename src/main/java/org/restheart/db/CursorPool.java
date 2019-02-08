@@ -82,7 +82,7 @@ public class CursorPool {
         return DBCursorPoolSingletonHolder.INSTANCE;
     }
     
-    private final DbsDAO dbsDAO;
+    private final DatabaseImpl dbsDAO;
 
     private final int SKIP_SLICE_LINEAR_DELTA
             = Bootstrapper.getConfiguration().getEagerLinearSliceDelta();
@@ -102,7 +102,7 @@ public class CursorPool {
     private final Cache<CursorPoolEntryKey, FindIterable<BsonDocument>> cache;
     private final LoadingCache<CursorPoolEntryKey, Long> collSizes;
 
-    private CursorPool(DbsDAO dbsDAO) {
+    private CursorPool(DatabaseImpl dbsDAO) {
         this.dbsDAO = dbsDAO;
 
         cache = CacheFactory.createLocalCache(
@@ -115,6 +115,7 @@ public class CursorPool {
                 60 * 1000,
                 (CursorPoolEntryKey key) -> {
                     return dbsDAO.getCollectionSize(
+                            key.getSession(),
                             key.getCollection(),
                             key.getFilter());
                 }
@@ -213,6 +214,7 @@ public class CursorPool {
 
                     CursorPoolEntryKey sliceKey
                             = new CursorPoolEntryKey(
+                                    key.getSession(),
                                     key.getCollection(),
                                     key.getSort(),
                                     key.getFilter(),
@@ -229,6 +231,7 @@ public class CursorPool {
                         // create the first cursor
                         FindIterable<BsonDocument> cursor = dbsDAO
                                 .getFindIterable(
+                                        key.getSession(),
                                         key.getCollection(),
                                         key.getSort(),
                                         key.getFilter(),
@@ -242,6 +245,7 @@ public class CursorPool {
                         cursor.iterator(); // this forces the actual skipping
 
                         CursorPoolEntryKey newkey = new CursorPoolEntryKey(
+                                key.getSession(),
                                 key.getCollection(),
                                 key.getSort(),
                                 key.getFilter(),
@@ -302,6 +306,7 @@ public class CursorPool {
                     if (existing == 0) {
                         FindIterable<BsonDocument> cursor = dbsDAO
                                 .getFindIterable(
+                                        key.getSession(),
                                         key.getCollection(),
                                         key.getSort(),
                                         key.getFilter(),
@@ -313,6 +318,7 @@ public class CursorPool {
                         cursor.iterator(); // this forces the actual skipping
 
                         CursorPoolEntryKey newkey = new CursorPoolEntryKey(
+                                key.getSession(),
                                 key.getCollection(),
                                 key.getSort(),
                                 key.getFilter(),
@@ -393,7 +399,7 @@ public class CursorPool {
     private static class DBCursorPoolSingletonHolder {
 
         private static final CursorPool INSTANCE
-                = new CursorPool(new DbsDAO());
+                = new CursorPool(new DatabaseImpl());
 
         private DBCursorPoolSingletonHolder() {
         }

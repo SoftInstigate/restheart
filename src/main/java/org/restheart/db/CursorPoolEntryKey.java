@@ -21,13 +21,14 @@ import com.mongodb.client.MongoCollection;
 import java.util.Formatter;
 import java.util.Objects;
 import org.bson.BsonDocument;
+import org.restheart.db.sessions.XClientSession;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class CursorPoolEntryKey {
-
+    private final XClientSession session;
     private final MongoCollection collection;
     private final BsonDocument sort;
     private final BsonDocument filter;
@@ -37,6 +38,7 @@ public class CursorPoolEntryKey {
     private final long cursorId;
 
     public CursorPoolEntryKey(
+            XClientSession session,
             MongoCollection collection,
             BsonDocument sort,
             BsonDocument filter,
@@ -44,6 +46,7 @@ public class CursorPoolEntryKey {
             BsonDocument hint,
             int skipped,
             long cursorId) {
+        this.session = session;
         this.collection = collection;
         this.filter = filter;
         this.keys = keys;
@@ -52,8 +55,9 @@ public class CursorPoolEntryKey {
         this.skipped = skipped;
         this.cursorId = cursorId;
     }
-    
+
     public CursorPoolEntryKey(CursorPoolEntryKey key) {
+        this.session = key.session;
         this.collection = key.collection;
         this.filter = key.filter;
         this.keys = key.keys;
@@ -104,7 +108,7 @@ public class CursorPoolEntryKey {
     public BsonDocument getKeys() {
         return keys;
     }
-    
+
     /**
      * @return the hint
      */
@@ -126,6 +130,10 @@ public class CursorPoolEntryKey {
             return false;
         }
         final CursorPoolEntryKey other = (CursorPoolEntryKey) obj;
+
+        if (!Objects.equals(this.session, other.session)) {
+            return false;
+        }
         if (!Objects.equals(this.collection, other.collection)) {
             return false;
         }
@@ -149,7 +157,11 @@ public class CursorPoolEntryKey {
 
     @Override
     public String toString() {
-        return "{ collection: "
+
+        return "{ session: "
+                + getSession().getSid()
+                + ", "
+                + "collection: "
                 + collection.getNamespace()
                 + ", "
                 + "filter: "
@@ -179,5 +191,12 @@ public class CursorPoolEntryKey {
                     + " - "
                     + f.format("%10d", getSkipped());
         }
+    }
+
+    /**
+     * @return the session
+     */
+    public XClientSession getSession() {
+        return session;
     }
 }

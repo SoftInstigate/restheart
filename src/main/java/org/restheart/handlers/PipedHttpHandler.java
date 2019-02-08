@@ -10,7 +10,7 @@ import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.db.Database;
-import org.restheart.db.DbsDAO;
+import org.restheart.db.DatabaseImpl;
 import org.restheart.db.OperationResult;
 import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.metadata.Relationship;
@@ -39,7 +39,7 @@ public abstract class PipedHttpHandler implements HttpHandler {
      * dbsDAO = new DbsDAO()
      */
     public PipedHttpHandler() {
-        this(null, new DbsDAO());
+        this(null, new DatabaseImpl());
     }
 
     /**
@@ -47,7 +47,7 @@ public abstract class PipedHttpHandler implements HttpHandler {
      * @param next the next handler in this chain
      */
     public PipedHttpHandler(PipedHttpHandler next) {
-        this(next, new DbsDAO());
+        this(next, new DatabaseImpl());
     }
 
     /**

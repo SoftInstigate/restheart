@@ -87,6 +87,7 @@ import org.restheart.handlers.TracingInstrumentationHandler;
 import org.restheart.handlers.applicationlogic.ApplicationLogicHandler;
 import org.restheart.handlers.injectors.AccountInjectorHandler;
 import org.restheart.handlers.injectors.BodyInjectorHandler;
+import org.restheart.handlers.injectors.ClientSessionInjectorHandler;
 import org.restheart.handlers.injectors.CollectionPropsInjectorHandler;
 import org.restheart.handlers.injectors.DbPropsInjectorHandler;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
@@ -733,10 +734,11 @@ public class Bootstrapper {
     private static GracefulShutdownHandler getHandlersPipe() {
         PipedHttpHandler coreHandlerChain
                 = new AccountInjectorHandler(
-                        new DbPropsInjectorHandler(
-                                new CollectionPropsInjectorHandler(
-                                        new RequestDispatcherHandler()
-                                )));
+                        new ClientSessionInjectorHandler(
+                                new DbPropsInjectorHandler(
+                                        new CollectionPropsInjectorHandler(
+                                                new RequestDispatcherHandler()
+                                        ))));
 
         PathHandler paths = path();
         PathTemplateHandler pathsTemplates = pathTemplate(false);

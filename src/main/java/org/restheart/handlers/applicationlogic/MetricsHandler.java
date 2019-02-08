@@ -39,7 +39,7 @@ import org.restheart.Configuration;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.COLLECTION;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.DATABASE;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
-import org.restheart.db.DbsDAO;
+import org.restheart.db.DatabaseImpl;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
@@ -68,7 +68,7 @@ public class MetricsHandler extends PipedHttpHandler {
         super(next);
     }
 
-    public MetricsHandler(PipedHttpHandler next, DbsDAO dbsDao) {
+    public MetricsHandler(PipedHttpHandler next, DatabaseImpl dbsDao) {
         super(next, dbsDao);
     }
 

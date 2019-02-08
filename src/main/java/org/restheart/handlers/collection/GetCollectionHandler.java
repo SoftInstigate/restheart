@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
 import org.restheart.db.Database;
-import org.restheart.db.DbsDAO;
+import org.restheart.db.DatabaseImpl;
 import org.restheart.representation.Resource;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.PipedHttpHandler;
@@ -48,7 +48,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
     }
 
     public GetCollectionHandler(PipedHttpHandler next) {
-        super(next, new DbsDAO());
+        super(next, new DatabaseImpl());
     }
 
     public GetCollectionHandler(PipedHttpHandler next, Database dbsDAO) {
@@ -80,7 +80,8 @@ public class GetCollectionHandler extends PipedHttpHandler {
 
         if (context.isCount()) {
             size = getDatabase()
-                    .getCollectionSize(coll, context.getFiltersDocument());
+                    .getCollectionSize(context.getClientSession(), 
+                            coll, context.getFiltersDocument());
         }
 
         // ***** get data
@@ -90,6 +91,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
 
             try {
                 data = getDatabase().getCollectionData(
+                        context.getClientSession(), 
                         coll,
                         context.getPage(),
                         context.getPagesize(),

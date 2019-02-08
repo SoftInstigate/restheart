@@ -43,7 +43,7 @@ import org.bson.json.JsonParseException;
 import org.restheart.Bootstrapper;
 import org.restheart.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.db.OperationResult;
-import org.restheart.representation.Resource;
+import org.restheart.db.sessions.XClientSession;
 import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
@@ -75,6 +75,7 @@ public class RequestContext {
     public static final String SHARDKEY_QPARAM_KEY = "shardkey";
     public static final String NO_PROPS_KEY = "np";
     public static final String REPRESENTATION_FORMAT_KEY = "rep";
+    public static final String CLIENT_SESSION_KEY = "cs";
 
     // matadata
     public static final String ETAG_DOC_POLICY_METADATA_KEY = "etagDocPolicy";
@@ -87,6 +88,7 @@ public class RequestContext {
     public static final String _METRICS = "_metrics";
     public static final String _SIZE = "_size";
     public static final String _META = "_meta";
+    public static final String _TRANSACTIONS = "_txns";
 
     public static final String FS_CHUNKS_SUFFIX = ".chunks";
     public static final String FS_FILES_SUFFIX = ".files";
@@ -163,8 +165,16 @@ public class RequestContext {
             } else {
                 type = TYPE.INVALID;
             }
-        } else if (pathTokens.length < 2) {
+        }  else if (pathTokens.length < 2) {
             type = TYPE.ROOT;
+        } else if (pathTokens.length == 2 
+                && pathTokens[pathTokens.length - 1]
+                        .equalsIgnoreCase(_TRANSACTIONS)) {
+            type = TYPE.TRANSACTIONS;
+        } else if (pathTokens.length == 3
+                && pathTokens[pathTokens.length - 2]
+                        .equalsIgnoreCase(_TRANSACTIONS)) {
+            type = TYPE.TRANSACTION;
         } else if (pathTokens.length < 3
                 && pathTokens[1].equalsIgnoreCase(_METRICS)) {
             type = TYPE.METRICS;
@@ -240,6 +250,7 @@ public class RequestContext {
     public static boolean isReservedResourceDb(String dbName) {
         return !dbName.equalsIgnoreCase(_METRICS)
                 && !dbName.equalsIgnoreCase(_SIZE)
+                && !dbName.equalsIgnoreCase(_TRANSACTIONS)
                 && (dbName.equals(ADMIN)
                 || dbName.equals(LOCAL)
                 || dbName.startsWith(SYSTEM)
@@ -351,6 +362,8 @@ public class RequestContext {
     private boolean inError = false;
 
     private Account authenticatedAccount = null;
+    
+    private XClientSession clientSession = null;
 
     /**
      * the HAL mode
@@ -1610,6 +1623,24 @@ public class RequestContext {
     public boolean isRoot() {
         return this.type == TYPE.ROOT;
     }
+    
+    /**
+     * helper method to check request resource type
+     *
+     * @return true if type is TYPE.TRANSACTIONS
+     */
+    public boolean isTxns() {
+        return this.type == TYPE.TRANSACTIONS;
+    }
+    
+    /**
+     * helper method to check request resource type
+     *
+     * @return true if type is TYPE.TRANSACTION
+     */
+    public boolean isTxn() {
+        return this.type == TYPE.TRANSACTION;
+    }
 
     /**
      * helper method to check request resource type
@@ -1797,7 +1828,9 @@ public class RequestContext {
         SCHEMA_STORE_SIZE,
         SCHEMA_STORE_META,
         BULK_DOCUMENTS,
-        METRICS
+        METRICS,
+        TRANSACTIONS,
+        TRANSACTION,
     }
 
     public enum METHOD {
@@ -1833,6 +1866,20 @@ public class RequestContext {
         REQUIRED, // always requires the etag, return PRECONDITION FAILED if missing
         REQUIRED_FOR_DELETE, // only requires the etag for DELETE, return PRECONDITION FAILED if missing
         OPTIONAL                // checks the etag only if provided by client via If-Match header
+    }
+
+    /**
+     * @return the clientSession
+     */
+    public XClientSession getClientSession() {
+        return clientSession;
+    }
+
+    /**
+     * @param clientSession the clientSession to set
+     */
+    public void setClientSession(XClientSession clientSession) {
+        this.clientSession = clientSession;
     }
 
 }

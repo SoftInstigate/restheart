@@ -21,7 +21,7 @@ import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.restheart.db.Database;
-import org.restheart.db.DbsDAO;
+import org.restheart.db.DatabaseImpl;
 import org.restheart.representation.Resource;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -42,7 +42,7 @@ public class GetDBHandler extends PipedHttpHandler {
     }
 
     public GetDBHandler(PipedHttpHandler next) {
-        super(next, new DbsDAO());
+        super(next, new DatabaseImpl());
     }
 
     public GetDBHandler(PipedHttpHandler next, Database dbsDAO) {

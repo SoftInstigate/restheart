@@ -51,7 +51,11 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.isInError()) {
+        if (context.isInError() 
+                || context.isTxns()
+                || context.isTxn() 
+                || context.isRoot()
+                || context.isRootSize()) {
             next(exchange, context);
             return;
         }

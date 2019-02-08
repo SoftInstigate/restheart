@@ -25,6 +25,7 @@ import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
 import org.restheart.handlers.IllegalQueryParamenterException;
+import org.restheart.db.sessions.XClientSession;
 
 /**
  *
@@ -87,6 +88,7 @@ public interface Database {
 
     /**
      *
+     * @param session the client session
      * @param collection
      * @param page
      * @param pagesize
@@ -98,6 +100,7 @@ public interface Database {
      * @return Collection Data as ArrayList of BsonDocument
      */
     ArrayList<BsonDocument> getCollectionData(
+            XClientSession session,
             MongoCollection<BsonDocument> collection,
             int page,
             int pagesize,
@@ -119,12 +122,14 @@ public interface Database {
 
     /**
      *
+     * @param session the client session
      * @param collection
      * @param filters
      * @return the number of documents in the given collection (taking into
      * account the filters in case)
      */
     long getCollectionSize(
+            XClientSession session,
             final MongoCollection<BsonDocument> collection,
             BsonDocument filters);
 
@@ -253,7 +258,8 @@ public interface Database {
     /**
      * Returs the FindIterable of the collection applying sorting, filtering and
      * projection.
-     *
+     * 
+     * @param session the client session
      * @param collection the mongodb MongoCollection<BsonDocument> object
      * @param sortBy the Deque collection of fields to use for sorting (prepend
      * field name with - for descending sorting)
@@ -265,6 +271,7 @@ public interface Database {
      * @throws JsonParseException
      */
     FindIterable<BsonDocument> getFindIterable(
+            XClientSession session,
             MongoCollection<BsonDocument> collection,
             BsonDocument sortBy,
             BsonDocument filters,
