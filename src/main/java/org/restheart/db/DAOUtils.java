@@ -60,6 +60,8 @@ public class DAOUtils {
 
     public final static Logger LOGGER = LoggerFactory.getLogger(DAOUtils.class);
 
+    public static final int DUPLICATE_KEY_ERROR = 11000;
+
     public final static FindOneAndUpdateOptions FAU_UPSERT_OPS = new FindOneAndUpdateOptions()
             .upsert(true).returnDocument(ReturnDocument.AFTER);
 
@@ -238,7 +240,7 @@ public class DAOUtils {
                         documentId,
                         mce.getErrorCode(),
                         mce.getErrorMessage());
-                if (mce.getErrorCode() == 11000) {
+                if (mce.getErrorCode() == DUPLICATE_KEY_ERROR) {
                     if (allowUpsert
                             && filter != null
                             && !filter.isEmpty()
@@ -268,7 +270,7 @@ public class DAOUtils {
                         getUpdateDocument(data, deepPatching),
                         allowUpsert ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS);
             } catch (MongoCommandException mce) {
-                if (mce.getErrorCode() == 11000) {
+                if (mce.getErrorCode() == DUPLICATE_KEY_ERROR) {
                     if (allowUpsert
                             && filter != null
                             && !filter.isEmpty()
