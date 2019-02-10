@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
@@ -49,7 +48,6 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
-import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +83,7 @@ public class DAOUtils {
 
     public final static UpdateOptions U_NOT_UPSERT_OPS = new UpdateOptions()
             .upsert(false);
-    
+
     public final static ReplaceOptions R_NOT_UPSERT_OPS = new ReplaceOptions()
             .upsert(false);
 
@@ -108,6 +106,7 @@ public class DAOUtils {
      * @param coll
      * @param documentId use Optional.empty() to specify no documentId (null is
      * _id: null)
+     * @param filter
      * @param shardKeys
      * @param data
      * @param patching Whether we want to patch the metadata or replace it
@@ -137,6 +136,7 @@ public class DAOUtils {
      * @param coll
      * @param documentId use Optional.empty() to specify no documentId (null is
      * _id: null)
+     * @param filter
      * @param shardKeys
      * @param data
      * @param replace
@@ -168,6 +168,7 @@ public class DAOUtils {
      * @param coll
      * @param documentId use Optional.empty() to specify no documentId (null is
      * _id: null)
+     * @param filter
      * @param shardKeys
      * @param data
      * @param replace
@@ -275,7 +276,7 @@ public class DAOUtils {
                         // DuplicateKey error
                         // this happens if the filter parameter didn't match
                         // the existing document and so the upserted doc
-                        // has an existing _id 
+                        // has an existing _id
                         return new OperationResult(HttpStatus.SC_NOT_FOUND,
                                 oldDocument,
                                 null);
@@ -361,36 +362,33 @@ public class DAOUtils {
         List<WriteModel<BsonDocument>> updates = new ArrayList<>();
 
         documents.stream().filter(_document -> _document.isDocument())
-                .forEach(new Consumer<BsonValue>() {
-                    @Override
-                    public void accept(BsonValue _document) {
-                        BsonDocument document = _document.asDocument();
+                .forEach((BsonValue _document) -> {
+                    BsonDocument document = _document.asDocument();
 
-                        // generate new id if missing, will be an insert
-                        if (!document.containsKey("_id")) {
-                            document
-                                    .put("_id", new BsonObjectId(new ObjectId()));
-                        }
-
-                        // add the _etag
-                        document.put("_etag", new BsonObjectId(etag));
-
-                        Bson _filter = eq("_id", document.get("_id"));
-
-                        if (shardKeys != null) {
-                            _filter = and(_filter, shardKeys);
-                        }
-
-                        if (filter != null && !filter.isEmpty()) {
-                            _filter = and(_filter, filter);
-                        }
-
-                        updates.add(new UpdateOneModel<>(
-                                _filter,
-                                getUpdateDocument(document),
-                                new UpdateOptions().upsert(true)
-                        ));
+                    // generate new id if missing, will be an insert
+                    if (!document.containsKey("_id")) {
+                        document
+                                .put("_id", new BsonObjectId(new ObjectId()));
                     }
+
+                    // add the _etag
+                    document.put("_etag", new BsonObjectId(etag));
+
+                    Bson _filter = eq("_id", document.get("_id"));
+
+                    if (shardKeys != null) {
+                        _filter = and(_filter, shardKeys);
+                    }
+
+                    if (filter != null && !filter.isEmpty()) {
+                        _filter = and(_filter, filter);
+                    }
+
+                    updates.add(new UpdateOneModel<>(
+                            _filter,
+                            getUpdateDocument(document),
+                            new UpdateOptions().upsert(true)
+                    ));
                 });
 
         return updates;
