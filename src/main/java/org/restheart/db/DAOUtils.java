@@ -252,7 +252,7 @@ public class DAOUtils {
                                 oldDocument,
                                 null);
                     } else {
-                        return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED,
+                        return new OperationResult(HttpStatus.SC_CONFLICT,
                                 oldDocument,
                                 null);
                     }
@@ -283,7 +283,7 @@ public class DAOUtils {
                                 oldDocument,
                                 null);
                     } else {
-                        return new OperationResult(HttpStatus.SC_EXPECTATION_FAILED,
+                        return new OperationResult(HttpStatus.SC_CONFLICT,
                                 oldDocument,
                                 null);
                     }
