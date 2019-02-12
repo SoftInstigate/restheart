@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "email": {"type": "string"},
+    "password": {"type": "string"},
+    "plan_code": {"type": "string"},
+    "roles": {"type": "array"},
+    "suspended": {"type": "boolean"}
+  },
+  "required": ["password", "roles"]
+}

@@ -22,12 +22,12 @@ users:
 ## bcrypt-hashed-password: true to authenticate against bcrypt hashed passwords
 ## https://github.com/svenkubiak/jBCrypt
 dbim:
-  - db: userbase
-    coll: accounts
-    prop-name-id: _id
+  - db: backupbox
+    coll: users
+    prop-name-id: email
     prop-name-password: password
     prop-name-roles: roles
-    bcrypt-hashed-password: false
+    bcrypt-hashed-password: true
     create-user: false
     create-user-document: '{"_id": "admin", "password": "secret", "roles": ["admins"]}'
     cache-enabled: false
@@ -57,6 +57,14 @@ permissions:
   # Users with role 'users' can GET any collection or document resource (excluding dbs and _logic )
   - role: users
     predicate: regex[pattern="/.*/.*", value="%R", full-match=true] and method[value="GET"] and not path-prefix[path="/_logic"]
+  - role: users
+    predicate: path-prefix[path="/txlog"] and method[value="GET"]
+  - role: users
+    predicate: path-prefix[path="/schedules"] and method[value="GET"]
+  - role: users
+    predicate: path-prefix[path="/users"] and method[value="GET"]
+  - role: users
+    predicate: path-template[value="/users/{username}"] and method[value="PATCH"]
 
   # Users with role 'users' can request URI /_logic/csv
   - role: users

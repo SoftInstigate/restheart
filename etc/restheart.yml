@@ -88,7 +88,7 @@ mongo-uri: {{{mongo-uri}}}
 # It is not possible to mix absolute paths and path templates: where URIs need to be
 # either all absolute paths or all path templates.
 mongo-mounts:
-  - what: "*"
+  - what: "/backupbox"
     where: /
 
 #### Static Web Resources
@@ -169,6 +169,10 @@ metadata-named-singletons:
   - group: transformers
     interface: org.restheart.metadata.transformers.Transformer
     singletons:
+      - name: userFilter
+        class: org.restheart.metadata.transformers.DocumentAccessTransformer
+      - name: addRequestProperties
+        class: org.restheart.metadata.transformers.RequestPropsInjecterTransformer
       - name: addRequestProperties
         class: org.restheart.metadata.transformers.RequestPropsInjecterTransformer
       - name: filterProperties
@@ -206,7 +210,7 @@ metadata-named-singletons:
 # or relative to the restheart.jar directory
 
 idm:
-  implementation-class: org.restheart.security.impl.SimpleFileIdentityManager
+  implementation-class: org.restheart.security.impl.DbIdentityManager
   conf-file: {{{idm.conf-file}}}
 access-manager:
   implementation-class: org.restheart.security.impl.SimpleAccessManager
@@ -239,15 +243,15 @@ access-manager:
 # issuer: verify the issues (iss claim). optional, default value matches: null (don't check iss)
 # audience: verify the audience (aud claim). optional, default value matches: null (don't check aud)
 
-#auth-mechanism:
-#    implementation-class: org.restheart.security.impl.JwtAuthenticationManagerFactory
-#    algorithm: HS256
-#    key: secret
-#    base64Encoded: false
-#    usernameClaim: sub
-#    rolesClaim: roles
-#    issuer: myIssuer
-#    audience: myAudience
+auth-mechanism:
+    implementation-class: org.restheart.security.impl.JwtAuthenticationManagerFactory
+    algorithm: HS256
+    key: secret
+    base64Encoded: false
+    usernameClaim: sub
+    rolesClaim: roles
+    issuer: myIssuer
+    audience: myAudience
 
 # Authentication Token
 
