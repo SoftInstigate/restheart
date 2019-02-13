@@ -1173,11 +1173,19 @@ public class Configuration {
     /**
      *
      * @param key
-     * @return the environment variable, if found
+     * @return the environment or java property variable, if found
      */
     private String overriddenValueFromEnv(final String key) {
         String shellKey = key.toUpperCase().replaceAll("-", "_");
-        String envValue = System.getenv(shellKey);
+        String envValue = System.getProperty(key);
+
+        if (envValue==null) {
+            envValue = System.getProperty(shellKey);
+        }
+
+        if (envValue==null) {
+            envValue = System.getenv(shellKey);
+        }
         if (null != envValue) {
             LOGGER.warn(">>> Overriding parameter '{}' with environment variable '{}={}' <<<", key, shellKey, envValue);
         }
