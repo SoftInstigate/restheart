@@ -114,7 +114,7 @@
         </dependency>
 
         <!-- update undertow dependency to avoid warning log message:
-             WARNING: An illegal reflective access operation has occurred -->
+        WARNING: An illegal reflective access operation has occurred -->
         <dependency>
             <groupId>org.jboss.xnio</groupId>
             <artifactId>xnio-nio</artifactId>
@@ -122,7 +122,7 @@
         </dependency>
 
         <!-- update undertow dependency to avoid warning log message:
-             WARNING: An illegal reflective access operation has occurred -->
+        WARNING: An illegal reflective access operation has occurred -->
         <dependency>
             <groupId>org.jboss.threads</groupId>
             <artifactId>jboss-threads</artifactId>
@@ -294,6 +294,7 @@
                                 <exclude>META-INF/*.SF</exclude>
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>
+                                <exclude>META-INF/*.txt</exclude>
                             </excludes>
                         </filter>
                         <filter>
@@ -314,6 +315,19 @@
                         </goals>
                         <configuration>
                             <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
+                                    <addHeader>false</addHeader>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+                                    <resource>META-INF/LICENSE.txt</resource>
+                                    <file>LICENSE.txt</file>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+                                    <resource>META-INF/COMM-LICENSE.txt</resource>
+                                    <file>COMM-LICENSE.txt</file>
+                                </transformer>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>org.restheart.Bootstrapper</mainClass>
                                 </transformer>
