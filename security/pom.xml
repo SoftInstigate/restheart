@@ -106,7 +106,7 @@
         <dependency>
             <groupId>org.jboss.xnio</groupId>
             <artifactId>xnio-nio</artifactId>
-            <version>3.6.5.Final</version>
+            <version>3.7.0.Final</version>
         </dependency>
         
         <!-- update undertow dependency to avoid warning log message:
@@ -114,13 +114,13 @@
         <dependency>
             <groupId>org.jboss.threads</groupId>
             <artifactId>jboss-threads</artifactId>
-            <version>2.3.2.Final</version>
+            <version>2.3.3.Final</version>
         </dependency>
         
         <dependency>
             <groupId>io.undertow</groupId>
             <artifactId>undertow-core</artifactId>
-            <version>2.0.16.Final</version>
+            <version>2.0.17.Final</version>
         </dependency>
 
         <dependency>
@@ -588,6 +588,7 @@
             </build>
         </profile>
     </profiles>
+    
     <reporting>
         <plugins>
             <plugin>
