@@ -17,19 +17,21 @@
  */
 package io.uiam.plugins.service.impl;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
+import io.uiam.handlers.ExchangeHelper;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.plugins.service.PluggableService;
-import io.uiam.utils.ChannelReader;
 import io.uiam.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
-import java.util.Deque;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class EchoService extends PluggableService {
+
     /**
      *
      * @param next
@@ -48,59 +50,52 @@ public class EchoService extends PluggableService {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        exchange.setStatusCode(HttpStatus.SC_OK);
+        var eh = new ExchangeHelper(exchange);
 
-        var msg = new StringBuffer();
+        JsonObject resp = new JsonObject();
+        
+        eh.setResponseContent(resp);
 
-        msg.append("Method: ");
-        msg.append(exchange.getRequestMethod().toString());
-        msg.append("\n");
+        resp.addProperty("method", exchange.getRequestMethod().toString());
+        resp.addProperty("URL", exchange.getRequestURL());
 
-        msg.append("URL: ");
-        msg.append(exchange.getRequestURL());
-        msg.append("\n\n");
+        if (eh.isRequesteContentTypeJson()) {
+            try {
+                resp.add("body", eh.getRequestBodyAsJson());
+            }
+            catch (JsonSyntaxException jse) {
+                resp.addProperty("body", eh.getRequestBody());
+            }
+        } else {
+            resp.addProperty("body", eh.getRequestBody());
+        }
 
-        msg.append("Body\n");
-
-        msg.append(ChannelReader.read(exchange.getRequestChannel()));
-
-        msg.append("\n\n");
-
-        msg.append("Query Parameters\n");
+        var qparams = new JsonObject();
+        resp.add("qparams", qparams);
 
         exchange.getQueryParameters().forEach((name, values) -> {
-            msg.append("\t");
-            msg.append(name);
-            msg.append(": ");
+            var _values = new JsonArray();
+
+            qparams.add(name, _values);
 
             values.iterator().forEachRemaining(value -> {
-                msg.append(value);
-                msg.append(",");
+                _values.add(value);
             });
-
-            msg.delete(msg.length() - 1, msg.length());
-
-            msg.append("\n");
         });
 
-        msg.append("\nHeaders\n");
+        var headers = new JsonObject();
+        resp.add("headers", headers);
 
         exchange.getRequestHeaders().forEach(header -> {
-            msg.append("\t");
-            msg.append(header.getHeaderName().toString());
-            msg.append(": ");
+            var _values = new JsonArray();
+            headers.add(header.getHeaderName().toString(), _values);
 
             header.iterator().forEachRemaining(value -> {
-                msg.append(value);
-                msg.append(",");
+                _values.add(value);
             });
 
-            msg.delete(msg.length() - 1, msg.length());
-
-            msg.append("\n");
         });
 
-        exchange.getResponseSender().send(msg.toString());
-        exchange.endExchange();
+        eh.setResponseStatusCode(HttpStatus.SC_OK);
     }
 }

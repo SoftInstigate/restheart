@@ -22,7 +22,7 @@ import com.google.common.net.UrlEscapers;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.plugins.IDMCacheSingleton;
+import io.uiam.plugins.PluginsRegistry;
 import io.uiam.plugins.PluginConfigurationException;
 import static io.uiam.plugins.authentication.PluggableTokenManager.AUTH_TOKEN_HEADER;
 import static io.uiam.plugins.authentication.PluggableTokenManager.AUTH_TOKEN_LOCATION_HEADER;
@@ -63,7 +63,7 @@ public class RndTokenService extends PluggableService {
         super(next, name, uri, secured, null);
 
         try {
-            this.tokenManager = (RndTokenManager) IDMCacheSingleton
+            this.tokenManager = (RndTokenManager) PluginsRegistry
                     .getInstance()
                     .getAuthTokenManager();
         } catch (ClassCastException cce) {

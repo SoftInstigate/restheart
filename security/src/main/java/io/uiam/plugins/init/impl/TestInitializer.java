@@ -22,7 +22,10 @@ import org.slf4j.LoggerFactory;
 
 import io.uiam.handlers.ExchangeHelper;
 import io.uiam.handlers.security.AccessManagerHandler;
+import io.uiam.plugins.PluginsRegistry;
 import io.uiam.plugins.init.PluggableInitializer;
+import io.uiam.plugins.interceptors.impl.TestRequestInterceptor;
+import io.uiam.plugins.interceptors.impl.TestResponseInterceptor;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 
@@ -35,10 +38,12 @@ public class TestInitializer implements PluggableInitializer {
 
     @Override
     public void init() {
-        LOGGER.info("Testing initializer allows GET requests to /foo/bar");
+        LOGGER.info("Testing initializer");
+        LOGGER.info("\tallows GET requests to /foo/bar");
+        LOGGER.info("\tadds a request and a response interceptor for /echo and /secho");
 
+        // add a global security predicate
         AccessManagerHandler.getGlobalSecurityPredicates().add(new Predicate() {
-
             @Override
             public boolean resolve(HttpServerExchange hse) {
                 var hex = new ExchangeHelper(hse);
@@ -46,5 +51,17 @@ public class TestInitializer implements PluggableInitializer {
                 return hex.isGet() && "/foo/bar".equals(hse.getRequestPath());
             }
         });
+        
+        // add a test response transformer
+        PluginsRegistry
+                .getInstance()
+                .getResponseInterceptors()
+                .add(new TestResponseInterceptor());
+        
+        // add a test request transformer
+        PluginsRegistry
+                .getInstance()
+                .getRequestInterceptors()
+                .add(new TestRequestInterceptor());
     }
 }

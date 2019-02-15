@@ -298,7 +298,8 @@ public class PluginsFactory {
      *
      * @return the PluggableService
      */
-    public static PluggableService getService(Map<String, Object> conf) throws PluginConfigurationException {
+    public static PluggableService getService(Map<String, Object> conf) 
+            throws PluginConfigurationException {
         Object _name = conf.get(Configuration.NAME_KEY);
 
         if (_name == null || !(_name instanceof String)) {

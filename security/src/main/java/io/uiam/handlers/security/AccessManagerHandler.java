@@ -53,7 +53,8 @@ public class AccessManagerHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        if (accessManager.isAllowed(exchange) && checkGlobalPredicates(exchange)) {
+        if (accessManager.isAllowed(exchange)
+                || checkGlobalPredicates(exchange)) {
             next(exchange);
         } else {
             exchange.setStatusCode(HttpStatus.SC_FORBIDDEN);
@@ -62,12 +63,12 @@ public class AccessManagerHandler extends PipedHttpHandler {
     }
 
     private boolean checkGlobalPredicates(HttpServerExchange hse) {
-        return getGlobalSecurityPredicates().stream().allMatch(predicate -> predicate.resolve(hse));
+        return getGlobalSecurityPredicates().stream().anyMatch(predicate -> predicate.resolve(hse));
     }
 
     /**
-     * @return the globalSecurityPredicates allow to get and set the global security
-     *         predicates to apply to all requests
+     * @return the globalSecurityPredicates allow to get and set the global
+     * security predicates to apply to all requests
      */
     public static Set<Predicate> getGlobalSecurityPredicates() {
         return globalSecurityPredicates;

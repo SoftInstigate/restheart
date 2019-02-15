@@ -52,18 +52,24 @@ public class ResponseHelper {
      * @param t
      */
     public static void endExchangeWithMessage(HttpServerExchange exchange, int code, String message, Throwable t) {
-        var hex = new ExchangeHelper(exchange);
+        var eh = new ExchangeHelper(exchange);
 
-        hex.setResponseStatusCode(code);
+        eh.setResponseStatusCode(code);
+
+        eh.setResponseContentTypeAsJson();
 
         String httpStatusText = HttpStatus.getStatusText(code);
 
-        hex.setInError(true);
+        eh.setInError(true);
 
-        exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "application/json");
-
-        hex.setResponseContent(
-                getErrorJsonDocument(exchange.getRequestPath(), code, httpStatusText, message, t, false));
+        eh.setResponseContent(
+                getErrorJsonDocument(
+                        exchange.getRequestPath(),
+                        code,
+                        httpStatusText,
+                        message,
+                        t,
+                        false));
     }
 
     /**

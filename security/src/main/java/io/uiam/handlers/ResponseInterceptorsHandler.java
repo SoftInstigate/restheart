@@ -17,44 +17,27 @@
  */
 package io.uiam.handlers;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.uiam.plugins.PluginsRegistry;
 
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestProxyHandler extends PipedHttpHandler {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(RequestProxyHandler.class);
-
+public class ResponseInterceptorsHandler extends PipedHttpHandler {
     /**
-     * Creates a new instance of RequestProxyHandler
-     *
+     * 
      */
-    public RequestProxyHandler() {
+    public ResponseInterceptorsHandler() {
         super(null);
     }
 
     /**
-     * Creates a new instance of RequestProxyHandler
-     *
      * @param next
      */
-    public RequestProxyHandler(PipedHttpHandler next) {
+    public ResponseInterceptorsHandler(PipedHttpHandler next) {
         super(next);
-    }
-
-    /**
-     * Creates a new instance of RequestProxyHandler
-     *
-     * @param handler
-     */
-    public RequestProxyHandler(HttpHandler handler) {
-        super(null);
     }
 
     /**
@@ -64,10 +47,14 @@ public class RequestProxyHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        LOGGER.info("should proxy request {}", exchange.getRequestURI());
-
-        if (getNext() != null) {
-            getNext().handleRequest(exchange);
-        }
+        var interceptors = PluginsRegistry
+                .getInstance()
+                .getResponseInterceptors();
+        
+        interceptors.stream()
+                .filter(t -> t.resolve(exchange))
+                .forEachOrdered(t -> t.handle(exchange));
+        
+        next(exchange);
     }
 }

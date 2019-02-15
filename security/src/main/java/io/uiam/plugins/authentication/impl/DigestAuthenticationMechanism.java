@@ -40,7 +40,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.uiam.plugins.IDMCacheSingleton;
+import io.uiam.plugins.PluginsRegistry;
 import io.uiam.plugins.PluginConfigurationException;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 import io.undertow.security.api.NonceManager;
@@ -78,7 +78,7 @@ public class DigestAuthenticationMechanism implements PluggableAuthenticationMec
         this(argValue(args, "realm"),
                 argValue(args, "domain"),
                 mechanismName,
-                IDMCacheSingleton
+                PluginsRegistry
                         .getInstance()
                         .getIdentityManager(argValue(args,"idm")));
     }

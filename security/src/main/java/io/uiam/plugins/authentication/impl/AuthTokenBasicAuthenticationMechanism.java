@@ -28,7 +28,7 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 
-import io.uiam.plugins.IDMCacheSingleton;
+import io.uiam.plugins.PluginsRegistry;
 import io.uiam.plugins.PluginConfigurationException;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
@@ -82,11 +82,11 @@ public class AuthTokenBasicAuthenticationMechanism
         super(argValue(args, "realm"),
                 mechanismName,
                 true,
-                IDMCacheSingleton.getInstance().getAuthTokenManager());
+                PluginsRegistry.getInstance().getAuthTokenManager());
 
         this.mechanismName = mechanismName;
         
-        this.identityManager = IDMCacheSingleton.getInstance().getAuthTokenManager();
+        this.identityManager = PluginsRegistry.getInstance().getAuthTokenManager();
     }
 
     @Override

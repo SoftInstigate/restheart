@@ -17,33 +17,40 @@
  */
 package io.uiam.handlers;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import io.uiam.utils.HttpStatus;
-import io.uiam.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.StatusCodes;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ErrorHandler implements HttpHandler {
-
-    private final HttpHandler next;
-
-    private final PipedHttpHandler sender = new ResponseContentSenderHandler(null);
-
-    private final Logger LOGGER = LoggerFactory.getLogger(ErrorHandler.class);
+public class RequestNotManagedHandler extends PipedHttpHandler {
+    /**
+     * Creates a new instance of RequestProxyHandler
+     *
+     */
+    public RequestNotManagedHandler() {
+        super(null);
+    }
 
     /**
-     * Creates a new instance of ErrorHandler
+     * Creates a new instance of RequestProxyHandler
      *
      * @param next
      */
-    public ErrorHandler(HttpHandler next) {
-        this.next = next;
+    public RequestNotManagedHandler(PipedHttpHandler next) {
+        super(next);
+    }
+
+    /**
+     * Creates a new instance of RequestProxyHandler
+     *
+     * @param handler
+     */
+    public RequestNotManagedHandler(HttpHandler handler) {
+        super(null);
     }
 
     /**
@@ -53,16 +60,7 @@ public class ErrorHandler implements HttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        try {
-            next.handleRequest(exchange);
-        } catch (Exception t) {
-            LOGGER.error("Error handling the request", t);
-
-            ResponseHelper.endExchangeWithMessage(exchange, 
-                    HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    "Error handling the request, see log for more information", t);
-
-            sender.handleRequest(exchange);
-        }
+        exchange.setStatusCode(StatusCodes.BAD_GATEWAY);
+        exchange.endExchange();
     }
 }

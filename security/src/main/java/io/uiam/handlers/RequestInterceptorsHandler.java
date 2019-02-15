@@ -17,26 +17,28 @@
  */
 package io.uiam.handlers;
 
-import com.google.gson.JsonObject;
+import io.uiam.plugins.PluginsRegistry;
 
 import io.undertow.server.HttpServerExchange;
+import java.util.List;
+import io.uiam.plugins.interceptors.PluggableRequestInterceptor;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ResponseSenderHandler extends PipedHttpHandler {
+public class RequestInterceptorsHandler extends PipedHttpHandler {
     /**
      * 
      */
-    public ResponseSenderHandler() {
+    public RequestInterceptorsHandler() {
         super(null);
     }
 
     /**
      * @param next
      */
-    public ResponseSenderHandler(PipedHttpHandler next) {
+    public RequestInterceptorsHandler(PipedHttpHandler next) {
         super(next);
     }
 
@@ -47,20 +49,14 @@ public class ResponseSenderHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var hex = new ExchangeHelper(exchange);
+        List<PluggableRequestInterceptor> interceptors = PluginsRegistry
+                .getInstance()
+                .getRequestInterceptors();
         
-        if (!exchange.isResponseStarted()) {
-            exchange.setStatusCode(hex.getResponseStatusCode());
-        }
-
-        JsonObject responseContent = hex.getResponseJsonContent();
-
-        if (responseContent != null) {
-            exchange.getResponseSender().send(responseContent.toString());
-        }
-
-        exchange.endExchange();
-
+        interceptors.stream()
+                .filter(t -> t.resolve(exchange))
+                .forEachOrdered(t -> t.handle(exchange));
+        
         next(exchange);
     }
 }

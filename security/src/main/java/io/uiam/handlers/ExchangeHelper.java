@@ -17,13 +17,24 @@
  */
 package io.uiam.handlers;
 
-import com.google.gson.JsonObject;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+import io.undertow.connector.PooledByteBuffer;
 
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
+import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xnio.Buffers;
 
 /**
  *
@@ -31,21 +42,31 @@ import io.undertow.util.Methods;
  */
 public class ExchangeHelper {
 
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(ExchangeHelper.class);
+
     // other constants
     public static final String SLASH = "/";
     public static final String PATCH = "PATCH";
     public static final String UNDERSCORE = "_";
+    
+    public static int MAX_CONTENT_SIZE = 10*1024*1024; // 10Mbyte
 
     private final HttpServerExchange wrapped;
 
-    private static final AttachmentKey<String> RAW_CONTENT_KEY = AttachmentKey.create(String.class);
-    private static final AttachmentKey<Integer> RESPONSE_STATUS_CODE_KEY = AttachmentKey.create(Integer.class);
-    private static final AttachmentKey<String> RESPONSE_CONTENT_TYPE_KEY = AttachmentKey.create(String.class);
-    private static final AttachmentKey<JsonObject> RESPONSE_JSON_CONTENT_KEY = AttachmentKey.create(JsonObject.class);
+    private static final JsonParser PARSER = new JsonParser();
+
+    private static final AttachmentKey<JsonElement> REQUEST_CONTENT_AS_JSON_KEY = AttachmentKey.create(JsonElement.class);
+
     private static final AttachmentKey<Boolean> IN_ERROR_KEY = AttachmentKey.create(Boolean.class);
     private static final AttachmentKey<Long> REQUEST_START_TIME_KEY = AttachmentKey.create(Long.class);
 
-    
+    private static final AttachmentKey<Integer> RESPONSE_STATUS_CODE_KEY = AttachmentKey.create(Integer.class);
+
+    private static final AttachmentKey<String> RESPONSE_CONTENT_TYPE_KEY = AttachmentKey.create(String.class);
+    private static final AttachmentKey<String> RESPONSE_CONTENT_KEY = AttachmentKey.create(String.class);
+    private static final AttachmentKey<JsonElement> RESPONSE_CONTENT_AS_JSON_KEY = AttachmentKey.create(JsonElement.class);
+
     public ExchangeHelper(HttpServerExchange exchange) {
         this.wrapped = exchange;
     }
@@ -70,66 +91,57 @@ public class ExchangeHelper {
 
     /**
      *
-     * @return method
+     * @return the request method
      */
     public METHOD getMethod() {
         return selectRequestMethod(wrapped.getRequestMethod());
     }
 
     /**
-     * @return the rawContent
+     * @return the request body as String
      */
-    public String getRawContent() {
-        return wrapped.getAttachment(RAW_CONTENT_KEY);
+    public String getRequestBody() throws IOException {
+        String content = readString(
+                readByteBuffer(
+                        getBufferedRequestDataAttachment(wrapped)));
+
+        LOGGER.debug("BUFFERED_REQUEST_DATA is {}", content);
+
+        return content;
+    }
+
+    private PooledByteBuffer[] getBufferedRequestDataAttachment(
+            final HttpServerExchange exchange) {
+        Field f;
+
+        try {
+            f = HttpServerExchange.class.getDeclaredField("BUFFERED_REQUEST_DATA");
+            f.setAccessible(true);
+        }
+        catch (NoSuchFieldException | SecurityException ex) {
+            throw new RuntimeException("could not find BUFFERED_REQUEST_DATA field", ex);
+        }
+
+        try {
+            return exchange.getAttachment(
+                    (AttachmentKey<PooledByteBuffer[]>) f.get(exchange));
+        }
+        catch (IllegalArgumentException | IllegalAccessException ex) {
+            throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
+        }
     }
 
     /**
-     * @param rawContent the rawContent to set
+     * @return the request body as JsonElement
      */
-    public void setRawContent(String rawContent) {
-        wrapped.putAttachment(RAW_CONTENT_KEY, rawContent);
-    }
+    public JsonElement getRequestBodyAsJson()
+            throws IOException, JsonSyntaxException {
+        if (wrapped.getAttachment(REQUEST_CONTENT_AS_JSON_KEY) == null) {
+            wrapped.putAttachment(REQUEST_CONTENT_AS_JSON_KEY,
+                    PARSER.parse(getRequestBody()));
+        }
 
-    /**
-     * @return the responseStatusCode
-     */
-    public int getResponseStatusCode() {
-        return wrapped.getAttachment(RESPONSE_STATUS_CODE_KEY);
-    }
-
-    /**
-     * @param responseStatusCode the responseStatusCode to set
-     */
-    public void setResponseStatusCode(int responseStatusCode) {
-        wrapped.putAttachment(RESPONSE_STATUS_CODE_KEY, responseStatusCode);
-    }
-
-    /**
-     * @return the responseJsonContent
-     */
-    public JsonObject getResponseJsonContent() {
-        return wrapped.getAttachment(RESPONSE_JSON_CONTENT_KEY);
-    }
-
-    /**
-     * @param responseJsonContent the responseJsonContent to set
-     */
-    public void setResponseContent(JsonObject responseJsonContent) {
-        wrapped.putAttachment(RESPONSE_JSON_CONTENT_KEY, responseJsonContent);
-    }
-
-    /**
-     * @return the responseContentType
-     */
-    public String getResponseContentType() {
-        return wrapped.getAttachment(RESPONSE_CONTENT_TYPE_KEY);
-    }
-
-    /**
-     * @param responseContentType the responseContentType to set
-     */
-    public void setResponseContentType(String responseContentType) {
-        wrapped.putAttachment(RESPONSE_CONTENT_TYPE_KEY, responseContentType);
+        return wrapped.getAttachment(REQUEST_CONTENT_AS_JSON_KEY);
     }
 
     /**
@@ -144,6 +156,83 @@ public class ExchangeHelper {
      */
     public void setRequestStartTime(Long requestStartTime) {
         wrapped.putAttachment(REQUEST_START_TIME_KEY, requestStartTime);
+    }
+
+    /**
+     * @return the responseStatusCode
+     */
+    public int getResponseStatusCode() {
+        if (wrapped.getAttachment(RESPONSE_STATUS_CODE_KEY) == null) {
+            return wrapped.getStatusCode();
+        } else {
+            return wrapped.getAttachment(RESPONSE_STATUS_CODE_KEY);
+        }
+    }
+
+    /**
+     * @param responseStatusCode the responseStatusCode to set
+     */
+    public void setResponseStatusCode(int responseStatusCode) {
+        wrapped.putAttachment(RESPONSE_STATUS_CODE_KEY, responseStatusCode);
+    }
+
+    /**
+     * @return the response content as String
+     */
+    public String getResponseContent() {
+        return wrapped.getAttachment(RESPONSE_CONTENT_KEY);
+    }
+
+    /**
+     * can be null if the content is not a String
+     *
+     * @param content the response content to set
+     */
+    public void setResponseContent(String content) {
+        wrapped.putAttachment(RESPONSE_CONTENT_KEY, content);
+    }
+
+    /**
+     * can be null if the content is not Json
+     *
+     * @return the response body as JsonElement
+     */
+    public JsonElement getResponseContentAsJson() {
+        return wrapped.getAttachment(RESPONSE_CONTENT_AS_JSON_KEY);
+    }
+
+    /**
+     * @param the response content to set
+     */
+    public void setResponseContent(JsonElement content) {
+        wrapped.putAttachment(RESPONSE_CONTENT_AS_JSON_KEY, content);
+    }
+
+    /**
+     * @return the responseContentType
+     */
+    public String getResponseContentType() {
+        return wrapped.getAttachment(RESPONSE_CONTENT_TYPE_KEY);
+    }
+
+    /**
+     * @return the responseContentType
+     */
+    public String getRequestContentType() {
+        return wrapped.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
+    }
+
+    /**
+     * @param responseContentType the responseContentType to set
+     */
+    public void setResponseContentType(String responseContentType) {
+        wrapped.putAttachment(RESPONSE_CONTENT_TYPE_KEY, responseContentType);
+    }
+
+    /**
+     */
+    public void setResponseContentTypeAsJson() {
+        wrapped.putAttachment(RESPONSE_CONTENT_TYPE_KEY, "application/json");
     }
 
     /**
@@ -223,5 +312,67 @@ public class ExchangeHelper {
      */
     public boolean isPut() {
         return getMethod() == METHOD.PUT;
+    }
+
+    /**
+     * helper method to check if the request content is Json
+     *
+     * @return true if Content-Type request header is application/json
+     */
+    public boolean isRequesteContentTypeJson() {
+        return "application/json".equals(getRequestContentType());
+    }
+
+    public String readString(ByteBuffer buffer) {
+        if (buffer == null) {
+            return null;
+        }
+        
+        return StandardCharsets.UTF_8
+                .decode(buffer)
+                .toString();
+    }
+
+    /**
+     * TODO throw exception if not enough space
+     *
+     * @param srcs
+     * @return
+     * @throws IOException
+     */
+    public ByteBuffer readByteBuffer(final PooledByteBuffer[] srcs) 
+            throws IOException {
+        if (srcs == null) {
+            return null;
+        }
+        
+        ByteBuffer dst = ByteBuffer.allocate(MAX_CONTENT_SIZE);
+
+        int copied = 0;
+        for (int i = 0; i < srcs.length; ++i) {
+            PooledByteBuffer pooled = srcs[i];
+            if (pooled != null) {
+                final ByteBuffer buf = pooled.getBuffer();
+                
+                if (buf.remaining() > dst.remaining()) {
+                    LOGGER.error("Request content too big. Max size is {} bytes", 
+                            MAX_CONTENT_SIZE);
+                    throw new IOException("Request content too big");
+                } 
+                
+                if (buf.hasRemaining()) {
+                    copied += Buffers.copy(dst, buf);
+
+                    // very important, I lost a day for this!
+                    buf.rewind();
+
+                    if (!dst.hasRemaining()) {
+                        return dst;
+                    }
+                }
+            }
+        }
+
+        return dst.position(0).limit(copied > 0 ? copied : 0);
     }
 }

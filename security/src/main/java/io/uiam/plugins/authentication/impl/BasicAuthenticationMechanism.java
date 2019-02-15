@@ -22,7 +22,7 @@ import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 
 import java.util.Map;
 
-import io.uiam.plugins.IDMCacheSingleton;
+import io.uiam.plugins.PluginsRegistry;
 import io.uiam.plugins.PluginConfigurationException;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
@@ -43,7 +43,7 @@ public class BasicAuthenticationMechanism extends io.undertow.security.impl.Basi
     public BasicAuthenticationMechanism(final String mechanismName, final Map<String, Object> args)
             throws PluginConfigurationException {
         super(argValue(args, "realm"), mechanismName, false,
-                IDMCacheSingleton.getInstance().getIdentityManager(argValue(args, "idm")));
+                PluginsRegistry.getInstance().getIdentityManager(argValue(args, "idm")));
 
         this.mechanismName = mechanismName;
     }
