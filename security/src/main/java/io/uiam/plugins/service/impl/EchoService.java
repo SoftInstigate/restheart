@@ -25,6 +25,7 @@ import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.plugins.service.PluggableService;
 import io.uiam.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
+import java.io.IOException;
 
 /**
  *
@@ -53,7 +54,7 @@ public class EchoService extends PluggableService {
         var eh = new ExchangeHelper(exchange);
 
         JsonObject resp = new JsonObject();
-        
+
         eh.setResponseContent(resp);
 
         resp.addProperty("method", exchange.getRequestMethod().toString());
@@ -64,10 +65,16 @@ public class EchoService extends PluggableService {
                 resp.add("body", eh.getRequestBodyAsJson());
             }
             catch (JsonSyntaxException jse) {
-                resp.addProperty("body", eh.getRequestBody());
+                resp.add("body", getTruncatedContentBytes(eh));
+                resp.addProperty("note",
+                        "showing up to 20 bytes of the request content");
             }
+        } else if (eh.isRequesteContentTypeXml() || eh.isRequesteContentTypeText()) {
+            resp.addProperty("body", eh.getRequestBodyAsText());
         } else {
-            resp.addProperty("body", eh.getRequestBody());
+            resp.add("body", getTruncatedContentBytes(eh));
+            resp.addProperty("note",
+                    "showing up to 20 bytes of the request content");
         }
 
         var qparams = new JsonObject();
@@ -97,5 +104,17 @@ public class EchoService extends PluggableService {
         });
 
         eh.setResponseStatusCode(HttpStatus.SC_OK);
+    }
+
+    private JsonArray getTruncatedContentBytes(ExchangeHelper eh) throws IOException {
+        byte[] content = eh.getRequestBodyAsBytes();
+
+        JsonArray ret = new JsonArray(20);
+
+        for (int i = 0; i < 20 && i < content.length; i++) {
+            ret.add(content[i]);
+        }
+
+        return ret;
     }
 }

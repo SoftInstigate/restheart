@@ -62,6 +62,7 @@ import org.xnio.Xnio;
 import org.xnio.ssl.XnioSsl;
 
 import io.uiam.handlers.ErrorHandler;
+import static io.uiam.handlers.ExchangeHelper.MAX_CONTENT_SIZE;
 import io.uiam.handlers.ExchangeHelper.METHOD;
 import io.uiam.handlers.GzipEncodingHandler;
 import io.uiam.handlers.PipedHttpHandler;
@@ -820,6 +821,12 @@ public class Bootstrapper {
      */
     private static GracefulShutdownHandler buildGracefulShutdownHandler(
             PathHandler paths) {
+        LOGGER.info("Request limit is {} bytes", MAX_CONTENT_SIZE);
+        
+        int maxBuffers = MAX_CONTENT_SIZE 
+                /configuration.getBufferSize() 
+                + 1;
+        
         return new GracefulShutdownHandler(new RequestLimitingHandler(
                 new RequestLimit(configuration.getRequestsLimit()),
                 new AllowedMethodsHandler(
@@ -827,7 +834,7 @@ public class Bootstrapper {
                         new RequestBufferingHandler(
                                 new GzipEncodingHandler(new ErrorHandler(
                                         new HttpContinueAcceptingHandler(paths)),
-                                        configuration.isForceGzipEncoding()), 1),
+                                        configuration.isForceGzipEncoding()), maxBuffers),
                         // allowed methods
                         HttpString.tryFromString(METHOD.GET.name()),
                         HttpString.tryFromString(METHOD.POST.name()),

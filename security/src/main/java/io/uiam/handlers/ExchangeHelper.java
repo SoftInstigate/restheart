@@ -49,8 +49,8 @@ public class ExchangeHelper {
     public static final String SLASH = "/";
     public static final String PATCH = "PATCH";
     public static final String UNDERSCORE = "_";
-    
-    public static int MAX_CONTENT_SIZE = 10*1024*1024; // 10Mbyte
+
+    public static int MAX_CONTENT_SIZE = 16 * 1024 * 1024; // 16byte
 
     private final HttpServerExchange wrapped;
 
@@ -100,12 +100,36 @@ public class ExchangeHelper {
     /**
      * @return the request body as String
      */
-    public String getRequestBody() throws IOException {
+    public byte[] getRequestBodyAsBytes() throws IOException {
+        PooledByteBuffer[] buffers = getBufferedRequestDataAttachment(wrapped);
+        
+        ByteBuffer content
+                = readByteBuffer(
+                        getBufferedRequestDataAttachment(wrapped));
+
+        if (content != null) {
+            LOGGER.debug("BUFFERED_REQUEST_DATA is {} bytes", content.limit());
+        } else {
+            LOGGER.debug("BUFFERED_REQUEST_DATA is {}", content);
+        }
+
+        return content == null ? null : content.array();
+    }
+
+    /**
+     * @return the request body as String
+     */
+    public String getRequestBodyAsText() throws IOException {
         String content = readString(
                 readByteBuffer(
                         getBufferedRequestDataAttachment(wrapped)));
 
-        LOGGER.debug("BUFFERED_REQUEST_DATA is {}", content);
+        if (content != null && content.length() > 100) {
+            LOGGER.debug("BUFFERED_REQUEST_DATA is {} (content truncated)",
+                    content.substring(100));
+        } else {
+            LOGGER.debug("BUFFERED_REQUEST_DATA is {}", content);
+        }
 
         return content;
     }
@@ -138,7 +162,7 @@ public class ExchangeHelper {
             throws IOException, JsonSyntaxException {
         if (wrapped.getAttachment(REQUEST_CONTENT_AS_JSON_KEY) == null) {
             wrapped.putAttachment(REQUEST_CONTENT_AS_JSON_KEY,
-                    PARSER.parse(getRequestBody()));
+                    PARSER.parse(getRequestBodyAsText()));
         }
 
         return wrapped.getAttachment(REQUEST_CONTENT_AS_JSON_KEY);
@@ -323,11 +347,31 @@ public class ExchangeHelper {
         return "application/json".equals(getRequestContentType());
     }
 
+    /**
+     * helper method to check if the request content is Xm
+     *
+     * @return true if Content-Type request header is application/xml or text/xml
+     */
+    public boolean isRequesteContentTypeXml() {
+        return "text/xml".equals(getRequestContentType())
+                || "application/xml".equals(getRequestContentType());
+    }
+    
+    /**
+     * helper method to check if the request content is text
+     *
+     * @return true if Content-Type request header starts with text/
+     */
+    public boolean isRequesteContentTypeText() {
+        return getRequestContentType() != null &&
+                getRequestContentType().startsWith("text/");
+    }
+
     public String readString(ByteBuffer buffer) {
         if (buffer == null) {
             return null;
         }
-        
+
         return StandardCharsets.UTF_8
                 .decode(buffer)
                 .toString();
@@ -340,12 +384,12 @@ public class ExchangeHelper {
      * @return
      * @throws IOException
      */
-    public ByteBuffer readByteBuffer(final PooledByteBuffer[] srcs) 
+    public ByteBuffer readByteBuffer(final PooledByteBuffer[] srcs)
             throws IOException {
         if (srcs == null) {
             return null;
         }
-        
+
         ByteBuffer dst = ByteBuffer.allocate(MAX_CONTENT_SIZE);
 
         int copied = 0;
@@ -353,22 +397,18 @@ public class ExchangeHelper {
             PooledByteBuffer pooled = srcs[i];
             if (pooled != null) {
                 final ByteBuffer buf = pooled.getBuffer();
-                
+
                 if (buf.remaining() > dst.remaining()) {
-                    LOGGER.error("Request content too big. Max size is {} bytes", 
+                    LOGGER.error("Request content too big. Max size is {} bytes",
                             MAX_CONTENT_SIZE);
                     throw new IOException("Request content too big");
-                } 
-                
+                }
+
                 if (buf.hasRemaining()) {
                     copied += Buffers.copy(dst, buf);
 
                     // very important, I lost a day for this!
                     buf.rewind();
-
-                    if (!dst.hasRemaining()) {
-                        return dst;
-                    }
                 }
             }
         }
