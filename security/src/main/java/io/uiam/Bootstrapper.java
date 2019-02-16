@@ -801,14 +801,14 @@ public class Bootstrapper {
             final PluggableTokenManager tokenManager
     ) {
         PathHandler paths = path();
+        
+        paths.addPrefixPath("/", new RequestNotManagedHandler());
 
         plugServices(configuration, paths,
                 authMechanisms, accessManager, tokenManager);
 
         proxyResources(configuration, paths,
                 authMechanisms, accessManager, tokenManager);
-
-        paths.addPrefixPath("/", new RequestNotManagedHandler());
 
         return buildGracefulShutdownHandler(paths);
     }
