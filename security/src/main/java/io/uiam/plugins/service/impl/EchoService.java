@@ -109,6 +109,10 @@ public class EchoService extends PluggableService {
     private JsonArray getTruncatedContentBytes(ExchangeHelper eh) throws IOException {
         byte[] content = eh.getRequestBodyAsBytes();
 
+        if (content == null) {
+            return null;
+        }
+        
         JsonArray ret = new JsonArray(20);
 
         for (int i = 0; i < 20 && i < content.length; i++) {
