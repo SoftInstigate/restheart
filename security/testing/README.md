@@ -16,6 +16,8 @@ Once the stack is running, the RESTHeart integration test suite is run.
 
 ## How to run the tests
 
+> Note: **Stop local instances of MongoDb** before running test.sh. The MongoDb container exposes the default port. It is needed by the test logic to remove test data. If MongoDb is also running outside the container stack, it hides the container port.
+
 First build the docker image:
 
 ```bash

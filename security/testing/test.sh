@@ -6,6 +6,12 @@ echo "###### test.sh #####"
 CD=$PWD
 SD="$( cd "$(dirname ${BASH_SOURCE[0]})" ; pwd -P )"
 
+echo "###### update RESTHeart image"
+
+docker pull softinstigate/restheart
+
+pgrep mongod && echo "ERROR, mongod is running on local host. Check README.md" && exit -1
+
 echo "###### start test stack"
 
 cd $SD
