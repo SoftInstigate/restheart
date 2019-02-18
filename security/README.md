@@ -177,27 +177,58 @@ Note that `/echo` is not secured and can be invoked without restrictions.
 ```bash
 $ http -f 127.0.0.1:8080/echo?qparam=value header:value a=1 b=2
 HTTP/1.1 200 OK
-(other headers omitted)
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Origin: *
+Access-Control-Expose-Headers: Location
+Access-Control-Expose-Headers: Location, ETag, Auth-Token, Auth-Token-Valid-Until, Auth-Token-Location, X-Powered-By
+Connection: keep-alive
+Content-Encoding: gzip
+Content-Length: 341
+Content-Type: application/json
+Date: Mon, 18 Feb 2019 17:25:19 GMT
 X-Powered-By: uIAM.io
 
-Method: POST
-URL: http://127.0.0.1:8080/echo
-
-Body
-a=1&b=2
-
-Query Parameters
-	qparam: value
-
-Headers
-	Accept: */*
-	Connection: keep-alive
-	Accept-Encoding: gzip, deflate
-	header: value
-	Content-Type: application/x-www-form-urlencoded; charset=utf-8
-	Content-Length: 7
-	User-Agent: HTTPie/0.9.9
-	Host: 127.0.0.1:8080
+{
+    "URL": "http://127.0.0.1:8080/echo",
+    "content": "a=1&b=2",
+    "headers": {
+        "Accept": [
+            "*/*"
+        ],
+        "Accept-Encoding": [
+            "gzip, deflate"
+        ],
+        "Connection": [
+            "keep-alive"
+        ],
+        "Content-Length": [
+            "7"
+        ],
+        "Content-Type": [
+            "application/x-www-form-urlencoded; charset=utf-8"
+        ],
+        "Host": [
+            "127.0.0.1:8080"
+        ],
+        "User-Agent": [
+            "HTTPie/1.0.2"
+        ],
+        "header": [
+            "value"
+        ]
+    },
+    "method": "POST",
+    "note": "showing up to 20 bytes of the request content",
+    "prop2": "property added by example response interceptor",
+    "qparams": {
+        "pagesize": [
+            "0"
+        ],
+        "qparam": [
+            "value"
+        ]
+    }
+}
 ```
 
 Let's try now to invoke `/secho` (please note the leading 's') without passing authentication credentials. This will fail with `401 Unauthorized` HTTP response.
@@ -207,8 +238,9 @@ $ http -f 127.0.0.1:8080/secho?qparam=value header:value a=1 b=2
 HTTP/1.1 401 Unauthorized
 Connection: keep-alive
 Content-Length: 0
-Date: Wed, 28 Nov 2018 14:42:48 GMT
-WWW-Authenticate: Basic realm="uIAM Realm
+Date: Mon, 18 Feb 2019 17:26:04 GMT
+WWW-Authenticate: Basic realm="uIAM Realm"
+WWW-Authenticate: Digest realm="uIAM Realm",domain="localhost",nonce="Z+fsw9eFwPgNMTU1MDUxMDc2NDA2NmFWzLOw/aaHdtjyi0jm5uE=",opaque="00000000000000000000000000000000",algorithm=MD5,qop="auth"
 ```
 
 Let's try now to pass credentials via basic authentication. The user `admin` is defined in the `security.yml` file.
@@ -219,37 +251,79 @@ HTTP/1.1 200 OK
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Origin: *
 Access-Control-Expose-Headers: Location
-Access-Control-Expose-Headers: Location, ETag, Auth-Token, Auth-Token-Valid-Until, X-Powered-By
-Auth-Token: ceemz9jjcjxx4puat0gzksioehp5olxivbn1edo3hj63af3z
-Auth-Token-Valid-Until: 2018-11-28T14:59:44.081609Z
-(other headers omitted)
+Access-Control-Expose-Headers: Location, ETag, Auth-Token, Auth-Token-Valid-Until, Auth-Token-Location, X-Powered-By
+Auth-Token: 5iojkf21pdul7layo3qultyes7qyt8obdm1u67hkmnw6l39ckm
+Auth-Token-Location: /tokens/admin
+Auth-Token-Valid-Until: 2019-02-18T17:41:25.142209Z
+Connection: keep-alive
+Content-Encoding: gzip
+Content-Length: 427
+Content-Type: application/json
+Date: Mon, 18 Feb 2019 17:26:25 GMT
 X-Powered-By: uIAM.io
 
-Method: POST
-URL: http://127.0.0.1:8080/secho
-
-Body
-a=1&b=2
-
-Query Parameters
-	qparam: value
-
-Headers
-	Accept: */*
-	Accept-Encoding: gzip, deflate
-	X-Forwarded-Server: 127.0.0.1
-	User-Agent: HTTPie/0.9.9
-	X-Forwarded-Account-Roles: admin,user
-	Connection: keep-alive
-	X-Forwarded-Proto: http
-	X-Forwarded-Port: 8080
-	X-Forwarded-Account-Id: admin
-	X-Forwarded-For: 127.0.0.1
-	header: value
-	Content-Type: application/x-www-form-urlencoded; charset=utf-8
-	Content-Length: 7
-	Host: 127.0.0.1:8080
-	X-Forwarded-Host: 127.0.0.1:8080
+{
+    "URL": "http://localhost:8080/echo",
+    "content": "a=1&b=2",
+    "headers": {
+        "Accept": [
+            "*/*"
+        ],
+        "Accept-Encoding": [
+            "gzip, deflate"
+        ],
+        "Connection": [
+            "keep-alive"
+        ],
+        "Content-Length": [
+            "7"
+        ],
+        "Content-Type": [
+            "application/x-www-form-urlencoded; charset=utf-8"
+        ],
+        "Host": [
+            "localhost:8080"
+        ],
+        "User-Agent": [
+            "HTTPie/1.0.2"
+        ],
+        "X-Forwarded-Account-Id": [
+            "admin"
+        ],
+        "X-Forwarded-Account-Roles": [
+            "user,admin"
+        ],
+        "X-Forwarded-For": [
+            "127.0.0.1"
+        ],
+        "X-Forwarded-Host": [
+            "127.0.0.1:8080"
+        ],
+        "X-Forwarded-Port": [
+            "8080"
+        ],
+        "X-Forwarded-Proto": [
+            "http"
+        ],
+        "X-Forwarded-Server": [
+            "127.0.0.1"
+        ],
+        "header": [
+            "value"
+        ]
+    },
+    "method": "POST",
+    "note": "showing up to 20 bytes of the request content",
+    "prop2": "property added by example response interceptor",
+    "qparams": {
+        "pagesize": [
+            "0"
+        ],
+        "qparam": [
+            "value"
+        ]
+    }
+}
   ```
 
 We can note that &#181;IAM:
