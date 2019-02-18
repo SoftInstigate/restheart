@@ -18,10 +18,18 @@
 package io.uiam.plugins.interceptors;
 
 /**
- * An request interceptor can modify a request before proxying it. Can be setup
- * by an Initializer using PluginsRegistry.getRequestInterceptors().add()
+ * An request interceptor can snoop and modify requests before proxying them.
+ * Can be setup by an Initializer using
+ * PluginsRegistry.getRequestInterceptors().add()
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public interface PluggableRequestInterceptor extends PluggableInterceptor {
+    /**
+     *
+     * @return true if the Interceptor requires to access the request content
+     */
+    default boolean requiresContent() {
+        return false;
+    }
 }

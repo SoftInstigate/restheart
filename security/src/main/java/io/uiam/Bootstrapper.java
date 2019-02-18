@@ -62,11 +62,11 @@ import org.xnio.Xnio;
 import org.xnio.ssl.XnioSsl;
 
 import io.uiam.handlers.ErrorHandler;
-import static io.uiam.handlers.ExchangeHelper.MAX_CONTENT_SIZE;
-import io.uiam.handlers.ExchangeHelper.METHOD;
+import io.uiam.handlers.Request.METHOD;
 import io.uiam.handlers.GzipEncodingHandler;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.PipedWrappingHandler;
+import io.uiam.handlers.RequestContentInjector;
 import io.uiam.handlers.RequestLoggerHandler;
 import io.uiam.handlers.RequestInterceptorsHandler;
 import io.uiam.handlers.ResponseContentSenderHandler;
@@ -93,10 +93,10 @@ import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.UndertowOptions;
 import io.undertow.server.handlers.AllowedMethodsHandler;
+import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
 import io.undertow.server.handlers.PathHandler;
-import io.undertow.server.handlers.RequestBufferingHandler;
 import io.undertow.server.handlers.RequestLimit;
 import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
@@ -801,7 +801,7 @@ public class Bootstrapper {
             final PluggableTokenManager tokenManager
     ) {
         PathHandler paths = path();
-        
+
         paths.addPrefixPath("/", new RequestNotManagedHandler());
 
         plugServices(configuration, paths,
@@ -821,20 +821,13 @@ public class Bootstrapper {
      */
     private static GracefulShutdownHandler buildGracefulShutdownHandler(
             PathHandler paths) {
-        LOGGER.info("Request limit is {} bytes", MAX_CONTENT_SIZE);
-        
-        int maxBuffers = MAX_CONTENT_SIZE 
-                /configuration.getBufferSize() 
-                + 1;
-        
         return new GracefulShutdownHandler(new RequestLimitingHandler(
                 new RequestLimit(configuration.getRequestsLimit()),
                 new AllowedMethodsHandler(
-                        //new BlockingHandler(
-                        new RequestBufferingHandler(
+                        new RequestContentInjector(
                                 new GzipEncodingHandler(new ErrorHandler(
                                         new HttpContinueAcceptingHandler(paths)),
-                                        configuration.isForceGzipEncoding()), maxBuffers),
+                                        configuration.isForceGzipEncoding())),
                         // allowed methods
                         HttpString.tryFromString(METHOD.GET.name()),
                         HttpString.tryFromString(METHOD.POST.name()),

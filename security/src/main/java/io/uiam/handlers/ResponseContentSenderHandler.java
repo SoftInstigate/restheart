@@ -51,28 +51,28 @@ public class ResponseContentSenderHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var eh = new ExchangeHelper(exchange);
+        var response = Response.wrap(exchange);
 
         if (!exchange.isResponseStarted()) {
-            exchange.setStatusCode(eh.getResponseStatusCode());
+            exchange.setStatusCode(response.getStatusCode());
         }
 
-        if (eh.getResponseContentAsJson() != null) {
+        if (response.getContentAsJson() != null) {
             exchange.getResponseHeaders().add(
                     Headers.CONTENT_TYPE,
                     "application/json");
 
-            exchange.getResponseSender().send(eh
-                    .getResponseContentAsJson()
+            exchange.getResponseSender().send(response
+                    .getContentAsJson()
                     .toString());
-        } else if (eh.getResponseContent() != null) {
-            if (eh.getResponseContentType() != null) {
+        } else if (response.getContent() != null) {
+            if (response.getContentType() != null) {
                 exchange.getResponseHeaders().add(
                         Headers.CONTENT_TYPE,
-                        eh.getResponseContentType());
+                        response.getContentType());
             }
 
-            exchange.getResponseSender().send(eh.getResponseContent());
+            exchange.getResponseSender().send(response.getContent());
         }
 
         exchange.endExchange();

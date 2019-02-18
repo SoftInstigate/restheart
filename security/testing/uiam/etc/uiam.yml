@@ -65,7 +65,7 @@ use-embedded-keystore: true
  # A custom initializer implmenting the io.uiam.init.Initializer interface
  # Can be used to inizialize data or add global transformers, checkers or security predicates
 
-#initializer-class: io.uiam.init.impl.TestInitializer
+#initializer-class: io.uiam.init.impl.ExampleInitializer
 
 ### Security
 

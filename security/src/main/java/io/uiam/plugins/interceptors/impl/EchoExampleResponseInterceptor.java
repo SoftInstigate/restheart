@@ -17,7 +17,7 @@
  */
 package io.uiam.plugins.interceptors.impl;
 
-import io.uiam.handlers.ExchangeHelper;
+import io.uiam.handlers.Response;
 import io.undertow.server.HttpServerExchange;
 import io.uiam.plugins.interceptors.PluggableResponseInterceptor;
 
@@ -25,26 +25,24 @@ import io.uiam.plugins.interceptors.PluggableResponseInterceptor;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class TestResponseInterceptor implements PluggableResponseInterceptor{
+public class EchoExampleResponseInterceptor implements PluggableResponseInterceptor{
 
     @Override
     public void handle(HttpServerExchange exchange) {
-        new ExchangeHelper(exchange)
-                .getResponseContentAsJson()
-                .getAsJsonObject()
-                .get("body")
+        Response.wrap(exchange)
+                .getContentAsJson()
                 .getAsJsonObject()
                 .addProperty("prop2", 
-                        "property added by test response transformer");
+                        "property added by example response interceptor");
     }
 
     @Override
     public boolean resolve(HttpServerExchange exchange) {
-        ExchangeHelper eh = new ExchangeHelper(exchange);
+        var response = Response.wrap(exchange);
         
-        return eh.isRequesteContentTypeJson() &&
-                eh.getResponseContentAsJson() != null &&
-                eh.getResponseContentAsJson().isJsonObject() &&
+        return response.isContentTypeJson() &&
+                response.getContentAsJson() != null &&
+                response.getContentAsJson().isJsonObject() &&
                 (exchange.getRequestPath().equals("/echo") ||
                 exchange.getRequestPath().equals("/secho"));
     }

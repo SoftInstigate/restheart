@@ -18,20 +18,27 @@
 package io.uiam.plugins.service.impl;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
-import io.uiam.handlers.ExchangeHelper;
+import io.uiam.handlers.Request;
 import io.uiam.handlers.PipedHttpHandler;
+import io.uiam.handlers.Response;
 import io.uiam.plugins.service.PluggableService;
 import io.uiam.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class EchoService extends PluggableService {
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(EchoService.class);
 
     /**
      *
@@ -51,28 +58,28 @@ public class EchoService extends PluggableService {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var eh = new ExchangeHelper(exchange);
+        var request = Request.wrap(exchange);
+        var response = Response.wrap(exchange);
 
         JsonObject resp = new JsonObject();
 
-        eh.setResponseContent(resp);
+        response.setContent(resp);
 
         resp.addProperty("method", exchange.getRequestMethod().toString());
         resp.addProperty("URL", exchange.getRequestURL());
 
-        if (eh.isRequesteContentTypeJson()) {
+        if (request.isContentTypeJson()) {
             try {
-                resp.add("body", eh.getRequestBodyAsJson());
-            }
-            catch (JsonSyntaxException jse) {
-                resp.add("body", getTruncatedContentBytes(eh));
+                resp.add("body", request.getContentAsJson());
+            } catch (JsonSyntaxException jse) {
+                resp.add("content", getContent(request));
                 resp.addProperty("note",
                         "showing up to 20 bytes of the request content");
             }
-        } else if (eh.isRequesteContentTypeXml() || eh.isRequesteContentTypeText()) {
-            resp.addProperty("body", eh.getRequestBodyAsText());
-        } else {
-            resp.add("body", getTruncatedContentBytes(eh));
+        } else if (request.isContentTypeXml() || request.isContentTypeText()) {
+            resp.addProperty("body", request.getContentAsText());
+        } else if (request.isContentAvailable()) {
+            resp.add("content", getContent(request));
             resp.addProperty("note",
                     "showing up to 20 bytes of the request content");
         }
@@ -103,22 +110,24 @@ public class EchoService extends PluggableService {
 
         });
 
-        eh.setResponseStatusCode(HttpStatus.SC_OK);
+        response.setStatusCode(HttpStatus.SC_OK);
     }
 
-    private JsonArray getTruncatedContentBytes(ExchangeHelper eh) throws IOException {
-        byte[] content = eh.getRequestBodyAsBytes();
+    private JsonElement getContent(Request request) throws IOException {
+        byte[] content = request.getContent();
 
         if (content == null) {
             return null;
-        }
-        
-        JsonArray ret = new JsonArray(20);
+        } else if (content.length < 1024) {
+            return new JsonPrimitive(request.getContentAsText());
+        } else {
+            JsonArray ret = new JsonArray(20);
 
-        for (int i = 0; i < 20 && i < content.length; i++) {
-            ret.add(content[i]);
-        }
+            for (int i = 0; i < 20 && i < content.length; i++) {
+                ret.add(content[i]);
+            }
 
-        return ret;
+            return ret;
+        }
     }
 }

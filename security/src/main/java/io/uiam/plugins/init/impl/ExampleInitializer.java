@@ -20,12 +20,12 @@ package io.uiam.plugins.init.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.uiam.handlers.ExchangeHelper;
+import io.uiam.handlers.Request;
 import io.uiam.handlers.security.AccessManagerHandler;
 import io.uiam.plugins.PluginsRegistry;
 import io.uiam.plugins.init.PluggableInitializer;
-import io.uiam.plugins.interceptors.impl.TestRequestInterceptor;
-import io.uiam.plugins.interceptors.impl.TestResponseInterceptor;
+import io.uiam.plugins.interceptors.impl.EchoExampleRequestInterceptor;
+import io.uiam.plugins.interceptors.impl.EchoExampleResponseInterceptor;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 
@@ -33,8 +33,8 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class TestInitializer implements PluggableInitializer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestInitializer.class);
+public class ExampleInitializer implements PluggableInitializer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExampleInitializer.class);
 
     @Override
     public void init() {
@@ -45,10 +45,11 @@ public class TestInitializer implements PluggableInitializer {
         // add a global security predicate
         AccessManagerHandler.getGlobalSecurityPredicates().add(new Predicate() {
             @Override
-            public boolean resolve(HttpServerExchange hse) {
-                var hex = new ExchangeHelper(hse);
+            public boolean resolve(HttpServerExchange exchange) {
+                var request = Request.wrap(exchange);
 
-                return hex.isGet() && "/foo/bar".equals(hse.getRequestPath());
+                return request.isGet() 
+                        && "/foo/bar".equals(exchange.getRequestPath());
             }
         });
         
@@ -56,12 +57,12 @@ public class TestInitializer implements PluggableInitializer {
         PluginsRegistry
                 .getInstance()
                 .getResponseInterceptors()
-                .add(new TestResponseInterceptor());
+                .add(new EchoExampleResponseInterceptor());
         
         // add a test request transformer
         PluginsRegistry
                 .getInstance()
                 .getRequestInterceptors()
-                .add(new TestRequestInterceptor());
+                .add(new EchoExampleRequestInterceptor());
     }
 }

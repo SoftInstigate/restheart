@@ -71,16 +71,16 @@ public class ExchangeHelperTest {
 
     @Test
     public void testSelectRequestMethod() {
-        var ex = new HttpServerExchange();
-        var hex = new ExchangeHelper(ex);
+        var exchange = new HttpServerExchange();
+        var request = Request.wrap(exchange);
 
-        ex.setRequestMethod(new HttpString("UNKNOWN"));
-        assertEquals(ExchangeHelper.METHOD.OTHER, hex.getMethod());
+        exchange.setRequestMethod(new HttpString("UNKNOWN"));
+        assertEquals(Request.METHOD.OTHER, request.getMethod());
 
-        ex.setRequestMethod(new HttpString("GET"));
-        assertEquals(ExchangeHelper.METHOD.GET, hex.getMethod());
+        exchange.setRequestMethod(new HttpString("GET"));
+        assertEquals(Request.METHOD.GET, request.getMethod());
 
-        ex.setRequestMethod(new HttpString("PATCH"));
-        assertEquals(ExchangeHelper.METHOD.PATCH, hex.getMethod());
+        exchange.setRequestMethod(new HttpString("PATCH"));
+        assertEquals(Request.METHOD.PATCH, request.getMethod());
     }
 }

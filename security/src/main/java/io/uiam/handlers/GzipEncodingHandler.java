@@ -20,7 +20,6 @@ package io.uiam.handlers;
 import java.util.Arrays;
 
 import io.uiam.utils.HttpStatus;
-import io.uiam.utils.ResponseHelper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
@@ -35,7 +34,8 @@ import io.undertow.util.Headers;
  */
 public class GzipEncodingHandler extends EncodingHandler {
 
-    private final ResponseContentSenderHandler sender = new ResponseContentSenderHandler(null);
+    private final ResponseContentSenderHandler sender
+            = new ResponseContentSenderHandler(null);
 
     private boolean forceCompression = false;
 
@@ -44,26 +44,31 @@ public class GzipEncodingHandler extends EncodingHandler {
      *
      * @param next
      * @param forceCompression if true requests without gzip encoding in
-     *                         Accept-Encoding header will be rejected
+     * Accept-Encoding header will be rejected
      */
     public GzipEncodingHandler(HttpHandler next, boolean forceCompression) {
-        super(next, new ContentEncodingRepository().addEncodingHandler("gzip", new GzipEncodingProvider(), 50));
+        super(next, new ContentEncodingRepository()
+                .addEncodingHandler("gzip", new GzipEncodingProvider(), 50));
         this.forceCompression = forceCompression;
     }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         if (forceCompression) {
-            HeaderValues acceptedEncodings = exchange.getRequestHeaders().get(Headers.ACCEPT_ENCODING_STRING);
+            HeaderValues acceptedEncodings = exchange
+                    .getRequestHeaders()
+                    .get(Headers.ACCEPT_ENCODING_STRING);
 
             for (String values : acceptedEncodings) {
-                if (Arrays.stream(values.split(",")).anyMatch((v) -> Headers.GZIP.toString().equals(v))) {
+                if (Arrays.stream(values.split(",")).anyMatch((v)
+                        -> Headers.GZIP.toString().equals(v))) {
                     super.handleRequest(exchange);
                     return;
                 }
             }
 
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST,
+            Response.wrap(exchange).endExchangeWithMessage(
+                    HttpStatus.SC_BAD_REQUEST,
                     "Accept-Encoding header must include gzip");
 
             sender.handleRequest(exchange);

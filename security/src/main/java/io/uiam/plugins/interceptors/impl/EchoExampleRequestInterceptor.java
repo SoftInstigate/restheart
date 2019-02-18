@@ -19,64 +19,55 @@ package io.uiam.plugins.interceptors.impl;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
-import io.uiam.handlers.ExchangeHelper;
+import io.uiam.handlers.Request;
 import io.undertow.server.HttpServerExchange;
-import java.io.IOException;
 import java.util.LinkedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.uiam.plugins.interceptors.PluggableRequestInterceptor;
+import java.io.IOException;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class TestRequestInterceptor implements PluggableRequestInterceptor {
-
+public class EchoExampleRequestInterceptor implements PluggableRequestInterceptor {
     private static final Logger LOGGER = LoggerFactory
-            .getLogger(TestRequestInterceptor.class);
+            .getLogger(EchoExampleRequestInterceptor.class);
 
     @Override
     public void handle(HttpServerExchange exchange) {
-        var eh = new ExchangeHelper(exchange);
+        var request = Request.wrap(exchange);
 
         // add query parameter ?pagesize=0
         var vals = new LinkedList<String>();
         vals.add("0");
-
         exchange.getQueryParameters().put("pagesize", vals);
 
-        try {
-            // modify the request body adding a json property
+        if (request.isContentTypeJson()) {
+            JsonElement requestContent = null;
 
-            eh.getRequestBodyAsJson().getAsJsonObject()
-                    .addProperty("prop1", "property added by test request transformer");
-        }
-        catch (IOException | JsonSyntaxException ex) {
-            LOGGER.error("error parsing request content as Json");
-        }
+            try {
+                requestContent = request.getContentAsJson();
+            } catch (IOException | JsonSyntaxException ex) {
+                LOGGER.error("error parsing request content as Json");
+            }
+            if (requestContent != null) {
+                requestContent.getAsJsonObject()
+                        .addProperty("prop1",
+                                "property added by example request interceptor");
+            }
+        } 
     }
 
     @Override
     public boolean resolve(HttpServerExchange exchange) {
-        ExchangeHelper eh = new ExchangeHelper(exchange);
-        
-        if (!eh.isRequesteContentTypeJson()) {
-            return false;
-        }
+        return exchange.getRequestPath().equals("/echo")
+                || exchange.getRequestPath().equals("/secho");
+    }
 
-        JsonElement requestContent = null;
-
-        try {
-            requestContent = eh.getRequestBodyAsJson();
-        }
-        catch (IOException | JsonSyntaxException ex) {
-            throw new RuntimeException(ex);
-        }
-
-        return requestContent != null
-                && requestContent.isJsonObject()
-                && (exchange.getRequestPath().equals("/echo")
-                || exchange.getRequestPath().equals("/secho"));
+    @Override
+    public boolean requiresContent() {
+        return true;
     }
 }

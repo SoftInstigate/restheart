@@ -68,9 +68,9 @@ use-embedded-keystore: true
 ### Initializer
 
  # A custom initializer implmenting the io.uiam.init.Initializer interface
- # Can be used to inizialize data or add global transformers, checkers or security predicates
+ # Can be used to inizialize data, to add global predicated and interceptors
 
-initializer-class: io.uiam.plugins.init.impl.TestInitializer
+initializer-class: io.uiam.plugins.init.impl.ExampleInitializer
 
 ### Security
 
@@ -211,10 +211,10 @@ force-gzip-encoding: false
 requests-limit: 1000
 
  # Number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
-io-threads: 2
+io-threads: 4
 
  # Number of threads created for blocking tasks (such as ones involving db access). suggested value: core*16
-worker-threads: 8
+worker-threads: 16
 
  # Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
 buffer-size: 16384

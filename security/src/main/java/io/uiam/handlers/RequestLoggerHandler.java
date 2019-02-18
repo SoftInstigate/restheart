@@ -104,10 +104,10 @@ public class RequestLoggerHandler extends PipedHttpHandler {
             return;
         }
 
-        var hex = new ExchangeHelper(exchange);
+        var request = Request.wrap(exchange);
 
         final StringBuilder sb = new StringBuilder();
-        final long start = hex.getRequestStartTime() != null ? hex.getRequestStartTime() : System.currentTimeMillis();
+        final long start = request.getStartTime() != null ? request.getStartTime() : System.currentTimeMillis();
 
         if (logLevel == 1) {
             sb.append(exchange.getRequestMethod()).append(" ").append(exchange.getRequestURL());

@@ -359,7 +359,7 @@
                                 <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
                                 <echo>1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
                                 <exec dir="${basedir}" executable="${basedir}/bin/start.sh">
-                                    <arg value="${basedir}/etc/uiam-dev.yml"/>
+                                    <arg value="${basedir}/etc/uiam.yml"/>
                                 </exec>
                             </target>
                         </configuration>
@@ -374,7 +374,7 @@
                             <skip>${skipITs}</skip>
                             <target>
                                 <exec dir="${basedir}" executable="${basedir}/bin/stop.sh">
-                                    <arg value="${basedir}/etc/uiam-dev.yml"/>
+                                    <arg value="${basedir}/etc/uiam.yml"/>
                                 </exec>
                             </target>
                         </configuration>

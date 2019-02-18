@@ -123,7 +123,7 @@ You need __Java 11__ and must download the latest release from [releases page](h
 ```
 $ tar -xzf uiam-XX.tar.gz
 $ cd uiam
-$ java -jar uiam.jar etc/uiam-dev.yml
+$ java -jar uiam.jar etc/uiam.yml
 ```
 
 ## Building from source
@@ -134,7 +134,7 @@ You need Git, Java 11 and Maven.
 $ git clone git@github.com:SoftInstigate/uiam.git
 $ cd uiam
 $ mvn package
-$ java -jar target/uiam.jar etc/uiam-dev.yml
+$ java -jar target/uiam.jar etc/uiam.yml
 ```
 
 ## With Docker
@@ -145,7 +145,7 @@ $ java -jar target/uiam.jar etc/uiam-dev.yml
 
 To follow this tutorial you need [httpie](https://httpie.org), a modern command line HTTP client made in Python which is easy to use and produces a colorized and indented output.
 
-Run &#181;IAM with the [default configuration file](etc/uiam-dev.yml). It is bound to port `8080` and proxies two example resources:
+Run &#181;IAM with the [default configuration file](etc/uiam.yml). It is bound to port `8080` and proxies two example resources:
 
 - https://restheart.org web site at URI `/restheart`
 - the service `/echo` implemented by &#181;IAM itself at URI `/secho`. It just echoes back the request (URL, query parameters, body and headers).
@@ -163,7 +163,7 @@ proxies:
       external-url: https://restheart.org
 ```
 
-Let's fist invoke the `/echo` service directly. This is defined in the [configuration file](etc/uiam-dev.yml) as follows:
+Let's fist invoke the `/echo` service directly. This is defined in the [configuration file](etc/uiam.yml) as follows:
 
 ```yaml
 services:
@@ -371,7 +371,7 @@ token-manager:
 
 # Configuration
 
-&#181;IAM is configured via the yml configuration file. See the [default configuration file](https://github.com/SoftInstigate/uiam/blob/master/etc/uiam-dev.yml) for inline help.
+&#181;IAM is configured via the yml configuration file. See the [default configuration file](https://github.com/SoftInstigate/uiam/blob/master/etc/uiam.yml) for inline help.
 
 # Plugin development
 
