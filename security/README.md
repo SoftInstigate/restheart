@@ -381,16 +381,16 @@ The Authentication Mechanism class must implement the `io.uiam.plugins.authentic
 
 ```java
 public interface PluggableAuthenticationMechanism extends AuthenticationMechanism {
-    @Override
-    public AuthenticationMechanismOutcome authenticate(
-            final HttpServerExchange exchange,
-            final SecurityContext securityContext);
+  @Override
+  public AuthenticationMechanismOutcome authenticate(
+          final HttpServerExchange exchange,
+          final SecurityContext securityContext);
 
-    @Override
-    public ChallengeResult sendChallenge(final HttpServerExchange exchange,
-            final SecurityContext securityContext);
+  @Override
+  public ChallengeResult sendChallenge(final HttpServerExchange exchange,
+          final SecurityContext securityContext);
 
-    public String getMechanismName();
+  public String getMechanismName();
 ```
 
 ### Configuration
@@ -414,8 +414,7 @@ The Authentication Mechanism implementation class must have the following constr
 If the property `args` is specified in configuration:
 
 ```java
-public MyAuthenticationMechanism(final String mechanismName,
-            final Map<String, Object> args) throws PluginConfigurationException {
+public MyAuthenticationMechanism(final String mechanismName, final Map<String, Object> args) throws PluginConfigurationException {
 
   // use argValue() helper method to get the arguments specified in the configuration file
   Integer _number = argValue(args, "number");
@@ -452,7 +451,8 @@ To mark the authentication as successful in `authenticate()`:
 final Account account;
 
 securityContext.authenticationComplete(account, getMechanismName(), false);
-        return AuthenticationMechanismOutcome.AUTHENTICATED;
+
+return AuthenticationMechanismOutcome.AUTHENTICATED;
 ```
 
 ### sendChallenge()
@@ -493,14 +493,14 @@ The Identity Manager class must implement the `io.uiam.plugins.authentication.Pl
 
 ```java
 public interface PluggableIdentityManager extends IdentityManager {
-    @Override
-    public Account verify(Account account);
-    
-    @Override
-    public Account verify(String id, Credential credential);
+  @Override
+  public Account verify(Account account);
+  
+  @Override
+  public Account verify(String id, Credential credential);
 
-    @Override
-    public Account verify(Credential credential);
+  @Override
+  public Account verify(Credential credential);
 }
 ```
 
@@ -525,8 +525,7 @@ The Identity Manager implementation class must have the following constructor:
 If the property `args` is specified in configuration:
 
 ```java
-public MyIdm(final String idmName,
-            final Map<String, Object> args) throws PluginConfigurationException {
+public MyIdm(final String idmName, final Map<String, Object> args) throws PluginConfigurationException {
 
   // use argValue() helper method to get the arguments specified in the configuration file
   Integer _number = argValue(args, "number");
@@ -547,7 +546,6 @@ The Access Manager implementation class must implement the `io.uiam.plugins.auth
 
 ```java
 public interface PluggableAccessManager {
-
     /**
      *
      * @param exchange
@@ -586,8 +584,7 @@ The Access Manager implementation class must have the following constructor:
 If the property `args` is specified in configuration:
 
 ```java
-public MyAM(final String amName,
-            final Map<String, Object> args) throws PluginConfigurationException {
+public MyAM(final String amName, final Map<String, Object> args) throws PluginConfigurationException {
 
   // use argValue() helper method to get the arguments specified in the configuration file
   Integer _number = argValue(args, "number");
@@ -610,31 +607,31 @@ Note that PluggableTokenManager extends PluggableIdentityManager for token verif
 
 ```java
 public interface PluggableTokenManager extends PluggableIdentityManager {
-    static final HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
-    static final HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
-    static final HttpString AUTH_TOKEN_LOCATION_HEADER = HttpString.tryFromString("Auth-Token-Location");
+  static final HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
+  static final HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
+  static final HttpString AUTH_TOKEN_LOCATION_HEADER = HttpString.tryFromString("Auth-Token-Location");
 
-    /**
-     * retrieves of generate a token valid for the account
-     * @param account
-     * @return the token for the account
-     */
-    public PasswordCredential get(Account account);
+  /**
+   * retrieves of generate a token valid for the account
+   * @param account
+   * @return the token for the account
+   */
+  public PasswordCredential get(Account account);
 
-    /**
-     * invalidates a token
-     * @param account
-     * @param token 
-     */
-    public void invalidate(Account account, PasswordCredential token);
+  /**
+   * invalidates a token
+   * @param account
+   * @param token 
+   */
+  public void invalidate(Account account, PasswordCredential token);
 
-    /**
-     * injects the token headers in the response
-     * 
-     * @param exchange
-     * @param token 
-     */
-    public void injectTokenHeaders(HttpServerExchange exchange, PasswordCredential token);
+  /**
+   * injects the token headers in the response
+   * 
+   * @param exchange
+   * @param token 
+   */
+  public void injectTokenHeaders(HttpServerExchange exchange, PasswordCredential token);
 }
 ```
 
@@ -659,8 +656,7 @@ The Access Manager implementation class must have the following constructor:
 If the property `args` is specified in configuration:
 
 ```java
-public MyTM(final String tmName,
-            final Map<String, Object> args) throws PluginConfigurationException {
+public MyTM(final String tmName, final Map<String, Object> args) throws PluginConfigurationException {
 
   // use argValue() helper method to get the arguments specified in the configuration file
   Integer _number = argValue(args, "number");
@@ -681,33 +677,35 @@ The Service implementation class must extend the `io.uiam.plugins.service.Plugga
 
 
 ```java
-    /**
-     *
-     * @param exchange
-     * @throws Exception
-     */
-    public abstract void handleRequest(HttpServerExchange exchange) throws Exception;
+public abstract class PluggableService extends PipedHttpHandler implements ConfigurablePlugin {
+  /**
+   *
+   * @param exchange
+   * @throws Exception
+   */
+  public abstract void handleRequest(HttpServerExchange exchange) throws Exception;
+  }
 }
 ```
 
 An example service implementation follows. It sends the usual `Hello World` message, however if the request specifies `?name=Bob` it responds with `Hello Bob`.
 
 ```java
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-      var msg = new StringBuffer("Hello ");
-      
-      var _name = exchange.getQueryParameters().get("name");
-      
-      if (_name == null || _name.isEmpty()) {
-          msg.append("World");
-      } else {
-          msg.append(_name.getFirst());
-      }
-      
-      exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
-      exchange.getResponseSender().send(msg.toString());
-      exchange.endExchange();
-    }
+public void handleRequest(HttpServerExchange exchange) throws Exception {
+  var msg = new StringBuffer("Hello ");
+  
+  var _name = exchange.getQueryParameters().get("name");
+  
+  if (_name == null || _name.isEmpty()) {
+      msg.append("World");
+  } else {
+      msg.append(_name.getFirst());
+  }
+  
+  exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+  exchange.getResponseSender().send(msg.toString());
+  exchange.endExchange();
+}
 ```
 
 ### Configuration
@@ -737,10 +735,10 @@ The Service abstract class implements the following constructor:
 
 ```java
 public PluggableService(PipedHttpHandler next,
-            String name,
-            String uri,
-            Boolean secured,
-            Map<String, Object> args);
+          String name,
+          String uri,
+          Boolean secured,
+          Map<String, Object> args);
 ```
 
 <hr>
@@ -755,7 +753,7 @@ The Initializer implementation class must extend the `io.uiam.plugins.init.Plugg
 
 ```java
 public interface PluggableInitializer {
-    public void init();
+  public void init();
 }
 ```
 
@@ -791,15 +789,15 @@ The following example predicate allows requesting URI `/foo/bar`:
 
 ```java
 // add a global security predicate
-        AccessManagerHandler.getGlobalSecurityPredicates().add(new Predicate() {
-            @Override
-            public boolean resolve(HttpServerExchange exchange) {
-                var request = Request.wrap(exchange);
+AccessManagerHandler.getGlobalSecurityPredicates().add(new Predicate() {
+    @Override
+    public boolean resolve(HttpServerExchange exchange) {
+        var request = Request.wrap(exchange);
 
-                return request.isGet() 
-                        && "/foo/bar".equals(exchange.getRequestPath());
-            }
-        });
+        return request.isGet() 
+                && "/foo/bar".equals(exchange.getRequestPath());
+    }
+});
 ```
 
 <hr>
@@ -816,20 +814,21 @@ Those interfaces both extend the base interface `io.uiam.plugins.interceptors.Pl
 
 
 ```java
-    /**
-     * implements the interceptor logic
-     * 
-     * @param exchange
-     * @throws Exception 
-     */
-    public void handleRequest(final HttpServerExchange exchange) throws Exception;
-    
-    /**
-     * 
-     * @param exchange
-     * @return true if the interceptor must handle the request
-     */
-    public boolean resolve(final HttpServerExchange exchange);
+public interface PluggableInterceptor {
+  /**
+   * implements the interceptor logic
+   * 
+   * @param exchange
+   * @throws Exception 
+   */
+  public void handleRequest(final HttpServerExchange exchange) throws Exception;
+  
+  /**
+   * 
+   * @param exchange
+   * @return true if the interceptor must handle the request
+   */
+  public boolean resolve(final HttpServerExchange exchange);
 }
 ```
 
@@ -847,13 +846,15 @@ In some cases, you need to access the request content. For example you need the 
  `PluggableRequestInterceptor` defines the following method with a default implementation that returns false:
 
 ```java
-    /**
-     *
-     * @return true if the Interceptor requires to access the request content
-     */
-    default boolean requiresContent() {
-        return false;
-    }
+public interface PluggableRequestInterceptor extends PluggableInterceptor {
+  /**
+   *
+   * @return true if the Interceptor requires to access the request content
+   */
+  default boolean requiresContent() {
+      return false;
+  }
+}
 ```
 
  This is only required for proxied resources. *Services* always have the request content available.
@@ -890,7 +891,7 @@ You just set the status code and the response content using helper class `Respon
 
 ```java
 @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
+public void handleRequest(HttpServerExchange exchange) throws Exception {
 
   Response response = Response.wrap(exchange);
 
