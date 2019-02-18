@@ -784,7 +784,7 @@ public void handleRequest(HttpServerExchange exchange) throws Exception {
 
 ### Configuration
 
-The Token Manager must be declared in the yml configuration file. 
+The *Service* must be declared in the yml configuration file. 
 Of course the implementation class must be in the java classpath.
 
 ```yml
