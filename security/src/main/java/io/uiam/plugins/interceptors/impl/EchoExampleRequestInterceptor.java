@@ -36,7 +36,7 @@ public class EchoExampleRequestInterceptor implements PluggableRequestIntercepto
             .getLogger(EchoExampleRequestInterceptor.class);
 
     @Override
-    public void handle(HttpServerExchange exchange) {
+    public void handleRequest(HttpServerExchange exchange) {
         var request = Request.wrap(exchange);
 
         // add query parameter ?pagesize=0

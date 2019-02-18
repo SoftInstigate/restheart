@@ -34,8 +34,8 @@ import io.undertow.util.Headers;
  */
 public class GzipEncodingHandler extends EncodingHandler {
 
-    private final ResponseContentSenderHandler sender
-            = new ResponseContentSenderHandler(null);
+    private final ResponseSenderHandler sender
+            = new ResponseSenderHandler(null);
 
     private boolean forceCompression = false;
 

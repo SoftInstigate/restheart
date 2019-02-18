@@ -28,7 +28,7 @@ import io.uiam.plugins.interceptors.PluggableResponseInterceptor;
 public class EchoExampleResponseInterceptor implements PluggableResponseInterceptor{
 
     @Override
-    public void handle(HttpServerExchange exchange) {
+    public void handleRequest(HttpServerExchange exchange) {
         Response.wrap(exchange)
                 .getContentAsJson()
                 .getAsJsonObject()

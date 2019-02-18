@@ -53,7 +53,7 @@ public class ResponseInterceptorsHandler extends PipedHttpHandler {
         
         interceptors.stream()
                 .filter(t -> t.resolve(exchange))
-                .forEachOrdered(t -> t.handle(exchange));
+                .forEachOrdered(t -> t.handleRequest(exchange));
         
         next(exchange);
     }

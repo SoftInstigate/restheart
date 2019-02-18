@@ -69,7 +69,7 @@ import io.uiam.handlers.PipedWrappingHandler;
 import io.uiam.handlers.RequestContentInjector;
 import io.uiam.handlers.RequestLoggerHandler;
 import io.uiam.handlers.RequestInterceptorsHandler;
-import io.uiam.handlers.ResponseContentSenderHandler;
+import io.uiam.handlers.ResponseSenderHandler;
 import io.uiam.handlers.ResponseInterceptorsHandler;
 import io.uiam.handlers.injectors.AccountHeadersInjector;
 import io.uiam.handlers.injectors.AuthHeadersRemover;
@@ -859,7 +859,7 @@ public class Bootstrapper {
                                     .getService(serviceConf);
 
                             var srv = new PipedWrappingHandler(
-                                    new ResponseContentSenderHandler(),
+                                    new ResponseSenderHandler(),
                                     new PipedWrappingHandler(
                                             new ResponseInterceptorsHandler(),
                                             _srv));

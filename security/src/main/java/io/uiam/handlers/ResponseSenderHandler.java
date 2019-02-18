@@ -28,19 +28,19 @@ import io.undertow.util.Headers;
  * ExchangeHelper.getResponseContent()
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ResponseContentSenderHandler extends PipedHttpHandler {
+public class ResponseSenderHandler extends PipedHttpHandler {
 
     /**
      *
      */
-    public ResponseContentSenderHandler() {
+    public ResponseSenderHandler() {
         super(null);
     }
 
     /**
      * @param next
      */
-    public ResponseContentSenderHandler(PipedHttpHandler next) {
+    public ResponseSenderHandler(PipedHttpHandler next) {
         super(next);
     }
 

@@ -35,9 +35,9 @@ import org.slf4j.LoggerFactory;
  * injects in the exchange the request content if the request involves a Service
  * or a Request Interceptor whose requiresContent() returns true
  *
- * Note that getting the content has significant performace overhead for proxed
- * resources. To mitigate DoS attacks the injector limits the size of the
- * content to MAX_CONTENT_SIZE bytes
+ * Note that getting the content has significant performance overhead for
+ * proxied resources. To mitigate DoS attacks the injector limits the size of
+ * the content to MAX_CONTENT_SIZE bytes
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */

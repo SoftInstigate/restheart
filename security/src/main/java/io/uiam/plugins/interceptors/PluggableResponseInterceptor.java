@@ -19,9 +19,9 @@ package io.uiam.plugins.interceptors;
 
 /**
  *
- * A resposne interceptor can the response from the proxied resource before
- * sending it to the client. Can be setup by an Initializer using
- * PluginsRegistry.getResponseInterceptors().add()
+ * A resposne interceptor can snoop and modify the response from the proxied
+ * resource before sending it to the client. Can be setup by an Initializer
+ * using PluginsRegistry.getResponseInterceptors().add()
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */

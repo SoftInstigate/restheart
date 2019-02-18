@@ -24,7 +24,18 @@ import io.undertow.server.HttpServerExchange;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public interface PluggableInterceptor {
-    public void handle(final HttpServerExchange exchange);
+    /**
+     * implements the interceptor logic
+     * 
+     * @param exchange
+     * @throws Exception 
+     */
+    public void handleRequest(final HttpServerExchange exchange);
     
+    /**
+     * 
+     * @param exchange
+     * @return true if the interceptor must handle the request
+     */
     public boolean resolve(final HttpServerExchange exchange);
 }
