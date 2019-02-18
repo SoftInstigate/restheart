@@ -690,7 +690,7 @@ The Service implementation class must extend the `io.uiam.plugins.service.Plugga
 }
 ```
 
-An example service implementation is. It sends the usual `Hello World` message, however if the request specifies `?name=Bob` it responds with `Hello Bob`.
+An example service implementation follows. It sends the usual `Hello World` message, however if the request specifies `?name=Bob` it responds with `Hello Bob`.
 
 ```java
     public void handleRequest(HttpServerExchange exchange) throws Exception {
@@ -741,6 +741,165 @@ public PluggableService(PipedHttpHandler next,
             String uri,
             Boolean secured,
             Map<String, Object> args);
+```
+
+<hr>
+
+## Develop an Initializer
+
+An *Initializer* allows executing custom logic at startup time. 
+
+Notably it allows to define *Interceptors* and *Global Permission Predicates*.
+
+The Initializer implementation class must extend the `io.uiam.plugins.init.PluggableInitializer` interface, implementing the following method:
+
+```java
+public interface PluggableInitializer {
+    public void init();
+}
+```
+
+An example Initializer is `io.uiam.plugins.init.impl.ExampleInitializer`.
+
+### Configuration
+
+The Initializer  must be declared in the yml configuration file. 
+Of course the implementation class must be in the java classpath.
+
+```yml
+initializer-class: io.uiam.plugins.init.impl.ExampleInitializer
+```
+
+### Defining Interceptors
+
+The `PluginsRegistry` class allows to define Interceptors.
+
+```java
+PluggableRequestInterceptor requestInterceptor = ...;
+PluggableResponseInterceptor responseIterceptor = ...;
+
+PluginsRegistry.getRequestInterceptors().add(requestInterceptor);
+
+PluginsRegistry.getResponseInterceptors().add(responseIterceptor);
+```
+
+### Defining Global Permission Predicates
+
+The `AccessManagerHandler` class allows to define Global Predicates. Requests that resolve any of the predicates are allowed.
+
+The following example predicate allows requesting URI `/foo/bar`:
+
+```java
+// add a global security predicate
+        AccessManagerHandler.getGlobalSecurityPredicates().add(new Predicate() {
+            @Override
+            public boolean resolve(HttpServerExchange exchange) {
+                var request = Request.wrap(exchange);
+
+                return request.isGet() 
+                        && "/foo/bar".equals(exchange.getRequestPath());
+            }
+        });
+```
+
+<hr>
+
+## Develop an Interceptor
+
+Interceptors allows to snoop and modify request and responses.
+
+A Request Interceptor applies before the request is proxied or handled by a *Service* thus allowing to modify the request. Its implementation class must implement the interface `io.uiam.plugins.interceptors.PluggableRequestInterceptor` .
+
+A Response Interceptor applies after the request has been proxied or handled by a *Service* this allowing to modify the response. Its implementation class must implement the interface `io.uiam.plugins.interceptors.PluggableResponseInterceptor`.
+
+Those interfaces both extend the base interface `io.uiam.plugins.interceptors.PluggableInterceptor`
+
+
+```java
+    /**
+     * implements the interceptor logic
+     * 
+     * @param exchange
+     * @throws Exception 
+     */
+    public void handleRequest(final HttpServerExchange exchange) throws Exception;
+    
+    /**
+     * 
+     * @param exchange
+     * @return true if the interceptor must handle the request
+     */
+    public boolean resolve(final HttpServerExchange exchange);
+}
+```
+
+Example interceptor implementations can be found in the package`io.uiam.plugins.interceptors.impl`.
+
+### Accessing the Request Content in a Request Interceptor
+
+In some cases, you need to access the request content. For example you need the request content in *Services*, to modify it with a `RequestInterceptor` or to implement an `AccessManager` that checks the content to authorize the request.
+
+ Accessing the content from the *HttpServerExchange* object using the exchange *InputStream* in proxied requests leads to an error because Undertow allows reading the content just once. 
+
+ In order to simplify accessing the content, the `Request.wrap(exchange).getContent()` helper method is available. It is very efficient since it uses the non blocking `RequestBufferingHandler` under to hood.
+ However, since accessing the request content might lead to significant performance overhead, a *PluggableRequestInterceptor* that resolves the request and overrides the `requiresContent()` to return true must be implemented to make data available.
+
+ `PluggableRequestInterceptor` defines the following method with a default implementation that returns false:
+
+```java
+    /**
+     *
+     * @return true if the Interceptor requires to access the request content
+     */
+    default boolean requiresContent() {
+        return false;
+    }
+```
+
+ This is only required for proxied resources. *Services* always have the request content available.
+
+Also note that, in order to mitigate DoS attacks, the size of the Request content available with `Request.wrap(exchange).getContent()` is limited to 16 Mbytes.
+
+### Configuration
+
+Interceptors are configured with *Initializers*. See `Develop an Initializer` section for more information.
+
+<hr>
+
+## Best practices
+
+### Interacting with the *HttpServerExchange* object
+
+The helper classes `Request` and `Response` are available to make easy interacting the `HttpServerExchange` object. As a general rule, always prefer using the helper classes if the functionality you need is available.
+
+For instance the following code snipped retrieves the request JSON content from the `HttpServerExchange`  
+
+```java
+HttpServerExchange exchange = ...;
+
+Request request = Request.wrap(exchange);
+
+if (request.isContentTypeJson()) {
+  JsonElement content = Request.wrap(exchange).request.getContentAsJson();
+}
+```
+
+### How to send the response
+
+You just set the status code and the response content using helper class `Response`. You don't need to send the response explicitly using low level `HttpServerExchange` methods, since the `ResponseSenderHandler` is in the processing chain and will do it for you.
+
+```java
+@Override
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+
+  Response response = Response.wrap(exchange);
+
+  JsonObject resp = new JsonObject();
+  resp.appProperty("message", "OK")
+
+  response.setContent(resp);
+  response.setStatusCode(HttpStatus.SC_OK);
+}
 ```
 
 <hr>
