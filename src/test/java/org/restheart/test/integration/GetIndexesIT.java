@@ -29,13 +29,11 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
-import org.json.JSONObject;
 import org.junit.Assert;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.restheart.representation.Resource;
-import static org.restheart.handlers.RequestContext.TYPE.SCHEMA_STORE;
 import static org.restheart.test.integration.AbstactIT.url;
 import org.restheart.utils.HttpStatus;
 
