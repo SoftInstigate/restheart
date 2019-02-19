@@ -157,7 +157,7 @@ public class PluginsFactory {
                 | SecurityException
                 | InvocationTargetException ex) {
             throw new PluginConfigurationException(
-                    "Error configuring Identity Manager"
+                    "Error configuring Identity Manager "
                     + (_name != null ? _name : ""), ex);
 
         }

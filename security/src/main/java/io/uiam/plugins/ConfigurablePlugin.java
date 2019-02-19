@@ -37,7 +37,7 @@ public interface ConfigurablePlugin {
             throws PluginConfigurationException {
         if (args == null || !args.containsKey(argKey)) {
             throw new PluginConfigurationException(
-                    "The AuthenticationMechanism" + " requires the argument '"
+                    "The plugin" + " requires the argument '"
                     + argKey
                     + "'");
         } else {
@@ -45,8 +45,7 @@ public interface ConfigurablePlugin {
                 return (V) args.get(argKey);
             } catch (ClassCastException cce) {
                 throw new PluginConfigurationException(
-                        "Wrong type for AuthenticationMechanism"
-                        + " argument '"
+                        "Wrong type for argument '"
                         + argKey + "'",
                         cce);
             }
