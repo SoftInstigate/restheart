@@ -77,7 +77,7 @@ import io.uiam.handlers.injectors.XPoweredByInjector;
 import io.uiam.handlers.security.CORSHandler;
 import io.uiam.handlers.security.SecurityHandler;
 import io.uiam.plugins.PluginConfigurationException;
-import io.uiam.plugins.PluginsFactory;
+import io.uiam.plugins.PluginsRegistry;
 import io.uiam.plugins.authentication.PluggableAuthenticationMechanism;
 import io.uiam.plugins.authentication.PluggableTokenManager;
 import io.uiam.plugins.authorization.PluggableAccessManager;
@@ -93,7 +93,6 @@ import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.UndertowOptions;
 import io.undertow.server.handlers.AllowedMethodsHandler;
-import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
 import io.undertow.server.handlers.PathHandler;
@@ -700,14 +699,18 @@ public class Bootstrapper {
 
         if (configuration.getAuthMechanisms() != null
                 && !configuration.getAuthMechanisms().isEmpty()) {
-            configuration.getAuthMechanisms().stream().forEachOrdered(am -> {
+            configuration.getAuthMechanisms().stream()
+                    .map(am -> am.get(Configuration.NAME_KEY))
+                    .filter(name -> name instanceof String)
+                    .map(name -> (String) name)
+                    .forEachOrdered(name -> {
 
                 try {
-                    authMechanisms.add(PluginsFactory
-                            .getAutenticationMechanism(am));
+                    authMechanisms.add(PluginsRegistry.getInstance()
+                            .getAuthenticationMechanism(name));
 
                     LOGGER.info("Authentication Mechanism {} enabled",
-                            am.get(Configuration.NAME_KEY));
+                            name);
                 }
                 catch (PluginConfigurationException pcex) {
                     logErrorAndExit(pcex.getMessage(), pcex, false, -3);
@@ -737,8 +740,7 @@ public class Bootstrapper {
             }
         } else {
             try {
-                return PluginsFactory.getAccessManager(configuration
-                        .getAccessManager());
+                return PluginsRegistry.getInstance().getAccessManager();
             }
             catch (PluginConfigurationException ex) {
                 logErrorAndExit("Error configuring Access Manager implementation "
@@ -853,10 +855,13 @@ public class Bootstrapper {
             final PluggableTokenManager tokenManager) {
         if (!conf.getServices().isEmpty()) {
             conf.getServices().stream()
-                    .forEach((Map<String, Object> serviceConf) -> {
+                    .map(am -> am.get(Configuration.NAME_KEY))
+                    .filter(name -> name instanceof String)
+                    .map(name -> (String) name)
+                    .forEachOrdered(name -> {
                         try {
-                            PluggableService _srv = PluginsFactory
-                                    .getService(serviceConf);
+                            PluggableService _srv = PluginsRegistry.getInstance()
+                                    .getService(name);
 
                             var srv = new PipedWrappingHandler(
                                     new ResponseSenderHandler(),
@@ -910,7 +915,7 @@ public class Bootstrapper {
         }
 
         try {
-            return PluginsFactory.getTokenManager(tokenManager);
+            return PluginsRegistry.getInstance().getTokenManager();
         }
         catch (PluginConfigurationException pce) {
             LOGGER.error("Error configuring token manager", pce);

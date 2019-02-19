@@ -39,11 +39,13 @@ public class PluginsFactory {
      * @param conf the configuration Map
      * @return the PluggableAuthenticationMechanism
      */
-    public static PluggableAuthenticationMechanism getAutenticationMechanism(Map<String, Object> conf)
+    static PluggableAuthenticationMechanism createAutenticationMechanism(
+            Map<String, Object> conf)
             throws PluginConfigurationException {
         if (conf == null || conf.isEmpty()) {
             throw new PluginConfigurationException(
-                    "Error configuring Authentication Mechanism, missing configuration");
+                    "Error configuring Authentication Mechanism,"
+                    + " missing configuration");
         }
 
         Object _name = conf.get(Configuration.NAME_KEY);
@@ -70,7 +72,8 @@ public class PluginsFactory {
 
         try {
             if (_args == null) {
-                return (PluggableAuthenticationMechanism) Class.forName((String) _clazz)
+                return (PluggableAuthenticationMechanism) Class
+                        .forName((String) _clazz)
                         .getDeclaredConstructor(String.class)
                         .newInstance((String) _name);
             } else {
@@ -82,13 +85,19 @@ public class PluginsFactory {
                             + Configuration.ARGS_KEY
                             + " property is not a map");
                 } else {
-                    return (PluggableAuthenticationMechanism) Class.forName((String) _clazz)
+                    return (PluggableAuthenticationMechanism) Class
+                            .forName((String) _clazz)
                             .getDeclaredConstructor(String.class, Map.class)
                             .newInstance((String) _name, (Map<?, ?>) _args);
                 }
             }
-        } catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InstantiationException
-                | NoSuchMethodException | SecurityException | InvocationTargetException ex) {
+        } catch (ClassNotFoundException
+                | IllegalAccessException
+                | IllegalArgumentException
+                | InstantiationException
+                | NoSuchMethodException
+                | SecurityException
+                | InvocationTargetException ex) {
             throw new PluginConfigurationException(
                     "Error configuring Authentication Mechanism "
                     + (_name != null ? _name : ""), ex);
@@ -101,7 +110,8 @@ public class PluginsFactory {
      * @param conf the configuration Map
      * @return the PluggableIdentityManager
      */
-    public static PluggableIdentityManager getIdentityManager(Map<String, Object> conf)
+    static PluggableIdentityManager createIdentityManager(
+            Map<String, Object> conf)
             throws PluginConfigurationException {
         if (conf == null || conf.isEmpty()) {
             throw new PluginConfigurationException(
@@ -144,7 +154,8 @@ public class PluginsFactory {
                             + Configuration.ARGS_KEY
                             + " property is not a map");
                 } else {
-                    return (PluggableIdentityManager) Class.forName((String) _clazz)
+                    return (PluggableIdentityManager) Class.forName(
+                            (String) _clazz)
                             .getDeclaredConstructor(String.class, Map.class)
                             .newInstance((String) _name, (Map<?, ?>) _args);
                 }
@@ -168,7 +179,8 @@ public class PluginsFactory {
      *
      * @return the PluggableAccessManager
      */
-    public static PluggableAccessManager getAccessManager(Map<String, Object> conf)
+    static PluggableAccessManager createAccessManager(
+            Map<String, Object> conf)
             throws PluginConfigurationException {
         if (conf == null || conf.isEmpty()) {
             throw new PluginConfigurationException(
@@ -233,7 +245,8 @@ public class PluginsFactory {
      *
      * @return the PluggableTokenManager
      */
-    public static PluggableTokenManager getTokenManager(Map<String, Object> conf)
+    static PluggableTokenManager createTokenManager(
+            Map<String, Object> conf)
             throws PluginConfigurationException {
         if (conf == null || conf.isEmpty()) {
             throw new PluginConfigurationException(
@@ -298,13 +311,15 @@ public class PluginsFactory {
      *
      * @return the PluggableService
      */
-    public static PluggableService getService(Map<String, Object> conf) 
+    static PluggableService createService(Map<String, Object> conf)
             throws PluginConfigurationException {
         Object _name = conf.get(Configuration.NAME_KEY);
 
         if (_name == null || !(_name instanceof String)) {
             throw new PluginConfigurationException(
-                    "Error configuring Service, missing " + Configuration.NAME_KEY + " property");
+                    "Error configuring Service, missing "
+                    + Configuration.NAME_KEY
+                    + " property");
         }
 
         Object _secured = conf.get(Configuration.SERVICE_SECURED_KEY);
@@ -346,8 +361,14 @@ public class PluginsFactory {
         try {
             if (_args == null) {
                 return (PluggableService) Class.forName((String) _clazz)
-                        .getDeclaredConstructor(PipedHttpHandler.class, String.class, String.class, Boolean.class)
-                        .newInstance(null, (String) _name, (String) _uri, (Boolean) _secured);
+                        .getDeclaredConstructor(PipedHttpHandler.class,
+                                String.class,
+                                String.class,
+                                Boolean.class)
+                        .newInstance(null,
+                                (String) _name,
+                                (String) _uri,
+                                (Boolean) _secured);
             } else {
                 if (!(_args instanceof Map)) {
                     throw new PluginConfigurationException(
@@ -357,9 +378,16 @@ public class PluginsFactory {
                             + Configuration.ARGS_KEY + " is not a map");
                 } else {
                     return (PluggableService) Class.forName((String) _clazz)
-                            .getDeclaredConstructor(PipedHttpHandler.class, String.class, String.class, Boolean.class,
+                            .getDeclaredConstructor(PipedHttpHandler.class,
+                                    String.class,
+                                    String.class,
+                                    Boolean.class,
                                     Map.class)
-                            .newInstance(null, (String) _name, (String) _uri, (Boolean) _secured, (Map<?, ?>) _args);
+                            .newInstance(null,
+                                    (String) _name,
+                                    (String) _uri,
+                                    (Boolean) _secured,
+                                    (Map<?, ?>) _args);
                 }
             }
         } catch (ClassNotFoundException

@@ -82,11 +82,11 @@ public class AuthTokenBasicAuthenticationMechanism
         super(argValue(args, "realm"),
                 mechanismName,
                 true,
-                PluginsRegistry.getInstance().getAuthTokenManager());
+                PluginsRegistry.getInstance().getTokenManager());
 
         this.mechanismName = mechanismName;
         
-        this.identityManager = PluginsRegistry.getInstance().getAuthTokenManager();
+        this.identityManager = PluginsRegistry.getInstance().getTokenManager();
     }
 
     @Override

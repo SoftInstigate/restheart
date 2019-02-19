@@ -65,7 +65,7 @@ public class RndTokenService extends PluggableService {
         try {
             this.tokenManager = (RndTokenManager) PluginsRegistry
                     .getInstance()
-                    .getAuthTokenManager();
+                    .getTokenManager();
         } catch (ClassCastException cce) {
             throw new PluginConfigurationException("Error configuring RndTokenManager, "
                     + "it only works when using token manager "
