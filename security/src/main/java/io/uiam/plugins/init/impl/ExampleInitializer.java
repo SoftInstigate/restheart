@@ -26,6 +26,7 @@ import io.uiam.plugins.PluginsRegistry;
 import io.uiam.plugins.init.PluggableInitializer;
 import io.uiam.plugins.interceptors.impl.EchoExampleRequestInterceptor;
 import io.uiam.plugins.interceptors.impl.EchoExampleResponseInterceptor;
+import io.uiam.utils.URLUtils;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 
@@ -39,7 +40,7 @@ public class ExampleInitializer implements PluggableInitializer {
     @Override
     public void init() {
         LOGGER.info("Testing initializer");
-        LOGGER.info("\tallows GET requests to /foo/bar");
+        LOGGER.info("\tdenies GET /secho/foo using a Global Permission Predicate");
         LOGGER.info("\tadds a request and a response interceptor for /echo and /secho");
 
         // add a global security predicate
@@ -48,8 +49,9 @@ public class ExampleInitializer implements PluggableInitializer {
             public boolean resolve(HttpServerExchange exchange) {
                 var request = Request.wrap(exchange);
 
-                return request.isGet() 
-                        && "/foo/bar".equals(exchange.getRequestPath());
+                return !(request.isGet() 
+                        && "/secho/foo".equals(URLUtils.removeTrailingSlashes(
+                                        exchange.getRequestPath())));
             }
         });
         

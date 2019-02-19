@@ -59,7 +59,7 @@ public class Response {
      * @return the responseContentType
      */
     public String getContentType() {
-        return wrapped.getAttachment(RESPONSE_CONTENT_TYPE_KEY);
+        return getWrapped().getAttachment(RESPONSE_CONTENT_TYPE_KEY);
     }
 
     /**
@@ -68,7 +68,7 @@ public class Response {
      * @param content the response content to set
      */
     public void setContent(String content) {
-        wrapped.putAttachment(RESPONSE_CONTENT_KEY, content);
+        getWrapped().putAttachment(RESPONSE_CONTENT_KEY, content);
     }
 
     /**
@@ -76,21 +76,21 @@ public class Response {
      */
     public void setContent(JsonElement content) {
         setContentTypeAsJson();
-        wrapped.putAttachment(RESPONSE_CONTENT_AS_JSON_KEY, content);
+        getWrapped().putAttachment(RESPONSE_CONTENT_AS_JSON_KEY, content);
     }
     
     /**
      * @return the responseContentType
      */
     public String getContentType(String responseContentType) {
-        return wrapped.getAttachment(RESPONSE_CONTENT_TYPE_KEY);
+        return getWrapped().getAttachment(RESPONSE_CONTENT_TYPE_KEY);
     }
     
     /**
      * @param responseContentType the responseContentType to set
      */
     public void setContentType(String responseContentType) {
-        wrapped.putAttachment(RESPONSE_CONTENT_TYPE_KEY, responseContentType);
+        getWrapped().putAttachment(RESPONSE_CONTENT_TYPE_KEY, responseContentType);
     }
     
     /**
@@ -106,17 +106,17 @@ public class Response {
      * sets Content-Type=application/json
      */
     public void setContentTypeAsJson() {
-        wrapped.putAttachment(RESPONSE_CONTENT_TYPE_KEY, "application/json");
+        getWrapped().putAttachment(RESPONSE_CONTENT_TYPE_KEY, "application/json");
     }
 
     /**
      * @return the responseStatusCode
      */
     public int getStatusCode() {
-        if (wrapped.getAttachment(RESPONSE_STATUS_CODE_KEY) == null) {
-            return wrapped.getStatusCode();
+        if (getWrapped().getAttachment(RESPONSE_STATUS_CODE_KEY) == null) {
+            return getWrapped().getStatusCode();
         } else {
-            return wrapped.getAttachment(RESPONSE_STATUS_CODE_KEY);
+            return getWrapped().getAttachment(RESPONSE_STATUS_CODE_KEY);
         }
     }
 
@@ -124,14 +124,14 @@ public class Response {
      * @param responseStatusCode the responseStatusCode to set
      */
     public void setStatusCode(int responseStatusCode) {
-        wrapped.putAttachment(RESPONSE_STATUS_CODE_KEY, responseStatusCode);
+        getWrapped().putAttachment(RESPONSE_STATUS_CODE_KEY, responseStatusCode);
     }
 
     /**
      * @return the response content as String
      */
     public String getContent() {
-        return wrapped.getAttachment(RESPONSE_CONTENT_KEY);
+        return getWrapped().getAttachment(RESPONSE_CONTENT_KEY);
     }
 
     /**
@@ -140,21 +140,21 @@ public class Response {
      * @return the response body as JsonElement
      */
     public JsonElement getContentAsJson() {
-        return wrapped.getAttachment(RESPONSE_CONTENT_AS_JSON_KEY);
+        return getWrapped().getAttachment(RESPONSE_CONTENT_AS_JSON_KEY);
     }
 
     /**
      * @return the inError
      */
     public boolean isInError() {
-        return wrapped.getAttachment(IN_ERROR_KEY);
+        return getWrapped().getAttachment(IN_ERROR_KEY);
     }
 
     /**
      * @param inError the inError to set
      */
     public void setInError(boolean inError) {
-        wrapped.putAttachment(IN_ERROR_KEY, inError);
+        getWrapped().putAttachment(IN_ERROR_KEY, inError);
     }
     
     /**
@@ -238,5 +238,12 @@ public class Response {
             resp.add("exception", nrep);
         }
         return resp;
+    }
+
+    /**
+     * @return the wrapped
+     */
+    public HttpServerExchange getWrapped() {
+        return wrapped;
     }
 }

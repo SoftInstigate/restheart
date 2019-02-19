@@ -42,12 +42,13 @@ import org.xnio.Buffers;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class Request {
+
     private static final Logger LOGGER = LoggerFactory
             .getLogger(Request.class);
 
     public static final String FORM_URLENCODED = "application/x-www-form-urlencoded";
     public static final String MULTIPART = "multipart/form-data";
-    
+
     // other constants
     public static final String SLASH = "/";
     public static final String PATCH = "PATCH";
@@ -94,7 +95,7 @@ public class Request {
      * @return the request method
      */
     public METHOD getMethod() {
-        return selectMethod(wrapped.getRequestMethod());
+        return selectMethod(getWrapped().getRequestMethod());
     }
 
     /**
@@ -104,7 +105,8 @@ public class Request {
         ByteBuffer content;
         try {
             content = readByteBuffer(getBufferedContent());
-        } catch (Exception ex) {
+        }
+        catch (Exception ex) {
             throw new IOException("Error getting request content", ex);
         }
 
@@ -122,7 +124,8 @@ public class Request {
         String content;
         try {
             content = new String(getContent(), Charset.defaultCharset());
-        } catch (Exception ex) {
+        }
+        catch (Exception ex) {
             throw new IOException("Error getting request content", ex);
         }
 
@@ -134,12 +137,12 @@ public class Request {
      */
     public JsonElement getContentAsJson()
             throws IOException, JsonSyntaxException {
-        if (wrapped.getAttachment(CONTENT_AS_JSON) == null) {
-            wrapped.putAttachment(CONTENT_AS_JSON,
+        if (getWrapped().getAttachment(CONTENT_AS_JSON) == null) {
+            getWrapped().putAttachment(CONTENT_AS_JSON,
                     PARSER.parse(getContentAsText()));
         }
 
-        return wrapped.getAttachment(CONTENT_AS_JSON);
+        return getWrapped().getAttachment(CONTENT_AS_JSON);
     }
 
     private PooledByteBuffer[] getBufferedContent() throws Exception {
@@ -154,14 +157,15 @@ public class Request {
         try {
             f = HttpServerExchange.class.getDeclaredField("BUFFERED_REQUEST_DATA");
             f.setAccessible(true);
-        } catch (NoSuchFieldException | SecurityException ex) {
+        }
+        catch (NoSuchFieldException | SecurityException ex) {
             throw new RuntimeException("could not find BUFFERED_REQUEST_DATA field", ex);
         }
 
         try {
-            return wrapped.getAttachment(
-                    (AttachmentKey<PooledByteBuffer[]>) f.get(wrapped));
-        } catch (IllegalArgumentException | IllegalAccessException ex) {
+            return getWrapped().getAttachment((AttachmentKey<PooledByteBuffer[]>) f.get(getWrapped()));
+        }
+        catch (IllegalArgumentException | IllegalAccessException ex) {
             throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
         }
     }
@@ -170,28 +174,28 @@ public class Request {
      * @return the requestStartTime
      */
     public Long getStartTime() {
-        return wrapped.getAttachment(START_TIME_KEY);
+        return getWrapped().getAttachment(START_TIME_KEY);
     }
 
     /**
      * @param requestStartTime the requestStartTime to set
      */
     public void setStartTime(Long requestStartTime) {
-        wrapped.putAttachment(START_TIME_KEY, requestStartTime);
+        getWrapped().putAttachment(START_TIME_KEY, requestStartTime);
     }
 
     /**
      * @return the responseContentType
      */
     public String getContentType() {
-        return wrapped.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
+        return getWrapped().getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
     }
 
     /**
      * @return the authenticatedAccount
      */
     public Account getAuthenticatedAccount() {
-        return this.wrapped.getSecurityContext().getAuthenticatedAccount();
+        return this.getWrapped().getSecurityContext().getAuthenticatedAccount();
     }
 
     public enum METHOD {
@@ -294,14 +298,15 @@ public class Request {
         try {
             f = HttpServerExchange.class.getDeclaredField("BUFFERED_REQUEST_DATA");
             f.setAccessible(true);
-        } catch (NoSuchFieldException | SecurityException ex) {
+        }
+        catch (NoSuchFieldException | SecurityException ex) {
             throw new RuntimeException("could not find BUFFERED_REQUEST_DATA field", ex);
         }
 
         try {
-            return null != wrapped.getAttachment(
-                    (AttachmentKey<PooledByteBuffer[]>) f.get(wrapped));
-        } catch (IllegalArgumentException | IllegalAccessException ex) {
+            return null != getWrapped().getAttachment((AttachmentKey<PooledByteBuffer[]>) f.get(getWrapped()));
+        }
+        catch (IllegalArgumentException | IllegalAccessException ex) {
             throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
         }
     }
@@ -342,5 +347,12 @@ public class Request {
         }
 
         return dst.position(0).limit(copied > 0 ? copied : 0);
+    }
+
+    /**
+     * @return the wrapped
+     */
+    public HttpServerExchange getWrapped() {
+        return wrapped;
     }
 }

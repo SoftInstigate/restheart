@@ -857,9 +857,11 @@ PluginsRegistry.getResponseInterceptors().add(responseIterceptor);
 
 ### Defining Global Permission Predicates
 
-The `AccessManagerHandler` class allows to define Global Predicates. Requests that resolve any of the predicates are allowed.
+The `AccessManagerHandler` class allows to define Global Predicates. Requests must resolve all of the predicates to be allowed.
 
-The following example predicate allows requesting URI `/foo/bar`:
+> You can think about a Global Predicate a way to black list request matching a given condition.
+
+The following example predicate denies `GET /foo/bar` requests:
 
 ```java
 // add a global security predicate
@@ -868,8 +870,10 @@ AccessManagerHandler.getGlobalSecurityPredicates().add(new Predicate() {
     public boolean resolve(HttpServerExchange exchange) {
         var request = Request.wrap(exchange);
 
-        return request.isGet() 
-                && "/foo/bar".equals(exchange.getRequestPath());
+        // return false to deny the request
+        return !(request.isGet() 
+                        && "/secho/foo".equals(URLUtils.removeTrailingSlashes(
+                                        exchange.getRequestPath())));
     }
 });
 ```
