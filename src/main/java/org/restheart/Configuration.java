@@ -657,107 +657,7 @@ public class Configuration {
      * Creates a new instance of Configuration with defaults values.
      */
     public Configuration() {
-        this.configurationFileMap = null;
-
-        ansiConsole = true;
-
-        httpsListener = true;
-        httpsPort = DEFAULT_HTTPS_PORT;
-        httpsHost = DEFAULT_HTTPS_HOST;
-
-        httpListener = true;
-        httpPort = DEFAULT_HTTP_PORT;
-        httpHost = DEFAULT_HTTP_HOST;
-
-        ajpListener = false;
-        ajpPort = DEFAULT_AJP_PORT;
-        ajpHost = DEFAULT_AJP_HOST;
-
-        instanceName = DEFAULT_INSTANCE_NAME;
-
-        instanceBaseURL = null;
-
-        defaultRepresentationFormat = DEFAULT_REPRESENTATION_FORMAT;
-
-        useEmbeddedKeystore = true;
-        keystoreFile = null;
-        keystorePassword = null;
-        certPassword = null;
-
-        mongoUri = new MongoClientURI(DEFAULT_MONGO_URI);
-
-        mongoMounts = new ArrayList<>();
-        Map<String, Object> defaultMongoMounts = new HashMap<>();
-        defaultMongoMounts.put(MONGO_MOUNT_WHAT_KEY, "*");
-        defaultMongoMounts.put(MONGO_MOUNT_WHERE_KEY, "/");
-        mongoMounts.add(defaultMongoMounts);
-
-        applicationLogicMounts = new ArrayList<>();
-
-        staticResourcesMounts = new ArrayList<>();
-
-        metadataNamedSingletons = new ArrayList<>();
-
-        HashMap<String, Object> browserStaticResourcesMountArgs = new HashMap<>();
-
-        browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WHAT_KEY, "browser");
-        browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WHERE_KEY, "/browser");
-        browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY, "browser.html");
-        browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_EMBEDDED_KEY, true);
-
-        staticResourcesMounts.add(browserStaticResourcesMountArgs);
-
-        logFilePath = URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
-                .concat(File.separator + "restheart.log");
-        logToConsole = true;
-        logToFile = true;
-        logLevel = Level.INFO;
-        traceHeaders = Collections.emptyList();
-
-        localCacheEnabled = true;
-        localCacheTtl = 1000;
-
-        schemaCacheEnabled = false;
-        schemaCacheTtl = 1000;
-
-        requestsLimit = 100;
-
-        queryTimeLimit = 0;
-        aggregationTimeLimit = 0;
-        aggregationCheckOperators = true;
-
-        ioThreads = 2;
-        workerThreads = 32;
-        bufferSize = 16384;
-        directBuffers = true;
-
-        forceGzipEncoding = false;
-
-        eagerPoolSize = 100;
-        eagerLinearSliceWidht = 1000;
-        eagerLinearSliceDelta = 100;
-        eagerLinearSliceHeights = new int[]{4, 2, 1};
-        eagerRndSliceMinWidht = 1000;
-        eagerRndMaxCursors = 50;
-
-        authTokenEnabled = true;
-        authTokenTtl = 15; // minutes
-
-        dbEtagCheckPolicy = DEFAULT_DB_ETAG_CHECK_POLICY;
-        collEtagCheckPolicy = DEFAULT_COLL_ETAG_CHECK_POLICY;
-        docEtagCheckPolicy = DEFAULT_DOC_ETAG_CHECK_POLICY;
-
-        logExchangeDump = 0;
-        metricsGatheringLevel = METRICS_GATHERING_LEVEL.ROOT;
-
-        connectionOptions = Maps.newHashMap();
-        initializerClass = null;
-
-        cursorBatchSize = DEFAULT_CURSOR_BATCH_SIZE;
-        defaultPagesize = DEFAULT_DEFAULT_PAGESIZE;
-        maxPagesize = DEFAULT_MAX_PAGESIZE;
-
-        allowUnescapedCharactersInUrl = true;
+        this (new HashMap<>(), false);
     }
 
     /**
@@ -852,7 +752,17 @@ public class Configuration {
 
         applicationLogicMounts = getAsListOfMaps(conf, APPLICATION_LOGIC_MOUNTS_KEY, new ArrayList<>());
 
-        staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, new ArrayList<>());
+        HashMap<String, Object> browserStaticResourcesMountArgs = new HashMap<>();
+
+        browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WHAT_KEY, "browser");
+        browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WHERE_KEY, "/browser");
+        browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY, "browser.html");
+        browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_EMBEDDED_KEY, true);
+
+        ArrayList<Map<String, Object>> defaultStaticResourcesMounts=new ArrayList<>();
+        defaultStaticResourcesMounts.add(browserStaticResourcesMountArgs);
+
+        staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, defaultStaticResourcesMounts);
 
         metadataNamedSingletons = getAsListOfMaps(conf, METADATA_NAMED_SINGLETONS_KEY, new ArrayList<>());
 
@@ -907,7 +817,7 @@ public class Configuration {
         authTokenEnabled = getAsBooleanOrDefault(conf, AUTH_TOKEN_ENABLED, true);
         authTokenTtl = getAsIntegerOrDefault(conf, AUTH_TOKEN_TTL, 15);
 
-        Map<String, Object> etagCheckPolicies = getAsMap(conf, ETAG_CHECK_POLICY_KEY);
+        Map<String, Object> etagCheckPolicies = getAsMap(conf, ETAG_CHECK_POLICY_KEY, null);
 
         if (etagCheckPolicies != null) {
             String _dbEtagCheckPolicy
@@ -976,7 +886,7 @@ public class Configuration {
             metricsGatheringLevel = mglevel;
         }
 
-        connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY);
+        connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY, Maps.newHashMap());
 
         initializerClass = getAsStringOrDefault(conf, INITIALIZER_CLASS_KEY, null);
 
@@ -1105,12 +1015,12 @@ public class Configuration {
      * @return
      */
     @SuppressWarnings("unchecked")
-    private Map<String, Object> getAsMap(final Map<String, Object> conf, final String key) {
+    private Map<String, Object> getAsMap(final Map<String, Object> conf, final String key, final Map<String, Object> defaultVal) {
         if (conf == null) {
             if (!silent) {
                 LOGGER.debug("parameters group {} not specified in the configuration file.", key);
             }
-            return null;
+            return defaultVal;
         }
 
         Object o = conf.get(key);
@@ -1121,7 +1031,7 @@ public class Configuration {
             if (!silent) {
                 LOGGER.debug("parameters group {} not specified in the configuration file.", key);
             }
-            return null;
+            return defaultVal;
         }
     }
 

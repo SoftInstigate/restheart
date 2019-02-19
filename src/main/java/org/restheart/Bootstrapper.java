@@ -150,7 +150,14 @@ public class Bootstrapper {
                 cmd.usage();
                 System.exit(0);
             }
-            CONF_FILE_PATH = FileUtils.getFileAbsolutePath(parameters.configPath);
+
+            String confFilePath = (parameters.configPath == null)
+                    ? System.getenv("RESTHEART_CONFFILE")
+                    : parameters.configPath;
+            CONF_FILE_PATH = FileUtils.getFileAbsolutePath(confFilePath);
+
+            FileUtils.getFileAbsolutePath(parameters.configPath);
+
             IS_FORKED = parameters.isForked;
             ENVIRONMENT_FILE = (parameters.envFile == null)
                     ? System.getenv("RESTHEART_ENVFILE")
