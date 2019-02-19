@@ -63,7 +63,7 @@ public class Request {
     private static final AttachmentKey<Long> START_TIME_KEY
             = AttachmentKey.create(Long.class);
 
-    private Request(HttpServerExchange exchange) {
+    public Request(HttpServerExchange exchange) {
         this.wrapped = exchange;
     }
 

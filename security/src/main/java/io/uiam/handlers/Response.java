@@ -47,7 +47,7 @@ public class Response {
     private static final AttachmentKey<String> RESPONSE_CONTENT_KEY = AttachmentKey.create(String.class);
     private static final AttachmentKey<JsonElement> RESPONSE_CONTENT_AS_JSON_KEY = AttachmentKey.create(JsonElement.class);
 
-    private Response(HttpServerExchange exchange) {
+    public Response(HttpServerExchange exchange) {
         this.wrapped = exchange;
     }
 
