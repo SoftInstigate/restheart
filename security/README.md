@@ -454,7 +454,7 @@ token-manager:
 The Authentication Mechanism class must implement the `io.uiam.plugins.authentication.PluggableAuthenticationMechanism` interface. 
 
 ```java
-public interface PluggableAuthenticationMechanism extends AuthenticationMechanism {
+public interface PluggableAuthenticationMechanism implements AuthenticationMechanism {
   @Override
   public AuthenticationMechanismOutcome authenticate(
           final HttpServerExchange exchange,
