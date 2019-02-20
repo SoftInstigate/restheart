@@ -18,24 +18,28 @@
 package io.uiam.handlers.injectors;
 
 import io.uiam.handlers.PipedHttpHandler;
+import io.uiam.handlers.Request;
 import io.uiam.plugins.authentication.impl.BaseAccount;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 
 /**
- * It injects the X-Powered-By response header
- * 
+ * Adds the following X-Forwarded custom headers to the proxied request:
+ *
+ * 'X-Forwarded-Account-Id', 'X-Forwarded-Account-Roles' and other headers set
+ * with Response.addXForwardedHeader()
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
  */
-public class AccountHeadersInjector extends PipedHttpHandler {
+public class XForwardedHeadersInjector extends PipedHttpHandler {
     /**
      * Creates a new instance of AccountHeadersInjector
      *
      * @param next
      */
-    public AccountHeadersInjector(PipedHttpHandler next) {
+    public XForwardedHeadersInjector(PipedHttpHandler next) {
         super(next);
     }
 
@@ -43,7 +47,7 @@ public class AccountHeadersInjector extends PipedHttpHandler {
      * Creates a new instance of AccountHeadersInjector
      *
      */
-    public AccountHeadersInjector() {
+    public XForwardedHeadersInjector() {
         super(null);
     }
 
@@ -55,23 +59,36 @@ public class AccountHeadersInjector extends PipedHttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         if (exchange != null && exchange.getSecurityContext() != null
-                && exchange.getSecurityContext().getAuthenticatedAccount() != null) {
+                && exchange.getSecurityContext()
+                        .getAuthenticatedAccount() != null) {
             Account a = exchange.getSecurityContext().getAuthenticatedAccount();
 
             if (a.getPrincipal() != null) {
-                exchange.getRequestHeaders().add(getHeaderForPrincipalName(), a.getPrincipal().getName());
+                exchange.getRequestHeaders()
+                        .add(getHeaderForAccountId(),
+                                a.getPrincipal().getName());
             }
-
-            StringBuffer rolesBS = new StringBuffer();
 
             if (a instanceof BaseAccount && ((BaseAccount) a).getRoles() != null) {
 
-                ((BaseAccount) a).getRoles().stream().forEachOrdered(role -> rolesBS.append(role.concat(",")));
+                ((BaseAccount) a).getRoles()
+                        .stream().forEachOrdered(role -> exchange
+                        .getRequestHeaders()
+                        .add(getHeaderForAccountRoles(), role));
 
-                if (rolesBS.length() > 1) {
-                    exchange.getRequestHeaders().add(getHeaderForPrincipalRoles(),
-                            rolesBS.substring(0, rolesBS.length() - 1));
-                }
+            }
+            
+            var xfhs = Request.wrap(exchange).getXForwardedHeaders();
+
+            if (xfhs != null) {
+                xfhs.entrySet().stream()
+                        .forEachOrdered(m -> {
+
+                            m.getValue().stream().forEachOrdered(v
+                                    -> exchange.getRequestHeaders()
+                                            .add(getHeaderForXH(m.getKey()),
+                                                    v));
+                        });
             }
         }
 
@@ -80,11 +97,15 @@ public class AccountHeadersInjector extends PipedHttpHandler {
         }
     }
 
-    private HttpString getHeaderForPrincipalName() {
-        return HttpString.tryFromString("X-Forwarded-Account-Id");
+    private HttpString getHeaderForXH(String suffix) {
+        return HttpString.tryFromString("X-Forwarded-".concat(suffix));
     }
 
-    private HttpString getHeaderForPrincipalRoles() {
-        return HttpString.tryFromString("X-Forwarded-Account-Roles");
+    private HttpString getHeaderForAccountId() {
+        return getHeaderForXH("Account-Id");
+    }
+
+    private HttpString getHeaderForAccountRoles() {
+        return getHeaderForXH("Account-Roles");
     }
 }

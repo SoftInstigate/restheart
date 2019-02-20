@@ -71,7 +71,7 @@ import io.uiam.handlers.RequestLoggerHandler;
 import io.uiam.handlers.RequestInterceptorsHandler;
 import io.uiam.handlers.ResponseSenderHandler;
 import io.uiam.handlers.ResponseInterceptorsHandler;
-import io.uiam.handlers.injectors.AccountHeadersInjector;
+import io.uiam.handlers.injectors.XForwardedHeadersInjector;
 import io.uiam.handlers.injectors.AuthHeadersRemover;
 import io.uiam.handlers.injectors.XPoweredByInjector;
 import io.uiam.handlers.security.CORSHandler;
@@ -1015,12 +1015,12 @@ public class Bootstrapper {
                 ProxyHandler proxyHandler = ProxyHandler.builder()
                         .setRewriteHostHeader(true)
                         .setProxyClient(proxyClient)
-                        .setNext(new AccountHeadersInjector(
+                        .setNext(new XForwardedHeadersInjector(
                                 new ResponseInterceptorsHandler()))
                         .build();
 
                 PipedHttpHandler wrappedProxyHandler
-                        = new AccountHeadersInjector(
+                        = new XForwardedHeadersInjector(
                                 new PipedWrappingHandler(
                                         new XPoweredByInjector(
                                                 new RequestInterceptorsHandler()),

@@ -26,6 +26,10 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,12 +44,16 @@ public class Response {
 
     private final HttpServerExchange wrapped;
 
-    private static final AttachmentKey<Boolean> IN_ERROR_KEY = AttachmentKey.create(Boolean.class);
-
-    private static final AttachmentKey<Integer> RESPONSE_STATUS_CODE_KEY = AttachmentKey.create(Integer.class);
-    private static final AttachmentKey<String> RESPONSE_CONTENT_TYPE_KEY = AttachmentKey.create(String.class);
-    private static final AttachmentKey<String> RESPONSE_CONTENT_KEY = AttachmentKey.create(String.class);
-    private static final AttachmentKey<JsonElement> RESPONSE_CONTENT_AS_JSON_KEY = AttachmentKey.create(JsonElement.class);
+    private static final AttachmentKey<Boolean> IN_ERROR_KEY
+            = AttachmentKey.create(Boolean.class);
+    private static final AttachmentKey<Integer> STATUS_CODE_KEY
+            = AttachmentKey.create(Integer.class);
+    private static final AttachmentKey<String> CONTENT_TYPE_KEY
+            = AttachmentKey.create(String.class);
+    private static final AttachmentKey<String> CONTENT_KEY
+            = AttachmentKey.create(String.class);
+    private static final AttachmentKey<JsonElement> CONTENT_AS_JSON_KEY
+            = AttachmentKey.create(JsonElement.class);
 
     public Response(HttpServerExchange exchange) {
         this.wrapped = exchange;
@@ -59,7 +67,7 @@ public class Response {
      * @return the responseContentType
      */
     public String getContentType() {
-        return getWrapped().getAttachment(RESPONSE_CONTENT_TYPE_KEY);
+        return getWrapped().getAttachment(CONTENT_TYPE_KEY);
     }
 
     /**
@@ -68,7 +76,7 @@ public class Response {
      * @param content the response content to set
      */
     public void setContent(String content) {
-        getWrapped().putAttachment(RESPONSE_CONTENT_KEY, content);
+        getWrapped().putAttachment(CONTENT_KEY, content);
     }
 
     /**
@@ -76,23 +84,23 @@ public class Response {
      */
     public void setContent(JsonElement content) {
         setContentTypeAsJson();
-        getWrapped().putAttachment(RESPONSE_CONTENT_AS_JSON_KEY, content);
+        getWrapped().putAttachment(CONTENT_AS_JSON_KEY, content);
     }
-    
+
     /**
      * @return the responseContentType
      */
     public String getContentType(String responseContentType) {
-        return getWrapped().getAttachment(RESPONSE_CONTENT_TYPE_KEY);
+        return getWrapped().getAttachment(CONTENT_TYPE_KEY);
     }
-    
+
     /**
      * @param responseContentType the responseContentType to set
      */
     public void setContentType(String responseContentType) {
-        getWrapped().putAttachment(RESPONSE_CONTENT_TYPE_KEY, responseContentType);
+        getWrapped().putAttachment(CONTENT_TYPE_KEY, responseContentType);
     }
-    
+
     /**
      * helper method to check if the response content is Json
      *
@@ -106,17 +114,17 @@ public class Response {
      * sets Content-Type=application/json
      */
     public void setContentTypeAsJson() {
-        getWrapped().putAttachment(RESPONSE_CONTENT_TYPE_KEY, "application/json");
+        getWrapped().putAttachment(CONTENT_TYPE_KEY, "application/json");
     }
 
     /**
      * @return the responseStatusCode
      */
     public int getStatusCode() {
-        if (getWrapped().getAttachment(RESPONSE_STATUS_CODE_KEY) == null) {
+        if (getWrapped().getAttachment(STATUS_CODE_KEY) == null) {
             return getWrapped().getStatusCode();
         } else {
-            return getWrapped().getAttachment(RESPONSE_STATUS_CODE_KEY);
+            return getWrapped().getAttachment(STATUS_CODE_KEY);
         }
     }
 
@@ -124,14 +132,14 @@ public class Response {
      * @param responseStatusCode the responseStatusCode to set
      */
     public void setStatusCode(int responseStatusCode) {
-        getWrapped().putAttachment(RESPONSE_STATUS_CODE_KEY, responseStatusCode);
+        getWrapped().putAttachment(STATUS_CODE_KEY, responseStatusCode);
     }
 
     /**
      * @return the response content as String
      */
     public String getContent() {
-        return getWrapped().getAttachment(RESPONSE_CONTENT_KEY);
+        return getWrapped().getAttachment(CONTENT_KEY);
     }
 
     /**
@@ -140,7 +148,7 @@ public class Response {
      * @return the response body as JsonElement
      */
     public JsonElement getContentAsJson() {
-        return getWrapped().getAttachment(RESPONSE_CONTENT_AS_JSON_KEY);
+        return getWrapped().getAttachment(CONTENT_AS_JSON_KEY);
     }
 
     /**
@@ -156,7 +164,7 @@ public class Response {
     public void setInError(boolean inError) {
         getWrapped().putAttachment(IN_ERROR_KEY, inError);
     }
-    
+
     /**
      *
      * @param code
@@ -187,10 +195,10 @@ public class Response {
         setStatusCode(code);
         setContentTypeAsJson();
         setInError(true);
-        setContent(getErrorObject(code, 
-                HttpStatus.getStatusText(code), 
-                message, 
-                t, 
+        setContent(getErrorObject(code,
+                HttpStatus.getStatusText(code),
+                message,
+                t,
                 false));
     }
 
@@ -215,10 +223,10 @@ public class Response {
         return list;
     }
 
-    private static JsonObject getErrorObject(int code, 
-            String httpStatusText, 
-            String message, 
-            Throwable t, 
+    private static JsonObject getErrorObject(int code,
+            String httpStatusText,
+            String message,
+            Throwable t,
             boolean includeStackTrace) {
         JsonObject resp = new JsonObject();
         resp.add("http status code", new JsonPrimitive(code));

@@ -33,6 +33,10 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.Buffers;
@@ -63,6 +67,9 @@ public class Request {
 
     private static final AttachmentKey<Long> START_TIME_KEY
             = AttachmentKey.create(Long.class);
+
+    private static final AttachmentKey<Map<String, List<String>>> XFORWARDED_HEADERS
+            = AttachmentKey.create(Map.class);
 
     public Request(HttpServerExchange exchange) {
         this.wrapped = exchange;
@@ -105,8 +112,7 @@ public class Request {
         ByteBuffer content;
         try {
             content = readByteBuffer(getBufferedContent());
-        }
-        catch (Exception ex) {
+        } catch (Exception ex) {
             throw new IOException("Error getting request content", ex);
         }
 
@@ -124,8 +130,7 @@ public class Request {
         String content;
         try {
             content = new String(getContent(), Charset.defaultCharset());
-        }
-        catch (Exception ex) {
+        } catch (Exception ex) {
             throw new IOException("Error getting request content", ex);
         }
 
@@ -157,15 +162,13 @@ public class Request {
         try {
             f = HttpServerExchange.class.getDeclaredField("BUFFERED_REQUEST_DATA");
             f.setAccessible(true);
-        }
-        catch (NoSuchFieldException | SecurityException ex) {
+        } catch (NoSuchFieldException | SecurityException ex) {
             throw new RuntimeException("could not find BUFFERED_REQUEST_DATA field", ex);
         }
 
         try {
             return getWrapped().getAttachment((AttachmentKey<PooledByteBuffer[]>) f.get(getWrapped()));
-        }
-        catch (IllegalArgumentException | IllegalAccessException ex) {
+        } catch (IllegalArgumentException | IllegalAccessException ex) {
             throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
         }
     }
@@ -195,7 +198,34 @@ public class Request {
      * @return the authenticatedAccount
      */
     public Account getAuthenticatedAccount() {
-        return this.getWrapped().getSecurityContext().getAuthenticatedAccount();
+        return getWrapped().getSecurityContext().getAuthenticatedAccount();
+    }
+
+    /**
+     * Add the header X-Forwarded-[key] to the proxied request; use it to pass
+     * to the bbackend information otherwise lost proxying the request.
+     *
+     * @param key
+     * @param value
+     */
+    public void addXForwardedHeader(String key, String value) {
+        if (wrapped.getAttachment(XFORWARDED_HEADERS) == null) {
+            wrapped.putAttachment(XFORWARDED_HEADERS, new LinkedHashMap<>());
+
+        }
+
+        var values = wrapped.getAttachment(XFORWARDED_HEADERS).get(key);
+
+        if (values == null) {
+            values = new ArrayList<>();
+            wrapped.getAttachment(XFORWARDED_HEADERS).put(key, values);
+        }
+
+        values.add(value);
+    }
+
+    public Map<String, List<String>> getXForwardedHeaders() {
+        return getWrapped().getAttachment(XFORWARDED_HEADERS);
     }
 
     public enum METHOD {
@@ -298,15 +328,13 @@ public class Request {
         try {
             f = HttpServerExchange.class.getDeclaredField("BUFFERED_REQUEST_DATA");
             f.setAccessible(true);
-        }
-        catch (NoSuchFieldException | SecurityException ex) {
+        } catch (NoSuchFieldException | SecurityException ex) {
             throw new RuntimeException("could not find BUFFERED_REQUEST_DATA field", ex);
         }
 
         try {
             return null != getWrapped().getAttachment((AttachmentKey<PooledByteBuffer[]>) f.get(getWrapped()));
-        }
-        catch (IllegalArgumentException | IllegalAccessException ex) {
+        } catch (IllegalArgumentException | IllegalAccessException ex) {
             throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
         }
     }
