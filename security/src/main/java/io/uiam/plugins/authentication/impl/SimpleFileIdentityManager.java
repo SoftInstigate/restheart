@@ -32,9 +32,12 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import com.google.common.collect.Sets;
+import static io.uiam.plugins.ConfigurablePlugin.argValue;
+import io.uiam.plugins.FileConfigurablePlugin;
+import io.uiam.plugins.PluginConfigurationException;
 
-import io.uiam.plugins.AbstractConfiFileConsumer;
 import io.uiam.plugins.authentication.PluggableIdentityManager;
+import io.uiam.utils.LambdaUtils;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.DigestCredential;
@@ -49,7 +52,9 @@ import io.undertow.util.HexConverter;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class SimpleFileIdentityManager extends AbstractConfiFileConsumer implements PluggableIdentityManager {
+public class SimpleFileIdentityManager 
+        extends FileConfigurablePlugin 
+        implements PluggableIdentityManager {
 
     private final Map<String, PwdCredentialAccount> accounts = new HashMap<>();
 
@@ -59,7 +64,7 @@ public class SimpleFileIdentityManager extends AbstractConfiFileConsumer impleme
      * @throws java.io.FileNotFoundException
      */
     public SimpleFileIdentityManager(String name, Map<String, Object> arguments)
-            throws FileNotFoundException, UnsupportedEncodingException {
+            throws FileNotFoundException, PluginConfigurationException {
         init(arguments, "users");
     }
 
@@ -67,33 +72,13 @@ public class SimpleFileIdentityManager extends AbstractConfiFileConsumer impleme
     @SuppressWarnings("unchecked")
     public Consumer<? super Map<String, Object>> consumeConfiguration() {
         return u -> {
-            Object _userid = u.get("userid");
-            Object _password = u.get("password");
-            Object _roles = u.get("roles");
-
-            if (_userid == null || !(_userid instanceof String)) {
-                throw new IllegalArgumentException(
-                        "wrong configuration file format. a user entry is missing the userid");
-            }
-
-            if (_password == null || !(_password instanceof String)) {
-                throw new IllegalArgumentException(
-                        "wrong configuration file format. a user entry is missing the password");
-            }
-
-            if (_roles == null) {
-                throw new IllegalArgumentException(
-                        "wrong configuration file format. a user entry is missing the roles");
-            }
-
-            if (!(_roles instanceof List)) {
-                throw new IllegalArgumentException(
-                        "wrong configuration file format. a user entry roles argument is not an array");
-            }
-
-            String userid = (String) _userid;
+            try {
+            String userid = argValue(u, "userid");
+            String _password = argValue(u, "password");
             char[] password = ((String) _password).toCharArray();
-
+            
+            List _roles = argValue(u, "roles");
+            
             if (((Collection<?>) _roles).stream().anyMatch(i -> !(i instanceof String))) {
                 throw new IllegalArgumentException(
                         "wrong configuration file format. a roles entry is wrong. they all must be strings");
@@ -104,6 +89,9 @@ public class SimpleFileIdentityManager extends AbstractConfiFileConsumer impleme
             PwdCredentialAccount a = new PwdCredentialAccount(userid, password, roles);
 
             this.accounts.put(userid, a);
+            } catch (PluginConfigurationException pce) {
+                LambdaUtils.throwsSneakyExcpetion(pce);
+            }
         };
     }
 

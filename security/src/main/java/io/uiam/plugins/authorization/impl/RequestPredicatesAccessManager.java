@@ -18,10 +18,10 @@
 package io.uiam.plugins.authorization.impl;
 
 import static com.google.common.collect.Sets.newHashSet;
+import static io.uiam.plugins.ConfigurablePlugin.argValue;
 import static io.undertow.predicate.Predicate.PREDICATE_CONTEXT;
 
 import java.io.FileNotFoundException;
-import java.io.UnsupportedEncodingException;
 import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,8 +30,10 @@ import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import io.uiam.plugins.AbstractConfiFileConsumer;
+import io.uiam.plugins.FileConfigurablePlugin;
+import io.uiam.plugins.PluginConfigurationException;
 import io.uiam.plugins.authorization.PluggableAccessManager;
+import io.uiam.utils.LambdaUtils;
 import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateParser;
 import io.undertow.security.idm.Account;
@@ -40,47 +42,46 @@ import io.undertow.server.HttpServerExchange;
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestPredicatesAccessManager extends AbstractConfiFileConsumer implements PluggableAccessManager {
+public class RequestPredicatesAccessManager
+        extends FileConfigurablePlugin
+        implements PluggableAccessManager {
 
     private final HashMap<String, Set<Predicate>> acl = new HashMap<>();
 
     /**
      * @param configuration
      * @throws java.io.FileNotFoundException
-     * @throws java.io.UnsupportedEncodingException
+     * @throws java.io.PluginConfigurationException
      */
-    public RequestPredicatesAccessManager(String name, Map<String, Object> configuration)
-            throws FileNotFoundException, UnsupportedEncodingException {
+    public RequestPredicatesAccessManager(String name, 
+            Map<String, Object> configuration)
+            throws FileNotFoundException, PluginConfigurationException {
         init(configuration, "permissions");
     }
 
     @Override
     public Consumer<? super Map<String, Object>> consumeConfiguration() {
         return u -> {
-            Object _role = u.get("role");
-            Object _predicate = u.get("predicate");
-
-            if (_role == null || !(_role instanceof String)) {
-                throw new IllegalArgumentException(
-                        "wrong configuration file format. a permission entry is missing the role");
-            }
-
-            String role = (String) _role;
-
-            if (_predicate == null || !(_predicate instanceof String)) {
-                throw new IllegalArgumentException(
-                        "wrong configuration file format. a permission entry is missing the predicate");
-            }
-
-            Predicate predicate = null;
-
             try {
-                predicate = PredicateParser.parse((String) _predicate, this.getClass().getClassLoader());
-            } catch (Throwable t) {
-                throw new IllegalArgumentException("wrong configuration file format. wrong predicate " + _predicate, t);
-            }
+                String role = argValue(u, ("role"));
+                String _predicate = argValue(u, "predicate");
 
-            aclForRole(role).add(predicate);
+                Predicate predicate = null;
+
+                try {
+                    predicate = PredicateParser.parse(
+                            _predicate,
+                            this.getClass().getClassLoader());
+                } catch (Throwable t) {
+                    throw new PluginConfigurationException("wrong configuration: "
+                            + "Invalid predicate " + _predicate, t);
+                }
+
+                aclForRole(role).add(predicate);
+
+            } catch (PluginConfigurationException pce) {
+                LambdaUtils.throwsSneakyExcpetion(pce);
+            }
         };
     }
 
@@ -105,7 +106,9 @@ public class RequestPredicatesAccessManager extends AbstractConfiFileConsumer im
         // see https://issues.jboss.org/browse/UNDERTOW-1317
         exchange.setRelativePath(exchange.getRequestPath());
 
-        return roles(exchange).anyMatch(role -> aclForRole(role).stream().anyMatch(p -> p.resolve(exchange)));
+        return roles(exchange).anyMatch(role -> aclForRole(role)
+                .stream()
+                .anyMatch(p -> p.resolve(exchange)));
     }
 
     @Override
@@ -123,9 +126,9 @@ public class RequestPredicatesAccessManager extends AbstractConfiFileConsumer im
                 exchange.putAttachment(PREDICATE_CONTEXT, new TreeMap<>());
             }
 
-            // Predicate.resolve() uses getRelativePath() that is the path relative to
-            // the last PathHandler We want to check against the full request path
-            // see https://issues.jboss.org/browse/UNDERTOW-1317
+            // Predicate.resolve() uses getRelativePath() that is the path 
+            // relative to the last PathHandler We want to check against the full 
+            // request path see https://issues.jboss.org/browse/UNDERTOW-1317
             exchange.setRelativePath(exchange.getRequestPath());
             return !ps.stream().anyMatch(p -> p.resolve(exchange));
         } else {
@@ -152,7 +155,8 @@ public class RequestPredicatesAccessManager extends AbstractConfiFileConsumer im
     }
 
     private Account account(HttpServerExchange exchange) {
-        final Account account = exchange.getSecurityContext().getAuthenticatedAccount();
+        final Account account = exchange.getSecurityContext()
+                .getAuthenticatedAccount();
         return isAuthenticated(account) ? account : new NotAuthenticatedAccount();
     }
 
