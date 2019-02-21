@@ -38,7 +38,7 @@ script:
 after_success:
   - if [[ "$MAVEN_DEPLOY" == true ]]; then ./bin/maven-deploy.sh; fi
    
-# Deploy to Githib   
+# Deploy to Github  
 deploy:
   provider: releases
   api_key:
