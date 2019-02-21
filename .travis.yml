@@ -23,3 +23,5 @@ cache:
      
 install: true
 script: mvn clean install
+
+after_success: ./bin/push.sh
