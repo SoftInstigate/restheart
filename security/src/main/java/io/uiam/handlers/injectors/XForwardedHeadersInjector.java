@@ -70,7 +70,6 @@ public class XForwardedHeadersInjector extends PipedHttpHandler {
             }
 
             if (a instanceof BaseAccount && ((BaseAccount) a).getRoles() != null) {
-
                 ((BaseAccount) a).getRoles()
                         .stream().forEachOrdered(role -> exchange
                         .getRequestHeaders()

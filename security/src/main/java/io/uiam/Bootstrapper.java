@@ -17,6 +17,10 @@
  */
 package io.uiam;
 
+import com.jayway.jsonpath.spi.json.GsonJsonProvider;
+import com.jayway.jsonpath.spi.json.JsonProvider;
+import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
+import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.uiam.Configuration.UIAM_VERSION;
 import io.uiam.handlers.RequestNotManagedHandler;
@@ -69,6 +73,7 @@ import io.uiam.handlers.PipedWrappingHandler;
 import io.uiam.handlers.RequestContentInjector;
 import io.uiam.handlers.RequestLoggerHandler;
 import io.uiam.handlers.RequestInterceptorsHandler;
+import io.uiam.handlers.ResponseInterceptorsHandlerInjector;
 import io.uiam.handlers.ResponseSenderHandler;
 import io.uiam.handlers.ResponseInterceptorsHandler;
 import io.uiam.handlers.injectors.XForwardedHeadersInjector;
@@ -101,6 +106,8 @@ import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.util.HttpString;
+import java.util.EnumSet;
+import java.util.Set;
 
 /**
  *
@@ -157,6 +164,28 @@ public class Bootstrapper {
 
             logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
         }
+
+        // configuration from JsonPath
+        com.jayway.jsonpath.Configuration.setDefaults(
+                new com.jayway.jsonpath.Configuration.Defaults() {
+            private final JsonProvider jsonProvider = new GsonJsonProvider();
+            private final MappingProvider mappingProvider = new GsonMappingProvider();
+
+            @Override
+            public JsonProvider jsonProvider() {
+                return jsonProvider;
+            }
+
+            @Override
+            public MappingProvider mappingProvider() {
+                return mappingProvider;
+            }
+
+            @Override
+            public Set<com.jayway.jsonpath.Option> options() {
+                return EnumSet.noneOf(com.jayway.jsonpath.Option.class);
+            }
+        });
 
         if (!hasForkOption(args)) {
             initLogging(args, null);
@@ -705,17 +734,17 @@ public class Bootstrapper {
                     .map(name -> (String) name)
                     .forEachOrdered(name -> {
 
-                try {
-                    authMechanisms.add(PluginsRegistry.getInstance()
-                            .getAuthenticationMechanism(name));
+                        try {
+                            authMechanisms.add(PluginsRegistry.getInstance()
+                                    .getAuthenticationMechanism(name));
 
-                    LOGGER.info("Authentication Mechanism {} enabled",
-                            name);
-                }
-                catch (PluginConfigurationException pcex) {
-                    logErrorAndExit(pcex.getMessage(), pcex, false, -3);
-                }
-            });
+                            LOGGER.info("Authentication Mechanism {} enabled",
+                                    name);
+                        }
+                        catch (PluginConfigurationException pcex) {
+                            logErrorAndExit(pcex.getMessage(), pcex, false, -3);
+                        }
+                    });
         } else {
             LOGGER.warn("***** No Authentication Mechanism specified. "
                     + "Authentication disabled.");
@@ -1015,16 +1044,15 @@ public class Bootstrapper {
                 ProxyHandler proxyHandler = ProxyHandler.builder()
                         .setRewriteHostHeader(true)
                         .setProxyClient(proxyClient)
-                        .setNext(new XForwardedHeadersInjector(
-                                new ResponseInterceptorsHandler()))
                         .build();
 
                 PipedHttpHandler wrappedProxyHandler
                         = new XForwardedHeadersInjector(
-                                new PipedWrappingHandler(
-                                        new XPoweredByInjector(
-                                                new RequestInterceptorsHandler()),
-                                        proxyHandler));
+                                new ResponseInterceptorsHandlerInjector(
+                                        new PipedWrappingHandler(
+                                                new XPoweredByInjector(
+                                                        new RequestInterceptorsHandler()),
+                                                proxyHandler)));
 
                 paths.addPrefixPath(uri,
                         new RequestLoggerHandler(
