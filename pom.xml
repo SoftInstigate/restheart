@@ -110,7 +110,7 @@
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver</artifactId>
-            <version>3.9.1</version>
+            <version>3.10.1</version>
         </dependency>
 
         <!-- update undertow dependency to avoid warning log message:
