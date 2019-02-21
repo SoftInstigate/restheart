@@ -16,8 +16,8 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
             echo "###### On master branch. Tagging image softinstigate/uiam:$VERSION as latest";
             docker tag softinstigate/uiam:$VERSION softinstigate/uiam:latest;
             docker push softinstigate/uiam:latest;
-            echo "###### Publishing Maven site at http://softinstigate.github.io/uiam/project-info.html";
-            mvn site --settings deploy-settings.xml -P report -Dmaven.test.skip=true;
+            #echo "###### Publishing Maven site at http://softinstigate.github.io/uiam/project-info.html";
+            #mvn site --settings deploy-settings.xml -P report -Dmaven.test.skip=true;
         fi
     else
         echo "###### ERROR! Variable VERSION is undefined";
