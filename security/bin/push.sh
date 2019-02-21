@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
     #mvn deploy --settings deploy-settings.xml -P release -Dmaven.test.skip=true;
