@@ -1,6 +1,8 @@
 # &#181;IAM
 
 [![Build Status](https://travis-ci.org/SoftInstigate/uiam.svg?branch=master)](https://travis-ci.org/SoftInstigate/uiam)
+[![Docker Stars](https://img.shields.io/docker/stars/softinstigate/uiam.svg?maxAge=2592000&logo=docker)](https://hub.docker.com/r/softinstigate/uiam/)
+[![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/uiam.svg?maxAge=2592000&logo=docker)](https://hub.docker.com/r/softinstigate/uiam/)
 
 &#181;IAM (micro-IAM) is a micro-gateway for **Identity and Access Management** designed for microservices architectures.
 
