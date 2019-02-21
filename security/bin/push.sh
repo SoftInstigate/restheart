@@ -6,7 +6,7 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
     export VERSION
     if [[ "$VERSION" ]]; then
         echo "###### Building Docker image for uIAM $VERSION";
-        docker login -u="$DOCKER_USER" --password-stdin="$DOCKER_PASS";
+        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
         docker build -t softinstigate/uiam:$VERSION . ;
         if [[ $VERSION != *-SNAPSHOT ]]; then
             docker push softinstigate/uiam:$VERSION;
