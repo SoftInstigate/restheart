@@ -6,6 +6,9 @@ git:
 
 sudo: false
 
+services:
+  - docker
+
 notifications:
   email:
     recipients:
