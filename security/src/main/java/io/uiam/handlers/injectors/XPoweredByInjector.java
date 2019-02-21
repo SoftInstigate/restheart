@@ -54,10 +54,9 @@ public class XPoweredByInjector extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        exchange.getResponseHeaders().add(HttpString.tryFromString(HttpHeaders.X_POWERED_BY), "uIAM.io");
+        exchange.getResponseHeaders().add(HttpString.tryFromString(
+                HttpHeaders.X_POWERED_BY), "uIAM.io");
 
-        if (getNext() != null) {
-            getNext().handleRequest(exchange);
-        }
+        next(exchange);
     }
 }

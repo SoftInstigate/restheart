@@ -84,10 +84,10 @@ public class RequestContentInjector extends RequestBufferingHandler {
         if (isContentRequiredByAnyRequestInterceptor(exchange)
                 || isServiceRequested(exchange)) {
 
-            LOGGER.debug("Request content available for Request.getContent()");
+            LOGGER.trace("Request content available for Request.getContent()");
             super.handleRequest(exchange);
         } else {
-            LOGGER.debug("Request content is not available for Request.getContent()");
+            LOGGER.trace("Request content is not available for Request.getContent()");
             next.handleRequest(exchange);
         }
     }

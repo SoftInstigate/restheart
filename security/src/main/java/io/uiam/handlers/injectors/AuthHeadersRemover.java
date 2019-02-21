@@ -46,8 +46,6 @@ public class AuthHeadersRemover extends PipedHttpHandler {
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
         exchange.getRequestHeaders().remove("Authorization");
 
-        if (getNext() != null) {
-            next(exchange);
-        }
+        next(exchange);
     }
 }

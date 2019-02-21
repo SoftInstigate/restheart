@@ -90,10 +90,8 @@ public class XForwardedHeadersInjector extends PipedHttpHandler {
                         });
             }
         }
-
-        if (getNext() != null) {
-            getNext().handleRequest(exchange);
-        }
+        
+        next(exchange);
     }
 
     private HttpString getHeaderForXH(String suffix) {

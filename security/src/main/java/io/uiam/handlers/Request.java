@@ -112,7 +112,8 @@ public class Request {
         ByteBuffer content;
         try {
             content = readByteBuffer(getBufferedContent());
-        } catch (Exception ex) {
+        }
+        catch (Exception ex) {
             throw new IOException("Error getting request content", ex);
         }
 
@@ -128,10 +129,16 @@ public class Request {
      */
     public String getContentAsText() throws IOException {
         String content;
-        try {
-            content = new String(getContent(), Charset.defaultCharset());
-        } catch (Exception ex) {
-            throw new IOException("Error getting request content", ex);
+
+        if (getWrapped().getAttachment(CONTENT_AS_JSON) != null) {
+            content = getWrapped().getAttachment(CONTENT_AS_JSON).toString();
+        } else {
+            try {
+                content = new String(getContent(), Charset.defaultCharset());
+            }
+            catch (Exception ex) {
+                throw new IOException("Error getting request content", ex);
+            }
         }
 
         return content;
@@ -139,6 +146,8 @@ public class Request {
 
     /**
      * @return the request body as Json
+     * @throws java.io.IOException
+     * @throws com.google.gson.JsonSyntaxException
      */
     public JsonElement getContentAsJson()
             throws IOException, JsonSyntaxException {
@@ -150,7 +159,17 @@ public class Request {
         return getWrapped().getAttachment(CONTENT_AS_JSON);
     }
 
-    private PooledByteBuffer[] getBufferedContent() throws Exception {
+    private PooledByteBuffer[] getBufferedContent() {
+        if (!isContentAvailable()) {
+            throw new IllegalStateException("Request content is not available. "
+                    + "Add a Request Inteceptor overriding requiresContent() "
+                    + "to return true in order to make the content available.");
+        }
+
+        return getWrapped().getAttachment(getBufferedRequestDataKey());
+    }
+
+    private AttachmentKey<PooledByteBuffer[]> getBufferedRequestDataKey() {
         if (!isContentAvailable()) {
             throw new IllegalStateException("Request content is not available. "
                     + "Add a Request Inteceptor overriding requiresContent() "
@@ -162,15 +181,56 @@ public class Request {
         try {
             f = HttpServerExchange.class.getDeclaredField("BUFFERED_REQUEST_DATA");
             f.setAccessible(true);
-        } catch (NoSuchFieldException | SecurityException ex) {
+        }
+        catch (NoSuchFieldException | SecurityException ex) {
             throw new RuntimeException("could not find BUFFERED_REQUEST_DATA field", ex);
         }
 
         try {
-            return getWrapped().getAttachment((AttachmentKey<PooledByteBuffer[]>) f.get(getWrapped()));
-        } catch (IllegalArgumentException | IllegalAccessException ex) {
+            return (AttachmentKey<PooledByteBuffer[]>) f.get(getWrapped());
+        }
+        catch (IllegalArgumentException | IllegalAccessException ex) {
             throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
         }
+    }
+
+    /**
+     * If content is modified in a proxied request, synch modification to
+     * BUFFERED_REQUEST_DATA. This is not required for PluggableService.
+     *
+     * @param exchange
+     * @throws IOException
+     */
+    public void syncBufferedContent(HttpServerExchange exchange) throws IOException {
+        if (!isContentAvailable()) {
+            return;
+        }
+        
+        // not getContent() as json might be availabe as json and modified
+        var src = ByteBuffer.wrap(getContentAsText().getBytes());
+
+        PooledByteBuffer[] dests = getWrapped()
+                .getAttachment(getBufferedRequestDataKey());
+
+        int pidx = 0;
+
+        long copied = 0;
+
+        while (src.hasRemaining() && pidx < dests.length) {
+            if (dests[pidx] == null) {
+                dests[pidx] = exchange.getConnection().getByteBufferPool().allocate();
+            }
+
+            ByteBuffer dest = dests[pidx].getBuffer();
+
+            copied += Buffers.copy(dest, src);
+
+            // very important, I lost a day for this!
+            dest.flip();
+            pidx++;
+        }
+
+        exchange.getRequestHeaders().put(Headers.CONTENT_LENGTH, copied);
     }
 
     /**
@@ -328,13 +388,15 @@ public class Request {
         try {
             f = HttpServerExchange.class.getDeclaredField("BUFFERED_REQUEST_DATA");
             f.setAccessible(true);
-        } catch (NoSuchFieldException | SecurityException ex) {
+        }
+        catch (NoSuchFieldException | SecurityException ex) {
             throw new RuntimeException("could not find BUFFERED_REQUEST_DATA field", ex);
         }
 
         try {
             return null != getWrapped().getAttachment((AttachmentKey<PooledByteBuffer[]>) f.get(getWrapped()));
-        } catch (IllegalArgumentException | IllegalAccessException ex) {
+        }
+        catch (IllegalArgumentException | IllegalAccessException ex) {
             throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
         }
     }
@@ -369,12 +431,12 @@ public class Request {
                     copied += Buffers.copy(dst, buf);
 
                     // very important, I lost a day for this!
-                    buf.rewind();
+                    buf.flip();
                 }
             }
         }
 
-        return dst.position(0).limit(copied > 0 ? copied : 0);
+        return dst.flip();
     }
 
     /**

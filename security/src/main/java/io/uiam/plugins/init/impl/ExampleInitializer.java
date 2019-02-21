@@ -26,6 +26,7 @@ import io.uiam.plugins.PluginsRegistry;
 import io.uiam.plugins.init.PluggableInitializer;
 import io.uiam.plugins.interceptors.impl.EchoExampleRequestInterceptor;
 import io.uiam.plugins.interceptors.impl.EchoExampleResponseInterceptor;
+import io.uiam.plugins.interceptors.impl.ExampleProxiedRequestInterceptor;
 import io.uiam.utils.URLUtils;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
@@ -55,16 +56,22 @@ public class ExampleInitializer implements PluggableInitializer {
             }
         });
         
-        // add a test response transformer
+        // add an example response transformer
         PluginsRegistry
                 .getInstance()
                 .getResponseInterceptors()
                 .add(new EchoExampleResponseInterceptor());
         
-        // add a test request transformer
+        // add an example request transformer
         PluginsRegistry
                 .getInstance()
                 .getRequestInterceptors()
                 .add(new EchoExampleRequestInterceptor());
+        
+        // add a test request transformer
+        PluginsRegistry
+                .getInstance()
+                .getRequestInterceptors()
+                .add(new ExampleProxiedRequestInterceptor());
     }
 }

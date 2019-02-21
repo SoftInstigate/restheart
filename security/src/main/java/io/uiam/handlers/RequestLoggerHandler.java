@@ -82,9 +82,7 @@ public class RequestLoggerHandler extends PipedHttpHandler {
             dumpExchange(exchange, configuration.logExchangeDump());
         }
 
-        if (getNext() != null) {
-            getNext().handleRequest(exchange);
-        }
+        next(exchange);
 
         if (handler != null) {
             handler.handleRequest(exchange);

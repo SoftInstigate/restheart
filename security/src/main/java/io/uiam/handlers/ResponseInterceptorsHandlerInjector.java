@@ -17,7 +17,6 @@
  */
 package io.uiam.handlers;
 
-
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.ResponseCommitListener;
 
@@ -26,9 +25,11 @@ import io.undertow.server.ResponseCommitListener;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ResponseInterceptorsHandlerInjector extends PipedHttpHandler {
+
     private ResponseInterceptorsHandler rish = new ResponseInterceptorsHandler();
+
     /**
-     * 
+     *
      */
     public ResponseInterceptorsHandlerInjector() {
         super(null);
@@ -52,13 +53,14 @@ public class ResponseInterceptorsHandlerInjector extends PipedHttpHandler {
             @Override
             public void beforeCommit(HttpServerExchange exchange) {
                 try {
-                rish.handleRequest(exchange);
-                } catch(Exception ce) {
+                    rish.handleRequest(exchange);
+                }
+                catch (Exception ce) {
                     throw new RuntimeException(ce);
                 }
             }
         });
-        
+
         next(exchange);
     }
 }
