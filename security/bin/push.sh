@@ -1,12 +1,12 @@
 #!/bin/bash
 
 if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
-    mvn deploy --settings deploy-settings.xml -P release -Dmaven.test.skip=true;
+    #mvn deploy --settings deploy-settings.xml -P release -Dmaven.test.skip=true;
     VERSION=$(./bin/project-version.sh 2>/dev/null);
     export VERSION
     if [[ "$VERSION" ]]; then
         echo "###### Building Docker image for uIAM $VERSION";
-        docker login -u="$DOCKER_USER" -p="$DOCKER_PASS";
+        docker login -u="$DOCKER_USER" --password-stdin="$DOCKER_PASS";
         docker build -t softinstigate/uiam:$VERSION . ;
         if [[ $VERSION != *-SNAPSHOT ]]; then
             docker push softinstigate/uiam:$VERSION;
