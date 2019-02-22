@@ -26,4 +26,13 @@ package io.uiam.plugins.interceptors;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public interface PluggableResponseInterceptor extends PluggableInterceptor {
+
+    /**
+     *
+     * @return true if the Interceptor requiers the response from the proxied
+     * backend before sending it to the client
+     */
+    default boolean requiresResponseContent() {
+        return false;
+    }
 }

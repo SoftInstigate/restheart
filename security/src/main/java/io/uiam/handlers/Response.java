@@ -21,13 +21,19 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import io.uiam.utils.BuffersUtils;
 import io.uiam.utils.HttpStatus;
+import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
+import io.undertow.util.Headers;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.ByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xnio.Buffers;
 
 /**
  *
@@ -132,10 +138,39 @@ public class Response {
     }
 
     /**
-     * @return the response content as String
+     * @return the request content as byte[]
      */
-    public String getContent() {
-        return getWrapped().getAttachment(CONTENT_KEY);
+    public byte[] getContent() throws IOException {
+        ByteBuffer content;
+        try {
+            content = BuffersUtils.readByteBuffer(getBufferedContent());
+        }
+        catch (Exception ex) {
+            throw new IOException("Error getting request content", ex);
+        }
+
+        byte[] ret = new byte[content.limit()];
+
+        content.get(ret);
+
+        return ret;
+    }
+    
+    /**
+     * If content is modified in a proxied request, synch modification to
+     * BUFFERED_RESPONSE_DATA. This is not required for PluggableService.
+     *
+     * @param exchange
+     * @throws IOException
+     */
+    public void syncBufferedContent(HttpServerExchange exchange) throws IOException {
+        if (!isContentAvailable()) {
+            return;
+        }
+        
+        
+
+        exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, 0);
     }
 
     /**
@@ -196,6 +231,20 @@ public class Response {
                 message,
                 t,
                 false));
+    }
+
+    private PooledByteBuffer[] getBufferedContent() {
+        if (!isContentAvailable()) {
+            throw new IllegalStateException("Response content is not available. "
+                    + "Add a Response Inteceptor overriding requiresResponseContent() "
+                    + "to return true in order to make the content available.");
+        }
+
+        return getWrapped().getAttachment(ModificableContentSinkConduit.BUFFERED_RESPONSE_DATA);
+    }
+
+    public boolean isContentAvailable() {
+        return null != getWrapped().getAttachment(ModificableContentSinkConduit.BUFFERED_RESPONSE_DATA);
     }
 
     private static String avoidEscapedChars(String s) {

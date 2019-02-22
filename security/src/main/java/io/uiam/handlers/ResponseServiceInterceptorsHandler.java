@@ -25,18 +25,18 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ResponseInterceptorsHandler extends PipedHttpHandler {
+public class ResponseServiceInterceptorsHandler extends PipedHttpHandler {
     /**
      * 
      */
-    public ResponseInterceptorsHandler() {
+    public ResponseServiceInterceptorsHandler() {
         super(null);
     }
 
     /**
      * @param next
      */
-    public ResponseInterceptorsHandler(PipedHttpHandler next) {
+    public ResponseServiceInterceptorsHandler(PipedHttpHandler next) {
         super(next);
     }
 

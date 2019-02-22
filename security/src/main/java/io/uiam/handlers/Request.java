@@ -20,7 +20,7 @@ package io.uiam.handlers;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import static io.uiam.handlers.injectors.RequestContentInjector.MAX_CONTENT_SIZE;
+import io.uiam.utils.BuffersUtils;
 import io.undertow.connector.PooledByteBuffer;
 
 import io.undertow.security.idm.Account;
@@ -111,7 +111,7 @@ public class Request {
     public byte[] getContent() throws IOException {
         ByteBuffer content;
         try {
-            content = readByteBuffer(getBufferedContent());
+            content = BuffersUtils.readByteBuffer(getBufferedContent());
         }
         catch (Exception ex) {
             throw new IOException("Error getting request content", ex);
@@ -401,43 +401,7 @@ public class Request {
         }
     }
 
-    /**
-     * @param srcs
-     * @return
-     * @throws IOException
-     */
-    private ByteBuffer readByteBuffer(final PooledByteBuffer[] srcs)
-            throws IOException {
-        if (srcs == null) {
-            return null;
-        }
-
-        ByteBuffer dst = ByteBuffer.allocate(MAX_CONTENT_SIZE);
-
-        int copied = 0;
-        for (int i = 0; i < srcs.length; ++i) {
-            PooledByteBuffer pooled = srcs[i];
-            if (pooled != null) {
-                final ByteBuffer buf = pooled.getBuffer();
-
-                if (buf.remaining() > dst.remaining()) {
-                    LOGGER.error("Request content exceeeded {} bytes limit",
-                            MAX_CONTENT_SIZE);
-                    throw new IOException("Request content exceeeded "
-                            + MAX_CONTENT_SIZE + " bytes limit");
-                }
-
-                if (buf.hasRemaining()) {
-                    copied += Buffers.copy(dst, buf);
-
-                    // very important, I lost a day for this!
-                    buf.flip();
-                }
-            }
-        }
-
-        return dst.flip();
-    }
+    
 
     /**
      * @return the wrapped

@@ -73,11 +73,11 @@ import io.uiam.handlers.PipedWrappingHandler;
 import io.uiam.handlers.injectors.RequestContentInjector;
 import io.uiam.handlers.RequestLoggerHandler;
 import io.uiam.handlers.RequestInterceptorsHandler;
-import io.uiam.handlers.injectors.ResponseInterceptorsHandlerInjector;
 import io.uiam.handlers.ResponseSenderHandler;
-import io.uiam.handlers.ResponseInterceptorsHandler;
+import io.uiam.handlers.ResponseServiceInterceptorsHandler;
 import io.uiam.handlers.injectors.XForwardedHeadersInjector;
 import io.uiam.handlers.injectors.AuthHeadersRemover;
+import io.uiam.handlers.ResponseProxyInterceptorsHandler;
 import io.uiam.handlers.injectors.XPoweredByInjector;
 import io.uiam.handlers.security.CORSHandler;
 import io.uiam.handlers.security.SecurityHandler;
@@ -895,7 +895,7 @@ public class Bootstrapper {
                             var srv = new PipedWrappingHandler(
                                     new ResponseSenderHandler(),
                                     new PipedWrappingHandler(
-                                            new ResponseInterceptorsHandler(),
+                                            new ResponseServiceInterceptorsHandler(),
                                             _srv));
 
                             if (_srv.getSecured()) {
@@ -1048,10 +1048,10 @@ public class Bootstrapper {
 
                 PipedHttpHandler wrappedProxyHandler
                         = new XForwardedHeadersInjector(
-                                new ResponseInterceptorsHandlerInjector(
+                                new XPoweredByInjector(
                                         new PipedWrappingHandler(
-                                                new XPoweredByInjector(
-                                                        new RequestInterceptorsHandler()),
+                                                new RequestInterceptorsHandler(
+                                                        new ResponseProxyInterceptorsHandler()),
                                                 proxyHandler)));
 
                 paths.addPrefixPath(uri,
