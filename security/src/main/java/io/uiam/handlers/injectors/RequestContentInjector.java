@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.uiam.handlers;
+package io.uiam.handlers.injectors;
 
 import io.uiam.Bootstrapper;
 import io.uiam.Configuration;

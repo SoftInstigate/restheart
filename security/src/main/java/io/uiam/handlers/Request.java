@@ -20,7 +20,7 @@ package io.uiam.handlers;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import static io.uiam.handlers.RequestContentInjector.MAX_CONTENT_SIZE;
+import static io.uiam.handlers.injectors.RequestContentInjector.MAX_CONTENT_SIZE;
 import io.undertow.connector.PooledByteBuffer;
 
 import io.undertow.security.idm.Account;
