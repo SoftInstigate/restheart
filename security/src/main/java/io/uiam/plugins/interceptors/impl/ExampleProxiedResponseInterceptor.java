@@ -24,7 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.uiam.plugins.interceptors.PluggableResponseInterceptor;
 import io.undertow.util.HttpString;
-import java.io.IOException;
 
 /**
  *
@@ -49,7 +48,7 @@ public class ExampleProxiedResponseInterceptor
                     "added by ExampleProxiedResponseInterceptor");
         }
         } catch(Throwable ioe) {
-            LOGGER.error("error gettingj json", ioe);
+            LOGGER.error("error getting json", ioe);
         }
         
         exchange.getResponseHeaders().add(HttpString.tryFromString("header"),
@@ -60,7 +59,7 @@ public class ExampleProxiedResponseInterceptor
     public boolean resolve(HttpServerExchange exchange) {
         var req = Request.wrap(exchange);
         return req.isGet()
-                && exchange.getRequestPath().startsWith("/pr");
+                && exchange.getRequestPath().startsWith("/pr/");
     }
 
     @Override

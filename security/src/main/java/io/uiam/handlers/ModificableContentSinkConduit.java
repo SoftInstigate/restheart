@@ -30,6 +30,9 @@ import org.xnio.channels.StreamSourceChannel;
 import org.xnio.conduits.ConduitWritableByteChannel;
 import org.xnio.conduits.StreamSinkConduit;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.protocol.http.ServerFixedLengthStreamSinkConduit;
+import io.undertow.util.AttachmentKey;
+import java.lang.reflect.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.Buffers;
@@ -125,6 +128,8 @@ public class ModificableContentSinkConduit
 
         PooledByteBuffer[] dests = exchange.getAttachment(resp.getBufferedDataKey());
 
+        updateServerFixedLengthStreamSinkConduit(dests);
+
         for (PooledByteBuffer dest : dests) {
             if (dest != null) {
                 ByteBuffer src = dest.getBuffer();
@@ -138,5 +143,38 @@ public class ModificableContentSinkConduit
         }
 
         next.terminateWrites();
+    }
+    
+    private void updateServerFixedLengthStreamSinkConduit(PooledByteBuffer[] dests) {
+        long length = 0;
+
+        for (PooledByteBuffer dest : dests) {
+            if (dest != null) {
+                ByteBuffer src = dest.getBuffer();
+                length += src.limit();
+            }
+        }
+
+        if (next instanceof ServerFixedLengthStreamSinkConduit) {
+            Method m;
+
+            try {
+                m = ServerFixedLengthStreamSinkConduit.class.getDeclaredMethod(
+                        "reset", 
+                        long.class, 
+                        HttpServerExchange.class);
+                m.setAccessible(true);
+            }
+            catch (NoSuchMethodException | SecurityException ex) {
+                throw new RuntimeException("could not find ServerFixedLengthStreamSinkConduit.reset method", ex);
+            }
+
+            try {
+                m.invoke(next, length, exchange);
+            }
+            catch (Throwable ex) {
+                throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
+            }
+        }
     }
 }

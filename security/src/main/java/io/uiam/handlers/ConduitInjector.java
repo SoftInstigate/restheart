@@ -37,21 +37,21 @@ import org.xnio.conduits.StreamSinkConduit;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ModificableContentSinkConduitInjector extends PipedHttpHandler {
+public class ConduitInjector extends PipedHttpHandler {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(ModificableContentSinkConduitInjector.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(ConduitInjector.class);
 
     public static final AttachmentKey<ModificableContentSinkConduit> MCSK_KEY
             = AttachmentKey.create(ModificableContentSinkConduit.class);
 
-    public ModificableContentSinkConduitInjector() {
+    public ConduitInjector() {
         super(null);
     }
 
     /**
      * @param next
      */
-    public ModificableContentSinkConduitInjector(PipedHttpHandler next) {
+    public ConduitInjector(PipedHttpHandler next) {
         super(next);
     }
 

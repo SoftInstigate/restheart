@@ -17,41 +17,25 @@
  */
 package io.uiam.handlers;
 
+import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestBuffersSynchronizer extends PipedHttpHandler {
+public class ForceIdentityProxyEncodingHandler extends PipedHttpHandler {
+
 
     /**
+     * Creates a new instance of ForceIdentityProxyEncodingHandler
      *
-     */
-    public RequestBuffersSynchronizer() {
-        super(null);
-    }
-
-    /**
      * @param next
      */
-    public RequestBuffersSynchronizer(PipedHttpHandler next) {
-        super(next);
+    public ForceIdentityProxyEncodingHandler(HttpHandler next) {
     }
 
-    /**
-     *
-     * @param exchange
-     * @throws Exception
-     */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var req = Request.wrap(exchange);
-        
-        if (req.isJsonContentAvailable()) {
-            req.syncBufferedContent();
-        }
-        
-        next(exchange);
     }
 }

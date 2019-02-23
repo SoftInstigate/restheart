@@ -70,7 +70,7 @@ import org.xnio.ssl.XnioSsl;
 import io.uiam.handlers.ErrorHandler;
 import io.uiam.handlers.Request.METHOD;
 import io.uiam.handlers.ForceGzipEncodingHandler;
-import io.uiam.handlers.ModificableContentSinkConduitInjector;
+import io.uiam.handlers.ConduitInjector;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.PipedWrappingHandler;
 import io.uiam.handlers.injectors.RequestContentInjector;
@@ -863,9 +863,12 @@ public class Bootstrapper {
                 new RequestLimit(configuration.getRequestsLimit()),
                 new AllowedMethodsHandler(
                         new RequestContentInjector(
-                                new ForceGzipEncodingHandler(new ErrorHandler(
-                                        new HttpContinueAcceptingHandler(paths)),
-                                        configuration.isForceGzipEncoding())),
+                                new ConduitInjector(
+                                        new PipedWrappingHandler(null,
+                                                new ForceGzipEncodingHandler(
+                                                        new ErrorHandler(
+                                                                new HttpContinueAcceptingHandler(paths)),
+                                                        configuration.isForceGzipEncoding())))),
                         // allowed methods
                         HttpString.tryFromString(METHOD.GET.name()),
                         HttpString.tryFromString(METHOD.POST.name()),
@@ -900,9 +903,9 @@ public class Bootstrapper {
                                     .getService(name);
 
                             var srv = new PipedWrappingHandler(
-                                            new ResponseServiceInterceptorsExecutor(
-                                                    new ResponseSender()),
-                                            _srv);
+                                    new ResponseServiceInterceptorsExecutor(
+                                            new ResponseSender()),
+                                    _srv);
 
                             if (_srv.getSecured()) {
                                 paths.addPrefixPath(_srv.getUri(), new RequestLoggerHandler(
@@ -1053,14 +1056,13 @@ public class Bootstrapper {
                         .build();
 
                 PipedHttpHandler wrappedProxyHandler
-                        = new ModificableContentSinkConduitInjector(
-                                new XForwardedHeadersInjector(
-                                        new XPoweredByInjector(
-                                                new RequestInterceptorsExecutor(
-                                                        new RequestBuffersSynchronizer(
+                        = new XForwardedHeadersInjector(
+                                new XPoweredByInjector(
+                                        new RequestInterceptorsExecutor(
+                                                new RequestBuffersSynchronizer(
                                                         new PipedWrappingHandler(
                                                                 new ResponseBuffersSynchronizer(),
-                                                                proxyHandler))))));
+                                                                proxyHandler)))));
 
                 paths.addPrefixPath(uri,
                         new RequestLoggerHandler(

@@ -17,16 +17,10 @@
  */
 package io.uiam.handlers;
 
-import io.uiam.utils.BuffersUtils;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 
 /**
  *
- * sends the response content attached to HttpServerExchange to the client
- *
- * @see ExchangeHelper.getResponseContentAsJson() and
- * ExchangeHelper.getResponseContent()
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ResponseBuffersSynchronizer extends PipedHttpHandler {
