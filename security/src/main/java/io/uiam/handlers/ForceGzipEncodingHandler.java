@@ -32,10 +32,10 @@ import io.undertow.util.Headers;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class GzipEncodingHandler extends EncodingHandler {
+public class ForceGzipEncodingHandler extends EncodingHandler {
 
-    private final ResponseSenderHandler sender
-            = new ResponseSenderHandler(null);
+    private final ResponseSender sender
+            = new ResponseSender(null);
 
     private boolean forceCompression = false;
 
@@ -46,7 +46,7 @@ public class GzipEncodingHandler extends EncodingHandler {
      * @param forceCompression if true requests without gzip encoding in
      * Accept-Encoding header will be rejected
      */
-    public GzipEncodingHandler(HttpHandler next, boolean forceCompression) {
+    public ForceGzipEncodingHandler(HttpHandler next, boolean forceCompression) {
         super(next, new ContentEncodingRepository()
                 .addEncodingHandler("gzip", new GzipEncodingProvider(), 50));
         this.forceCompression = forceCompression;

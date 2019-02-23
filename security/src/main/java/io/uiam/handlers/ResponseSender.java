@@ -28,19 +28,19 @@ import io.undertow.server.HttpServerExchange;
  * ExchangeHelper.getResponseContent()
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ResponseSenderHandler extends PipedHttpHandler {
+public class ResponseSender extends PipedHttpHandler {
 
     /**
      *
      */
-    public ResponseSenderHandler() {
+    public ResponseSender() {
         super(null);
     }
 
     /**
      * @param next
      */
-    public ResponseSenderHandler(PipedHttpHandler next) {
+    public ResponseSender(PipedHttpHandler next) {
         super(next);
     }
 
@@ -56,7 +56,11 @@ public class ResponseSenderHandler extends PipedHttpHandler {
         if (!exchange.isResponseStarted()) {
             exchange.setStatusCode(response.getStatusCode());
         }
-
+        
+        if (response.isJsonContentAvailable()) {
+            response.syncBufferedContent();
+        }
+        
         if (response.isContentAvailable()) {
             exchange.getResponseSender().send(
                     BuffersUtils.toByteBuffer(

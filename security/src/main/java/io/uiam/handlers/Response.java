@@ -46,6 +46,8 @@ public class Response extends AbstractExchange {
             = AttachmentKey.create(PooledByteBuffer[].class);
     private static final AttachmentKey<JsonElement> BUFFERED_JSON_DATA
             = AttachmentKey.create(JsonElement.class);
+    private static final AttachmentKey<Integer> STATUS_CODE
+            = AttachmentKey.create(Integer.class);
 
     public Response(HttpServerExchange exchange) {
         super(exchange);
@@ -80,7 +82,7 @@ public class Response extends AbstractExchange {
      * @param responseContentType the responseContentType to set
      */
     public void setContentType(String responseContentType) {
-        getWrapped().getResponseHeaders().add(Headers.CONTENT_TYPE,
+        getWrapped().getResponseHeaders().put(Headers.CONTENT_TYPE,
                 responseContentType);
     }
 
@@ -95,14 +97,14 @@ public class Response extends AbstractExchange {
      * @return the responseStatusCode
      */
     public int getStatusCode() {
-        return getWrapped().getStatusCode();
+        return getWrapped().getAttachment(STATUS_CODE);
     }
 
     /**
      * @param responseStatusCode the responseStatusCode to set
      */
     public void setStatusCode(int responseStatusCode) {
-        getWrapped().setStatusCode(responseStatusCode);
+        getWrapped().putAttachment(STATUS_CODE, responseStatusCode);
     }
 
     /**

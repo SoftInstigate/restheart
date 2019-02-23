@@ -133,10 +133,10 @@ public class ModificableContentSinkConduit
                 Buffers.dump(src, sb, 1, 1);
                 LOGGER.debug("{}", sb);
 
-                super.write(src);
+                next.write(src);
             }
         }
 
-        super.terminateWrites();
+        next.terminateWrites();
     }
 }

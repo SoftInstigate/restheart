@@ -32,7 +32,7 @@ public class ErrorHandler implements HttpHandler {
 
     private final HttpHandler next;
 
-    private final PipedHttpHandler sender = new ResponseSenderHandler(null);
+    private final PipedHttpHandler sender = new ResponseSender(null);
 
     private final Logger LOGGER = LoggerFactory.getLogger(ErrorHandler.class);
 

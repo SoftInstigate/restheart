@@ -69,7 +69,7 @@ import org.xnio.ssl.XnioSsl;
 
 import io.uiam.handlers.ErrorHandler;
 import io.uiam.handlers.Request.METHOD;
-import io.uiam.handlers.GzipEncodingHandler;
+import io.uiam.handlers.ForceGzipEncodingHandler;
 import io.uiam.handlers.ModificableContentSinkConduitInjector;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.PipedWrappingHandler;
@@ -77,7 +77,7 @@ import io.uiam.handlers.injectors.RequestContentInjector;
 import io.uiam.handlers.RequestLoggerHandler;
 import io.uiam.handlers.RequestInterceptorsExecutor;
 import io.uiam.handlers.ResponseBuffersSynchronizer;
-import io.uiam.handlers.ResponseSenderHandler;
+import io.uiam.handlers.ResponseSender;
 import io.uiam.handlers.ResponseServiceInterceptorsExecutor;
 import io.uiam.handlers.injectors.XForwardedHeadersInjector;
 import io.uiam.handlers.injectors.AuthHeadersRemover;
@@ -863,7 +863,7 @@ public class Bootstrapper {
                 new RequestLimit(configuration.getRequestsLimit()),
                 new AllowedMethodsHandler(
                         new RequestContentInjector(
-                                new GzipEncodingHandler(new ErrorHandler(
+                                new ForceGzipEncodingHandler(new ErrorHandler(
                                         new HttpContinueAcceptingHandler(paths)),
                                         configuration.isForceGzipEncoding())),
                         // allowed methods
@@ -900,10 +900,9 @@ public class Bootstrapper {
                                     .getService(name);
 
                             var srv = new PipedWrappingHandler(
-                                    new ResponseSenderHandler(),
-                                    new PipedWrappingHandler(
-                                            new ResponseServiceInterceptorsExecutor(),
-                                            _srv));
+                                            new ResponseServiceInterceptorsExecutor(
+                                                    new ResponseSender()),
+                                            _srv);
 
                             if (_srv.getSecured()) {
                                 paths.addPrefixPath(_srv.getUri(), new RequestLoggerHandler(
