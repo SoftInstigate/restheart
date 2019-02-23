@@ -19,6 +19,7 @@ package io.uiam.handlers;
 
 import io.uiam.utils.BuffersUtils;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 
 /**
  *
@@ -28,19 +29,19 @@ import io.undertow.server.HttpServerExchange;
  * ExchangeHelper.getResponseContent()
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ResponseSenderHandler extends PipedHttpHandler {
+public class ResponseBuffersSynchronizer extends PipedHttpHandler {
 
     /**
      *
      */
-    public ResponseSenderHandler() {
+    public ResponseBuffersSynchronizer() {
         super(null);
     }
 
     /**
      * @param next
      */
-    public ResponseSenderHandler(PipedHttpHandler next) {
+    public ResponseBuffersSynchronizer(PipedHttpHandler next) {
         super(next);
     }
 
@@ -51,20 +52,12 @@ public class ResponseSenderHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var response = Response.wrap(exchange);
+        var res = Response.wrap(exchange);
 
-        if (!exchange.isResponseStarted()) {
-            exchange.setStatusCode(response.getStatusCode());
+        if (res.isJsonContentAvailable()) {
+            res.syncBufferedContent();
         }
-
-        if (response.isContentAvailable()) {
-            exchange.getResponseSender().send(
-                    BuffersUtils.toByteBuffer(
-                            response.getContent()));
-        }
-
-        exchange.endExchange();
-
+        
         next(exchange);
     }
 }

@@ -20,23 +20,24 @@ package io.uiam.handlers;
 import io.uiam.plugins.PluginsRegistry;
 
 import io.undertow.server.HttpServerExchange;
+import java.io.IOException;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ResponseServiceInterceptorsHandler extends PipedHttpHandler {
+public class ResponseServiceInterceptorsExecutor extends PipedHttpHandler {
     /**
      * 
      */
-    public ResponseServiceInterceptorsHandler() {
+    public ResponseServiceInterceptorsExecutor() {
         super(null);
     }
 
     /**
      * @param next
      */
-    public ResponseServiceInterceptorsHandler(PipedHttpHandler next) {
+    public ResponseServiceInterceptorsExecutor(PipedHttpHandler next) {
         super(next);
     }
 

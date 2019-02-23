@@ -17,7 +17,6 @@
  */
 package io.uiam.plugins.interceptors.impl;
 
-import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import io.uiam.handlers.Response;
 import io.undertow.server.HttpServerExchange;
@@ -41,10 +40,6 @@ public class EchoExampleResponseInterceptor implements PluggableResponseIntercep
                     .getAsJsonObject()
                     .addProperty("prop2",
                             "property added by example response interceptor");
-
-            
-            // TODO is that really required, can we automate synch?
-            response.syncBufferedContent(exchange);
         }
         catch (IOException | JsonSyntaxException ex) {
             Response.wrap(exchange).endExchangeWithMessage(

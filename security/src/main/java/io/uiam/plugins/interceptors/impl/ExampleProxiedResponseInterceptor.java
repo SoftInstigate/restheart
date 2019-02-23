@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.uiam.plugins.interceptors.PluggableResponseInterceptor;
 import io.undertow.util.HttpString;
+import java.io.IOException;
 
 /**
  *
@@ -40,16 +41,25 @@ public class ExampleProxiedResponseInterceptor
 
     @Override
     public void handleRequest(HttpServerExchange exchange) {
-        var response = Response.wrap(exchange);
+        var res = Response.wrap(exchange);
 
-        exchange.getResponseHeaders().add(HttpString.tryFromString("header"), 
+        try {
+        if (res.getContentAsJson() != null) {
+            res.getContentAsJson().getAsJsonObject().addProperty("wow", 
+                    "added by ExampleProxiedResponseInterceptor");
+        }
+        } catch(Throwable ioe) {
+            LOGGER.error("error gettingj json", ioe);
+        }
+        
+        exchange.getResponseHeaders().add(HttpString.tryFromString("header"),
                 "added by ExampleProxiedResponseInterceptor");
     }
 
     @Override
     public boolean resolve(HttpServerExchange exchange) {
         var req = Request.wrap(exchange);
-        return req.isGet() 
+        return req.isGet()
                 && exchange.getRequestPath().startsWith("/pr");
     }
 

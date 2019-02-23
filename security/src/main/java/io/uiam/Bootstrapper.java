@@ -23,8 +23,8 @@ import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.uiam.Configuration.UIAM_VERSION;
-import static io.uiam.handlers.AbstractExchange.MAX_BUFFERS;
 import static io.uiam.handlers.AbstractExchange.MAX_CONTENT_SIZE;
+import io.uiam.handlers.RequestBuffersSynchronizer;
 import io.uiam.handlers.RequestNotManagedHandler;
 import static io.undertow.Handlers.path;
 import static org.fusesource.jansi.Ansi.ansi;
@@ -70,16 +70,17 @@ import org.xnio.ssl.XnioSsl;
 import io.uiam.handlers.ErrorHandler;
 import io.uiam.handlers.Request.METHOD;
 import io.uiam.handlers.GzipEncodingHandler;
+import io.uiam.handlers.ModificableContentSinkConduitInjector;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.PipedWrappingHandler;
 import io.uiam.handlers.injectors.RequestContentInjector;
 import io.uiam.handlers.RequestLoggerHandler;
-import io.uiam.handlers.RequestInterceptorsHandler;
+import io.uiam.handlers.RequestInterceptorsExecutor;
+import io.uiam.handlers.ResponseBuffersSynchronizer;
 import io.uiam.handlers.ResponseSenderHandler;
-import io.uiam.handlers.ResponseServiceInterceptorsHandler;
+import io.uiam.handlers.ResponseServiceInterceptorsExecutor;
 import io.uiam.handlers.injectors.XForwardedHeadersInjector;
 import io.uiam.handlers.injectors.AuthHeadersRemover;
-import io.uiam.handlers.ResponseProxyInterceptorsHandler;
 import io.uiam.handlers.injectors.XPoweredByInjector;
 import io.uiam.handlers.security.CORSHandler;
 import io.uiam.handlers.security.SecurityHandler;
@@ -840,7 +841,7 @@ public class Bootstrapper {
         LOGGER.info("Content buffers maximun size "
                 + "is {} bytes",
                 MAX_CONTENT_SIZE);
-        
+
         plugServices(configuration, paths,
                 authMechanisms, accessManager, tokenManager);
 
@@ -901,14 +902,14 @@ public class Bootstrapper {
                             var srv = new PipedWrappingHandler(
                                     new ResponseSenderHandler(),
                                     new PipedWrappingHandler(
-                                            new ResponseServiceInterceptorsHandler(),
+                                            new ResponseServiceInterceptorsExecutor(),
                                             _srv));
 
                             if (_srv.getSecured()) {
                                 paths.addPrefixPath(_srv.getUri(), new RequestLoggerHandler(
                                         new CORSHandler(
                                                 new XPoweredByInjector(
-                                                        new RequestInterceptorsHandler(
+                                                        new RequestInterceptorsExecutor(
                                                                 new SecurityHandler(srv,
                                                                         authMechanisms,
                                                                         accessManager,
@@ -917,7 +918,7 @@ public class Bootstrapper {
                                 paths.addPrefixPath(_srv.getUri(), new RequestLoggerHandler(
                                         new CORSHandler(
                                                 new XPoweredByInjector(
-                                                        new RequestInterceptorsHandler(
+                                                        new RequestInterceptorsExecutor(
                                                                 new SecurityHandler(srv,
                                                                         authMechanisms,
                                                                         new FullAccessManager(false),
@@ -1053,12 +1054,14 @@ public class Bootstrapper {
                         .build();
 
                 PipedHttpHandler wrappedProxyHandler
-                        = new XForwardedHeadersInjector(
-                                new XPoweredByInjector(
-                                        new PipedWrappingHandler(
-                                                new RequestInterceptorsHandler(
-                                                        new ResponseProxyInterceptorsHandler()),
-                                                proxyHandler)));
+                        = new ModificableContentSinkConduitInjector(
+                                new XForwardedHeadersInjector(
+                                        new XPoweredByInjector(
+                                                new RequestInterceptorsExecutor(
+                                                        new RequestBuffersSynchronizer(
+                                                        new PipedWrappingHandler(
+                                                                new ResponseBuffersSynchronizer(),
+                                                                proxyHandler))))));
 
                 paths.addPrefixPath(uri,
                         new RequestLoggerHandler(

@@ -65,6 +65,8 @@ public class EchoService extends PluggableService {
         var request = Request.wrap(exchange);
         var response = Response.wrap(exchange);
 
+        response.setStatusCode(HttpStatus.SC_OK);
+        
         JsonObject resp = new JsonObject();
 
         resp.addProperty("method", exchange.getRequestMethod().toString());
@@ -114,8 +116,7 @@ public class EchoService extends PluggableService {
 
         });
 
-        response.setContent(resp);
-        response.setStatusCode(HttpStatus.SC_OK);
+        response.setJsonContent(resp);
     }
 
     private JsonElement getTruncatedContent(Request request) throws IOException {
@@ -125,7 +126,7 @@ public class EchoService extends PluggableService {
             return null;
         } else if (content.length < 1024) {
             return new JsonPrimitive(
-                    BuffersUtils.toString(request.getContent(), 
+                    BuffersUtils.toString(request.getContent(),
                             StandardCharsets.UTF_8));
         } else {
             JsonArray ret = new JsonArray(20);

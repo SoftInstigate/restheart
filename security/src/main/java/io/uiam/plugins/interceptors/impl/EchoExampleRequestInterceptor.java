@@ -26,13 +26,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.uiam.plugins.interceptors.PluggableRequestInterceptor;
 import java.io.IOException;
-import java.util.logging.Level;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class EchoExampleRequestInterceptor implements PluggableRequestInterceptor {
+
     private static final Logger LOGGER = LoggerFactory
             .getLogger(EchoExampleRequestInterceptor.class);
 
@@ -50,23 +50,16 @@ public class EchoExampleRequestInterceptor implements PluggableRequestIntercepto
 
             try {
                 requestContent = request.getContentAsJson();
-            } catch (IOException | JsonSyntaxException ex) {
+            }
+            catch (IOException | JsonSyntaxException ex) {
                 LOGGER.error("error parsing request content as Json");
             }
             if (requestContent != null) {
                 requestContent.getAsJsonObject()
                         .addProperty("prop1",
                                 "property added by example request interceptor");
-                
-                // TODO is that really required, can we automate synch?
-                try {
-                    request.syncBufferedContent(exchange);
-                }
-                catch (IOException ex) {
-                    LOGGER.error("error sync content", ex);
-                }
             }
-        } 
+        }
     }
 
     @Override

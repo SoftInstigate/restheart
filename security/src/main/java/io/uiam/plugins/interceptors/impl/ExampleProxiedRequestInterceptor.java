@@ -46,8 +46,6 @@ public class ExampleProxiedRequestInterceptor
             request.getContentAsJson()
                     .getAsJsonObject()
                     .addProperty("modified", true);
-
-            request.syncBufferedContent(exchange);
         }
         catch (IOException | JsonSyntaxException ex) {
             LOGGER.warn("error", ex);

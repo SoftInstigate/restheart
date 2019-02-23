@@ -19,12 +19,9 @@ package io.uiam.handlers;
 
 import io.uiam.plugins.PluginsRegistry;
 import io.undertow.server.ConduitWrapper;
-import io.undertow.server.ExchangeCompletionListener;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.ResponseCommitListener;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.ConduitFactory;
-import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.conduits.StreamSinkConduit;
@@ -40,21 +37,21 @@ import org.xnio.conduits.StreamSinkConduit;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ResponseProxyInterceptorsHandler extends PipedHttpHandler {
+public class ModificableContentSinkConduitInjector extends PipedHttpHandler {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(ResponseProxyInterceptorsHandler.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(ModificableContentSinkConduitInjector.class);
 
     public static final AttachmentKey<ModificableContentSinkConduit> MCSK_KEY
             = AttachmentKey.create(ModificableContentSinkConduit.class);
 
-    public ResponseProxyInterceptorsHandler() {
+    public ModificableContentSinkConduitInjector() {
         super(null);
     }
 
     /**
      * @param next
      */
-    public ResponseProxyInterceptorsHandler(PipedHttpHandler next) {
+    public ModificableContentSinkConduitInjector(PipedHttpHandler next) {
         super(next);
     }
 
@@ -72,7 +69,6 @@ public class ResponseProxyInterceptorsHandler extends PipedHttpHandler {
             public StreamSinkConduit wrap(
                     ConduitFactory<StreamSinkConduit> factory,
                     HttpServerExchange exchange) {
-
                 if (PluginsRegistry.getInstance()
                         .getResponseInterceptors()
                         .stream()
@@ -91,31 +87,25 @@ public class ResponseProxyInterceptorsHandler extends PipedHttpHandler {
             }
         });
 
-        // before sending the response execute the interceptors
-        exchange.addResponseCommitListener(new ResponseCommitListener() {
-            @Override
-            public void beforeCommit(HttpServerExchange exchange) {
-                // invoke all response interceptors
-                PluginsRegistry.getInstance()
-                        .getResponseInterceptors()
-                        .stream()
-                        .filter(ri -> ri.resolve(exchange))
-                        .forEachOrdered(ri -> ri.handleRequest(exchange));
-                
-                // and send the response to the client
-                var mcsc = exchange.getAttachment(MCSK_KEY);
-
-                if (mcsc != null) {
-                    try {
-                        mcsc.flushToClient();
-                    }
-                    catch (IOException ex) {
-                        LOGGER.error("error sending data to client", ex);
-                    }
-                }
-            }
-        });
-
+//        // before sending the response execute the interceptors
+//        exchange.addResponseCommitListener(new ResponseCommitListener() {
+//            @Override
+//            public void beforeCommit(HttpServerExchange exchange) {
+//                LOGGER.debug("****** beforeCommit");
+//                
+//                // and send the response to the client
+//                var mcsc = exchange.getAttachment(MCSK_KEY);
+//
+//                if (mcsc != null) {
+//                    try {
+//                        mcsc.flushToClient();
+//                    }
+//                    catch (IOException ex) {
+//                        LOGGER.error("error sending data to client", ex);
+//                    }
+//                }
+//            }
+//        });
         next(exchange);
     }
 }

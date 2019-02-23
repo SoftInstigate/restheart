@@ -32,21 +32,21 @@ public class PipedWrappingHandler extends PipedHttpHandler {
      * Creates a new instance of PipedWrappingHandler
      *
      * @param next
-     * @param toWrap
+     * @param handler
      */
-    public PipedWrappingHandler(PipedHttpHandler next, HttpHandler toWrap) {
+    public PipedWrappingHandler(PipedHttpHandler next, HttpHandler handler) {
         super(next);
-        wrapped = toWrap;
+        wrapped = handler;
     }
 
     /**
      * Creates a new instance of PipedWrappingHandler
      *
-     * @param toWrap
+     * @param handler
      */
-    public PipedWrappingHandler(HttpHandler toWrap) {
+    public PipedWrappingHandler(HttpHandler handler) {
         super(null);
-        wrapped = toWrap;
+        wrapped = handler;
     }
 
     /**

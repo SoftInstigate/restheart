@@ -27,18 +27,18 @@ import io.uiam.plugins.interceptors.PluggableRequestInterceptor;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestInterceptorsHandler extends PipedHttpHandler {
+public class RequestInterceptorsExecutor extends PipedHttpHandler {
     /**
      * 
      */
-    public RequestInterceptorsHandler() {
+    public RequestInterceptorsExecutor() {
         super(null);
     }
 
     /**
      * @param next
      */
-    public RequestInterceptorsHandler(PipedHttpHandler next) {
+    public RequestInterceptorsExecutor(PipedHttpHandler next) {
         super(next);
     }
 

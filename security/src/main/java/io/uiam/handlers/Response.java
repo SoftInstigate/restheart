@@ -31,7 +31,7 @@ import io.undertow.util.Headers;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -42,10 +42,10 @@ public class Response extends AbstractExchange {
 
     private static final AttachmentKey<Boolean> IN_ERROR_KEY
             = AttachmentKey.create(Boolean.class);
-    private static final AttachmentKey<Integer> STATUS_CODE_KEY
-            = AttachmentKey.create(Integer.class);
-    private static final AttachmentKey<String> CONTENT_TYPE_KEY
-            = AttachmentKey.create(String.class);
+    private static final AttachmentKey<PooledByteBuffer[]> BUFFERED_RESPONSE_DATA
+            = AttachmentKey.create(PooledByteBuffer[].class);
+    private static final AttachmentKey<JsonElement> BUFFERED_JSON_DATA
+            = AttachmentKey.create(JsonElement.class);
 
     public Response(HttpServerExchange exchange) {
         super(exchange);
@@ -60,55 +60,49 @@ public class Response extends AbstractExchange {
      * @return the responseContentType
      */
     public String getContentType() {
-        return getWrapped().getAttachment(CONTENT_TYPE_KEY);
+        if (getWrapped().getResponseHeaders().get(Headers.CONTENT_TYPE) != null) {
+            return getWrapped().getResponseHeaders().get(Headers.CONTENT_TYPE)
+                    .getFirst();
+        } else {
+            return null;
+        }
     }
 
     /**
      * @param the response content to set
      */
-    public void setContent(JsonElement content) throws IOException {
+    public void setJsonContent(JsonElement content) throws IOException {
         setContentTypeAsJson();
-        getWrapped().putAttachment(CONTENT_AS_JSON, content);
-        syncBufferedContent(wrapped);
-    }
-
-    /**
-     * @return the responseContentType
-     */
-    public String getContentType(String responseContentType) {
-        return getWrapped().getAttachment(CONTENT_TYPE_KEY);
+        getWrapped().putAttachment(getBufferedJsonKey(), content);
     }
 
     /**
      * @param responseContentType the responseContentType to set
      */
     public void setContentType(String responseContentType) {
-        getWrapped().putAttachment(CONTENT_TYPE_KEY, responseContentType);
+        getWrapped().getResponseHeaders().add(Headers.CONTENT_TYPE,
+                responseContentType);
     }
 
     /**
      * sets Content-Type=application/json
      */
     public void setContentTypeAsJson() {
-        getWrapped().putAttachment(CONTENT_TYPE_KEY, "application/json");
+        setContentType("application/json");
     }
 
     /**
      * @return the responseStatusCode
      */
     public int getStatusCode() {
-        if (getWrapped().getAttachment(STATUS_CODE_KEY) == null) {
-            return getWrapped().getStatusCode();
-        } else {
-            return getWrapped().getAttachment(STATUS_CODE_KEY);
-        }
+        return getWrapped().getStatusCode();
     }
 
     /**
      * @param responseStatusCode the responseStatusCode to set
      */
     public void setStatusCode(int responseStatusCode) {
-        getWrapped().putAttachment(STATUS_CODE_KEY, responseStatusCode);
+        getWrapped().setStatusCode(responseStatusCode);
     }
 
     /**
@@ -121,15 +115,15 @@ public class Response extends AbstractExchange {
      */
     public JsonElement getContentAsJson()
             throws IOException, JsonSyntaxException {
-        if (getWrapped().getAttachment(CONTENT_AS_JSON) == null) {
+        if (getWrapped().getAttachment(getBufferedJsonKey()) == null) {
             getWrapped().putAttachment(
-                    CONTENT_AS_JSON,
+                    getBufferedJsonKey(),
                     PARSER.parse(
                             BuffersUtils.toString(getContent(),
-                                    Charset.forName("utf-8")))
+                                    StandardCharsets.UTF_8))
             );
         }
-        return getWrapped().getAttachment(CONTENT_AS_JSON);
+        return getWrapped().getAttachment(getBufferedJsonKey());
     }
 
     /**
@@ -154,7 +148,7 @@ public class Response extends AbstractExchange {
     public void endExchange(int code, JsonObject body) throws IOException {
         setStatusCode(code);
         setInError(true);
-        setContent(body);
+        setJsonContent(body);
     }
 
     /**
@@ -163,7 +157,7 @@ public class Response extends AbstractExchange {
      * @param message
      */
     public void endExchangeWithMessage(int code, String message) {
-            endExchangeWithMessage(code, message, null);
+        endExchangeWithMessage(code, message, null);
     }
 
     /**
@@ -177,7 +171,7 @@ public class Response extends AbstractExchange {
         setContentTypeAsJson();
         setInError(true);
         try {
-            setContent(getErrorObject(code,
+            setJsonContent(getErrorObject(code,
                     HttpStatus.getStatusText(code),
                     message,
                     t,
@@ -188,9 +182,20 @@ public class Response extends AbstractExchange {
         }
     }
 
+    @Override
     protected AttachmentKey<PooledByteBuffer[]> getBufferedDataKey() {
-        return ModificableContentSinkConduit.BUFFERED_RESPONSE_DATA;
-    };
+        return BUFFERED_RESPONSE_DATA;
+    }
+
+    @Override
+    protected AttachmentKey<JsonElement> getBufferedJsonKey() {
+        return BUFFERED_JSON_DATA;
+    }
+    
+    @Override
+    protected void setContentLength(int length) {
+        wrapped.getResponseHeaders().put(Headers.CONTENT_LENGTH, length);
+    }
 
     private static String avoidEscapedChars(String s) {
         return s == null ? null : s.replaceAll("\"", "'").replaceAll("\t", "  ");

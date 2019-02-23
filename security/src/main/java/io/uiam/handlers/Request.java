@@ -17,6 +17,7 @@
  */
 package io.uiam.handlers;
 
+import com.google.gson.JsonElement;
 import io.undertow.connector.PooledByteBuffer;
 
 import io.undertow.security.idm.Account;
@@ -39,7 +40,7 @@ import org.slf4j.LoggerFactory;
 public class Request extends AbstractExchange {
     public static final String FORM_URLENCODED = "application/x-www-form-urlencoded";
     public static final String MULTIPART = "multipart/form-data";
-
+    
     // other constants
     public static final String SLASH = "/";
     public static final String PATCH = "PATCH";
@@ -50,6 +51,9 @@ public class Request extends AbstractExchange {
 
     private static final AttachmentKey<Map<String, List<String>>> XFORWARDED_HEADERS
             = AttachmentKey.create(Map.class);
+    
+    private static final AttachmentKey<JsonElement> BUFFERED_JSON_DATA 
+            = AttachmentKey.create(JsonElement.class);
 
     public Request(HttpServerExchange exchange) {
         super(exchange);
@@ -94,33 +98,8 @@ public class Request extends AbstractExchange {
                     + "to return true in order to make the content available.");
         }
 
-        return getWrapped().getAttachment(getBufferedRequestDataKey());
+        return getWrapped().getAttachment(getBufferedDataKey());
     }
-
-    private AttachmentKey<PooledByteBuffer[]> getBufferedRequestDataKey() {
-        if (!isContentAvailable()) {
-            throw new IllegalStateException("Request content is not available. "
-                    + "Add a Request Inteceptor overriding requiresContent() "
-                    + "to return true in order to make the content available.");
-        }
-
-        Field f;
-
-        try {
-            f = HttpServerExchange.class.getDeclaredField("BUFFERED_REQUEST_DATA");
-            f.setAccessible(true);
-        }
-        catch (NoSuchFieldException | SecurityException ex) {
-            throw new RuntimeException("could not find BUFFERED_REQUEST_DATA field", ex);
-        }
-
-        try {
-            return (AttachmentKey<PooledByteBuffer[]>) f.get(getWrapped());
-        }
-        catch (IllegalArgumentException | IllegalAccessException ex) {
-            throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
-        }
-    } 
 
     /**
      * @return the request ContentType
@@ -130,6 +109,7 @@ public class Request extends AbstractExchange {
         return getWrapped().getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
     }
     
+    @Override
     protected AttachmentKey<PooledByteBuffer[]> getBufferedDataKey() {
         Field f;
 
@@ -148,6 +128,15 @@ public class Request extends AbstractExchange {
             throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
         }
     };
+
+    @Override
+    protected void setContentLength(int length) {
+        wrapped.getRequestHeaders().put(Headers.CONTENT_LENGTH, length);
+    }
+    
+    protected AttachmentKey<JsonElement> getBufferedJsonKey() {
+        return BUFFERED_JSON_DATA;
+    }
 
     /**
      * @return the requestStartTime

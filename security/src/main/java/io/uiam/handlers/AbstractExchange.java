@@ -52,11 +52,9 @@ public abstract class AbstractExchange {
     protected static final JsonParser PARSER = new JsonParser();
     protected final HttpServerExchange wrapped;
 
-    protected static AttachmentKey<JsonElement> CONTENT_AS_JSON;
 
     public AbstractExchange(HttpServerExchange exchange) {
         this.wrapped = exchange;
-        CONTENT_AS_JSON = AttachmentKey.create(JsonElement.class);
     }
 
     /**
@@ -80,15 +78,15 @@ public abstract class AbstractExchange {
             return null;
         }
 
-        if (getWrapped().getAttachment(CONTENT_AS_JSON) == null) {
+        if (getWrapped().getAttachment(getBufferedJsonKey()) == null) {
             getWrapped().putAttachment(
-                    CONTENT_AS_JSON,
+                    getBufferedJsonKey(),
                     PARSER.parse(
                             BuffersUtils.toString(getContent(),
                                     Charset.forName("utf-8")))
             );
         }
-        return getWrapped().getAttachment(CONTENT_AS_JSON);
+        return getWrapped().getAttachment(getBufferedJsonKey());
     }
 
     /**
@@ -98,27 +96,31 @@ public abstract class AbstractExchange {
      * @param exchange
      * @throws IOException
      */
-    public void syncBufferedContent(HttpServerExchange exchange)
+    public void syncBufferedContent()
             throws IOException {
-        if (getContentAsJson() == null) {
+        if (wrapped.getAttachment(getBufferedJsonKey()) == null) {
             return;
         }
 
         ByteBuffer src = ByteBuffer.wrap(getContentAsJson().toString().getBytes());
 
         if (!isContentAvailable()) {
-            exchange.putAttachment(getBufferedDataKey(), 
+            wrapped.putAttachment(getBufferedDataKey(), 
                     new PooledByteBuffer[MAX_BUFFERS]);
         }
 
         PooledByteBuffer[] dest = getContent();
 
-        int copied = BuffersUtils.transfer(src, dest, exchange);
+        int copied = BuffersUtils.transfer(src, dest, wrapped);
 
-        exchange.getRequestHeaders().put(Headers.CONTENT_LENGTH, copied);
+        setContentLength(copied);
     }
 
+    protected abstract void setContentLength(int length);
+    
     protected abstract AttachmentKey<PooledByteBuffer[]> getBufferedDataKey();
+    
+    protected abstract AttachmentKey<JsonElement> getBufferedJsonKey();
 
     public abstract String getContentType();
 
@@ -129,12 +131,16 @@ public abstract class AbstractExchange {
                     + "to return true in order to make the content available.");
         }
 
-        return getWrapped().getAttachment(
-                ModificableContentSinkConduit.BUFFERED_RESPONSE_DATA);
+        return getWrapped().getAttachment(getBufferedDataKey());
     }
 
     public boolean isContentAvailable() {
         return null != getWrapped().getAttachment(getBufferedDataKey());
+
+    }
+    
+    public boolean isJsonContentAvailable() {
+        return null != getWrapped().getAttachment(getBufferedJsonKey());
 
     }
 

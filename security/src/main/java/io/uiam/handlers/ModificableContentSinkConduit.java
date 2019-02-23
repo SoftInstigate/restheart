@@ -18,6 +18,7 @@
 package io.uiam.handlers;
 
 import static io.uiam.handlers.AbstractExchange.MAX_BUFFERS;
+import io.uiam.plugins.PluginsRegistry;
 import io.uiam.utils.BuffersUtils;
 import io.undertow.connector.PooledByteBuffer;
 import java.io.IOException;
@@ -29,7 +30,6 @@ import org.xnio.channels.StreamSourceChannel;
 import org.xnio.conduits.ConduitWritableByteChannel;
 import org.xnio.conduits.StreamSinkConduit;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.AttachmentKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.Buffers;
@@ -49,9 +49,6 @@ public class ModificableContentSinkConduit
     //private ByteBuffer data = null;
     private HttpServerExchange exchange;
 
-    public static final AttachmentKey<PooledByteBuffer[]> BUFFERED_RESPONSE_DATA
-            = AttachmentKey.create(PooledByteBuffer[].class);
-
     /**
      * Construct a new instance.
      *
@@ -62,14 +59,21 @@ public class ModificableContentSinkConduit
             HttpServerExchange exchange) {
         super(next);
         this.exchange = exchange;
-        this.exchange.putAttachment(BUFFERED_RESPONSE_DATA,
+        this.exchange.putAttachment(Response.wrap(exchange).getBufferedDataKey(),
                 new PooledByteBuffer[MAX_BUFFERS]);
     }
 
     @Override
     public int write(ByteBuffer src) throws IOException {
-        return BuffersUtils.transfer(src, 
-                exchange.getAttachment(BUFFERED_RESPONSE_DATA),
+        StringBuilder sb = new StringBuilder();
+
+        Buffers.dump(src,
+                sb, 2, 2);
+
+        LOGGER.debug("sink conduit write {}", sb);
+
+        return BuffersUtils.transfer(src,
+                exchange.getAttachment(Response.wrap(exchange).getBufferedDataKey()),
                 exchange);
     }
 
@@ -105,7 +109,21 @@ public class ModificableContentSinkConduit
 
     @Override
     public void terminateWrites() throws IOException {
-        PooledByteBuffer[] dests = exchange.getAttachment(BUFFERED_RESPONSE_DATA);
+        LOGGER.debug("terminateWrites");
+        var resp = Response.wrap(exchange);
+
+        PluginsRegistry.getInstance()
+                .getResponseInterceptors()
+                .stream()
+                .filter(ri -> ri.resolve(exchange))
+                .forEachOrdered(ri -> {
+                    LOGGER.debug("excuting {}", ri.getClass().getSimpleName());
+                    ri.handleRequest(exchange);
+                });
+
+        resp.syncBufferedContent();
+
+        PooledByteBuffer[] dests = exchange.getAttachment(resp.getBufferedDataKey());
 
         for (PooledByteBuffer dest : dests) {
             if (dest != null) {
@@ -113,15 +131,12 @@ public class ModificableContentSinkConduit
                 StringBuilder sb = new StringBuilder();
 
                 Buffers.dump(src, sb, 1, 1);
-                LOGGER.trace("{}", sb);
+                LOGGER.debug("{}", sb);
 
                 super.write(src);
-                //Connectors.updateResponseBytesSent(exchange, 0 - src.position());
             }
         }
-    }
 
-    public void flushToClient() throws IOException {
         super.terminateWrites();
     }
 }
