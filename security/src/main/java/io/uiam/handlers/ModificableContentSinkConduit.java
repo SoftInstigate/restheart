@@ -17,10 +17,9 @@
  */
 package io.uiam.handlers;
 
-import io.uiam.Bootstrapper;
-import static io.uiam.handlers.ResponseProxyInterceptorsHandler.LOGGER;
+import static io.uiam.handlers.AbstractExchange.MAX_BUFFERS;
+import io.uiam.utils.BuffersUtils;
 import io.undertow.connector.PooledByteBuffer;
-import io.undertow.server.Connectors;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -36,7 +35,6 @@ import org.slf4j.LoggerFactory;
 import org.xnio.Buffers;
 import org.xnio.conduits.AbstractStreamSinkConduit;
 import org.xnio.conduits.Conduits;
-import org.xnio.conduits.WriteReadyHandler;
 
 /**
  *
@@ -48,28 +46,11 @@ public class ModificableContentSinkConduit
     static final Logger LOGGER = LoggerFactory.getLogger(
             ModificableContentSinkConduit.class);
 
-    private ByteBuffer data = null;
+    //private ByteBuffer data = null;
+    private HttpServerExchange exchange;
 
     public static final AttachmentKey<PooledByteBuffer[]> BUFFERED_RESPONSE_DATA
             = AttachmentKey.create(PooledByteBuffer[].class);
-
-    public static final int MAX_CONTENT_SIZE = 16 * 1024 * 1024; // 16byte
-
-    public static final int MAX_BUFFERS;
-
-    static {
-        MAX_BUFFERS = 1 + (MAX_CONTENT_SIZE / (Bootstrapper.getConfiguration() != null
-                ? Bootstrapper.getConfiguration().getBufferSize()
-                : 1024));
-
-        LOGGER.info("The maximum size for request content "
-                + "is {} bytes.",
-                MAX_CONTENT_SIZE,
-                MAX_BUFFERS,
-                Bootstrapper.getConfiguration() != null
-                ? Bootstrapper.getConfiguration().getBufferSize()
-                : 16384);
-    }
 
     /**
      * Construct a new instance.
@@ -77,23 +58,19 @@ public class ModificableContentSinkConduit
      * @param next the delegate conduit to set
      * @param exchange
      */
-    public ModificableContentSinkConduit(StreamSinkConduit next, HttpServerExchange exchange) {
+    public ModificableContentSinkConduit(StreamSinkConduit next,
+            HttpServerExchange exchange) {
         super(next);
-        setWriteReadyHandler(new WriteReadyHandler.ChannelListenerHandler<>(
-                Connectors.getConduitSinkChannel(exchange)));
-        reset();
+        this.exchange = exchange;
+        this.exchange.putAttachment(BUFFERED_RESPONSE_DATA,
+                new PooledByteBuffer[MAX_BUFFERS]);
     }
 
     @Override
     public int write(ByteBuffer src) throws IOException {
-        int copied = 0;
-
-        if (src.hasRemaining()) {
-            copied += Buffers.copy(data, src);
-            src.flip();
-        }
-
-        return copied;
+        return BuffersUtils.transfer(src, 
+                exchange.getAttachment(BUFFERED_RESPONSE_DATA),
+                exchange);
     }
 
     @Override
@@ -128,43 +105,23 @@ public class ModificableContentSinkConduit
 
     @Override
     public void terminateWrites() throws IOException {
-        LOGGER.debug("terminateWrites 2");
+        PooledByteBuffer[] dests = exchange.getAttachment(BUFFERED_RESPONSE_DATA);
 
-        reset();
+        for (PooledByteBuffer dest : dests) {
+            if (dest != null) {
+                ByteBuffer src = dest.getBuffer();
+                StringBuilder sb = new StringBuilder();
 
-        write(ByteBuffer.wrap("{\"ciao\":1}".getBytes()));
+                Buffers.dump(src, sb, 1, 1);
+                LOGGER.trace("{}", sb);
 
-        LOGGER.debug("modified data {}", dump());
+                super.write(src);
+                //Connectors.updateResponseBytesSent(exchange, 0 - src.position());
+            }
+        }
+    }
 
-        //data.flip();
-        super.write(data);
+    public void flushToClient() throws IOException {
         super.terminateWrites();
-    }
-
-    public ByteBuffer getData() {
-        return data;
-    }
-
-    public void reset() {
-        this.data = ByteBuffer.allocate(16 * 1024);
-    }
-
-    public void writeFinalToClient() throws IOException {
-        LOGGER.debug("sending data {}", dump());
-        data.flip();
-        super.write(data);
-    }
-
-    private StringBuilder dump() {
-        data.flip();
-        StringBuilder sb = new StringBuilder();
-        try {
-            Buffers.dump(data, sb, 0, 20);
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        return sb;
     }
 }

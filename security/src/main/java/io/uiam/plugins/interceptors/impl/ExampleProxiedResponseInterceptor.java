@@ -17,7 +17,6 @@
  */
 package io.uiam.plugins.interceptors.impl;
 
-import com.google.gson.JsonSyntaxException;
 import io.uiam.handlers.Request;
 import io.uiam.handlers.Response;
 import io.undertow.server.HttpServerExchange;
@@ -25,7 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.uiam.plugins.interceptors.PluggableResponseInterceptor;
 import io.undertow.util.HttpString;
-import java.io.IOException;
 
 /**
  *

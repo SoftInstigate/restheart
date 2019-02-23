@@ -23,6 +23,8 @@ import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.uiam.Configuration.UIAM_VERSION;
+import static io.uiam.handlers.AbstractExchange.MAX_BUFFERS;
+import static io.uiam.handlers.AbstractExchange.MAX_CONTENT_SIZE;
 import io.uiam.handlers.RequestNotManagedHandler;
 import static io.undertow.Handlers.path;
 import static org.fusesource.jansi.Ansi.ansi;
@@ -835,6 +837,10 @@ public class Bootstrapper {
 
         paths.addPrefixPath("/", new RequestNotManagedHandler());
 
+        LOGGER.info("Content buffers maximun size "
+                + "is {} bytes",
+                MAX_CONTENT_SIZE);
+        
         plugServices(configuration, paths,
                 authMechanisms, accessManager, tokenManager);
 

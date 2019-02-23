@@ -17,10 +17,6 @@
  */
 package io.uiam.handlers;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
-import io.uiam.utils.BuffersUtils;
 import io.undertow.connector.PooledByteBuffer;
 
 import io.undertow.security.idm.Account;
@@ -29,27 +25,18 @@ import io.undertow.util.AttachmentKey;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
-import java.io.IOException;
 import java.lang.reflect.Field;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xnio.Buffers;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class Request {
-
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(Request.class);
-
+public class Request extends AbstractExchange {
     public static final String FORM_URLENCODED = "application/x-www-form-urlencoded";
     public static final String MULTIPART = "multipart/form-data";
 
@@ -58,13 +45,6 @@ public class Request {
     public static final String PATCH = "PATCH";
     public static final String UNDERSCORE = "_";
 
-    private final HttpServerExchange wrapped;
-
-    private static final JsonParser PARSER = new JsonParser();
-
-    private static final AttachmentKey<JsonElement> CONTENT_AS_JSON
-            = AttachmentKey.create(JsonElement.class);
-
     private static final AttachmentKey<Long> START_TIME_KEY
             = AttachmentKey.create(Long.class);
 
@@ -72,7 +52,8 @@ public class Request {
             = AttachmentKey.create(Map.class);
 
     public Request(HttpServerExchange exchange) {
-        this.wrapped = exchange;
+        super(exchange);
+        LOGGER = LoggerFactory.getLogger(Request.class);
     }
 
     public static Request wrap(HttpServerExchange exchange) {
@@ -105,61 +86,8 @@ public class Request {
         return selectMethod(getWrapped().getRequestMethod());
     }
 
-    /**
-     * @return the request content as byte[]
-     */
-    public byte[] getContent() throws IOException {
-        ByteBuffer content;
-        try {
-            content = BuffersUtils.readByteBuffer(getBufferedContent());
-        }
-        catch (Exception ex) {
-            throw new IOException("Error getting request content", ex);
-        }
-
-        byte[] ret = new byte[content.limit()];
-
-        content.get(ret);
-
-        return ret;
-    }
-
-    /**
-     * @return the request content as String
-     */
-    public String getContentAsText() throws IOException {
-        String content;
-
-        if (getWrapped().getAttachment(CONTENT_AS_JSON) != null) {
-            content = getWrapped().getAttachment(CONTENT_AS_JSON).toString();
-        } else {
-            try {
-                content = new String(getContent(), Charset.defaultCharset());
-            }
-            catch (Exception ex) {
-                throw new IOException("Error getting request content", ex);
-            }
-        }
-
-        return content;
-    }
-
-    /**
-     * @return the request body as Json
-     * @throws java.io.IOException
-     * @throws com.google.gson.JsonSyntaxException
-     */
-    public JsonElement getContentAsJson()
-            throws IOException, JsonSyntaxException {
-        if (getWrapped().getAttachment(CONTENT_AS_JSON) == null) {
-            getWrapped().putAttachment(CONTENT_AS_JSON,
-                    PARSER.parse(getContentAsText()));
-        }
-
-        return getWrapped().getAttachment(CONTENT_AS_JSON);
-    }
-
-    private PooledByteBuffer[] getBufferedContent() {
+    @Override
+    public PooledByteBuffer[] getContent() {
         if (!isContentAvailable()) {
             throw new IllegalStateException("Request content is not available. "
                     + "Add a Request Inteceptor overriding requiresContent() "
@@ -192,46 +120,34 @@ public class Request {
         catch (IllegalArgumentException | IllegalAccessException ex) {
             throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
         }
-    }
+    } 
 
     /**
-     * If content is modified in a proxied request, synch modification to
-     * BUFFERED_REQUEST_DATA. This is not required for PluggableService.
-     *
-     * @param exchange
-     * @throws IOException
+     * @return the request ContentType
      */
-    public void syncBufferedContent(HttpServerExchange exchange) throws IOException {
-        if (!isContentAvailable()) {
-            return;
-        }
-        
-        // not getContent() as json might be availabe as json and modified
-        var src = ByteBuffer.wrap(getContentAsText().getBytes());
-
-        PooledByteBuffer[] dests = getWrapped()
-                .getAttachment(getBufferedRequestDataKey());
-
-        int pidx = 0;
-
-        long copied = 0;
-
-        while (src.hasRemaining() && pidx < dests.length) {
-            if (dests[pidx] == null) {
-                dests[pidx] = exchange.getConnection().getByteBufferPool().allocate();
-            }
-
-            ByteBuffer dest = dests[pidx].getBuffer();
-
-            copied += Buffers.copy(dest, src);
-
-            // very important, I lost a day for this!
-            dest.flip();
-            pidx++;
-        }
-
-        exchange.getRequestHeaders().put(Headers.CONTENT_LENGTH, copied);
+    @Override
+    public String getContentType() {
+        return getWrapped().getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
     }
+    
+    protected AttachmentKey<PooledByteBuffer[]> getBufferedDataKey() {
+        Field f;
+
+        try {
+            f = HttpServerExchange.class.getDeclaredField("BUFFERED_REQUEST_DATA");
+            f.setAccessible(true);
+        }
+        catch (NoSuchFieldException | SecurityException ex) {
+            throw new RuntimeException("could not find BUFFERED_REQUEST_DATA field", ex);
+        }
+
+        try {
+            return (AttachmentKey<PooledByteBuffer[]>) f.get(getWrapped());
+        }
+        catch (IllegalArgumentException | IllegalAccessException ex) {
+            throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
+        }
+    };
 
     /**
      * @return the requestStartTime
@@ -245,13 +161,6 @@ public class Request {
      */
     public void setStartTime(Long requestStartTime) {
         getWrapped().putAttachment(START_TIME_KEY, requestStartTime);
-    }
-
-    /**
-     * @return the responseContentType
-     */
-    public String getContentType() {
-        return getWrapped().getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
     }
 
     /**
@@ -346,67 +255,9 @@ public class Request {
         return getMethod() == METHOD.PUT;
     }
 
-    /**
-     * helper method to check if the request content is Json
-     *
-     * @return true if Content-Type request header is application/json
-     */
-    public boolean isContentTypeJson() {
-        return "application/json".equals(getContentType());
-    }
-
-    /**
-     * helper method to check if the request content is Xm
-     *
-     * @return true if Content-Type request header is application/xml or
-     * text/xml
-     */
-    public boolean isContentTypeXml() {
-        return "text/xml".equals(getContentType())
-                || "application/xml".equals(getContentType());
-    }
-
-    /**
-     * helper method to check if the request content is text
-     *
-     * @return true if Content-Type request header starts with text/
-     */
-    public boolean isContentTypeText() {
-        return getContentType() != null
-                && getContentType().startsWith("text/");
-    }
-
     public boolean isContentTypeFormOrMultipart() {
         return getContentType() != null
                 && (getContentType().startsWith(FORM_URLENCODED)
                 || getContentType().startsWith(MULTIPART));
-    }
-
-    public boolean isContentAvailable() {
-        Field f;
-
-        try {
-            f = HttpServerExchange.class.getDeclaredField("BUFFERED_REQUEST_DATA");
-            f.setAccessible(true);
-        }
-        catch (NoSuchFieldException | SecurityException ex) {
-            throw new RuntimeException("could not find BUFFERED_REQUEST_DATA field", ex);
-        }
-
-        try {
-            return null != getWrapped().getAttachment((AttachmentKey<PooledByteBuffer[]>) f.get(getWrapped()));
-        }
-        catch (IllegalArgumentException | IllegalAccessException ex) {
-            throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
-        }
-    }
-
-    
-
-    /**
-     * @return the wrapped
-     */
-    public HttpServerExchange getWrapped() {
-        return wrapped;
     }
 }

@@ -17,8 +17,10 @@
  */
 package io.uiam.handlers;
 
+import io.uiam.utils.BuffersUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import java.nio.ByteBuffer;
 
 /**
  *
@@ -72,7 +74,8 @@ public class ResponseSenderHandler extends PipedHttpHandler {
                         response.getContentType());
             }
 
-            exchange.getResponseSender().send(response.getContent());
+            exchange.getResponseSender().send(
+                    BuffersUtils.toByteBuffer(response.getContent()));
         }
 
         exchange.endExchange();

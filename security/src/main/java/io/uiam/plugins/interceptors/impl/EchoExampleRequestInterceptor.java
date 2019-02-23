@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.uiam.plugins.interceptors.PluggableRequestInterceptor;
 import java.io.IOException;
+import java.util.logging.Level;
 
 /**
  *
@@ -56,6 +57,14 @@ public class EchoExampleRequestInterceptor implements PluggableRequestIntercepto
                 requestContent.getAsJsonObject()
                         .addProperty("prop1",
                                 "property added by example request interceptor");
+                
+                // TODO is that really required, can we automate synch?
+                try {
+                    request.syncBufferedContent(exchange);
+                }
+                catch (IOException ex) {
+                    LOGGER.error("error sync content", ex);
+                }
             }
         } 
     }

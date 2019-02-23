@@ -17,33 +17,52 @@
  */
 package io.uiam.plugins.interceptors.impl;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import io.uiam.handlers.Response;
 import io.undertow.server.HttpServerExchange;
 import io.uiam.plugins.interceptors.PluggableResponseInterceptor;
+import io.uiam.utils.HttpStatus;
+import java.io.IOException;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class EchoExampleResponseInterceptor implements PluggableResponseInterceptor{
+public class EchoExampleResponseInterceptor implements PluggableResponseInterceptor {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) {
-        Response.wrap(exchange)
-                .getContentAsJson()
-                .getAsJsonObject()
-                .addProperty("prop2", 
-                        "property added by example response interceptor");
+        try {
+            var response = Response.wrap(exchange);
+
+            response
+                    .getContentAsJson()
+                    .getAsJsonObject()
+                    .addProperty("prop2",
+                            "property added by example response interceptor");
+
+            
+            // TODO is that really required, can we automate synch?
+            response.syncBufferedContent(exchange);
+        }
+        catch (IOException | JsonSyntaxException ex) {
+            Response.wrap(exchange).endExchangeWithMessage(
+                    HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                    "error",
+                    ex);
+        }
     }
 
     @Override
     public boolean resolve(HttpServerExchange exchange) {
-        var response = Response.wrap(exchange);
-        
-        return response.isContentTypeJson() &&
-                response.getContentAsJson() != null &&
-                response.getContentAsJson().isJsonObject() &&
-                (exchange.getRequestPath().equals("/echo") ||
-                exchange.getRequestPath().equals("/secho"));
+        return Response.wrap(exchange).isContentTypeJson()
+                && (exchange.getRequestPath().equals("/echo")
+                || exchange.getRequestPath().equals("/secho"));
+    }
+
+    @Override
+    public boolean requiresResponseContent() {
+        return true;
     }
 }

@@ -20,6 +20,7 @@ package io.uiam.handlers.injectors;
 import io.uiam.Bootstrapper;
 import io.uiam.Configuration;
 import io.uiam.plugins.PluginsRegistry;
+import static io.uiam.handlers.AbstractExchange.MAX_BUFFERS;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
@@ -46,23 +47,6 @@ public class RequestContentInjector extends RequestBufferingHandler {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(RequestContentInjector.class);
 
-    public static final int MAX_CONTENT_SIZE = 16 * 1024 * 1024; // 16byte
-
-    public static final int MAX_BUFFERS;
-
-    static {
-        MAX_BUFFERS = 1 + (MAX_CONTENT_SIZE / (Bootstrapper.getConfiguration() != null
-                ? Bootstrapper.getConfiguration().getBufferSize()
-                : 1024));
-
-        LOGGER.info("The maximum size for request content "
-                + "is {} bytes.",
-                MAX_CONTENT_SIZE,
-                MAX_BUFFERS,
-                Bootstrapper.getConfiguration() != null
-                ? Bootstrapper.getConfiguration().getBufferSize()
-                : 16384);
-    }
 
     private HttpHandler next;
 

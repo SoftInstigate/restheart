@@ -47,9 +47,6 @@ public class ResponseProxyInterceptorsHandler extends PipedHttpHandler {
     public static final AttachmentKey<ModificableContentSinkConduit> MCSK_KEY
             = AttachmentKey.create(ModificableContentSinkConduit.class);
 
-    /**
-     * @param next
-     */
     public ResponseProxyInterceptorsHandler() {
         super(null);
     }
@@ -98,25 +95,19 @@ public class ResponseProxyInterceptorsHandler extends PipedHttpHandler {
         exchange.addResponseCommitListener(new ResponseCommitListener() {
             @Override
             public void beforeCommit(HttpServerExchange exchange) {
+                // invoke all response interceptors
                 PluginsRegistry.getInstance()
                         .getResponseInterceptors()
                         .stream()
                         .filter(ri -> ri.resolve(exchange))
                         .forEachOrdered(ri -> ri.handleRequest(exchange));
-            }
-        });
-
-        // send the response to the client
-        exchange.addExchangeCompleteListener(new ExchangeCompletionListener() {
-            @Override
-            public void exchangeEvent(HttpServerExchange exchange,
-                    ExchangeCompletionListener.NextListener nextListener) {
-
+                
+                // and send the response to the client
                 var mcsc = exchange.getAttachment(MCSK_KEY);
 
                 if (mcsc != null) {
                     try {
-                        mcsc.writeFinalToClient();
+                        mcsc.flushToClient();
                     }
                     catch (IOException ex) {
                         LOGGER.error("error sending data to client", ex);

@@ -26,9 +26,12 @@ import io.uiam.handlers.Request;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.Response;
 import io.uiam.plugins.service.PluggableService;
+import io.uiam.utils.BuffersUtils;
 import io.uiam.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +40,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class EchoService extends PluggableService {
+
     private static final Logger LOGGER = LoggerFactory
             .getLogger(EchoService.class);
 
@@ -63,23 +67,23 @@ public class EchoService extends PluggableService {
 
         JsonObject resp = new JsonObject();
 
-        response.setContent(resp);
-
         resp.addProperty("method", exchange.getRequestMethod().toString());
         resp.addProperty("URL", exchange.getRequestURL());
 
         if (request.isContentTypeJson()) {
             try {
                 resp.add("body", request.getContentAsJson());
-            } catch (JsonSyntaxException jse) {
-                resp.add("content", getContent(request));
+            }
+            catch (JsonSyntaxException jse) {
+                resp.add("content", getTruncatedContent(request));
                 resp.addProperty("note",
                         "showing up to 20 bytes of the request content");
             }
         } else if (request.isContentTypeXml() || request.isContentTypeText()) {
-            resp.addProperty("body", request.getContentAsText());
+            resp.addProperty("body", BuffersUtils.toString(request.getContent(),
+                    Charset.forName("utf-8")));
         } else if (request.isContentAvailable()) {
-            resp.add("content", getContent(request));
+            resp.add("content", getTruncatedContent(request));
             resp.addProperty("note",
                     "showing up to 20 bytes of the request content");
         }
@@ -110,16 +114,19 @@ public class EchoService extends PluggableService {
 
         });
 
+        response.setContent(resp);
         response.setStatusCode(HttpStatus.SC_OK);
     }
 
-    private JsonElement getContent(Request request) throws IOException {
-        byte[] content = request.getContent();
+    private JsonElement getTruncatedContent(Request request) throws IOException {
+        byte[] content = BuffersUtils.toByteArray(request.getContent());
 
         if (content == null) {
             return null;
         } else if (content.length < 1024) {
-            return new JsonPrimitive(request.getContentAsText());
+            return new JsonPrimitive(
+                    BuffersUtils.toString(request.getContent(), 
+                            StandardCharsets.UTF_8));
         } else {
             JsonArray ret = new JsonArray(20);
 

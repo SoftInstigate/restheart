@@ -21,6 +21,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSyntaxException;
 import io.uiam.utils.BuffersUtils;
 import io.uiam.utils.HttpStatus;
 import io.undertow.connector.PooledByteBuffer;
@@ -30,21 +31,14 @@ import io.undertow.util.Headers;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.nio.ByteBuffer;
-import org.slf4j.Logger;
+import java.nio.charset.Charset;
 import org.slf4j.LoggerFactory;
-import org.xnio.Buffers;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class Response {
-
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(Response.class);
-
-    private final HttpServerExchange wrapped;
+public class Response extends AbstractExchange {
 
     private static final AttachmentKey<Boolean> IN_ERROR_KEY
             = AttachmentKey.create(Boolean.class);
@@ -52,13 +46,10 @@ public class Response {
             = AttachmentKey.create(Integer.class);
     private static final AttachmentKey<String> CONTENT_TYPE_KEY
             = AttachmentKey.create(String.class);
-    private static final AttachmentKey<String> CONTENT_KEY
-            = AttachmentKey.create(String.class);
-    private static final AttachmentKey<JsonElement> CONTENT_AS_JSON_KEY
-            = AttachmentKey.create(JsonElement.class);
 
     public Response(HttpServerExchange exchange) {
-        this.wrapped = exchange;
+        super(exchange);
+        LOGGER = LoggerFactory.getLogger(Request.class);
     }
 
     public static Response wrap(HttpServerExchange exchange) {
@@ -73,20 +64,12 @@ public class Response {
     }
 
     /**
-     * can be null if the content is not a String
-     *
-     * @param content the response content to set
-     */
-    public void setContent(String content) {
-        getWrapped().putAttachment(CONTENT_KEY, content);
-    }
-
-    /**
      * @param the response content to set
      */
-    public void setContent(JsonElement content) {
+    public void setContent(JsonElement content) throws IOException {
         setContentTypeAsJson();
-        getWrapped().putAttachment(CONTENT_AS_JSON_KEY, content);
+        getWrapped().putAttachment(CONTENT_AS_JSON, content);
+        syncBufferedContent(wrapped);
     }
 
     /**
@@ -101,15 +84,6 @@ public class Response {
      */
     public void setContentType(String responseContentType) {
         getWrapped().putAttachment(CONTENT_TYPE_KEY, responseContentType);
-    }
-
-    /**
-     * helper method to check if the response content is Json
-     *
-     * @return true if Content-Type response header is application/json
-     */
-    public boolean isContentTypeJson() {
-        return "application/json".equals(getContentType());
     }
 
     /**
@@ -138,48 +112,24 @@ public class Response {
     }
 
     /**
-     * @return the request content as byte[]
-     */
-    public byte[] getContent() throws IOException {
-        ByteBuffer content;
-        try {
-            content = BuffersUtils.readByteBuffer(getBufferedContent());
-        }
-        catch (Exception ex) {
-            throw new IOException("Error getting request content", ex);
-        }
-
-        byte[] ret = new byte[content.limit()];
-
-        content.get(ret);
-
-        return ret;
-    }
-    
-    /**
-     * If content is modified in a proxied request, synch modification to
-     * BUFFERED_RESPONSE_DATA. This is not required for PluggableService.
+     * the Json is saved in the exchange. if modified syncBufferedContent() must
+     * be invoked
      *
-     * @param exchange
-     * @throws IOException
+     * @return the request body as Json
+     * @throws java.io.IOException
+     * @throws com.google.gson.JsonSyntaxException
      */
-    public void syncBufferedContent(HttpServerExchange exchange) throws IOException {
-        if (!isContentAvailable()) {
-            return;
+    public JsonElement getContentAsJson()
+            throws IOException, JsonSyntaxException {
+        if (getWrapped().getAttachment(CONTENT_AS_JSON) == null) {
+            getWrapped().putAttachment(
+                    CONTENT_AS_JSON,
+                    PARSER.parse(
+                            BuffersUtils.toString(getContent(),
+                                    Charset.forName("utf-8")))
+            );
         }
-        
-        
-
-        exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, 0);
-    }
-
-    /**
-     * can be null if the content is not Json
-     *
-     * @return the response body as JsonElement
-     */
-    public JsonElement getContentAsJson() {
-        return getWrapped().getAttachment(CONTENT_AS_JSON_KEY);
+        return getWrapped().getAttachment(CONTENT_AS_JSON);
     }
 
     /**
@@ -201,7 +151,7 @@ public class Response {
      * @param code
      * @param body
      */
-    public void endExchange(int code, JsonObject body) {
+    public void endExchange(int code, JsonObject body) throws IOException {
         setStatusCode(code);
         setInError(true);
         setContent(body);
@@ -213,7 +163,7 @@ public class Response {
      * @param message
      */
     public void endExchangeWithMessage(int code, String message) {
-        endExchangeWithMessage(code, message, null);
+            endExchangeWithMessage(code, message, null);
     }
 
     /**
@@ -226,26 +176,21 @@ public class Response {
         setStatusCode(code);
         setContentTypeAsJson();
         setInError(true);
-        setContent(getErrorObject(code,
-                HttpStatus.getStatusText(code),
-                message,
-                t,
-                false));
-    }
-
-    private PooledByteBuffer[] getBufferedContent() {
-        if (!isContentAvailable()) {
-            throw new IllegalStateException("Response content is not available. "
-                    + "Add a Response Inteceptor overriding requiresResponseContent() "
-                    + "to return true in order to make the content available.");
+        try {
+            setContent(getErrorObject(code,
+                    HttpStatus.getStatusText(code),
+                    message,
+                    t,
+                    false));
         }
-
-        return getWrapped().getAttachment(ModificableContentSinkConduit.BUFFERED_RESPONSE_DATA);
+        catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
     }
 
-    public boolean isContentAvailable() {
-        return null != getWrapped().getAttachment(ModificableContentSinkConduit.BUFFERED_RESPONSE_DATA);
-    }
+    protected AttachmentKey<PooledByteBuffer[]> getBufferedDataKey() {
+        return ModificableContentSinkConduit.BUFFERED_RESPONSE_DATA;
+    };
 
     private static String avoidEscapedChars(String s) {
         return s == null ? null : s.replaceAll("\"", "'").replaceAll("\t", "  ");
@@ -291,12 +236,5 @@ public class Response {
             resp.add("exception", nrep);
         }
         return resp;
-    }
-
-    /**
-     * @return the wrapped
-     */
-    public HttpServerExchange getWrapped() {
-        return wrapped;
     }
 }

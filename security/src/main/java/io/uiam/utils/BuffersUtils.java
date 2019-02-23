@@ -17,10 +17,12 @@
  */
 package io.uiam.utils;
 
-import static io.uiam.handlers.ModificableContentSinkConduit.MAX_CONTENT_SIZE;
+import static io.uiam.handlers.AbstractExchange.MAX_CONTENT_SIZE;
 import io.undertow.connector.PooledByteBuffer;
+import io.undertow.server.HttpServerExchange;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.Buffers;
@@ -30,16 +32,16 @@ import org.xnio.Buffers;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class BuffersUtils {
-    
+
     private static final Logger LOGGER = LoggerFactory
             .getLogger(BuffersUtils.class);
-    
+
     /**
      * @param srcs
      * @return
      * @throws IOException
      */
-    public static ByteBuffer readByteBuffer(final PooledByteBuffer[] srcs)
+    public static ByteBuffer toByteBuffer(final PooledByteBuffer[] srcs)
             throws IOException {
         if (srcs == null) {
             return null;
@@ -69,5 +71,77 @@ public class BuffersUtils {
         }
 
         return dst.flip();
+    }
+
+    public static byte[] toByteArray(final PooledByteBuffer[] srcs)
+            throws IOException {
+        ByteBuffer content = toByteBuffer(srcs);
+
+        byte[] ret = new byte[content.limit()];
+
+        content.get(ret);
+
+        return ret;
+    }
+
+    public static String toString(final PooledByteBuffer[] srcs, Charset cs)
+            throws IOException {
+        return new String(toByteArray(srcs), cs);
+    }
+
+    public static int transfer(final ByteBuffer src,
+            final PooledByteBuffer[] dest,
+            HttpServerExchange exchange) {
+        int copied = 0;
+        int pidx = 0;
+
+        while (src.hasRemaining() && pidx < dest.length) {
+            if (dest[pidx] == null) {
+                dest[pidx] = exchange.getConnection()
+                        .getByteBufferPool().allocate();
+            }
+
+            ByteBuffer _dest = dest[pidx].getBuffer();
+
+            _dest.rewind();
+
+            copied += Buffers.copy(_dest, src);
+
+            // very important, I lost a day for this!
+            _dest.flip();
+
+            pidx++;
+        }
+
+        return copied;
+    }
+
+    public static int transfer(final PooledByteBuffer[] src,
+            final PooledByteBuffer[] dest,
+            HttpServerExchange exchange) {
+        int copied = 0;
+        int idx = 0;
+
+        while (idx < src.length && idx < dest.length) {
+            if (src[idx] != null) {
+                if (dest[idx] == null) {
+                    dest[idx] = exchange.getConnection()
+                            .getByteBufferPool().allocate();
+                }
+
+                ByteBuffer _dest = dest[idx].getBuffer();
+                ByteBuffer _src = src[idx].getBuffer();
+
+                copied += Buffers.copy(_dest, _src);
+
+                // very important, I lost a day for this!
+                _dest.flip();
+                _src.flip();
+            }
+
+            idx++;
+        }
+
+        return copied;
     }
 }
