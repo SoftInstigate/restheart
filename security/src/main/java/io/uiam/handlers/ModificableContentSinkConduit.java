@@ -127,7 +127,8 @@ public class ModificableContentSinkConduit
                 .filter(ri -> !AbstractExchange.isInError(exchange))
                 .filter(ri -> ri.resolve(exchange))
                 .forEachOrdered(ri -> {
-                    LOGGER.debug("excuting {}", ri.getClass().getSimpleName());
+                    LOGGER.debug("Executing response interceptor {}", 
+                                ri.getClass().getSimpleName());
 
                     try {
                         ri.handleRequest(exchange);
@@ -156,10 +157,10 @@ public class ModificableContentSinkConduit
                 ByteBuffer src = dest.getBuffer();
                 StringBuilder sb = new StringBuilder();
 
-//                if (LOGGER.isDebugEnabled()) {
-//                    Buffers.dump(src, sb, 2, 2);
-//                    LOGGER.debug("terminateWrites\n{}", sb);
-//                }
+                if (LOGGER.isTraceEnabled()) {
+                    Buffers.dump(src, sb, 2, 2);
+                    LOGGER.trace("terminateWrites\n{}", sb);
+                }
                 
                 next.write(src);
             }

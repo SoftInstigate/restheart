@@ -23,7 +23,6 @@ import io.uiam.plugins.PluginsRegistry;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import io.uiam.plugins.interceptors.PluggableRequestInterceptor;
-import io.uiam.plugins.interceptors.impl.ExampleProxiedResponseInterceptor;
 import io.uiam.utils.LambdaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +64,8 @@ public class RequestInterceptorsExecutor extends PipedHttpHandler {
                 .filter(ri -> ri.resolve(exchange))
                 .forEachOrdered(ri -> {
                     try {
+                        LOGGER.debug("Executing request interceptor {}", 
+                                ri.getClass().getSimpleName());
                         ri.handleRequest(exchange);
                     }
                     catch (Exception ex) {

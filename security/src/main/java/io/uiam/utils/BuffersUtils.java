@@ -62,7 +62,6 @@ public class BuffersUtils {
                 }
 
                 if (srcBuffer.hasRemaining()) {
-                    LOGGER.debug("*************** copying src[{}]", i);
                     Buffers.copy(dst, srcBuffer);
 
                     // very important, I lost a day for this!
@@ -96,21 +95,24 @@ public class BuffersUtils {
         int copied = 0;
         int pidx = 0;
 
+        src.rewind();
         while (src.hasRemaining() && pidx < dest.length) {
+            ByteBuffer _dest;
+            
             if (dest[pidx] == null) {
                 dest[pidx] = exchange.getConnection()
                         .getByteBufferPool().allocate();
+                _dest = dest[pidx].getBuffer();
+            } else {
+                _dest = dest[pidx].getBuffer();
+                _dest.clear();
             }
-
-            ByteBuffer _dest = dest[pidx].getBuffer();
-
-            _dest.rewind();
 
             copied += Buffers.copy(_dest, src);
 
             // very important, I lost a day for this!
             _dest.flip();
-
+            
             pidx++;
         }
 

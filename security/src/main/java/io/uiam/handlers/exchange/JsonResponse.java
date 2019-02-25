@@ -33,7 +33,6 @@ import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import org.slf4j.LoggerFactory;
-import org.xnio.Buffers;
 
 /**
  *
@@ -67,23 +66,6 @@ public class JsonResponse extends Response<JsonElement> {
             return JsonNull.INSTANCE;
         } else {
             try {
-                LOGGER.debug("************************ raw content befor parsing");
-                var raw = getRawContent();
-                var cont = 0;
-                for (PooledByteBuffer dest : raw) {
-                    if (dest != null) {
-                        LOGGER.debug("processing buffer {}", cont);
-                        ByteBuffer src = dest.getBuffer();
-                        StringBuilder sb = new StringBuilder();
-
-                        if (LOGGER.isDebugEnabled()) {
-                            Buffers.dump(src, sb, 2, 2);
-                            LOGGER.debug("\n{}", sb);
-                        }
-                    }
-                }
-                LOGGER.debug("************************ raw content befor parsing");
-
                 String rawContentAsString = BuffersUtils.toString(getRawContent(),
                         StandardCharsets.UTF_8);
                 
