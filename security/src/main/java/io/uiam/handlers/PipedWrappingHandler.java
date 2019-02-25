@@ -17,6 +17,7 @@
  */
 package io.uiam.handlers;
 
+import io.uiam.handlers.exchange.AbstractExchange;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
@@ -61,7 +62,7 @@ public class PipedWrappingHandler extends PipedHttpHandler {
         } else {
             wrapped.handleRequest(exchange);
 
-            if (!exchange.isResponseComplete() && getNext() != null) {
+            if (!exchange.isResponseComplete()) {
                 next(exchange);
             }
         }

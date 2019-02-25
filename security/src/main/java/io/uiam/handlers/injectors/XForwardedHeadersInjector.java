@@ -18,11 +18,13 @@
 package io.uiam.handlers.injectors;
 
 import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.Request;
+import io.uiam.handlers.exchange.ByteArrayRequest;
 import io.uiam.plugins.authentication.impl.BaseAccount;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Adds the following X-Forwarded custom headers to the proxied request:
@@ -34,6 +36,7 @@ import io.undertow.util.HttpString;
  *
  */
 public class XForwardedHeadersInjector extends PipedHttpHandler {
+
     /**
      * Creates a new instance of AccountHeadersInjector
      *
@@ -76,13 +79,13 @@ public class XForwardedHeadersInjector extends PipedHttpHandler {
                         .add(getHeaderForAccountRoles(), role));
 
             }
-            
-            var xfhs = Request.wrap(exchange).getXForwardedHeaders();
+
+            Map<String, List<String>> xfhs = ByteArrayRequest.wrap(exchange)
+                    .getXForwardedHeaders();
 
             if (xfhs != null) {
                 xfhs.entrySet().stream()
                         .forEachOrdered(m -> {
-
                             m.getValue().stream().forEachOrdered(v
                                     -> exchange.getRequestHeaders()
                                             .add(getHeaderForXH(m.getKey()),
@@ -90,7 +93,7 @@ public class XForwardedHeadersInjector extends PipedHttpHandler {
                         });
             }
         }
-        
+
         next(exchange);
     }
 

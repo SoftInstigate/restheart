@@ -17,8 +17,9 @@
  */
 package io.uiam.plugins.interceptors.impl;
 
-import io.uiam.handlers.Request;
-import io.uiam.handlers.Response;
+import com.google.gson.JsonElement;
+import io.uiam.handlers.exchange.JsonRequest;
+import io.uiam.handlers.exchange.JsonResponse;
 import io.undertow.server.HttpServerExchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,25 +40,27 @@ public class ExampleProxiedResponseInterceptor
             .getLogger(ExampleProxiedResponseInterceptor.class);
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) {
-        var res = Response.wrap(exchange);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var response = JsonResponse.wrap(exchange);
 
-        try {
-        if (res.getContentAsJson() != null) {
-            res.getContentAsJson().getAsJsonObject().addProperty("wow", 
-                    "added by ExampleProxiedResponseInterceptor");
+        if (response.isContentAvailable()) {
+            JsonElement content = response.readContent();
+
+            if (content.isJsonObject()) {
+                content.getAsJsonObject().addProperty("wow",
+                        "added by ExampleProxiedResponseInterceptor");
+
+                response.writeContent(content);
+            }
         }
-        } catch(Throwable ioe) {
-            LOGGER.error("error getting json", ioe);
-        }
-        
+
         exchange.getResponseHeaders().add(HttpString.tryFromString("header"),
                 "added by ExampleProxiedResponseInterceptor");
     }
 
     @Override
     public boolean resolve(HttpServerExchange exchange) {
-        var req = Request.wrap(exchange);
+        var req = JsonRequest.wrap(exchange);
         return req.isGet()
                 && exchange.getRequestPath().startsWith("/pr/");
     }

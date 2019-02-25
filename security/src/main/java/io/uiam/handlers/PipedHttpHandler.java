@@ -1,5 +1,6 @@
 package io.uiam.handlers;
 
+import io.uiam.handlers.exchange.AbstractExchange;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
@@ -35,7 +36,6 @@ public abstract class PipedHttpHandler implements HttpHandler {
      */
     public abstract void handleRequest(HttpServerExchange exchange) throws Exception;
 
-
     /**
      * @return the next PipedHttpHandler
      */
@@ -44,7 +44,8 @@ public abstract class PipedHttpHandler implements HttpHandler {
     }
 
     protected void next(HttpServerExchange exchange) throws Exception {
-        if (getNext() != null) {
+        if (!AbstractExchange.isInError(exchange) 
+                && getNext() != null) {
             getNext().handleRequest(exchange);
         }
     }

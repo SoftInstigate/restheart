@@ -17,8 +17,9 @@
  */
 package io.uiam.handlers;
 
-import io.uiam.utils.BuffersUtils;
+import io.uiam.handlers.exchange.ByteArrayResponse;
 import io.undertow.server.HttpServerExchange;
+import java.nio.ByteBuffer;
 
 /**
  *
@@ -51,20 +52,16 @@ public class ResponseSender extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var response = Response.wrap(exchange);
+        var response = ByteArrayResponse.wrap(exchange);
 
         if (!exchange.isResponseStarted()) {
             exchange.setStatusCode(response.getStatusCode());
         }
-        
-        if (response.isJsonContentAvailable()) {
-            response.syncBufferedContent();
-        }
-        
+
+
         if (response.isContentAvailable()) {
             exchange.getResponseSender().send(
-                    BuffersUtils.toByteBuffer(
-                            response.getContent()));
+                    ByteBuffer.wrap(response.readContent()));
         }
 
         exchange.endExchange();

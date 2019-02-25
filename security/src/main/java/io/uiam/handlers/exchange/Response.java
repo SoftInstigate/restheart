@@ -1,0 +1,162 @@
+/*
+ * uIAM - the IAM for microservices
+ * Copyright (C) SoftInstigate Srl
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package io.uiam.handlers.exchange;
+
+import io.uiam.utils.HttpStatus;
+import io.undertow.connector.PooledByteBuffer;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.AttachmentKey;
+import io.undertow.util.Headers;
+import java.io.IOException;
+
+/**
+ *
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ */
+public abstract class Response<T> extends AbstractExchange<T> {
+
+    private static final AttachmentKey<Boolean> IN_ERROR_KEY
+            = AttachmentKey.create(Boolean.class);
+    private static final AttachmentKey<Integer> STATUS_CODE
+            = AttachmentKey.create(Integer.class);
+    public static final AttachmentKey<PooledByteBuffer[]> BUFFERED_RESPONSE_DATA
+            = AttachmentKey.create(PooledByteBuffer[].class);
+    
+    protected Response(HttpServerExchange exchange) {
+        super(exchange);
+    }
+    
+    public static String getContentType(HttpServerExchange exchange) {
+        return exchange.getResponseHeaders()
+                .getFirst(Headers.CONTENT_TYPE);
+    }
+
+    /**
+     * @return the responseContentType
+     */
+    @Override
+    public String getContentType() {
+        if (getWrapped().getResponseHeaders().get(Headers.CONTENT_TYPE) != null) {
+            return getWrapped().getResponseHeaders().get(Headers.CONTENT_TYPE)
+                    .getFirst();
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public AttachmentKey<PooledByteBuffer[]> getRawContentKey() {
+        return BUFFERED_RESPONSE_DATA;
+    }
+
+    /**
+     * @param responseContentType the responseContentType to set
+     */
+    public void setContentType(String responseContentType) {
+        getWrapped().getResponseHeaders().put(Headers.CONTENT_TYPE,
+                responseContentType);
+    }
+
+    /**
+     * sets Content-Type=application/json
+     */
+    public void setContentTypeAsJson() {
+        setContentType("application/json");
+    }
+
+    /**
+     * @return the responseStatusCode
+     */
+    public int getStatusCode() {
+        return getWrapped().getAttachment(STATUS_CODE);
+    }
+
+    /**
+     * @param responseStatusCode the responseStatusCode to set
+     */
+    public void setStatusCode(int responseStatusCode) {
+        getWrapped().putAttachment(STATUS_CODE, responseStatusCode);
+    }
+
+    @Override
+    protected void setContentLength(int length) {
+        wrapped.getResponseHeaders().put(Headers.CONTENT_LENGTH, length);
+    }
+
+    /**
+     * @return the inError
+     */
+    public boolean isInError() {
+        return getWrapped().getAttachment(IN_ERROR_KEY);
+    }
+
+    /**
+     * @param inError the inError to set
+     */
+    public void setInError(boolean inError) {
+        getWrapped().putAttachment(IN_ERROR_KEY, inError);
+    }
+
+    /**
+     *
+     * @param code
+     * @param body
+     */
+    public void endExchange(int code, T body) throws IOException {
+        setStatusCode(code);
+        setInError(true);
+        writeContent(body);
+    }
+
+    /**
+     *
+     * @param code
+     * @param message
+     */
+    public void endExchangeWithMessage(int code, String message) {
+        endExchangeWithMessage(code, message, null);
+    }
+
+    /**
+     *
+     * @param code
+     * @param message
+     * @param t
+     */
+    public void endExchangeWithMessage(int code, String message, Throwable t) {
+        setStatusCode(code);
+        setContentTypeAsJson();
+        setInError(true);
+        try {
+            writeContent(getErrorContent(code,
+                    HttpStatus.getStatusText(code),
+                    message,
+                    t,
+                    false));
+        }
+        catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+    }
+
+    protected abstract T getErrorContent(int code,
+            String httpStatusText,
+            String message,
+            Throwable t,
+            boolean includeStackTrace) throws IOException;
+}

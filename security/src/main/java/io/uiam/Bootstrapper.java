@@ -23,7 +23,8 @@ import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.uiam.Configuration.UIAM_VERSION;
-import static io.uiam.handlers.AbstractExchange.MAX_CONTENT_SIZE;
+import static io.uiam.handlers.exchange.AbstractExchange.MAX_CONTENT_SIZE;
+import io.uiam.handlers.exchange.AbstractExchange.METHOD;
 import io.uiam.handlers.RequestBuffersSynchronizer;
 import io.uiam.handlers.RequestNotManagedHandler;
 import static io.undertow.Handlers.path;
@@ -68,7 +69,6 @@ import org.xnio.Xnio;
 import org.xnio.ssl.XnioSsl;
 
 import io.uiam.handlers.ErrorHandler;
-import io.uiam.handlers.Request.METHOD;
 import io.uiam.handlers.ForceGzipEncodingHandler;
 import io.uiam.handlers.ConduitInjector;
 import io.uiam.handlers.PipedHttpHandler;
@@ -76,9 +76,7 @@ import io.uiam.handlers.PipedWrappingHandler;
 import io.uiam.handlers.injectors.RequestContentInjector;
 import io.uiam.handlers.RequestLoggerHandler;
 import io.uiam.handlers.RequestInterceptorsExecutor;
-import io.uiam.handlers.ResponseBuffersSynchronizer;
 import io.uiam.handlers.ResponseSender;
-import io.uiam.handlers.ResponseServiceInterceptorsExecutor;
 import io.uiam.handlers.injectors.XForwardedHeadersInjector;
 import io.uiam.handlers.injectors.AuthHeadersRemover;
 import io.uiam.handlers.injectors.XPoweredByInjector;
@@ -903,8 +901,7 @@ public class Bootstrapper {
                                     .getService(name);
 
                             var srv = new PipedWrappingHandler(
-                                    new ResponseServiceInterceptorsExecutor(
-                                            new ResponseSender()),
+                                    new ResponseSender(),
                                     _srv);
 
                             if (_srv.getSecured()) {
@@ -1061,7 +1058,7 @@ public class Bootstrapper {
                                         new RequestInterceptorsExecutor(
                                                 new RequestBuffersSynchronizer(
                                                         new PipedWrappingHandler(
-                                                                new ResponseBuffersSynchronizer(),
+                                                                null,
                                                                 proxyHandler)))));
 
                 paths.addPrefixPath(uri,

@@ -17,6 +17,7 @@
  */
 package io.uiam.handlers;
 
+import io.uiam.handlers.exchange.JsonRequest;
 import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
@@ -102,7 +103,7 @@ public class RequestLoggerHandler extends PipedHttpHandler {
             return;
         }
 
-        var request = Request.wrap(exchange);
+        var request = JsonRequest.wrap(exchange);
 
         final StringBuilder sb = new StringBuilder();
         final long start = request.getStartTime() != null ? request.getStartTime() : System.currentTimeMillis();

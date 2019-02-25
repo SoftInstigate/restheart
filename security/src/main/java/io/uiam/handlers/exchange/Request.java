@@ -15,9 +15,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.uiam.handlers;
+package io.uiam.handlers.exchange;
 
-import com.google.gson.JsonElement;
 import io.undertow.connector.PooledByteBuffer;
 
 import io.undertow.security.idm.Account;
@@ -31,16 +30,16 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class Request extends AbstractExchange {
+public abstract class Request<T> extends AbstractExchange<T> {
+
     public static final String FORM_URLENCODED = "application/x-www-form-urlencoded";
     public static final String MULTIPART = "multipart/form-data";
-    
+
     // other constants
     public static final String SLASH = "/";
     public static final String PATCH = "PATCH";
@@ -51,17 +50,14 @@ public class Request extends AbstractExchange {
 
     private static final AttachmentKey<Map<String, List<String>>> XFORWARDED_HEADERS
             = AttachmentKey.create(Map.class);
-    
-    private static final AttachmentKey<JsonElement> BUFFERED_JSON_DATA 
-            = AttachmentKey.create(JsonElement.class);
 
-    public Request(HttpServerExchange exchange) {
+    protected Request(HttpServerExchange exchange) {
         super(exchange);
-        LOGGER = LoggerFactory.getLogger(Request.class);
     }
 
-    public static Request wrap(HttpServerExchange exchange) {
-        return new Request(exchange);
+    public static String getContentType(HttpServerExchange exchange) {
+        return exchange.getRequestHeaders()
+                .getFirst(Headers.CONTENT_TYPE);
     }
 
     private static METHOD selectMethod(HttpString _method) {
@@ -90,27 +86,31 @@ public class Request extends AbstractExchange {
         return selectMethod(getWrapped().getRequestMethod());
     }
 
-    @Override
-    public PooledByteBuffer[] getContent() {
-        if (!isContentAvailable()) {
-            throw new IllegalStateException("Request content is not available. "
-                    + "Add a Request Inteceptor overriding requiresContent() "
-                    + "to return true in order to make the content available.");
-        }
-
-        return getWrapped().getAttachment(getBufferedDataKey());
-    }
-
     /**
      * @return the request ContentType
      */
     @Override
     public String getContentType() {
-        return getWrapped().getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
+        return getContentType(getWrapped());
     }
     
+    /**
+     * @param responseContentType the responseContentType to set
+     */
+    public void setContentType(String responseContentType) {
+        getWrapped().getRequestHeaders().put(Headers.CONTENT_TYPE,
+                responseContentType);
+    }
+
+    /**
+     * sets Content-Type=application/json
+     */
+    public void setContentTypeAsJson() {
+        setContentType("application/json");
+    }
+
     @Override
-    protected AttachmentKey<PooledByteBuffer[]> getBufferedDataKey() {
+    protected AttachmentKey<PooledByteBuffer[]> getRawContentKey() {
         Field f;
 
         try {
@@ -127,15 +127,11 @@ public class Request extends AbstractExchange {
         catch (IllegalArgumentException | IllegalAccessException ex) {
             throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
         }
-    };
+    }
 
     @Override
     protected void setContentLength(int length) {
         wrapped.getRequestHeaders().put(Headers.CONTENT_LENGTH, length);
-    }
-    
-    protected AttachmentKey<JsonElement> getBufferedJsonKey() {
-        return BUFFERED_JSON_DATA;
     }
 
     /**
@@ -185,9 +181,24 @@ public class Request extends AbstractExchange {
     public Map<String, List<String>> getXForwardedHeaders() {
         return getWrapped().getAttachment(XFORWARDED_HEADERS);
     }
+    
+    /**
+     * helper method to check if the request content is Json
+     *
+     * @return true if Content-Type request header is application/json
+     */
+    public static boolean isContentTypeJson(HttpServerExchange exchange) {
+        return "application/json".equals(getContentType(exchange));
+    }
+    
+    public static boolean isContentTypeFormOrMultipart(HttpServerExchange exchange) {
+        return getContentType(exchange) != null
+                && (getContentType(exchange).startsWith(FORM_URLENCODED)
+                || getContentType(exchange).startsWith(MULTIPART));
+    }
 
-    public enum METHOD {
-        GET, POST, PUT, DELETE, PATCH, OPTIONS, OTHER
+    public boolean isContentTypeFormOrMultipart() {
+        return isContentTypeFormOrMultipart(wrapped);
     }
 
     /**
@@ -242,11 +253,5 @@ public class Request extends AbstractExchange {
      */
     public boolean isPut() {
         return getMethod() == METHOD.PUT;
-    }
-
-    public boolean isContentTypeFormOrMultipart() {
-        return getContentType() != null
-                && (getContentType().startsWith(FORM_URLENCODED)
-                || getContentType().startsWith(MULTIPART));
     }
 }

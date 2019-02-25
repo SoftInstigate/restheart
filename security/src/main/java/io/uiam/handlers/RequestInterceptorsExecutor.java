@@ -17,19 +17,27 @@
  */
 package io.uiam.handlers;
 
+import io.uiam.handlers.exchange.AbstractExchange;
 import io.uiam.plugins.PluginsRegistry;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import io.uiam.plugins.interceptors.PluggableRequestInterceptor;
+import io.uiam.plugins.interceptors.impl.ExampleProxiedResponseInterceptor;
+import io.uiam.utils.LambdaUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestInterceptorsExecutor extends PipedHttpHandler {
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(RequestInterceptorsExecutor.class);
+
     /**
-     * 
+     *
      */
     public RequestInterceptorsExecutor() {
         super(null);
@@ -52,11 +60,22 @@ public class RequestInterceptorsExecutor extends PipedHttpHandler {
         List<PluggableRequestInterceptor> interceptors = PluginsRegistry
                 .getInstance()
                 .getRequestInterceptors();
-        
+
         interceptors.stream()
-                .filter(t -> t.resolve(exchange))
-                .forEachOrdered(t -> t.handleRequest(exchange));
-        
+                .filter(ri -> ri.resolve(exchange))
+                .forEachOrdered(ri -> {
+                    try {
+                        ri.handleRequest(exchange);
+                    }
+                    catch (Exception ex) {
+                        LOGGER.error("Error executing request interceptor {}", 
+                                ri.getClass().getSimpleName(), 
+                                ex);
+                        AbstractExchange.setInError(exchange);
+                        LambdaUtils.throwsSneakyExcpetion(ex);
+                    }
+                });
+
         next(exchange);
     }
 }

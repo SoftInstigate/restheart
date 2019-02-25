@@ -27,7 +27,7 @@ import java.util.Optional;
 import com.google.common.collect.Sets;
 import io.uiam.cache.Cache;
 import io.uiam.cache.CacheFactory;
-import io.uiam.handlers.Request;
+import io.uiam.handlers.exchange.JsonRequest;
 
 import io.uiam.plugins.ConfigurablePlugin;
 import io.uiam.plugins.PluginConfigurationException;
@@ -130,7 +130,7 @@ public class RndTokenManager implements PluggableTokenManager {
         exchange.getResponseHeaders().add(AUTH_TOKEN_VALID_HEADER,
                 Instant.now().plus(ttl, ChronoUnit.MINUTES).toString());
 
-        var request = Request.wrap(exchange);
+        var request = JsonRequest.wrap(exchange);
 
         if (request.getAuthenticatedAccount() != null
                 && request.getAuthenticatedAccount().getPrincipal() != null

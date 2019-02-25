@@ -17,7 +17,7 @@
  */
 package io.uiam.utils;
 
-import static io.uiam.handlers.AbstractExchange.MAX_CONTENT_SIZE;
+import static io.uiam.handlers.exchange.AbstractExchange.MAX_CONTENT_SIZE;
 import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
 import java.io.IOException;
@@ -49,23 +49,24 @@ public class BuffersUtils {
 
         ByteBuffer dst = ByteBuffer.allocate(MAX_CONTENT_SIZE);
 
-        for (int i = 0; i < srcs.length; ++i) {
-            PooledByteBuffer pooled = srcs[i];
-            if (pooled != null) {
-                final ByteBuffer buf = pooled.getBuffer();
+        for (int i = 0; i < srcs.length; i++) {
+            PooledByteBuffer src = srcs[i];
+            if (src != null) {
+                final ByteBuffer srcBuffer = src.getBuffer();
 
-                if (buf.remaining() > dst.remaining()) {
+                if (srcBuffer.remaining() > dst.remaining()) {
                     LOGGER.error("Request content exceeeded {} bytes limit",
                             MAX_CONTENT_SIZE);
                     throw new IOException("Request content exceeeded "
                             + MAX_CONTENT_SIZE + " bytes limit");
                 }
 
-                if (buf.hasRemaining()) {
-                    Buffers.copy(dst, buf);
+                if (srcBuffer.hasRemaining()) {
+                    LOGGER.debug("*************** copying src[{}]", i);
+                    Buffers.copy(dst, srcBuffer);
 
                     // very important, I lost a day for this!
-                    buf.flip();
+                    srcBuffer.flip();
                 }
             }
         }

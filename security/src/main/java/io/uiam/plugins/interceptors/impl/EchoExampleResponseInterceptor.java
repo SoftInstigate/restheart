@@ -17,12 +17,12 @@
  */
 package io.uiam.plugins.interceptors.impl;
 
-import com.google.gson.JsonSyntaxException;
-import io.uiam.handlers.Response;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import io.uiam.handlers.exchange.JsonResponse;
 import io.undertow.server.HttpServerExchange;
 import io.uiam.plugins.interceptors.PluggableResponseInterceptor;
-import io.uiam.utils.HttpStatus;
-import java.io.IOException;
+import io.undertow.util.HttpString;
 
 /**
  *
@@ -31,29 +31,33 @@ import java.io.IOException;
 public class EchoExampleResponseInterceptor implements PluggableResponseInterceptor {
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) {
-        try {
-            var response = Response.wrap(exchange);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var response = JsonResponse.wrap(exchange);
+        
+        exchange.getResponseHeaders().add(HttpString.tryFromString("header"),
+                "added by EchoExampleResponseInterceptor " + exchange.getRequestPath());
 
-            response
-                    .getContentAsJson()
-                    .getAsJsonObject()
-                    .addProperty("prop2",
-                            "property added by example response interceptor");
-        }
-        catch (IOException | JsonSyntaxException ex) {
-            Response.wrap(exchange).endExchangeWithMessage(
-                    HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    "error",
-                    ex);
+        if (response.isContentAvailable()) {
+            JsonElement _content = response
+                    .readContent();
+
+            // can be null
+            if (_content.isJsonObject()) {
+                JsonObject content = _content
+                        .getAsJsonObject();
+
+                content.addProperty("prop2",
+                        "property added by EchoExampleResponseInterceptor");
+
+                response.writeContent(content);
+            }
         }
     }
 
     @Override
     public boolean resolve(HttpServerExchange exchange) {
-        return Response.wrap(exchange).isContentTypeJson()
-                && (exchange.getRequestPath().equals("/echo")
-                || exchange.getRequestPath().equals("/secho"));
+        return exchange.getRequestPath().equals("/echo") || 
+                exchange.getRequestPath().equals("/secho");
     }
 
     @Override

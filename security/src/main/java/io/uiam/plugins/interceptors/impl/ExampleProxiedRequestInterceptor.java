@@ -17,13 +17,12 @@
  */
 package io.uiam.plugins.interceptors.impl;
 
-import com.google.gson.JsonSyntaxException;
-import io.uiam.handlers.Request;
+import com.google.gson.JsonElement;
+import io.uiam.handlers.exchange.JsonRequest;
 import io.undertow.server.HttpServerExchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.uiam.plugins.interceptors.PluggableRequestInterceptor;
-import java.io.IOException;
 
 /**
  *
@@ -39,22 +38,24 @@ public class ExampleProxiedRequestInterceptor
             .getLogger(ExampleProxiedRequestInterceptor.class);
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) {
-        var request = Request.wrap(exchange);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = JsonRequest.wrap(exchange);
 
-        try {
-            request.getContentAsJson()
-                    .getAsJsonObject()
-                    .addProperty("modified", true);
-        }
-        catch (IOException | JsonSyntaxException ex) {
-            LOGGER.warn("error", ex);
+        if (request.isContentAvailable()) {
+            JsonElement content = request.readContent();
+
+            if (content.isJsonObject()) {
+                content.getAsJsonObject()
+                        .addProperty("modified", true);
+                
+                request.writeContent(content);
+            }
         }
     }
 
     @Override
     public boolean resolve(HttpServerExchange exchange) {
-        var req = Request.wrap(exchange);
+        var req = JsonRequest.wrap(exchange);
         return !req.isGet() && req.isContentTypeJson()
                 && exchange.getRequestPath().startsWith("/pr");
     }

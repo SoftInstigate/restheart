@@ -18,13 +18,13 @@
 package io.uiam.plugins.service.impl;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
-import io.uiam.handlers.Request;
+import io.uiam.handlers.exchange.JsonRequest;
 import io.uiam.handlers.PipedHttpHandler;
-import io.uiam.handlers.Response;
+import io.uiam.handlers.exchange.ByteArrayRequest;
+import io.uiam.handlers.exchange.JsonResponse;
+import io.uiam.handlers.exchange.Request;
 import io.uiam.plugins.service.PluggableService;
 import io.uiam.utils.BuffersUtils;
 import io.uiam.utils.HttpStatus;
@@ -32,6 +32,7 @@ import io.undertow.server.HttpServerExchange;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,33 +63,38 @@ public class EchoService extends PluggableService {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = Request.wrap(exchange);
-        var response = Response.wrap(exchange);
-
-        response.setStatusCode(HttpStatus.SC_OK);
-        
         JsonObject resp = new JsonObject();
 
         resp.addProperty("method", exchange.getRequestMethod().toString());
         resp.addProperty("URL", exchange.getRequestURL());
 
-        if (request.isContentTypeJson()) {
+        if (Request.isContentTypeJson(exchange)) {
+            var request = JsonRequest.wrap(exchange);
+
             try {
-                resp.add("body", request.getContentAsJson());
+                resp.add("body", request.readContent());
             }
             catch (JsonSyntaxException jse) {
-                resp.add("content", getTruncatedContent(request));
+                resp.addProperty("content", getTruncatedContent(
+                        ByteArrayRequest.wrap(exchange)));
                 resp.addProperty("note",
                         "showing up to 20 bytes of the request content");
             }
-        } else if (request.isContentTypeXml() || request.isContentTypeText()) {
-            resp.addProperty("body", BuffersUtils.toString(request.getContent(),
-                    Charset.forName("utf-8")));
-        } else if (request.isContentAvailable()) {
-            resp.add("content", getTruncatedContent(request));
-            resp.addProperty("note",
-                    "showing up to 20 bytes of the request content");
+        } else {
+            var request = ByteArrayRequest.wrap(exchange);
+            if (request.isContentTypeXml() || request.isContentTypeText()) {
+                resp.addProperty("body", BuffersUtils.toString(request.getRawContent(),
+                        Charset.forName("utf-8")));
+            } else if (request.isContentAvailable()) {
+                resp.addProperty("content", getTruncatedContent(request));
+                resp.addProperty("note",
+                        "showing up to 20 bytes of the request content");
+            }
         }
+
+        var response = JsonResponse.wrap(exchange);
+
+        response.setStatusCode(HttpStatus.SC_OK);
 
         var qparams = new JsonObject();
         resp.add("qparams", qparams);
@@ -116,26 +122,20 @@ public class EchoService extends PluggableService {
 
         });
 
-        response.setJsonContent(resp);
+        response.writeContent(resp);
     }
 
-    private JsonElement getTruncatedContent(Request request) throws IOException {
-        byte[] content = BuffersUtils.toByteArray(request.getContent());
+    private String getTruncatedContent(ByteArrayRequest request)
+            throws IOException {
+        byte[] content = request.readContent();
 
         if (content == null) {
             return null;
         } else if (content.length < 1024) {
-            return new JsonPrimitive(
-                    BuffersUtils.toString(request.getContent(),
-                            StandardCharsets.UTF_8));
+            return new String(content, StandardCharsets.UTF_8);
         } else {
-            JsonArray ret = new JsonArray(20);
-
-            for (int i = 0; i < 20 && i < content.length; i++) {
-                ret.add(content[i]);
-            }
-
-            return ret;
+            return new String(Arrays.copyOfRange(content, 0, 1023), StandardCharsets.UTF_8);
         }
     }
+
 }

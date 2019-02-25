@@ -24,7 +24,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-import io.uiam.handlers.Request;
+import io.uiam.handlers.exchange.JsonRequest;
 import io.uiam.handlers.PipedHttpHandler;
 import static io.uiam.plugins.authentication.PluggableTokenManager.AUTH_TOKEN_HEADER;
 import static io.uiam.plugins.authentication.PluggableTokenManager.AUTH_TOKEN_LOCATION_HEADER;
@@ -69,7 +69,7 @@ public class GetRoleService extends PluggableService {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = Request.wrap(exchange);
+        var request = JsonRequest.wrap(exchange);
 
         if (request.isOptions()) {
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET");

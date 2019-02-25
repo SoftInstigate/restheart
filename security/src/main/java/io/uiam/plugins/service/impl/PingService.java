@@ -21,7 +21,7 @@ import static io.uiam.plugins.ConfigurablePlugin.argValue;
 
 import java.util.Map;
 
-import io.uiam.handlers.Request;
+import io.uiam.handlers.exchange.JsonRequest;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.plugins.service.PluggableService;
 import io.uiam.utils.HttpStatus;
@@ -57,7 +57,7 @@ public class PingService extends PluggableService {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = Request.wrap(exchange);
+        var request = JsonRequest.wrap(exchange);
 
         if (request.isGet()) {
             exchange.setStatusCode(HttpStatus.SC_OK);

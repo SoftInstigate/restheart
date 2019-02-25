@@ -17,6 +17,9 @@
  */
 package io.uiam.handlers;
 
+import io.uiam.handlers.exchange.ByteArrayResponse;
+import io.uiam.handlers.exchange.JsonResponse;
+import io.uiam.handlers.exchange.Response;
 import java.util.Arrays;
 
 import io.uiam.utils.HttpStatus;
@@ -67,7 +70,7 @@ public class ForceGzipEncodingHandler extends EncodingHandler {
                 }
             }
 
-            Response.wrap(exchange).endExchangeWithMessage(
+            ByteArrayResponse.wrap(exchange).endExchangeWithMessage(
                     HttpStatus.SC_BAD_REQUEST,
                     "Accept-Encoding header must include gzip");
 

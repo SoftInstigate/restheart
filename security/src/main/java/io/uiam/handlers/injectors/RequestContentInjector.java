@@ -20,7 +20,7 @@ package io.uiam.handlers.injectors;
 import io.uiam.Bootstrapper;
 import io.uiam.Configuration;
 import io.uiam.plugins.PluginsRegistry;
-import static io.uiam.handlers.AbstractExchange.MAX_BUFFERS;
+import static io.uiam.handlers.exchange.AbstractExchange.MAX_BUFFERS;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.List;

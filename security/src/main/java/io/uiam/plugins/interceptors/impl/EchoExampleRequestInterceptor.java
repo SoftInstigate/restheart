@@ -18,14 +18,13 @@
 package io.uiam.plugins.interceptors.impl;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonSyntaxException;
-import io.uiam.handlers.Request;
+import com.google.gson.JsonObject;
+import io.uiam.handlers.exchange.JsonRequest;
 import io.undertow.server.HttpServerExchange;
 import java.util.LinkedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.uiam.plugins.interceptors.PluggableRequestInterceptor;
-import java.io.IOException;
 
 /**
  *
@@ -37,27 +36,29 @@ public class EchoExampleRequestInterceptor implements PluggableRequestIntercepto
             .getLogger(EchoExampleRequestInterceptor.class);
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) {
-        var request = Request.wrap(exchange);
-
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         // add query parameter ?pagesize=0
         var vals = new LinkedList<String>();
-        vals.add("0");
-        exchange.getQueryParameters().put("pagesize", vals);
+        vals.add("param added by EchoExampleRequestInterceptor");
+        exchange.getQueryParameters().put("param", vals);
+
+        var request = JsonRequest.wrap(exchange);
+
+        JsonElement requestContent = null;
+
+        if (!request.isContentAvailable()) {
+            request.writeContent(new JsonObject());
+        }
 
         if (request.isContentTypeJson()) {
-            JsonElement requestContent = null;
+            requestContent = request.readContent();
 
-            try {
-                requestContent = request.getContentAsJson();
-            }
-            catch (IOException | JsonSyntaxException ex) {
-                LOGGER.error("error parsing request content as Json");
-            }
-            if (requestContent != null) {
+            if (requestContent.isJsonObject()) {
                 requestContent.getAsJsonObject()
                         .addProperty("prop1",
-                                "property added by example request interceptor");
+                                "property added by EchoExampleRequestInterceptor");
+
+                request.writeContent(requestContent);
             }
         }
     }

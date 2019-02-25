@@ -20,7 +20,7 @@ package io.uiam.plugins.init.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.uiam.handlers.Request;
+import io.uiam.handlers.exchange.JsonRequest;
 import io.uiam.handlers.security.AccessManagerHandler;
 import io.uiam.plugins.PluginsRegistry;
 import io.uiam.plugins.init.PluggableInitializer;
@@ -49,7 +49,7 @@ public class ExampleInitializer implements PluggableInitializer {
         AccessManagerHandler.getGlobalSecurityPredicates().add(new Predicate() {
             @Override
             public boolean resolve(HttpServerExchange exchange) {
-                var request = Request.wrap(exchange);
+                var request = JsonRequest.wrap(exchange);
 
                 return !(request.isGet() 
                         && "/secho/foo".equals(URLUtils.removeTrailingSlashes(

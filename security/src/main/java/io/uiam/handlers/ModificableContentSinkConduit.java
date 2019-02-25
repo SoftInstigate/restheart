@@ -17,9 +17,14 @@
  */
 package io.uiam.handlers;
 
-import static io.uiam.handlers.AbstractExchange.MAX_BUFFERS;
+import io.uiam.handlers.exchange.AbstractExchange;
+import io.uiam.handlers.exchange.Response;
+import static io.uiam.handlers.exchange.AbstractExchange.MAX_BUFFERS;
+import io.uiam.handlers.exchange.ByteArrayResponse;
 import io.uiam.plugins.PluginsRegistry;
 import io.uiam.utils.BuffersUtils;
+import io.uiam.utils.HttpStatus;
+import io.uiam.utils.LambdaUtils;
 import io.undertow.connector.PooledByteBuffer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -31,7 +36,7 @@ import org.xnio.conduits.ConduitWritableByteChannel;
 import org.xnio.conduits.StreamSinkConduit;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.protocol.http.ServerFixedLengthStreamSinkConduit;
-import io.undertow.util.AttachmentKey;
+import io.undertow.util.Headers;
 import java.lang.reflect.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +67,7 @@ public class ModificableContentSinkConduit
             HttpServerExchange exchange) {
         super(next);
         this.exchange = exchange;
-        this.exchange.putAttachment(Response.wrap(exchange).getBufferedDataKey(),
+        this.exchange.putAttachment(Response.BUFFERED_RESPONSE_DATA,
                 new PooledByteBuffer[MAX_BUFFERS]);
     }
 
@@ -70,13 +75,15 @@ public class ModificableContentSinkConduit
     public int write(ByteBuffer src) throws IOException {
         StringBuilder sb = new StringBuilder();
 
-        Buffers.dump(src,
-                sb, 2, 2);
+        if (LOGGER.isTraceEnabled()) {
+            Buffers.dump(src,
+                    sb, 2, 2);
 
-        LOGGER.debug("sink conduit write {}", sb);
+            LOGGER.trace("sink conduit write\n{}", sb);
+        }
 
         return BuffersUtils.transfer(src,
-                exchange.getAttachment(Response.wrap(exchange).getBufferedDataKey()),
+                exchange.getAttachment(Response.BUFFERED_RESPONSE_DATA),
                 exchange);
     }
 
@@ -112,60 +119,79 @@ public class ModificableContentSinkConduit
 
     @Override
     public void terminateWrites() throws IOException {
-        LOGGER.debug("terminateWrites");
-        var resp = Response.wrap(exchange);
+        var resp = ByteArrayResponse.wrap(exchange);
 
         PluginsRegistry.getInstance()
                 .getResponseInterceptors()
                 .stream()
+                .filter(ri -> !AbstractExchange.isInError(exchange))
                 .filter(ri -> ri.resolve(exchange))
                 .forEachOrdered(ri -> {
                     LOGGER.debug("excuting {}", ri.getClass().getSimpleName());
-                    ri.handleRequest(exchange);
+
+                    try {
+                        ri.handleRequest(exchange);
+                    }
+                    catch (Exception ex) {
+                        LOGGER.error("Error executing response interceptor", ex);
+                        AbstractExchange.setInError(exchange);
+                        // set error message
+                        ByteArrayResponse response = ByteArrayResponse
+                                .wrap(exchange);
+                        
+                        response.endExchangeWithMessage(
+                                HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                                "Error executing response interceptor " 
+                                        + ri.getClass().getSimpleName(),
+                                ex);
+                    }
                 });
 
-        resp.syncBufferedContent();
+        PooledByteBuffer[] dests = resp.getRawContent();
 
-        PooledByteBuffer[] dests = exchange.getAttachment(resp.getBufferedDataKey());
-
-        updateServerFixedLengthStreamSinkConduit(dests);
+        updateContentLenght(exchange, dests);
 
         for (PooledByteBuffer dest : dests) {
             if (dest != null) {
                 ByteBuffer src = dest.getBuffer();
                 StringBuilder sb = new StringBuilder();
 
-                Buffers.dump(src, sb, 1, 1);
-                LOGGER.debug("{}", sb);
-
+//                if (LOGGER.isDebugEnabled()) {
+//                    Buffers.dump(src, sb, 2, 2);
+//                    LOGGER.debug("terminateWrites\n{}", sb);
+//                }
+                
                 next.write(src);
             }
         }
 
         next.terminateWrites();
     }
-    
-    private void updateServerFixedLengthStreamSinkConduit(PooledByteBuffer[] dests) {
+
+    private void updateContentLenght(HttpServerExchange exchange, PooledByteBuffer[] dests) {
         long length = 0;
 
         for (PooledByteBuffer dest : dests) {
             if (dest != null) {
-                ByteBuffer src = dest.getBuffer();
-                length += src.limit();
+                length += dest.getBuffer().limit();
             }
         }
-
+        
+        exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, length);
+        
+        // need also to update lenght of ServerFixedLengthStreamSinkConduit
         if (next instanceof ServerFixedLengthStreamSinkConduit) {
             Method m;
 
             try {
                 m = ServerFixedLengthStreamSinkConduit.class.getDeclaredMethod(
-                        "reset", 
-                        long.class, 
+                        "reset",
+                        long.class,
                         HttpServerExchange.class);
                 m.setAccessible(true);
             }
             catch (NoSuchMethodException | SecurityException ex) {
+                LOGGER.error("could not find ServerFixedLengthStreamSinkConduit.reset method", ex);
                 throw new RuntimeException("could not find ServerFixedLengthStreamSinkConduit.reset method", ex);
             }
 
@@ -173,6 +199,7 @@ public class ModificableContentSinkConduit
                 m.invoke(next, length, exchange);
             }
             catch (Throwable ex) {
+                LOGGER.error("could not access BUFFERED_REQUEST_DATA field", ex);
                 throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
             }
         }

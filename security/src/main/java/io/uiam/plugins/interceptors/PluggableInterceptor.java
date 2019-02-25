@@ -30,7 +30,7 @@ public interface PluggableInterceptor {
      * @param exchange
      * @throws Exception 
      */
-    public void handleRequest(final HttpServerExchange exchange);
+    public void handleRequest(final HttpServerExchange exchange) throws Exception;
     
     /**
      * 

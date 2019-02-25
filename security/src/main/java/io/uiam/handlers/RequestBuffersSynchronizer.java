@@ -17,6 +17,7 @@
  */
 package io.uiam.handlers;
 
+import io.uiam.handlers.exchange.JsonRequest;
 import io.undertow.server.HttpServerExchange;
 
 /**
@@ -46,10 +47,10 @@ public class RequestBuffersSynchronizer extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var req = Request.wrap(exchange);
+        var req = JsonRequest.wrap(exchange);
         
-        if (req.isJsonContentAvailable()) {
-            req.syncBufferedContent();
+        if (req.isContentAvailable()) {
+            // 
         }
         
         next(exchange);

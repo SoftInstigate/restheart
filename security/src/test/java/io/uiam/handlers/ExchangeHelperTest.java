@@ -17,6 +17,7 @@
  */
 package io.uiam.handlers;
 
+import io.uiam.handlers.exchange.JsonRequest;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.After;
@@ -72,15 +73,15 @@ public class ExchangeHelperTest {
     @Test
     public void testSelectRequestMethod() {
         var exchange = new HttpServerExchange();
-        var request = Request.wrap(exchange);
+        var request = JsonRequest.wrap(exchange);
 
         exchange.setRequestMethod(new HttpString("UNKNOWN"));
-        assertEquals(Request.METHOD.OTHER, request.getMethod());
+        assertEquals(JsonRequest.METHOD.OTHER, request.getMethod());
 
         exchange.setRequestMethod(new HttpString("GET"));
-        assertEquals(Request.METHOD.GET, request.getMethod());
+        assertEquals(JsonRequest.METHOD.GET, request.getMethod());
 
         exchange.setRequestMethod(new HttpString("PATCH"));
-        assertEquals(Request.METHOD.PATCH, request.getMethod());
+        assertEquals(JsonRequest.METHOD.PATCH, request.getMethod());
     }
 }
