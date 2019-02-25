@@ -17,7 +17,6 @@
  */
 package io.uiam.handlers;
 
-import io.uiam.handlers.exchange.AbstractExchange;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
