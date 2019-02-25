@@ -89,6 +89,13 @@ public class BuffersUtils {
         return new String(toByteArray(srcs), cs);
     }
 
+    /**
+     * transfer the src data to the pooled buffers overwriting the exising data
+     * @param src
+     * @param dest
+     * @param exchange
+     * @return 
+     */
     public static int transfer(final ByteBuffer src,
             final PooledByteBuffer[] dest,
             HttpServerExchange exchange) {
@@ -106,6 +113,43 @@ public class BuffersUtils {
             } else {
                 _dest = dest[pidx].getBuffer();
                 _dest.clear();
+            }
+
+            copied += Buffers.copy(_dest, src);
+
+            // very important, I lost a day for this!
+            _dest.flip();
+            
+            pidx++;
+        }
+
+        return copied;
+    }
+    
+    /**
+     * append the src data to the pooled buffers
+     * @param src
+     * @param dest
+     * @param exchange
+     * @return 
+     */
+    public static int append(final ByteBuffer src,
+            final PooledByteBuffer[] dest,
+            HttpServerExchange exchange) {
+        int copied = 0;
+        int pidx = 0;
+
+        src.rewind();
+        while (src.hasRemaining() && pidx < dest.length) {
+            ByteBuffer _dest;
+            
+            if (dest[pidx] == null) {
+                dest[pidx] = exchange.getConnection()
+                        .getByteBufferPool().allocate();
+                _dest = dest[pidx].getBuffer();
+            } else {
+                _dest = dest[pidx].getBuffer();
+                _dest.position(_dest.limit());
             }
 
             copied += Buffers.copy(_dest, src);

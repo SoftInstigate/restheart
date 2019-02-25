@@ -24,7 +24,6 @@ import io.uiam.handlers.exchange.ByteArrayResponse;
 import io.uiam.plugins.PluginsRegistry;
 import io.uiam.utils.BuffersUtils;
 import io.uiam.utils.HttpStatus;
-import io.uiam.utils.LambdaUtils;
 import io.undertow.connector.PooledByteBuffer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -82,7 +81,7 @@ public class ModificableContentSinkConduit
             LOGGER.trace("sink conduit write\n{}", sb);
         }
 
-        return BuffersUtils.transfer(src,
+        return BuffersUtils.append(src,
                 exchange.getAttachment(Response.BUFFERED_RESPONSE_DATA),
                 exchange);
     }
@@ -127,8 +126,8 @@ public class ModificableContentSinkConduit
                 .filter(ri -> !AbstractExchange.isInError(exchange))
                 .filter(ri -> ri.resolve(exchange))
                 .forEachOrdered(ri -> {
-                    LOGGER.debug("Executing response interceptor {}", 
-                                ri.getClass().getSimpleName());
+                    LOGGER.debug("Executing response interceptor {}",
+                            ri.getClass().getSimpleName());
 
                     try {
                         ri.handleRequest(exchange);
@@ -139,11 +138,29 @@ public class ModificableContentSinkConduit
                         // set error message
                         ByteArrayResponse response = ByteArrayResponse
                                 .wrap(exchange);
+
+                        // dump bufferd content
+                        PooledByteBuffer[] dests = resp.getRawContent();
+                        int nbuf = 0;
+                        for (PooledByteBuffer dest : dests) {
+                            if (dest != null) {
+                                ByteBuffer src = dest.getBuffer();
+                                StringBuilder sb = new StringBuilder();
+
+                                try {
+                                    Buffers.dump(src, sb, 2, 2);
+                                    LOGGER.error("Content buffer #{}:\n{}", nbuf, sb);
+                                } catch(IOException ie) {
+                                    LOGGER.error("failed to dump buffered content", ie);
+                                }
+                            }
+                            nbuf++;
+                        }
                         
                         response.endExchangeWithMessage(
                                 HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                                "Error executing response interceptor " 
-                                        + ri.getClass().getSimpleName(),
+                                "Error executing response interceptor "
+                                + ri.getClass().getSimpleName(),
                                 ex);
                     }
                 });
@@ -157,11 +174,6 @@ public class ModificableContentSinkConduit
                 ByteBuffer src = dest.getBuffer();
                 StringBuilder sb = new StringBuilder();
 
-                if (LOGGER.isTraceEnabled()) {
-                    Buffers.dump(src, sb, 2, 2);
-                    LOGGER.trace("terminateWrites\n{}", sb);
-                }
-                
                 next.write(src);
             }
         }
@@ -177,9 +189,9 @@ public class ModificableContentSinkConduit
                 length += dest.getBuffer().limit();
             }
         }
-        
+
         exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, length);
-        
+
         // need also to update lenght of ServerFixedLengthStreamSinkConduit
         if (next instanceof ServerFixedLengthStreamSinkConduit) {
             Method m;
