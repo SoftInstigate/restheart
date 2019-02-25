@@ -32,3 +32,5 @@ Scenario: request with valid Authorization header
     Given path '/secho'    
     When method GET
     Then status 200
+    And match response.headers['X-Forwarded-Account-Roles'][0] == 'user'
+    And match response.headers['X-Forwarded-Account-Roles'][1] == 'admin'
