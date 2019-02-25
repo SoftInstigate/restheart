@@ -43,6 +43,8 @@ proxies:
         - http://127.0.0.1:8080/echo
         - http://localhost:8080/echo
       connections-per-thread: 20
+    - internal-uri: /pr
+      external-url: http://127.0.0.1:8081
 
 #### SSL Configuration
 
@@ -68,7 +70,7 @@ use-embedded-keystore: true
  # A custom initializer implmenting the io.uiam.init.Initializer interface
  # Can be used to inizialize data, to add global predicated and interceptors
 
-#initializer-class: io.uiam.plugins.init.impl.ExampleInitializer
+initializer-class: io.uiam.plugins.init.impl.ExampleInitializer
 
 ### Security
 

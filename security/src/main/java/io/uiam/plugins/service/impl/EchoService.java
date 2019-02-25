@@ -72,7 +72,7 @@ public class EchoService extends PluggableService {
             var request = JsonRequest.wrap(exchange);
 
             try {
-                resp.add("body", request.readContent());
+                resp.add("content", request.readContent());
             }
             catch (JsonSyntaxException jse) {
                 resp.addProperty("content", getTruncatedContent(
@@ -83,7 +83,7 @@ public class EchoService extends PluggableService {
         } else {
             var request = ByteArrayRequest.wrap(exchange);
             if (request.isContentTypeXml() || request.isContentTypeText()) {
-                resp.addProperty("body", BuffersUtils.toString(request.getRawContent(),
+                resp.addProperty("content", BuffersUtils.toString(request.getRawContent(),
                         Charset.forName("utf-8")));
             } else if (request.isContentAvailable()) {
                 resp.addProperty("content", getTruncatedContent(request));

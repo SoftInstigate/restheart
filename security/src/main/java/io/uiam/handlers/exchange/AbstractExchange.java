@@ -31,10 +31,10 @@ import org.slf4j.Logger;
 public abstract class AbstractExchange<T> {
 
     protected static Logger LOGGER;
-    
+
     private static final AttachmentKey<Boolean> IN_ERROR
             = AttachmentKey.create(Boolean.class);
-    
+
     private static final AttachmentKey<Boolean> RESPONSE_INTERCEPTOR_EXECUTED
             = AttachmentKey.create(Boolean.class);
 
@@ -48,7 +48,7 @@ public abstract class AbstractExchange<T> {
                         ? Bootstrapper.getConfiguration().getBufferSize()
                         : 1024));
     }
-    
+
     public enum METHOD {
         GET, POST, PUT, DELETE, PATCH, OPTIONS, OTHER
     }
@@ -58,39 +58,36 @@ public abstract class AbstractExchange<T> {
     public AbstractExchange(HttpServerExchange exchange) {
         this.wrapped = exchange;
     }
-    
+
     /**
      * @return the wrapped
      */
     public HttpServerExchange getWrapped() {
         return wrapped;
     }
-    
+
     public static boolean isInError(HttpServerExchange exchange) {
-        return exchange.getAttachment(IN_ERROR) != null 
+        return exchange.getAttachment(IN_ERROR) != null
                 && exchange.getAttachment(IN_ERROR);
     }
-    
+
     public static void setInError(HttpServerExchange exchange) {
         exchange
                 .putAttachment(IN_ERROR, true);
     }
-    
+
     public static boolean responseInterceptorsExecuted(HttpServerExchange exchange) {
-        return exchange.getAttachment(RESPONSE_INTERCEPTOR_EXECUTED) != null 
+        return exchange.getAttachment(RESPONSE_INTERCEPTOR_EXECUTED) != null
                 && exchange.getAttachment(RESPONSE_INTERCEPTOR_EXECUTED);
     }
-    
+
     public static void setResponseInterceptorsExecuted(HttpServerExchange exchange) {
         exchange
                 .putAttachment(RESPONSE_INTERCEPTOR_EXECUTED, true);
     }
-    
-    
-    
 
     public abstract T readContent() throws IOException;
-    
+
     public abstract void writeContent(T content) throws IOException;
 
     protected abstract void setContentLength(int length);
@@ -106,13 +103,12 @@ public abstract class AbstractExchange<T> {
 
         return getWrapped().getAttachment(getRawContentKey());
     }
-    
+
     public void setRawContent(PooledByteBuffer[] raw) {
         getWrapped().putAttachment(getRawContentKey(), raw);
     }
 
 //    protected abstract AttachmentKey<T> getContentKey();
-
     public abstract String getContentType();
 
     public boolean isContentAvailable() {
@@ -126,7 +122,9 @@ public abstract class AbstractExchange<T> {
      * @return true if Content-Type request header is application/json
      */
     public boolean isContentTypeJson() {
-        return "application/json".equals(getContentType());
+        return "application/json".equals(getContentType())
+                || (getContentType() != null
+                && getContentType().startsWith("application/json;"));
     }
 
     /**
@@ -137,9 +135,13 @@ public abstract class AbstractExchange<T> {
      */
     public boolean isContentTypeXml() {
         return "text/xml".equals(getContentType())
-                || "application/xml".equals(getContentType());
+                || (getContentType() != null
+                && getContentType().startsWith("text/xml;"))
+                || "application/xml".equals(getContentType())
+                || (getContentType() != null
+                && getContentType().startsWith("application/xml;"));
     }
-    
+
     /**
      * helper method to check if the request content is text
      *
