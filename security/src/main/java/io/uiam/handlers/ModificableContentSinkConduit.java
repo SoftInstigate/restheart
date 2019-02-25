@@ -171,7 +171,6 @@ public class ModificableContentSinkConduit
             }
         }
 
-        LOGGER.debug("********* terminateWrites (reset pool) {}", exchange.getRequestPath());
         resetBufferPool(exchange);
         next.terminateWrites();
     }
