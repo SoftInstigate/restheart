@@ -91,10 +91,11 @@ public class BuffersUtils {
 
     /**
      * transfer the src data to the pooled buffers overwriting the exising data
+     *
      * @param src
      * @param dest
      * @param exchange
-     * @return 
+     * @return
      */
     public static int transfer(final ByteBuffer src,
             final PooledByteBuffer[] dest,
@@ -102,10 +103,10 @@ public class BuffersUtils {
         int copied = 0;
         int pidx = 0;
 
-        src.rewind();
+        //src.rewind();
         while (src.hasRemaining() && pidx < dest.length) {
             ByteBuffer _dest;
-            
+
             if (dest[pidx] == null) {
                 dest[pidx] = exchange.getConnection()
                         .getByteBufferPool().allocate();
@@ -119,19 +120,40 @@ public class BuffersUtils {
 
             // very important, I lost a day for this!
             _dest.flip();
-            
+
             pidx++;
         }
-
+        
+        
         return copied;
     }
-    
+
+    public static void dump(String msg, PooledByteBuffer[] data) {
+        int nbuf = 0;
+        for (PooledByteBuffer dest : data) {
+            if (dest != null) {
+                ByteBuffer src = dest.getBuffer();
+                StringBuilder sb = new StringBuilder();
+
+                try {
+                    Buffers.dump(src, sb, 2, 2);
+                    LOGGER.debug("{} buffer #{}:\n{}", msg, nbuf, sb);
+                }
+                catch (IOException ie) {
+                    LOGGER.debug("failed to dump buffered content", ie);
+                }
+            }
+            nbuf++;
+        }
+    }
+
     /**
      * append the src data to the pooled buffers
+     *
      * @param src
      * @param dest
      * @param exchange
-     * @return 
+     * @return
      */
     public static int append(final ByteBuffer src,
             final PooledByteBuffer[] dest,
@@ -142,7 +164,7 @@ public class BuffersUtils {
         src.rewind();
         while (src.hasRemaining() && pidx < dest.length) {
             ByteBuffer _dest;
-            
+
             if (dest[pidx] == null) {
                 dest[pidx] = exchange.getConnection()
                         .getByteBufferPool().allocate();
@@ -156,7 +178,7 @@ public class BuffersUtils {
 
             // very important, I lost a day for this!
             _dest.flip();
-            
+
             pidx++;
         }
 

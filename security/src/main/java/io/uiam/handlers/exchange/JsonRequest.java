@@ -25,10 +25,12 @@ import static io.uiam.handlers.exchange.AbstractExchange.LOGGER;
 import io.uiam.utils.BuffersUtils;
 import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import org.slf4j.LoggerFactory;
+import org.xnio.Buffers;
 
 /**
  *
@@ -42,7 +44,7 @@ public class JsonRequest extends Request<JsonElement> {
         super(exchange);
         LOGGER = LoggerFactory.getLogger(JsonRequest.class);
     }
-    
+
     public static JsonRequest wrap(HttpServerExchange exchange) {
         return new JsonRequest(exchange);
     }
@@ -66,6 +68,9 @@ public class JsonRequest extends Request<JsonElement> {
                         StandardCharsets.UTF_8));
             }
             catch (JsonParseException ex) {
+                // dump bufferd content
+                BuffersUtils.dump("Error parsing content", getRawContent());
+
                 throw new IOException("Error parsing json", ex);
             }
         }
@@ -76,6 +81,7 @@ public class JsonRequest extends Request<JsonElement> {
         setContentTypeAsJson();
         if (content == null) {
             setRawContent(null);
+            getWrapped().getRequestHeaders().remove(Headers.CONTENT_LENGTH);
         } else {
             PooledByteBuffer[] dest;
             if (isContentAvailable()) {
@@ -85,10 +91,15 @@ public class JsonRequest extends Request<JsonElement> {
                 setRawContent(dest);
             }
 
-            BuffersUtils.transfer(
+            int copied = BuffersUtils.transfer(
                     ByteBuffer.wrap(content.toString().getBytes()),
                     dest,
                     wrapped);
+            
+            // updated request content length
+            // this is not needed in Response.writeContent() since done
+            // by ModificableContentSinkConduit.updateContentLenght();
+            getWrapped().getRequestHeaders().put(Headers.CONTENT_LENGTH, copied);
         }
     }
 }

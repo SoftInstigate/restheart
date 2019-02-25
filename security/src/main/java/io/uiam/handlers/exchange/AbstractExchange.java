@@ -34,6 +34,9 @@ public abstract class AbstractExchange<T> {
     
     private static final AttachmentKey<Boolean> IN_ERROR
             = AttachmentKey.create(Boolean.class);
+    
+    private static final AttachmentKey<Boolean> RESPONSE_INTERCEPTOR_EXECUTED
+            = AttachmentKey.create(Boolean.class);
 
     public static final int MAX_CONTENT_SIZE = 16 * 1024 * 1024; // 16byte
 
@@ -72,6 +75,19 @@ public abstract class AbstractExchange<T> {
         exchange
                 .putAttachment(IN_ERROR, true);
     }
+    
+    public static boolean responseInterceptorsExecuted(HttpServerExchange exchange) {
+        return exchange.getAttachment(RESPONSE_INTERCEPTOR_EXECUTED) != null 
+                && exchange.getAttachment(RESPONSE_INTERCEPTOR_EXECUTED);
+    }
+    
+    public static void setResponseInterceptorsExecuted(HttpServerExchange exchange) {
+        exchange
+                .putAttachment(RESPONSE_INTERCEPTOR_EXECUTED, true);
+    }
+    
+    
+    
 
     public abstract T readContent() throws IOException;
     

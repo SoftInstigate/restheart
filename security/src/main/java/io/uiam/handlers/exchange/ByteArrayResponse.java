@@ -24,6 +24,7 @@ import static io.uiam.handlers.exchange.AbstractExchange.MAX_BUFFERS;
 import io.uiam.utils.BuffersUtils;
 import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;

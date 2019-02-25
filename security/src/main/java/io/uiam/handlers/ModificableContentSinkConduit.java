@@ -39,7 +39,6 @@ import io.undertow.util.Headers;
 import java.lang.reflect.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xnio.Buffers;
 import org.xnio.conduits.AbstractStreamSinkConduit;
 import org.xnio.conduits.Conduits;
 
@@ -66,21 +65,24 @@ public class ModificableContentSinkConduit
             HttpServerExchange exchange) {
         super(next);
         this.exchange = exchange;
+
+        resetBufferPool(exchange);
+    }
+
+    /**
+     * init buffers pool with a single, empty buffer.
+     *
+     * @param exchange
+     * @return
+     */
+    private void resetBufferPool(HttpServerExchange exchange) {
+        var buffers = new PooledByteBuffer[MAX_BUFFERS];
         this.exchange.putAttachment(Response.BUFFERED_RESPONSE_DATA,
-                new PooledByteBuffer[MAX_BUFFERS]);
+                buffers);
     }
 
     @Override
     public int write(ByteBuffer src) throws IOException {
-        StringBuilder sb = new StringBuilder();
-
-        if (LOGGER.isTraceEnabled()) {
-            Buffers.dump(src,
-                    sb, 2, 2);
-
-            LOGGER.trace("sink conduit write\n{}", sb);
-        }
-
         return BuffersUtils.append(src,
                 exchange.getAttachment(Response.BUFFERED_RESPONSE_DATA),
                 exchange);
@@ -120,50 +122,44 @@ public class ModificableContentSinkConduit
     public void terminateWrites() throws IOException {
         var resp = ByteArrayResponse.wrap(exchange);
 
-        PluginsRegistry.getInstance()
-                .getResponseInterceptors()
-                .stream()
-                .filter(ri -> !AbstractExchange.isInError(exchange))
-                .filter(ri -> ri.resolve(exchange))
-                .forEachOrdered(ri -> {
-                    LOGGER.debug("Executing response interceptor {}",
-                            ri.getClass().getSimpleName());
+        if (!AbstractExchange.isInError(exchange)
+                && !AbstractExchange.responseInterceptorsExecuted(exchange)) {
+            AbstractExchange.setResponseInterceptorsExecuted(exchange);
+            PluginsRegistry.getInstance()
+                    .getResponseInterceptors()
+                    .stream()
+                    .filter(ri -> ri.resolve(exchange))
+                    .forEachOrdered(ri -> {
+                        LOGGER.debug("Executing response interceptor {} for {}",
+                                ri.getClass().getSimpleName(),
+                                exchange.getRequestPath());
 
-                    try {
-                        ri.handleRequest(exchange);
-                    }
-                    catch (Exception ex) {
-                        LOGGER.error("Error executing response interceptor", ex);
-                        AbstractExchange.setInError(exchange);
-                        // set error message
-                        ByteArrayResponse response = ByteArrayResponse
-                                .wrap(exchange);
-
-                        // dump bufferd content
-                        PooledByteBuffer[] dests = resp.getRawContent();
-                        int nbuf = 0;
-                        for (PooledByteBuffer dest : dests) {
-                            if (dest != null) {
-                                ByteBuffer src = dest.getBuffer();
-                                StringBuilder sb = new StringBuilder();
-
-                                try {
-                                    Buffers.dump(src, sb, 2, 2);
-                                    LOGGER.error("Content buffer #{}:\n{}", nbuf, sb);
-                                } catch(IOException ie) {
-                                    LOGGER.error("failed to dump buffered content", ie);
-                                }
-                            }
-                            nbuf++;
+                        try {
+                            ri.handleRequest(exchange);
                         }
-                        
-                        response.endExchangeWithMessage(
-                                HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                                "Error executing response interceptor "
-                                + ri.getClass().getSimpleName(),
-                                ex);
-                    }
-                });
+                        catch (Exception ex) {
+                            LOGGER.error("Error executing response interceptor {} for {}",
+                                    ri.getClass().getSimpleName(),
+                                    exchange.getRequestPath(),
+                                    ex);
+                            AbstractExchange.setInError(exchange);
+                            // set error message
+                            ByteArrayResponse response = ByteArrayResponse
+                                    .wrap(exchange);
+
+                            // dump bufferd content
+                            BuffersUtils.dump("content buffer "
+                                    + exchange.getRequestPath(),
+                                    resp.getRawContent());
+
+                            response.endExchangeWithMessage(
+                                    HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                                    "Error executing response interceptor "
+                                    + ri.getClass().getSimpleName(),
+                                    ex);
+                        }
+                    });
+        }
 
         PooledByteBuffer[] dests = resp.getRawContent();
 
@@ -171,13 +167,12 @@ public class ModificableContentSinkConduit
 
         for (PooledByteBuffer dest : dests) {
             if (dest != null) {
-                ByteBuffer src = dest.getBuffer();
-                StringBuilder sb = new StringBuilder();
-
-                next.write(src);
+                next.write(dest.getBuffer());
             }
         }
 
+        LOGGER.debug("********* terminateWrites (reset pool) {}", exchange.getRequestPath());
+        resetBufferPool(exchange);
         next.terminateWrites();
     }
 

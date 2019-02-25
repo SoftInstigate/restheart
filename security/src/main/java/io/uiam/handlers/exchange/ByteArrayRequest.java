@@ -21,6 +21,7 @@ import static io.uiam.handlers.exchange.AbstractExchange.MAX_BUFFERS;
 import io.uiam.utils.BuffersUtils;
 import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.slf4j.LoggerFactory;
@@ -63,10 +64,15 @@ public class ByteArrayRequest extends Request<byte[]> {
                 setRawContent(dest);
             }
             
-            BuffersUtils.transfer(
+            int copied = BuffersUtils.transfer(
                     ByteBuffer.wrap(content.toString().getBytes()),
                     dest,
                     wrapped);
+            
+            // updated request content length
+            // this is not needed in Response.writeContent() since done
+            // by ModificableContentSinkConduit.updateContentLenght();
+            getWrapped().getRequestHeaders().put(Headers.CONTENT_LENGTH, copied);
         }
     }
 }

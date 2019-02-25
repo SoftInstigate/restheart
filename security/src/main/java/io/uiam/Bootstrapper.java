@@ -25,7 +25,6 @@ import static com.sun.akuma.CLibrary.LIBC;
 import static io.uiam.Configuration.UIAM_VERSION;
 import static io.uiam.handlers.exchange.AbstractExchange.MAX_CONTENT_SIZE;
 import io.uiam.handlers.exchange.AbstractExchange.METHOD;
-import io.uiam.handlers.RequestBuffersSynchronizer;
 import io.uiam.handlers.RequestNotManagedHandler;
 import static io.undertow.Handlers.path;
 import static org.fusesource.jansi.Ansi.ansi;
@@ -99,6 +98,7 @@ import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.UndertowOptions;
 import io.undertow.server.handlers.AllowedMethodsHandler;
+import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
 import io.undertow.server.handlers.PathHandler;
@@ -861,12 +861,13 @@ public class Bootstrapper {
                 new RequestLimit(configuration.getRequestsLimit()),
                 new AllowedMethodsHandler(
                         new RequestContentInjector(
-                                new ConduitInjector(
-                                        new PipedWrappingHandler(null,
-                                                new ForceGzipEncodingHandler(
-                                                        new ErrorHandler(
-                                                                new HttpContinueAcceptingHandler(paths)),
-                                                        configuration.isForceGzipEncoding())))),
+                                new BlockingHandler(
+                                        new ConduitInjector(
+                                                new PipedWrappingHandler(null,
+                                                        new ForceGzipEncodingHandler(
+                                                                new ErrorHandler(
+                                                                        new HttpContinueAcceptingHandler(paths)),
+                                                                configuration.isForceGzipEncoding()))))),
                         // allowed methods
                         HttpString.tryFromString(METHOD.GET.name()),
                         HttpString.tryFromString(METHOD.POST.name()),
@@ -1056,10 +1057,9 @@ public class Bootstrapper {
                         = new XForwardedHeadersInjector(
                                 new XPoweredByInjector(
                                         new RequestInterceptorsExecutor(
-                                                new RequestBuffersSynchronizer(
-                                                        new PipedWrappingHandler(
-                                                                null,
-                                                                proxyHandler)))));
+                                                new PipedWrappingHandler(
+                                                        null,
+                                                        proxyHandler))));
 
                 paths.addPrefixPath(uri,
                         new RequestLoggerHandler(

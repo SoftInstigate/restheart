@@ -18,11 +18,13 @@
 package io.uiam.handlers;
 
 import io.uiam.handlers.exchange.AbstractExchange;
+import io.uiam.handlers.exchange.ByteArrayRequest;
 import io.uiam.plugins.PluginsRegistry;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import io.uiam.plugins.interceptors.PluggableRequestInterceptor;
+import io.uiam.utils.BuffersUtils;
 import io.uiam.utils.LambdaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +34,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestInterceptorsExecutor extends PipedHttpHandler {
+
     private static final Logger LOGGER = LoggerFactory
             .getLogger(RequestInterceptorsExecutor.class);
 
@@ -64,13 +67,16 @@ public class RequestInterceptorsExecutor extends PipedHttpHandler {
                 .filter(ri -> ri.resolve(exchange))
                 .forEachOrdered(ri -> {
                     try {
-                        LOGGER.debug("Executing request interceptor {}", 
-                                ri.getClass().getSimpleName());
+                        LOGGER.debug("Executing request interceptor {} for {}",
+                                ri.getClass().getSimpleName(),
+                                exchange.getRequestPath());
+                        
                         ri.handleRequest(exchange);
                     }
                     catch (Exception ex) {
-                        LOGGER.error("Error executing request interceptor {}", 
-                                ri.getClass().getSimpleName(), 
+                        LOGGER.error("Error executing request interceptor {} for {}",
+                                ri.getClass().getSimpleName(),
+                                exchange.getRequestPath(),
                                 ex);
                         AbstractExchange.setInError(exchange);
                         LambdaUtils.throwsSneakyExcpetion(ex);

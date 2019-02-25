@@ -87,25 +87,6 @@ public class ConduitInjector extends PipedHttpHandler {
             }
         });
 
-//        // before sending the response execute the interceptors
-//        exchange.addResponseCommitListener(new ResponseCommitListener() {
-//            @Override
-//            public void beforeCommit(HttpServerExchange exchange) {
-//                LOGGER.debug("****** beforeCommit");
-//                
-//                // and send the response to the client
-//                var mcsc = exchange.getAttachment(MCSK_KEY);
-//
-//                if (mcsc != null) {
-//                    try {
-//                        mcsc.flushToClient();
-//                    }
-//                    catch (IOException ex) {
-//                        LOGGER.error("error sending data to client", ex);
-//                    }
-//                }
-//            }
-//        });
         next(exchange);
     }
 }
