@@ -77,7 +77,7 @@ public class ModificableContentSinkConduit
      */
     private void resetBufferPool(HttpServerExchange exchange) {
         var buffers = new PooledByteBuffer[MAX_BUFFERS];
-        this.exchange.putAttachment(Response.BUFFERED_RESPONSE_DATA,
+        exchange.putAttachment(Response.BUFFERED_RESPONSE_DATA,
                 buffers);
     }
 
@@ -171,7 +171,6 @@ public class ModificableContentSinkConduit
             }
         }
 
-        resetBufferPool(exchange);
         next.terminateWrites();
     }
 
