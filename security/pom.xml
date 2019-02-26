@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.uiam</groupId>
     <artifactId>uiam</artifactId>
@@ -78,12 +79,14 @@
 
     <distributionManagement>
         <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <id>uiam-snapshot</id>
+            <name>S3 Snapshot Repository</name>
+            <url>s3://maven.softinstigate.com/snapshot</url>
         </snapshotRepository>
         <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <id>uiam-release</id>
+            <name>S3 Release Repository</name>
+            <url>s3://maven.softinstigate.com/release</url>
         </repository>
     </distributionManagement>
 
@@ -93,7 +96,7 @@
             <url>https://jitpack.io</url>
         </repository>
     </repositories>
-    
+
     <scm>
         <url>https://github.com/SoftInstigate/uiam</url>
         <connection>scm:git:git@github.com:SoftInstigate/uiam.git</connection>
@@ -108,7 +111,7 @@
             <artifactId>xnio-nio</artifactId>
             <version>3.7.0.Final</version>
         </dependency>
-        
+
         <!-- update undertow dependency to avoid warning log message:
              WARNING: An illegal reflective access operation has occurred -->
         <dependency>
@@ -116,7 +119,7 @@
             <artifactId>jboss-threads</artifactId>
             <version>2.3.3.Final</version>
         </dependency>
-        
+
         <dependency>
             <groupId>io.undertow</groupId>
             <artifactId>undertow-core</artifactId>
@@ -128,7 +131,7 @@
             <artifactId>guava</artifactId>
             <version>27.0-jre</version>
         </dependency>
-        
+
         <dependency>
             <groupId>com.jayway.jsonpath</groupId>
             <artifactId>json-path</artifactId>
@@ -140,7 +143,7 @@
             <artifactId>snakeyaml</artifactId>
             <version>1.23</version>
         </dependency>
-        
+
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
@@ -185,14 +188,14 @@
             <version>1.4.9</version>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>com.intuit.karate</groupId>
             <artifactId>karate-apache</artifactId>
             <version>0.9.1</version>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>com.intuit.karate</groupId>
             <artifactId>karate-junit4</artifactId>
@@ -203,7 +206,14 @@
     </dependencies>
 
     <build>
-      <testResources>
+        <extensions>
+            <extension>
+                <groupId>org.springframework.build</groupId>
+                <artifactId>aws-maven</artifactId>
+                <version>5.0.0.RELEASE</version>
+            </extension>
+        </extensions>
+        <testResources>
             <testResource>
                 <directory>src/test/java</directory>
                 <excludes>
@@ -241,7 +251,7 @@
                     </execution>
                 </executions>
             </plugin>
-            
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -309,7 +319,7 @@
                     </execution>
                 </executions>
             </plugin>
-      
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -350,7 +360,7 @@
                     </execution>
                 </executions>
             </plugin>
-            
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
@@ -390,18 +400,6 @@
                     </execution>
                 </executions>
             </plugin>
-            
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>1.6.8</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <serverId>ossrh</serverId>
-                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 
@@ -415,13 +413,13 @@
                         <artifactId>maven-site-plugin</artifactId>
                         <version>3.7.1</version>
                     </plugin>
-                    
+
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-project-info-reports-plugin</artifactId>
                         <version>3.0.0</version>
                     </plugin>
-                    
+
                     <plugin>
                         <groupId>com.github.github</groupId>
                         <artifactId>site-maven-plugin</artifactId>
@@ -594,7 +592,7 @@
             </build>
         </profile>
     </profiles>
-    
+
     <reporting>
         <plugins>
             <plugin>
