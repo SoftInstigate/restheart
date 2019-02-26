@@ -2,7 +2,6 @@
 set -e
 
 if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
-    mvn deploy --settings settings.xml -Dmaven.test.skip=true;
     VERSION=$(./bin/project-version.sh 2>/dev/null);
     export VERSION
     if [[ "$VERSION" ]]; then
