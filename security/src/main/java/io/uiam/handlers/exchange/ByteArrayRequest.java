@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ByteArrayRequest extends Request<byte[]> {
 
-    private ByteArrayRequest(HttpServerExchange exchange) {
+    protected ByteArrayRequest(HttpServerExchange exchange) {
         super(exchange);
         LOGGER = LoggerFactory.getLogger(ByteArrayRequest.class);
     }

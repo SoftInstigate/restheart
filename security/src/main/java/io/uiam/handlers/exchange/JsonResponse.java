@@ -42,7 +42,7 @@ public class JsonResponse extends Response<JsonElement> {
 
     protected static final JsonParser PARSER = new JsonParser();
 
-    private JsonResponse(HttpServerExchange exchange) {
+    protected JsonResponse(HttpServerExchange exchange) {
         super(exchange);
         LOGGER = LoggerFactory.getLogger(JsonRequest.class);
     }

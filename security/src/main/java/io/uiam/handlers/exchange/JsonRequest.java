@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import org.slf4j.LoggerFactory;
-import org.xnio.Buffers;
 
 /**
  *
@@ -40,7 +39,7 @@ public class JsonRequest extends Request<JsonElement> {
 
     protected static final JsonParser PARSER = new JsonParser();
 
-    private JsonRequest(HttpServerExchange exchange) {
+    protected JsonRequest(HttpServerExchange exchange) {
         super(exchange);
         LOGGER = LoggerFactory.getLogger(JsonRequest.class);
     }
