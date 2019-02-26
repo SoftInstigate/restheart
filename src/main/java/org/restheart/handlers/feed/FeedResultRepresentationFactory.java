@@ -22,9 +22,9 @@ import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.restheart.Configuration;
-import org.restheart.hal.AbstractRepresentationFactory;
-import org.restheart.hal.Link;
-import org.restheart.hal.Representation;
+import org.restheart.representation.AbstractRepresentationFactory;
+import org.restheart.representation.Link;
+import org.restheart.representation.Resource;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.HAL_MODE;
@@ -51,13 +51,13 @@ public class FeedResultRepresentationFactory
      * @throws IllegalQueryParamenterException
      */
     @Override
-    public Representation getRepresentation(HttpServerExchange exchange,
+    public Resource getRepresentation(HttpServerExchange exchange,
             RequestContext context,
             List<BsonDocument> embeddedData,
             long size)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
-        final Representation rep;
+        final Resource rep;
 
         if (context.isFullHalMode()) {
             rep = createRepresentation(exchange, context, requestPath);
@@ -86,7 +86,7 @@ public class FeedResultRepresentationFactory
     }
 
     private void addEmbeddedData(List<BsonDocument> embeddedData,
-            final Representation rep)
+            final Resource rep)
             throws IllegalQueryParamenterException {
         if (embeddedData != null) {
             addReturnedProperty(embeddedData, rep);
@@ -99,7 +99,7 @@ public class FeedResultRepresentationFactory
         }
     }
 
-    private void addLinkTemplates(final Representation rep,
+    private void addLinkTemplates(final Resource rep,
             final String requestPath) {
         rep.addLink(new Link("rh:collection",
                 URLUtils.getParentPath(URLUtils.getParentPath(requestPath))));
@@ -108,13 +108,13 @@ public class FeedResultRepresentationFactory
     }
 
     private void embeddedDocuments(List<BsonDocument> embeddedData,
-            Representation rep) throws IllegalQueryParamenterException {
+            Resource rep) throws IllegalQueryParamenterException {
         embeddedData.stream().map((d) -> {
-            Representation nrep = new Representation();
+            Resource nrep = new Resource();
             nrep.addProperties(d);
             return nrep;
         }).forEach((nrep) -> {
-            rep.addRepresentation("rh:result", nrep);
+            rep.addChild("rh:result", nrep);
         });
     }
 }
