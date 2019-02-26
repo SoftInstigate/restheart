@@ -1,51 +1,38 @@
-## RESTHeart simple security configuration file.
+## configuration file for RESTHeart integration  test suite
 ---
-## Configuration for file based Identity Manager
 users:
     - userid: user1
-      password: changeit
-      roles: [powerusers]
+      password: secret
+      roles: [user]
 
     - userid: user2
-      password: changeit
-      roles: [users]
+      password: secret
+      roles: [user]
 
     - userid: admin
-      password: changeit
-      roles: [users, admins]
+      password: secret
+      roles: [user, admins]
 
-
-## Configuration for file based Access Manager
-
-## Look at undertow documentation for information about predictates syntax
-## http://undertow.io/undertow-docs/undertow-docs-1.3.0/index.html#predicates-attributes-and-handlers
-## The special role $unauthenticated allows to give permissions without requiring authentication
 permissions:
     - role: admins
       predicate: path-prefix[path="/"]
 
     - role: $unauthenticated
-      predicate: path-prefix[path="/testdb/refcoll1"] and method[value="GET"]
+      predicate: path-prefix[path="/echo"] and method[value="GET"]
 
-    - role: powerusers
-      predicate: path-prefix[path="/testdb"] and method[value="GET"]
+    - role: user
+      predicate: path-prefix[path="/secho"] and method[value="GET"]
 
-    - role: powerusers
-      predicate: path-prefix[path="/testmytmpdb"]
+    - role: user
+      predicate: path[path="/secho/foo"] and method[value="GET"]
 
-    - role: users
-      predicate: path-prefix[path="/testdb/refcoll2"] and method[value="GET"]
-
-    - role: users
-      predicate: path[path="/testdb/refcoll2"] and method[value="GET"]
-
-    - role: users
-      predicate: (path[path="/testtmpdb2"] or path[path="/testtmpdb3"]) and method[value="PUT"]
+    - role: user
+      predicate: (path[path="/echo"] or path[path="/secho"]) and method[value="PUT"]
 
     # This to check the path-template predicate
-    - role: users
-      predicate: path-template[value="/testtmpdb2/{username}"] and equals[%u, "${username}"]
+    - role: user
+      predicate: path-template[value="/secho/{username}"] and equals[%u, "${username}"]
 
     # This to check the regex predicate
-    - role: users
-      predicate: regex[pattern="/testtmpdb3/(.*?)", value="%R", full-match=true] and equals[%u, "${1}"]
+    - role: user
+      predicate: regex[pattern="/secho/(.*?)", value="%R", full-match=true] and equals[%u, "${1}"]

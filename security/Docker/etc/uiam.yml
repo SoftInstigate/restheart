@@ -30,7 +30,7 @@ instance-name: uiam-docker
 
 ### Proxied resources
 
- # internal-uri (required) The URI where the proxied resource must be bound.
+# internal-uri (required) The URI where the proxied resource must be bound.
  # external-url (required) The URL of the resource to proxy. It can be an array of URLs for load balancing.
  # connections-per-thread (optional, default 10) Controls the number of connections to create per thread.
  # soft-max-connections-per-thread (optional, default 5) Controls the number of connections to create per thread.
@@ -67,7 +67,7 @@ use-embedded-keystore: true
  # A custom initializer implmenting the io.uiam.init.Initializer interface
  # Can be used to inizialize data or add global transformers, checkers or security predicates
 
-#initializer-class: io.uiam.init.impl.TestInitializer
+#initializer-class: io.uiam.init.impl.ExampleInitializer
 
 ### Security
 
@@ -94,12 +94,12 @@ auth-mechanisms:
       args:
         realm: uIAM Realm
         idm: simpleFileIdentityManager
-    - name: digestAuthenticationMechanism
-      class: io.uiam.plugins.authentication.impl.DigestAuthenticationMechanism
-      args: 
-        realm: uIAM Realm
-        domain: localhost
-        idm: simpleFileIdentityManager
+#    - name: digestAuthenticationMechanism
+#      class: io.uiam.plugins.authentication.impl.DigestAuthenticationMechanism
+#      args: 
+#        realm: uIAM Realm
+#        domain: localhost
+#        idm: simpleFileIdentityManager
 #    - name: identityAuthenticationMechanism
 #      class: io.uiam.plugins.authentication.impl.IdentityAuthenticationMechanism
 #      args:
@@ -118,7 +118,7 @@ idms:
     - name: simpleFileIdentityManager
       class: io.uiam.plugins.authentication.impl.SimpleFileIdentityManager
       args:
-        conf-file: ../etc/security.yml
+        conf-file: /opt/uiam/etc/security.yml
     - name: authTokenIdentityManager
       class: io.uiam.plugins.authentication.impl.AuthTokenIdentityManager
 
@@ -132,8 +132,8 @@ access-manager:
     name: requestPredicatesAccessManager
     class: io.uiam.plugins.authorization.impl.RequestPredicatesAccessManager
     args:
-        conf-file: ../etc/security.yml
-
+        conf-file: /opt/uiam/etc/security.yml
+ 
 ## Token Manager
 
  # If a token-manager is configured, uIAM will use it to generate and verify token
@@ -147,6 +147,7 @@ token-manager:
     class: io.uiam.plugins.authentication.impl.RndTokenManager
     args:
       ttl: 15
+      srv-uri: /_authtokens
 
 ## Services
 
@@ -159,7 +160,7 @@ token-manager:
 services:
     - name: rndTokenManager
       class: io.uiam.plugins.service.impl.RndTokenService
-      uri: /tokens
+      uri: /_authtokens
       secured: false
     - name: ping
       class: io.uiam.plugins.service.impl.PingService
@@ -177,7 +178,7 @@ services:
       class: io.uiam.plugins.service.impl.EchoService
       uri: /echo
       secured: false
-      
+
 #### Logging
 
  # enable-log-console: true => log messages to the console (default value: true)
@@ -188,7 +189,7 @@ services:
  # ansi-console: use Ansi console for logging. 
  # WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
 
-enable-log-file: true
+enable-log-file: false
 log-file-path: /var/log/uiam.log
 enable-log-console: true
 log-level: DEBUG
