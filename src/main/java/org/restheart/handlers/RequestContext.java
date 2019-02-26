@@ -37,14 +37,11 @@ import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
-import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.Bootstrapper;
 import org.restheart.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.db.OperationResult;
-import org.restheart.db.sessions.XClientSession;
-import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +72,6 @@ public class RequestContext {
     public static final String SHARDKEY_QPARAM_KEY = "shardkey";
     public static final String NO_PROPS_KEY = "np";
     public static final String REPRESENTATION_FORMAT_KEY = "rep";
-    public static final String CLIENT_SESSION_KEY = "cs";
 
     // matadata
     public static final String ETAG_DOC_POLICY_METADATA_KEY = "etagDocPolicy";
@@ -87,20 +83,16 @@ public class RequestContext {
     public static final String ADMIN = "admin";
     public static final String _METRICS = "_metrics";
     public static final String _SIZE = "_size";
-    public static final String _META = "_meta";
-    public static final String _TRANSACTIONS = "_txns";
 
     public static final String FS_CHUNKS_SUFFIX = ".chunks";
     public static final String FS_FILES_SUFFIX = ".files";
-    public static final String META_COLLNAME = "_properties";
-    public static final String DB_META_DOCID = "_properties";
-    public static final String COLL_META_DOCID_PREFIX = "_properties.";
 
     public static final String RESOURCES_WILDCARD_KEY = "*";
 
     public static final String _INDEXES = "_indexes";
     public static final String _SCHEMAS = "_schemas";
     public static final String _AGGREGATIONS = "_aggrs";
+    public static final String _FEEDS = "_feeds";
 
     public static final String BINARY_CONTENT = "binary";
 
@@ -153,28 +145,8 @@ public class RequestContext {
             } else {
                 type = TYPE.INVALID;
             }
-        } else if (pathTokens.length > 2 && pathTokens[pathTokens.length - 1].equalsIgnoreCase(_META)) {
-            if (pathTokens.length == 3) {
-                type = TYPE.DB_META;
-            } else if (pathTokens.length == 4 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
-                type = TYPE.FILES_BUCKET_META;
-            } else if (pathTokens.length == 4 && pathTokens[2].endsWith(_SCHEMAS)) {
-                type = TYPE.SCHEMA_STORE_META;
-            } else if (pathTokens.length == 4) {
-                type = TYPE.COLLECTION_META;
-            } else {
-                type = TYPE.INVALID;
-            }
-        }  else if (pathTokens.length < 2) {
+        } else if (pathTokens.length < 2) {
             type = TYPE.ROOT;
-        } else if (pathTokens.length == 2 
-                && pathTokens[pathTokens.length - 1]
-                        .equalsIgnoreCase(_TRANSACTIONS)) {
-            type = TYPE.TRANSACTIONS;
-        } else if (pathTokens.length == 3
-                && pathTokens[pathTokens.length - 2]
-                        .equalsIgnoreCase(_TRANSACTIONS)) {
-            type = TYPE.TRANSACTION;
         } else if (pathTokens.length < 3
                 && pathTokens[1].equalsIgnoreCase(_METRICS)) {
             type = TYPE.METRICS;
@@ -235,6 +207,12 @@ public class RequestContext {
         } else if (pathTokens.length > 4
                 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
             type = TYPE.AGGREGATION;
+        } else if (pathTokens.length == 4
+                && pathTokens[3].equalsIgnoreCase(_FEEDS)) {
+            type = TYPE.INVALID;
+        } else if (pathTokens.length > 4
+                && pathTokens[3].equalsIgnoreCase(_FEEDS)) {
+            type = TYPE.FEED;
         } else {
             type = TYPE.DOCUMENT;
         }
@@ -250,7 +228,6 @@ public class RequestContext {
     public static boolean isReservedResourceDb(String dbName) {
         return !dbName.equalsIgnoreCase(_METRICS)
                 && !dbName.equalsIgnoreCase(_SIZE)
-                && !dbName.equalsIgnoreCase(_TRANSACTIONS)
                 && (dbName.equals(ADMIN)
                 || dbName.equals(LOCAL)
                 || dbName.startsWith(SYSTEM)
@@ -267,7 +244,6 @@ public class RequestContext {
         return collectionName != null
                 && !collectionName.equalsIgnoreCase(_SCHEMAS)
                 && !collectionName.equalsIgnoreCase(_METRICS)
-                && !collectionName.equalsIgnoreCase(_META)
                 && !collectionName.equalsIgnoreCase(_SIZE)
                 && (collectionName.startsWith(SYSTEM)
                 || collectionName.startsWith(UNDERSCORE)
@@ -291,18 +267,19 @@ public class RequestContext {
         return (documentIdRaw.startsWith(UNDERSCORE)
                 || (type != TYPE.AGGREGATION
                 && _AGGREGATIONS.equalsIgnoreCase(documentIdRaw)))
+                && (documentIdRaw.startsWith(UNDERSCORE)
+                || (type != TYPE.FEED
+                && _FEEDS.equalsIgnoreCase(documentIdRaw)))
                 && !documentIdRaw.equalsIgnoreCase(_METRICS)
                 && !documentIdRaw.equalsIgnoreCase(_SIZE)
                 && !documentIdRaw.equalsIgnoreCase(_INDEXES)
-                && !documentIdRaw.equalsIgnoreCase(_META)
-                && !documentIdRaw.equalsIgnoreCase(DB_META_DOCID)
-                && !documentIdRaw.startsWith(COLL_META_DOCID_PREFIX)
                 && !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID)
                 && !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID)
                 && !documentIdRaw.equalsIgnoreCase(NULL_KEY_ID)
                 && !documentIdRaw.equalsIgnoreCase(TRUE_KEY_ID)
                 && !documentIdRaw.equalsIgnoreCase(FALSE_KEY_ID)
                 && !(type == TYPE.AGGREGATION)
+                && !(type == TYPE.FEED)
                 || (documentIdRaw.equals(RESOURCES_WILDCARD_KEY)
                 && !(type == TYPE.BULK_DOCUMENTS));
     }
@@ -362,8 +339,6 @@ public class RequestContext {
     private boolean inError = false;
 
     private Account authenticatedAccount = null;
-    
-    private XClientSession clientSession = null;
 
     /**
      * the HAL mode
@@ -675,6 +650,17 @@ public class RequestContext {
      */
     public String getAggregationOperation() {
         return getPathTokenAt(4);
+    }
+
+    /**
+     * @return feed operation name
+     */
+    public String getFeedOperation() {
+        return getPathTokenAt(4);
+    }
+
+    public String getFeedIdentifier() {
+        return getPathTokenAt(5);
     }
 
     /**
@@ -1106,13 +1092,7 @@ public class RequestContext {
      * @return the documentId
      */
     public BsonValue getDocumentId() {
-        if (isDbMeta()) {
-            return new BsonString(DB_META_DOCID);
-        } else if (isCollectionMeta()) {
-            return new BsonString(COLL_META_DOCID_PREFIX.concat(getPathTokenAt(2)));
-        } else {
-            return documentId;
-        }
+        return documentId;
     }
 
     /**
@@ -1623,24 +1603,6 @@ public class RequestContext {
     public boolean isRoot() {
         return this.type == TYPE.ROOT;
     }
-    
-    /**
-     * helper method to check request resource type
-     *
-     * @return true if type is TYPE.TRANSACTIONS
-     */
-    public boolean isTxns() {
-        return this.type == TYPE.TRANSACTIONS;
-    }
-    
-    /**
-     * helper method to check request resource type
-     *
-     * @return true if type is TYPE.TRANSACTION
-     */
-    public boolean isTxn() {
-        return this.type == TYPE.TRANSACTION;
-    }
 
     /**
      * helper method to check request resource type
@@ -1681,28 +1643,10 @@ public class RequestContext {
     /**
      * helper method to check request resource type
      *
-     * @return true if type is TYPE.DB_META
-     */
-    public boolean isDbMeta() {
-        return this.type == TYPE.DB_META;
-    }
-
-    /**
-     * helper method to check request resource type
-     *
      * @return true if type is TYPE.COLLECTION_SIZE
      */
     public boolean isCollectionSize() {
         return this.type == TYPE.COLLECTION_SIZE;
-    }
-
-    /**
-     * helper method to check request resource type
-     *
-     * @return true if type is TYPE.COLLECTION_META
-     */
-    public boolean isCollectionMeta() {
-        return this.type == TYPE.COLLECTION_META;
     }
 
     /**
@@ -1717,28 +1661,10 @@ public class RequestContext {
     /**
      * helper method to check request resource type
      *
-     * @return true if type is TYPE.FILES_BUCKET_META
-     */
-    public boolean isFilesBucketMeta() {
-        return this.type == TYPE.FILES_BUCKET_META;
-    }
-
-    /**
-     * helper method to check request resource type
-     *
      * @return true if type is TYPE.SCHEMA_STORE_SIZE
      */
     public boolean isSchemaStoreSize() {
         return this.type == TYPE.SCHEMA_STORE_SIZE;
-    }
-
-    /**
-     * helper method to check request resource type
-     *
-     * @return true if type is TYPE.SCHEMA_STORE_SIZE
-     */
-    public boolean isSchemaStoreMeta() {
-        return this.type == TYPE.SCHEMA_STORE_META;
     }
 
     /**
@@ -1810,27 +1736,22 @@ public class RequestContext {
         ROOT_SIZE,
         DB,
         DB_SIZE,
-        DB_META,
         COLLECTION,
         COLLECTION_SIZE,
-        COLLECTION_META,
         DOCUMENT,
         COLLECTION_INDEXES,
         INDEX,
+        FEED,
         FILES_BUCKET,
         FILES_BUCKET_SIZE,
-        FILES_BUCKET_META,
         FILE,
         FILE_BINARY,
         AGGREGATION,
         SCHEMA,
         SCHEMA_STORE,
         SCHEMA_STORE_SIZE,
-        SCHEMA_STORE_META,
         BULK_DOCUMENTS,
-        METRICS,
-        TRANSACTIONS,
-        TRANSACTION,
+        METRICS
     }
 
     public enum METHOD {
@@ -1855,6 +1776,12 @@ public class RequestContext {
         BOOLEAN     // boolean
     }
 
+    public enum REPRESENTATION_FORMAT {
+        PLAIN_JSON, // Plain Json
+        PJ, // Alias for plain json
+        HAL // Hypertext Application Language
+    }
+
     public enum HAL_MODE {
         FULL, // full mode
         F, // alias for full
@@ -1866,20 +1793,6 @@ public class RequestContext {
         REQUIRED, // always requires the etag, return PRECONDITION FAILED if missing
         REQUIRED_FOR_DELETE, // only requires the etag for DELETE, return PRECONDITION FAILED if missing
         OPTIONAL                // checks the etag only if provided by client via If-Match header
-    }
-
-    /**
-     * @return the clientSession
-     */
-    public XClientSession getClientSession() {
-        return clientSession;
-    }
-
-    /**
-     * @param clientSession the clientSession to set
-     */
-    public void setClientSession(XClientSession clientSession) {
-        this.clientSession = clientSession;
     }
 
 }
