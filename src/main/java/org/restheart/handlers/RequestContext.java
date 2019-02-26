@@ -92,6 +92,7 @@ public class RequestContext {
     public static final String _INDEXES = "_indexes";
     public static final String _SCHEMAS = "_schemas";
     public static final String _AGGREGATIONS = "_aggrs";
+    public static final String _FEEDS = "_feeds";
 
     public static final String BINARY_CONTENT = "binary";
 
@@ -206,6 +207,12 @@ public class RequestContext {
         } else if (pathTokens.length > 4
                 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
             type = TYPE.AGGREGATION;
+        } else if (pathTokens.length == 4
+                && pathTokens[3].equalsIgnoreCase(_FEEDS)) {
+            type = TYPE.INVALID;
+        } else if (pathTokens.length > 4
+                && pathTokens[3].equalsIgnoreCase(_FEEDS)) {
+            type = TYPE.FEED;
         } else {
             type = TYPE.DOCUMENT;
         }
@@ -260,6 +267,9 @@ public class RequestContext {
         return (documentIdRaw.startsWith(UNDERSCORE)
                 || (type != TYPE.AGGREGATION
                 && _AGGREGATIONS.equalsIgnoreCase(documentIdRaw)))
+                && (documentIdRaw.startsWith(UNDERSCORE)
+                || (type != TYPE.FEED
+                && _FEEDS.equalsIgnoreCase(documentIdRaw)))
                 && !documentIdRaw.equalsIgnoreCase(_METRICS)
                 && !documentIdRaw.equalsIgnoreCase(_SIZE)
                 && !documentIdRaw.equalsIgnoreCase(_INDEXES)
@@ -269,6 +279,7 @@ public class RequestContext {
                 && !documentIdRaw.equalsIgnoreCase(TRUE_KEY_ID)
                 && !documentIdRaw.equalsIgnoreCase(FALSE_KEY_ID)
                 && !(type == TYPE.AGGREGATION)
+                && !(type == TYPE.FEED)
                 || (documentIdRaw.equals(RESOURCES_WILDCARD_KEY)
                 && !(type == TYPE.BULK_DOCUMENTS));
     }
@@ -642,6 +653,17 @@ public class RequestContext {
     }
 
     /**
+     * @return feed operation name
+     */
+    public String getFeedOperation() {
+        return getPathTokenAt(4);
+    }
+
+    public String getFeedIdentifier() {
+        return getPathTokenAt(5);
+    }
+
+    /**
      *
      * @return URI
      * @throws URISyntaxException
@@ -764,8 +786,8 @@ public class RequestContext {
     public void setFilter(Deque<String> filter) {
         this.filter = filter;
     }
-    
-     /**
+
+    /**
      * @return the hint
      */
     public Deque<String> getHint() {
@@ -835,7 +857,7 @@ public class RequestContext {
 
         return sort;
     }
-    
+
     public BsonDocument getHintDocument() throws JsonParseException {
         BsonDocument ret = new BsonDocument();
 
@@ -1719,6 +1741,7 @@ public class RequestContext {
         DOCUMENT,
         COLLECTION_INDEXES,
         INDEX,
+        FEED,
         FILES_BUCKET,
         FILES_BUCKET_SIZE,
         FILE,
