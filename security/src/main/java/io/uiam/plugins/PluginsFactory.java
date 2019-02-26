@@ -301,7 +301,7 @@ public class PluginsFactory {
                 | SecurityException
                 | InvocationTargetException ex) {
             throw new PluginConfigurationException(
-                    "Error configuring Token Manager"
+                    "Error configuring Token Manager "
                     + (_name != null ? _name : ""), ex);
         }
     }
