@@ -41,6 +41,9 @@ import org.restheart.handlers.document.DeleteDocumentHandler;
 import org.restheart.handlers.document.GetDocumentHandler;
 import org.restheart.handlers.document.PatchDocumentHandler;
 import org.restheart.handlers.document.PutDocumentHandler;
+import org.restheart.handlers.feed.DeleteFeedHandler;
+import org.restheart.handlers.feed.GetFeedHandler;
+import org.restheart.handlers.feed.PostFeedHandler;
 import org.restheart.handlers.files.DeleteBucketHandler;
 import org.restheart.handlers.files.DeleteFileHandler;
 import org.restheart.handlers.files.FileMetadataHandler;
@@ -187,7 +190,7 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
                 new RequestTransformerHandler(
                         new PatchDBHandler(
                                 respTransformers())));
-        
+
         // *** COLLECTION handlers
         putPipedHttpHandler(TYPE.COLLECTION, METHOD.GET,
                 new RequestTransformerHandler(
@@ -318,13 +321,12 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
                 new RequestTransformerHandler(
                         new GetCollectionHandler(
                                 respTransformers())));
-        
-        
+
         putPipedHttpHandler(TYPE.FILES_BUCKET, METHOD.GET,
                 new RequestTransformerHandler(
                         new GetCollectionHandler(
                                 respTransformers())));
-        
+
         putPipedHttpHandler(TYPE.FILES_BUCKET_SIZE, METHOD.GET,
                 new RequestTransformerHandler(
                         new TransformersListHandler(
@@ -438,6 +440,22 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
                 new RequestTransformerHandler(
                         new TestTxnHandler(
                                         respTransformers())));
+
+        // *** FEED handlers
+        putPipedHttpHandler(TYPE.FEED, METHOD.GET,
+                new RequestTransformerHandler(
+                        new GetFeedHandler(
+                                responseSenderHandler)));
+
+        putPipedHttpHandler(TYPE.FEED, METHOD.POST,
+                new RequestTransformerHandler(
+                        new PostFeedHandler(
+                                responseSenderHandler)));
+
+        putPipedHttpHandler(TYPE.FEED, METHOD.DELETE,
+                new RequestTransformerHandler(
+                        new DeleteFeedHandler(
+                                responseSenderHandler)));
 
         // *** SCHEMA handlers
         putPipedHttpHandler(TYPE.SCHEMA_STORE, METHOD.GET,
