@@ -702,7 +702,7 @@ public class Configuration {
         httpsPort = getAsIntegerOrDefault(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
         httpsHost = getAsStringOrDefault(conf, HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
 
-        httpListener = getAsBooleanOrDefault(conf, HTTP_LISTENER_KEY, false);
+        httpListener = getAsBooleanOrDefault(conf, HTTP_LISTENER_KEY, true);
         httpPort = getAsIntegerOrDefault(conf, HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
         httpHost = getAsStringOrDefault(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
 
