@@ -66,9 +66,10 @@ public class JsonResponse extends Response<JsonElement> {
             return JsonNull.INSTANCE;
         } else {
             try {
-                String rawContentAsString = BuffersUtils.toString(getRawContent(),
+                String rawContentAsString = BuffersUtils.toString(
+                        getRawContent(),
                         StandardCharsets.UTF_8);
-                
+
                 return PARSER.parse(rawContentAsString);
             }
             catch (JsonParseException ex) {

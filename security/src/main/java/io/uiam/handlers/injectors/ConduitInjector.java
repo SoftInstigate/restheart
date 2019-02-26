@@ -15,13 +15,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.uiam.handlers;
+package io.uiam.handlers.injectors;
 
+import io.uiam.handlers.ModificableContentSinkConduit;
+import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.plugins.PluginsRegistry;
 import io.undertow.server.ConduitWrapper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.ConduitFactory;
+import io.undertow.util.HeaderMap;
+import io.undertow.util.Headers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.conduits.StreamSinkConduit;
@@ -41,12 +45,11 @@ public class ConduitInjector extends PipedHttpHandler {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ConduitInjector.class);
 
-    public static final AttachmentKey<ModificableContentSinkConduit> MCSK_KEY
+    public static final AttachmentKey<ModificableContentSinkConduit> MCSC_KEY
             = AttachmentKey.create(ModificableContentSinkConduit.class);
-
-    public ConduitInjector() {
-        super(null);
-    }
+    
+    public static final AttachmentKey<HeaderMap> ORIGINAL_ACCEPT_ENCODINGS_KEY
+            = AttachmentKey.create(HeaderMap.class);
 
     /**
      * @param next
@@ -78,7 +81,7 @@ public class ConduitInjector extends PipedHttpHandler {
                             factory.create(),
                             exchange);
 
-                    exchange.putAttachment(MCSK_KEY, mcsc);
+                    exchange.putAttachment(MCSC_KEY, mcsc);
 
                     return mcsc;
                 } else {
@@ -86,7 +89,44 @@ public class ConduitInjector extends PipedHttpHandler {
                 }
             }
         });
+        
+        forceIdentityEncodingForInterceptors(exchange);
 
         next(exchange);
+    }
+
+    /**
+     * if the ModificableContentSinkConduit is set, set the Accept-Encoding
+     * header to identity this is required to avoid response interceptors
+     * dealing with compressed data
+     *
+     * @param exchange
+     */
+    private static void forceIdentityEncodingForInterceptors(HttpServerExchange exchange) {
+        if (PluginsRegistry.getInstance()
+                .getResponseInterceptors()
+                .stream()
+                .filter(ri -> ri.resolve(exchange))
+                .anyMatch(ri -> ri.requiresResponseContent())) {
+            var _before = exchange.getRequestHeaders()
+                    .get(Headers.ACCEPT_ENCODING);
+
+            var before = new HeaderMap();
+
+            for (var value : _before) {
+                before.add(Headers.ACCEPT_ENCODING, value);
+            }
+            
+            exchange.putAttachment(ORIGINAL_ACCEPT_ENCODINGS_KEY, before);
+
+            LOGGER.debug("{} "
+                    + "setting it to identity because request involves "
+                    + "response interceptors. "
+                    + "Todo: compress response after interceptors execute", before);
+
+            exchange.getRequestHeaders().put(
+                    Headers.ACCEPT_ENCODING,
+                    "identity");
+        }
     }
 }

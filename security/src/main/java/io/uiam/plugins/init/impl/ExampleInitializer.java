@@ -43,7 +43,7 @@ public class ExampleInitializer implements PluggableInitializer {
     public void init() {
         LOGGER.info("Testing initializer");
         LOGGER.info("\tdenies GET /secho/foo using a Global Permission Predicate");
-        LOGGER.info("\tadds a request and a response interceptor for /echo and /secho");
+        LOGGER.info("\tadds a request and a response interceptors for /iecho and /siecho");
 
         // add a global security predicate
         AccessManagerHandler.getGlobalSecurityPredicates().add(new Predicate() {

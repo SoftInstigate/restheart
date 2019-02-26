@@ -37,11 +37,21 @@ instance-name: develop
  # max-queue-size (optional, default 0) Controls the number of connections to create per thread.
  # connections-ttl (optional, default -1) Connections Time to Live in seconds.
  # problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
+
+## /echo is EchoService
+## /secho secured proxied /echo
+## /iecho is EchoService with request and response interceptors
+## /siecho secured proxied /iecho with request and response interceptors
+
 proxies:
     - internal-uri: /secho
       external-url: 
         - http://127.0.0.1:8080/echo
         - http://localhost:8080/echo
+    - internal-uri: /siecho
+      external-url: 
+        - http://127.0.0.1:8080/iecho
+        - http://localhost:8080/iecho
       connections-per-thread: 20
     - internal-uri: /pr
       external-url: http://127.0.0.1:8081
@@ -180,6 +190,10 @@ services:
     - name: requestEchoer
       class: io.uiam.plugins.service.impl.EchoService
       uri: /echo
+      secured: false
+    - name: interceptedRequestEchoer
+      class: io.uiam.plugins.service.impl.EchoService
+      uri: /iecho
       secured: false
       
 #### Logging

@@ -88,6 +88,11 @@ public class BuffersUtils {
             throws IOException {
         return new String(toByteArray(srcs), cs);
     }
+    
+    public static String toString(final byte[] src, Charset cs)
+            throws IOException {
+        return new String(src, cs);
+    }
 
     /**
      * transfer the src data to the pooled buffers overwriting the exising data

@@ -23,6 +23,7 @@ import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.uiam.Configuration.UIAM_VERSION;
+import io.uiam.handlers.ConfigurableEncodingHandler;
 import static io.uiam.handlers.exchange.AbstractExchange.MAX_CONTENT_SIZE;
 import io.uiam.handlers.exchange.AbstractExchange.METHOD;
 import io.uiam.handlers.RequestNotManagedHandler;
@@ -68,8 +69,6 @@ import org.xnio.Xnio;
 import org.xnio.ssl.XnioSsl;
 
 import io.uiam.handlers.ErrorHandler;
-import io.uiam.handlers.ForceGzipEncodingHandler;
-import io.uiam.handlers.ConduitInjector;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.handlers.PipedWrappingHandler;
 import io.uiam.handlers.injectors.RequestContentInjector;
@@ -78,6 +77,7 @@ import io.uiam.handlers.RequestInterceptorsExecutor;
 import io.uiam.handlers.ResponseSender;
 import io.uiam.handlers.injectors.XForwardedHeadersInjector;
 import io.uiam.handlers.injectors.AuthHeadersRemover;
+import io.uiam.handlers.injectors.ConduitInjector;
 import io.uiam.handlers.injectors.XPoweredByInjector;
 import io.uiam.handlers.security.CORSHandler;
 import io.uiam.handlers.security.SecurityHandler;
@@ -864,10 +864,11 @@ public class Bootstrapper {
                                 new BlockingHandler(
                                         new ConduitInjector(
                                                 new PipedWrappingHandler(null,
-                                                        new ForceGzipEncodingHandler(
+                                                        new ConfigurableEncodingHandler(
                                                                 new ErrorHandler(
                                                                         new HttpContinueAcceptingHandler(paths)),
-                                                                configuration.isForceGzipEncoding()))))),
+                                                                configuration.isForceGzipEncoding())
+                                                )))),
                         // allowed methods
                         HttpString.tryFromString(METHOD.GET.name()),
                         HttpString.tryFromString(METHOD.POST.name()),

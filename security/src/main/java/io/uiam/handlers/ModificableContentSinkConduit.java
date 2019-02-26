@@ -43,6 +43,8 @@ import org.xnio.conduits.AbstractStreamSinkConduit;
 import org.xnio.conduits.Conduits;
 
 /**
+ * a conduit that buffers data allowing to modify it it also responsible of
+ * executing response interceptors when terminateWrites() is called
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
@@ -208,6 +210,8 @@ public class ModificableContentSinkConduit
                 LOGGER.error("could not access BUFFERED_REQUEST_DATA field", ex);
                 throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
             }
+        } else {
+            LOGGER.warn("updateContentLenght() next is {}", next.getClass().getSimpleName());
         }
     }
 }
