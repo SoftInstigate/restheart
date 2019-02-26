@@ -62,7 +62,7 @@ public abstract class AbstractExchange<T> {
     /**
      * @return the wrapped
      */
-    public HttpServerExchange getWrapped() {
+    HttpServerExchange getWrapped() {
         return wrapped;
     }
 
