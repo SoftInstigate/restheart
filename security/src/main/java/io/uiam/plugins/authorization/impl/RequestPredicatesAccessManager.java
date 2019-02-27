@@ -18,6 +18,7 @@
 package io.uiam.plugins.authorization.impl;
 
 import static com.google.common.collect.Sets.newHashSet;
+import io.uiam.handlers.exchange.ByteArrayRequest;
 import static io.uiam.plugins.ConfigurablePlugin.argValue;
 import static io.undertow.predicate.Predicate.PREDICATE_CONTEXT;
 
@@ -113,6 +114,11 @@ public class RequestPredicatesAccessManager
 
     @Override
     public boolean isAuthenticationRequired(final HttpServerExchange exchange) {
+        // don't require authentication for OPTIONS requests
+        if (ByteArrayRequest.wrap(exchange).isOptions()) {
+            return false;
+        }
+        
         if (getAcl() == null) {
             return true;
         }

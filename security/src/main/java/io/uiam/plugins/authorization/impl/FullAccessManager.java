@@ -17,6 +17,7 @@
  */
 package io.uiam.plugins.authorization.impl;
 
+import io.uiam.handlers.exchange.ByteArrayRequest;
 import io.uiam.plugins.authorization.PluggableAccessManager;
 import io.undertow.server.HttpServerExchange;
 
@@ -41,6 +42,7 @@ public class FullAccessManager implements PluggableAccessManager {
 
     @Override
     public boolean isAuthenticationRequired(HttpServerExchange exchange) {
-        return authenticationRequired;
+        return !ByteArrayRequest.wrap(exchange).isOptions()
+                && authenticationRequired;
     }
 }

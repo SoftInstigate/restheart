@@ -141,11 +141,11 @@ idms:
  
  # See README.md for the list of available Access Managers
 
-access-manager:
-    name: requestPredicatesAccessManager
-    class: io.uiam.plugins.authorization.impl.RequestPredicatesAccessManager
-    args:
-        conf-file: ../etc/security.yml
+#access-manager:
+#    name: requestPredicatesAccessManager
+#    class: io.uiam.plugins.authorization.impl.RequestPredicatesAccessManager
+#    args:
+#        conf-file: ../etc/security.yml
 
 ## Token Manager
 
