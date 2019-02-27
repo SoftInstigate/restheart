@@ -68,7 +68,7 @@ public class XForwardedHeadersInjector extends PipedHttpHandler {
 
             if (a.getPrincipal() != null) {
                 exchange.getRequestHeaders()
-                        .add(getHeaderForAccountId(),
+                        .add(getXForwardedAccountIdHeaderName(),
                                 a.getPrincipal().getName());
             }
 
@@ -76,7 +76,7 @@ public class XForwardedHeadersInjector extends PipedHttpHandler {
                 ((BaseAccount) a).getRoles()
                         .stream().forEachOrdered(role -> exchange
                         .getRequestHeaders()
-                        .add(getHeaderForAccountRoles(), role));
+                        .add(getXForwardedRolesHeaderName(), role));
 
             }
 
@@ -88,7 +88,7 @@ public class XForwardedHeadersInjector extends PipedHttpHandler {
                         .forEachOrdered(m -> {
                             m.getValue().stream().forEachOrdered(v
                                     -> exchange.getRequestHeaders()
-                                            .add(getHeaderForXH(m.getKey()),
+                                            .add(getXForwardedHeaderName(m.getKey()),
                                                     v));
                         });
             }
@@ -97,15 +97,15 @@ public class XForwardedHeadersInjector extends PipedHttpHandler {
         next(exchange);
     }
 
-    private HttpString getHeaderForXH(String suffix) {
+    public static HttpString getXForwardedHeaderName(String suffix) {
         return HttpString.tryFromString("X-Forwarded-".concat(suffix));
     }
 
-    private HttpString getHeaderForAccountId() {
-        return getHeaderForXH("Account-Id");
+    public static HttpString getXForwardedAccountIdHeaderName() {
+        return getXForwardedHeaderName("Account-Id");
     }
 
-    private HttpString getHeaderForAccountRoles() {
-        return getHeaderForXH("Account-Roles");
+    public static HttpString getXForwardedRolesHeaderName() {
+        return getXForwardedHeaderName("Account-Roles");
     }
 }
