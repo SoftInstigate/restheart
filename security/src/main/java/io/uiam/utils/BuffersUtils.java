@@ -129,6 +129,11 @@ public class BuffersUtils {
             pidx++;
         }
         
+        // clean up remaining destination buffers
+        while (pidx < dest.length) {
+             dest[pidx] = null;
+             pidx++;
+        }
         
         return copied;
     }
@@ -186,6 +191,12 @@ public class BuffersUtils {
 
             pidx++;
         }
+        
+        // clean up remaining destination buffers
+        while (pidx < dest.length) {
+             dest[pidx] = null;
+             pidx++;
+        }
 
         return copied;
     }
@@ -214,6 +225,12 @@ public class BuffersUtils {
             }
 
             idx++;
+        }
+        
+        // clean up remaining destination buffers
+        while (idx < dest.length) {
+             dest[idx] = null;
+             idx++;
         }
 
         return copied;
