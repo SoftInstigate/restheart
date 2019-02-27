@@ -194,9 +194,6 @@ log-file-path: /var/log/uiam.log
 enable-log-console: true
 log-level: DEBUG
 requests-log-level: 1
-requests-log-trace-headers: ciap
-    
-
 ansi-console: true
 
 #### Performance Options
