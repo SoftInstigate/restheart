@@ -31,3 +31,18 @@ Scenario: request with valid Authorization header
     Then status 200
     And match response.headers['X-Forwarded-Account-Roles'][0] == 'user'
     And match response.headers['X-Forwarded-Account-Roles'][1] == 'admin'
+
+Scenario: X-Forwarded headers must be filtered out from proxied request
+    * header Authorization = authHeader
+    * header X-Forwarded-Account-Id = 'anId'
+    * header X-Forwarded-Account-Roles = 'aRole'
+    * header X-Forwarded-Not-Sensitive-Header = 'aValue'
+    Given path '/secho'    
+    When method GET
+    Then status 200
+    And match response.headers['X-Forwarded-Account-Id'] contains 'admin'
+    And match response.headers['X-Forwarded-Account-Id'] !contains 'anId'
+    And match response.headers['X-Forwarded-Account-Roles'] contains 'admin'
+    And match response.headers['X-Forwarded-Account-Roles'] contains 'user'
+    And match response.headers['X-Forwarded-Account-Roles'] !contains 'aRole'
+    And match response.headers['X-Forwarded-Not-Sensitive-Header'] contains 'aValue'

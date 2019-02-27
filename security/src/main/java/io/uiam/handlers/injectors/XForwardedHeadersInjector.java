@@ -66,6 +66,21 @@ public class XForwardedHeadersInjector extends PipedHttpHandler {
                         .getAuthenticatedAccount() != null) {
             Account a = exchange.getSecurityContext().getAuthenticatedAccount();
 
+            // remove sensitive X-Forwarded headers from request
+            // to avoid clients to control headers such as X-Forwarded-Account-Id
+            exchange.getRequestHeaders().remove(getXForwardedAccountIdHeaderName());
+            exchange.getRequestHeaders().remove(getXForwardedRolesHeaderName());
+
+            Map<String, List<String>> xfhs = ByteArrayRequest.wrap(exchange)
+                    .getXForwardedHeaders();
+
+            if (xfhs != null) {
+                xfhs.entrySet().stream()
+                        .forEachOrdered(m -> exchange.getRequestHeaders()
+                        .remove(m.getKey()));
+            }
+
+            // add X-Forwarded headers
             if (a.getPrincipal() != null) {
                 exchange.getRequestHeaders()
                         .add(getXForwardedAccountIdHeaderName(),
@@ -80,16 +95,13 @@ public class XForwardedHeadersInjector extends PipedHttpHandler {
 
             }
 
-            Map<String, List<String>> xfhs = ByteArrayRequest.wrap(exchange)
-                    .getXForwardedHeaders();
-
             if (xfhs != null) {
                 xfhs.entrySet().stream()
                         .forEachOrdered(m -> {
                             m.getValue().stream().forEachOrdered(v
-                                    -> exchange.getRequestHeaders()
-                                            .add(getXForwardedHeaderName(m.getKey()),
-                                                    v));
+                                    -> exchange.getRequestHeaders().put(
+                                            getXForwardedHeaderName(m.getKey()),
+                                            v));
                         });
             }
         }
