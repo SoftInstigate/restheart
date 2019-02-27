@@ -2,8 +2,8 @@ Feature: test basic authentication mechanism
 
 Background:
 * url 'http://localhost:8080'
-* def authHeader = 'Basic YWRtaW46Y2hhbmdlaXQ'
-# YWRtaW46Y2hhbmdlaXQ= => admin:changeit
+* def authHeader = 'Basic YWRtaW46c2VjcmV0'
+# YWRtaW46Y2hhbmdlaXQ= => admin:secret
 * def wrongAuthHeader = 'Basic YWRtaW46d3Jvbmc='
 # YWRtaW46d3Jvbmc= => admin:wrong (wrong password)
 * def basicAuthChallenge = 'Basic realm="uIAM Realm"'

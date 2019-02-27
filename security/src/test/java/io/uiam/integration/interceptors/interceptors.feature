@@ -2,8 +2,8 @@ Feature: test interceptors
 
 Background:
 * url 'http://localhost:8080'
-* def authHeader = 'Basic YWRtaW46Y2hhbmdlaXQ'
-# YWRtaW46Y2hhbmdlaXQ= => admin:changeit
+* def authHeader = 'Basic YWRtaW46c2VjcmV0'
+# YWRtaW46Y2hhbmdlaXQ= => admin:secret
 * def identityEncoding = 'identity'
 * def someJson = { s: "string", n: 1, obj: { x:1, y:2}, array:["a","b","c"] }
 
