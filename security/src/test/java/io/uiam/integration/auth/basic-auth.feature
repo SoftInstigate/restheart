@@ -7,7 +7,6 @@ Background:
 * def wrongAuthHeader = 'Basic YWRtaW46d3Jvbmc='
 # YWRtaW46d3Jvbmc= => admin:wrong (wrong password)
 * def basicAuthChallenge = 'Basic realm="uIAM Realm"'
-* def identityEncoding = 'identity'
 
 Scenario: request without Authorization header
     * header Accept-Encoding = 'identity'
@@ -19,7 +18,6 @@ Scenario: request without Authorization header
 
 Scenario: request with wrong Authorization header
     * header Authorization = wrongAuthHeader
-    * header Accept-Encoding = identityEncoding
     Given path '/secho'
     When method GET
     Then status 401
@@ -28,7 +26,6 @@ Scenario: request with wrong Authorization header
 
 Scenario: request with valid Authorization header
     * header Authorization = authHeader
-    * header Accept-Encoding = identityEncoding
     Given path '/secho'    
     When method GET
     Then status 200
