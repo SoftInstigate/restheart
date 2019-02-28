@@ -17,7 +17,7 @@
  */
 package io.uiam.handlers.injectors;
 
-import io.uiam.handlers.ModificableContentSinkConduit;
+import io.uiam.handlers.ModifiableContentSinkConduit;
 import io.uiam.handlers.PipedHttpHandler;
 import io.uiam.plugins.PluginsRegistry;
 import io.undertow.server.ConduitWrapper;
@@ -45,8 +45,8 @@ public class ConduitInjector extends PipedHttpHandler {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ConduitInjector.class);
 
-    public static final AttachmentKey<ModificableContentSinkConduit> MCSC_KEY
-            = AttachmentKey.create(ModificableContentSinkConduit.class);
+    public static final AttachmentKey<ModifiableContentSinkConduit> MCSC_KEY
+            = AttachmentKey.create(ModifiableContentSinkConduit.class);
     
     public static final AttachmentKey<HeaderMap> ORIGINAL_ACCEPT_ENCODINGS_KEY
             = AttachmentKey.create(HeaderMap.class);
@@ -77,7 +77,7 @@ public class ConduitInjector extends PipedHttpHandler {
                         .stream()
                         .filter(ri -> ri.resolve(exchange))
                         .anyMatch(ri -> ri.requiresResponseContent())) {
-                    var mcsc = new ModificableContentSinkConduit(
+                    var mcsc = new ModifiableContentSinkConduit(
                             factory.create(),
                             exchange);
 

@@ -48,11 +48,10 @@ import org.xnio.conduits.Conduits;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class ModificableContentSinkConduit
+public class ModifiableContentSinkConduit
         extends AbstractStreamSinkConduit<StreamSinkConduit> {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(
-            ModificableContentSinkConduit.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(ModifiableContentSinkConduit.class);
 
     //private ByteBuffer data = null;
     private HttpServerExchange exchange;
@@ -63,7 +62,7 @@ public class ModificableContentSinkConduit
      * @param next the delegate conduit to set
      * @param exchange
      */
-    public ModificableContentSinkConduit(StreamSinkConduit next,
+    public ModifiableContentSinkConduit(StreamSinkConduit next,
             HttpServerExchange exchange) {
         super(next);
         this.exchange = exchange;
