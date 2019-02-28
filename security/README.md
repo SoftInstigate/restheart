@@ -888,7 +888,7 @@ Interceptors allows to snoop and modify request and responses.
 
 A Request Interceptor applies before the request is proxied or handled by a *Service* thus allowing to modify the request. Its implementation class must implement the interface `io.uiam.plugins.interceptors.PluggableRequestInterceptor` .
 
-A Response Interceptor applies after the request has been proxied or handled by a *Service* this allowing to modify the response. Its implementation class must implement the interface `io.uiam.plugins.interceptors.PluggableResponseInterceptor`.
+A Response Interceptor applies after the request has been proxied or handled by a *Service* thus allowing to modify the response. Its implementation class must implement the interface `io.uiam.plugins.interceptors.PluggableResponseInterceptor`.
 
 Those interfaces both extend the base interface `io.uiam.plugins.interceptors.PluggableInterceptor`
 
@@ -912,15 +912,17 @@ public interface PluggableInterceptor {
 }
 ```
 
+The `handleRequest()` method is invoked only if the `resolve()` method returns true.
+
 Example interceptor implementations can be found in the package`io.uiam.plugins.interceptors.impl`.
 
-### Accessing the Request Content in a Request Interceptor
+### Accessing the Content in Request Interceptors
 
-In some cases, you need to access the request content. For example you need the request content in *Services*, to modify it with a `RequestInterceptor` or to implement an `AccessManager` that checks the content to authorize the request.
+In some cases, you need to access the request content. For example you need the request content in *Services*, to modify it with a `PluggableRequestInterceptor` or to implement an `AccessManager` that checks the content to authorize the request.
 
  Accessing the content from the *HttpServerExchange* object using the exchange *InputStream* in proxied requests leads to an error because Undertow allows reading the content just once. 
 
- In order to simplify accessing the content, the `Request.wrap(exchange).getContent()` helper method is available. It is very efficient since it uses the non blocking `RequestBufferingHandler` under to hood.
+ In order to simplify accessing the content, the `ByteArrayRequest.wrap(exchange).readContent()` and `JsonRequest.wrap(exchange).readContent()` helper methods are available. They are very efficient since they use the non blocking `RequestBufferingHandler` under to hood.
  However, since accessing the request content might lead to significant performance overhead, a *PluggableRequestInterceptor* that resolves the request and overrides the `requiresContent()` to return true must be implemented to make data available.
 
  `PluggableRequestInterceptor` defines the following method with a default implementation that returns false:
@@ -937,9 +939,29 @@ public interface PluggableRequestInterceptor extends PluggableInterceptor {
 }
 ```
 
- This is only required for proxied resources. *Services* always have the request content available.
+Please note that, in order to mitigate DoS attacks, the size of the Request content available with `readContent()` is limited to 16 Mbytes.
 
-Also note that, in order to mitigate DoS attacks, the size of the Request content available with `Request.wrap(exchange).getContent()` is limited to 16 Mbytes.
+### Accessing the Content in Response Interceptors
+
+In some cases, you need to access the response content. For example you might need the modify the response from a proxied resource before sending it to the client.
+
+ In order to simplify accessing the content, the `ByteArrayRequest.wrap(exchange).readContent()` and `JsonResponse.wrap(exchange).readContent()` helper methods are available. Since accessing the response content might lead to significant performance overhead because the full response must be read by uIAM, a *PluggableResponseInterceptor* that resolves the request and overrides the `requiresResponseContent()` to return true must be implemented to make data available.
+
+ `PluggableResponseInterceptor` defines the following method with a default implementation that returns false:
+
+```java
+public interface PluggableResponseInterceptor extends PluggableInterceptor {
+  /**
+   *
+   * @return true if the Interceptor requires to access the response content
+   */
+  default boolean requiresResponseContent() {
+      return false;
+  }
+}
+```
+
+Please note that, in order to mitigate DoS attacks, the size of the response content available with `readContent()` is limited to 16 Mbytes.
 
 ### Configuration
 
@@ -951,7 +973,7 @@ Interceptors are configured with *Initializers*. See `Develop an Initializer` se
 
 ### Interacting with the *HttpServerExchange* object
 
-The helper classes `Request` and `Response` are available to make easy interacting the `HttpServerExchange` object. As a general rule, always prefer using the helper classes if the functionality you need is available.
+The helper classes `ByteArrayRequest`, `JsonRequest`, `ByteArrayResponse` and `JsonResponse` are available to make easy interacting the `HttpServerExchange` object. As a general rule, always prefer using the helper classes if the functionality you need is available.
 
 For instance the following code snipped retrieves the request JSON content from the `HttpServerExchange`  
 
@@ -961,24 +983,24 @@ HttpServerExchange exchange = ...;
 Request request = Request.wrap(exchange);
 
 if (request.isContentTypeJson()) {
-  JsonElement content = Request.wrap(exchange).request.getContentAsJson();
+  JsonElement content = JsonRequest.wrap(exchange).readContent();
 }
 ```
 
 ### How to send the response
 
-You just set the status code and the response content using helper class `Response`. You don't need to send the response explicitly using low level `HttpServerExchange` methods, since the `ResponseSenderHandler` is in the processing chain and will do it for you.
+You just set the status code and the response content using helper classes `ByteArrayResponse` or `JsonResponse`. You don't need to send the response explicitly using low level `HttpServerExchange` methods, since the `ResponseSenderHandler` is in the processing chain and will do it for you.
 
 ```java
 @Override
 public void handleRequest(HttpServerExchange exchange) throws Exception {
 
-  Response response = Response.wrap(exchange);
+  JsonResponse response = JsonResponse.wrap(exchange);
 
   JsonObject resp = new JsonObject();
   resp.appProperty("message", "OK")
 
-  response.setContent(resp);
+  response.writeContent(resp);
   response.setStatusCode(HttpStatus.SC_OK);
 }
 ```
