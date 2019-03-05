@@ -27,6 +27,7 @@ import org.apache.http.HttpStatus;
 import org.bson.types.ObjectId;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -149,6 +150,19 @@ public class JsonSchemaCheckerIT extends AbstactIT {
 
         
         Assert.assertEquals("test create schema with dollar prefixed field", HttpStatus.SC_CREATED, resp.getStatus());
+    }
+    
+    @Test
+    @Ignore
+    public void testPutSchemaWithDollarAsObjectPropertyPrefix() throws Exception {
+        resp = Unirest.put(url(DB, SCHEMA_STORE, "SchemaWithDollarAsObjectPropertyPrefix"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .body(getResourceFile("schemas/schemaWithDollarAsObjectPropertyPrefix.json"))
+                .asString();
+
+        
+        Assert.assertEquals("test create schema with dollar prefixed object property", HttpStatus.SC_CREATED, resp.getStatus());
     }
 
     @Test
