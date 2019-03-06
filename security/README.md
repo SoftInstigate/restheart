@@ -695,18 +695,17 @@ public interface PluggableTokenManager extends PluggableIdentityManager {
   public PasswordCredential get(Account account);
 
   /**
-   * update the account bound to the token
+   * updates the account bound to a token
    * @param account
-   * @param token 
    */
-  public void update(Account account, PasswordCredential token);
+  public void update(Account account);
 
   /**
-   * invalidates a token
+   * invalidates the token bound to the account
    * @param account
    * @param token 
    */
-  public void invalidate(Account account, PasswordCredential token);
+  public void invalidate(Account account);
 
   /**
    * injects the token headers in the response

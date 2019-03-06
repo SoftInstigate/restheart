@@ -122,7 +122,7 @@ public class RndTokenManager implements PluggableTokenManager {
     }
     
     @Override
-    public void update(Account account, PasswordCredential token) {
+    public void update(Account account) {
         String id = account.getPrincipal().getName();
 
         Optional<PwdCredentialAccount> _authTokenAccount
