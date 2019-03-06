@@ -39,9 +39,9 @@ import io.undertow.util.HttpString;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
- *         The Access-Control-Expose-Headers header indicates which headers are
- *         safe to expose to the API of a CORS API specification.
- * 
+ * The Access-Control-Expose-Headers header indicates which headers are safe to
+ * expose to the API of a CORS API specification.
+ *
  */
 public class CORSHandler extends PipedHttpHandler {
 
@@ -84,28 +84,36 @@ public class CORSHandler extends PipedHttpHandler {
         }
     }
 
-    private void injectAccessControlAllowHeaders(HttpServerExchange exchange) {
+    public static void injectAccessControlAllowHeaders(HttpServerExchange exchange) {
         HeaderMap requestHeaders = exchange.getRequestHeaders();
         HeaderMap responseHeaders = exchange.getResponseHeaders();
 
-        if (requestHeaders.contains(ORIGIN)) {
-            responseHeaders.add(ACCESS_CONTROL_ALLOW_ORIGIN, requestHeaders.get(ORIGIN).getFirst());
-        } else {
-            responseHeaders.add(ACCESS_CONTROL_ALLOW_ORIGIN, ALL_ORIGINS);
+        if (!responseHeaders.contains(ACCESS_CONTROL_ALLOW_ORIGIN)) {
+            if (requestHeaders.contains(ORIGIN)) {
+
+                responseHeaders.add(ACCESS_CONTROL_ALLOW_ORIGIN,
+                        requestHeaders.get(ORIGIN).getFirst());
+            } else {
+                responseHeaders.add(ACCESS_CONTROL_ALLOW_ORIGIN, ALL_ORIGINS);
+            }
         }
 
-        responseHeaders.add(ACCESS_CONTROL_ALLOW_CREDENTIAL, "true");
+        if (!responseHeaders.contains(ACCESS_CONTROL_ALLOW_CREDENTIAL)) {
+            responseHeaders.add(ACCESS_CONTROL_ALLOW_CREDENTIAL, "true");
+        }
 
-        responseHeaders.add(ACCESS_CONTROL_EXPOSE_HEADERS, LOCATION_STRING);
-        responseHeaders.add(ACCESS_CONTROL_EXPOSE_HEADERS,
-                LOCATION_STRING + ", " + Headers.ETAG + ", " 
-                        + AUTH_TOKEN_HEADER.toString() + ", "
-                        + AUTH_TOKEN_VALID_HEADER.toString() + ", "
-                        + AUTH_TOKEN_LOCATION_HEADER.toString() + ", "
-                        + HttpHeaders.X_POWERED_BY);
+        if (!responseHeaders.contains(ACCESS_CONTROL_EXPOSE_HEADERS)) {
+            responseHeaders.add(ACCESS_CONTROL_EXPOSE_HEADERS,
+                    LOCATION_STRING + ", " + Headers.ETAG + ", "
+                    + AUTH_TOKEN_HEADER.toString() + ", "
+                    + AUTH_TOKEN_VALID_HEADER.toString() + ", "
+                    + AUTH_TOKEN_LOCATION_HEADER.toString() + ", "
+                    + HttpHeaders.X_POWERED_BY);
+        }
     }
 
     interface CORSHeaders {
+
         HttpString ACCESS_CONTROL_EXPOSE_HEADERS = HttpString.tryFromString("Access-Control-Expose-Headers");
         HttpString ACCESS_CONTROL_ALLOW_CREDENTIAL = HttpString.tryFromString("Access-Control-Allow-Credentials");
         HttpString ACCESS_CONTROL_ALLOW_ORIGIN = HttpString.tryFromString("Access-Control-Allow-Origin");

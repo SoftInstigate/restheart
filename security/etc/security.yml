@@ -17,6 +17,10 @@ users:
       password: secret
       roles: [user, admin]
 
+    - userid: noroles
+      password: secret
+      roles: []
+
 permissions:
     # OPTIONS is always allowed
     - role: $unauthenticated

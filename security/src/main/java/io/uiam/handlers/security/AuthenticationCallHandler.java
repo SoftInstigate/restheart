@@ -18,6 +18,7 @@
 package io.uiam.handlers.security;
 
 import io.uiam.handlers.PipedHttpHandler;
+import io.uiam.utils.HttpStatus;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -42,7 +43,8 @@ public class AuthenticationCallHandler extends PipedHttpHandler {
      * authentication is not required.
      *
      * @throws java.lang.Exception
-     * @see io.undertow.server.HttpHandler#handleRequest(io.undertow.server.HttpServerExchange)
+     * @see
+     * io.undertow.server.HttpHandler#handleRequest(io.undertow.server.HttpServerExchange)
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
@@ -51,11 +53,20 @@ public class AuthenticationCallHandler extends PipedHttpHandler {
             return;
         }
         SecurityContext rcontext = exchange.getSecurityContext();
-        if (rcontext.authenticate()) {
+        
+        // 1 call authenticate that performs authentication on the request. 
+        // 2 make sure that, only if authentication is required, than the request is authenticated
+        if (rcontext.authenticate()
+                && (!rcontext.isAuthenticationRequired()
+                || rcontext.isAuthenticated())) {
             if (!exchange.isComplete()) {
                 next(exchange);
             }
         } else {
+            // add CORS headers
+            CORSHandler.injectAccessControlAllowHeaders(exchange);
+            // set status code and end exchange
+            exchange.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
             exchange.endExchange();
         }
     }

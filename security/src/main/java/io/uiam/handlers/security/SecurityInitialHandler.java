@@ -56,13 +56,14 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-
 public class SecurityInitialHandler extends PipedHttpHandler {
+
     private final AuthenticationMode authenticationMode;
     private final String programaticMechName;
     private final SecurityContextFactoryImpl contextFactory;
 
-    static void setSecurityContext(final HttpServerExchange exchange, final SecurityContext securityContext) {
+    static void setSecurityContext(final HttpServerExchange exchange,
+            final SecurityContext securityContext) {
         if (System.getSecurityManager() == null) {
             exchange.setSecurityContext(securityContext);
         } else {
@@ -73,28 +74,39 @@ public class SecurityInitialHandler extends PipedHttpHandler {
         }
     }
 
-    public SecurityInitialHandler(final AuthenticationMode authenticationMode, final String programaticMechName,
-            final SecurityContextFactoryImpl contextFactory, final PipedHttpHandler next) {
+    public SecurityInitialHandler(final AuthenticationMode authenticationMode,
+            final String programaticMechName,
+            final SecurityContextFactoryImpl contextFactory,
+            final PipedHttpHandler next) {
         super(next);
         this.authenticationMode = authenticationMode;
         this.programaticMechName = programaticMechName;
         this.contextFactory = contextFactory;
     }
 
-    public SecurityInitialHandler(final AuthenticationMode authenticationMode, final IdentityManager identityManager,
-            final String programaticMechName, final PipedHttpHandler next) {
-        this(authenticationMode, programaticMechName, (SecurityContextFactoryImpl) SecurityContextFactoryImpl.INSTANCE,
+    public SecurityInitialHandler(final AuthenticationMode authenticationMode,
+            final IdentityManager identityManager,
+            final String programaticMechName, 
+            final PipedHttpHandler next) {
+        this(authenticationMode,
+                programaticMechName,
+                (SecurityContextFactoryImpl) SecurityContextFactoryImpl.INSTANCE,
                 next);
     }
 
-    public SecurityInitialHandler(final AuthenticationMode authenticationMode, final PipedHttpHandler next) {
-        this(authenticationMode, null, (SecurityContextFactoryImpl) SecurityContextFactoryImpl.INSTANCE, next);
+    public SecurityInitialHandler(final AuthenticationMode authenticationMode,
+            final PipedHttpHandler next) {
+        this(authenticationMode,
+                null,
+                (SecurityContextFactoryImpl) SecurityContextFactoryImpl.INSTANCE,
+                next);
     }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        SecurityContext newContext = this.contextFactory.createSecurityContext(exchange, authenticationMode, null,
-                programaticMechName);
+        SecurityContext newContext = this.contextFactory
+                .createSecurityContext(exchange, authenticationMode, null,
+                        programaticMechName);
 
         setSecurityContext(exchange, newContext);
         next(exchange);

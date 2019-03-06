@@ -22,6 +22,7 @@ import com.google.common.net.UrlEscapers;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.uiam.handlers.PipedHttpHandler;
+import io.uiam.handlers.security.CORSHandler;
 import io.uiam.plugins.PluginsRegistry;
 import io.uiam.plugins.PluginConfigurationException;
 import static io.uiam.plugins.authentication.PluggableTokenManager.AUTH_TOKEN_HEADER;

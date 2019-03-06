@@ -57,6 +57,9 @@ public class AccessManagerHandler extends PipedHttpHandler {
                 && checkGlobalPredicates(exchange)) {
             next(exchange);
         } else {
+            // add CORS headers
+            CORSHandler.injectAccessControlAllowHeaders(exchange);
+            // set status code and end exchange
             exchange.setStatusCode(HttpStatus.SC_FORBIDDEN);
             exchange.endExchange();
         }
