@@ -132,11 +132,11 @@ public class RndTokenService extends PluggableService {
             exchange.getResponseSender().send(resp.toString());
             exchange.endExchange();
         } else if (Methods.DELETE.equals(exchange.getRequestMethod())) {
-            BaseAccount token = new BaseAccount(exchange.getSecurityContext()
+            BaseAccount account = new BaseAccount(exchange.getSecurityContext()
                     .getAuthenticatedAccount().getPrincipal().getName(),
                     null);
 
-            tokenManager.invalidate(token, null);
+            tokenManager.invalidate(account);
 
             removeAuthTokens(exchange);
             exchange.setStatusCode(HttpStatus.SC_NO_CONTENT);

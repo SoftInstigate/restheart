@@ -117,8 +117,28 @@ public class RndTokenManager implements PluggableTokenManager {
     }
 
     @Override
-    public void invalidate(Account account, PasswordCredential token) {
+    public void invalidate(Account account) {
         this.CACHE.invalidate(account.getPrincipal().getName());
+    }
+    
+    @Override
+    public void update(Account account, PasswordCredential token) {
+        String id = account.getPrincipal().getName();
+
+        Optional<PwdCredentialAccount> _authTokenAccount
+                = this.CACHE.get(id);
+
+        if (_authTokenAccount != null && _authTokenAccount.isPresent()) {
+            PwdCredentialAccount authTokenAccount = _authTokenAccount.get();
+
+            PwdCredentialAccount updatedAuthTokenAccount
+                    = new PwdCredentialAccount(
+                            id,
+                            authTokenAccount.getCredentials().getPassword(),
+                            account.getRoles());
+
+            this.CACHE.put(id, updatedAuthTokenAccount);
+        }
     }
 
     @Override

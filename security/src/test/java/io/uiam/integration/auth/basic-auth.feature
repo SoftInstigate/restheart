@@ -2,10 +2,17 @@ Feature: test basic authentication mechanism
 
 Background:
 * url 'http://localhost:8080'
-* def authHeader = 'Basic YWRtaW46c2VjcmV0'
-# YWRtaW46Y2hhbmdlaXQ= => admin:secret
-* def wrongAuthHeader = 'Basic YWRtaW46d3Jvbmc='
-# YWRtaW46d3Jvbmc= => admin:wrong (wrong password)
+* def basic =
+""" 
+function(creds) {
+  var temp = creds.username + ':' + creds.password;
+  var Base64 = Java.type('java.util.Base64');
+  var encoded = Base64.getEncoder().encodeToString(temp.bytes);
+  return 'Basic ' + encoded;
+}
+"""
+* def authHeader = basic({username: 'admin', password: 'secret' })
+* def wrongAuthHeader = basic({username: 'admin', password: 'wrong!' })
 * def basicAuthChallenge = 'Basic realm="uIAM Realm"'
 
 Scenario: request without Authorization header
