@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -36,8 +37,10 @@ import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
+import org.restheart.Configuration.METRICS_GATHERING_LEVEL;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.COLLECTION;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.DATABASE;
+import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.OFF;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
 import org.restheart.db.DbsDAO;
 import org.restheart.handlers.PipedHttpHandler;
@@ -54,6 +57,7 @@ import org.restheart.utils.SharedMetricRegistryProxy;
  * and the prometheus format.
  *
  * @author Lena Brüder {@literal <brueder@e-spirit.com>}
+ * @author Christian Groth {@literal <groth@e-spirit.com>}
  */
 public class MetricsHandler extends PipedHttpHandler {
 
@@ -71,68 +75,83 @@ public class MetricsHandler extends PipedHttpHandler {
         super(next, dbsDao);
     }
 
+    /**
+     * Computes the needed metrics level for given request.
+     * @param context current request context
+     * @return metrics level for request
+     */
+    METRICS_GATHERING_LEVEL getMetricsLevelForRequest(RequestContext context) {
+
+        // check if enabled at all
+        METRICS_GATHERING_LEVEL level = OFF;
+        if (configuration.gatheringAboveOrEqualToLevel(ROOT)) {
+
+            // check if db context is given
+            if (isFilledAndNotMetrics(context.getDBName())) {
+
+                // check if collection context is given
+                if (isFilledAndNotMetrics(context.getCollectionName())) {
+
+                    // check if collection level configured
+                    if (configuration.gatheringAboveOrEqualToLevel(COLLECTION)) {
+                        level = COLLECTION;
+                    }
+                } else {
+
+                    // check if database level configured
+                    if (configuration.gatheringAboveOrEqualToLevel(DATABASE)) {
+                        level = DATABASE;
+                    }
+                }
+            } else {
+                level = ROOT;
+            }
+        }
+
+        return level;
+    }
+
     private boolean isFilledAndNotMetrics(String dbOrCollectionName) {
         return dbOrCollectionName != null && !dbOrCollectionName.equalsIgnoreCase(RequestContext._METRICS);
     }
 
     /**
-     * Finds the metric registry that is related to the request path currently
-     * being asked for. Will only write metrics in case they have been gathered
-     * - if none are there, will return null.
-     *
-     * @return a metric registry, or null if none match
+     * Resolves the metrics registry for given gathering level.
+     * @param context current request context
+     * @param metricsLevel desired metrics gathering level
+     * @return metrics registry
      */
-    MetricRegistry getCorrectMetricRegistry(RequestContext context) {
-        MetricRegistry registry = null;
-        if (configuration.gatheringAboveOrEqualToLevel(ROOT)) {
-            if (isFilledAndNotMetrics(context.getDBName())) {
-                if (isFilledAndNotMetrics(context.getCollectionName())) {
-                    if (configuration.gatheringAboveOrEqualToLevel(COLLECTION)) {
-                        registry = metrics.registry(context.getDBName(), context.getCollectionName());
-                    }
-                } else {
-                    if (configuration.gatheringAboveOrEqualToLevel(DATABASE)) {
-                        registry = metrics.registry(context.getDBName());
-                    }
-                }
-            } else {
-                registry = metrics.registry();
-            }
+    MetricRegistry getMetricsRegistry(RequestContext context, METRICS_GATHERING_LEVEL metricsLevel) {
+        switch (metricsLevel) {
+            case ROOT: return metrics.registry();
+            case DATABASE: return metrics.registry(context.getDBName());
+            case COLLECTION: return metrics.registry(context.getDBName(), context.getCollectionName());
+            default: return null;
         }
-        return registry;
     }
 
-    /**
-     *
-     * @param exchange
-     * @param context
-     * @throws Exception
-     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        MetricRegistry registry = getCorrectMetricRegistry(context);
+
+        METRICS_GATHERING_LEVEL metricsLevelForRequest = getMetricsLevelForRequest(context);
+        MetricRegistry registry = getMetricsRegistry(context, metricsLevelForRequest);
 
         if (registry != null) {
             if (context.getMethod() == METHOD.GET) {
-                // context.getRepresentationFormat().name()
+
+                // detect metrics response type
+                Deque<String> representationFormatParameters = exchange.getQueryParameters().get(REPRESENTATION_FORMAT_KEY);
                 ResponseType responseType = Optional.ofNullable(
-                        ResponseType.forQueryParameter(exchange
-                                .getQueryParameters()
-                                .get(REPRESENTATION_FORMAT_KEY) == null
-                                ? null
-                                : exchange
-                                        .getQueryParameters()
-                                        .get(REPRESENTATION_FORMAT_KEY)
-                                        .getFirst())
+                        ResponseType.forQueryParameter(
+                                representationFormatParameters == null ? null : representationFormatParameters.getFirst())
                 ).orElseGet(()
-                        -> ResponseType.forAcceptHeader(
-                                exchange
-                                        .getRequestHeaders()
-                                        .getFirst(Headers.ACCEPT))
+                        -> ResponseType.forAcceptHeader(exchange.getRequestHeaders().getFirst(Headers.ACCEPT))
                 );
+
+                // render metrics or error on unknown response type
                 if (responseType != null) {
                     exchange.setStatusCode(HttpStatus.SC_OK);
-                    responseType.writeTo(exchange, registry);
+                    responseType.writeTo(exchange, metricsLevelForRequest, registry);
                     exchange.endExchange();
                 } else {
                     String acceptableTypes = Arrays.stream(ResponseType.values())
@@ -161,6 +180,7 @@ public class MetricsHandler extends PipedHttpHandler {
 
     @VisibleForTesting
     enum ResponseType {
+
         /**
          * dropwizard-metrics compatible JSON format, see
          * https://github.com/iZettle/dropwizard-metrics/blob/v3.1.2/metrics-json/src/main/java/com/codahale/metrics/json/MetricsModule.java
@@ -168,7 +188,7 @@ public class MetricsHandler extends PipedHttpHandler {
          */
         JSON("application/json") {
             @Override
-            public String generateResponse(MetricRegistry registry) throws IOException {
+            public String generateResponse(METRICS_GATHERING_LEVEL metricsLevel, MetricRegistry registry) throws IOException {
                 BsonDocument document = MetricsJsonGenerator
                         .generateMetricsBson(registry, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
                 return document.toJson(
@@ -179,6 +199,7 @@ public class MetricsHandler extends PipedHttpHandler {
                 );
             }
         },
+
         /**
          * format description can be found at
          * https://prometheus.io/docs/instrumenting/exposition_formats/
@@ -199,14 +220,50 @@ public class MetricsHandler extends PipedHttpHandler {
             }
 
             @Override
-            public String generateResponse(MetricRegistry registry) throws IOException {
+            public String generateResponse(METRICS_GATHERING_LEVEL metricsLevel, MetricRegistry registry) throws IOException {
+
                 StringBuilder sb = new StringBuilder();
-
                 long timestamp = System.currentTimeMillis();
+                if(metricsLevel == ROOT) {
+                    metricsProxy.registries().forEach(registryName -> {
 
-                BsonDocument root = MetricsJsonGenerator
-                        .generateMetricsBson(registry, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
+                        // reconstruct database and collection name
+                        String[] registryNameParts = registryName.split("/");
+                        String databaseName = registryNameParts.length > 0 ? registryNameParts[0] : null;
+                        String collectionName = registryNameParts.length > 1 ? registryNameParts[1] : null;
+                        boolean isRootMetricsRegistry = metricsProxy.isDefault(databaseName);
+
+                        // set values for database and collection labels
+                        if(isRootMetricsRegistry) {
+                            databaseName = DATABASE_AND_COLLECTION_ALL_VALUES_LABEL_VALUE;
+                            collectionName = DATABASE_AND_COLLECTION_ALL_VALUES_LABEL_VALUE;
+                        } else {
+                            if(collectionName == null) {
+                                collectionName = DATABASE_AND_COLLECTION_ALL_VALUES_LABEL_VALUE;
+                            }
+                        }
+
+                        // generate metrics
+                        sb.append(generateResponse(metricsProxy.registry(registryName), databaseName, collectionName, timestamp));
+                    });
+                } else {
+
+                    // we provide null here for database and collection names to not change the previous behavior, generating
+                    // these prometheus labels is only available when requesting metrics on root level
+                    sb.append(generateResponse(registry, null, null, timestamp));
+                }
+
+                return sb.toString().trim();
+            }
+
+            public String generateResponse(MetricRegistry registry, String databaseName, String collectionName, long timestamp) {
+
+                // fetch metrics registry and build json data
+                BsonDocument root = MetricsJsonGenerator.generateMetricsBson(registry, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
                 root.remove("version");
+
+                // convert json data to prometheus format
+                StringBuilder sb = new StringBuilder();
                 root.forEach((groupKey, groupContent)
                         -> groupContent.asDocument().forEach((metricKey, metricContent) -> {
                             final String[] split = metricKey.split("\\.");
@@ -218,11 +275,16 @@ public class MetricsHandler extends PipedHttpHandler {
                                 if (value.isNumber()) {
                                     sb.append("http_response_").append(groupKey).append("_").append(metricType);
                                     sb.append("{");
+                                    if(databaseName != null) {
+                                        sb.append("database=\"").append(databaseName).append("\",");
+                                    }
+                                    if(collectionName != null) {
+                                        sb.append("collection=\"").append(collectionName).append("\",");
+                                    }
                                     sb.append("type=\"").append(type).append("\",");
                                     sb.append("method=\"").append(method).append("\"");
                                     if (responseCode != null) {
-                                        sb.append(",");
-                                        sb.append("code=\"").append(responseCode).append("\"");
+                                        sb.append(",code=\"").append(responseCode).append("\"");
                                     }
                                     sb.append("} ");
                                     sb.append(valueAsString(value));
@@ -234,28 +296,38 @@ public class MetricsHandler extends PipedHttpHandler {
 
                             sb.append("\n");
                         }
-                        ));
+                ));
 
+                // return result
                 return sb.toString();
             }
         };
+
+        SharedMetricRegistryProxy metricsProxy = new SharedMetricRegistryProxy();
+
+        // if we just use null for database and collection labels when data is aggregated this would lead to problems
+        // defining filters in grafana correctly, so it's better to use an artificial value for these cases. we use a
+        // value starting and ending with an underscore here to reduce the chance of hitting a real database or collection name
+        final String DATABASE_AND_COLLECTION_ALL_VALUES_LABEL_VALUE = "_all_";
 
         /**
          * The content-type that is being used for both Accept and Content-Type
          * headers
          */
         String contentType;
+
         /**
          * the media range for the given content type
          */
         String mediaRange;
+
         /**
          * if any, the specialization of the content-type (after ";" in
          * Content-Type header). null if n/a.
          */
         String specialization;
 
-        abstract public String generateResponse(MetricRegistry registry) throws IOException;
+        abstract public String generateResponse(METRICS_GATHERING_LEVEL context, MetricRegistry registry) throws IOException;
 
         ResponseType(String contentType) {
             this(contentType, null);
@@ -299,9 +371,9 @@ public class MetricsHandler extends PipedHttpHandler {
                     || entry.contentType.equalsIgnoreCase(mediaRange);
         }
 
-        public void writeTo(HttpServerExchange exchange, MetricRegistry registry) throws IOException {
+        public void writeTo(HttpServerExchange exchange, METRICS_GATHERING_LEVEL metricsLevel, MetricRegistry registry) throws IOException {
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, getOutputContentType());
-            exchange.getResponseSender().send(generateResponse(registry));
+            exchange.getResponseSender().send(generateResponse(metricsLevel, registry));
         }
 
         /**
