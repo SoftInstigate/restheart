@@ -23,6 +23,7 @@ import com.beust.jcommander.Parameters;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
+import com.github.mustachejava.MustacheNotFoundException;
 import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.undertow.Handlers.path;
@@ -199,7 +200,16 @@ public class Bootstrapper {
                 p.load(reader);
             }
             MustacheFactory mf = new DefaultMustacheFactory();
-            Mustache m = mf.compile(CONF_FILE_PATH.toString());
+            
+            Mustache m;
+            
+            try {
+                m = mf.compile(CONF_FILE_PATH.toString());
+            } catch(MustacheNotFoundException ex) {
+                logErrorAndExit("Configuration file not found " + CONF_FILE_PATH, null, false, -1);
+                m = null;
+            }
+            
             StringWriter writer = new StringWriter();
             m.execute(writer, p);
             writer.flush();
