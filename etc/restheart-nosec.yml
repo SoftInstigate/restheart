@@ -9,13 +9,13 @@
 # Using the http listener is not secure: users credentials can be sniffed by a man-in-the-middle attack.
 # Use the http listener only on trusted environments.
 
-https-listener: true
+https-listener: false
 https-host: 0.0.0.0
-https-port: {{{https-port}}}
+https-port: 4443
 
 http-listener: true
 http-host: 0.0.0.0
-http-port: {{{http-port}}}
+http-port: 8081
 
 ajp-listener: false
 ajp-host: 0.0.0.0
@@ -33,15 +33,7 @@ instance-name: {{{instance-name}}}
 
 #instance-base-url: http://localhost
 
-#### Default representation format https://restheart.org/learn/representation-format/
-
-## STANDARD  root and dbs as an array of children's ids
-##           collection as arrays of document objects and documents as objects
-## HAL       Hypertext Application Language
-## SHAL      Simplified HAL with children as direct elements of _embedded array
-
-## PLAIN_JSON or HAL are aliases for SHAL
-## S is an alias for STANDARD
+#### default representation format (PLAIN_JSON or HAL)
 
 default-representation-format: {{{default-representation-format}}}
 
@@ -107,15 +99,16 @@ mongo-mounts:
 # If embedded is true, the resources are either included in the restheart.jar or in the classpath
 
 static-resources-mounts:
-    - what: browser
-      where: /browser
-      welcome-file: browser.html
-      embedded: true
+  - what: browser
+    where: /browser
+    welcome-file: browser.html
+    secured: false
+    embedded: true
 
 ### Initializer
 
 # A custom initializer implmenting the org.restheart.init.Initializer interface
-# Can be used to inizialize data or add global transformers and checkers
+# Can be used to inizialize data or add global transformers, checkers or security predicates
 # See org.restheart.init.TestInitializer for a simple example
 
 #initializer-class: org.restheart.init.TestInitializer
@@ -129,17 +122,26 @@ static-resources-mounts:
 
 # In the following example two built-in application logic handlers are defined:
 # PingHandler bound to /_logic/ping that implements a simple ping service
+# GetRoleHandler bound to /_logic/roles that returns the current user authentication status and eventually its roles
 # CacheInvalidator bound to /_logic/ic that invalidates a db or collection cache entry
 
 application-logic-mounts:
-    - what: org.restheart.handlers.applicationlogic.PingHandler
-      where: /ping
-      args:
-          msg: "ciao from the restheart team"
-    - what: org.restheart.handlers.applicationlogic.CacheInvalidator
-      where: /ic
-    - what: org.restheart.handlers.applicationlogic.CsvLoaderHandler
-      where: /csv
+  - what: org.restheart.handlers.applicationlogic.PingHandler
+    where: /ping
+    secured: false
+    args:
+      msg: "ciao from the restheart team"
+  - what: org.restheart.handlers.applicationlogic.GetRoleHandler
+    where: /roles
+    secured: false
+    args:
+      url: /_logic/roles
+  - what: org.restheart.handlers.applicationlogic.CacheInvalidator
+    where: /ic
+    secured: true
+  - what: org.restheart.handlers.applicationlogic.CsvLoaderHandler
+    where: /csv
+    secured: true
 
 ### Metadata Named Singletons
 
@@ -177,10 +179,12 @@ metadata-named-singletons:
         class: org.restheart.metadata.transformers.OidsAsStringsTransformer
       - name: writeResult
         class: org.restheart.metadata.transformers.WriteResultTransformer
-          
-    # hooks group used by handler:
-    # org.restheart.handlers.metadata.HookHandler
-    # More information in hook javadoc
+      - name: hashProperties
+        class: org.restheart.metadata.transformers.HashTransformer
+
+  # hooks group used by handler:
+  # org.restheart.handlers.metadata.HookHandler
+  # More information in hook javadoc
   - group: hooks
     interface: org.restheart.metadata.hooks.Hook
     singletons:
@@ -189,9 +193,73 @@ metadata-named-singletons:
 
 ### Security
 
-# Check if aggregation variables use operators. allowing operators in aggregation variables 
-# is risky. requester can inject operators modifying the query
+# The security is configured by setting:
 
+# idm: the Identity Manager responsible of authentication
+# access-manager: the Access Manager responsible of authorization
+# auth-mechanism: the additional Authentication Mechanism to use
+# The RESTHeart security is pluggable and you can provide you own
+# implementation of both IDM and AM. the provided default
+# implementations of IDM and AM are SimpleFileIdentityManager,
+# DbIdentityManager, JwtIdentityManager and SimpleAccessManager.
+# conf-file paths are either absolute (starting with /)
+# or relative to the restheart.jar directory
+
+#idm:
+#  implementation-class: org.restheart.security.impl.SimpleFileIdentityManager
+#  conf-file: {{{idm.conf-file}}}
+#access-manager:
+#  implementation-class: org.restheart.security.impl.SimpleAccessManager
+#  conf-file: {{{access-manager.conf-file}}}
+
+# RESTHeart uses the BasicAuthenticationMechanism by default.
+# A different mechanism can be specified via the auth-mechanism configuration option
+# the implementation-class must specify a factory class implementing
+# the interface org.restheart.security.AuthenticationMechanismFactory
+# See http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#security
+# JwtAuthenticationManagerFactory and IdentityAuthenticationManagerFactory
+# for example implementations
+
+# Identity Authentication Manager
+# All requests are bound to the specified user
+
+#auth-mechanism:
+#    implementation-class: org.restheart.security.impl.IdentityAuthenticationManagerFactory
+#    username: a
+#    pwd: a
+
+# Jwt Authentication Manager
+# Authentication via Json Web Token https://jwt.io
+
+# algorithm: RSA (RS256 | RS384 |RS512) or HMAC (HS256 | HS384 | HS512)
+# key: for RSA the base64 encoded of the public key; for HMAC, the secret key
+# base64Encoded: set to true if the jwt token is base64 encoded. optional, default valud: false
+# usernameClaim: the claim that holds the username. optional, default value: 'sub' (jwt subject).
+# rolesClaim: the claim that holds the roles as string or array of strings
+# issuer: verify the issues (iss claim). optional, default value matches: null (don't check iss)
+# audience: verify the audience (aud claim). optional, default value matches: null (don't check aud)
+
+#auth-mechanism:
+#    implementation-class: org.restheart.security.impl.JwtAuthenticationManagerFactory
+#    algorithm: HS256
+#    key: secret
+#    base64Encoded: false
+#    usernameClaim: sub
+#    rolesClaim: roles
+#    issuer: myIssuer
+#    audience: myAudience
+
+# Authentication Token
+
+# Note: you need to pay attention to the authentitcation token in case of multi-node deployments (horizontal scalability).
+# In this case, you need to either disable it or use a load balancer with the sticky session option
+# or use a distributed auth token cache implementation (not provided in the current version).
+
+auth-token-enabled: false
+auth-token-ttl: 15
+
+# Check if aggregation variables use operators. allowing operators in aggregation variables
+# is risky. requester can inject operators modifying the query
 aggregation-check-operators: true
 
 #### Logging
@@ -211,7 +279,7 @@ enable-log-file: true
 log-file-path: /var/log/restheart.log
 enable-log-console: true
 log-level: {{{log-level}}}
-requests-log-level: 2
+requests-log-level: 1
 metrics-gathering-level: DATABASE
 requests-log-trace-headers:
 #  - x-b3-traceid      # vv Zipkin headers, see https://github.com/openzipkin/b3-propagation

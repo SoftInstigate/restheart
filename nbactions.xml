@@ -12,7 +12,6 @@
             <properties>
                 <exec.args>-classpath %classpath org.restheart.Bootstrapper -e etc/dev.properties etc/restheart.yml</exec.args>
                 <exec.executable>java</exec.executable>
-                
             </properties>
         </action>
         <action>

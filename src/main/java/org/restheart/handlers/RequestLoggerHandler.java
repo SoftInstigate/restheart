@@ -131,6 +131,12 @@ public class RequestLoggerHandler extends PipedHttpHandler {
             }
             for (HeaderValues header : exchange.getRequestHeaders()) {
                 header.stream().forEach((value) -> {
+                    if (header.getHeaderName() != null
+                            && "Authorization".equalsIgnoreCase(header
+                                    .getHeaderName().toString())) {
+                        value = "**********";
+                    }
+
                     sb.append("            header=").append(header.getHeaderName()).append("=").append(value).append("\n");
                 });
             }
@@ -192,17 +198,15 @@ public class RequestLoggerHandler extends PipedHttpHandler {
                         .append(" contentLength=").append(exchange1.getResponseContentLength());
 
                 if (sc != null && sc.getAuthenticatedAccount() != null) {
-                    sb.append(" username=").append(sc.getAuthenticatedAccount().getPrincipal().getName())
-                            .append(" roles=").append(sc.getAuthenticatedAccount().getRoles());
+                    sb.append(" ").append(sc.getAuthenticatedAccount().toString());
                 }
             } else {
                 sb.append("--------------------------RESPONSE--------------------------\n");
                 if (sc != null) {
                     if (sc.isAuthenticated()) {
                         sb.append("          authType=").append(sc.getMechanismName()).append("\n");
-                        sb.append("          username=").append(sc.getAuthenticatedAccount().getPrincipal().getName())
+                        sb.append("          account=").append(sc.getAuthenticatedAccount().toString())
                                 .append("\n");
-                        sb.append("             roles=").append(sc.getAuthenticatedAccount().getRoles()).append("\n");
                     } else {
                         sb.append("          authType=none" + "\n");
                     }
