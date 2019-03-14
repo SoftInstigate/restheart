@@ -199,15 +199,14 @@ public class RequestLoggerHandler extends PipedHttpHandler {
                         .append(" contentLength=").append(exchange1.getResponseContentLength());
 
                 if (sc != null && sc.getAuthenticatedAccount() != null) {
-                    sb.append(" username=").append(sc.getAuthenticatedAccount().getPrincipal().getName())
-                            .append(" roles=").append(sc.getAuthenticatedAccount().getRoles());
+                    sb.append(" ").append(sc.getAuthenticatedAccount().toString());
                 }
             } else {
                 sb.append("--------------------------RESPONSE--------------------------\n");
                 if (sc != null) {
                     if (sc.isAuthenticated()) {
                         sb.append("          authType=").append(sc.getMechanismName()).append("\n");
-                        sb.append("          user=").append(sc.getAuthenticatedAccount().toString())
+                        sb.append("          account=").append(sc.getAuthenticatedAccount().toString())
                                 .append("\n");
                     } else {
                         sb.append("          authType=none" + "\n");
