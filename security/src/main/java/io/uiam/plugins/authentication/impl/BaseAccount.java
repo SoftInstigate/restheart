@@ -67,4 +67,12 @@ public class BaseAccount implements Account {
     public Set<String> getRoles() {
         return roles;
     }
+    
+    @Override
+    public String toString() {
+        return "username="
+                .concat(principal != null ? principal.getName() : "null")
+                .concat(" roles=")
+                .concat(roles != null ? roles.toString(): "null");
+    }
 }

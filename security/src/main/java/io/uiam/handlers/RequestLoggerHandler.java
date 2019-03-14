@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import io.uiam.Bootstrapper;
 import io.uiam.Configuration;
+import static io.uiam.plugins.authentication.PluggableTokenManager.AUTH_TOKEN_HEADER;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.ExchangeCompletionListener;
 import io.undertow.server.HttpHandler;
@@ -134,6 +135,12 @@ public class RequestLoggerHandler extends PipedHttpHandler {
             }
             for (HeaderValues header : exchange.getRequestHeaders()) {
                 header.stream().forEach((value) -> {
+                    if (header.getHeaderName() != null
+                            && "Authorization".equalsIgnoreCase(header
+                                    .getHeaderName().toString())) {
+                        value = "**********";
+                    }
+
                     sb.append("            header=").append(header.getHeaderName()).append("=").append(value)
                             .append("\n");
                 });
@@ -197,17 +204,14 @@ public class RequestLoggerHandler extends PipedHttpHandler {
                                 .append(" contentLength=").append(exchange1.getResponseContentLength());
 
                         if (sc != null && sc.getAuthenticatedAccount() != null) {
-                            sb.append(" username=").append(sc.getAuthenticatedAccount().getPrincipal().getName())
-                                    .append(" roles=").append(sc.getAuthenticatedAccount().getRoles());
+                            sb.append(" ").append(sc.getAuthenticatedAccount().toString());
                         }
                     } else if (logLevel >= 2) {
                         sb.append("--------------------------RESPONSE--------------------------\n");
                         if (sc != null) {
                             if (sc.isAuthenticated()) {
                                 sb.append("          authType=").append(sc.getMechanismName()).append("\n");
-                                sb.append("          username=")
-                                        .append(sc.getAuthenticatedAccount().getPrincipal().getName()).append("\n");
-                                sb.append("             roles=").append(sc.getAuthenticatedAccount().getRoles())
+                                sb.append("          account=").append(sc.getAuthenticatedAccount().toString())
                                         .append("\n");
                             } else {
                                 sb.append("          authType=none" + "\n");
@@ -227,6 +231,13 @@ public class RequestLoggerHandler extends PipedHttpHandler {
                         }
                         for (HeaderValues header : exchange1.getResponseHeaders()) {
                             header.stream().forEach((value) -> {
+                                if (header.getHeaderName() != null
+                                        && AUTH_TOKEN_HEADER.toString().
+                                                equalsIgnoreCase(header
+                                                        .getHeaderName().toString())) {
+                                    value = "**********";
+                                }
+
                                 sb.append("            header=").append(header.getHeaderName()).append("=")
                                         .append(value).append("\n");
                             });
