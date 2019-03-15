@@ -193,16 +193,16 @@ public class Bootstrapper {
                 p.load(reader);
             }
             MustacheFactory mf = new DefaultMustacheFactory();
-            
+
             Mustache m;
-            
+
             try {
                 m = mf.compile(CONF_FILE_PATH.toString());
-            } catch(MustacheNotFoundException ex) {
+            } catch (MustacheNotFoundException ex) {
                 logErrorAndExit("Configuration file not found " + CONF_FILE_PATH, null, false, -1);
                 m = null;
             }
-            
+
             StringWriter writer = new StringWriter();
             m.execute(writer, p);
             writer.flush();
@@ -1007,8 +1007,8 @@ public class Bootstrapper {
                                         new RequestLoggerHandler(
                                                 new CORSHandler(
                                                         handler))));
-                        LOGGER.info("URL {} bound to application logic handler {}."
-                                + "/_logic" + alWhere, alClazz);
+                        LOGGER.info("URL {} bound to application logic handler {}.",
+                                "/_logic".concat(alWhere), alClazz);
                     } else {
                         LOGGER.error("Cannot pipe application logic handler {}."
                                 + " Class {} does not extend ApplicationLogicHandler",
