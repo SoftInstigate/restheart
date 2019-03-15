@@ -46,6 +46,7 @@ import org.bson.BsonTimestamp;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
+import org.restheart.db.sessions.XClientSession;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -96,15 +97,7 @@ public class DAOUtils {
 
     /**
      *
-     * @param newContent the value of newContent
-     * @return a not null BsonDocument
-     */
-    protected static BsonDocument validContent(final BsonDocument newContent) {
-        return (newContent == null) ? new BsonDocument() : newContent;
-    }
-
-    /**
-     *
+     * @param cs the client session
      * @param coll
      * @param documentId use Optional.empty() to specify no documentId (null is
      * _id: null)
@@ -116,13 +109,15 @@ public class DAOUtils {
      * @return the old document
      */
     public static OperationResult updateMetadata(
-            MongoCollection<BsonDocument> coll,
-            Object documentId,
-            BsonDocument filter,
-            BsonDocument shardKeys,
-            BsonDocument data,
-            boolean patching) {
+            final XClientSession cs,
+            final MongoCollection<BsonDocument> coll,
+            final Object documentId,
+            final BsonDocument filter,
+            final BsonDocument shardKeys,
+            final BsonDocument data,
+            final boolean patching) {
         return updateDocument(
+                cs,
                 coll,
                 documentId,
                 filter,
@@ -135,6 +130,7 @@ public class DAOUtils {
 
     /**
      *
+     * @param cs the client session
      * @param coll
      * @param documentId use Optional.empty() to specify no documentId (null is
      * _id: null)
@@ -145,13 +141,15 @@ public class DAOUtils {
      * @return the old document
      */
     public static OperationResult updateDocument(
-            MongoCollection<BsonDocument> coll,
-            Object documentId,
-            BsonDocument filter,
-            BsonDocument shardKeys,
-            BsonDocument data,
-            boolean replace) {
+            final XClientSession cs,
+            final MongoCollection<BsonDocument> coll,
+            final Object documentId,
+            final BsonDocument filter,
+            final BsonDocument shardKeys,
+            final BsonDocument data,
+            final boolean replace) {
         return updateDocument(
+                cs,
                 coll,
                 documentId,
                 filter,
@@ -167,6 +165,7 @@ public class DAOUtils {
      * <strong>TODO</strong> - Think about changing the numerous arguments into
      * a context
      *
+     * @param cs the client session
      * @param coll
      * @param documentId use Optional.empty() to specify no documentId (null is
      * _id: null)
@@ -181,14 +180,15 @@ public class DAOUtils {
      */
     @SuppressWarnings("rawtypes")
     public static OperationResult updateDocument(
-            MongoCollection<BsonDocument> coll,
-            Object documentId,
-            BsonDocument filter,
-            BsonDocument shardKeys,
-            BsonDocument data,
-            boolean replace,
-            boolean deepPatching,
-            boolean allowUpsert) {
+            final XClientSession cs,
+            final MongoCollection<BsonDocument> coll,
+            final Object documentId,
+            final BsonDocument filter,
+            final BsonDocument shardKeys,
+            final BsonDocument data,
+            final boolean replace,
+            final boolean deepPatching,
+            final boolean allowUpsert) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(data);
 
@@ -215,7 +215,9 @@ public class DAOUtils {
         BsonDocument oldDocument;
 
         if (idPresent) {
-            oldDocument = coll.find(query).first();
+            oldDocument = cs == null
+                    ? coll.find(query).first()
+                    : coll.find(cs, query).first();
 
             if (!allowUpsert && oldDocument == null) {
                 return new OperationResult(HttpStatus.SC_NOT_FOUND);
@@ -228,9 +230,13 @@ public class DAOUtils {
             BsonDocument newDocument;
 
             try {
-                newDocument = coll.findOneAndReplace(query,
-                        getReplaceDocument(data),
-                        allowUpsert ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS);
+                newDocument = cs == null
+                        ? coll.findOneAndReplace(query,
+                                getReplaceDocument(data),
+                                allowUpsert ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS)
+                        : coll.findOneAndReplace(cs, query,
+                                getReplaceDocument(data),
+                                allowUpsert ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS);
             } catch (IllegalArgumentException iae) {
                 return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, null);
             } catch (MongoCommandException mce) {
@@ -266,9 +272,13 @@ public class DAOUtils {
             BsonDocument newDocument;
 
             try {
-                newDocument = coll.findOneAndUpdate(query,
-                        getUpdateDocument(data, deepPatching),
-                        allowUpsert ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS);
+                newDocument = cs == null
+                        ? coll.findOneAndUpdate(query,
+                                getUpdateDocument(data, deepPatching),
+                                allowUpsert ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS)
+                        : coll.findOneAndUpdate(cs, query,
+                                getUpdateDocument(data, deepPatching),
+                                allowUpsert ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS);
             } catch (MongoCommandException mce) {
                 if (mce.getErrorCode() == DUPLICATE_KEY_ERROR) {
                     if (allowUpsert
@@ -296,13 +306,25 @@ public class DAOUtils {
         }
     }
 
+    /**
+     * 
+     * @param cs the client session
+     * @param coll
+     * @param documentId
+     * @param shardKeys
+     * @param data
+     * @param etag
+     * @param etagLocation
+     * @return 
+     */
     public static boolean restoreDocument(
-            MongoCollection<BsonDocument> coll,
-            Object documentId,
-            BsonDocument shardKeys,
-            BsonDocument data,
-            Object etag,
-            String etagLocation) {
+            final XClientSession cs,
+            final MongoCollection<BsonDocument> coll,
+            final Object documentId,
+            final BsonDocument shardKeys,
+            final BsonDocument data,
+            final Object etag,
+            final String etagLocation) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(documentId);
         Objects.requireNonNull(data);
@@ -321,7 +343,9 @@ public class DAOUtils {
             query = and(query, shardKeys);
         }
 
-        UpdateResult result = coll.replaceOne(query, data, R_NOT_UPSERT_OPS);
+        UpdateResult result = cs == null
+                ? coll.replaceOne(query, data, R_NOT_UPSERT_OPS)
+                : coll.replaceOne(cs, query, data, R_NOT_UPSERT_OPS);
 
         if (result.isModifiedCountAvailable()) {
             return result.getModifiedCount() == 1;
@@ -330,7 +354,17 @@ public class DAOUtils {
         }
     }
 
+    /**
+     * 
+     * @param cs the client session
+     * @param coll
+     * @param documents
+     * @param filter
+     * @param shardKeys
+     * @return 
+     */
     public static BulkOperationResult bulkUpsertDocuments(
+            final XClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final BsonArray documents,
             final BsonDocument filter,
@@ -347,12 +381,32 @@ public class DAOUtils {
                 shardKeys,
                 newEtag);
 
-        BulkWriteResult result = coll.bulkWrite(wm, BWO_NOT_ORDERED);
+        BulkWriteResult result = cs == null
+                ? coll.bulkWrite(wm, BWO_NOT_ORDERED)
+                : coll.bulkWrite(cs, wm, BWO_NOT_ORDERED);
 
         return new BulkOperationResult(HttpStatus.SC_OK, newEtag, result);
     }
 
-    private static List<WriteModel<BsonDocument>> getBulkWriteModel(
+    /**
+     *
+     * @param newContent the value of newContent
+     * @return a not null BsonDocument
+     */
+    static BsonDocument validContent(final BsonDocument newContent) {
+        return (newContent == null) ? new BsonDocument() : newContent;
+    }
+
+    /**
+     * 
+     * @param mcoll
+     * @param documents
+     * @param filter
+     * @param shardKeys
+     * @param etag
+     * @return 
+     */
+    static List<WriteModel<BsonDocument>> getBulkWriteModel(
             final MongoCollection<BsonDocument> mcoll,
             final BsonArray documents,
             final BsonDocument filter,
@@ -401,7 +455,7 @@ public class DAOUtils {
      * @param data
      * @return the document for update operation, with proper update operators
      */
-    public static BsonDocument getUpdateDocument(BsonDocument data) {
+    static BsonDocument getUpdateDocument(final BsonDocument data) {
         return getUpdateDocument(data, false);
     }
 
@@ -411,7 +465,7 @@ public class DAOUtils {
      * @return the document for replace operation, without dot notation and
      * replacing $currentDate operator
      */
-    public static BsonDocument getReplaceDocument(final BsonDocument doc) {
+    static BsonDocument getReplaceDocument(final BsonDocument doc) {
         if (JsonUtils.containsUpdateOperators(doc, false)) {
             BsonDocument ret = new BsonDocument();
             ret.putAll(doc);
@@ -465,7 +519,9 @@ public class DAOUtils {
      * notation
      * @return the document for update operation, with proper update operators
      */
-    public static BsonDocument getUpdateDocument(BsonDocument data, boolean flatten) {
+    static BsonDocument getUpdateDocument(
+            final BsonDocument data,
+            final boolean flatten) {
         BsonDocument ret = new BsonDocument();
 
         // add other update operators

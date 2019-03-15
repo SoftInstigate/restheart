@@ -137,7 +137,9 @@ public class PutIndexHandler extends PipedHttpHandler {
         ops.put("name", new BsonString(id));
 
         try {
-            getDatabase().createIndex(db, co, keys, ops);
+            getDatabase().createIndex(
+                    context.getClientSession(),
+                    db, co, keys, ops);
         } catch (Throwable t) {
             ResponseHelper.endExchangeWithMessage(
                     exchange, 

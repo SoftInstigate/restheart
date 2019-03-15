@@ -82,7 +82,9 @@ public class AfterWriteCheckHandler
 
             if (oldData != null) {
                 // document was updated, restore old one
-                DAOUtils.restoreDocument(coll,
+                DAOUtils.restoreDocument(
+                        context.getClientSession(),
+                        coll,
                         oldData.get("_id"),
                         context.getShardKey(),
                         oldData,

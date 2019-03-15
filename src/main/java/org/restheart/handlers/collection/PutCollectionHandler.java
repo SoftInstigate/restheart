@@ -26,10 +26,6 @@ import org.restheart.db.OperationResult;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
-import org.restheart.handlers.metadata.InvalidMetadataException;
-import org.restheart.metadata.Relationship;
-import org.restheart.metadata.checkers.RequestChecker;
-import org.restheart.metadata.transformers.RequestTransformer;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -106,6 +102,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
         boolean updating = context.getCollectionProps() != null;
 
         OperationResult result = getDatabase().upsertCollection(
+                context.getClientSession(),
                 context.getDBName(),
                 context.getCollectionName(),
                 content,

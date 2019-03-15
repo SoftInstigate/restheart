@@ -127,6 +127,7 @@ public class FileMetadataHandler extends PipedHttpHandler {
         }
 
         OperationResult result = fileMetadataDAO.updateMetadata(
+                context.getClientSession(),
                 context.getDBName(),
                 context.getCollectionName(),
                 context.getDocumentId(),

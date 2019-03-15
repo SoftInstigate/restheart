@@ -69,6 +69,7 @@ public class BulkPatchDocumentsHandler extends PipedHttpHandler {
         
         BulkOperationResult result = this.documentDAO
                 .bulkPatchDocuments(
+                        context.getClientSession(),
                         context.getDBName(), 
                         context.getCollectionName(), 
                         context.getFiltersDocument(),

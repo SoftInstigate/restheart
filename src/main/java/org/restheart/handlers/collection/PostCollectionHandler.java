@@ -128,7 +128,9 @@ public class PostCollectionHandler extends PipedHttpHandler {
         }
 
         OperationResult result = this.documentDAO
-                .upsertDocumentPost(context.getDBName(),
+                .upsertDocumentPost(
+                        context.getClientSession(),
+                        context.getDBName(),
                         context.getCollectionName(),
                         context.getFiltersDocument(),
                         context.getShardKey(),

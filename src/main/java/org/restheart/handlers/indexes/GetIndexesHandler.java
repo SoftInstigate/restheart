@@ -65,6 +65,7 @@ public class GetIndexesHandler extends PipedHttpHandler {
         
         List<BsonDocument> indexes = getDatabase()
                 .getCollectionIndexes(
+                        context.getClientSession(),
                         context.getDBName(),
                         context.getCollectionName());
 

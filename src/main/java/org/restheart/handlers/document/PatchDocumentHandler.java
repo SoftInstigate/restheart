@@ -96,6 +96,7 @@ public class PatchDocumentHandler extends PipedHttpHandler {
         }
 
         OperationResult result = documentDAO.upsertDocument(
+                context.getClientSession(),
                 context.getDBName(),
                 context.getCollectionName(),
                 context.getDocumentId(),

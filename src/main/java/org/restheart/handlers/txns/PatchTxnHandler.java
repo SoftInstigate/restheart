@@ -136,7 +136,7 @@ public class PatchTxnHandler extends PipedHttpHandler {
 
     public static BsonDocument endSession(String sid) {
         // { killSessions: [ { id : <UUID> }, ... ] } )
-
+        
         var sids = new BsonArray();
         
         sids.add(new BsonDocument("id", createServerSessionIdentifier(sid)));

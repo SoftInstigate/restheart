@@ -84,7 +84,9 @@ public class LocalCachesSingleton {
         if (enabled) {
             this.dbPropsCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl,
                     (String key) -> {
-                        return this.dbsDAO.getDatabaseProperties(key);
+                        return this.dbsDAO.getDatabaseProperties(
+                                null, // no client session 
+                                key);
                     });
 
             this.collectionPropsCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl,
@@ -92,6 +94,7 @@ public class LocalCachesSingleton {
                         String[] dbNameAndCollectionName = key.split(SEPARATOR);
                         return this.dbsDAO
                                 .getCollectionProperties(
+                                        null, // no client session 
                                         dbNameAndCollectionName[0],
                                         dbNameAndCollectionName[1]);
                     });

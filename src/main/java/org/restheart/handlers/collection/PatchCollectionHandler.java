@@ -126,6 +126,7 @@ public class PatchCollectionHandler extends PipedHttpHandler {
 
         OperationResult result = getDatabase()
                 .upsertCollection(
+                        context.getClientSession(),
                         context.getDBName(),
                         context.getCollectionName(),
                         content,

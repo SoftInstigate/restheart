@@ -404,22 +404,22 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
     }
 
     private void createTestData() {
-        dbsDAO.upsertDB(dbName, dbProps, new ObjectId().toString(), false, false, false);
+        dbsDAO.upsertDB(null, dbName, dbProps, new ObjectId().toString(), false, false, false);
 
-        dbsDAO.upsertCollection(dbName, collection1Name, coll1Props, new ObjectId().toString(), false, false, false);
-        dbsDAO.upsertCollection(dbName, collection2Name, coll2Props, new ObjectId().toString(), false, false, false);
-        dbsDAO.upsertCollection(dbName, docsCollectionName, docsCollectionProps, new ObjectId().toString(), false, false, false);
+        dbsDAO.upsertCollection(null, dbName, collection1Name, coll1Props, new ObjectId().toString(), false, false, false);
+        dbsDAO.upsertCollection(null, dbName, collection2Name, coll2Props, new ObjectId().toString(), false, false, false);
+        dbsDAO.upsertCollection(null, dbName, docsCollectionName, docsCollectionProps, new ObjectId().toString(), false, false, false);
 
         for (String index : docsCollectionIndexesStrings) {
-            dbsDAO.createIndex(dbName, docsCollectionName, BsonDocument.parse(index), null);
+            dbsDAO.createIndex(null, dbName, docsCollectionName, BsonDocument.parse(index), null);
         }
 
         final DocumentDAO documentDAO = new DocumentDAO();
-        documentDAO.upsertDocument(dbName, collection1Name, document1Id, null, null, document1Props, new ObjectId().toString(), false, false);
-        documentDAO.upsertDocument(dbName, collection2Name, document2Id, null, null, document2Props, new ObjectId().toString(), false, false);
+        documentDAO.upsertDocument(null, dbName, collection1Name, document1Id, null, null, document1Props, new ObjectId().toString(), false, false);
+        documentDAO.upsertDocument(null, dbName, collection2Name, document2Id, null, null, document2Props, new ObjectId().toString(), false, false);
 
         for (String doc : docsPropsStrings) {
-            documentDAO.upsertDocument(dbName, docsCollectionName, new ObjectId().toString(), null, null, BsonDocument.parse(doc), new ObjectId().toString(), false, false);
+            documentDAO.upsertDocument(null, dbName, docsCollectionName, new ObjectId().toString(), null, null, BsonDocument.parse(doc), new ObjectId().toString(), false, false);
         }
         LOG.debug("test data created");
     }

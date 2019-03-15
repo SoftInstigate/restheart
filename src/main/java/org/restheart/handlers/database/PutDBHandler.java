@@ -118,6 +118,7 @@ public class PutDBHandler extends PipedHttpHandler {
         boolean updating = context.getDbProps() != null;
 
         OperationResult result = getDatabase().upsertDB(
+                context.getClientSession(),
                 context.getDBName(),
                 content,
                 context.getETag(),

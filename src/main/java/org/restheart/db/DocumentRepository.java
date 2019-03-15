@@ -20,31 +20,147 @@ package org.restheart.db;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.Document;
+import org.restheart.db.sessions.XClientSession;
 
 /**
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public interface DocumentRepository {
+    /**
+     * 
+     * @param cs the client session
+     * @param dbName
+     * @param collName
+     * @param documentId
+     * @param filter
+     * @param shardedKeys
+     * @param content
+     * @param requestEtag
+     * @param patching
+     * @param checkEtag
+     * @return 
+     */
+    OperationResult upsertDocument(
+            final XClientSession cs,
+            final String dbName, 
+            final String collName, 
+            final Object documentId, 
+            final BsonDocument filter, 
+            final BsonDocument shardedKeys, 
+            final BsonDocument content, 
+            final String requestEtag, 
+            boolean patching, 
+            final boolean checkEtag);
 
-    OperationResult upsertDocument(final String dbName, final String collName, final Object documentId, final BsonDocument filter, final BsonDocument shardedKeys, final BsonDocument content, final String requestEtag, boolean patching, final boolean checkEtag);
+    /**
+     * 
+     * @param cs the client session
+     * @param dbName
+     * @param collName
+     * @param filter
+     * @param shardedKeys
+     * @param content
+     * @param requestEtag
+     * @param checkEtag
+     * @return 
+     */
+    OperationResult upsertDocumentPost(
+            final XClientSession cs,
+            final String dbName, 
+            final String collName, 
+            final BsonDocument filter,
+            final BsonDocument shardedKeys, 
+            final BsonDocument content, 
+            final String requestEtag, 
+            final boolean checkEtag);
 
-    OperationResult upsertDocumentPost(final String dbName, final String collName, final BsonDocument filter, final BsonDocument shardedKeys, final BsonDocument content, final String requestEtag, final boolean checkEtag);
+    /**
+     * 
+     * @param cs the client session
+     * @param dbName
+     * @param collName
+     * @param documentId
+     * @param filter
+     * @param shardedKeys
+     * @param requestEtag
+     * @param checkEtag
+     * @return 
+     */
+    OperationResult deleteDocument(
+            final XClientSession cs,
+            final String dbName, 
+            final String collName, 
+            final Object documentId, 
+            final BsonDocument filter, 
+            final BsonDocument shardedKeys,
+            final String requestEtag, 
+            final boolean checkEtag);
+    
+    /**
+     * 
+     * @param cs the client session
+     * @param dbName
+     * @param collName
+     * @param documents
+     * @param filter
+     * @param shardKeys
+     * @return 
+     */
+    BulkOperationResult bulkUpsertDocumentsPost(
+            final XClientSession cs,
+            final String dbName, 
+            final String collName,
+            final BsonArray documents,
+            final BsonDocument filter, 
+            final BsonDocument shardKeys);
 
-    OperationResult deleteDocument(final String dbName, String collName, Object documentId, final BsonDocument filter, final BsonDocument shardedKeys, final String requestEtag, final boolean checkEtag);
+    /**
+     * 
+     * @param cs the client session
+     * @param dbName
+     * @param collName
+     * @param filter
+     * @param shardKeys
+     * @param data
+     * @return 
+     */
+    BulkOperationResult bulkPatchDocuments(
+            final XClientSession cs,
+            final String dbName, 
+            final String collName, 
+            final BsonDocument filter, 
+            final BsonDocument shardKeys, 
+            final BsonDocument data);
 
-    BulkOperationResult bulkUpsertDocumentsPost(final String dbName, final String collName, final BsonArray documents, final BsonDocument filter, final BsonDocument shardKeys);
-
-    BulkOperationResult bulkPatchDocuments(final String dbName, final String collName, final BsonDocument filter, final BsonDocument shardKeys, final BsonDocument data);
-
-    BulkOperationResult bulkDeleteDocuments(final String dbName, final String collName, final BsonDocument filter, final BsonDocument shardKeys);
+    /**
+     * 
+     * @param cs the client session
+     * @param dbName
+     * @param collName
+     * @param filter
+     * @param shardKeys
+     * @return 
+     */
+    BulkOperationResult bulkDeleteDocuments(
+            final XClientSession cs,
+            final String dbName, 
+            final String collName, 
+            final BsonDocument filter, 
+            final BsonDocument shardKeys);
 
     /**
      * returns the ETag of the document
+     * 
+     * @param cs the client session
      * @param dbName
      * @param collName
      * @param documentId
      * @return Document containing _etag property
      */
-    Document getDocumentEtag(String dbName, String collName, Object documentId);
+    Document getDocumentEtag(
+            final XClientSession cs,
+            final String dbName, 
+            final String collName, 
+            final Object documentId);
 }

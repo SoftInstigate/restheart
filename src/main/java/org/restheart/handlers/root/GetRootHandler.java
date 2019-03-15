@@ -65,7 +65,7 @@ public class GetRootHandler extends PipedHttpHandler {
         List<BsonDocument> data = new ArrayList<>();
 
         if (context.getPagesize() >= 0) {
-            List<String> _dbs = getDatabase().getDatabaseNames();
+            List<String> _dbs = getDatabase().getDatabaseNames(context.getClientSession());
 
             // filter out reserved resources
             List<String> dbs = _dbs.stream()
@@ -91,7 +91,9 @@ public class GetRootHandler extends PipedHttpHandler {
                                 .getDBProperties(db);
                     } else {
                         return getDatabase()
-                                .getDatabaseProperties(db);
+                                .getDatabaseProperties(
+                                        context.getClientSession(), 
+                                        db);
                     }
                 }
                 ).forEach((item) -> {

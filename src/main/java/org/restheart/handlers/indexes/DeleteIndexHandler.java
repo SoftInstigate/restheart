@@ -73,7 +73,12 @@ public class DeleteIndexHandler extends PipedHttpHandler {
             return;
         }
 
-        int httpCode = getDatabase().deleteIndex(dbName, collectionName, indexId);
+        int httpCode = getDatabase().deleteIndex(
+                context.getClientSession(),
+                dbName, 
+                collectionName, 
+                indexId);
+        
         context.setResponseStatusCode(httpCode);
         
         next(exchange, context);

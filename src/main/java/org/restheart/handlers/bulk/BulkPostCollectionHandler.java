@@ -100,7 +100,9 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
         }
 
         BulkOperationResult result = this.documentDAO
-                .bulkUpsertDocumentsPost(context.getDBName(),
+                .bulkUpsertDocumentsPost(
+                        context.getClientSession(),
+                        context.getDBName(),
                         context.getCollectionName(),
                         documents,
                         context.getFiltersDocument(),

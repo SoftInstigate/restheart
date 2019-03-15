@@ -74,6 +74,7 @@ public class BulkDeleteDocumentsHandler extends PipedHttpHandler {
         
         BulkOperationResult result = this.documentDAO
                 .bulkDeleteDocuments(
+                        context.getClientSession(),
                         context.getDBName(),
                         context.getCollectionName(),
                         context.getFiltersDocument(),

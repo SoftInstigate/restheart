@@ -29,6 +29,7 @@ import org.bson.BsonInt32;
 import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.restheart.db.sessions.XClientSession;
 import static org.restheart.handlers.RequestContext.DB_META_DOCID;
 import org.restheart.utils.HttpStatus;
 
@@ -56,17 +57,24 @@ class IndexDAO {
 
     /**
      *
+     * @param cs the client session
      * @param dbName
      * @param collName
      * @return
      */
-    List<BsonDocument> getCollectionIndexes(String dbName, String collName) {
+    List<BsonDocument> getCollectionIndexes(
+            final XClientSession cs,
+            final String dbName,
+            final String collName) {
         List<BsonDocument> ret = new ArrayList<>();
 
-        ListIndexesIterable<Document> indexes = client
-                .getDatabase(dbName)
-                .getCollection(collName, BsonDocument.class)
-                .listIndexes();
+        ListIndexesIterable<Document> indexes = cs == null
+                ? client.getDatabase(dbName)
+                        .getCollection(collName, BsonDocument.class)
+                        .listIndexes()
+                : client.getDatabase(dbName)
+                        .getCollection(collName, BsonDocument.class)
+                        .listIndexes(cs);
 
         indexes.iterator().forEachRemaining(
                 i -> {
@@ -83,49 +91,68 @@ class IndexDAO {
 
     /**
      *
+     * @param cs the client session
      * @param dbName
      * @param collection
      * @param keys
      * @param options
      */
     void createIndex(
-            String dbName,
-            String collection,
-            BsonDocument keys,
-            BsonDocument options) {
+            final XClientSession cs,
+            final String dbName,
+            final String collection,
+            final BsonDocument keys,
+            final BsonDocument options) {
         if (options == null) {
-            client
-                    .getDatabase(dbName)
-                    .getCollection(collection)
-                    .createIndex(keys);
+            if (cs == null) {
+                client.getDatabase(dbName)
+                        .getCollection(collection)
+                        .createIndex(keys);
+            } else {
+                client.getDatabase(dbName)
+                        .getCollection(collection)
+                        .createIndex(cs, keys);
+            }
         } else {
-            client
-                    .getDatabase(dbName)
-                    .getCollection(collection)
-                    .createIndex(keys, getIndexOptions(options));
+            if (cs == null) {
+                client.getDatabase(dbName)
+                        .getCollection(collection)
+                        .createIndex(keys, getIndexOptions(options));
+            } else {
+                client.getDatabase(dbName)
+                        .getCollection(collection)
+                        .createIndex(cs, keys, getIndexOptions(options));
+            }
         }
     }
 
     /**
      *
+     * @param cs the client session
      * @param db
      * @param collection
      * @param indexId
      * @return
      */
     int deleteIndex(
-            String dbName,
-            String collection,
-            String indexId) {
-        client
-                .getDatabase(dbName)
-                .getCollection(collection)
-                .dropIndex(indexId);
+            final XClientSession cs,
+            final String dbName,
+            final String collection,
+            final String indexId) {
+        if (cs == null) {
+            client.getDatabase(dbName)
+                    .getCollection(collection)
+                    .dropIndex(indexId);
+        } else {
+            client.getDatabase(dbName)
+                    .getCollection(collection)
+                    .dropIndex(cs, indexId);
+        }
 
         return HttpStatus.SC_NO_CONTENT;
     }
 
-    IndexOptions getIndexOptions(BsonDocument options) {
+    IndexOptions getIndexOptions(final BsonDocument options) {
         IndexOptions ret = new IndexOptions();
 
         //***Options for All Index Types

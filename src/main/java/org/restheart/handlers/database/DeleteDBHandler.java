@@ -63,7 +63,11 @@ public class DeleteDBHandler extends PipedHttpHandler {
         
         String etag = context.getETag();
 
-        OperationResult result = getDatabase().deleteDatabase(context.getDBName(), etag, context.isETagCheckRequired());
+        OperationResult result = getDatabase().deleteDatabase(
+                context.getClientSession(),
+                context.getDBName(), 
+                etag, 
+                context.isETagCheckRequired());
 
         context.setDbOperationResult(result);
 
