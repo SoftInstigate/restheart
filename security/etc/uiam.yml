@@ -32,6 +32,7 @@ instance-name: develop
 
  # internal-uri (required) The URI where the proxied resource must be bound.
  # external-url (required) The URL of the resource to proxy. It can be an array of URLs for load balancing.
+ # rewrite-host-header (optional, default true) should the HOST header be rewritten to use the target host of the call.
  # connections-per-thread (optional, default 10) Controls the number of connections to create per thread.
  # soft-max-connections-per-thread (optional, default 5) Controls the number of connections to create per thread.
  # max-queue-size (optional, default 0) Controls the number of connections to create per thread.
@@ -42,6 +43,7 @@ proxies:
       external-url: 
         - http://127.0.0.1:8080/echo
         - http://localhost:8080/echo
+      rewrite-host-header: true
       connections-per-thread: 20
 
 #### SSL Configuration

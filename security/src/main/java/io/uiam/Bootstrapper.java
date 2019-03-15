@@ -999,6 +999,9 @@ public class Bootstrapper {
 
             Integer ttl = Configuration.getOrDefault(m,
                     Configuration.PROXY_TTL, -1, true);
+            
+            boolean rewriteHostHeader = Configuration.getOrDefault(m,
+                    Configuration.PROXY_REWRITE_HOST_HEADER, true, true);
 
             // Time in seconds between retries for problem server
             Integer problemServerRetry = Configuration.getOrDefault(m,
@@ -1050,7 +1053,7 @@ public class Bootstrapper {
                 }
 
                 ProxyHandler proxyHandler = ProxyHandler.builder()
-                        .setRewriteHostHeader(true)
+                        .setRewriteHostHeader(rewriteHostHeader)
                         .setProxyClient(proxyClient)
                         .build();
 

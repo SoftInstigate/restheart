@@ -206,6 +206,11 @@ public class Configuration {
      * the key for the external-url property.
      */
     public static final String PROXY_URL_KEY = "external-url";
+    
+    /**
+     * the key for the rewrite-host-header.
+     */
+    public static final String PROXY_REWRITE_HOST_HEADER = "rewrite-host-header";
 
     /**
      * the key for the connections-per-thread property.
