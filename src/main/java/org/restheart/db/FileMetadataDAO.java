@@ -27,6 +27,7 @@ import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
+import org.restheart.db.sessions.XClientSession;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -43,8 +44,23 @@ public class FileMetadataDAO implements FileMetadataRepository {
         client = MongoDBClientSingleton.getInstance().getClient();
     }
 
+    /**
+     *
+     * @param cs the client session
+     * @param dbName
+     * @param collName
+     * @param documentId
+     * @param filter
+     * @param shardKeys
+     * @param newContent
+     * @param requestEtag
+     * @param patching
+     * @param checkEtag
+     * @return
+     */
     @Override
     public OperationResult updateMetadata(
+            final XClientSession cs,
             final String dbName,
             final String collName,
             final Object documentId,
@@ -55,15 +71,18 @@ public class FileMetadataDAO implements FileMetadataRepository {
             final boolean patching,
             final boolean checkEtag) {
         MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<BsonDocument> mcoll = mdb.getCollection(collName, BsonDocument.class);
+        MongoCollection<BsonDocument> mcoll = mdb
+                .getCollection(collName, BsonDocument.class);
 
         // genereate new etag
         ObjectId newEtag = new ObjectId();
 
         final BsonDocument content = DAOUtils.validContent(newContent);
-        content.get("metadata", new BsonDocument()).asDocument().put("_etag", new BsonObjectId(newEtag));
+        content.get("metadata", new BsonDocument()).asDocument()
+                .put("_etag", new BsonObjectId(newEtag));
 
         OperationResult updateResult = DAOUtils.updateMetadata(
+                cs,
                 mcoll,
                 documentId,
                 filter,
@@ -82,6 +101,7 @@ public class FileMetadataDAO implements FileMetadataRepository {
             } else if (checkEtag) {
                 // check the old etag (in case restore the old document version)
                 return optimisticCheckEtag(
+                        cs,
                         mcoll,
                         shardKeys,
                         oldDocument,
@@ -89,8 +109,11 @@ public class FileMetadataDAO implements FileMetadataRepository {
                         requestEtag,
                         HttpStatus.SC_OK);
             } else {
-                BsonDocument newDocument = mcoll.find(
-                        eq("_id", documentId)).first();
+                var query = eq("_id", documentId);
+
+                BsonDocument newDocument = cs == null
+                        ? mcoll.find(query).first()
+                        : mcoll.find(cs, query).first();
 
                 return new OperationResult(updateResult.getHttpCode() > 0
                         ? updateResult.getHttpCode()
@@ -99,6 +122,7 @@ public class FileMetadataDAO implements FileMetadataRepository {
         } else if (oldDocument != null && checkEtag) { // update
             // check the old etag (in case restore the old document)
             return optimisticCheckEtag(
+                    cs,
                     mcoll,
                     shardKeys,
                     oldDocument,
@@ -106,8 +130,10 @@ public class FileMetadataDAO implements FileMetadataRepository {
                     requestEtag,
                     HttpStatus.SC_OK);
         } else if (oldDocument != null) {  // update
-            BsonDocument newDocument = mcoll.find(
-                    eq("_id", documentId)).first();
+            var query = eq("_id", documentId);
+            BsonDocument newDocument = cs == null
+                    ? mcoll.find(query).first()
+                    : mcoll.find(cs, query).first();
 
             return new OperationResult(
                     updateResult.getHttpCode() > 0
@@ -122,6 +148,7 @@ public class FileMetadataDAO implements FileMetadataRepository {
     }
 
     private OperationResult optimisticCheckEtag(
+            final XClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final BsonDocument shardKeys,
             final BsonDocument oldDocument,
@@ -129,11 +156,13 @@ public class FileMetadataDAO implements FileMetadataRepository {
             final String requestEtag,
             final int httpStatusIfOk) {
 
-        BsonValue oldEtag = oldDocument.get("metadata", new BsonDocument()).asDocument().get("_etag");
+        BsonValue oldEtag = oldDocument.get("metadata", new BsonDocument())
+                .asDocument().get("_etag");
 
         if (oldEtag != null && requestEtag == null) {
             // oops, we need to restore old document
             DAOUtils.restoreDocument(
+                    cs,
                     coll,
                     oldDocument.get("_id"),
                     shardKeys,
@@ -156,14 +185,17 @@ public class FileMetadataDAO implements FileMetadataRepository {
         }
 
         if (Objects.equals(_requestEtag, oldEtag)) {
-            BsonDocument newDocument = coll.find(
-                    eq("_id", oldDocument.get("_id"))).first();
+            var query = eq("_id", oldDocument.get("_id"));
+            BsonDocument newDocument = cs == null
+                    ? coll.find(query).first()
+                    : coll.find(cs, query).first();
 
             return new OperationResult(
                     httpStatusIfOk, newEtag, oldDocument, newDocument);
         } else {
             // oops, we need to restore old document
             DAOUtils.restoreDocument(
+                    cs,
                     coll,
                     oldDocument.get("_id"),
                     shardKeys,

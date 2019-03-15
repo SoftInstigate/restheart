@@ -82,7 +82,10 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
 
             if (!LocalCachesSingleton.isEnabled()) {
                 collProps = getDatabase().
-                        getCollectionProperties(dbName, collName);
+                        getCollectionProperties(
+                                context.getClientSession(),
+                                dbName, 
+                                collName);
             } else {
                 collProps = LocalCachesSingleton.getInstance()
                         .getCollectionProperties(dbName, collName);

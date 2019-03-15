@@ -66,7 +66,8 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
             BsonDocument dbProps;
 
             if (!LocalCachesSingleton.isEnabled()) {
-                dbProps = getDatabase().getDatabaseProperties(dbName);
+                dbProps = getDatabase().getDatabaseProperties(
+                        context.getClientSession(), dbName);
             } else {
                 dbProps = LocalCachesSingleton.getInstance().getDBProperties(dbName);
             }

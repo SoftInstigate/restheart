@@ -25,7 +25,6 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
-import io.undertow.server.session.Session;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -115,18 +114,23 @@ class CollectionDAO {
      * '_properties'). This method returns true even if the collection contains
      * such document.
      *
+     * @param cs the session id, can be null
      * @param coll the mongodb DBCollection object
      * @return true if the commection is empty
      */
-    public boolean isCollectionEmpty(final MongoCollection<BsonDocument> coll) {
-        return coll.countDocuments() == 0;
+    public boolean isCollectionEmpty(
+            final XClientSession cs,
+            final MongoCollection<BsonDocument> coll) {
+        return cs == null
+                ? coll.countDocuments() == 0
+                : coll.countDocuments(cs) == 0;
     }
 
     /**
      * Returns the number of documents in the given collection (taking into
      * account the filters in case).
      *
-     * @param cd the session id, can be null
+     * @param cs the session id, can be null
      * @param coll the mongodb DBCollection object.
      * @param filters the filters to apply. it is a Deque collection of mongodb
      * query conditions.
@@ -134,21 +138,19 @@ class CollectionDAO {
      * account the filters in case)
      */
     public long getCollectionSize(
-            final XClientSession sid,
+            final XClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final BsonDocument filters) {
-        if (sid == null) {
-            return coll.countDocuments(filters);
-        } else {
-            return coll.countDocuments(sid, filters);
-        }
+        return cs == null
+                ? coll.countDocuments(filters)
+                : coll.countDocuments(cs, filters);
     }
 
     /**
      * Returs the FindIterable<BsonDocument> of the collection applying sorting,
      * filtering and projection.
      *
-     * @param session the client session
+     * @param cs the client session
      * @param sortBy the sort expression to use for sorting (prepend field name
      * with - for descending sorting)
      * @param filters the filters to apply.
@@ -157,20 +159,16 @@ class CollectionDAO {
      * @throws JsonParseException
      */
     FindIterable<BsonDocument> getFindIterable(
-            XClientSession session,
+            final XClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final BsonDocument sortBy,
             final BsonDocument filters,
             final BsonDocument hint,
             final BsonDocument keys) throws JsonParseException {
 
-        FindIterable<BsonDocument> ret;
-
-        if (session == null) {
-            ret = coll.find(filters);
-        } else {
-            ret = coll.find(session, filters);
-        }
+        var ret = cs == null
+                ? coll.find(filters)
+                : coll.find(cs, filters);
 
         return ret.projection(keys)
                 .sort(sortBy)
@@ -181,7 +179,7 @@ class CollectionDAO {
     }
 
     ArrayList<BsonDocument> getCollectionData(
-            XClientSession session,
+            final XClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final int page,
             final int pagesize,
@@ -189,7 +187,7 @@ class CollectionDAO {
             final BsonDocument filters,
             final BsonDocument hint,
             final BsonDocument keys,
-            CursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager)
+            final CursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager)
             throws JsonParseException {
 
         ArrayList<BsonDocument> ret = new ArrayList<>();
@@ -202,7 +200,7 @@ class CollectionDAO {
 
             _cursor = CursorPool.getInstance().get(
                     new CursorPoolEntryKey(
-                            session,
+                            cs,
                             coll,
                             sortBy,
                             filters,
@@ -219,7 +217,7 @@ class CollectionDAO {
         FindIterable<BsonDocument> cursor;
 
         if (_cursor == null) {
-            cursor = getFindIterable(session, coll, sortBy, filters, hint, keys);
+            cursor = getFindIterable(cs, coll, sortBy, filters, hint, keys);
             cursor.skip(toskip);
 
             MongoCursor<BsonDocument> mc = cursor.iterator();
@@ -268,7 +266,7 @@ class CollectionDAO {
         // the pool is populated here because, skipping with cursor.next() is heavy operation
         // and we want to minimize the chances that pool cursors are allocated in parallel
         CursorPool.getInstance().populateCache(
-                new CursorPoolEntryKey(session, coll, sortBy, filters, hint, keys, toskip, 0),
+                new CursorPoolEntryKey(cs, coll, sortBy, filters, hint, keys, toskip, 0),
                 eager);
 
         return ret;
@@ -277,25 +275,28 @@ class CollectionDAO {
     /**
      * Returns the collection properties document.
      *
+     * @param cs the client session
      * @param dbName the database name of the collection
      * @param collName the collection name
      * @return the collection properties document
      */
     public BsonDocument getCollectionProps(
+            final XClientSession cs,
             final String dbName,
             final String collName) {
         MongoCollection<BsonDocument> propsColl
                 = getCollection(dbName, META_COLLNAME);
 
-        BsonDocument props = propsColl
-                .find(new BsonDocument("_id",
-                        new BsonString("_properties.".concat(collName))))
-                .limit(1)
-                .first();
+        var query = new BsonDocument("_id",
+                new BsonString("_properties.".concat(collName)));
+
+        var props = cs == null
+                ? propsColl.find(query).limit(1).first()
+                : propsColl.find(cs, query).limit(1).first();
 
         if (props != null) {
             props.append("_id", new BsonString(collName));
-        } else if (doesCollectionExist(dbName, collName)) {
+        } else if (doesCollectionExist(cs, dbName, collName)) {
             return new BsonDocument("_id", new BsonString(collName));
         }
 
@@ -305,15 +306,18 @@ class CollectionDAO {
     /**
      * Returns true if the collection exists
      *
+     * @param cs the client session
      * @param dbName the database name of the collection
      * @param collName the collection name
      * @return true if the collection exists
      */
-    public boolean doesCollectionExist(String dbName, String collName) {
-        MongoCursor<String> dbCollections = client
-                .getDatabase(dbName)
-                .listCollectionNames()
-                .iterator();
+    public boolean doesCollectionExist(
+            final XClientSession cs,
+            final String dbName,
+            final String collName) {
+        MongoCursor<String> dbCollections = cs == null
+                ? client.getDatabase(dbName).listCollectionNames().iterator()
+                : client.getDatabase(dbName).listCollectionNames(cs).iterator();
 
         while (dbCollections.hasNext()) {
             String dbCollection = dbCollections.next();
@@ -329,6 +333,7 @@ class CollectionDAO {
     /**
      * Upsert the collection properties.
      *
+     * @param cs the client session
      * @param dbName the database name of the collection
      * @param collName the collection name
      * @param properties the new collection properties
@@ -341,6 +346,7 @@ class CollectionDAO {
      */
     @SuppressWarnings("unchecked")
     OperationResult upsertCollection(
+            final XClientSession cs,
             final String dbName,
             final String collName,
             final BsonDocument properties,
@@ -355,7 +361,11 @@ class CollectionDAO {
 
         if (!updating) {
             try {
-                client.getDatabase(dbName).createCollection(collName);
+                if (cs == null) {
+                    client.getDatabase(dbName).createCollection(collName);
+                } else {
+                    client.getDatabase(dbName).createCollection(cs, collName);
+                }
             } catch (MongoCommandException ex) {
                 // error 48 is NamespaceExists
                 // this can happen when a request A creates a collection
@@ -383,9 +393,14 @@ class CollectionDAO {
                 = mdb.getCollection(META_COLLNAME, BsonDocument.class);
 
         if (checkEtag && updating) {
+            var query = eq("_id", COLL_META_DOCID_PREFIX.concat(collName));
+
             BsonDocument oldProperties
-                    = mcoll.find(eq("_id", COLL_META_DOCID_PREFIX.concat(collName)))
-                            .projection(FIELDS_TO_RETURN).first();
+                    = cs == null
+                            ? mcoll.find(query)
+                                    .projection(FIELDS_TO_RETURN).first()
+                            : mcoll.find(cs, query)
+                                    .projection(FIELDS_TO_RETURN).first();
 
             if (oldProperties != null) {
                 BsonValue oldEtag = oldProperties.get("_etag");
@@ -406,6 +421,7 @@ class CollectionDAO {
 
                 if (Objects.equals(_requestEtag, oldEtag)) {
                     return doCollPropsUpdate(
+                            cs,
                             collName,
                             patching,
                             updating,
@@ -421,6 +437,7 @@ class CollectionDAO {
                 // this is the case when the coll does not have properties
                 // e.g. it has not been created by restheart
                 return doCollPropsUpdate(
+                        cs,
                         collName,
                         patching,
                         updating,
@@ -430,6 +447,7 @@ class CollectionDAO {
             }
         } else {
             return doCollPropsUpdate(
+                    cs,
                     collName,
                     patching,
                     updating,
@@ -440,14 +458,16 @@ class CollectionDAO {
     }
 
     private OperationResult doCollPropsUpdate(
-            String collName,
-            boolean patching,
-            boolean updating,
-            MongoCollection<BsonDocument> mcoll,
-            BsonDocument dcontent,
-            ObjectId newEtag) {
+            final XClientSession cs,
+            final String collName,
+            final boolean patching,
+            final boolean updating,
+            final MongoCollection<BsonDocument> mcoll,
+            final BsonDocument dcontent,
+            final ObjectId newEtag) {
         if (patching) {
             OperationResult ret = DAOUtils.updateDocument(
+                    cs,
                     mcoll,
                     "_properties.".concat(collName),
                     null,
@@ -459,6 +479,7 @@ class CollectionDAO {
                     : HttpStatus.SC_OK, newEtag);
         } else if (updating) {
             OperationResult ret = DAOUtils.updateDocument(
+                    cs,
                     mcoll,
                     "_properties.".concat(collName),
                     null,
@@ -470,6 +491,7 @@ class CollectionDAO {
                     : HttpStatus.SC_OK, newEtag);
         } else {
             OperationResult ret = DAOUtils.updateDocument(
+                    cs,
                     mcoll,
                     "_properties.".concat(collName),
                     null,
@@ -485,23 +507,29 @@ class CollectionDAO {
     /**
      * Deletes a collection.
      *
+     * @param cs the client session
      * @param dbName the database name of the collection
      * @param collName the collection name
      * @param requestEtag the entity tag. must match to allow actual write
      * (otherwise http error code is returned)
      * @return the HttpStatus code to set in the http response
      */
-    OperationResult deleteCollection(final String dbName,
+    OperationResult deleteCollection(
+            final XClientSession cs,
+            final String dbName,
             final String collName,
             final String requestEtag,
             final boolean checkEtag) {
         MongoDatabase mdb = client.getDatabase(dbName);
         MongoCollection<Document> mcoll = mdb.getCollection(META_COLLNAME);
 
+        var query = eq("_id", COLL_META_DOCID_PREFIX.concat(collName));
+
         if (checkEtag) {
-            Document properties = mcoll.find(
-                    eq("_id", COLL_META_DOCID_PREFIX.concat(collName)))
-                    .projection(FIELDS_TO_RETURN).first();
+
+            Document properties = cs == null
+                    ? mcoll.find(query).projection(FIELDS_TO_RETURN).first()
+                    : mcoll.find(cs, query).projection(FIELDS_TO_RETURN).first();
 
             if (properties != null) {
                 Object oldEtag = properties.get("_etag");
@@ -523,8 +551,15 @@ class CollectionDAO {
         }
 
         MongoCollection<Document> collToDelete = mdb.getCollection(collName);
-        collToDelete.drop();
-        mcoll.deleteOne(eq("_id", "_properties.".concat(collName)));
+
+        if (cs == null) {
+            collToDelete.drop();
+            mcoll.deleteOne(query);
+        } else {
+            collToDelete.drop(cs);
+            mcoll.deleteOne(cs, query);
+        }
+
         return new OperationResult(HttpStatus.SC_NO_CONTENT);
     }
 }

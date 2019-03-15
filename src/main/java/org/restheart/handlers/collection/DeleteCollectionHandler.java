@@ -58,8 +58,12 @@ public class DeleteCollectionHandler extends PipedHttpHandler {
             return;
         }
 
-        OperationResult result = getDatabase().deleteCollection(context.getDBName(), context.getCollectionName(),
-                context.getETag(), context.isETagCheckRequired());
+        OperationResult result = getDatabase().deleteCollection(
+                context.getClientSession(),
+                context.getDBName(), 
+                context.getCollectionName(),
+                context.getETag(), 
+                context.isETagCheckRequired());
 
         if (isResponseInConflict(context, result, exchange)) {
             return;

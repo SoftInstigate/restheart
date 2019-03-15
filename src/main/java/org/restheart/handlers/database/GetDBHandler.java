@@ -66,12 +66,15 @@ public class GetDBHandler extends PipedHttpHandler {
         }
 
         List<String> colls = getDatabase()
-                .getCollectionNames(context.getDBName());
+                .getCollectionNames(
+                        context.getClientSession(),
+                        context.getDBName());
 
         List<BsonDocument> data = null;
 
         if (context.getPagesize() > 0) {
             data = getDatabase().getDatabaseData(
+                    context.getClientSession(),
                     context.getDBName(),
                     colls,
                     context.getPage(),

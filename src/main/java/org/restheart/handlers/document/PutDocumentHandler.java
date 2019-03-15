@@ -114,6 +114,7 @@ public class PutDocumentHandler extends PipedHttpHandler {
         String etag = context.getETag();
 
         OperationResult result = this.documentDAO.upsertDocument(
+                context.getClientSession(),
                 context.getDBName(),
                 context.getCollectionName(),
                 context.getDocumentId(),

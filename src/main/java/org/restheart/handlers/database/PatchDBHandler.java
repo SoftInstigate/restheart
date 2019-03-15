@@ -123,6 +123,7 @@ public class PatchDBHandler extends PipedHttpHandler {
         }
 
         OperationResult result = getDatabase().upsertDB(
+                context.getClientSession(),
                 context.getDBName(),
                 content,
                 context.getETag(),

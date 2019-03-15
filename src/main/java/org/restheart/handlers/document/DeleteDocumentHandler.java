@@ -85,7 +85,9 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
         }
         
         OperationResult result = this.documentDAO
-                .deleteDocument(context.getDBName(),
+                .deleteDocument(
+                        context.getClientSession(),
+                        context.getDBName(),
                         context.getCollectionName(),
                         context.getDocumentId(),
                         context.getFiltersDocument(),
