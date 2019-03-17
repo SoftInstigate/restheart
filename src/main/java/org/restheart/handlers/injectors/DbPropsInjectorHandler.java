@@ -51,25 +51,28 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.isInError() 
-                || context.isTxns()
-                || context.isTxn() 
+        if (context.isInError()
+                || context.isSessions()
+                || context.isTxn()
                 || context.isRoot()
                 || context.isRootSize()) {
             next(exchange, context);
             return;
         }
-        
+
         String dbName = context.getDBName();
 
         if (dbName != null) {
             BsonDocument dbProps;
 
-            if (!LocalCachesSingleton.isEnabled()) {
+            if (!LocalCachesSingleton.isEnabled()
+                    || context.getClientSession() != null) {
                 dbProps = getDatabase().getDatabaseProperties(
-                        context.getClientSession(), dbName);
+                        context.getClientSession(), 
+                        dbName);
             } else {
-                dbProps = LocalCachesSingleton.getInstance().getDBProperties(dbName);
+                dbProps = LocalCachesSingleton.getInstance()
+                        .getDBProperties(dbName);
             }
 
             // if dbProps is null, the db does not exist

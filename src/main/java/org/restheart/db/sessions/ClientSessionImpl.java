@@ -37,7 +37,7 @@ import static org.bson.assertions.Assertions.notNull;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class XClientSession
+public class ClientSessionImpl
         extends BaseClientSessionImpl
         implements ClientSession {
 
@@ -51,7 +51,7 @@ public class XClientSession
     private boolean commitInProgress;
     private TransactionOptions transactionOptions;
 
-    public XClientSession(final ServerSessionPool serverSessionPool,
+    public ClientSessionImpl(final ServerSessionPool serverSessionPool,
             final Object originator,
             final ClientSessionOptions options,
             final MongoClientDelegate delegate) {

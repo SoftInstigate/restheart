@@ -15,13 +15,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.txns;
+package org.restheart.handlers.sessions;
 
-import org.restheart.db.sessions.XClientSessionFactory;
-import org.restheart.db.sessions.XClientSession;
+import org.restheart.db.sessions.Txns;
+import org.restheart.db.sessions.ClientSessionFactory;
+import org.restheart.db.sessions.ClientSessionImpl;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoCommandException;
+import static com.mongodb.client.model.Filters.eq;
 import io.undertow.server.HttpServerExchange;
+import java.util.Arrays;
 import java.util.UUID;
 import org.bson.BsonArray;
 import org.bson.BsonBinary;
@@ -36,6 +39,9 @@ import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.representation.Resource;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import static org.restheart.db.sessions.Txns.CMD.ABORT;
+import static org.restheart.db.sessions.Txns.CMD.COMMIT;
+import static org.restheart.db.sessions.Txns.CMD.START;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
@@ -44,12 +50,12 @@ import org.slf4j.LoggerFactory;
 /**
  *
  * commits the transaction of the session
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class PatchTxnHandler extends PipedHttpHandler {
+public class PatchSessionHandler extends PipedHttpHandler {
     private static final Logger LOGGER = LoggerFactory
-            .getLogger(PatchTxnHandler.class);
+            .getLogger(PatchSessionHandler.class);
 
     private static MongoClient MCLIENT = MongoDBClientSingleton
             .getInstance().getClient();
@@ -57,15 +63,15 @@ public class PatchTxnHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of PatchTxnHandler
      */
-    public PatchTxnHandler() {
+    public PatchSessionHandler() {
         super();
     }
 
-    public PatchTxnHandler(PipedHttpHandler next) {
+    public PatchSessionHandler(PipedHttpHandler next) {
         super(next, new DatabaseImpl());
     }
 
-    public PatchTxnHandler(PipedHttpHandler next, Database dbsDAO) {
+    public PatchSessionHandler(PipedHttpHandler next, Database dbsDAO) {
         super(next, dbsDAO);
     }
 
@@ -86,48 +92,87 @@ public class PatchTxnHandler extends PipedHttpHandler {
         }
 
         String sid = context.getCollectionName();
+        ClientSessionImpl cs = ClientSessionFactory.getClientSession(sid);
 
-        LOGGER.debug("server session id {}", sid);
+        Txns.CMD command;
 
-        XClientSession cs = XClientSessionFactory.getClientSession(sid);
+        if (context.getContent() != null
+                && context.getContent().isDocument()
+                && context.getContent().asDocument().containsKey("txn")
+                && context.getContent().asDocument().get("txn").isString()) {
 
-        if (!cs.hasActiveTransaction()) {
-            // this avoids sending the startTransaction msg
-            cs.setMessageSentInCurrentTransaction(true);
-            cs.startTransaction();
-        }
-
-        if (cs == null) {
-            LOGGER.debug("session not found {}", sid);
-
-            context.setResponseStatusCode(HttpStatus.SC_NOT_FOUND);
-        } else {
+            var txn = context.getContent().asDocument().get("txn").asString();
 
             try {
-                cs.commitTransaction();
-                endSession(sid);
+                command = Txns.CMD.valueOf(txn.getValue());
+            } catch (IllegalArgumentException iae) {
+                ResponseHelper.endExchangeWithMessage(exchange,
+                        context,
+                        HttpStatus.SC_BAD_REQUEST,
+                        "request does not contain valid txn property. "
+                        + "Allowed valures are "
+                        + Arrays.toString(Txns.CMD.values()));
+                next(exchange, context);
+                return;
+            }
+        } else {
+            ResponseHelper.endExchangeWithMessage(exchange,
+                    context,
+                    HttpStatus.SC_BAD_REQUEST,
+                    "request does not contain mandatory txn property");
+            next(exchange, context);
+            return;
+        }
 
-                context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
-                context.setResponseStatusCode(HttpStatus.SC_OK);
-            } catch (MongoCommandException mce) {
-                LOGGER.error("Error {} {}, {}",
-                        mce.getErrorCode(),
-                        mce.getErrorCodeName(),
-                        mce.getErrorMessage());
-                
-                if (mce.getErrorCode() == 20) {
-                    ResponseHelper.endExchangeWithMessage(exchange,
-                            context,
-                            HttpStatus.SC_BAD_GATEWAY,
-                            mce.getErrorCodeName() + ", " + mce.getErrorMessage());
-                } else if (mce.getErrorCode() == 251) {
-                    ResponseHelper.endExchangeWithMessage(exchange,
-                            context,
-                            HttpStatus.SC_NOT_ACCEPTABLE,
-                            mce.getErrorCodeName() + ", " + mce.getErrorMessage());
-                } else {
-                    throw mce;
-                }
+        try {
+            switch (command) {
+                case START:
+                    cs.startTransaction();
+
+                    // propagate transaction to server
+                    // this avoids error 'Given transaction number X does not match any in-progress transactions.'
+                    MCLIENT
+                            .getDatabase("db")
+                            .getCollection("coll")
+                            .find(cs)
+                            .limit(1)
+                            .projection(eq("_id", 1))
+                            .first();
+                    break;
+                case COMMIT:
+                    cs.setMessageSentInCurrentTransaction(true);
+                    cs.startTransaction();
+
+                    cs.commitTransaction();
+                    break;
+                case ABORT:
+                    cs.setMessageSentInCurrentTransaction(true);
+                    cs.startTransaction();
+
+                    cs.abortTransaction();
+                    break;
+            }
+
+            context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
+            context.setResponseStatusCode(HttpStatus.SC_OK);
+        } catch (MongoCommandException mce) {
+            LOGGER.error("Error {} {}, {}",
+                    mce.getErrorCode(),
+                    mce.getErrorCodeName(),
+                    mce.getErrorMessage());
+
+            if (mce.getErrorCode() == 20) {
+                ResponseHelper.endExchangeWithMessage(exchange,
+                        context,
+                        HttpStatus.SC_BAD_GATEWAY,
+                        mce.getErrorCodeName() + ", " + mce.getErrorMessage());
+            } else if (mce.getErrorCode() == 251) {
+                ResponseHelper.endExchangeWithMessage(exchange,
+                        context,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        mce.getErrorCodeName() + ", " + mce.getErrorMessage());
+            } else {
+                throw mce;
             }
         }
 
@@ -136,11 +181,11 @@ public class PatchTxnHandler extends PipedHttpHandler {
 
     public static BsonDocument endSession(String sid) {
         // { killSessions: [ { id : <UUID> }, ... ] } )
-        
+
         var sids = new BsonArray();
-        
+
         sids.add(new BsonDocument("id", createServerSessionIdentifier(sid)));
-        
+
         BsonDocument killSessionsCmd = new BsonDocument(
                 "endSessions",
                 sids);

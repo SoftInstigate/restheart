@@ -211,7 +211,7 @@ enable-log-file: true
 log-file-path: /var/log/restheart.log
 enable-log-console: true
 log-level: {{{log-level}}}
-requests-log-level: 2
+requests-log-level: 1
 metrics-gathering-level: DATABASE
 requests-log-trace-headers:
 #  - x-b3-traceid      # vv Zipkin headers, see https://github.com/openzipkin/b3-propagation

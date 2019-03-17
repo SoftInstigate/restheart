@@ -20,7 +20,7 @@ package org.restheart.db;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.Document;
-import org.restheart.db.sessions.XClientSession;
+import org.restheart.db.sessions.ClientSessionImpl;
 
 /**
  *
@@ -42,7 +42,7 @@ public interface DocumentRepository {
      * @return 
      */
     OperationResult upsertDocument(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName, 
             final String collName, 
             final Object documentId, 
@@ -66,7 +66,7 @@ public interface DocumentRepository {
      * @return 
      */
     OperationResult upsertDocumentPost(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName, 
             final String collName, 
             final BsonDocument filter,
@@ -88,7 +88,7 @@ public interface DocumentRepository {
      * @return 
      */
     OperationResult deleteDocument(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName, 
             final String collName, 
             final Object documentId, 
@@ -108,7 +108,7 @@ public interface DocumentRepository {
      * @return 
      */
     BulkOperationResult bulkUpsertDocumentsPost(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName, 
             final String collName,
             final BsonArray documents,
@@ -126,7 +126,7 @@ public interface DocumentRepository {
      * @return 
      */
     BulkOperationResult bulkPatchDocuments(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName, 
             final String collName, 
             final BsonDocument filter, 
@@ -143,7 +143,7 @@ public interface DocumentRepository {
      * @return 
      */
     BulkOperationResult bulkDeleteDocuments(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName, 
             final String collName, 
             final BsonDocument filter, 
@@ -159,7 +159,7 @@ public interface DocumentRepository {
      * @return Document containing _etag property
      */
     Document getDocumentEtag(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName, 
             final String collName, 
             final Object documentId);

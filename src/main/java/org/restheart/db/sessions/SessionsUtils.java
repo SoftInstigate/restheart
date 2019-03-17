@@ -94,8 +94,4 @@ public class SessionsUtils {
     public static MongoClientDelegate getMongoClientDelegate() {
         return delegate;
     }
-
-    public static boolean startTransaction(String sid) {
-        return false;
-    }
 }

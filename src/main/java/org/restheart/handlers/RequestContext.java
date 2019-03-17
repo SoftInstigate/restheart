@@ -43,7 +43,7 @@ import org.bson.json.JsonParseException;
 import org.restheart.Bootstrapper;
 import org.restheart.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.db.OperationResult;
-import org.restheart.db.sessions.XClientSession;
+import org.restheart.db.sessions.ClientSessionImpl;
 import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
@@ -75,7 +75,7 @@ public class RequestContext {
     public static final String SHARDKEY_QPARAM_KEY = "shardkey";
     public static final String NO_PROPS_KEY = "np";
     public static final String REPRESENTATION_FORMAT_KEY = "rep";
-    public static final String CLIENT_SESSION_KEY = "cs";
+    public static final String CLIENT_SESSION_KEY = "session";
 
     // matadata
     public static final String ETAG_DOC_POLICY_METADATA_KEY = "etagDocPolicy";
@@ -88,7 +88,7 @@ public class RequestContext {
     public static final String _METRICS = "_metrics";
     public static final String _SIZE = "_size";
     public static final String _META = "_meta";
-    public static final String _TRANSACTIONS = "_txns";
+    public static final String _SESSIONS = "_sessions";
 
     public static final String FS_CHUNKS_SUFFIX = ".chunks";
     public static final String FS_FILES_SUFFIX = ".files";
@@ -170,12 +170,12 @@ public class RequestContext {
             type = TYPE.ROOT;
         } else if (pathTokens.length == 2 
                 && pathTokens[pathTokens.length - 1]
-                        .equalsIgnoreCase(_TRANSACTIONS)) {
-            type = TYPE.TRANSACTIONS;
+                        .equalsIgnoreCase(_SESSIONS)) {
+            type = TYPE.SESSIONS;
         } else if (pathTokens.length == 3
                 && pathTokens[pathTokens.length - 2]
-                        .equalsIgnoreCase(_TRANSACTIONS)) {
-            type = TYPE.TRANSACTION;
+                        .equalsIgnoreCase(_SESSIONS)) {
+            type = TYPE.SESSION;
         } else if (pathTokens.length < 3
                 && pathTokens[1].equalsIgnoreCase(_METRICS)) {
             type = TYPE.METRICS;
@@ -257,7 +257,7 @@ public class RequestContext {
     public static boolean isReservedResourceDb(String dbName) {
         return !dbName.equalsIgnoreCase(_METRICS)
                 && !dbName.equalsIgnoreCase(_SIZE)
-                && !dbName.equalsIgnoreCase(_TRANSACTIONS)
+                && !dbName.equalsIgnoreCase(_SESSIONS)
                 && (dbName.equals(ADMIN)
                 || dbName.equals(LOCAL)
                 || dbName.startsWith(SYSTEM)
@@ -374,7 +374,7 @@ public class RequestContext {
 
     private Account authenticatedAccount = null;
     
-    private XClientSession clientSession = null;
+    private ClientSessionImpl clientSession = null;
 
     /**
      * the HAL mode
@@ -1651,8 +1651,8 @@ public class RequestContext {
      *
      * @return true if type is TYPE.TRANSACTIONS
      */
-    public boolean isTxns() {
-        return this.type == TYPE.TRANSACTIONS;
+    public boolean isSessions() {
+        return this.type == TYPE.SESSIONS;
     }
     
     /**
@@ -1661,7 +1661,7 @@ public class RequestContext {
      * @return true if type is TYPE.TRANSACTION
      */
     public boolean isTxn() {
-        return this.type == TYPE.TRANSACTION;
+        return this.type == TYPE.SESSION;
     }
 
     /**
@@ -1852,8 +1852,8 @@ public class RequestContext {
         SCHEMA_STORE_META,
         BULK_DOCUMENTS,
         METRICS,
-        TRANSACTIONS,
-        TRANSACTION,
+        SESSIONS,
+        SESSION,
     }
 
     public enum METHOD {
@@ -1894,14 +1894,14 @@ public class RequestContext {
     /**
      * @return the clientSession
      */
-    public XClientSession getClientSession() {
+    public ClientSessionImpl getClientSession() {
         return clientSession;
     }
 
     /**
      * @param clientSession the clientSession to set
      */
-    public void setClientSession(XClientSession clientSession) {
+    public void setClientSession(ClientSessionImpl clientSession) {
         this.clientSession = clientSession;
     }
 

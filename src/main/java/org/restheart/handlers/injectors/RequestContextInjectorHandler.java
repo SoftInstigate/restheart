@@ -57,8 +57,7 @@ import org.restheart.utils.URLUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestContextInjectorHandler extends PipedHttpHandler {
-
-    private static final Logger LOG = Logger.getLogger(RequestContextInjectorHandler.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(RequestContextInjectorHandler.class.getName());
 
     private static final int DEFAULT_PAGESIZE = Bootstrapper
             .getConfiguration()
@@ -443,7 +442,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 try {
                     next(exchange, rcontext);
                 } catch (Exception e) {
-                    LOG.warning(e.getMessage());
+                    LOGGER.warning(e.getMessage());
                 }
 
                 return;

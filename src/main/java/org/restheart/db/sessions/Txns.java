@@ -17,26 +17,10 @@
  */
 package org.restheart.db.sessions;
 
-import com.mongodb.connection.Cluster;
-import com.mongodb.internal.session.ServerSessionPool;
-import com.mongodb.session.ServerSession;
-
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class XServerSessionPool extends ServerSessionPool {
-    private String sid;
-    
-    @SuppressWarnings("deprecation")
-    public XServerSessionPool(Cluster cluster, String sid) {
-        super(cluster);
-        
-        this.sid = sid;
-    }
-
-    @Override
-    public ServerSession get() {
-        return XClientSessionFactory.createServerSession(sid);
-    }
+public interface Txns {
+    public enum CMD { START, COMMIT, ABORT };
 }

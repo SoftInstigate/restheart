@@ -15,10 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.txns;
+package org.restheart.handlers.sessions;
 
-import org.restheart.db.sessions.XClientSessionFactory;
-import org.restheart.db.sessions.XClientSession;
+import org.restheart.db.sessions.ClientSessionFactory;
+import org.restheart.db.sessions.ClientSessionImpl;
 import com.mongodb.MongoCommandException;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.db.Database;
@@ -37,22 +37,22 @@ import org.slf4j.LoggerFactory;
  * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class DeleteTxnHandler extends PipedHttpHandler {
+public class DeleteSessionHandler extends PipedHttpHandler {
     private static final Logger LOGGER = LoggerFactory
-            .getLogger(DeleteTxnHandler.class); 
+            .getLogger(DeleteSessionHandler.class); 
 
     /**
      * Creates a new instance of DeleteTxnHandler
      */
-    public DeleteTxnHandler() {
+    public DeleteSessionHandler() {
         super();
     }
 
-    public DeleteTxnHandler(PipedHttpHandler next) {
+    public DeleteSessionHandler(PipedHttpHandler next) {
         super(next, new DatabaseImpl());
     }
 
-    public DeleteTxnHandler(PipedHttpHandler next, Database dbsDAO) {
+    public DeleteSessionHandler(PipedHttpHandler next, Database dbsDAO) {
         super(next, dbsDAO);
     }
 
@@ -76,7 +76,7 @@ public class DeleteTxnHandler extends PipedHttpHandler {
 
         LOGGER.debug("server session id {}", sid);
 
-        XClientSession cs = XClientSessionFactory.getClientSession(sid);
+        ClientSessionImpl cs = ClientSessionFactory.getClientSession(sid);
         
         if (!cs.hasActiveTransaction()) {
             // this avoids sending the startTransaction msg
