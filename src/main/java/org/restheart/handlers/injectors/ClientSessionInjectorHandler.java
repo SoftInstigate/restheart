@@ -21,9 +21,11 @@ import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.db.sessions.XClientSessionFactory;
+import org.restheart.db.sessions.ClientSessionFactory;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -34,6 +36,9 @@ import org.restheart.utils.ResponseHelper;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ClientSessionInjectorHandler extends PipedHttpHandler {
+    private static final Logger LOGGER
+            = LoggerFactory.getLogger(ClientSessionInjectorHandler.class);
+
     /**
      * Creates a new instance of DbPropsInjectorHandler
      *
@@ -74,8 +79,15 @@ public class ClientSessionInjectorHandler extends PipedHttpHandler {
             return;
         }
 
-        context.setClientSession(XClientSessionFactory
-                .getClientSession(sid));
+        LOGGER.debug("Request is executed in session {}", sid);
+        
+        var cs = ClientSessionFactory
+                .getClientSession(sid);
+        
+        cs.setMessageSentInCurrentTransaction(true);
+        cs.startTransaction();
+        
+        context.setClientSession(cs);
 
         next(exchange, context);
     }

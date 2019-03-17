@@ -25,7 +25,7 @@ import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
 import org.restheart.handlers.IllegalQueryParamenterException;
-import org.restheart.db.sessions.XClientSession;
+import org.restheart.db.sessions.ClientSessionImpl;
 
 /**
  *
@@ -43,7 +43,7 @@ public interface Database {
      * @return HTTP status code
      */
     OperationResult deleteCollection(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String collectionName,
             final String requestEtag,
@@ -58,7 +58,7 @@ public interface Database {
      * @return HTTP status code
      */
     OperationResult deleteDatabase(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String requestEtag,
             final boolean checkEtag);
@@ -69,7 +69,7 @@ public interface Database {
      *
      */
     boolean doesDbExist(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName);
 
     /**
@@ -81,7 +81,7 @@ public interface Database {
      *
      */
     boolean doesCollectionExist(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String collName);
 
@@ -109,7 +109,7 @@ public interface Database {
      * @return Collection Data as ArrayList of BsonDocument
      */
     ArrayList<BsonDocument> getCollectionData(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final MongoCollection<BsonDocument> collection,
             final int page,
             final int pagesize,
@@ -127,7 +127,7 @@ public interface Database {
      * @return Collection properties
      */
     BsonDocument getCollectionProperties(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String collectionName);
 
@@ -141,7 +141,7 @@ public interface Database {
      * account the filters in case)
      */
     long getCollectionSize(
-            final XClientSession session,
+            final ClientSessionImpl session,
             final MongoCollection<BsonDocument> collection,
             final BsonDocument filters);
 
@@ -172,7 +172,7 @@ public interface Database {
      *
      */
     List<BsonDocument> getDatabaseData(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName, List<String> collections,
             final int page,
             final int pagesize)
@@ -183,7 +183,7 @@ public interface Database {
      * @param cs the client session
      * @return A List of database names
      */
-    List<String> getDatabaseNames(final XClientSession cs);
+    List<String> getDatabaseNames(final ClientSessionImpl cs);
 
     /**
      *
@@ -192,7 +192,7 @@ public interface Database {
      * @return A List of collection names
      */
     List<String> getCollectionNames(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName);
 
     /**
@@ -201,7 +201,7 @@ public interface Database {
      *
      */
     BsonDocument getDatabaseProperties(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName);
 
     /**
@@ -217,7 +217,7 @@ public interface Database {
      * @return
      */
     OperationResult upsertCollection(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String collectionName,
             final BsonDocument content,
@@ -238,7 +238,7 @@ public interface Database {
      * @return
      */
     OperationResult upsertDB(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final BsonDocument content,
             final String requestEtag,
@@ -255,7 +255,7 @@ public interface Database {
      * @return the operation result
      */
     int deleteIndex(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String collection,
             final String indexId);
@@ -268,7 +268,7 @@ public interface Database {
      * @return A List of indexes for collectionName in dbName
      */
     List<BsonDocument> getCollectionIndexes(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String collectionName);
 
@@ -281,7 +281,7 @@ public interface Database {
      * @param options
      */
     void createIndex(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String collection,
             final BsonDocument keys,
@@ -303,7 +303,7 @@ public interface Database {
      * @throws JsonParseException
      */
     FindIterable<BsonDocument> getFindIterable(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final MongoCollection<BsonDocument> collection,
             final BsonDocument sortBy,
             final BsonDocument filters,

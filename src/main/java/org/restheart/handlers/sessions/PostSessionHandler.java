@@ -15,9 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.txns;
+package org.restheart.handlers.sessions;
 
-import org.restheart.db.sessions.XClientSessionFactory;
+import org.restheart.db.sessions.ClientSessionFactory;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientException;
 import com.mongodb.client.ClientSession;
@@ -46,9 +46,9 @@ import org.slf4j.LoggerFactory;
  * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class PostTxnsHandler extends PipedHttpHandler {
+public class PostSessionHandler extends PipedHttpHandler {
     private static final Logger LOGGER = LoggerFactory
-            .getLogger(PostTxnsHandler.class);
+            .getLogger(PostSessionHandler.class);
 
     private static MongoClient MCLIENT = MongoDBClientSingleton
             .getInstance().getClient();
@@ -56,15 +56,15 @@ public class PostTxnsHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of PostTxnsHandler
      */
-    public PostTxnsHandler() {
+    public PostSessionHandler() {
         super();
     }
 
-    public PostTxnsHandler(PipedHttpHandler next) {
+    public PostSessionHandler(PipedHttpHandler next) {
         super(next, new DatabaseImpl());
     }
 
-    public PostTxnsHandler(PipedHttpHandler next, Database dbsDAO) {
+    public PostSessionHandler(PipedHttpHandler next, Database dbsDAO) {
         super(next, dbsDAO);
     }
 
@@ -87,16 +87,6 @@ public class PostTxnsHandler extends PipedHttpHandler {
         try {
             String sid = UUID.randomUUID().toString();
 
-            ClientSession cs = XClientSessionFactory.getClientSession(sid);
-            cs.startTransaction();
-
-            // force transaction to server
-            MCLIENT.getDatabase("foo")
-                    .getCollection("bar")
-                    .find(cs)
-                    .projection(new BsonDocument("_id", new BsonInt32(1)))
-                    .first();
-            
             exchange.getResponseHeaders()
                     .add(HttpString.tryFromString("Location"),
                             RepUtils.getReferenceLink(
@@ -110,6 +100,7 @@ public class PostTxnsHandler extends PipedHttpHandler {
             LOGGER.error("Error {}",
                     mce.getMessage());
 
+            // TODO check if server supports sessions
             if (!MongoDBClientSingleton.isReplicaSet()) {
                 ResponseHelper.endExchangeWithMessage(exchange,
                         context,

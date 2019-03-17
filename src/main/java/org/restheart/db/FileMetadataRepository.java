@@ -1,7 +1,7 @@
 package org.restheart.db;
 
 import org.bson.BsonDocument;
-import org.restheart.db.sessions.XClientSession;
+import org.restheart.db.sessions.ClientSessionImpl;
 
 /**
  *
@@ -24,7 +24,7 @@ public interface FileMetadataRepository {
      * @return 
      */
     public abstract OperationResult updateMetadata(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String collName,
             final Object documentId,

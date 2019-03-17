@@ -27,7 +27,7 @@ import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
-import org.restheart.db.sessions.XClientSession;
+import org.restheart.db.sessions.ClientSessionImpl;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -60,7 +60,7 @@ public class FileMetadataDAO implements FileMetadataRepository {
      */
     @Override
     public OperationResult updateMetadata(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String collName,
             final Object documentId,
@@ -148,7 +148,7 @@ public class FileMetadataDAO implements FileMetadataRepository {
     }
 
     private OperationResult optimisticCheckEtag(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final MongoCollection<BsonDocument> coll,
             final BsonDocument shardKeys,
             final BsonDocument oldDocument,

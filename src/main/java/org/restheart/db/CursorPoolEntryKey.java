@@ -21,14 +21,14 @@ import com.mongodb.client.MongoCollection;
 import java.util.Formatter;
 import java.util.Objects;
 import org.bson.BsonDocument;
-import org.restheart.db.sessions.XClientSession;
+import org.restheart.db.sessions.ClientSessionImpl;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class CursorPoolEntryKey {
-    private final XClientSession session;
+    private final ClientSessionImpl session;
     private final MongoCollection collection;
     private final BsonDocument sort;
     private final BsonDocument filter;
@@ -38,7 +38,7 @@ public class CursorPoolEntryKey {
     private final long cursorId;
 
     public CursorPoolEntryKey(
-            XClientSession session,
+            ClientSessionImpl session,
             MongoCollection collection,
             BsonDocument sort,
             BsonDocument filter,
@@ -196,7 +196,7 @@ public class CursorPoolEntryKey {
     /**
      * @return the session
      */
-    public XClientSession getSession() {
+    public ClientSessionImpl getSession() {
         return session;
     }
 }

@@ -29,7 +29,7 @@ import org.bson.BsonInt32;
 import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.restheart.db.sessions.XClientSession;
+import org.restheart.db.sessions.ClientSessionImpl;
 import static org.restheart.handlers.RequestContext.DB_META_DOCID;
 import org.restheart.utils.HttpStatus;
 
@@ -63,7 +63,7 @@ class IndexDAO {
      * @return
      */
     List<BsonDocument> getCollectionIndexes(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String collName) {
         List<BsonDocument> ret = new ArrayList<>();
@@ -98,7 +98,7 @@ class IndexDAO {
      * @param options
      */
     void createIndex(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String collection,
             final BsonDocument keys,
@@ -135,7 +135,7 @@ class IndexDAO {
      * @return
      */
     int deleteIndex(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String collection,
             final String indexId) {

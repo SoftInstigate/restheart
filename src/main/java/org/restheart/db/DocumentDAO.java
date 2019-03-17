@@ -39,7 +39,7 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
-import org.restheart.db.sessions.XClientSession;
+import org.restheart.db.sessions.ClientSessionImpl;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +68,7 @@ public class DocumentDAO implements DocumentRepository {
      */
     @Override
     public Document getDocumentEtag(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String collName,
             final Object documentId) {
@@ -101,7 +101,7 @@ public class DocumentDAO implements DocumentRepository {
     @Override
     @SuppressWarnings("unchecked")
     public OperationResult upsertDocument(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String collName,
             final Object documentId,
@@ -204,7 +204,7 @@ public class DocumentDAO implements DocumentRepository {
     @Override
     @SuppressWarnings("unchecked")
     public OperationResult upsertDocumentPost(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String collName,
             final BsonDocument filter,
@@ -282,7 +282,7 @@ public class DocumentDAO implements DocumentRepository {
     @Override
     @SuppressWarnings("unchecked")
     public BulkOperationResult bulkUpsertDocumentsPost(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String collName,
             final BsonArray documents,
@@ -326,7 +326,7 @@ public class DocumentDAO implements DocumentRepository {
      */
     @Override
     public OperationResult deleteDocument(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String collName,
             final Object documentId,
@@ -390,7 +390,7 @@ public class DocumentDAO implements DocumentRepository {
      */
     @Override
     public BulkOperationResult bulkDeleteDocuments(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String collName,
             final BsonDocument filter,
@@ -430,7 +430,7 @@ public class DocumentDAO implements DocumentRepository {
      */
     @Override
     public BulkOperationResult bulkPatchDocuments(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final String dbName,
             final String collName,
             final BsonDocument filter,
@@ -463,7 +463,7 @@ public class DocumentDAO implements DocumentRepository {
     }
 
     private OperationResult optimisticCheckEtag(
-            final XClientSession cs,
+            final ClientSessionImpl cs,
             final MongoCollection<BsonDocument> coll,
             final BsonDocument shardKeys,
             final BsonDocument oldDocument,

@@ -33,8 +33,6 @@ import static org.bson.assertions.Assertions.notNull;
 import org.bson.codecs.EncoderContext;
 import org.bson.codecs.UuidCodec;
 import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.db.sessions.XServerSessionPool;
-import org.restheart.db.sessions.XClientSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,9 +40,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class XClientSessionFactory {
+public class ClientSessionFactory {
     private static final Logger LOGGER = LoggerFactory
-            .getLogger("org.restheart.mongodb");
+            .getLogger(ClientSessionFactory.class);
 
     private static MongoClient MCLIENT = MongoDBClientSingleton
             .getInstance()
@@ -66,7 +64,7 @@ public class XClientSessionFactory {
         return holder.getBinary("id");
     }
 
-    public static XClientSession getClientSession(String sid) {
+    public static ClientSessionImpl getClientSession(String sid) {
         ClientSessionOptions cso = ClientSessionOptions
                 .builder()
                 .build();
@@ -79,7 +77,7 @@ public class XClientSessionFactory {
                 MCLIENT.getReadPreference());
     }
 
-    public static XClientSession createClientSession(
+    public static ClientSessionImpl createClientSession(
             String sid,
             final ClientSessionOptions options,
             final ReadConcern readConcern,
@@ -89,8 +87,10 @@ public class XClientSessionFactory {
         notNull("writeConcern", writeConcern);
         notNull("readPreference", readPreference);
 
+        // TODO allow request to specify session and txn options
         ClientSessionOptions mergedOptions = ClientSessionOptions
                 .builder(options)
+                .causallyConsistent(true)
                 .defaultTransactionOptions(
                         TransactionOptions.merge(
                                 options.getDefaultTransactionOptions(),
@@ -101,17 +101,11 @@ public class XClientSessionFactory {
                                         .build()))
                 .build();
 
-        XClientSession cs = new XClientSession(
-                new XServerSessionPool(SessionsUtils.getCluster(), sid),
+        ClientSessionImpl cs = new ClientSessionImpl(
+                new SimpleServerSessionPool(SessionsUtils.getCluster(), sid),
                 MCLIENT,
                 mergedOptions,
                 SessionsUtils.getMongoClientDelegate());
-
-        LOGGER.debug("sid {}", cs.getServerSession()
-                .getIdentifier().asDocument()
-                .get("id").asBinary().asUuid());
-
-        LOGGER.debug("transaction {}", cs.hasActiveTransaction());
 
         return cs;
 
