@@ -81,4 +81,12 @@ public class SimpleAccount implements Account {
     public Set<String> getRoles() {
         return Collections.unmodifiableSet(roles);
     }
+
+    @Override
+    public String toString() {
+        return "username="
+                .concat(principal != null ? principal.getName() : "null")
+                .concat(" roles=")
+                .concat(roles != null ? roles.toString(): "null");
+    }
 }
