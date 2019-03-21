@@ -1,4 +1,4 @@
-FROM openjdk:11.0.1-jdk
+FROM openjdk:11.0-jre-slim-stretch
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
