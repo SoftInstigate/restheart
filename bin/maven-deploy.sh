@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-if [[ "$MAVEN_DEPLOY" == true ]]; then
+if [[ "$MAVEN_DEPLOY" == "true" ]]; then
     if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
         RESTHEART_VERSION=$(./bin/project-version.sh 2>/dev/null)
         export RESTHEART_VERSION
@@ -21,6 +21,7 @@ if [[ "$MAVEN_DEPLOY" == true ]]; then
                 echo "###### Publishing Maven site at http://softinstigate.github.io/restheart/project-info.html"
                 mvn site -s deploy-settings.xml -P report -Dmaven.test.skip=true
             fi
+            echo "###### Deploy to Maven Central"
             mvn deploy -s deploy-settings.xml -P release -Dmaven.test.skip=true
         else
             echo "###### ERROR! Variable RESTHEART_VERSION is undefined"
