@@ -980,12 +980,24 @@ public class Bootstrapper {
         }
 
         conf.getProxies().stream().forEachOrdered(m -> {
-            String uri = Configuration.getOrDefault(m,
-                    Configuration.PROXY_URI_KEY, null, true);
+            String location = Configuration.getOrDefault(m,
+                    Configuration.PROXY_LOCATION_KEY, null, true);
+            
+            
+            Object _proxyPass = Configuration.getOrDefault(m,
+                    Configuration.PROXY_PASS_KEY, null, true);
 
-            Object _resourceURL = Configuration.getOrDefault(m,
-                    Configuration.PROXY_URL_KEY, null, true);
-
+            if (location == null && _proxyPass != null) {
+                LOGGER.warn("Location URI not specified for resource {} ",
+                            _proxyPass);
+                return;
+            }
+            
+            if (location == null && _proxyPass == null) {
+                LOGGER.warn("Invalid proxies entry detected");
+                return;
+            }
+            
             // The number of connections to create per thread
             Integer connectionsPerThread = Configuration.getOrDefault(m,
                     Configuration.PROXY_CONNECTIONS_PER_THREAD, 10,
@@ -1034,22 +1046,22 @@ public class Bootstrapper {
                                 .setProblemServerRetry(problemServerRetry)
                                 .setTtl(ttl);
 
-                if (_resourceURL instanceof String) {
+                if (_proxyPass instanceof String) {
                     proxyClient = proxyClient.addHost(
-                            new URI((String) _resourceURL), sslProvider);
-                } else if (_resourceURL instanceof List) {
-                    for (Object resourceURL : ((List<?>) _resourceURL)) {
-                        if (resourceURL instanceof String) {
+                            new URI((String) _proxyPass), sslProvider);
+                } else if (_proxyPass instanceof List) {
+                    for (Object proxyPassURL : ((List<?>) _proxyPass)) {
+                        if (proxyPassURL instanceof String) {
                             proxyClient = proxyClient.addHost(
-                                    new URI((String) resourceURL), sslProvider);
+                                    new URI((String) proxyPassURL), sslProvider);
                         } else {
-                            LOGGER.warn("Invalid URI {}, resource {} not proxied ",
-                                    uri, resourceURL);
+                            LOGGER.warn("Invalid proxy pass URL {}, location {} not bound ",
+                                    proxyPassURL, location);
                         }
                     }
                 } else {
-                    LOGGER.warn("Invalid URI {}, resource {} not proxied ",
-                            uri, _resourceURL);
+                    LOGGER.warn("Invalid proxy pass URL {}, location {} not bound ",
+                            _proxyPass);
                 }
 
                 ProxyHandler proxyHandler = ProxyHandler.builder()
@@ -1065,7 +1077,7 @@ public class Bootstrapper {
                                                         null,
                                                         proxyHandler))));
 
-                paths.addPrefixPath(uri,
+                paths.addPrefixPath(location,
                         new RequestLoggerHandler(
                                 new SecurityHandler(
                                         new AuthHeadersRemover(
@@ -1074,12 +1086,12 @@ public class Bootstrapper {
                                         accessManager,
                                         tokenManager)));
 
-                LOGGER.info("URI {} bound to {}", uri, _resourceURL);
+                LOGGER.info("location URI {} bound to {}", location, _proxyPass);
             }
             catch (URISyntaxException ex) {
-                LOGGER.warn("Invalid URI {}, resources {} not proxied ",
-                        uri,
-                        _resourceURL);
+                LOGGER.warn("Invalid location URI {}, resource {} not bound ",
+                        location,
+                        _proxyPass);
             }
         });
     }

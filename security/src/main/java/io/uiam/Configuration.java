@@ -198,14 +198,14 @@ public class Configuration {
     public static final String PROXY_KEY = "proxies";
 
     /**
-     * the key for the internal-uri property.
+     * the key for the location property.
      */
-    public static final String PROXY_URI_KEY = "internal-uri";
+    public static final String PROXY_LOCATION_KEY = "location";
 
     /**
-     * the key for the external-url property.
+     * the key for the proxy-pass property.
      */
-    public static final String PROXY_URL_KEY = "external-url";
+    public static final String PROXY_PASS_KEY = "proxy-pass";
     
     /**
      * the key for the rewrite-host-header.

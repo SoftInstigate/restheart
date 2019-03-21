@@ -30,8 +30,9 @@ instance-name: develop
 
 ### Proxied resources
 
- # internal-uri (required) The URI where the proxied resource must be bound.
- # external-url (required) The URL of the resource to proxy. It can be an array of URLs for load balancing.
+ # location (required) The location URI to bound to the HTTP proxied server.
+ # proxy-pass (required) The URL of the HTTP proxied server. It can be an array of URLs for load balancing.
+ # rewrite-host-header (optional, default true) should the HOST header be rewritten to use the target host of the call.
  # connections-per-thread (optional, default 10) Controls the number of connections to create per thread.
  # soft-max-connections-per-thread (optional, default 5) Controls the number of connections to create per thread.
  # max-queue-size (optional, default 0) Controls the number of connections to create per thread.
@@ -44,17 +45,17 @@ instance-name: develop
 ## /siecho secured proxied /iecho with request and response interceptors
 
 proxies:
-    - internal-uri: /secho
-      external-url: 
+    - location: /secho
+      proxy-pass: 
         - http://127.0.0.1:8080/echo
         - http://localhost:8080/echo
-    - internal-uri: /siecho
-      external-url: 
+    - location: /siecho
+      proxy-pass: 
         - http://127.0.0.1:8080/iecho
         - http://localhost:8080/iecho
       connections-per-thread: 20
-    - internal-uri: /pr
-      external-url: http://127.0.0.1:8081
+    - location: /pr
+      proxy-pass: http://127.0.0.1:8081
 
 #### SSL Configuration
 

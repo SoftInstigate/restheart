@@ -71,13 +71,13 @@ We proxy them as follows:
 
 ```yml
 proxies:
-    - internal-uri: /api
-      external-url: https://10.0.0.1/api
-    - internal-uri: /
-      external-url: https://10.0.0.2/web
+    - location: /api
+      proxy-pass: https://10.0.0.1/api
+    - location: /
+      proxy-pass: https://10.0.0.2/web
 ```
 
-As a result, the URLs `https://domain.io` and `https://domain.io/api` are proxied to the internal resources. All requests from the external network pass through &#181;IAM that enforces authentication and authorization.
+As a result, the URLs `https://domain.io` and `https://domain.io/api` are proxied to the  resources specified by the `proxy-pass` URL. All requests from the external network pass through &#181;IAM that enforces authentication and authorization.
 
 ```http
 GET https://domain.io/index.html
@@ -156,13 +156,13 @@ Below the mentioned configuration's fragment:
 
 ```yaml
 proxies:
-    - internal-uri: /secho
-      external-url: 
+    - location: /secho
+      proxy-pass: 
         - http://127.0.0.1:8080/echo
         - http://localhost:8080/echo
       connections-per-thread: 20
-    - internal-uri: /restheart
-      external-url: https://restheart.org
+    - location: /restheart
+      proxy-pass: https://restheart.org
 ```
 
 Let's fist invoke the `/echo` service directly. This is defined in the [configuration file](etc/uiam.yml) as follows:
