@@ -33,10 +33,7 @@ before_script:
 
 script:
   - docker ps
-  - mvn clean verify -DskipITs=false
-
-after_success:
-  - if [[ "$MAVEN_DEPLOY" == true ]]; then ./bin/maven-deploy.sh; fi
+  - ./bin/maven-deploy.sh
 
 # Deploy to Github
 deploy:
