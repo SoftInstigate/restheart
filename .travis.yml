@@ -2,8 +2,8 @@ dist: trusty
 sudo: false
 language: java
 jdk:
-   - openjdk8
-   - openjdk11
+  - openjdk8
+  - openjdk11
 git:
   depth: 3
 
@@ -14,13 +14,13 @@ notifications:
     on_success: always
   slack:
     secure: "IeoyrbTPjPtopkmTFbcCzgy+9q8MMzhla9lXhZYdqsbn19KKe4UKNp0Cu0SY601ss586Lw4jsegvba6LFF3bi3j4aK0ZITtGJ4PYGvYByh3O7zi4Y0K2RUeYU1CfTIl18QBHcAIjQSmKLJPnyN9Y5Y4/4KhfWTqXy7tvkB36Oys="
-    
+
 cache:
   directories:
-     - '$HOME/.m2'
+    - "$HOME/.m2"
 
 services:
-   - docker
+  - docker
 
 before_install:
   - docker run -d -p 27017:27017 mongo:$MONGO
@@ -37,38 +37,38 @@ script:
 
 after_success:
   - if [[ "$MAVEN_DEPLOY" == true ]]; then ./bin/maven-deploy.sh; fi
-   
-# Deploy to Github  
+
+# Deploy to Github
 deploy:
   provider: releases
   api_key:
     secure: EEGZ5uRn23QqhPqiENRZxBkuDw+qyl23ELUr0HHltI/DK+UIsFQrQydZbtl6VIPTzE8O3EOy/PhzTk2zXlh5cfi+THkIAzpNzW93CAUNFMknUV/cDsrgRSKwEXlF1LJ1WqerM8g4pKvyfyJTOIkFwir/1bIZ/ww+8zIqw6+SBlo=
   file_glob: true
-  file: 
+  file:
     - "target/*.tar.gz"
     - "target/*.zip"
     - "target/restheart.jar"
   skip_cleanup: true
   on:
     tags: true
-    condition: $MAVEN_DEPLOY = true 
+    condition: $MAVEN_DEPLOY = true
 
 env:
   matrix:
-  - MONGO=4.0
-  - MONGO=3.6 MAVEN_DEPLOY=true
+    - MONGO=4.0
+    - MONGO=3.6 MAVEN_DEPLOY=true
   global:
     - secure: "rlLQCDykTqV7/EC+kTCw5JpYbuZwk0Neq5q1kRQ6hjcUYRdgjPJretVg+1e5+GcGOH4/Z/aOGdQrk1HtPW6tE+ePIUDAUwuLX2+6AUt2FqIqumYoJxYR7rsw+THkjiPaopB7qmWOUJ1vec7QCEiaGexYcjs3j6mv//SbnUksY2w="
     - secure: "t4tS+6EAC9nuE9SOKMfooux34usyPY2oBt0/737A2o9y3LXgy/jt0hyx09W4Gc1ZHq8QYoEiwHU40rlo2KWcxPKK/e4U/dZ1ne5OBJLKt5dhGr/PwaO0rVa7039zgQRn1VN+ayx92AfQCZMyA7iTrVDrM/2lxvDww0UYyZmViaA="
     - secure: "NJiw/JRqiwYkEx2eisu5yllgX6oKJwhV60SldnlpnHqWzOaqXoqsKLOiP18cBPeLT6BuVYT9Z0PyaI9+2bPzt2IUC6vKuhimPYA0IRqoDfAcdSKa/Q1LcbLdbX+T941IE0iPlVesh3iFf41Cc5BM5ND2fu/yRlAHOcJFTdSqGAs="
-    - # GITHUB_TOKEN 
+    -  # GITHUB_TOKEN
     - secure: "P+eIZffIwlYApsZ+i87jQ0/SXTNwWpAiq5QcjJPLSlUxFrBsTUbI2nvW1NWJNb9+lZS08bTpEtm5NC1bIKW8zBLVSdidr0m7ogSa+BdvclXvQ4Zu5YEJETJ6+IP5EAn03NSfbfUrWz/mtlplSCK6Mr1dRVFT/7ictQMvvkFoqok="
-    - # GPG_KEY_NAME
+    -  # GPG_KEY_NAME
     - secure: "TpW3POqtLLgSjYq0eGc03fk90AlkoqYieNht8c1AE/vgP442G1y9jkKk81AQulGHmpGZYQ3slhtn754jwAS2uzcHb4DtjIsbZvum/Ipbebgmi5Gi2sVcsWXPaEPoctzf/+tuKLz1psjuZzT3m1K2AaqvhUlKwy7oAgZt0X78axM="
-    - # GPG_PASSPHRASE
+    -  # GPG_PASSPHRASE
     - secure: "U5su51eqq16En2sVYwCT8oseHfXWLO5dLjDvKpDefg+wLXF9y1E8Ckic0m2Rzq4mQdJMyrrQk+ZLu+LSgQC3kfHCrjDJ1Qv+olnPuuGPVZqlc+bQRgwBkyUWOXts+8t8JTF3swEz4kVV9mGTeQiuchjBlySaPSSNQStEXoI7+dg="
 
 matrix:
   exclude:
-  - jdk: openjdk11
-    env: MONGO=3.6 MAVEN_DEPLOY=true
+    - jdk: openjdk11
+      env: MONGO=3.6 MAVEN_DEPLOY=true
