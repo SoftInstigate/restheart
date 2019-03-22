@@ -15,9 +15,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.sessions;
+package org.restheart.handlers.sessions.txns;
 
-import org.restheart.db.sessions.Txns;
 import org.restheart.db.sessions.ClientSessionFactory;
 import org.restheart.db.sessions.ClientSessionImpl;
 import com.mongodb.MongoClient;
@@ -39,13 +38,14 @@ import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.representation.Resource;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import static org.restheart.db.sessions.Txns.CMD.ABORT;
-import static org.restheart.db.sessions.Txns.CMD.COMMIT;
-import static org.restheart.db.sessions.Txns.CMD.START;
+import static org.restheart.db.sessions.Txn.CMD.ABORT;
+import static org.restheart.db.sessions.Txn.CMD.COMMIT;
+import static org.restheart.db.sessions.Txn.CMD.START;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.restheart.db.sessions.Txn;
 
 /**
  *
@@ -53,9 +53,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class PatchSessionHandler extends PipedHttpHandler {
+public class PatchTxnHandler extends PipedHttpHandler {
     private static final Logger LOGGER = LoggerFactory
-            .getLogger(PatchSessionHandler.class);
+            .getLogger(PatchTxnHandler.class);
 
     private static MongoClient MCLIENT = MongoDBClientSingleton
             .getInstance().getClient();
@@ -63,15 +63,15 @@ public class PatchSessionHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of PatchTxnHandler
      */
-    public PatchSessionHandler() {
+    public PatchTxnHandler() {
         super();
     }
 
-    public PatchSessionHandler(PipedHttpHandler next) {
+    public PatchTxnHandler(PipedHttpHandler next) {
         super(next, new DatabaseImpl());
     }
 
-    public PatchSessionHandler(PipedHttpHandler next, Database dbsDAO) {
+    public PatchTxnHandler(PipedHttpHandler next, Database dbsDAO) {
         super(next, dbsDAO);
     }
 
@@ -91,10 +91,25 @@ public class PatchSessionHandler extends PipedHttpHandler {
             return;
         }
 
-        String sid = context.getCollectionName();
+        String _sid = context.getCollectionName();
+        
+        UUID sid;
+
+        try {
+            sid = UUID.fromString(_sid);
+        } catch (IllegalArgumentException iae) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "Invalid session id");
+            next(exchange, context);
+            return;
+        }
+        
         ClientSessionImpl cs = ClientSessionFactory.getClientSession(sid);
 
-        Txns.CMD command;
+        Txn.CMD command;
 
         if (context.getContent() != null
                 && context.getContent().isDocument()
@@ -104,14 +119,14 @@ public class PatchSessionHandler extends PipedHttpHandler {
             var txn = context.getContent().asDocument().get("txn").asString();
 
             try {
-                command = Txns.CMD.valueOf(txn.getValue());
+                command = Txn.CMD.valueOf(txn.getValue());
             } catch (IllegalArgumentException iae) {
                 ResponseHelper.endExchangeWithMessage(exchange,
                         context,
                         HttpStatus.SC_BAD_REQUEST,
                         "request does not contain valid txn property. "
                         + "Allowed valures are "
-                        + Arrays.toString(Txns.CMD.values()));
+                        + Arrays.toString(Txn.CMD.values()));
                 next(exchange, context);
                 return;
             }
@@ -140,15 +155,9 @@ public class PatchSessionHandler extends PipedHttpHandler {
                             .first();
                     break;
                 case COMMIT:
-                    cs.setMessageSentInCurrentTransaction(true);
-                    cs.startTransaction();
-
                     cs.commitTransaction();
                     break;
                 case ABORT:
-                    cs.setMessageSentInCurrentTransaction(true);
-                    cs.startTransaction();
-
                     cs.abortTransaction();
                     break;
             }

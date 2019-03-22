@@ -48,41 +48,88 @@ public class ClientSessionFactory {
             .getInstance()
             .getClient();
 
-    public static ServerSession createServerSession(String sid) {
+    public static ServerSession createServerSession(UUID sid) {
         return new ServerSessionImpl(createServerSessionIdentifier(sid));
     }
 
-    private static BsonBinary createServerSessionIdentifier(String serverSessionUUID) {
+    private static BsonBinary createServerSessionIdentifier(UUID sid) {
         UuidCodec uuidCodec = new UuidCodec(UuidRepresentation.STANDARD);
         BsonDocument holder = new BsonDocument();
         BsonDocumentWriter bsonDocumentWriter = new BsonDocumentWriter(holder);
         bsonDocumentWriter.writeStartDocument();
         bsonDocumentWriter.writeName("id");
-        uuidCodec.encode(bsonDocumentWriter, UUID.fromString(serverSessionUUID),
+        uuidCodec.encode(bsonDocumentWriter,
+                sid,
                 EncoderContext.builder().build());
         bsonDocumentWriter.writeEndDocument();
         return holder.getBinary("id");
     }
 
-    public static ClientSessionImpl getClientSession(String sid) {
+    public static ClientSessionImpl getClientSession(UUID sid) {
+        var options = Sid.getSessionOptions(sid);
+
         ClientSessionOptions cso = ClientSessionOptions
                 .builder()
+                .causallyConsistent(options.isCausallyConsistent())
                 .build();
 
-        return createClientSession(
+        ClientSessionImpl cs = createClientSession(
                 sid,
                 cso,
                 MCLIENT.getReadConcern(),
                 MCLIENT.getWriteConcern(),
-                MCLIENT.getReadPreference());
+                MCLIENT.getReadPreference(),
+                null);
+
+        if (options.isTransacted()) {
+            var txnServerStatus = SessionsUtils.getTxnServerStatus(cs);
+            
+            cs.setTxnServerStatus(txnServerStatus);
+
+//            if (!cs.hasActiveTransaction()) {
+//                cs.startTransaction();
+//            }
+            if (cs.getServerSession().getTransactionNumber() 
+                    < txnServerStatus.getTxnId()) {
+                ((ServerSessionImpl) cs.getServerSession())
+                        .advanceTransactionNumber(txnServerStatus.getTxnId());
+            }
+
+            switch (txnServerStatus.getState()) {
+                case IN:
+                    cs.setMessageSentInCurrentTransaction(true);
+                    break;
+                case ABORTED:
+                case COMMITTED:
+//                    cs.getServerSession().advanceTransactionNumber();
+//                    cs.setMessageSentInCurrentTransaction(false);
+//                    txnServerStatus = new Txn(cs.getServerSession().getTransactionNumber(),
+//                            Txn.TransactionState.IN);
+                    break;
+                case NONE:
+//                    cs.setMessageSentInCurrentTransaction(false);
+//                    if (!cs.hasActiveTransaction()) {
+//                        cs.startTransaction();
+//                    }
+                    break;
+                default:
+                    throw new IllegalStateException("Session "
+                            + sid
+                            + " has unknown txn status "
+                            + txnServerStatus);
+            }
+        } 
+
+        return cs;
     }
 
-    public static ClientSessionImpl createClientSession(
-            String sid,
+    static ClientSessionImpl createClientSession(
+            UUID sid,
             final ClientSessionOptions options,
             final ReadConcern readConcern,
             final WriteConcern writeConcern,
-            final ReadPreference readPreference) {
+            final ReadPreference readPreference,
+            final Txn txnServerStatus) {
         notNull("readConcern", readConcern);
         notNull("writeConcern", writeConcern);
         notNull("readPreference", readPreference);
@@ -105,7 +152,8 @@ public class ClientSessionFactory {
                 new SimpleServerSessionPool(SessionsUtils.getCluster(), sid),
                 MCLIENT,
                 mergedOptions,
-                SessionsUtils.getMongoClientDelegate());
+                SessionsUtils.getMongoClientDelegate(),
+                txnServerStatus);
 
         return cs;
 
@@ -125,7 +173,7 @@ final class ServerSessionImpl implements ServerSession {
     };
 
     private final BsonDocument identifier;
-    private final long transactionNumber = 1;
+    private long transactionNumber = 0;
     private volatile long lastUsedAtMillis = clock.millis();
     private volatile boolean closed;
 
@@ -154,7 +202,18 @@ final class ServerSessionImpl implements ServerSession {
 
     @Override
     public long advanceTransactionNumber() {
-        return transactionNumber;
+        return transactionNumber++;
+    }
+
+    public void advanceTransactionNumber(long number) {
+        if (number <= this.transactionNumber) {
+            throw new IllegalArgumentException("current transactionNumber is "
+                    + this.transactionNumber
+                    + " cannot set it to "
+                    + number);
+        }
+
+        this.transactionNumber = number;
     }
 
     @Override

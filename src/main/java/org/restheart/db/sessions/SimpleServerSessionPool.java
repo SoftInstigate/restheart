@@ -20,16 +20,17 @@ package org.restheart.db.sessions;
 import com.mongodb.connection.Cluster;
 import com.mongodb.internal.session.ServerSessionPool;
 import com.mongodb.session.ServerSession;
+import java.util.UUID;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class SimpleServerSessionPool extends ServerSessionPool {
-    private String sid;
+    private UUID sid;
     
     @SuppressWarnings("deprecation")
-    public SimpleServerSessionPool(Cluster cluster, String sid) {
+    public SimpleServerSessionPool(Cluster cluster, UUID sid) {
         super(cluster);
         
         this.sid = sid;

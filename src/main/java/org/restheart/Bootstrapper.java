@@ -585,10 +585,6 @@ public class Bootstrapper {
             }
         });
 
-        if (undertowServer != null) {
-            undertowServer.stop();
-        }
-
         if (!silent) {
             LOGGER.info(ansi().fg(GREEN).a("RESTHeart stopped").reset().toString());
         }

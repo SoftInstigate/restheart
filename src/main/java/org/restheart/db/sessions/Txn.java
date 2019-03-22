@@ -21,6 +21,43 @@ package org.restheart.db.sessions;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface Txns {
-    public enum CMD { START, COMMIT, ABORT };
+public class Txn {
+    public enum CMD {
+        START, COMMIT, ABORT
+    };
+
+    public enum TransactionState {
+        NONE, IN, COMMITTED, ABORTED
+    }
+
+    private final TransactionState state;
+    private final long txnId;
+
+    public Txn(final long txnId, final TransactionState state) {
+        this.txnId = txnId;
+        this.state = state;
+    }
+
+    @Override
+    public String toString() {
+        if (txnId == -1 && state == TransactionState.NONE) {
+            return "Txn(state=NOT_SUPPORTED)";
+        } else {
+            return "Txn(txnId=" + getTxnId() + ", state=" + getState() + ")";
+        }
+    }
+
+    /**
+     * @return the state
+     */
+    public TransactionState getState() {
+        return state;
+    }
+
+    /**
+     * @return the txid
+     */
+    public long getTxnId() {
+        return txnId;
+    }
 }

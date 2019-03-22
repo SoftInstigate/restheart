@@ -69,7 +69,9 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.isInError() || context.isTxn()) {
+        if (context.isInError() 
+                || context.isTxn()
+                || context.isTxns()) {
             next(exchange, context);
             return;
         }
