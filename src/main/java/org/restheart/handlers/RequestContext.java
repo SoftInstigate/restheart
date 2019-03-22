@@ -75,7 +75,8 @@ public class RequestContext {
     public static final String SHARDKEY_QPARAM_KEY = "shardkey";
     public static final String NO_PROPS_KEY = "np";
     public static final String REPRESENTATION_FORMAT_KEY = "rep";
-    public static final String CLIENT_SESSION_KEY = "session";
+    public static final String CLIENT_SESSION_KEY = "sid";
+    public static final String TXNID_KEY = "txn";
 
     // matadata
     public static final String ETAG_DOC_POLICY_METADATA_KEY = "etagDocPolicy";
@@ -173,6 +174,10 @@ public class RequestContext {
                 && pathTokens[pathTokens.length - 1]
                         .equalsIgnoreCase(_SESSIONS)) {
             type = TYPE.SESSIONS;
+        } else if (pathTokens.length == 3
+                && pathTokens[pathTokens.length - 2]
+                        .equalsIgnoreCase(_SESSIONS)) {
+            type = TYPE.SESSION;
         } else if (pathTokens.length == 4
                 && pathTokens[pathTokens.length - 3]
                         .equalsIgnoreCase(_SESSIONS)
@@ -690,6 +695,23 @@ public class RequestContext {
      */
     public String getIndexId() {
         return getPathTokenAt(4);
+    }
+
+    /**
+     *
+     * @return the txn id or null if request type is not SESSIONS, TRANSACTIONS
+     * or TRANSACTION
+     */
+    public String getSid() {
+        return isTxn() || isTxns() || isSessions() ? getPathTokenAt(2) : null;
+    }
+
+    /**
+     *
+     * @return the txn id or null if request type is not TRANSACTION
+     */
+    public long getTxnId() {
+        return isTxn() ? Long.parseLong(getPathTokenAt(4)) : null;
     }
 
     /**
@@ -1873,6 +1895,7 @@ public class RequestContext {
         SCHEMA_STORE_META,
         BULK_DOCUMENTS,
         METRICS,
+        SESSION,
         SESSIONS,
         TRANSACTIONS,
         TRANSACTION

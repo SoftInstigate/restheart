@@ -17,6 +17,7 @@
  */
 package org.restheart.db.sessions;
 
+import com.mongodb.ClientSessionOptions;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoCommandException;
 import com.mongodb.MongoCredential;
@@ -31,8 +32,10 @@ import java.lang.reflect.Method;
 import java.util.Collections;
 import static java.util.Collections.singletonList;
 import java.util.List;
+import java.util.UUID;
 import org.bson.conversions.Bson;
 import org.restheart.db.MongoDBClientSingleton;
+import static org.restheart.db.sessions.ClientSessionFactory.createClientSession;
 import org.restheart.db.sessions.Txn.TransactionState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,19 +100,45 @@ public class SessionsUtils {
         }
     }
 
-    static Txn getTxnServerStatus(ClientSessionImpl cs) {
-        if (!Sid.getSessionOptions(cs.getSid())
-                .isTransacted()) {
-            return new Txn(-1, TransactionState.NONE);
+    public static Txn getTxnServerStatus(UUID sid) {
+        var options = Sid.getSessionOptions(sid);
+
+        if (!options.isTransacted()) {
+            return Txn.newNotSupportingTxn();
+        }
+
+        var cso = ClientSessionOptions
+                .builder()
+                .causallyConsistent(options.isCausallyConsistent())
+                .build();
+
+        var cs = createClientSession(
+                sid,
+                cso,
+                MCLIENT.getReadConcern(),
+                MCLIENT.getWriteConcern(),
+                MCLIENT.getReadPreference(),
+                Txn.newNotSupportingTxn());
+
+        // set txnId on ServerSession
+        if (cs.getServerSession().getTransactionNumber()
+                < 1) {
+            ((ServerSessionImpl) cs.getServerSession())
+                    .advanceTransactionNumber(1);
         }
 
         try {
+            if (!cs.hasActiveTransaction()) {
+                cs.setMessageSentInCurrentTransaction(true);
+                cs.startTransaction();
+            }
             runDummyReadCommand(cs);
             return new Txn(1, TransactionState.IN);
         } catch (MongoQueryException mqe) {
             var num = getTxnNumFromExc(mqe);
 
             if (num > 1) {
+                cs.advanceServerSessionTransactionNumber(num);
                 try {
                     runDummyReadCommand(cs);
                     return new Txn(num, TransactionState.IN);
@@ -122,13 +151,13 @@ public class SessionsUtils {
         }
     }
 
-    static void runDummyReadCommand(ClientSessionImpl cs)
+    /**
+     *
+     * @param cs
+     * @throws MongoQueryException
+     */
+    public static void runDummyReadCommand(ClientSessionImpl cs)
             throws MongoQueryException {
-        if (!cs.hasActiveTransaction()) {
-            cs.setMessageSentInCurrentTransaction(true);
-            cs.startTransaction();
-        }
-
         MCLIENT
                 .getDatabase("foo")
                 .getCollection("bar")
@@ -142,8 +171,13 @@ public class SessionsUtils {
 
     private static void runDummyWriteCommand(ClientSessionImpl cs)
             throws MongoCommandException {
+        boolean msict = cs.isMessageSentInCurrentTransaction();
+
         cs.setMessageSentInCurrentTransaction(true);
-        cs.startTransaction();
+
+        if (!cs.hasActiveTransaction()) {
+            cs.startTransaction();
+        }
 
         MCLIENT
                 .getDatabase("foo")
@@ -151,25 +185,72 @@ public class SessionsUtils {
                 .updateOne(cs,
                         IMPOSSIBLE_CONDITION,
                         eq("$set", eq("a", 1)));
+
+        cs.setMessageSentInCurrentTransaction(msict);
     }
 
-    private static final String TXT_NUM_ERROR_MSG_PREFIX = "because a newer transaction ";
-    private static final String TXT_NUM_ERROR_MSG_SUFFIX = " has already started";
+    private static final String TXT_NUM_ERROR_MSG_PREFIX_STARTED = "because a newer transaction ";
+    private static final String TXT_NUM_ERROR_MSG_SUFFIX_STARTED = " has already started";
+
+    private static final String TXT_NUM_ERROR_MSG_PREFIX_ABORTED = "Transaction ";
+    private static final String TXT_NUM_ERROR_MSG_SUFFIX_ABORTED = " has been aborted";
+    
+    private static final String TXT_NUM_ERROR_MSG_PREFIX_COMMITTED = "Transaction ";
+    private static final String TXT_NUM_ERROR_MSG_SUFFIX_COMMITTED = " has been committed";
+    
+    private static final String TXT_NUM_ERROR_MSG_PREFIX_NONE = "Given transaction number ";
+    private static final String TXT_NUM_ERROR_MSG_SUFFIX_NONE = " does not match any in-progress transactions";
 
     private static long getTxnNumFromExc(MongoQueryException mqe) {
         var ret = 1l;
 
         if (mqe.getErrorCode() == 225 && mqe.getErrorMessage() != null) {
-            int start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX)
-                    + TXT_NUM_ERROR_MSG_PREFIX.length();
-            int end = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_SUFFIX);
+            int start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX_STARTED)
+                    + TXT_NUM_ERROR_MSG_PREFIX_STARTED.length();
+            int end = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_SUFFIX_STARTED);
 
-            String numStr = mqe.getErrorMessage().substring(start, end).trim();
+            if (start >= 0 && end >= 0) {
+                String numStr = mqe.getErrorMessage().substring(start, end).trim();
 
-            ret = Long.parseLong(numStr);
+                return Long.parseLong(numStr);
+            }
+        } else if (mqe.getErrorCode() == 251 && mqe.getErrorMessage() != null) {
+            int start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX_ABORTED)
+                    + TXT_NUM_ERROR_MSG_PREFIX_ABORTED.length();
+            int end = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_SUFFIX_ABORTED);
+
+            if (start >= 0 && end >= 0) {
+                String numStr = mqe.getErrorMessage().substring(start, end).trim();
+
+                return Long.parseLong(numStr);
+            }
+            
+            start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX_NONE)
+                    + TXT_NUM_ERROR_MSG_PREFIX_NONE.length();
+            end = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_SUFFIX_NONE);
+
+            if (start >= 0 && end >= 0) {
+                String numStr = mqe.getErrorMessage().substring(start, end).trim();
+
+                return Long.parseLong(numStr);
+            }
+        } else if (mqe.getErrorCode() == 256 && mqe.getErrorMessage() != null) {
+            int start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX_COMMITTED)
+                    + TXT_NUM_ERROR_MSG_PREFIX_COMMITTED.length();
+            int end = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_SUFFIX_COMMITTED);
+
+            if (start >= 0 && end >= 0) {
+                String numStr = mqe.getErrorMessage().substring(start, end).trim();
+
+                return Long.parseLong(numStr);
+            }
         }
 
-        return ret;
+        LOGGER.debug("***** query error not handled {}: {}",
+                mqe.getErrorCode(),
+                mqe.getErrorMessage());
+
+        throw mqe;
     }
 
     private static TransactionState getTxnStateFromExc(MongoQueryException mqe) {
@@ -181,13 +262,18 @@ public class SessionsUtils {
                     "has been aborted")) {
                 return TransactionState.ABORTED;
             }
+        } else if (mqe.getErrorCode() == 256) {
+            if (mqe.getErrorMessage().contains(
+                    "has been committed")) {
+                return TransactionState.COMMITTED;
+            }
         }
 
         LOGGER.debug("***** query error not handled {}: {}",
                 mqe.getErrorCode(),
                 mqe.getErrorMessage());
 
-        return TransactionState.NONE;
+        throw mqe;
     }
 
     public static MongoClientDelegate getMongoClientDelegate() {

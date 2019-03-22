@@ -45,7 +45,8 @@ public class RepresentationTransformer implements Transformer {
         if (!context.isInError()
                 && (context.isDocument()
                 || context.isFile()
-                || context.isIndex())) {
+                || context.isIndex())
+                || context.isTxns()) {
             return;
         }
 

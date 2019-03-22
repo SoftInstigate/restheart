@@ -65,6 +65,10 @@ public class ClientSessionImpl
             boolean messageSentInCurrentTransaction) {
         this.messageSentInCurrentTransaction = messageSentInCurrentTransaction;
     }
+    
+    public boolean isMessageSentInCurrentTransaction() {
+        return this.messageSentInCurrentTransaction;
+    }
 
     @Override
     public boolean hasActiveTransaction() {
@@ -127,7 +131,8 @@ public class ClientSessionImpl
         } else {
             transactionState = TransactionState.IN;
         }
-        getServerSession().advanceTransactionNumber();
+        
+        //getServerSession().advanceTransactionNumber();
 
         this.transactionOptions = TransactionOptions.merge(
                 transactionOptions,
@@ -144,7 +149,11 @@ public class ClientSessionImpl
                     + "unacknowledged write concern");
         }
     }
-
+    
+    public void advanceServerSessionTransactionNumber(long number) {
+        ((ServerSessionImpl)getServerSession()).advanceTransactionNumber(number);
+    }
+    
     @Override
     @SuppressWarnings("deprecation")
     public void commitTransaction() {

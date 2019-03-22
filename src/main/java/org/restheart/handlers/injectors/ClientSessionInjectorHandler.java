@@ -22,6 +22,8 @@ import java.util.UUID;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.db.sessions.ClientSessionFactory;
+import org.restheart.db.sessions.ClientSessionImpl;
+import static org.restheart.db.sessions.Txn.TransactionState.IN;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
@@ -29,9 +31,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * this handler injects the db properties in the RequestContext this handler is
- * also responsible of sending NOT_FOUND in case of requests involving not
- * existing dbs (that are not PUT)
+ * this handler injects the ClientSession in the request context
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -80,14 +80,49 @@ public class ClientSessionInjectorHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-        
-        var cs = ClientSessionFactory
-                .getClientSession(sid);
 
-        LOGGER.debug("Request is executed in session {} with {}", 
-                _sid, 
-                cs.getTxnServerStatus());
-        
+        ClientSessionImpl cs;
+
+        if (exchange.getQueryParameters()
+                .containsKey(RequestContext.TXNID_KEY)) {
+            String _txnId = exchange.getQueryParameters()
+                    .get(RequestContext.TXNID_KEY).getFirst();
+
+            long txnId = -1;
+
+            try {
+                txnId = Long.parseLong(_txnId);
+            } catch (NumberFormatException nfe) {
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "Invalid txnId");
+                next(exchange, context);
+                return;
+            }
+
+            cs = ClientSessionFactory
+                    .getTxnClientSession(sid, txnId);
+
+            LOGGER.debug("Request is executed in session {} with {}",
+                    _sid,
+                    cs.getTxnServerStatus());
+            
+            if (cs.getTxnServerStatus().getState() == IN) {
+                cs.setMessageSentInCurrentTransaction(true);
+                
+                if (!cs.hasActiveTransaction()) {
+                    cs.startTransaction();
+                }
+            }
+        } else {
+            cs = ClientSessionFactory
+                    .getClientSession(sid);
+
+            LOGGER.debug("Request is executed in session {}", _sid);
+        }
+
         context.setClientSession(cs);
 
         next(exchange, context);

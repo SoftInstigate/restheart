@@ -19,13 +19,17 @@ package org.restheart.handlers.sessions.txns;
 
 import org.restheart.db.sessions.ClientSessionFactory;
 import org.restheart.db.sessions.ClientSessionImpl;
-import com.mongodb.MongoCommandException;
+import com.mongodb.MongoClient;
 import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonInt64;
+import org.bson.BsonString;
 import org.restheart.db.Database;
 import org.restheart.db.DatabaseImpl;
+import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.db.sessions.SessionsUtils;
-import org.restheart.representation.Resource;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
@@ -35,26 +39,29 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * aborts transaction of the session
+ * commits the transaction of the session
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class DeleteTxnHandler extends PipedHttpHandler {
+public class GetTxnHandler extends PipedHttpHandler {
     private static final Logger LOGGER = LoggerFactory
-            .getLogger(DeleteTxnHandler.class);
+            .getLogger(GetTxnHandler.class);
+
+    private static MongoClient MCLIENT = MongoDBClientSingleton
+            .getInstance().getClient();
 
     /**
-     * Creates a new instance of DeleteTxnHandler
+     * Creates a new instance of PatchTxnHandler
      */
-    public DeleteTxnHandler() {
+    public GetTxnHandler() {
         super();
     }
 
-    public DeleteTxnHandler(PipedHttpHandler next) {
+    public GetTxnHandler(PipedHttpHandler next) {
         super(next, new DatabaseImpl());
     }
 
-    public DeleteTxnHandler(PipedHttpHandler next, Database dbsDAO) {
+    public GetTxnHandler(PipedHttpHandler next, Database dbsDAO) {
         super(next, dbsDAO);
     }
 
@@ -74,7 +81,7 @@ public class DeleteTxnHandler extends PipedHttpHandler {
             return;
         }
 
-        String _sid = context.getCollectionName();
+        String _sid = context.getSid();
 
         UUID sid;
 
@@ -91,35 +98,24 @@ public class DeleteTxnHandler extends PipedHttpHandler {
         }
 
         var txn = SessionsUtils.getTxnServerStatus(sid);
-        ClientSessionImpl cs = ClientSessionFactory.getTxnClientSession(sid, txn.getTxnId());
 
-        try {
-            cs.setMessageSentInCurrentTransaction(true);
-            
-            if (!cs.hasActiveTransaction()) {
-                cs.startTransaction();
-            }
-            
-            cs.abortTransaction();
+        var currentTxn = new BsonDocument();
 
-            context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
-            context.setResponseStatusCode(HttpStatus.SC_NO_CONTENT);
-        } catch (MongoCommandException mce) {
-            LOGGER.error("Error {} {}, {}",
-                    mce.getErrorCode(),
-                    mce.getErrorCodeName(),
-                    mce.getErrorMessage());
+        var resp = new BsonDocument("currentTxn", currentTxn);
+        
+        currentTxn.append("id",
+                txn.getTxnId() > Integer.MAX_VALUE
+                ? new BsonInt64(txn.getTxnId())
+                : new BsonInt32((int) txn.getTxnId()));
 
-            if (mce.getErrorCode() == 20) {
-                ResponseHelper.endExchangeWithMessage(exchange,
-                        context,
-                        HttpStatus.SC_BAD_GATEWAY,
-                        mce.getErrorCodeName() + ", " + mce.getErrorMessage());
-            } else {
-                throw mce;
-            }
-        }
+        context.setResponseStatusCode(HttpStatus.SC_NOT_FOUND);
+        currentTxn.append("state", new BsonString(txn.getState().name()));
+        context.setResponseStatusCode(HttpStatus.SC_OK);
+
+        
+        context.setResponseContent(resp);
 
         next(exchange, context);
     }
+
 }
