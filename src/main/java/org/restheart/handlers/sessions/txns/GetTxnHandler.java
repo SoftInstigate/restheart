@@ -17,19 +17,17 @@
  */
 package org.restheart.handlers.sessions.txns;
 
-import org.restheart.db.sessions.ClientSessionFactory;
-import org.restheart.db.sessions.ClientSessionImpl;
-import com.mongodb.MongoClient;
 import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonInt64;
+import org.bson.BsonNull;
 import org.bson.BsonString;
 import org.restheart.db.Database;
 import org.restheart.db.DatabaseImpl;
-import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.db.sessions.SessionsUtils;
+import static org.restheart.db.sessions.Txn.TransactionState.NONE;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
@@ -46,9 +44,6 @@ import org.slf4j.LoggerFactory;
 public class GetTxnHandler extends PipedHttpHandler {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(GetTxnHandler.class);
-
-    private static MongoClient MCLIENT = MongoDBClientSingleton
-            .getInstance().getClient();
 
     /**
      * Creates a new instance of PatchTxnHandler
@@ -99,21 +94,25 @@ public class GetTxnHandler extends PipedHttpHandler {
 
         var txn = SessionsUtils.getTxnServerStatus(sid);
 
-        var currentTxn = new BsonDocument();
+        if (txn.getState() == NONE) {
+            context.setResponseContent(
+                    new BsonDocument("currentTxn", new BsonNull()));
+        } else {
+            var currentTxn = new BsonDocument();
 
-        var resp = new BsonDocument("currentTxn", currentTxn);
-        
-        currentTxn.append("id",
-                txn.getTxnId() > Integer.MAX_VALUE
-                ? new BsonInt64(txn.getTxnId())
-                : new BsonInt32((int) txn.getTxnId()));
+            var resp = new BsonDocument("currentTxn", currentTxn);
 
-        context.setResponseStatusCode(HttpStatus.SC_NOT_FOUND);
-        currentTxn.append("state", new BsonString(txn.getState().name()));
+            currentTxn.append("id",
+                    txn.getTxnId() > Integer.MAX_VALUE
+                    ? new BsonInt64(txn.getTxnId())
+                    : new BsonInt32((int) txn.getTxnId()));
+
+            currentTxn.append("state", new BsonString(txn.getState().name()));
+            
+            context.setResponseContent(resp);
+        }
+
         context.setResponseStatusCode(HttpStatus.SC_OK);
-
-        
-        context.setResponseContent(resp);
 
         next(exchange, context);
     }

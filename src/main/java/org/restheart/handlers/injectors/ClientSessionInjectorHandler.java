@@ -23,6 +23,7 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.db.sessions.ClientSessionFactory;
 import org.restheart.db.sessions.ClientSessionImpl;
+import org.restheart.db.sessions.Txn;
 import static org.restheart.db.sessions.Txn.TransactionState.IN;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -97,7 +98,7 @@ public class ClientSessionInjectorHandler extends PipedHttpHandler {
                         exchange,
                         context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
-                        "Invalid txnId");
+                        "Invalid txn");
                 next(exchange, context);
                 return;
             }
@@ -105,13 +106,38 @@ public class ClientSessionInjectorHandler extends PipedHttpHandler {
             cs = ClientSessionFactory
                     .getTxnClientSession(sid, txnId);
 
+            cs.advanceServerSessionTransactionNumber(txnId);
+
+            if (txnId != cs.getTxnServerStatus().getTxnId()) {
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "Specified txn does not match the active txn id ("
+                        + cs.getTxnServerStatus().getTxnId()
+                        + ")");
+                next(exchange, context);
+                return;
+            }
+            
+            if (cs.getTxnServerStatus().getState() != IN) {
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        context,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "Specified txn is not in-progress, status is "
+                        + cs.getTxnServerStatus().getState());
+                next(exchange, context);
+                return;
+            }
+
             LOGGER.debug("Request is executed in session {} with {}",
                     _sid,
                     cs.getTxnServerStatus());
-            
+
             if (cs.getTxnServerStatus().getState() == IN) {
                 cs.setMessageSentInCurrentTransaction(true);
-                
+
                 if (!cs.hasActiveTransaction()) {
                     cs.startTransaction();
                 }

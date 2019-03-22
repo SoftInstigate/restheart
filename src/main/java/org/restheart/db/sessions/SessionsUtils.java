@@ -201,9 +201,12 @@ public class SessionsUtils {
     private static final String TXT_NUM_ERROR_MSG_PREFIX_NONE = "Given transaction number ";
     private static final String TXT_NUM_ERROR_MSG_SUFFIX_NONE = " does not match any in-progress transactions";
 
+    /**
+     * gets the actual txn id from error messages
+     * @param mqe
+     * @return 
+     */
     private static long getTxnNumFromExc(MongoQueryException mqe) {
-        var ret = 1l;
-
         if (mqe.getErrorCode() == 225 && mqe.getErrorMessage() != null) {
             int start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX_STARTED)
                     + TXT_NUM_ERROR_MSG_PREFIX_STARTED.length();
@@ -253,6 +256,11 @@ public class SessionsUtils {
         throw mqe;
     }
 
+    /**
+     * get txn status from error messag
+     * @param mqe
+     * @return 
+     */
     private static TransactionState getTxnStateFromExc(MongoQueryException mqe) {
         if (mqe.getErrorCode() == 251) {
             if (mqe.getErrorMessage().contains(
