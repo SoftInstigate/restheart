@@ -22,10 +22,6 @@ package org.restheart.db.sessions;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class Txn {
-    public enum CMD {
-        START, COMMIT, ABORT
-    };
-
     public enum TransactionState {
         NONE, IN, COMMITTED, ABORTED
     }
@@ -59,5 +55,13 @@ public class Txn {
      */
     public long getTxnId() {
         return txnId;
+    }
+    
+    public boolean supportsTxns() {
+        return txnId == -1 && state == TransactionState.NONE;
+    }
+    
+    public static Txn newNotSupportingTxn() {
+        return  new Txn(-1, TransactionState.NONE);
     }
 }

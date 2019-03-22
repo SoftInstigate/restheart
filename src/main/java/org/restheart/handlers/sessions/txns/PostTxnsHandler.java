@@ -26,8 +26,11 @@ import org.bson.BsonString;
 import org.restheart.db.Database;
 import org.restheart.db.DatabaseImpl;
 import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.db.sessions.SessionOptions;
-import org.restheart.db.sessions.Sid;
+import org.restheart.db.sessions.ClientSessionFactory;
+import org.restheart.db.sessions.ClientSessionImpl;
+import org.restheart.db.sessions.SessionsUtils;
+import static org.restheart.db.sessions.Txn.TransactionState.ABORTED;
+import static org.restheart.db.sessions.Txn.TransactionState.COMMITTED;
 import org.restheart.representation.Resource;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -41,7 +44,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  * creates a session with a started transaction
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PostTxnsHandler extends PipedHttpHandler {
@@ -82,18 +85,60 @@ public class PostTxnsHandler extends PipedHttpHandler {
             return;
         }
 
+        String _sid = context.getSid();
+
+        UUID sid;
+
         try {
-            UUID sid = Sid.randomUUID(new SessionOptions(true, true));
+            sid = UUID.fromString(_sid);
+        } catch (IllegalArgumentException iae) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "Invalid session id");
+            next(exchange, context);
+            return;
+        }
+
+        var txn = SessionsUtils.getTxnServerStatus(sid);
+
+        if (txn.getState() == ABORTED
+                || txn.getState() == COMMITTED) {
+            var nextTxnId = txn.getTxnId() + 1;
+
+            var cs = ClientSessionFactory.getTxnClientSession(sid, nextTxnId);
+
+            cs.setMessageSentInCurrentTransaction(false);
+            
+            if (!cs.hasActiveTransaction()) {
+                cs.startTransaction();
+            }
+            
+            // propagate the transaction
+            
+            SessionsUtils.runDummyReadCommand(cs);
 
             exchange.getResponseHeaders()
                     .add(HttpString.tryFromString("Location"),
                             RepUtils.getReferenceLink(
                                     context,
                                     URLUtils.getRemappedRequestURL(exchange),
-                                    new BsonString(sid.toString())));
+                                    new BsonString("" + nextTxnId)));
 
-            context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
-            context.setResponseStatusCode(HttpStatus.SC_NO_CONTENT);
+            
+            context.setResponseStatusCode(HttpStatus.SC_CREATED);
+        } else {
+            context.setResponseStatusCode(HttpStatus.SC_NOT_MODIFIED);
+        }
+
+        try {
+            exchange.getResponseHeaders()
+                    .add(HttpString.tryFromString("Location"),
+                            RepUtils.getReferenceLink(
+                                    context,
+                                    URLUtils.getRemappedRequestURL(exchange),
+                                    new BsonString(sid.toString())));
         } catch (MongoClientException mce) {
             LOGGER.error("Error {}",
                     mce.getMessage());

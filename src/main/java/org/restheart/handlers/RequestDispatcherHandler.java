@@ -71,6 +71,7 @@ import org.restheart.handlers.transformers.RepresentationTransformer;
 import org.restheart.handlers.sessions.txns.DeleteTxnHandler;
 import org.restheart.handlers.sessions.txns.PatchTxnHandler;
 import org.restheart.handlers.sessions.PostSessionHandler;
+import org.restheart.handlers.sessions.txns.GetTxnHandler;
 import org.restheart.handlers.sessions.txns.PostTxnsHandler;
 import org.restheart.metadata.transformers.RequestTransformer.PHASE;
 import org.restheart.utils.HttpStatus;
@@ -431,6 +432,11 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
         putPipedHttpHandler(TYPE.TRANSACTIONS, METHOD.POST,
                 new RequestTransformerHandler(
                         new PostTxnsHandler(
+                                        respTransformers())));
+        
+        putPipedHttpHandler(TYPE.TRANSACTIONS, METHOD.GET,
+                new RequestTransformerHandler(
+                        new GetTxnHandler(
                                         respTransformers())));
         
         putPipedHttpHandler(TYPE.TRANSACTION, METHOD.DELETE,

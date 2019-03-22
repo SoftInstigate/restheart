@@ -66,6 +66,10 @@ public class ClientSessionFactory {
     }
 
     public static ClientSessionImpl getClientSession(UUID sid) {
+        return getTxnClientSession(sid, -1);
+    }
+
+    public static ClientSessionImpl getTxnClientSession(UUID sid, long txnId) {
         var options = Sid.getSessionOptions(sid);
 
         ClientSessionOptions cso = ClientSessionOptions
@@ -79,46 +83,15 @@ public class ClientSessionFactory {
                 MCLIENT.getReadConcern(),
                 MCLIENT.getWriteConcern(),
                 MCLIENT.getReadPreference(),
-                null);
+                Txn.newNotSupportingTxn());
 
-        if (options.isTransacted()) {
-            var txnServerStatus = SessionsUtils.getTxnServerStatus(cs);
+        if (txnId >= 0) {
+            var txnServerStatus = SessionsUtils.getTxnServerStatus(sid);
+            cs.setTxnServerStatus(txnServerStatus);            
             
-            cs.setTxnServerStatus(txnServerStatus);
-
-//            if (!cs.hasActiveTransaction()) {
-//                cs.startTransaction();
-//            }
-            if (cs.getServerSession().getTransactionNumber() 
-                    < txnServerStatus.getTxnId()) {
-                ((ServerSessionImpl) cs.getServerSession())
-                        .advanceTransactionNumber(txnServerStatus.getTxnId());
-            }
-
-            switch (txnServerStatus.getState()) {
-                case IN:
-                    cs.setMessageSentInCurrentTransaction(true);
-                    break;
-                case ABORTED:
-                case COMMITTED:
-//                    cs.getServerSession().advanceTransactionNumber();
-//                    cs.setMessageSentInCurrentTransaction(false);
-//                    txnServerStatus = new Txn(cs.getServerSession().getTransactionNumber(),
-//                            Txn.TransactionState.IN);
-                    break;
-                case NONE:
-//                    cs.setMessageSentInCurrentTransaction(false);
-//                    if (!cs.hasActiveTransaction()) {
-//                        cs.startTransaction();
-//                    }
-                    break;
-                default:
-                    throw new IllegalStateException("Session "
-                            + sid
-                            + " has unknown txn status "
-                            + txnServerStatus);
-            }
-        } 
+            ((ServerSessionImpl) cs.getServerSession())
+                    .advanceTransactionNumber(txnId);
+        }
 
         return cs;
     }
@@ -206,13 +179,6 @@ final class ServerSessionImpl implements ServerSession {
     }
 
     public void advanceTransactionNumber(long number) {
-        if (number <= this.transactionNumber) {
-            throw new IllegalArgumentException("current transactionNumber is "
-                    + this.transactionNumber
-                    + " cannot set it to "
-                    + number);
-        }
-
         this.transactionNumber = number;
     }
 

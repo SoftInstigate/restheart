@@ -133,11 +133,11 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 try {
                     rep = REPRESENTATION_FORMAT.valueOf(_rep.trim().toUpperCase());
                 } catch (IllegalArgumentException iae) {
-                    rcontext.addWarning("illegal rep parameter " 
-                            + _rep 
+                    rcontext.addWarning("illegal rep parameter "
+                            + _rep
                             + " (must be STANDARD, NESTED or HAL;"
-                                    + " S is an alias for STANDARD;"
-                                    + " PLAIN_JSON, PJ are aliases for NESTED)");
+                            + " S is an alias for STANDARD;"
+                            + " PLAIN_JSON, PJ are aliases for NESTED)");
                 }
             }
         }
@@ -167,6 +167,21 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                     + "see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
             next(exchange, rcontext);
             return;
+        }
+
+        // check txnId to be a valid long 
+        if (rcontext.isTxn()) {
+            try {
+                rcontext.getTxnId();
+            } catch (Throwable t) {
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        rcontext,
+                        HttpStatus.SC_BAD_REQUEST,
+                        "illegal txnId: it must be a number");
+                next(exchange, rcontext);
+                return;
+            }
         }
 
         // check collection name to be a valid mongodb name
