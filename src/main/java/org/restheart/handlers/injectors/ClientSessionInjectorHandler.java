@@ -64,11 +64,13 @@ public class ClientSessionInjectorHandler extends PipedHttpHandler {
             return;
         }
 
-        String sid = exchange.getQueryParameters()
+        String _sid = exchange.getQueryParameters()
                 .get(RequestContext.CLIENT_SESSION_KEY).getFirst();
 
+        UUID sid;
+
         try {
-            UUID.fromString(sid);
+            sid = UUID.fromString(_sid);
         } catch (IllegalArgumentException iae) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
@@ -78,14 +80,13 @@ public class ClientSessionInjectorHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-
-        LOGGER.debug("Request is executed in session {}", sid);
         
         var cs = ClientSessionFactory
                 .getClientSession(sid);
-        
-        cs.setMessageSentInCurrentTransaction(true);
-        cs.startTransaction();
+
+        LOGGER.debug("Request is executed in session {} with {}", 
+                _sid, 
+                cs.getTxnServerStatus());
         
         context.setClientSession(cs);
 

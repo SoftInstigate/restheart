@@ -68,9 +68,10 @@ import org.restheart.handlers.schema.JsonSchemaTransformer;
 import org.restheart.handlers.transformers.MetaRequestTransformer;
 import org.restheart.handlers.transformers.SizeRequestTransformer;
 import org.restheart.handlers.transformers.RepresentationTransformer;
-import org.restheart.handlers.sessions.DeleteSessionHandler;
-import org.restheart.handlers.sessions.PatchSessionHandler;
+import org.restheart.handlers.sessions.txns.DeleteTxnHandler;
+import org.restheart.handlers.sessions.txns.PatchTxnHandler;
 import org.restheart.handlers.sessions.PostSessionHandler;
+import org.restheart.handlers.sessions.txns.PostTxnsHandler;
 import org.restheart.metadata.transformers.RequestTransformer.PHASE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -418,21 +419,28 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
                         new GetAggregationHandler(
                                 respTransformers())));
         
-        // *** Sessions handler
+        // *** Sessions handlers
         
         putPipedHttpHandler(TYPE.SESSIONS, METHOD.POST,
                 new RequestTransformerHandler(
                         new PostSessionHandler(
                                         respTransformers())));
         
-        putPipedHttpHandler(TYPE.SESSION, METHOD.DELETE,
+        // *** Txns handlers
+        
+        putPipedHttpHandler(TYPE.TRANSACTIONS, METHOD.POST,
                 new RequestTransformerHandler(
-                        new DeleteSessionHandler(
+                        new PostTxnsHandler(
                                         respTransformers())));
         
-        putPipedHttpHandler(TYPE.SESSION, METHOD.PATCH,
+        putPipedHttpHandler(TYPE.TRANSACTION, METHOD.DELETE,
                 new RequestTransformerHandler(
-                        new PatchSessionHandler(
+                        new DeleteTxnHandler(
+                                        respTransformers())));
+        
+        putPipedHttpHandler(TYPE.TRANSACTION, METHOD.PATCH,
+                new RequestTransformerHandler(
+                        new PatchTxnHandler(
                                         respTransformers())));
         
         // *** FEED handlers

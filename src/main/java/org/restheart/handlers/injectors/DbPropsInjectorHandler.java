@@ -54,6 +54,7 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
         if (context.isInError()
                 || context.isSessions()
                 || context.isTxn()
+                || context.isTxns()
                 || context.isRoot()
                 || context.isRootSize()) {
             next(exchange, context);

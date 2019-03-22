@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.sessions;
+package org.restheart.handlers.sessions.txns;
 
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientException;
@@ -44,9 +44,9 @@ import org.slf4j.LoggerFactory;
  * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class PostSessionHandler extends PipedHttpHandler {
+public class PostTxnsHandler extends PipedHttpHandler {
     private static final Logger LOGGER = LoggerFactory
-            .getLogger(PostSessionHandler.class);
+            .getLogger(PostTxnsHandler.class);
 
     private static MongoClient MCLIENT = MongoDBClientSingleton
             .getInstance().getClient();
@@ -54,15 +54,15 @@ public class PostSessionHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of PostTxnsHandler
      */
-    public PostSessionHandler() {
+    public PostTxnsHandler() {
         super();
     }
 
-    public PostSessionHandler(PipedHttpHandler next) {
+    public PostTxnsHandler(PipedHttpHandler next) {
         super(next, new DatabaseImpl());
     }
 
-    public PostSessionHandler(PipedHttpHandler next, Database dbsDAO) {
+    public PostTxnsHandler(PipedHttpHandler next, Database dbsDAO) {
         super(next, dbsDAO);
     }
 

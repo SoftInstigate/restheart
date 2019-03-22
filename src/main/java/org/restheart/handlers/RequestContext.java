@@ -89,6 +89,7 @@ public class RequestContext {
     public static final String _SIZE = "_size";
     public static final String _META = "_meta";
     public static final String _SESSIONS = "_sessions";
+    public static final String _TRANSACTIONS = "_txns";
 
     public static final String FS_CHUNKS_SUFFIX = ".chunks";
     public static final String FS_FILES_SUFFIX = ".files";
@@ -166,16 +167,24 @@ public class RequestContext {
             } else {
                 type = TYPE.INVALID;
             }
-        }  else if (pathTokens.length < 2) {
+        } else if (pathTokens.length < 2) {
             type = TYPE.ROOT;
-        } else if (pathTokens.length == 2 
+        } else if (pathTokens.length == 2
                 && pathTokens[pathTokens.length - 1]
                         .equalsIgnoreCase(_SESSIONS)) {
             type = TYPE.SESSIONS;
-        } else if (pathTokens.length == 3
+        } else if (pathTokens.length == 4
+                && pathTokens[pathTokens.length - 3]
+                        .equalsIgnoreCase(_SESSIONS)
+                && pathTokens[pathTokens.length - 1]
+                        .equalsIgnoreCase(_TRANSACTIONS)) {
+            type = TYPE.TRANSACTIONS;
+        } else if (pathTokens.length == 5
+                && pathTokens[pathTokens.length - 4]
+                        .equalsIgnoreCase(_SESSIONS)
                 && pathTokens[pathTokens.length - 2]
-                        .equalsIgnoreCase(_SESSIONS)) {
-            type = TYPE.SESSION;
+                        .equalsIgnoreCase(_TRANSACTIONS)) {
+            type = TYPE.TRANSACTION;
         } else if (pathTokens.length < 3
                 && pathTokens[1].equalsIgnoreCase(_METRICS)) {
             type = TYPE.METRICS;
@@ -298,6 +307,8 @@ public class RequestContext {
         return (documentIdRaw.startsWith(UNDERSCORE)
                 || (type != TYPE.AGGREGATION
                 && _AGGREGATIONS.equalsIgnoreCase(documentIdRaw)))
+                && (type == TYPE.TRANSACTION
+                || !_TRANSACTIONS.equalsIgnoreCase(documentIdRaw))
                 && (documentIdRaw.startsWith(UNDERSCORE)
                 || (type != TYPE.FEED
                 && _FEEDS.equalsIgnoreCase(documentIdRaw)))
@@ -314,6 +325,7 @@ public class RequestContext {
                 && !documentIdRaw.equalsIgnoreCase(FALSE_KEY_ID)
                 && !(type == TYPE.AGGREGATION)
                 && !(type == TYPE.FEED)
+                && !(type == TYPE.TRANSACTION)
                 || (documentIdRaw.equals(RESOURCES_WILDCARD_KEY)
                 && !(type == TYPE.BULK_DOCUMENTS));
     }
@@ -373,7 +385,7 @@ public class RequestContext {
     private boolean inError = false;
 
     private Account authenticatedAccount = null;
-    
+
     private ClientSessionImpl clientSession = null;
 
     /**
@@ -1645,7 +1657,7 @@ public class RequestContext {
     public boolean isRoot() {
         return this.type == TYPE.ROOT;
     }
-    
+
     /**
      * helper method to check request resource type
      *
@@ -1654,14 +1666,23 @@ public class RequestContext {
     public boolean isSessions() {
         return this.type == TYPE.SESSIONS;
     }
-    
+
+    /**
+     * helper method to check request resource type
+     *
+     * @return true if type is TYPE.TRANSACTIONS
+     */
+    public boolean isTxns() {
+        return this.type == TYPE.TRANSACTIONS;
+    }
+
     /**
      * helper method to check request resource type
      *
      * @return true if type is TYPE.TRANSACTION
      */
     public boolean isTxn() {
-        return this.type == TYPE.SESSION;
+        return this.type == TYPE.TRANSACTION;
     }
 
     /**
@@ -1853,7 +1874,8 @@ public class RequestContext {
         BULK_DOCUMENTS,
         METRICS,
         SESSIONS,
-        SESSION,
+        TRANSACTIONS,
+        TRANSACTION
     }
 
     public enum METHOD {

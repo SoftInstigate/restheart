@@ -15,12 +15,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.sessions;
+package org.restheart.handlers.sessions.txns;
 
 import org.restheart.db.sessions.ClientSessionFactory;
 import org.restheart.db.sessions.ClientSessionImpl;
 import com.mongodb.MongoCommandException;
 import io.undertow.server.HttpServerExchange;
+import java.util.UUID;
 import org.restheart.db.Database;
 import org.restheart.db.DatabaseImpl;
 import org.restheart.representation.Resource;
@@ -34,25 +35,25 @@ import org.slf4j.LoggerFactory;
 /**
  *
  * aborts transaction of the session
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class DeleteSessionHandler extends PipedHttpHandler {
+public class DeleteTxnHandler extends PipedHttpHandler {
     private static final Logger LOGGER = LoggerFactory
-            .getLogger(DeleteSessionHandler.class); 
+            .getLogger(DeleteTxnHandler.class);
 
     /**
      * Creates a new instance of DeleteTxnHandler
      */
-    public DeleteSessionHandler() {
+    public DeleteTxnHandler() {
         super();
     }
 
-    public DeleteSessionHandler(PipedHttpHandler next) {
+    public DeleteTxnHandler(PipedHttpHandler next) {
         super(next, new DatabaseImpl());
     }
 
-    public DeleteSessionHandler(PipedHttpHandler next, Database dbsDAO) {
+    public DeleteTxnHandler(PipedHttpHandler next, Database dbsDAO) {
         super(next, dbsDAO);
     }
 
@@ -72,44 +73,43 @@ public class DeleteSessionHandler extends PipedHttpHandler {
             return;
         }
 
-        String sid = context.getCollectionName();
+        String _sid = context.getCollectionName();
 
-        LOGGER.debug("server session id {}", sid);
+        UUID sid;
 
-        ClientSessionImpl cs = ClientSessionFactory.getClientSession(sid);
-        
-        if (!cs.hasActiveTransaction()) {
-            // this avoids sending the startTransaction msg
-            cs.setMessageSentInCurrentTransaction(true);
-            cs.startTransaction();
+        try {
+            sid = UUID.fromString(_sid);
+        } catch (IllegalArgumentException iae) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "Invalid session id");
+            next(exchange, context);
+            return;
         }
 
-        if (cs == null) {
-            LOGGER.debug("session not found {}", sid);
+        ClientSessionImpl cs = ClientSessionFactory.getClientSession(sid);
 
-            context.setResponseStatusCode(HttpStatus.SC_NOT_FOUND);
-        } else {
+        try {
+            cs.abortTransaction();
+            cs.close();
 
-            try {
-                cs.abortTransaction();
-                cs.close();
+            context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
+            context.setResponseStatusCode(HttpStatus.SC_NO_CONTENT);
+        } catch (MongoCommandException mce) {
+            LOGGER.error("Error {} {}, {}",
+                    mce.getErrorCode(),
+                    mce.getErrorCodeName(),
+                    mce.getErrorMessage());
 
-                context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
-                context.setResponseStatusCode(HttpStatus.SC_NO_CONTENT);
-            } catch (MongoCommandException mce) {
-                LOGGER.error("Error {} {}, {}",
-                        mce.getErrorCode(),
-                        mce.getErrorCodeName(),
-                        mce.getErrorMessage());
-
-                if (mce.getErrorCode() == 20) {
-                    ResponseHelper.endExchangeWithMessage(exchange,
-                            context,
-                            HttpStatus.SC_BAD_GATEWAY,
-                            mce.getErrorCodeName() + ", " + mce.getErrorMessage());
-                } else {
-                    throw mce;
-                }
+            if (mce.getErrorCode() == 20) {
+                ResponseHelper.endExchangeWithMessage(exchange,
+                        context,
+                        HttpStatus.SC_BAD_GATEWAY,
+                        mce.getErrorCodeName() + ", " + mce.getErrorMessage());
+            } else {
+                throw mce;
             }
         }
 

@@ -30,8 +30,10 @@ import com.mongodb.internal.session.ServerSessionPool;
 import com.mongodb.operation.AbortTransactionOperation;
 import com.mongodb.operation.CommitTransactionOperation;
 import java.util.Objects;
+import java.util.UUID;
 import static org.bson.assertions.Assertions.isTrue;
 import static org.bson.assertions.Assertions.notNull;
+import org.restheart.db.sessions.Txn.TransactionState;
 
 /**
  *
@@ -41,22 +43,22 @@ public class ClientSessionImpl
         extends BaseClientSessionImpl
         implements ClientSession {
 
-    public enum TransactionState {
-        NONE, IN, COMMITTED, ABORTED
-    }
-
     private final MongoClientDelegate delegate;
     private TransactionState transactionState = TransactionState.NONE;
     private boolean messageSentInCurrentTransaction;
     private boolean commitInProgress;
     private TransactionOptions transactionOptions;
+    private boolean causallyConsistent = true;
+    private Txn txnServerStatus = null;
 
     public ClientSessionImpl(final ServerSessionPool serverSessionPool,
             final Object originator,
             final ClientSessionOptions options,
-            final MongoClientDelegate delegate) {
+            final MongoClientDelegate delegate,
+            final Txn txnServerStatus) {
         super(serverSessionPool, originator, options);
         this.delegate = delegate;
+        this.txnServerStatus = txnServerStatus;
     }
 
     public void setMessageSentInCurrentTransaction(
@@ -69,6 +71,21 @@ public class ClientSessionImpl
         return transactionState == TransactionState.IN
                 || (transactionState == TransactionState.COMMITTED
                 && commitInProgress);
+    }
+
+    @Override
+    public boolean isCausallyConsistent() {
+        return causallyConsistent;
+    }
+
+    public boolean isTransacted() {
+        return getSid() == null
+                ? false
+                : Sid.getSessionOptions(getSid()).isTransacted();
+    }
+
+    public void setCausallyConsistent(boolean causallyConsistent) {
+        this.causallyConsistent = causallyConsistent;
     }
 
     @Override
@@ -111,6 +128,7 @@ public class ClientSessionImpl
             transactionState = TransactionState.IN;
         }
         getServerSession().advanceTransactionNumber();
+
         this.transactionOptions = TransactionOptions.merge(
                 transactionOptions,
                 getOptions().getDefaultTransactionOptions());
@@ -212,20 +230,39 @@ public class ClientSessionImpl
         return Objects.hash(getSid());
     }
 
-    public String getSid() {
+    public UUID getSid() {
         if (getServerSession() != null
                 && getServerSession()
                         .getIdentifier() != null
                 && getServerSession()
-                        .getIdentifier().isBinary()) {
+                        .getIdentifier().isDocument()
+                && getServerSession()
+                        .getIdentifier().asDocument().containsKey("id")
+                && getServerSession()
+                        .getIdentifier().asDocument().get("id").isBinary()) {
             return getServerSession()
                     .getIdentifier()
+                    .asDocument()
+                    .get("id")
                     .asBinary()
-                    .asUuid()
-                    .toString();
+                    .asUuid();
         } else {
             return null;
         }
 
+    }
+
+    /**
+     * @return the txnServerStatus
+     */
+    public Txn getTxnServerStatus() {
+        return txnServerStatus;
+    }
+
+    /**
+     * @param txnServerStatus the txnServerStatus to set
+     */
+    public void setTxnServerStatus(Txn txnServerStatus) {
+        this.txnServerStatus = txnServerStatus;
     }
 }
