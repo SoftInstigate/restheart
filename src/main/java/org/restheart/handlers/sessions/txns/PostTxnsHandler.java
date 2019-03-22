@@ -18,7 +18,6 @@
 package org.restheart.handlers.sessions.txns;
 
 import com.mongodb.MongoClient;
-import com.mongodb.MongoClientException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.UUID;
@@ -27,11 +26,10 @@ import org.restheart.db.Database;
 import org.restheart.db.DatabaseImpl;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.db.sessions.ClientSessionFactory;
-import org.restheart.db.sessions.ClientSessionImpl;
 import org.restheart.db.sessions.SessionsUtils;
 import static org.restheart.db.sessions.Txn.TransactionState.ABORTED;
 import static org.restheart.db.sessions.Txn.TransactionState.COMMITTED;
-import org.restheart.representation.Resource;
+import static org.restheart.db.sessions.Txn.TransactionState.NONE;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.representation.RepUtils;
@@ -104,8 +102,11 @@ public class PostTxnsHandler extends PipedHttpHandler {
         var txn = SessionsUtils.getTxnServerStatus(sid);
 
         if (txn.getState() == ABORTED
-                || txn.getState() == COMMITTED) {
-            var nextTxnId = txn.getTxnId() + 1;
+                || txn.getState() == COMMITTED
+                || txn.getState() == NONE) {
+            var nextTxnId = txn.getState() == NONE 
+                    ? txn.getTxnId() 
+                    : txn.getTxnId() + 1;
 
             var cs = ClientSessionFactory.getTxnClientSession(sid, nextTxnId);
 
@@ -116,7 +117,6 @@ public class PostTxnsHandler extends PipedHttpHandler {
             }
             
             // propagate the transaction
-            
             SessionsUtils.runDummyReadCommand(cs);
 
             exchange.getResponseHeaders()
@@ -130,28 +130,6 @@ public class PostTxnsHandler extends PipedHttpHandler {
             context.setResponseStatusCode(HttpStatus.SC_CREATED);
         } else {
             context.setResponseStatusCode(HttpStatus.SC_NOT_MODIFIED);
-        }
-
-        try {
-            exchange.getResponseHeaders()
-                    .add(HttpString.tryFromString("Location"),
-                            RepUtils.getReferenceLink(
-                                    context,
-                                    URLUtils.getRemappedRequestURL(exchange),
-                                    new BsonString(sid.toString())));
-        } catch (MongoClientException mce) {
-            LOGGER.error("Error {}",
-                    mce.getMessage());
-
-            // TODO check if server supports sessions
-            if (!MongoDBClientSingleton.isReplicaSet()) {
-                ResponseHelper.endExchangeWithMessage(exchange,
-                        context,
-                        HttpStatus.SC_BAD_GATEWAY,
-                        mce.getMessage());
-            } else {
-                throw mce;
-            }
         }
 
         next(exchange, context);
