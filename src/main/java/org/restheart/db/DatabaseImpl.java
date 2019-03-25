@@ -18,6 +18,7 @@
 package org.restheart.db;
 
 import com.mongodb.MongoClient;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -38,7 +39,6 @@ import org.restheart.handlers.RequestContext;
 import static org.restheart.handlers.RequestContext.META_COLLNAME;
 import static org.restheart.handlers.RequestContext.DB_META_DOCID;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
-import org.restheart.db.sessions.ClientSessionImpl;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -80,7 +80,7 @@ public class DatabaseImpl implements Database {
      */
     @Override
     public boolean doesDbExist(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName) {
         // at least one collection exists for an existing db
         return cs == null
@@ -102,7 +102,7 @@ public class DatabaseImpl implements Database {
      */
     @Override
     public boolean doesCollectionExist(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collName) {
         return collectionDAO.doesCollectionExist(cs, dbName, collName);
@@ -127,7 +127,7 @@ public class DatabaseImpl implements Database {
      */
     @Override
     public List<String> getCollectionNames(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName) {
         MongoDatabase db = getDatabase(dbName);
 
@@ -171,7 +171,7 @@ public class DatabaseImpl implements Database {
      */
     @Override
     public BsonDocument getDatabaseProperties(
-            final ClientSessionImpl cs, final String dbName) {
+            final ClientSession cs, final String dbName) {
         MongoCollection<BsonDocument> propsColl
                 = collectionDAO.getCollection(dbName, META_COLLNAME);
 
@@ -201,7 +201,7 @@ public class DatabaseImpl implements Database {
      */
     @Override
     public List<BsonDocument> getDatabaseData(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final List<String> colls,
             final int page,
@@ -284,7 +284,7 @@ public class DatabaseImpl implements Database {
     @Override
     @SuppressWarnings("unchecked")
     public OperationResult upsertDB(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final BsonDocument newContent,
             final String requestEtag,
@@ -367,7 +367,7 @@ public class DatabaseImpl implements Database {
     }
 
     private OperationResult doDbPropsUpdate(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final boolean patching,
             final boolean updating,
             final MongoCollection<BsonDocument> mcoll,
@@ -421,7 +421,7 @@ public class DatabaseImpl implements Database {
      */
     @Override
     public OperationResult deleteDatabase(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String requestEtag,
             final boolean checkEtag) {
@@ -472,7 +472,7 @@ public class DatabaseImpl implements Database {
      */
     @Override
     public BsonDocument getCollectionProperties(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collName) {
         return collectionDAO.getCollectionProps(
@@ -512,7 +512,7 @@ public class DatabaseImpl implements Database {
      */
     @Override
     public OperationResult upsertCollection(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collName,
             final BsonDocument content,
@@ -542,7 +542,7 @@ public class DatabaseImpl implements Database {
      */
     @Override
     public OperationResult deleteCollection(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collectionName,
             final String requestEtag,
@@ -564,7 +564,7 @@ public class DatabaseImpl implements Database {
      */
     @Override
     public long getCollectionSize(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final BsonDocument filters) {
         return collectionDAO.getCollectionSize(cs, coll, filters);
@@ -585,7 +585,7 @@ public class DatabaseImpl implements Database {
      */
     @Override
     public ArrayList<BsonDocument> getCollectionData(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final int page,
             final int pagesize,
@@ -612,7 +612,7 @@ public class DatabaseImpl implements Database {
      * @return
      */
     @Override
-    public List<String> getDatabaseNames(final ClientSessionImpl cs) {
+    public List<String> getDatabaseNames(final ClientSession cs) {
         ArrayList<String> dbNames = new ArrayList<>();
 
         if (cs == null) {
@@ -634,7 +634,7 @@ public class DatabaseImpl implements Database {
      */
     @Override
     public int deleteIndex(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collection,
             final String indexId) {
@@ -650,7 +650,7 @@ public class DatabaseImpl implements Database {
      */
     @Override
     public List<BsonDocument> getCollectionIndexes(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collectionName) {
         return indexDAO.getCollectionIndexes(cs, dbName, collectionName);
@@ -668,7 +668,7 @@ public class DatabaseImpl implements Database {
      */
     @Override
     public FindIterable<BsonDocument> getFindIterable(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final MongoCollection<BsonDocument> collection,
             final BsonDocument sortBy,
             final BsonDocument filters,
@@ -693,7 +693,7 @@ public class DatabaseImpl implements Database {
      */
     @Override
     public void createIndex(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collection,
             final BsonDocument keys,

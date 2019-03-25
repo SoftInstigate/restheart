@@ -19,6 +19,7 @@ package org.restheart.db;
 
 import com.mongodb.MongoClient;
 import com.mongodb.bulk.BulkWriteResult;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -39,7 +40,6 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
-import org.restheart.db.sessions.ClientSessionImpl;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +68,7 @@ public class DocumentDAO implements DocumentRepository {
      */
     @Override
     public Document getDocumentEtag(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collName,
             final Object documentId) {
@@ -101,7 +101,7 @@ public class DocumentDAO implements DocumentRepository {
     @Override
     @SuppressWarnings("unchecked")
     public OperationResult upsertDocument(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collName,
             final Object documentId,
@@ -204,7 +204,7 @@ public class DocumentDAO implements DocumentRepository {
     @Override
     @SuppressWarnings("unchecked")
     public OperationResult upsertDocumentPost(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collName,
             final BsonDocument filter,
@@ -282,7 +282,7 @@ public class DocumentDAO implements DocumentRepository {
     @Override
     @SuppressWarnings("unchecked")
     public BulkOperationResult bulkUpsertDocumentsPost(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collName,
             final BsonArray documents,
@@ -319,6 +319,7 @@ public class DocumentDAO implements DocumentRepository {
      * @param dbName
      * @param collName
      * @param documentId
+     * @param filter
      * @param shardedKeys
      * @param requestEtag
      * @param checkEtag
@@ -326,7 +327,7 @@ public class DocumentDAO implements DocumentRepository {
      */
     @Override
     public OperationResult deleteDocument(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collName,
             final Object documentId,
@@ -390,7 +391,7 @@ public class DocumentDAO implements DocumentRepository {
      */
     @Override
     public BulkOperationResult bulkDeleteDocuments(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collName,
             final BsonDocument filter,
@@ -430,7 +431,7 @@ public class DocumentDAO implements DocumentRepository {
      */
     @Override
     public BulkOperationResult bulkPatchDocuments(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collName,
             final BsonDocument filter,
@@ -463,7 +464,7 @@ public class DocumentDAO implements DocumentRepository {
     }
 
     private OperationResult optimisticCheckEtag(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final BsonDocument shardKeys,
             final BsonDocument oldDocument,

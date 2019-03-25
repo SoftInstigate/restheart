@@ -20,6 +20,7 @@ package org.restheart.db;
 import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoCommandException;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
@@ -40,7 +41,6 @@ import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
 import static org.restheart.handlers.RequestContext.META_COLLNAME;
 import static org.restheart.handlers.RequestContext.COLL_META_DOCID_PREFIX;
-import org.restheart.db.sessions.ClientSessionImpl;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,7 +119,7 @@ class CollectionDAO {
      * @return true if the commection is empty
      */
     public boolean isCollectionEmpty(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final MongoCollection<BsonDocument> coll) {
         return cs == null
                 ? coll.countDocuments() == 0
@@ -138,7 +138,7 @@ class CollectionDAO {
      * account the filters in case)
      */
     public long getCollectionSize(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final BsonDocument filters) {
         return cs == null
@@ -159,7 +159,7 @@ class CollectionDAO {
      * @throws JsonParseException
      */
     FindIterable<BsonDocument> getFindIterable(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final BsonDocument sortBy,
             final BsonDocument filters,
@@ -179,7 +179,7 @@ class CollectionDAO {
     }
 
     ArrayList<BsonDocument> getCollectionData(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final int page,
             final int pagesize,
@@ -281,7 +281,7 @@ class CollectionDAO {
      * @return the collection properties document
      */
     public BsonDocument getCollectionProps(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collName) {
         MongoCollection<BsonDocument> propsColl
@@ -312,7 +312,7 @@ class CollectionDAO {
      * @return true if the collection exists
      */
     public boolean doesCollectionExist(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collName) {
         MongoCursor<String> dbCollections = cs == null
@@ -346,7 +346,7 @@ class CollectionDAO {
      */
     @SuppressWarnings("unchecked")
     OperationResult upsertCollection(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collName,
             final BsonDocument properties,
@@ -458,7 +458,7 @@ class CollectionDAO {
     }
 
     private OperationResult doCollPropsUpdate(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String collName,
             final boolean patching,
             final boolean updating,
@@ -515,7 +515,7 @@ class CollectionDAO {
      * @return the HttpStatus code to set in the http response
      */
     OperationResult deleteCollection(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collName,
             final String requestEtag,

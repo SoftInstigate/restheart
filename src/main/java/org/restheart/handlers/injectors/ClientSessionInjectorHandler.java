@@ -24,7 +24,7 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.db.sessions.ClientSessionFactory;
 import org.restheart.db.sessions.ClientSessionImpl;
 import org.restheart.db.sessions.Txn;
-import static org.restheart.db.sessions.Txn.TransactionState.IN;
+import static org.restheart.db.sessions.Txn.TransactionStatus.IN;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
@@ -120,13 +120,13 @@ public class ClientSessionInjectorHandler extends PipedHttpHandler {
                 return;
             }
             
-            if (cs.getTxnServerStatus().getState() != IN) {
+            if (cs.getTxnServerStatus().getStatus() != IN) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
                         context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "Specified txn is not in-progress, status is "
-                        + cs.getTxnServerStatus().getState());
+                        + cs.getTxnServerStatus().getStatus());
                 next(exchange, context);
                 return;
             }
@@ -135,7 +135,7 @@ public class ClientSessionInjectorHandler extends PipedHttpHandler {
                     _sid,
                     cs.getTxnServerStatus());
 
-            if (cs.getTxnServerStatus().getState() == IN) {
+            if (cs.getTxnServerStatus().getStatus() == IN) {
                 cs.setMessageSentInCurrentTransaction(true);
 
                 if (!cs.hasActiveTransaction()) {

@@ -27,9 +27,9 @@ import org.restheart.db.DatabaseImpl;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.db.sessions.ClientSessionFactory;
 import org.restheart.db.sessions.SessionsUtils;
-import static org.restheart.db.sessions.Txn.TransactionState.ABORTED;
-import static org.restheart.db.sessions.Txn.TransactionState.COMMITTED;
-import static org.restheart.db.sessions.Txn.TransactionState.NONE;
+import static org.restheart.db.sessions.Txn.TransactionStatus.ABORTED;
+import static org.restheart.db.sessions.Txn.TransactionStatus.COMMITTED;
+import static org.restheart.db.sessions.Txn.TransactionStatus.NONE;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.representation.RepUtils;
@@ -101,10 +101,10 @@ public class PostTxnsHandler extends PipedHttpHandler {
 
         var txn = SessionsUtils.getTxnServerStatus(sid);
 
-        if (txn.getState() == ABORTED
-                || txn.getState() == COMMITTED
-                || txn.getState() == NONE) {
-            var nextTxnId = txn.getState() == NONE 
+        if (txn.getStatus() == ABORTED
+                || txn.getStatus() == COMMITTED
+                || txn.getStatus() == NONE) {
+            var nextTxnId = txn.getStatus() == NONE 
                     ? txn.getTxnId() 
                     : txn.getTxnId() + 1;
 

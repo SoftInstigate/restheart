@@ -17,6 +17,7 @@
  */
 package org.restheart.db;
 
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
 import java.util.Formatter;
 import java.util.Objects;
@@ -28,7 +29,7 @@ import org.restheart.db.sessions.ClientSessionImpl;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class CursorPoolEntryKey {
-    private final ClientSessionImpl session;
+    private final ClientSession session;
     private final MongoCollection collection;
     private final BsonDocument sort;
     private final BsonDocument filter;
@@ -38,7 +39,7 @@ public class CursorPoolEntryKey {
     private final long cursorId;
 
     public CursorPoolEntryKey(
-            ClientSessionImpl session,
+            ClientSession session,
             MongoCollection collection,
             BsonDocument sort,
             BsonDocument filter,
@@ -159,7 +160,7 @@ public class CursorPoolEntryKey {
     public String toString() {
 
         return "{ session: "
-                + getSession().getSid()
+                + ClientSessionImpl.getSid(getSession())
                 + ", "
                 + "collection: "
                 + collection.getNamespace()
@@ -196,7 +197,7 @@ public class CursorPoolEntryKey {
     /**
      * @return the session
      */
-    public ClientSessionImpl getSession() {
+    public ClientSession getSession() {
         return session;
     }
 }

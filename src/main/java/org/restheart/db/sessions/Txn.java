@@ -22,32 +22,32 @@ package org.restheart.db.sessions;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class Txn {
-    public enum TransactionState {
+    public enum TransactionStatus {
         NONE, IN, COMMITTED, ABORTED
     }
 
-    private final TransactionState state;
+    private final TransactionStatus status;
     private final long txnId;
 
-    public Txn(final long txnId, final TransactionState state) {
+    public Txn(final long txnId, final TransactionStatus status) {
         this.txnId = txnId;
-        this.state = state;
+        this.status = status;
     }
 
     @Override
     public String toString() {
-        if (txnId == -1 && state == TransactionState.NONE) {
-            return "Txn(state=NOT_SUPPORTED)";
+        if (txnId == -1 && status == TransactionStatus.NONE) {
+            return "Txn(status=NOT_SUPPORTED)";
         } else {
-            return "Txn(txnId=" + getTxnId() + ", state=" + getState() + ")";
+            return "Txn(txnId=" + getTxnId() + ", status=" + getStatus() + ")";
         }
     }
 
     /**
-     * @return the state
+     * @return the status
      */
-    public TransactionState getState() {
-        return state;
+    public TransactionStatus getStatus() {
+        return status;
     }
 
     /**
@@ -58,10 +58,10 @@ public class Txn {
     }
     
     public boolean supportsTxns() {
-        return txnId == -1 && state == TransactionState.NONE;
+        return txnId == -1 && status == TransactionStatus.NONE;
     }
     
     public static Txn newNotSupportingTxn() {
-        return  new Txn(-1, TransactionState.NONE);
+        return  new Txn(-1, TransactionStatus.NONE);
     }
 }
