@@ -93,7 +93,7 @@ public class PostSessionHandler extends PipedHttpHandler {
                                     new BsonString(sid.toString())));
 
             context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
-            context.setResponseStatusCode(HttpStatus.SC_NO_CONTENT);
+            context.setResponseStatusCode(HttpStatus.SC_CREATED);
         } catch (MongoClientException mce) {
             LOGGER.error("Error {}",
                     mce.getMessage());
