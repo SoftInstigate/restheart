@@ -1,11 +1,11 @@
 Feature: test json schema
 
 Background:
-* url 'http://localhost:8080'
+* url 'http://localhost:18080'
 # note: db starting with 'test-' are automatically deleted after test finishes
 * def db = '/test-txns'
 * def coll = '/coll'
-* def collUrl = 'http://localhost:8080/test-txns/coll'
+* def collUrl = 'http://localhost:18080/test-txns/coll'
 * def sid = function(url) { return url.substring(url.length-36); }
 * def docid = function(url) { return url.substring(url.length-24); }
 
@@ -78,7 +78,7 @@ Scenario: create a session, txn, document and commit
     And method GET
     Then status 200
 
-Scenario: create a session, txn, document and check isolation and abort txn
+Scenario: create a session, txn, document, check isolation and abort txn
     Given path db
     And request {}
     When method PUT
