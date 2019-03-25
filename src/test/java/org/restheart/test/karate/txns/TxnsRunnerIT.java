@@ -1,4 +1,4 @@
-package org.restheart.test.karate;
+package org.restheart.test.karate.txns;
 
 /*
  * Copyright SoftInstigate srl. All Rights Reserved.
@@ -19,6 +19,6 @@ import org.restheart.test.integration.AbstactIT;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RunWith(Karate.class)
-public class RunnerIT extends AbstactIT {
+public class TxnsRunnerIT extends AbstactIT {
 
 }
