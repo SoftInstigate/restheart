@@ -18,6 +18,7 @@
 package org.restheart.db;
 
 import com.mongodb.MongoClient;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
@@ -27,7 +28,6 @@ import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
-import org.restheart.db.sessions.ClientSessionImpl;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -60,7 +60,7 @@ public class FileMetadataDAO implements FileMetadataRepository {
      */
     @Override
     public OperationResult updateMetadata(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collName,
             final Object documentId,
@@ -148,7 +148,7 @@ public class FileMetadataDAO implements FileMetadataRepository {
     }
 
     private OperationResult optimisticCheckEtag(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final BsonDocument shardKeys,
             final BsonDocument oldDocument,

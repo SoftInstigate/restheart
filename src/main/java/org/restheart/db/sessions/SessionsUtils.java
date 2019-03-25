@@ -36,7 +36,7 @@ import java.util.UUID;
 import org.bson.conversions.Bson;
 import org.restheart.db.MongoDBClientSingleton;
 import static org.restheart.db.sessions.ClientSessionFactory.createClientSession;
-import org.restheart.db.sessions.Txn.TransactionState;
+import org.restheart.db.sessions.Txn.TransactionStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -133,7 +133,7 @@ public class SessionsUtils {
                 cs.startTransaction();
             }
             runDummyReadCommand(cs);
-            return new Txn(1, TransactionState.IN);
+            return new Txn(1, TransactionStatus.IN);
         } catch (MongoQueryException mqe) {
             var num = getTxnNumFromExc(mqe);
 
@@ -141,7 +141,7 @@ public class SessionsUtils {
                 cs.advanceServerSessionTransactionNumber(num);
                 try {
                     runDummyReadCommand(cs);
-                    return new Txn(num, TransactionState.IN);
+                    return new Txn(num, TransactionStatus.IN);
                 } catch (MongoQueryException mqe2) {
                     return new Txn(num, getTxnStateFromExc(mqe2));
                 }
@@ -261,19 +261,19 @@ public class SessionsUtils {
      * @param mqe
      * @return 
      */
-    private static TransactionState getTxnStateFromExc(MongoQueryException mqe) {
+    private static TransactionStatus getTxnStateFromExc(MongoQueryException mqe) {
         if (mqe.getErrorCode() == 251) {
             if (mqe.getErrorMessage().contains(
                     "does not match any in-progress transactions")) {
-                return TransactionState.NONE;
+                return TransactionStatus.NONE;
             } else if (mqe.getErrorMessage().contains(
                     "has been aborted")) {
-                return TransactionState.ABORTED;
+                return TransactionStatus.ABORTED;
             }
         } else if (mqe.getErrorCode() == 256) {
             if (mqe.getErrorMessage().contains(
                     "has been committed")) {
-                return TransactionState.COMMITTED;
+                return TransactionStatus.COMMITTED;
             }
         }
 

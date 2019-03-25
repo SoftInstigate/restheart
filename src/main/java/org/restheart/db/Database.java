@@ -17,6 +17,7 @@
  */
 package org.restheart.db;
 
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -25,7 +26,6 @@ import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
 import org.restheart.handlers.IllegalQueryParamenterException;
-import org.restheart.db.sessions.ClientSessionImpl;
 
 /**
  *
@@ -43,7 +43,7 @@ public interface Database {
      * @return HTTP status code
      */
     OperationResult deleteCollection(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collectionName,
             final String requestEtag,
@@ -58,7 +58,7 @@ public interface Database {
      * @return HTTP status code
      */
     OperationResult deleteDatabase(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String requestEtag,
             final boolean checkEtag);
@@ -69,7 +69,7 @@ public interface Database {
      *
      */
     boolean doesDbExist(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName);
 
     /**
@@ -81,7 +81,7 @@ public interface Database {
      *
      */
     boolean doesCollectionExist(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collName);
 
@@ -109,7 +109,7 @@ public interface Database {
      * @return Collection Data as ArrayList of BsonDocument
      */
     ArrayList<BsonDocument> getCollectionData(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final MongoCollection<BsonDocument> collection,
             final int page,
             final int pagesize,
@@ -127,21 +127,20 @@ public interface Database {
      * @return Collection properties
      */
     BsonDocument getCollectionProperties(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collectionName);
 
     /**
      *
      * @param cs the client session
-     * @param session the client session
      * @param collection
      * @param filters
      * @return the number of documents in the given collection (taking into
      * account the filters in case)
      */
     long getCollectionSize(
-            final ClientSessionImpl session,
+            final ClientSession cs,
             final MongoCollection<BsonDocument> collection,
             final BsonDocument filters);
 
@@ -172,7 +171,7 @@ public interface Database {
      *
      */
     List<BsonDocument> getDatabaseData(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName, List<String> collections,
             final int page,
             final int pagesize)
@@ -183,7 +182,7 @@ public interface Database {
      * @param cs the client session
      * @return A List of database names
      */
-    List<String> getDatabaseNames(final ClientSessionImpl cs);
+    List<String> getDatabaseNames(final ClientSession cs);
 
     /**
      *
@@ -192,7 +191,7 @@ public interface Database {
      * @return A List of collection names
      */
     List<String> getCollectionNames(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName);
 
     /**
@@ -201,7 +200,7 @@ public interface Database {
      *
      */
     BsonDocument getDatabaseProperties(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName);
 
     /**
@@ -217,7 +216,7 @@ public interface Database {
      * @return
      */
     OperationResult upsertCollection(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collectionName,
             final BsonDocument content,
@@ -238,7 +237,7 @@ public interface Database {
      * @return
      */
     OperationResult upsertDB(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final BsonDocument content,
             final String requestEtag,
@@ -255,7 +254,7 @@ public interface Database {
      * @return the operation result
      */
     int deleteIndex(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collection,
             final String indexId);
@@ -268,7 +267,7 @@ public interface Database {
      * @return A List of indexes for collectionName in dbName
      */
     List<BsonDocument> getCollectionIndexes(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collectionName);
 
@@ -281,7 +280,7 @@ public interface Database {
      * @param options
      */
     void createIndex(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collection,
             final BsonDocument keys,
@@ -303,7 +302,7 @@ public interface Database {
      * @throws JsonParseException
      */
     FindIterable<BsonDocument> getFindIterable(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final MongoCollection<BsonDocument> collection,
             final BsonDocument sortBy,
             final BsonDocument filters,

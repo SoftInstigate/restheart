@@ -112,7 +112,7 @@ public class PatchTxnHandler extends PipedHttpHandler {
             try {
                 ClientSessionImpl cs = ClientSessionFactory.getTxnClientSession(sid, txnId);
 
-                switch (cs.getTxnServerStatus().getState()) {
+                switch (cs.getTxnServerStatus().getStatus()) {
                     case NONE:
                         if (!cs.hasActiveTransaction()) {
                             cs.startTransaction();

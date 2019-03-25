@@ -19,6 +19,7 @@ package org.restheart.db;
 
 import com.mongodb.MongoCommandException;
 import com.mongodb.bulk.BulkWriteResult;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.BulkWriteOptions;
 import static com.mongodb.client.model.Filters.and;
@@ -46,7 +47,6 @@ import org.bson.BsonTimestamp;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
-import org.restheart.db.sessions.ClientSessionImpl;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -109,7 +109,7 @@ public class DAOUtils {
      * @return the old document
      */
     public static OperationResult updateMetadata(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final Object documentId,
             final BsonDocument filter,
@@ -141,7 +141,7 @@ public class DAOUtils {
      * @return the old document
      */
     public static OperationResult updateDocument(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final Object documentId,
             final BsonDocument filter,
@@ -180,7 +180,7 @@ public class DAOUtils {
      */
     @SuppressWarnings("rawtypes")
     public static OperationResult updateDocument(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final Object documentId,
             final BsonDocument filter,
@@ -318,7 +318,7 @@ public class DAOUtils {
      * @return 
      */
     public static boolean restoreDocument(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final Object documentId,
             final BsonDocument shardKeys,
@@ -364,7 +364,7 @@ public class DAOUtils {
      * @return 
      */
     public static BulkOperationResult bulkUpsertDocuments(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final BsonArray documents,
             final BsonDocument filter,

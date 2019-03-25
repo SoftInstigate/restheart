@@ -33,7 +33,7 @@ import java.util.Objects;
 import java.util.UUID;
 import static org.bson.assertions.Assertions.isTrue;
 import static org.bson.assertions.Assertions.notNull;
-import org.restheart.db.sessions.Txn.TransactionState;
+import org.restheart.db.sessions.Txn.TransactionStatus;
 
 /**
  *
@@ -44,7 +44,7 @@ public class ClientSessionImpl
         implements ClientSession {
 
     private final MongoClientDelegate delegate;
-    private TransactionState transactionState = TransactionState.NONE;
+    private TransactionStatus transactionState = TransactionStatus.NONE;
     private boolean messageSentInCurrentTransaction;
     private boolean commitInProgress;
     private TransactionOptions transactionOptions;
@@ -72,8 +72,8 @@ public class ClientSessionImpl
 
     @Override
     public boolean hasActiveTransaction() {
-        return transactionState == TransactionState.IN
-                || (transactionState == TransactionState.COMMITTED
+        return transactionState == TransactionStatus.IN
+                || (transactionState == TransactionStatus.COMMITTED
                 && commitInProgress);
     }
 
@@ -100,9 +100,9 @@ public class ClientSessionImpl
             messageSentInCurrentTransaction = true;
             return firstMessageInCurrentTransaction;
         } else {
-            if (transactionState == TransactionState.COMMITTED
-                    || transactionState == TransactionState.ABORTED) {
-                cleanupTransaction(TransactionState.NONE);
+            if (transactionState == TransactionStatus.COMMITTED
+                    || transactionState == TransactionStatus.ABORTED) {
+                cleanupTransaction(TransactionStatus.NONE);
             }
             return false;
         }
@@ -110,8 +110,8 @@ public class ClientSessionImpl
 
     @Override
     public TransactionOptions getTransactionOptions() {
-        isTrue("in transaction", transactionState == TransactionState.IN
-                || transactionState == TransactionState.COMMITTED);
+        isTrue("in transaction", transactionState == TransactionStatus.IN
+                || transactionState == TransactionStatus.COMMITTED);
         return transactionOptions;
     }
 
@@ -123,13 +123,13 @@ public class ClientSessionImpl
     @Override
     public void startTransaction(final TransactionOptions transactionOptions) {
         notNull("transactionOptions", transactionOptions);
-        if (transactionState == TransactionState.IN) {
+        if (transactionState == TransactionStatus.IN) {
             throw new IllegalStateException("Transaction already in progress");
         }
-        if (transactionState == TransactionState.COMMITTED) {
-            cleanupTransaction(TransactionState.IN);
+        if (transactionState == TransactionStatus.COMMITTED) {
+            cleanupTransaction(TransactionStatus.IN);
         } else {
-            transactionState = TransactionState.IN;
+            transactionState = TransactionStatus.IN;
         }
         
         //getServerSession().advanceTransactionNumber();
@@ -157,11 +157,11 @@ public class ClientSessionImpl
     @Override
     @SuppressWarnings("deprecation")
     public void commitTransaction() {
-        if (transactionState == TransactionState.ABORTED) {
+        if (transactionState == TransactionStatus.ABORTED) {
             throw new IllegalStateException(
                     "Cannot call commitTransaction after calling abortTransaction");
         }
-        if (transactionState == TransactionState.NONE) {
+        if (transactionState == TransactionStatus.NONE) {
             throw new IllegalStateException("There is no transaction started");
         }
         try {
@@ -179,21 +179,21 @@ public class ClientSessionImpl
             }
         } finally {
             commitInProgress = false;
-            transactionState = TransactionState.COMMITTED;
+            transactionState = TransactionStatus.COMMITTED;
         }
     }
 
     @Override
     @SuppressWarnings("deprecation")
     public void abortTransaction() {
-        if (transactionState == TransactionState.ABORTED) {
+        if (transactionState == TransactionStatus.ABORTED) {
             throw new IllegalStateException("Cannot call abortTransaction twice");
         }
-        if (transactionState == TransactionState.COMMITTED) {
+        if (transactionState == TransactionStatus.COMMITTED) {
             throw new IllegalStateException(
                     "Cannot call abortTransaction after calling commitTransaction");
         }
-        if (transactionState == TransactionState.NONE) {
+        if (transactionState == TransactionStatus.NONE) {
             throw new IllegalStateException("There is no transaction started");
         }
         try {
@@ -211,14 +211,14 @@ public class ClientSessionImpl
         } catch (Exception e) {
             // ignore errors
         } finally {
-            cleanupTransaction(TransactionState.ABORTED);
+            cleanupTransaction(TransactionStatus.ABORTED);
         }
     }
 
     @Override
     public void close() {
         try {
-            if (transactionState == TransactionState.IN) {
+            if (transactionState == TransactionStatus.IN) {
                 abortTransaction();
             }
         } finally {
@@ -228,7 +228,7 @@ public class ClientSessionImpl
         }
     }
 
-    private void cleanupTransaction(final TransactionState nextState) {
+    private void cleanupTransaction(final TransactionStatus nextState) {
         messageSentInCurrentTransaction = false;
         transactionOptions = null;
         transactionState = nextState;
@@ -240,16 +240,20 @@ public class ClientSessionImpl
     }
 
     public UUID getSid() {
-        if (getServerSession() != null
-                && getServerSession()
+        return getSid(this);
+    }
+    
+    public static UUID getSid(ClientSession cs) {
+        if (cs.getServerSession() != null
+                && cs.getServerSession()
                         .getIdentifier() != null
-                && getServerSession()
+                && cs.getServerSession()
                         .getIdentifier().isDocument()
-                && getServerSession()
+                && cs.getServerSession()
                         .getIdentifier().asDocument().containsKey("id")
-                && getServerSession()
+                && cs.getServerSession()
                         .getIdentifier().asDocument().get("id").isBinary()) {
-            return getServerSession()
+            return cs.getServerSession()
                     .getIdentifier()
                     .asDocument()
                     .get("id")

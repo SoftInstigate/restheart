@@ -1,7 +1,7 @@
 package org.restheart.db;
 
+import com.mongodb.client.ClientSession;
 import org.bson.BsonDocument;
-import org.restheart.db.sessions.ClientSessionImpl;
 
 /**
  *
@@ -24,7 +24,7 @@ public interface FileMetadataRepository {
      * @return 
      */
     public abstract OperationResult updateMetadata(
-            final ClientSessionImpl cs,
+            final ClientSession cs,
             final String dbName,
             final String collName,
             final Object documentId,

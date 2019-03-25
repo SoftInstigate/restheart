@@ -27,7 +27,7 @@ import org.bson.BsonString;
 import org.restheart.db.Database;
 import org.restheart.db.DatabaseImpl;
 import org.restheart.db.sessions.SessionsUtils;
-import static org.restheart.db.sessions.Txn.TransactionState.NONE;
+import static org.restheart.db.sessions.Txn.TransactionStatus.NONE;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
@@ -94,7 +94,7 @@ public class GetTxnHandler extends PipedHttpHandler {
 
         var txn = SessionsUtils.getTxnServerStatus(sid);
 
-        if (txn.getState() == NONE) {
+        if (txn.getStatus() == NONE) {
             context.setResponseContent(
                     new BsonDocument("currentTxn", new BsonNull()));
         } else {
@@ -107,7 +107,7 @@ public class GetTxnHandler extends PipedHttpHandler {
                     ? new BsonInt64(txn.getTxnId())
                     : new BsonInt32((int) txn.getTxnId()));
 
-            currentTxn.append("state", new BsonString(txn.getState().name()));
+            currentTxn.append("status", new BsonString(txn.getStatus().name()));
             
             context.setResponseContent(resp);
         }
