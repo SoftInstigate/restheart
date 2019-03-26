@@ -9,6 +9,7 @@ Background:
 * def sid = function(url) { return url.substring(url.length-36); }
 * def docid = function(url) { return url.substring(url.length-24); }
 
+@requires-mongodb-4 @requires-replica-set
 Scenario: create a session, txn, document and commit
     Given path db
     And request {}
@@ -78,6 +79,7 @@ Scenario: create a session, txn, document and commit
     And method GET
     Then status 200
 
+@requires-mongodb-4 @requires-replica-set
 Scenario: create a session, txn, document, check isolation and abort txn
     Given path db
     And request {}
