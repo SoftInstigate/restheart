@@ -22,9 +22,9 @@ services:
   - docker
 
 before_install:
-  - docker run -d -p 27017:27017 --net=bridge --name mymongo mongo:$MONGO --replSet rs0
-  - export MONGOHOST=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mymongo)
-  - docker run -it --rm --net=bridge mongo:$MONGO mongo --host $MONGOHOST --eval "rs.initiate()"
+  - docker network create mongo-cluster
+  - docker run -d -p 27017:27017 --net=mongo-cluster --name mongo1 mongo:$MONGO --replSet rs0
+  - docker run -it --rm --net=mongo-cluster mongo:$MONGO mongo --host mongo1 --eval "rs.initiate()"
 
 install: true
 
