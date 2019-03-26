@@ -10,6 +10,7 @@ package org.restheart.test.karate;
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
+import com.intuit.karate.KarateOptions;
 import com.intuit.karate.junit4.Karate;
 import org.junit.runner.RunWith;
 import org.restheart.test.integration.AbstactIT;
@@ -19,6 +20,8 @@ import org.restheart.test.integration.AbstactIT;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RunWith(Karate.class)
+// use KarateOptions to limit test to execute
+//@KarateOptions(features = { "classpath:org/restheart/test/karate/txns" })
 public class RunnerIT extends AbstactIT {
 
 }

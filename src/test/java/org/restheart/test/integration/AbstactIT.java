@@ -73,6 +73,7 @@ public abstract class AbstactIT {
 
     @AfterClass
     public static void tearDownClass() {
+        deleteTestData();
     }
 
     protected static String getResourceFile(String resourcePath) throws IOException, URISyntaxException {
@@ -122,6 +123,7 @@ public abstract class AbstactIT {
 
         return sb.toString();
     }
+    
     @Rule
     public TestRule watcher = new TestWatcher() {
         @Override
@@ -139,7 +141,7 @@ public abstract class AbstactIT {
         deleteTestData();
     }
 
-    private void deleteTestData() {
+    private static void deleteTestData() {
         ArrayList<String> dbNames = new ArrayList<>();
 
         MongoDBClientSingleton.getInstance()
