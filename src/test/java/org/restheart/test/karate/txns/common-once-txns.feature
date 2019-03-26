@@ -1,5 +1,5 @@
 @ignore
-Feature: init feature for txn
+Feature: init feature for txn, creats test db and collection + define sono useful functions
 
 Background:
 * def baseUrl = 'http://localhost:18080'

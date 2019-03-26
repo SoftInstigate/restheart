@@ -1,8 +1,7 @@
 @ignore
-Feature: common feature that creates a txn
+Feature: feature that creates a session with in-progress txn
 
 Background:
-* def common = callonce read('common-once-txns.feature')
 * url baseUrl
 
 @requires-mongodb-4 @requires-replica-set

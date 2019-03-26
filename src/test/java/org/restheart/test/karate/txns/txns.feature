@@ -1,4 +1,4 @@
-Feature: test json schema
+Feature: test txns
 
 Background:
 * def common = callonce read('common-once-txns.feature')
@@ -27,16 +27,7 @@ Scenario: create a session, txn, document and commit
     And method GET
     Then status 404
 
-    Given path '/_sessions/' + txn.sid + '/_txns/1'
-    And request {}
-    When method PATCH
-    Then status 200
-
-    Given path '/_sessions/' + txn.sid + '/_txns'
-    When method GET
-    Then status 200
-    And match response.currentTxn.status == 'COMMITTED'
-    And match response.currentTxn.id == 1
+    * call read('common-commit-txn.feature') { baseUrl: '#(common.baseUrl)', sid: '#(txn.sid)', txn: 1 }
 
     Given path common.db + common.coll + '/' + docid
     And method GET
@@ -82,16 +73,7 @@ Scenario: create a session, txn, document, check isolation and abort txn
     And match response.currentTxn.status == 'IN'
     And match response.currentTxn.id == 1
 
-    Given path '/_sessions/' + txn.sid + '/_txns/1'
-    And request {}
-    When method DELETE
-    Then status 204
-
-    Given path '/_sessions/' + txn.sid + '/_txns'
-    When method GET
-    Then status 200
-    And match response.currentTxn.status == 'ABORTED'
-    And match response.currentTxn.id == 1
+    * call read('common-abort-txn.feature') { baseUrl: '#(common.baseUrl)', sid: '#(txn.sid)', txn: 1 }
 
     Given path common.db + common.coll + '/' + docid
     And method GET
@@ -140,13 +122,4 @@ Scenario: create a document in txn T1, create conflicting document in T2. T2 abo
     And match response.currentTxn.status == 'ABORTED'
     And match response.currentTxn.id == 1
 
-    Given path '/_sessions/' + txn.sid + '/_txns/1'
-    And request {}
-    When method PATCH
-    Then status 200
-
-    Given path '/_sessions/' + txn.sid + '/_txns'
-    When method GET
-    Then status 200
-    And match response.currentTxn.status == 'COMMITTED'
-    And match response.currentTxn.id == 1
+    * call read('common-commit-txn.feature') { baseUrl: '#(common.baseUrl)', sid: '#(txn.sid)', txn: 1 }
