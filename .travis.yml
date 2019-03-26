@@ -24,6 +24,7 @@ services:
 before_install:
   - docker network create mongo-cluster
   - docker run -d -p 27017:27017 --net=mongo-cluster --name mongo1 mongo:$MONGO --replSet rs0
+  - sleep 10
   - docker run -it --rm --net=mongo-cluster mongo:$MONGO mongo --host mongo1 --eval "rs.initiate()"
 
 install: true
