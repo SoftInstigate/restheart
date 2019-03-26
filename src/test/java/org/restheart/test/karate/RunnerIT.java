@@ -21,7 +21,9 @@ import org.restheart.test.integration.AbstactIT;
  */
 @RunWith(Karate.class)
 // use KarateOptions to limit test to execute
-//@KarateOptions(features = { "classpath:org/restheart/test/karate/txns" })
+@KarateOptions(
+        //features = { "classpath:org/restheart/test/karate/txns" }, 
+        tags = "~@ignore")
 public class RunnerIT extends AbstactIT {
 
 }
