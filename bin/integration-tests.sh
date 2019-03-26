@@ -7,7 +7,7 @@ set -e
 cleanup() {
     echo "### Cleaning up $IMAGE:$MONGO_VERSION container..."
     docker stop "$CONTAINER_ID"
-
+    docker network rm "$MONGO_TMP_NETWORK"
     echo "### Done testing RESTHeart with $IMAGE:$MONGO_VERSION"
 }
 trap cleanup ERR INT TERM
@@ -25,8 +25,13 @@ fi
 
 cd "$(dirname ${BASH_SOURCE[0]})"/.. || exit 1
 
+MONGO_TMP_NETWORK="mongo-$(date | md5)"
+
 echo "### Running volatile $IMAGE:$MONGO_VERSION Docker container..."
-CONTAINER_ID=$( docker run --rm -d -p 27017:27017 "$IMAGE:$MONGO_VERSION" )
+docker network create "$MONGO_TMP_NETWORK"
+CONTAINER_ID=$( docker run --rm -d -p 27017:27017 --net="$MONGO_TMP_NETWORK" --name mongo1 "$IMAGE:$MONGO_VERSION" --replSet rs0)
+echo "Waiting for mongodb complete startup..." && sleep 10
+docker run -it --rm --net="$MONGO_TMP_NETWORK" "$IMAGE:$MONGO_VERSION" mongo --host mongo1 --eval "rs.initiate()"
 
 echo "### Build RESTHeart and run integration tests..."
 mvn clean verify -DskipITs=false
