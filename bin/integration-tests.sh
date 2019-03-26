@@ -16,7 +16,7 @@ trap cleanup ERR INT TERM
 # export the MONGO_VERSION variable.
 # For example: export MONGO_VERSION=3.4 && ./bin/integration-tests.sh
 if [[ -z $MONGO_VERSION ]]; then
-    MONGO_VERSION=3.6
+    MONGO_VERSION=4.0
 fi
 if [[ -z $IMAGE ]]; then
     IMAGE=mongo
