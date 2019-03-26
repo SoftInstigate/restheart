@@ -2,7 +2,7 @@
 Feature: feature that aborts a txn
 
 # call as follows 
-# def txn = call read('common-abort-txn.feature') { sid: <sessionId>, txn: txnNum }
+# call read('common-abort-txn.feature') { sid: <sessionId>, txn: txnNum }
 
 Background:
 * url baseUrl
