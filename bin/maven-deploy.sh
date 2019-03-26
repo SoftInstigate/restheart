@@ -2,7 +2,7 @@
 set -e
 
 if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
-    mvn deploy --settings deploy-settings.xml -P release -Dmaven.test.skip=true;
+    #mvn deploy --settings deploy-settings.xml -P release -Dmaven.test.skip=true;
     RESTHEART_VERSION=$(./bin/project-version.sh 2>/dev/null);
     export RESTHEART_VERSION
     if [[ "$RESTHEART_VERSION" ]]; then
@@ -18,7 +18,7 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
             docker tag softinstigate/restheart:$RESTHEART_VERSION softinstigate/restheart:latest;
             docker push softinstigate/restheart:latest;
             echo "###### Publishing Maven site at http://softinstigate.github.io/restheart/project-info.html";
-            mvn site --settings deploy-settings.xml -P report -Dmaven.test.skip=true;
+            #mvn site --settings deploy-settings.xml -P report -Dmaven.test.skip=true;
         fi
     else
         echo "###### ERROR! Variable RESTHEART_VERSION is undefined";

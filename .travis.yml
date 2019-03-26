@@ -4,7 +4,7 @@ language: java
 jdk:
    - openjdk11
 git:
-  depth: 3
+  depth: 10
 
 notifications:
   email:
@@ -22,8 +22,9 @@ services:
    - docker
 
 before_install:
-  - docker run -d -p 27017:27017 mongo:$MONGO --replSet rs0
-  - ./bin/before-deploy.sh
+  - docker run -d -p 27017:27017 --name mymongo mongo:$MONGO --replSet rs0
+  - export MONGOHOST=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mymongo)
+  - docker run -it --rm mongo:$MONGO mongo --host $MONGOHOST --eval "rs.initiate()"
 
 install: true
 
@@ -34,28 +35,7 @@ script:
   - docker ps
   - mvn clean verify -DskipITs=false
 
-after_success:
-  - if [[ "$MAVEN_DEPLOY" == true ]]; then ./bin/maven-deploy.sh; fi
-   
-# Deploy to Github  
-deploy:
-  provider: releases
-  api_key:
-    secure: EEGZ5uRn23QqhPqiENRZxBkuDw+qyl23ELUr0HHltI/DK+UIsFQrQydZbtl6VIPTzE8O3EOy/PhzTk2zXlh5cfi+THkIAzpNzW93CAUNFMknUV/cDsrgRSKwEXlF1LJ1WqerM8g4pKvyfyJTOIkFwir/1bIZ/ww+8zIqw6+SBlo=
-  file_glob: true
-  file: 
-    - "target/*.tar.gz"
-    - "target/*.zip"
-    - "target/restheart.jar"
-  skip_cleanup: true
-  on:
-    tags: true
-    condition: $MAVEN_DEPLOY = true 
-
 env:
-  matrix:
-  - MONGO=4.0
-  - MONGO=3.6 MAVEN_DEPLOY=true
   global:
     - secure: "rlLQCDykTqV7/EC+kTCw5JpYbuZwk0Neq5q1kRQ6hjcUYRdgjPJretVg+1e5+GcGOH4/Z/aOGdQrk1HtPW6tE+ePIUDAUwuLX2+6AUt2FqIqumYoJxYR7rsw+THkjiPaopB7qmWOUJ1vec7QCEiaGexYcjs3j6mv//SbnUksY2w="
     - secure: "t4tS+6EAC9nuE9SOKMfooux34usyPY2oBt0/737A2o9y3LXgy/jt0hyx09W4Gc1ZHq8QYoEiwHU40rlo2KWcxPKK/e4U/dZ1ne5OBJLKt5dhGr/PwaO0rVa7039zgQRn1VN+ayx92AfQCZMyA7iTrVDrM/2lxvDww0UYyZmViaA="
@@ -67,7 +47,3 @@ env:
     - # GPG_PASSPHRASE
     - secure: "U5su51eqq16En2sVYwCT8oseHfXWLO5dLjDvKpDefg+wLXF9y1E8Ckic0m2Rzq4mQdJMyrrQk+ZLu+LSgQC3kfHCrjDJ1Qv+olnPuuGPVZqlc+bQRgwBkyUWOXts+8t8JTF3swEz4kVV9mGTeQiuchjBlySaPSSNQStEXoI7+dg="
 
-matrix:
-  exclude:
-  - jdk: openjdk11
-    env: MONGO=3.6 MAVEN_DEPLOY=true
