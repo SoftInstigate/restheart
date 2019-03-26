@@ -24,7 +24,7 @@ services:
 before_install:
   - docker network create mongo-cluster
   - docker run -d -p 27017:27017 --net=mongo-cluster --name mongo1 mongo:$MONGO --replSet rs0
-  - sleep 10
+  - echo "Waiting for mongodb complete startup..." && sleep 10
   - docker run -it --rm --net=mongo-cluster mongo:$MONGO mongo --host mongo1 --eval "rs.initiate()"
 
 install: true
@@ -39,6 +39,7 @@ script:
 env:
   matrix:
     - MONGO=4.0
+    - MONGO=3.6
   global:
     - secure: "rlLQCDykTqV7/EC+kTCw5JpYbuZwk0Neq5q1kRQ6hjcUYRdgjPJretVg+1e5+GcGOH4/Z/aOGdQrk1HtPW6tE+ePIUDAUwuLX2+6AUt2FqIqumYoJxYR7rsw+THkjiPaopB7qmWOUJ1vec7QCEiaGexYcjs3j6mv//SbnUksY2w="
     - secure: "t4tS+6EAC9nuE9SOKMfooux34usyPY2oBt0/737A2o9y3LXgy/jt0hyx09W4Gc1ZHq8QYoEiwHU40rlo2KWcxPKK/e4U/dZ1ne5OBJLKt5dhGr/PwaO0rVa7039zgQRn1VN+ayx92AfQCZMyA7iTrVDrM/2lxvDww0UYyZmViaA="
