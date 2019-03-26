@@ -22,7 +22,7 @@ services:
    - docker
 
 before_install:
-  - docker run -d -p 27017:27017 mongo:$MONGO
+  - docker run -d -p 27017:27017 mongo:$MONGO --replSet rs0
   - ./bin/before-deploy.sh
 
 install: true
