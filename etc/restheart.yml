@@ -10,11 +10,11 @@
 # Use the http listener only on trusted environments.
 
 https-listener: true
-https-host: 0.0.0.0
+https-host: 127.0.0.1
 https-port: {{{https-port}}}
 
 http-listener: true
-http-host: 0.0.0.0
+http-host: 127.0.0.1
 http-port: {{{http-port}}}
 
 ajp-listener: false

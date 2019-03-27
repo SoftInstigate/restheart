@@ -186,12 +186,23 @@ public class Bootstrapper {
             LOGGER.warn("No configuration file provided, starting with default values!");
             return new Configuration();
         } else if (ENVIRONMENT_FILE == null) {
+            try {
+                if (Configuration.isParametric(CONF_FILE_PATH)) {
+                    logErrorAndExit("Configuration is parametric but no properties file has been specified. You can use -e option to specify the properties file. For more information check https://restheart.org/learn/configuration-file/", null, false, -1);
+                }
+            } catch (IOException ioe) {
+                logErrorAndExit("Configuration file not found " + CONF_FILE_PATH, null, false, -1);
+            }
+
             return new Configuration(CONF_FILE_PATH, false);
         } else {
             Properties p = new Properties();
             try (InputStreamReader reader = new InputStreamReader(new FileInputStream(ENVIRONMENT_FILE), "UTF-8")) {
                 p.load(reader);
+            } catch (FileNotFoundException fnfe) {
+                logErrorAndExit("Properties file not found " + ENVIRONMENT_FILE, null, false, -1);
             }
+
             MustacheFactory mf = new DefaultMustacheFactory();
 
             Mustache m;
@@ -646,18 +657,36 @@ public class Bootstrapper {
             builder.addHttpsListener(configuration.getHttpsPort(), configuration.getHttpHost(), sslContext);
             LOGGER.info("HTTPS listener bound at {}:{}",
                     configuration.getHttpsHost(), configuration.getHttpsPort());
+
+            if (configuration.getHttpsHost().equals("127.0.0.1") 
+                    || configuration.getHttpHost().equalsIgnoreCase("localhost")) {
+                LOGGER.warn("HTTPS listener is bound to localhost. "
+                        + "Remote systems will be unable to connect to this server.");
+            }
         }
 
         if (configuration.isHttpListener()) {
             builder.addHttpListener(configuration.getHttpPort(), configuration.getHttpsHost());
             LOGGER.info("HTTP listener bound at {}:{}",
                     configuration.getHttpHost(), configuration.getHttpPort());
+            
+            if (configuration.getHttpsHost().equals("127.0.0.1") 
+                    || configuration.getHttpHost().equalsIgnoreCase("localhost")) {
+                LOGGER.warn("HTTP listener is bound to localhost. "
+                        + "Remote systems will be unable to connect to this server.");
+            }
         }
 
         if (configuration.isAjpListener()) {
             builder.addAjpListener(configuration.getAjpPort(), configuration.getAjpHost());
             LOGGER.info("Ajp listener bound at {}:{}",
                     configuration.getAjpHost(), configuration.getAjpPort());
+            
+            if (configuration.getAjpHost().equals("127.0.0.1") 
+                    || configuration.getHttpHost().equalsIgnoreCase("localhost")) {
+                LOGGER.warn("HTTPS listener is bound to localhost. "
+                        + "Remote systems will be unable to connect to this server.");
+            }
         }
 
         LocalCachesSingleton.init(configuration);
@@ -671,7 +700,7 @@ public class Bootstrapper {
         }
 
         if (configuration.isSchemaCacheEnabled()) {
-            LOGGER.info("Local cache for schema stores enabled  with TTL {} msecs",
+            LOGGER.info("Local cache for schema stores enabled with TTL {} msecs",
                     configuration.getSchemaCacheTtl() < 0 ? "∞"
                     : configuration.getSchemaCacheTtl());
         } else {
