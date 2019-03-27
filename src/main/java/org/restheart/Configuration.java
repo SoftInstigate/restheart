@@ -24,6 +24,7 @@ import com.mongodb.MongoClientURI;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,6 +34,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Scanner;
+import java.util.regex.Pattern;
 import org.restheart.handlers.RequestContext.ETAG_CHECK_POLICY;
 import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.URLUtils;
@@ -67,10 +70,10 @@ public class Configuration {
      * default mongo uri mongodb://127.0.0.1
      */
     public static final String DEFAULT_MONGO_URI = "mongodb://127.0.0.1";
-    public static final String DEFAULT_ROUTE = "0.0.0.0";
+    public static final String DEFAULT_ROUTE = "127.0.0.1";
 
     /**
-     * default ajp host 0.0.0.0.
+     * default ajp host 127.0.0.1.
      */
     public static final String DEFAULT_AJP_HOST = DEFAULT_ROUTE;
 
@@ -80,7 +83,7 @@ public class Configuration {
     public static final int DEFAULT_AJP_PORT = 8009;
 
     /**
-     * default http host 0.0.0.0.
+     * default http host 127.0.0.1.
      */
     public static final String DEFAULT_HTTP_HOST = DEFAULT_ROUTE;
 
@@ -90,7 +93,7 @@ public class Configuration {
     public static final int DEFAULT_HTTP_PORT = 8080;
 
     /**
-     * default https host 0.0.0.0.
+     * default https host 127.0.0.1.
      */
     public static final String DEFAULT_HTTPS_HOST = DEFAULT_ROUTE;
 
@@ -358,7 +361,6 @@ public class Configuration {
      */
     public static final String STATIC_RESOURCES_MOUNT_EMBEDDED_KEY = "embedded";
 
-
     /**
      * the key for the certpassword property.
      */
@@ -559,12 +561,20 @@ public class Configuration {
         try (FileInputStream fis = new FileInputStream(confFilePath.toFile())) {
             conf = (Map<String, Object>) yaml.load(fis);
         } catch (FileNotFoundException fne) {
-            throw new ConfigurationException("configuration file not found", fne);
+            throw new ConfigurationException("Configuration file not found", fne);
         } catch (Throwable t) {
-            throw new ConfigurationException("error parsing the configuration file", t);
+            throw new ConfigurationException("Error parsing the configuration file", t);
         }
 
         return conf;
+    }
+
+    static boolean isParametric(final Path confFilePath) throws IOException {
+        Scanner sc = new Scanner(confFilePath, "UTF-8");
+
+        return sc.findAll(Pattern.compile("\\{\\{.*\\}\\}"))
+                .limit(1)
+                .count() > 0;
     }
 
     /**
@@ -657,7 +667,7 @@ public class Configuration {
      * Creates a new instance of Configuration with defaults values.
      */
     public Configuration() {
-        this (new HashMap<>(), false);
+        this(new HashMap<>(), false);
     }
 
     /**
@@ -759,7 +769,7 @@ public class Configuration {
         browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY, "browser.html");
         browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_EMBEDDED_KEY, true);
 
-        ArrayList<Map<String, Object>> defaultStaticResourcesMounts=new ArrayList<>();
+        ArrayList<Map<String, Object>> defaultStaticResourcesMounts = new ArrayList<>();
         defaultStaticResourcesMounts.add(browserStaticResourcesMountArgs);
 
         staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, defaultStaticResourcesMounts);
@@ -1044,11 +1054,11 @@ public class Configuration {
         String shellKey = key.toUpperCase().replaceAll("-", "_");
         String envValue = System.getProperty(key);
 
-        if (envValue==null) {
+        if (envValue == null) {
             envValue = System.getProperty(shellKey);
         }
 
-        if (envValue==null) {
+        if (envValue == null) {
             envValue = System.getenv(shellKey);
         }
         if (null != envValue) {
