@@ -38,15 +38,15 @@ echo "### Build RESTHeart and run integration tests..."
 case $MONGO_VERSION in
     *"4."*)
         KARATE_OPS=""
-        ;;
+    ;;
     *"3.6"*)
         KARATE_OPS="--tags ~@requires-mongodb-4"
-        ;;
+    ;;
     *)
-        KARATE_OPS="--tags ~@requires-mongodb-4 ~@requires-mongodb-3.6"
-        ;;
+        export KARATE_OPS="--tags ~@requires-mongodb-4 ~@requires-mongodb-3.6"
+    ;;
 esac
 
-mvn clean verify -DskipITs=false -Dkarate.options='$KARATE_OPS'
+mvn clean verify -DskipITs=false -Dkarate.options="$KARATE_OPS"
 
 cleanup
