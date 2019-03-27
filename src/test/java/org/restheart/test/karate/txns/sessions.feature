@@ -7,6 +7,7 @@ Background:
 * def coll = '/coll'
 * def sid = function(url) { return url.substring(url.length-36); }
 
+@requires-mongodb-3.6
 Scenario: create a session and use it for inserts and queries
     Given path db
     And request {}
