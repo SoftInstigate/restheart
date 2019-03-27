@@ -10,15 +10,15 @@
 # Use the http listener only on trusted environments.
 
 https-listener: false
-https-host: 0.0.0.0
+https-host: 127.0.0.1
 https-port: 4443
 
 http-listener: true
-http-host: 0.0.0.0
+http-host: 127.0.0.1
 http-port: 8081
 
 ajp-listener: false
-ajp-host: 0.0.0.0
+ajp-host: 127.0.0.1
 ajp-port: 8009
 
 #### Instance

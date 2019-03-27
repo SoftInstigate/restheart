@@ -18,7 +18,7 @@ http-host: 127.0.0.1
 http-port: {{{http-port}}}
 
 ajp-listener: false
-ajp-host: 0.0.0.0
+ajp-host: 127.0.0.1
 ajp-port: 8009
 
 #### Instance
