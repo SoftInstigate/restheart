@@ -37,7 +37,7 @@ env:
   matrix:
     - MONGO=4.0 REPLICASET=true  KARATE_OPS=""
     - MONGO=3.6 REPLICASET=true  KARATE_OPS="--tags ~@requires-mongodb-4"
-    - MONGO=3.4 REPLICASET=false KARATE_OPS="--tags ~@requires-mongodb-4 ~@requires-mongodb-3.6"
+    - MONGO=3.4 REPLICASET=false KARATE_OPS="--tags ~@requires-mongodb-4 ~@requires-mongodb-3.6 @requires-replica-set"
   global:
     - secure: "rlLQCDykTqV7/EC+kTCw5JpYbuZwk0Neq5q1kRQ6hjcUYRdgjPJretVg+1e5+GcGOH4/Z/aOGdQrk1HtPW6tE+ePIUDAUwuLX2+6AUt2FqIqumYoJxYR7rsw+THkjiPaopB7qmWOUJ1vec7QCEiaGexYcjs3j6mv//SbnUksY2w="
     - secure: "t4tS+6EAC9nuE9SOKMfooux34usyPY2oBt0/737A2o9y3LXgy/jt0hyx09W4Gc1ZHq8QYoEiwHU40rlo2KWcxPKK/e4U/dZ1ne5OBJLKt5dhGr/PwaO0rVa7039zgQRn1VN+ayx92AfQCZMyA7iTrVDrM/2lxvDww0UYyZmViaA="
