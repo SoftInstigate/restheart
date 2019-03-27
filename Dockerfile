@@ -1,9 +1,6 @@
-FROM openjdk:8u191-jre-alpine
+FROM openjdk:11.0-jre-slim-stretch
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
-
-#RUN apk upgrade --update
-RUN apk add --no-cache libstdc++ curl ca-certificates bash
 
 WORKDIR /opt/restheart
 COPY Docker/etc/* /opt/restheart/etc/
