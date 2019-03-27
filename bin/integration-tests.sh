@@ -14,7 +14,7 @@ trap cleanup ERR INT TERM
 
 # if you want to run integration tests against a different version of MongoDB
 # export the MONGO_VERSION variable.
-# For example: export MONGO_VERSION=3.4 && ./bin/integration-tests.sh
+# For example: export MONGO_VERSION=3.6 && ./bin/integration-tests.sh
 if [[ -z $MONGO_VERSION ]]; then
     MONGO_VERSION=4.0
 fi
@@ -34,6 +34,19 @@ echo "Waiting for mongodb complete startup..." && sleep 10
 docker run -it --rm --net="$MONGO_TMP_NETWORK" "$IMAGE:$MONGO_VERSION" mongo --host mongo1 --eval "rs.initiate()"
 
 echo "### Build RESTHeart and run integration tests..."
-mvn clean verify -DskipITs=false
+
+case $MONGO_VERSION in
+    *"4."*)
+        KARATE_OPS=""
+        ;;
+    *"3.6"*)
+        KARATE_OPS="--tags ~@requires-mongodb-4"
+        ;;
+    *)
+        KARATE_OPS="--tags ~@requires-mongodb-4 ~@requires-mongodb-3.6"
+        ;;
+esac
+
+mvn clean verify -DskipITs=false -Dkarate.options='$KARATE_OPS'
 
 cleanup
