@@ -64,12 +64,13 @@ public class GetFeedHandler extends PipedHttpHandler {
         }
 
         if (context.getFeedIdentifier() != null) {
-
+            
             if (exchange.getRequestHeaders()
-                    .get("Connection")
-                    .getFirst()
-                    .equals("Upgrade")) {
-
+                    .get("connection")
+                        .getFirst()
+                            .toLowerCase()
+                                .equals("upgrade")) {
+                System.out.println(exchange.getRequestHeaders().toString());
                 String wsUriPath = getWsUri(context);
 
                 CacheableFeed feed
