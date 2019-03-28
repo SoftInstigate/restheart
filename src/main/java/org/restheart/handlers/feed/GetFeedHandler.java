@@ -132,6 +132,8 @@ public class GetFeedHandler extends PipedHttpHandler {
                 context.setResponseContent(new FeedResultRepresentationFactory()
                         .getRepresentation(exchange, context, data, size)
                         .asBsonDocument());
+                context.setResponseStatusCode(HttpStatus.SC_OK);
+                
                 next(exchange, context);
 
             } else {
