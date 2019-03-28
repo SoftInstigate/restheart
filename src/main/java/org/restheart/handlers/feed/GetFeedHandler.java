@@ -64,12 +64,12 @@ public class GetFeedHandler extends PipedHttpHandler {
         }
 
         if (context.getFeedIdentifier() != null) {
-            
+
             if (exchange.getRequestHeaders()
                     .get("connection")
-                        .getFirst()
-                            .toLowerCase()
-                                .equals("upgrade")) {
+                    .getFirst()
+                    .toLowerCase()
+                    .equals("upgrade")) {
                 System.out.println(exchange.getRequestHeaders().toString());
                 String wsUriPath = getWsUri(context);
 
@@ -117,10 +117,10 @@ public class GetFeedHandler extends PipedHttpHandler {
                     CacheableFeed feedResource
                             = CacheManagerSingleton
                                     .retrieveWebSocket(resource);
-                    
+
                     List<BsonDocument> aVars = feedResource.getAVars();
-                    
-                    String jsonString = "{'" + getResourceIdentifier(resource) + "': "+ aVars.toString() +"}";
+
+                    String jsonString = "{'" + getResourceIdentifier(resource) + "': " + aVars.toString() + "}";
                     if (checkIfRequestedFeedResourceUri(resource, context)) {
                         data.add(BsonDocument.parse(jsonString));
                     }
@@ -129,11 +129,21 @@ public class GetFeedHandler extends PipedHttpHandler {
 
                 long size = data.size();
 
+                if (size == 0) {
+                    ResponseHelper.endExchangeWithMessage(
+                            exchange,
+                            context,
+                            HttpStatus.SC_NOT_FOUND,
+                            "No feeds are notifying for this feedOperation");
+
+                    next(exchange, context);
+                }
+
                 context.setResponseContent(new FeedResultRepresentationFactory()
                         .getRepresentation(exchange, context, data, size)
                         .asBsonDocument());
                 context.setResponseStatusCode(HttpStatus.SC_OK);
-                
+
                 next(exchange, context);
 
             } else {
@@ -159,7 +169,7 @@ public class GetFeedHandler extends PipedHttpHandler {
         String[] uriPath = URI.split("/");
         return uriPath[5];
     }
-    
+
     private String getWsUri(RequestContext context) {
 
         String result = "/" + context.getDBName()
