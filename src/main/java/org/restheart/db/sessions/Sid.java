@@ -20,7 +20,6 @@ package org.restheart.db.sessions;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import static org.restheart.db.sessions.SessionOptions.CAUSALLY_CONSISTENT_FLAG;
-import static org.restheart.db.sessions.SessionOptions.TXN_FLAG;
 
 /**
  *
@@ -54,8 +53,6 @@ public class Sid {
 
         var lsb = longToBytes(uuid.getLeastSignificantBits());
 
-        setTransactedFlag(lsb, options.isTransacted());
-
         setCasuallyConsistentFlag(lsb, options.isCausallyConsistent());
 
         return new UUID(uuid.getMostSignificantBits(), bytesToLong(lsb));
@@ -64,13 +61,10 @@ public class Sid {
     public static SessionOptions getSessionOptions(UUID uuid) {
         var lsb = longToBytes(uuid.getLeastSignificantBits());
 
-        boolean tf = (lsb[0] & TXN_FLAG)
-                == TXN_FLAG;
-
         boolean ccf = (lsb[0] & CAUSALLY_CONSISTENT_FLAG)
                 == CAUSALLY_CONSISTENT_FLAG;
 
-        return new SessionOptions(tf, ccf);
+        return new SessionOptions(ccf);
     }
 
     /**
@@ -87,19 +81,11 @@ public class Sid {
      * @param lsb
      * @param value
      */
-    static void setTransactedFlag(byte[] lsb, boolean value) {
-        if (value) {
-            lsb[0] |= TXN_FLAG; // 0010 0000
-        } else {
-            lsb[0] &= 0xDF; // 1101 1111
-        }
-    }
-
     static void setCasuallyConsistentFlag(byte[] lsb, boolean value) {
         if (value) {
-            lsb[0] |= CAUSALLY_CONSISTENT_FLAG; // 0001 0000
+            lsb[0] |= CAUSALLY_CONSISTENT_FLAG; // 0010 0000
         } else {
-            lsb[0] &= 0xEF; // 1110 1111
+            lsb[0] &= 0xDF; // 1101 1111
         }
     }
 

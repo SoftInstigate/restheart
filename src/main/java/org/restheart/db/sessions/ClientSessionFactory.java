@@ -65,11 +65,33 @@ public class ClientSessionFactory {
         return holder.getBinary("id");
     }
 
+    /**
+     * 
+     * @param sid
+     * @return 
+     */
     public static ClientSessionImpl getClientSession(UUID sid) {
-        return getTxnClientSession(sid, -1);
+        return getTxnClientSession(sid, null);
     }
-
-    public static ClientSessionImpl getTxnClientSession(UUID sid, long txnId) {
+    
+    /**
+     * 
+     * Warn: requires a round trip to the server
+     * 
+     * @param sid
+     * @return 
+     */
+    public static ClientSessionImpl getTxnClientSession(UUID sid) {
+        return getTxnClientSession(sid, SessionsUtils.getTxnServerStatus(sid));
+    }
+    
+    /**
+     * 
+     * @param sid
+     * @param txnServerStatus
+     * @return 
+     */
+    public static ClientSessionImpl getTxnClientSession(UUID sid, Txn txnServerStatus) {
         var options = Sid.getSessionOptions(sid);
 
         ClientSessionOptions cso = ClientSessionOptions
@@ -83,14 +105,15 @@ public class ClientSessionFactory {
                 MCLIENT.getReadConcern(),
                 MCLIENT.getWriteConcern(),
                 MCLIENT.getReadPreference(),
-                Txn.newNotSupportingTxn());
+                null);
 
-        if (txnId >= 0) {
-            var txnServerStatus = SessionsUtils.getTxnServerStatus(sid);
-            cs.setTxnServerStatus(txnServerStatus);            
+        if (txnServerStatus != null) {
+            cs.setTxnServerStatus(txnServerStatus);
+            
+            cs.setServerSessionTransactionNumber(txnServerStatus.getTxnId());
             
             ((ServerSessionImpl) cs.getServerSession())
-                    .advanceTransactionNumber(txnId);
+                    .setTransactionNumber(txnServerStatus.getTxnId());
         }
 
         return cs;
@@ -178,7 +201,7 @@ final class ServerSessionImpl implements ServerSession {
         return transactionNumber++;
     }
 
-    public void advanceTransactionNumber(long number) {
+    public void setTransactionNumber(long number) {
         this.transactionNumber = number;
     }
 

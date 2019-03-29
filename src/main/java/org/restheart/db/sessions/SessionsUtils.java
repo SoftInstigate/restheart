@@ -19,11 +19,9 @@ package org.restheart.db.sessions;
 
 import com.mongodb.ClientSessionOptions;
 import com.mongodb.MongoClient;
-import com.mongodb.MongoCommandException;
 import com.mongodb.MongoCredential;
 import com.mongodb.MongoQueryException;
 import com.mongodb.client.internal.MongoClientDelegate;
-import com.mongodb.client.model.Filters;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.connection.Cluster;
 import com.mongodb.internal.session.ServerSessionPool;
@@ -33,7 +31,6 @@ import java.util.Collections;
 import static java.util.Collections.singletonList;
 import java.util.List;
 import java.util.UUID;
-import org.bson.conversions.Bson;
 import org.restheart.db.MongoDBClientSingleton;
 import static org.restheart.db.sessions.ClientSessionFactory.createClientSession;
 import org.restheart.db.sessions.Txn.TransactionStatus;
@@ -100,12 +97,14 @@ public class SessionsUtils {
         }
     }
 
+    /**
+     * Warn: requires two round trips to server
+     *
+     * @param sid
+     * @return the txn status from server
+     */
     public static Txn getTxnServerStatus(UUID sid) {
         var options = Sid.getSessionOptions(sid);
-
-        if (!options.isTransacted()) {
-            return Txn.newNotSupportingTxn();
-        }
 
         var cso = ClientSessionOptions
                 .builder()
@@ -118,13 +117,13 @@ public class SessionsUtils {
                 MCLIENT.getReadConcern(),
                 MCLIENT.getWriteConcern(),
                 MCLIENT.getReadPreference(),
-                Txn.newNotSupportingTxn());
+                null);
 
         // set txnId on ServerSession
         if (cs.getServerSession().getTransactionNumber()
                 < 1) {
             ((ServerSessionImpl) cs.getServerSession())
-                    .advanceTransactionNumber(1);
+                    .setTransactionNumber(1);
         }
 
         try {
@@ -132,15 +131,15 @@ public class SessionsUtils {
                 cs.setMessageSentInCurrentTransaction(true);
                 cs.startTransaction();
             }
-            runDummyReadCommand(cs);
+            propagateSession(cs);
             return new Txn(1, TransactionStatus.IN);
         } catch (MongoQueryException mqe) {
             var num = getTxnNumFromExc(mqe);
 
             if (num > 1) {
-                cs.advanceServerSessionTransactionNumber(num);
+                cs.setServerSessionTransactionNumber(num);
                 try {
-                    runDummyReadCommand(cs);
+                    propagateSession(cs);
                     return new Txn(num, TransactionStatus.IN);
                 } catch (MongoQueryException mqe2) {
                     return new Txn(num, getTxnStateFromExc(mqe2));
@@ -152,12 +151,14 @@ public class SessionsUtils {
     }
 
     /**
+     * Warn: requires a round trip to the server
      *
      * @param cs
      * @throws MongoQueryException
      */
-    public static void runDummyReadCommand(ClientSessionImpl cs)
+    public static void propagateSession(ClientSessionImpl cs)
             throws MongoQueryException {
+        LOGGER.debug("*********** round trip to server to propagate session");
         MCLIENT
                 .getDatabase("foo")
                 .getCollection("bar")
@@ -167,44 +168,23 @@ public class SessionsUtils {
                 .first();
     }
 
-    private static final Bson IMPOSSIBLE_CONDITION = Filters.exists("_id", false);
-
-    private static void runDummyWriteCommand(ClientSessionImpl cs)
-            throws MongoCommandException {
-        boolean msict = cs.isMessageSentInCurrentTransaction();
-
-        cs.setMessageSentInCurrentTransaction(true);
-
-        if (!cs.hasActiveTransaction()) {
-            cs.startTransaction();
-        }
-
-        MCLIENT
-                .getDatabase("foo")
-                .getCollection("bar")
-                .updateOne(cs,
-                        IMPOSSIBLE_CONDITION,
-                        eq("$set", eq("a", 1)));
-
-        cs.setMessageSentInCurrentTransaction(msict);
-    }
-
     private static final String TXT_NUM_ERROR_MSG_PREFIX_STARTED = "because a newer transaction ";
     private static final String TXT_NUM_ERROR_MSG_SUFFIX_STARTED = " has already started";
 
     private static final String TXT_NUM_ERROR_MSG_PREFIX_ABORTED = "Transaction ";
     private static final String TXT_NUM_ERROR_MSG_SUFFIX_ABORTED = " has been aborted";
-    
+
     private static final String TXT_NUM_ERROR_MSG_PREFIX_COMMITTED = "Transaction ";
     private static final String TXT_NUM_ERROR_MSG_SUFFIX_COMMITTED = " has been committed";
-    
+
     private static final String TXT_NUM_ERROR_MSG_PREFIX_NONE = "Given transaction number ";
     private static final String TXT_NUM_ERROR_MSG_SUFFIX_NONE = " does not match any in-progress transactions";
 
     /**
      * gets the actual txn id from error messages
+     *
      * @param mqe
-     * @return 
+     * @return
      */
     private static long getTxnNumFromExc(MongoQueryException mqe) {
         if (mqe.getErrorCode() == 225 && mqe.getErrorMessage() != null) {
@@ -227,7 +207,7 @@ public class SessionsUtils {
 
                 return Long.parseLong(numStr);
             }
-            
+
             start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX_NONE)
                     + TXT_NUM_ERROR_MSG_PREFIX_NONE.length();
             end = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_SUFFIX_NONE);
@@ -258,8 +238,9 @@ public class SessionsUtils {
 
     /**
      * get txn status from error messag
+     *
      * @param mqe
-     * @return 
+     * @return
      */
     private static TransactionStatus getTxnStateFromExc(MongoQueryException mqe) {
         if (mqe.getErrorCode() == 251) {

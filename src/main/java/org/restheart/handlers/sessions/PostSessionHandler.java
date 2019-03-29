@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  * creates a session with a started transaction
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PostSessionHandler extends PipedHttpHandler {
@@ -83,7 +83,7 @@ public class PostSessionHandler extends PipedHttpHandler {
         }
 
         try {
-            UUID sid = Sid.randomUUID(new SessionOptions(true, true));
+            UUID sid = Sid.randomUUID(new SessionOptions(true));
 
             exchange.getResponseHeaders()
                     .add(HttpString.tryFromString("Location"),

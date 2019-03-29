@@ -104,32 +104,8 @@ public class ClientSessionInjectorHandler extends PipedHttpHandler {
             }
 
             cs = ClientSessionFactory
-                    .getTxnClientSession(sid, txnId);
-
-            cs.advanceServerSessionTransactionNumber(txnId);
-
-            if (txnId != cs.getTxnServerStatus().getTxnId()) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        context,
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        "Specified txn does not match the active txn id ("
-                        + cs.getTxnServerStatus().getTxnId()
-                        + ")");
-                next(exchange, context);
-                return;
-            }
-            
-            if (cs.getTxnServerStatus().getStatus() != IN) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        context,
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        "Specified txn is not in-progress, status is "
-                        + cs.getTxnServerStatus().getStatus());
-                next(exchange, context);
-                return;
-            }
+                    .getTxnClientSession(sid,
+                            new Txn(txnId, Txn.TransactionStatus.IN));
 
             LOGGER.debug("Request is executed in session {} with {}",
                     _sid,
