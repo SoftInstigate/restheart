@@ -36,11 +36,7 @@ public class Txn {
 
     @Override
     public String toString() {
-        if (txnId == -1 && status == TransactionStatus.NONE) {
-            return "Txn(status=NOT_SUPPORTED)";
-        } else {
-            return "Txn(txnId=" + getTxnId() + ", status=" + getStatus() + ")";
-        }
+        return "Txn(txnId=" + getTxnId() + ", status=" + getStatus() + ")";
     }
 
     /**
@@ -55,13 +51,5 @@ public class Txn {
      */
     public long getTxnId() {
         return txnId;
-    }
-    
-    public boolean supportsTxns() {
-        return txnId == -1 && status == TransactionStatus.NONE;
-    }
-    
-    public static Txn newNotSupportingTxn() {
-        return  new Txn(-1, TransactionStatus.NONE);
     }
 }

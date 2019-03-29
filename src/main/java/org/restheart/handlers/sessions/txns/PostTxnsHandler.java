@@ -27,6 +27,7 @@ import org.restheart.db.DatabaseImpl;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.db.sessions.ClientSessionFactory;
 import org.restheart.db.sessions.SessionsUtils;
+import org.restheart.db.sessions.Txn;
 import static org.restheart.db.sessions.Txn.TransactionStatus.ABORTED;
 import static org.restheart.db.sessions.Txn.TransactionStatus.COMMITTED;
 import static org.restheart.db.sessions.Txn.TransactionStatus.NONE;
@@ -104,20 +105,21 @@ public class PostTxnsHandler extends PipedHttpHandler {
         if (txn.getStatus() == ABORTED
                 || txn.getStatus() == COMMITTED
                 || txn.getStatus() == NONE) {
-            var nextTxnId = txn.getStatus() == NONE 
-                    ? txn.getTxnId() 
+            var nextTxnId = txn.getStatus() == NONE
+                    ? txn.getTxnId()
                     : txn.getTxnId() + 1;
 
-            var cs = ClientSessionFactory.getTxnClientSession(sid, nextTxnId);
+            var cs = ClientSessionFactory.getTxnClientSession(sid,
+                    new Txn(nextTxnId, txn.getStatus()));
 
             cs.setMessageSentInCurrentTransaction(false);
-            
+
             if (!cs.hasActiveTransaction()) {
                 cs.startTransaction();
             }
-            
+
             // propagate the transaction
-            SessionsUtils.runDummyReadCommand(cs);
+            SessionsUtils.propagateSession(cs);
 
             exchange.getResponseHeaders()
                     .add(HttpString.tryFromString("Location"),
@@ -126,7 +128,6 @@ public class PostTxnsHandler extends PipedHttpHandler {
                                     URLUtils.getRemappedRequestURL(exchange),
                                     new BsonString("" + nextTxnId)));
 
-            
             context.setResponseStatusCode(HttpStatus.SC_CREATED);
         } else {
             context.setResponseStatusCode(HttpStatus.SC_NOT_MODIFIED);

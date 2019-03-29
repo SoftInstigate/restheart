@@ -21,7 +21,6 @@ import org.restheart.db.sessions.ClientSessionFactory;
 import org.restheart.db.sessions.ClientSessionImpl;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoCommandException;
-import static com.mongodb.client.model.Filters.eq;
 import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
 import org.bson.BsonArray;
@@ -34,8 +33,7 @@ import org.bson.codecs.UuidCodec;
 import org.restheart.db.Database;
 import org.restheart.db.DatabaseImpl;
 import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.db.sessions.SessionsUtils;
-import org.restheart.representation.Resource;
+import org.restheart.db.sessions.Txn;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.utils.HttpStatus;
@@ -104,57 +102,38 @@ public class PatchTxnHandler extends PipedHttpHandler {
             return;
         }
 
-        var txn = SessionsUtils.getTxnServerStatus(sid);
+        try {
+            ClientSessionImpl cs = ClientSessionFactory
+                    .getTxnClientSession(sid, new Txn(txnId, 
+                            Txn.TransactionStatus.IN));
 
-        if (txn.getTxnId() != txnId) {
-            context.setResponseStatusCode(HttpStatus.SC_NOT_FOUND);
-        } else {
-            try {
-                ClientSessionImpl cs = ClientSessionFactory.getTxnClientSession(sid, txnId);
+            cs.setMessageSentInCurrentTransaction(true);
 
-                switch (cs.getTxnServerStatus().getStatus()) {
-                    case NONE:
-                        if (!cs.hasActiveTransaction()) {
-                            cs.startTransaction();
-                        }
+            if (!cs.hasActiveTransaction()) {
+                cs.startTransaction();
+            }
 
-                        // propagate txn
-                        SessionsUtils.runDummyReadCommand(cs);
-                        context.setResponseStatusCode(HttpStatus.SC_OK);
-                        break;
-                    case IN:
-                        cs.setMessageSentInCurrentTransaction(true);
-                        
-                        if (!cs.hasActiveTransaction()) {
-                            cs.startTransaction();
-                        }
-                        
-                        cs.commitTransaction();
-                        context.setResponseStatusCode(HttpStatus.SC_OK);
-                        break;
-                    default:
-                        context.setResponseStatusCode(HttpStatus.SC_NOT_MODIFIED);
-                }
+            cs.commitTransaction();
+            context.setResponseStatusCode(HttpStatus.SC_OK);
 
-            } catch (MongoCommandException mce) {
-                LOGGER.error("Error {} {}, {}",
-                        mce.getErrorCode(),
-                        mce.getErrorCodeName(),
-                        mce.getErrorMessage());
+        } catch (MongoCommandException mce) {
+            LOGGER.error("Error {} {}, {}",
+                    mce.getErrorCode(),
+                    mce.getErrorCodeName(),
+                    mce.getErrorMessage());
 
-                if (mce.getErrorCode() == 20) {
-                    ResponseHelper.endExchangeWithMessage(exchange,
-                            context,
-                            HttpStatus.SC_BAD_GATEWAY,
-                            mce.getErrorCodeName() + ", " + mce.getErrorMessage());
-                } else if (mce.getErrorCode() == 251) {
-                    ResponseHelper.endExchangeWithMessage(exchange,
-                            context,
-                            HttpStatus.SC_NOT_ACCEPTABLE,
-                            mce.getErrorCodeName() + ", " + mce.getErrorMessage());
-                } else {
-                    throw mce;
-                }
+            if (mce.getErrorCode() == 20) {
+                ResponseHelper.endExchangeWithMessage(exchange,
+                        context,
+                        HttpStatus.SC_BAD_GATEWAY,
+                        mce.getErrorCodeName() + ", " + mce.getErrorMessage());
+            } else if (mce.getErrorCode() == 251 ||mce.getErrorCode() == 225) {
+                ResponseHelper.endExchangeWithMessage(exchange,
+                        context,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        mce.getErrorCodeName() + ", " + mce.getErrorMessage());
+            } else {
+                throw mce;
             }
         }
 

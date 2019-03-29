@@ -19,7 +19,6 @@ package org.restheart.db.sessions;
 
 import org.junit.Assert;
 import org.junit.Test;
-import static org.restheart.db.sessions.Sid.longToBytes;
 
 /**
  *
@@ -33,7 +32,7 @@ public class SidTest {
     @Test
     public void testSessionOptionCase1() {
         for (int cont = 0; cont < 10; cont++) {
-            var so = new SessionOptions(false, false);
+            var so = new SessionOptions(false);
             var sid = Sid.randomUUID(so);
             var so2 = Sid.getSessionOptions(sid);
             
@@ -44,29 +43,7 @@ public class SidTest {
     @Test
     public void testSessionOptionCase2() {
         for (int cont = 0; cont < 10; cont++) {
-            var so = new SessionOptions(false, true);
-            var sid = Sid.randomUUID(so);
-            var so2 = Sid.getSessionOptions(sid);
-            
-            Assert.assertEquals(so, so2);
-        }
-    }
-    
-    @Test
-    public void testSessionOptionCase3() {
-        for (int cont = 0; cont < 10; cont++) {
-            var so = new SessionOptions(true, false);
-            var sid = Sid.randomUUID(so);
-            var so2 = Sid.getSessionOptions(sid);
-            
-            Assert.assertEquals(so, so2);
-        }
-    }
-    
-    @Test
-    public void testSessionOptionCase4() {
-        for (int cont = 0; cont < 10; cont++) {
-            var so = new SessionOptions(true, true);
+            var so = new SessionOptions(true);
             var sid = Sid.randomUUID(so);
             var so2 = Sid.getSessionOptions(sid);
             

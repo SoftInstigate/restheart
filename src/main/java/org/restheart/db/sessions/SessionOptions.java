@@ -26,32 +26,19 @@ import static org.restheart.db.sessions.Sid.longToBytes;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class SessionOptions {
-    public static final int TXN_FLAG = 0x20; // 0010 0000
-    public static final int CAUSALLY_CONSISTENT_FLAG = 0x10; // 0001 0000
+    public static final int CAUSALLY_CONSISTENT_FLAG = 0x20; // 0010 0000
 
-    private final boolean transacted;
     private final boolean causallyConsistent;
 
-    public SessionOptions(boolean transacted, boolean causallyConsistent) {
-        this.transacted = transacted;
+    public SessionOptions(boolean causallyConsistent) {
         this.causallyConsistent = causallyConsistent;
     }
 
     public SessionOptions(UUID sid) {
         var lsb = longToBytes(sid.getLeastSignificantBits());
 
-        this.transacted = (lsb[0] & TXN_FLAG) 
-                == TXN_FLAG;
-        
-        this.causallyConsistent = (lsb[0] & CAUSALLY_CONSISTENT_FLAG) 
+        this.causallyConsistent = (lsb[0] & CAUSALLY_CONSISTENT_FLAG)
                 == CAUSALLY_CONSISTENT_FLAG;
-    }
-
-    /**
-     * @return the transacted
-     */
-    public boolean isTransacted() {
-        return transacted;
     }
 
     /**
@@ -72,15 +59,12 @@ public class SessionOptions {
 
         var other = (SessionOptions) obj;
 
-        return Objects.equal(this.transacted, other.transacted)
-                && Objects.equal(this.causallyConsistent, other.causallyConsistent);
+        return Objects.equal(this.causallyConsistent, other.causallyConsistent);
     }
 
     @Override
     public String toString() {
-        return "SessionOptions(" 
-                + this.transacted
-                + ", "
+        return "SessionOptions(causallyConsistent= "
                 + this.causallyConsistent
                 + ")";
     }

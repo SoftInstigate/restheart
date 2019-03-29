@@ -83,9 +83,7 @@ public class ClientSessionImpl
     }
 
     public boolean isTransacted() {
-        return getSid() == null
-                ? false
-                : Sid.getSessionOptions(getSid()).isTransacted();
+        return txnServerStatus != null;
     }
 
     public void setCausallyConsistent(boolean causallyConsistent) {
@@ -150,8 +148,8 @@ public class ClientSessionImpl
         }
     }
     
-    public void advanceServerSessionTransactionNumber(long number) {
-        ((ServerSessionImpl)getServerSession()).advanceTransactionNumber(number);
+    public void setServerSessionTransactionNumber(long number) {
+        ((ServerSessionImpl)getServerSession()).setTransactionNumber(number);
     }
     
     @Override

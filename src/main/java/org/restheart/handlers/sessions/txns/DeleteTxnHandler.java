@@ -24,7 +24,7 @@ import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
 import org.restheart.db.Database;
 import org.restheart.db.DatabaseImpl;
-import org.restheart.db.sessions.SessionsUtils;
+import org.restheart.db.sessions.Txn;
 import org.restheart.representation.Resource;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -74,12 +74,11 @@ public class DeleteTxnHandler extends PipedHttpHandler {
             return;
         }
 
-        String _sid = context.getCollectionName();
-
         UUID sid;
+        long txnId = context.getTxnId();
 
         try {
-            sid = UUID.fromString(_sid);
+            sid = UUID.fromString(context.getSid());
         } catch (IllegalArgumentException iae) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
@@ -90,16 +89,17 @@ public class DeleteTxnHandler extends PipedHttpHandler {
             return;
         }
 
-        var txn = SessionsUtils.getTxnServerStatus(sid);
-        ClientSessionImpl cs = ClientSessionFactory.getTxnClientSession(sid, txn.getTxnId());
+        ClientSessionImpl cs = ClientSessionFactory
+                .getTxnClientSession(sid, new Txn(txnId,
+                        Txn.TransactionStatus.IN));
 
         try {
             cs.setMessageSentInCurrentTransaction(true);
-            
+
             if (!cs.hasActiveTransaction()) {
                 cs.startTransaction();
             }
-            
+
             cs.abortTransaction();
 
             context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
