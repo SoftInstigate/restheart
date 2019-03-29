@@ -1,4 +1,4 @@
-package org.restheart.test.karate;
+package karate;
 
 /*
  * Copyright SoftInstigate srl. All Rights Reserved.
