@@ -4,6 +4,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
+import java.nio.file.Paths;
 import org.bson.BsonDocument;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -34,7 +35,7 @@ public class SkipTimeTest {
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        MongoDBClientSingleton.init(new Configuration().getMongoUri());
+        MongoDBClientSingleton.init(new Configuration(Paths.get("etc/test/restheart-integrationtest.yml")).getMongoUri());
     }
 
     @AfterClass
