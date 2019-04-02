@@ -39,7 +39,6 @@ public class ConfigurationTest {
     public ConfigurationTest() {
     }
 
-    @Test
     public void testConfigurationTemplate() throws IOException, ConfigurationException {
         Map<String, Object> obj = LoadConfiguration("env.properties");
 
