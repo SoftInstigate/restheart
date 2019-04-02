@@ -69,7 +69,7 @@ public abstract class AbstractPT {
         Map<String, Object> configuration = (Map<String, Object>) yaml.load(ymlSB.toString());
 
         try {
-            MongoDBClientSingleton.init(new Configuration(configuration, true));
+            MongoDBClientSingleton.init(new Configuration(configuration, true).getMongoUri());
         } catch (ConfigurationException ex) {
             System.exit(-1);
         }
