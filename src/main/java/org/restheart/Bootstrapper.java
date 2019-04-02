@@ -200,16 +200,16 @@ public class Bootstrapper {
                 p.load(reader);
             }
             MustacheFactory mf = new DefaultMustacheFactory();
-            
+
             Mustache m;
-            
+
             try {
                 m = mf.compile(CONF_FILE_PATH.toString());
             } catch(MustacheNotFoundException ex) {
                 logErrorAndExit("Configuration file not found " + CONF_FILE_PATH, null, false, -1);
                 m = null;
             }
-            
+
             StringWriter writer = new StringWriter();
             m.execute(writer, p);
             writer.flush();
@@ -435,7 +435,7 @@ public class Bootstrapper {
                 configuration.getMongoUri().getHosts(), configuration.getMongoUri().getOptions());
 
         try {
-            MongoDBClientSingleton.init(configuration);
+            MongoDBClientSingleton.init(configuration.getMongoUri());
             //force setup
             MongoDBClientSingleton.getInstance();
             LOGGER.info("MongoDB connection pool initialized");

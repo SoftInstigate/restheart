@@ -34,7 +34,7 @@ public class SkipTimeTest {
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        MongoDBClientSingleton.init(new Configuration());
+        MongoDBClientSingleton.init(new Configuration().getMongoUri());
     }
 
     @AfterClass
