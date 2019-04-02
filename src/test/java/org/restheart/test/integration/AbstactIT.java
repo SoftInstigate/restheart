@@ -64,7 +64,7 @@ public abstract class AbstactIT {
 
     static {
         LOG.info("BASE_URL=" + HTTP_HOST.toURI());
-        MongoDBClientSingleton.init(new Configuration().getMongoUri());
+        MongoDBClientSingleton.init(new Configuration(Paths.get("etc/test/restheart-integrationtest.yml")).getMongoUri());
     }
 
     @BeforeClass

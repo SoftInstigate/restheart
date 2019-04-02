@@ -33,9 +33,7 @@ import org.slf4j.LoggerFactory;
 public class MongoDBClientSingleton {
 
     private static boolean initialized = false;
-
     private static MongoClientURI mongoUri;
-
     private static String serverVersion = null;
     private static boolean replicaSet = false;
 
