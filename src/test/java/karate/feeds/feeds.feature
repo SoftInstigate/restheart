@@ -4,32 +4,7 @@ Background:
 * url 'http://localhost:18080'
 * def db = '/test-changes-feed'
 * def coll = db + '/coll'
-# note: db starting with 'test-' are automatically deleted after test finishes
-
-
-# TESTING ENVIROMENT SETUP SECTION
-
-@requires-mongodb-3.6 @requires-replica-set
-Scenario: create test db
-    Given path db
-    And request {}
-    When method PUT
-    Then status 201
-
-@requires-mongodb-3.6 @requires-replica-set
-Scenario: create test collection with feeds metadata and open feed resources
-    Given path coll
-    And request {"feeds": [{"stages": [], "uri": "feedOperation" }, {"stages": [], "uri": "emptyFeedOperation" }, {"stages": [{"_$match": {"fullDocument.targettedProperty": {"_$var": "param"}}}], "uri": "feedOperationWithStageParam" }]}
-    When method PUT
-    Then status 201
-    * call read('./features/open_feeds.feature')
-
-@requires-mongodb-3.6 @requires-replica-set
-Scenario: simple GET request
-    Given path coll
-    When method GET
-    Then status 200
-
+* callonce read('./features/set_up_test_environment.feature')
 
 # SUCCESSFULL SCENARIOS SECTION
 
