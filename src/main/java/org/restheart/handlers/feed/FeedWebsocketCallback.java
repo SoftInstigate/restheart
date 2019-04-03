@@ -17,8 +17,6 @@
  */
 package org.restheart.handlers.feed;
 
-import com.mongodb.client.ChangeStreamIterable;
-import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import io.undertow.websockets.WebSocketConnectionCallback;
@@ -26,13 +24,11 @@ import io.undertow.websockets.core.AbstractReceiveListener;
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.core.WebSockets;
 import io.undertow.websockets.spi.WebSocketHttpExchange;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import org.bson.BsonDocument;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import org.bson.Document;
 
 /**
@@ -42,79 +38,76 @@ import org.bson.Document;
  */
 public class FeedWebsocketCallback implements WebSocketConnectionCallback {
 
-    List<BsonDocument> pipeline;
-    ScheduledFuture<?> scheduledThreadReference;
-    ArrayList<WebSocketChannel> sessions = new ArrayList<WebSocketChannel>();
-
-    public FeedWebsocketCallback(MongoCollection<BsonDocument> collection, List<BsonDocument> resolvedPipeline) {
-
-        this.pipeline = resolvedPipeline;
-        this.scheduledThreadReference
-                = this.initScheduledPushNotificationsThread(
-                        this.sessions,
-                        collection.watch(this.pipeline)
-                );
-
-    }
+    private static Set<WebSocketChannel> PEER_CONNECTIONS = null;
+    private static boolean ALREADY_NOTIFYING = false;
+    private static boolean CHECK_ONE_MORE_TIME = false;
 
     @Override
 
     public void onConnect(WebSocketHttpExchange exchange, WebSocketChannel channel) {
         channel.getReceiveSetter().set(new AbstractReceiveListener() {
         });
+        PEER_CONNECTIONS = channel.getPeerConnections();
         channel.resumeReceives();
-        this.setSessions(channel);
-
     }
 
-    public void setSessions(WebSocketChannel sessions) {
-        this.sessions.clear();
-        this.sessions.add(sessions);
-
+    public static void notifyClients() {
+        if (ALREADY_NOTIFYING == false) {
+            ALREADY_NOTIFYING = true;
+            checkCachedCursorsForNotifications();
+            ALREADY_NOTIFYING = false;
+            if (CHECK_ONE_MORE_TIME == true) {
+                CHECK_ONE_MORE_TIME = false;
+                notifyClients();
+            }
+        } else {
+            CHECK_ONE_MORE_TIME = true;
+        }
     }
 
-    ScheduledFuture<?> initScheduledPushNotificationsThread(ArrayList<WebSocketChannel> sessions, ChangeStreamIterable changeStreamIterable) {
-        class OneShotTask implements Runnable {
+    private static void checkCachedCursorsForNotifications() {
+        Map<String, Optional<CacheableChangesStreamCursor>> cacheMap = CacheManagerSingleton.getCacheAsMap();
 
-            ArrayList<WebSocketChannel> sessions;
-            MongoCursor<ChangeStreamDocument<Document>> iterator;
+        for (Map.Entry<String, Optional<CacheableChangesStreamCursor>> cacheableChangeStreamEntry : cacheMap
+                .entrySet()) {
+            MongoCursor<ChangeStreamDocument<Document>> iterator = cacheableChangeStreamEntry.getValue().get()
+                    .getIterator();
 
-            OneShotTask(ArrayList<WebSocketChannel> sessions, ChangeStreamIterable changeStreamIterable) {
-                this.iterator = changeStreamIterable.iterator();
-                this.sessions = sessions;
-            }
+            ChangeStreamDocument<Document> changeStreamDocument = iterator.tryNext();
 
-            public void run() {
-                pushNotifications(sessions, changeStreamIterable);
-            }
-
-            void pushNotifications(ArrayList<WebSocketChannel> sessions, ChangeStreamIterable changeStreamIterable) {
-                ChangeStreamDocument<Document> changeStreamDocument = this.iterator.tryNext();
-                if (changeStreamDocument != null) {
-
-                    while (this.iterator.tryNext() != null) {}
-
-                    if (!this.sessions.isEmpty()) {
-
-                        for (WebSocketChannel session : this.sessions.get(0).getPeerConnections()) {
-                            WebSockets.sendText(changeStreamDocument.toString(), session, null);
-                        }
-                    }
+            if (changeStreamDocument != null) {
+                // Move ahead cursor over changes
+                while (iterator.tryNext() != null) {
                 }
-            }
 
+                pushNotifications(cacheableChangeStreamEntry.getKey(), changeStreamDocument);
+            }
         }
 
-        ScheduledExecutorService scheduler
-                = Executors.newScheduledThreadPool(1);
-
-        Thread t = new Thread(new OneShotTask(sessions, changeStreamIterable));
-
-        return scheduler.scheduleAtFixedRate(t, 2, 2, SECONDS);
-
     }
 
-    public void finalize() {
-        this.scheduledThreadReference.cancel(true);
+    private static void pushNotifications(String streamUrl, ChangeStreamDocument<Document> data) {
+
+        if (PEER_CONNECTIONS != null) {
+            for (WebSocketChannel channel : PEER_CONNECTIONS) {
+
+                try {
+                    if (getHttpUrl(channel.getUrl()).equals(streamUrl)) {
+                        WebSockets.sendText(data.toString(), channel, null);
+                    }
+                } catch (Exception ex) {
+                    System.out.println("URL parsing exception for " + channel.getUrl());
+                }
+
+            }
+        }
     }
+
+    private static String getHttpUrl(String webSocketUrl) throws MalformedURLException {
+        String result = webSocketUrl.substring(2); // remove ws protocol part
+        result = "http" + result;
+        result = new URL(result).getPath();
+        return result;
+    }
+
 }

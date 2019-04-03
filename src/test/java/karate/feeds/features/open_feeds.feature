@@ -12,6 +12,12 @@ Scenario: Opens "globalNotificationsFeed" ChangesFeed to notify collection chang
     When method POST
     Then status 201
 
+Scenario: Opens "toBeDeletedFeed" ChangesFeed for DELETE Scenario
+    Given path coll + '/_feeds/feedOperation/toBeDeletedFeed'
+    And request {}
+    When method POST
+    Then status 201
+
 Scenario: Opens "targettedDataNotificationsFeed" ChangesFeed to notify collection changes for documents whose properties meets $match stage condition ({"targettedProperty": "test"}) 
     Given path coll + '/_feeds/feedOperationWithStageParam/targettedDataNotificationsFeed'
     And request {}

@@ -19,30 +19,35 @@ package org.restheart.handlers.feed;
 
 import io.undertow.websockets.WebSocketProtocolHandshakeHandler;
 import java.util.List;
+
+import com.mongodb.client.MongoCursor;
+import com.mongodb.client.MongoIterable;
+import com.mongodb.client.model.changestream.ChangeStreamDocument;
+
 import org.bson.BsonDocument;
+import org.bson.Document;
 
 /**
  *
  * @author omartrasatti
  */
-public class CacheableFeed {
+public class CacheableChangesStreamCursor {
 
-    private WebSocketProtocolHandshakeHandler webSocketProtocolHandshakeHandler;
+    private MongoCursor<ChangeStreamDocument<Document>> iterator;
     private List<BsonDocument> aVars = null;
 
-    public CacheableFeed(
-            WebSocketProtocolHandshakeHandler webSocketProtocolHandshakeHandler,
+    public CacheableChangesStreamCursor(MongoCursor<ChangeStreamDocument<Document>> iterator,
             List<BsonDocument> aVars) {
-        
-        this.webSocketProtocolHandshakeHandler = webSocketProtocolHandshakeHandler;
+
+        this.iterator = iterator;
         this.aVars = aVars;
-        
+
     }
-    
-    public WebSocketProtocolHandshakeHandler getHandshakeHandler() {
-        return this.webSocketProtocolHandshakeHandler;
+
+    public MongoCursor<ChangeStreamDocument<Document>> getIterator() {
+        return this.iterator;
     }
-    
+
     public List<BsonDocument> getAVars() {
         return this.aVars;
     }
