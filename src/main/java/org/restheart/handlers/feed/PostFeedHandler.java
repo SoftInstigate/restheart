@@ -22,7 +22,6 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 
 import io.undertow.server.HttpServerExchange;
-import io.undertow.websockets.WebSocketProtocolHandshakeHandler;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.HashMap;
@@ -34,6 +33,7 @@ import java.util.function.Consumer;
 import org.bson.BsonDocument;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -44,107 +44,111 @@ import org.restheart.utils.ResponseHelper;
  *
  */
 public class PostFeedHandler extends PipedHttpHandler {
-
-        private static SecureRandom RND_GENERATOR = new SecureRandom();
-        private static Consumer<ChangeStreamDocument> TRIGGER_NOTIFICATIONS = 
-        (notification) -> {
+    private static String QUERY_NOT_PRESENT_EXCEPTION_MESSAGE = "Query does not exist";
+    private static SecureRandom RND_GENERATOR = new SecureRandom();
+    private static Consumer<ChangeStreamDocument> TRIGGER_NOTIFICATIONS
+            = (notification) -> {
                 FeedWebsocketCallback.notifyClients();
-        };
+            };
 
+    public PostFeedHandler() {
+        super();
+    }
 
-        private static Map<String, ChangeStreamIterable> CHANGE_STREAM_MAP = new HashMap();
-        public PostFeedHandler() {
-                super();
+    /**
+     * Default ctor
+     *
+     * @param next
+     */
+    public PostFeedHandler(PipedHttpHandler next) {
+        super(next);
+    }
+
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
+    @Override
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+
+        if (context.isInError()) {
+            next(exchange, context);
+            return;
         }
 
-        /**
-         * Default ctor
-         *
-         * @param next
-         */
-        public PostFeedHandler(PipedHttpHandler next) {
-                super(next);
-        }
+        List<BsonDocument> resolvedStages;
 
-        /**
-         *
-         * @param exchange
-         * @param context
-         * @throws Exception
-         */
-        @Override
-        public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-
-                if (context.isInError()) {
-                        next(exchange, context);
-                        return;
-                }
-
-                String changesStreamOperation = context.getFeedOperation();
-                List<FeedOperation> feeds = FeedOperation.getFromJson(context.getCollectionProps());
-                Optional<FeedOperation> _query = feeds.stream().filter(q -> q.getUri().equals(changesStreamOperation))
-                                .findFirst();
-
-                if (!_query.isPresent()) {
-                        ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_NOT_FOUND,
-                                        "query does not exist");
-                        next(exchange, context);
-                        return;
-                }
-
-                FeedOperation pipeline = _query.get();
-
-                String changesStreamIdentifier = getChangeStreamIdentifier(context);
-                String changesStreamUriPath = getChangeStreamOperationUri(context) + "/" + changesStreamIdentifier;
-                List<BsonDocument> resolvedStages = pipeline.getResolvedStagesAsList(context.getAggreationVars());
-                ChangeStreamIterable changeStreamIterable = initChangeStream(context, resolvedStages);
-
-                
-                CacheManagerSingleton.cacheChangeStreamCursor(changesStreamUriPath, 
-                new CacheableChangesStreamCursor(changeStreamIterable.iterator(), resolvedStages));
-                
-                if (CHANGE_STREAM_MAP.keySet().contains(getChangeStreamOperationUri(context) + "/" + changesStreamIdentifier)) {
-                        CHANGE_STREAM_MAP.remove(getChangeStreamOperationUri(context) + "/" + changesStreamIdentifier);
-                }
-                
-                CHANGE_STREAM_MAP.put(getChangeStreamOperationUri(context) + "/" + changesStreamIdentifier, changeStreamIterable);
-
-                ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_CREATED,
-                                "waiting for client ws at " + changesStreamUriPath);
-
+        try {
+            resolvedStages = getResolvedStagesAsList(context);
+        } catch (Exception ex) {
+            if (ex.getMessage().equals(QUERY_NOT_PRESENT_EXCEPTION_MESSAGE)) {
+                ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_NOT_FOUND,
+                        "query does not exist");
                 next(exchange, context);
-                
-                CHANGE_STREAM_MAP.get(getChangeStreamOperationUri(context) + "/" + changesStreamIdentifier)
-                        .forEach(TRIGGER_NOTIFICATIONS);
-
+                return;
+            } else {
+                throw ex;
+            }
         }
 
-        private String generateChangeStreamRandomIdentifier() {
-                String randomId = new BigInteger(256, RND_GENERATOR).toString(Character.MAX_RADIX).substring(0, 16);
+        String changesStreamIdentifier = getChangeStreamIdentifier(context);
+        String changesStreamUriPath = getChangeStreamOperationUri(context) + "/" + changesStreamIdentifier;
 
-                return randomId;
+        CacheManagerSingleton.cacheChangeStreamCursor(changesStreamUriPath,
+                new CacheableChangesStreamCursor(initChangeStream(context, resolvedStages).iterator(), resolvedStages));
+
+        ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_CREATED,
+                "waiting for client ws at " + changesStreamUriPath);
+
+        next(exchange, context);
+
+    }
+
+    private List<BsonDocument> getResolvedStagesAsList(RequestContext context) throws InvalidMetadataException, QueryVariableNotBoundException, Exception {
+
+        String changesStreamOperation = context.getFeedOperation();
+        List<FeedOperation> feeds = FeedOperation.getFromJson(context.getCollectionProps());
+        Optional<FeedOperation> _query = feeds.stream().filter(q -> q.getUri().equals(changesStreamOperation))
+                .findFirst();
+
+        if (!_query.isPresent()) {
+            throw new Exception(QUERY_NOT_PRESENT_EXCEPTION_MESSAGE);
         }
 
-        private String getChangeStreamOperationUri(RequestContext context) {
-                return "/" + context.getDBName() + "/" + context.getCollectionName() + "/_feeds/"
-                                + context.getFeedOperation();
+        FeedOperation pipeline = _query.get();
+
+        List<BsonDocument> resolvedStages = pipeline.getResolvedStagesAsList(context.getAggreationVars());
+        return resolvedStages;
+    }
+
+    private String generateChangeStreamRandomIdentifier() {
+        String randomId = new BigInteger(256, RND_GENERATOR).toString(Character.MAX_RADIX).substring(0, 16);
+
+        return randomId;
+    }
+
+    private String getChangeStreamOperationUri(RequestContext context) {
+        return "/" + context.getDBName() + "/" + context.getCollectionName() + "/_feeds/"
+                + context.getFeedOperation();
+    }
+
+    private String getChangeStreamIdentifier(RequestContext context) {
+
+        String identifier = context.getFeedIdentifier();
+        if (identifier == null) {
+            identifier = generateChangeStreamRandomIdentifier();
         }
 
-        private String getChangeStreamIdentifier(RequestContext context) {
+        return identifier;
+    }
 
-                String identifier = context.getFeedIdentifier();
-                if (identifier == null) {
-                        identifier = generateChangeStreamRandomIdentifier();
-                }
+    private ChangeStreamIterable initChangeStream(RequestContext context, List<BsonDocument> resolvedStages) {
 
-                return identifier;
-        }
+        MongoCollection<BsonDocument> collection = getDatabase().getCollection(context.getDBName(),
+                context.getCollectionName());
 
-        private ChangeStreamIterable initChangeStream(RequestContext context, List<BsonDocument> resolvedStages ) {
-
-                MongoCollection<BsonDocument> collection = getDatabase().getCollection(context.getDBName(),
-                                context.getCollectionName());
-
-                return collection.watch(resolvedStages);
-        }
+        return collection.watch(resolvedStages);
+    }
 }

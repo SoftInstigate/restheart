@@ -17,6 +17,7 @@
  */
 package org.restheart.handlers.feed;
 
+import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import io.undertow.websockets.WebSocketConnectionCallback;
@@ -29,7 +30,12 @@ import java.net.URL;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import org.bson.Document;
+import org.restheart.db.MongoDBClientSingleton;
+import org.restheart.handlers.RequestContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -41,14 +47,28 @@ public class FeedWebsocketCallback implements WebSocketConnectionCallback {
     private static Set<WebSocketChannel> PEER_CONNECTIONS = null;
     private static boolean ALREADY_NOTIFYING = false;
     private static boolean CHECK_ONE_MORE_TIME = false;
+    private static boolean FIRST_CLIENT_CONNECTED = false;
+
+    private static final Logger LOGGER
+            = LoggerFactory.getLogger(RequestContext.class);
+
+    private static final Consumer<ChangeStreamDocument> CHECK_FOR_NOTIFICATIONS = (ChangeStreamDocument x) -> {
+        notifyClients();
+    };
 
     @Override
-
     public void onConnect(WebSocketHttpExchange exchange, WebSocketChannel channel) {
         channel.getReceiveSetter().set(new AbstractReceiveListener() {
         });
         PEER_CONNECTIONS = channel.getPeerConnections();
         channel.resumeReceives();
+
+        if (!FIRST_CLIENT_CONNECTED) {
+            FIRST_CLIENT_CONNECTED = true;
+            MongoClient client = MongoDBClientSingleton.getInstance().getClient();
+            client.watch().forEach(CHECK_FOR_NOTIFICATIONS);
+        }
+
     }
 
     public static void notifyClients() {
@@ -87,7 +107,7 @@ public class FeedWebsocketCallback implements WebSocketConnectionCallback {
     }
 
     private static void pushNotifications(String streamUrl, ChangeStreamDocument<Document> data) {
-
+        LOGGER.warn("Pushing notifications");
         if (PEER_CONNECTIONS != null) {
             for (WebSocketChannel channel : PEER_CONNECTIONS) {
 
@@ -95,8 +115,8 @@ public class FeedWebsocketCallback implements WebSocketConnectionCallback {
                     if (getHttpUrl(channel.getUrl()).equals(streamUrl)) {
                         WebSockets.sendText(data.toString(), channel, null);
                     }
-                } catch (Exception ex) {
-                    System.out.println("URL parsing exception for " + channel.getUrl());
+                } catch (MalformedURLException ex) {
+                    LOGGER.warn("URL parsing exception for " + channel.getUrl());
                 }
 
             }
