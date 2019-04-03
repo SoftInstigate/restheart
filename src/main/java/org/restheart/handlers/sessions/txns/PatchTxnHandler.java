@@ -103,6 +103,7 @@ public class PatchTxnHandler extends PipedHttpHandler {
         }
 
         try {
+            // assume optimistically txn in progress, we get an error eventually
             ClientSessionImpl cs = ClientSessionFactory
                     .getTxnClientSession(sid, new Txn(txnId, 
                             Txn.TransactionStatus.IN));
@@ -115,7 +116,6 @@ public class PatchTxnHandler extends PipedHttpHandler {
 
             cs.commitTransaction();
             context.setResponseStatusCode(HttpStatus.SC_OK);
-
         } catch (MongoCommandException mce) {
             LOGGER.error("Error {} {}, {}",
                     mce.getErrorCode(),
@@ -131,7 +131,7 @@ public class PatchTxnHandler extends PipedHttpHandler {
                 ResponseHelper.endExchangeWithMessage(exchange,
                         context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
-                        mce.getErrorCodeName() + ", " + mce.getErrorMessage());
+                        mce.getErrorMessage());
             } else {
                 throw mce;
             }

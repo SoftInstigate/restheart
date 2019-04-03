@@ -152,6 +152,11 @@ public class ClientSessionImpl
         ((ServerSessionImpl)getServerSession()).setTransactionNumber(number);
     }
     
+    public void setTransactionState(TransactionStatus transactionState) {
+        startTransaction(); // this inits the transactionOptions
+        this.transactionState = transactionState;
+    }
+    
     @Override
     @SuppressWarnings("deprecation")
     public void commitTransaction() {
@@ -276,4 +281,6 @@ public class ClientSessionImpl
     public void setTxnServerStatus(Txn txnServerStatus) {
         this.txnServerStatus = txnServerStatus;
     }
+    
+    
 }
