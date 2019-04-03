@@ -43,3 +43,10 @@ Scenario: create a session and use it for inserts and queries
     And method GET
     Then status 200
     And match response._size == 5
+
+@requires-mongodb-4 @requires-replica-set
+Scenario: try to use invalid sid
+    Given path db + coll
+    And param sid = 'invalid'
+    When method GET
+    Then status 406

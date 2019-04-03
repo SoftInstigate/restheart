@@ -6,7 +6,7 @@ Background:
 * def txn = call read('common-start-txn.feature') { baseUrl: '#(common.baseUrl)' }
 
 @requires-mongodb-4 @requires-replica-set
-Scenario: create a session, txn, document and commit
+Scenario: create a txn, document and commit
     Given path common.db + common.coll
     And request { 'a': 101 }
     And param sid = txn.sid
@@ -34,7 +34,7 @@ Scenario: create a session, txn, document and commit
     Then status 200
 
 @requires-mongodb-4 @requires-replica-set
-Scenario: create a session, txn, document, check isolation and abort txn
+Scenario: create a txn, a document, check isolation and abort txn
     Given path common.db + common.coll
     And request { 'a': 101 }
     And param sid = txn.sid
@@ -78,48 +78,3 @@ Scenario: create a session, txn, document, check isolation and abort txn
     Given path common.db + common.coll + '/' + docid
     And method GET
     Then status 404
-
-@requires-mongodb-4 @requires-replica-set
-Scenario: create a document in txn T1, create conflicting document in T2. T2 aborts, T1 can commit
-    * def txn2 = call read('common-start-txn.feature') { baseUrl: '#(common.baseUrl)' }
-    
-    Given path '/_sessions/' + txn.sid + '/_txns'
-    When method GET
-    Then status 200
-    And match response.currentTxn.status == 'IN'
-    And match response.currentTxn.id == 1
-
-    Given path '/_sessions/' + txn2.sid + '/_txns'
-    When method GET
-    Then status 200
-    And match response.currentTxn.status == 'IN'
-    And match response.currentTxn.id == 1
-
-    Given path common.db + common.coll
-    And request { _id: 1, a: 101 }
-    And param sid = txn.sid
-    And param txn = 1
-    When method POST
-    Then status 201
-
-    Given path common.db + common.coll
-    And request { _id: 1, a: 101 }
-    And param sid = txn2.sid
-    And param txn = 1
-    When method POST
-    Then status 500
-    And print "**** TODO this 500 must be handled to return a better status code"
-
-    Given path '/_sessions/' + txn.sid + '/_txns'
-    When method GET
-    Then status 200
-    And match response.currentTxn.status == 'IN'
-    And match response.currentTxn.id == 1
-
-    Given path '/_sessions/' + txn2.sid + '/_txns'
-    When method GET
-    Then status 200
-    And match response.currentTxn.status == 'ABORTED'
-    And match response.currentTxn.id == 1
-
-    * call read('common-commit-txn.feature') { baseUrl: '#(common.baseUrl)', sid: '#(txn.sid)', txn: 1 }
