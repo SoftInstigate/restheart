@@ -109,7 +109,7 @@ public class ClientSessionFactory {
 
         if (txnServerStatus != null) {
             cs.setTxnServerStatus(txnServerStatus);
-            
+            cs.setTransactionState(txnServerStatus.getStatus());
             cs.setServerSessionTransactionNumber(txnServerStatus.getTxnId());
             
             ((ServerSessionImpl) cs.getServerSession())
@@ -189,6 +189,10 @@ final class ServerSessionImpl implements ServerSession {
     public long getTransactionNumber() {
         return transactionNumber;
     }
+    
+    public void setTransactionNumber(long number) {
+        this.transactionNumber = number;
+    }
 
     @Override
     public BsonDocument getIdentifier() {
@@ -200,11 +204,7 @@ final class ServerSessionImpl implements ServerSession {
     public long advanceTransactionNumber() {
         return transactionNumber++;
     }
-
-    public void setTransactionNumber(long number) {
-        this.transactionNumber = number;
-    }
-
+    
     @Override
     public boolean isClosed() {
         return closed;

@@ -18,6 +18,7 @@ Scenario: start txn when already IN
 
 @requires-mongodb-4 @requires-replica-set
 Scenario: commit txn when txn status=NONE
+    # just abort the txn automatically created by background section
     * call read('common-abort-txn.feature') { baseUrl: '#(common.baseUrl)', sid: '#(txn.sid)', txn: 1 }
 
     Given path '/_sessions'
@@ -31,10 +32,11 @@ Scenario: commit txn when txn status=NONE
     And request {}
     When method PATCH
     Then status 406
-    * print "**** TODO this 406 must be handled to return a better error status code"
+    And match response.message == "Given transaction number 1 does not match any in-progress transactions."
 
 @requires-mongodb-4 @requires-replica-set
 Scenario: abort txn when txn status=NONE
+    # just abort the txn automatically created by background section
     * call read('common-abort-txn.feature') { baseUrl: '#(common.baseUrl)', sid: '#(txn.sid)', txn: 1 }
 
     Given path '/_sessions'
@@ -46,8 +48,8 @@ Scenario: abort txn when txn status=NONE
 
     Given path '/_sessions/' + sid + '/_txns/' + 1
     When method DELETE
-    Then status 204
-    * print "**** TODO this 204 must be handled to return a better error status code"
+    Then status 406
+    And assert response.message == 'Given transaction number 1 does not match any in-progress transactions. Current txn is Txn(txnId=1, status=NONE)'
 
 @requires-mongodb-4 @requires-replica-set
 Scenario: abort txn when txn status=ABORTED
@@ -57,7 +59,8 @@ Scenario: abort txn when txn status=ABORTED
     Given path '/_sessions/' + sid + '/_txns/' + 1
     And request {}
     When method DELETE
-    Then status 204
+    Then status 406
+    And assert response.message == 'Given transaction number 1 does not match any in-progress transactions. Current txn is Txn(txnId=1, status=ABORTED)'
 
 Scenario: commit txn when txn status=ABORTED
     * def sid = txn.sid
@@ -67,7 +70,7 @@ Scenario: commit txn when txn status=ABORTED
     And request {}
     When method PATCH
     Then status 406
-    * print "**** TODO this 406 must be handled to return a better error status code"
+    And assert response.message == 'Transaction 1 has been aborted.'
 
 # test requests on txn that are invalid due to wrong txn id
 
@@ -140,7 +143,7 @@ Scenario: create a document in aborted txn
 @requires-mongodb-4 @requires-replica-set
 Scenario: GET collection in aborted txn
     * def sid = txn.sid
-    * call read('common-abort-txn.feature') { baseUrl: '#(common.baseUrl)', sid: '#(txn.sid)', txn: 1 }
+    * call read('common-abort-txn.feature') { baseUrl: '#(common.baseUrl)', sid: '#(sid)', txn: 1 }
     
     Given path common.db + common.coll
     And param sid = sid

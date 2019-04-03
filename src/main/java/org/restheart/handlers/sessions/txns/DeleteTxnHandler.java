@@ -24,6 +24,7 @@ import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
 import org.restheart.db.Database;
 import org.restheart.db.DatabaseImpl;
+import org.restheart.db.sessions.SessionsUtils;
 import org.restheart.db.sessions.Txn;
 import org.restheart.representation.Resource;
 import org.restheart.handlers.PipedHttpHandler;
@@ -75,7 +76,6 @@ public class DeleteTxnHandler extends PipedHttpHandler {
         }
 
         UUID sid;
-        long txnId = context.getTxnId();
 
         try {
             sid = UUID.fromString(context.getSid());
@@ -90,33 +90,38 @@ public class DeleteTxnHandler extends PipedHttpHandler {
         }
 
         ClientSessionImpl cs = ClientSessionFactory
-                .getTxnClientSession(sid, new Txn(txnId,
-                        Txn.TransactionStatus.IN));
+                .getTxnClientSession(sid);
 
-        try {
-            cs.setMessageSentInCurrentTransaction(true);
+        if (cs.getTxnServerStatus().getTxnId() != context.getTxnId()
+                || cs.getTxnServerStatus().getStatus() != Txn.TransactionStatus.IN) {
+            ResponseHelper.endExchangeWithMessage(exchange,
+                    context,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "Given transaction number "
+                    + context.getTxnId()
+                    + " does not match any in-progress transactions. "
+                    + "Current txn is " + cs.getTxnServerStatus());
+        } else {
+            try {
+                cs.setMessageSentInCurrentTransaction(true);
+                cs.abortTransaction();
 
-            if (!cs.hasActiveTransaction()) {
-                cs.startTransaction();
-            }
+                context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
+                context.setResponseStatusCode(HttpStatus.SC_NO_CONTENT);
+            } catch (MongoCommandException mce) {
+                LOGGER.error("Error {} {}, {}",
+                        mce.getErrorCode(),
+                        mce.getErrorCodeName(),
+                        mce.getErrorMessage());
 
-            cs.abortTransaction();
-
-            context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
-            context.setResponseStatusCode(HttpStatus.SC_NO_CONTENT);
-        } catch (MongoCommandException mce) {
-            LOGGER.error("Error {} {}, {}",
-                    mce.getErrorCode(),
-                    mce.getErrorCodeName(),
-                    mce.getErrorMessage());
-
-            if (mce.getErrorCode() == 20) {
-                ResponseHelper.endExchangeWithMessage(exchange,
-                        context,
-                        HttpStatus.SC_BAD_GATEWAY,
-                        mce.getErrorCodeName() + ", " + mce.getErrorMessage());
-            } else {
-                throw mce;
+                if (mce.getErrorCode() == 20) {
+                    ResponseHelper.endExchangeWithMessage(exchange,
+                            context,
+                            HttpStatus.SC_BAD_GATEWAY,
+                            mce.getErrorCodeName() + ", " + mce.getErrorMessage());
+                } else {
+                    throw mce;
+                }
             }
         }
 
