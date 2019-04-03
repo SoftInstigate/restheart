@@ -17,6 +17,7 @@
  */
 package org.restheart.handlers.feed;
 
+import io.undertow.Handlers;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.websockets.WebSocketProtocolHandshakeHandler;
 import java.util.ArrayList;
@@ -34,6 +35,8 @@ import org.restheart.utils.ResponseHelper;
  * @author Omar Trasatti {@literal <omar@softinstigate.com>}
  */
 public class GetFeedHandler extends PipedHttpHandler {
+    private static WebSocketProtocolHandshakeHandler WEBSOCKET_HANDLER = Handlers
+            .websocket(new FeedWebsocketCallback());
 
     public GetFeedHandler() {
         super();
@@ -55,8 +58,7 @@ public class GetFeedHandler extends PipedHttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange,
-            RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         System.out.println(context.getUnmappedRequestUri());
         if (context.isInError()) {
             next(exchange, context);
@@ -65,102 +67,42 @@ public class GetFeedHandler extends PipedHttpHandler {
 
         if (context.getFeedIdentifier() != null) {
 
-            if (exchange.getRequestHeaders()
-                    .get("connection")
-                    .getFirst()
-                    .toLowerCase()
-                    .equals("upgrade")) {
-                System.out.println(exchange.getRequestHeaders().toString());
-                String wsUriPath = getWsUri(context);
+            if (exchange.getRequestHeaders().get("connection").getFirst().toLowerCase().equals("upgrade")) {
+                String changeStreamUri = getWsUri(context);
 
-                CacheableFeed feed
-                        = CacheManagerSingleton
-                                .retrieveWebSocket(wsUriPath);
-
-                WebSocketProtocolHandshakeHandler wsHandler
-                        = feed.getHandshakeHandler();
-
-                if (wsHandler != null) {
-
-                    wsHandler.handleRequest(exchange);
-
+                if (changeStreamIsOpen(changeStreamUri)) {
+                    WEBSOCKET_HANDLER.handleRequest(exchange);
                 } else {
-
-                    ResponseHelper.endExchangeWithMessage(
-                            exchange,
-                            context,
-                            HttpStatus.SC_NOT_FOUND,
+                    ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_NOT_FOUND,
                             "WebSocket resource hasnt been initialized");
-
                     next(exchange, context);
                 }
             } else {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        context,
-                        HttpStatus.SC_BAD_REQUEST,
+                ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_BAD_REQUEST,
                         "No Upgrade header has been found into request headers");
-
                 next(exchange, context);
             }
 
         } else {
+            ArrayList<BsonDocument> data = getOpenedChangeStreamsRequestData(context);
+            long size = data.size();
 
-            ArrayList<BsonDocument> data = new ArrayList<>();
-
-            Set<String> wsResoucesUriSet = CacheManagerSingleton
-                    .retrieveResourcesUriSet();
-
-            if (!wsResoucesUriSet.isEmpty()) {
-                // TODO ritornare lista delle uri dei ws in cache
-                for (String resource : wsResoucesUriSet) {
-                    CacheableFeed feedResource
-                            = CacheManagerSingleton
-                                    .retrieveWebSocket(resource);
-
-                    List<BsonDocument> aVars = feedResource.getAVars();
-
-                    String jsonString = "{'" + getResourceIdentifier(resource) + "': " + aVars.toString() + "}";
-                    if (checkIfRequestedFeedResourceUri(resource, context)) {
-                        data.add(BsonDocument.parse(jsonString));
-                    }
-
-                }
-
-                long size = data.size();
-
-                if (size == 0) {
-                    ResponseHelper.endExchangeWithMessage(
-                            exchange,
-                            context,
-                            HttpStatus.SC_NOT_FOUND,
-                            "No feeds are notifying for this feedOperation");
-
-                    next(exchange, context);
-                }
-
-                context.setResponseContent(new FeedResultRepresentationFactory()
-                        .getRepresentation(exchange, context, data, size)
-                        .asBsonDocument());
-                context.setResponseStatusCode(HttpStatus.SC_OK);
-
-                next(exchange, context);
-
-            } else {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        context,
-                        HttpStatus.SC_NOT_FOUND,
+            if (size == 0) {
+                ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_NOT_FOUND,
                         "No feeds are notifying for this feedOperation");
-
                 next(exchange, context);
             }
+
+            context.setResponseContent(new FeedResultRepresentationFactory()
+                    .getRepresentation(exchange, context, data, size).asBsonDocument());
+            context.setResponseStatusCode(HttpStatus.SC_OK);
+            next(exchange, context);
 
         }
 
     }
 
-    private boolean checkIfRequestedFeedResourceUri(String URI, RequestContext context) {
+    private boolean resourceBelongsToFeedOperation(String URI, RequestContext context) {
         String[] uriPath = URI.split("/");
         return uriPath[4].equals(context.getFeedOperation());
     }
@@ -172,13 +114,41 @@ public class GetFeedHandler extends PipedHttpHandler {
 
     private String getWsUri(RequestContext context) {
 
-        String result = "/" + context.getDBName()
-                + "/" + context.getCollectionName()
-                + "/_feeds/"
-                + context.getFeedOperation() + "/"
-                + context.getFeedIdentifier();
+        String result = "/" + context.getDBName() + "/" + context.getCollectionName() + "/_feeds/"
+                + context.getFeedOperation() + "/" + context.getFeedIdentifier();
 
         return result;
     }
 
+    private boolean changeStreamIsOpen(String changeStreamUri) {
+
+        Set<String> openedChangeStreamsUriSet = CacheManagerSingleton.getChangeStreamsUriSet();
+
+        return openedChangeStreamsUriSet.contains(changeStreamUri);
+    }
+
+    private ArrayList<BsonDocument> getOpenedChangeStreamsRequestData(RequestContext context) {
+
+        ArrayList<BsonDocument> data = new ArrayList<>();
+        Set<String> changeStreamUriSet = CacheManagerSingleton.getChangeStreamsUriSet();
+
+        if (!changeStreamUriSet.isEmpty()) {
+
+            for (String resource : changeStreamUriSet) {
+
+                if (resourceBelongsToFeedOperation(resource, context)) {
+
+                    CacheableChangesStreamCursor cachedChangeStreamIterable = CacheManagerSingleton
+                            .getCachedChangeStreamIterable(resource);
+
+                    List<BsonDocument> aVars = cachedChangeStreamIterable.getAVars();
+
+                    String jsonString = "{'" + getResourceIdentifier(resource) + "': " + aVars.toString() + "}";
+
+                    data.add(BsonDocument.parse(jsonString));
+                }
+            }
+        }
+        return data;
+    }
 }

@@ -59,17 +59,18 @@ public class DeleteFeedHandler extends PipedHttpHandler {
             return;
         }
 
-        String wsUriPath = context
+        String changeStreamUriPath = context
                 .getUri()
                 .getPath();
+
         if (context.getFeedIdentifier() != null) {
-            Set<String> wsResoucesUriSet = CacheManagerSingleton
-                    .retrieveResourcesUriSet();
+            Set<String> changeStreamUriSet = CacheManagerSingleton
+                    .getChangeStreamsUriSet();
 
-            if (!wsResoucesUriSet.isEmpty()) {
+            if (!changeStreamUriSet.isEmpty()) {
 
-                if (wsResoucesUriSet.contains(wsUriPath)) {
-                    CacheManagerSingleton.closeWebSocket(wsUriPath);
+                if (changeStreamUriSet.contains(changeStreamUriPath)) {
+                    CacheManagerSingleton.removeChangeStream(changeStreamUriPath);
                     ResponseHelper.endExchangeWithMessage(
                             exchange,
                             context,
@@ -77,7 +78,7 @@ public class DeleteFeedHandler extends PipedHttpHandler {
                             null);
                 } else {
                     String responseMessage = "Feed "
-                            + getFeedIdentifier(wsUriPath)
+                            + getFeedIdentifier(changeStreamUriPath)
                             + " hasn't been found";
 
                     ResponseHelper.endExchangeWithMessage(

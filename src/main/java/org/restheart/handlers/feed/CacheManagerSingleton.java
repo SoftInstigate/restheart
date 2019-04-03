@@ -16,6 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.restheart.handlers.feed;
+
+import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.restheart.cache.Cache;
@@ -28,10 +31,8 @@ import org.restheart.cache.CacheFactory;
  */
 public class CacheManagerSingleton {
 
-    private Cache<String, CacheableFeed> CACHE = CacheFactory.createLocalCache(
-            1000,
-            Cache.EXPIRE_POLICY.NEVER,
-            0);
+    private Cache<String, CacheableChangesStreamCursor> CACHE = CacheFactory.createLocalCache(1000,
+            Cache.EXPIRE_POLICY.NEVER, 0);
 
     public static CacheManagerSingleton getInstance() {
 
@@ -39,18 +40,14 @@ public class CacheManagerSingleton {
 
     }
 
-    public static void cacheWebSocket(String uriPath, CacheableFeed feed) {
-        CacheManagerSingleton.getInstance().CACHE
-                .put(uriPath, feed);
+    public static void cacheChangeStreamCursor(String uriPath, CacheableChangesStreamCursor cacheableCursor) {
+        CacheManagerSingleton.getInstance().CACHE.put(uriPath, cacheableCursor);
     }
 
-    public static CacheableFeed retrieveWebSocket(String uriPath) {
+    public static CacheableChangesStreamCursor getCachedChangeStreamIterable(String uriPath) {
 
-        Optional<CacheableFeed> result
-                = CacheManagerSingleton
-                        .getInstance().CACHE
-                        .get(uriPath);
-        
+        Optional<CacheableChangesStreamCursor> result = CacheManagerSingleton.getInstance().CACHE.get(uriPath);
+
         if (result != null) {
             return result.get();
         }
@@ -58,13 +55,29 @@ public class CacheManagerSingleton {
         return null;
     }
 
-    public static Set<String> retrieveResourcesUriSet() {
+    public static Collection<Optional<CacheableChangesStreamCursor>> getCachedChangeStreams() {
+
+        Map<String, Optional<CacheableChangesStreamCursor>> result
+                = CacheManagerSingleton
+                        .getInstance().CACHE
+                        .asMap();
+        return result.values();
+    }
+    
+    public static Map<String, Optional<CacheableChangesStreamCursor>> getCacheAsMap() {
+
+        return CacheManagerSingleton
+                .getInstance().CACHE
+                .asMap();
+    }
+
+    public static Set<String> getChangeStreamsUriSet() {
         return CacheManagerSingleton.getInstance().CACHE
                 .asMap()
                 .keySet();
     }
 
-    public static void closeWebSocket(String uriPath) {
+    public static void removeChangeStream(String uriPath) {
         CacheManagerSingleton.getInstance().CACHE
                 .invalidate(uriPath);
     }
