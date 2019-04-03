@@ -673,8 +673,7 @@ public class Configuration {
      * Creates a new instance of Configuration with defaults values.
      */
     public Configuration() {
-        this (new HashMap<>(), false);
-
+        this(new HashMap<>(), false);
     }
 
     /**
@@ -710,7 +709,6 @@ public class Configuration {
      */
     public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
         this.configurationFileMap = conf;
-
         this.silent = silent;
 
         ansiConsole = getAsBooleanOrDefault(conf, ANSI_CONSOLE_KEY, true);
@@ -777,11 +775,10 @@ public class Configuration {
         browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_SECURED_KEY, false);
         browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_EMBEDDED_KEY, true);
 
-        ArrayList<Map<String, Object>> defaultStaticResourcesMounts=new ArrayList<>();
+        ArrayList<Map<String, Object>> defaultStaticResourcesMounts = new ArrayList<>();
         defaultStaticResourcesMounts.add(browserStaticResourcesMountArgs);
 
         staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, defaultStaticResourcesMounts);
-
         metadataNamedSingletons = getAsListOfMaps(conf, METADATA_NAMED_SINGLETONS_KEY, new ArrayList<>());
 
         Map<String, Object> idm = getAsMap(conf, IDM_KEY, Maps.newHashMap());
@@ -1081,15 +1078,16 @@ public class Configuration {
         String shellKey = key.toUpperCase().replaceAll("-", "_");
         String envValue = System.getProperty(key);
 
-        if (envValue==null) {
+        if (envValue == null) {
             envValue = System.getProperty(shellKey);
         }
 
-        if (envValue==null) {
+        if (envValue == null) {
             envValue = System.getenv(shellKey);
         }
         if (null != envValue) {
-            LOGGER.warn(">>> Overriding parameter '{}' with environment variable '{}={}' <<<", key, shellKey, envValue);
+            LOGGER.warn(">>> Found environment variable '{}': overriding parameter '{}' with value '{}'",
+                    shellKey, key, envValue);
         }
         return envValue;
     }
