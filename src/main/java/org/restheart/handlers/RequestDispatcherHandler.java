@@ -41,9 +41,9 @@ import org.restheart.handlers.document.DeleteDocumentHandler;
 import org.restheart.handlers.document.GetDocumentHandler;
 import org.restheart.handlers.document.PatchDocumentHandler;
 import org.restheart.handlers.document.PutDocumentHandler;
-import org.restheart.handlers.feed.DeleteFeedHandler;
-import org.restheart.handlers.feed.GetFeedHandler;
-import org.restheart.handlers.feed.PostFeedHandler;
+import org.restheart.handlers.stream.DeleteChangeStreamHandler;
+import org.restheart.handlers.stream.GetChangeStreamHandler;
+import org.restheart.handlers.stream.PostChangeStreamHandler;
 import org.restheart.handlers.files.DeleteBucketHandler;
 import org.restheart.handlers.files.DeleteFileHandler;
 import org.restheart.handlers.files.FileMetadataHandler;
@@ -449,20 +449,20 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
                         new PatchTxnHandler(
                                         respTransformers())));
         
-        // *** FEED handlers
-        putPipedHttpHandler(TYPE.FEED, METHOD.GET,
+        // *** CHANGE_STREAM handlers
+        putPipedHttpHandler(TYPE.CHANGE_STREAM, METHOD.GET,
                 new RequestTransformerHandler(
-                        new GetFeedHandler(
+                        new GetChangeStreamHandler(
                                 responseSenderHandler)));
 
-        putPipedHttpHandler(TYPE.FEED, METHOD.POST,
+        putPipedHttpHandler(TYPE.CHANGE_STREAM, METHOD.POST,
                 new RequestTransformerHandler(
-                        new PostFeedHandler(
+                        new PostChangeStreamHandler(
                                 responseSenderHandler)));
 
-        putPipedHttpHandler(TYPE.FEED, METHOD.DELETE,
+        putPipedHttpHandler(TYPE.CHANGE_STREAM, METHOD.DELETE,
                 new RequestTransformerHandler(
-                        new DeleteFeedHandler(
+                        new DeleteChangeStreamHandler(
                                 responseSenderHandler)));
 
         // *** SCHEMA handlers

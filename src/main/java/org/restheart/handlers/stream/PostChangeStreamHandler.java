@@ -15,20 +15,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.feed;
+package org.restheart.handlers.stream;
 
 import com.mongodb.client.ChangeStreamIterable;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.model.changestream.ChangeStreamDocument;
 
 import io.undertow.server.HttpServerExchange;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import org.bson.BsonDocument;
 import org.restheart.handlers.PipedHttpHandler;
@@ -43,15 +39,11 @@ import org.restheart.utils.ResponseHelper;
  * @author Omar Trasatti {@literal <omar@softinstigate.com>}
  *
  */
-public class PostFeedHandler extends PipedHttpHandler {
+public class PostChangeStreamHandler extends PipedHttpHandler {
     private static String QUERY_NOT_PRESENT_EXCEPTION_MESSAGE = "Query does not exist";
     private static SecureRandom RND_GENERATOR = new SecureRandom();
-    private static Consumer<ChangeStreamDocument> TRIGGER_NOTIFICATIONS
-            = (notification) -> {
-                FeedWebsocketCallback.notifyClients();
-            };
 
-    public PostFeedHandler() {
+    public PostChangeStreamHandler() {
         super();
     }
 
@@ -60,7 +52,7 @@ public class PostFeedHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public PostFeedHandler(PipedHttpHandler next) {
+    public PostChangeStreamHandler(PipedHttpHandler next) {
         super(next);
     }
 
@@ -108,16 +100,16 @@ public class PostFeedHandler extends PipedHttpHandler {
 
     private List<BsonDocument> getResolvedStagesAsList(RequestContext context) throws InvalidMetadataException, QueryVariableNotBoundException, Exception {
 
-        String changesStreamOperation = context.getFeedOperation();
-        List<FeedOperation> feeds = FeedOperation.getFromJson(context.getCollectionProps());
-        Optional<FeedOperation> _query = feeds.stream().filter(q -> q.getUri().equals(changesStreamOperation))
+        String changesStreamOperation = context.getChangeStreamOperation();
+        List<ChangeStreamOperation> streams = ChangeStreamOperation.getFromJson(context.getCollectionProps());
+        Optional<ChangeStreamOperation> _query = streams.stream().filter(q -> q.getUri().equals(changesStreamOperation))
                 .findFirst();
 
         if (!_query.isPresent()) {
             throw new Exception(QUERY_NOT_PRESENT_EXCEPTION_MESSAGE);
         }
 
-        FeedOperation pipeline = _query.get();
+        ChangeStreamOperation pipeline = _query.get();
 
         List<BsonDocument> resolvedStages = pipeline.getResolvedStagesAsList(context.getAggreationVars());
         return resolvedStages;
@@ -130,13 +122,13 @@ public class PostFeedHandler extends PipedHttpHandler {
     }
 
     private String getChangeStreamOperationUri(RequestContext context) {
-        return "/" + context.getDBName() + "/" + context.getCollectionName() + "/_feeds/"
-                + context.getFeedOperation();
+        return "/" + context.getDBName() + "/" + context.getCollectionName() + "/_streams/"
+                + context.getChangeStreamOperation();
     }
 
     private String getChangeStreamIdentifier(RequestContext context) {
 
-        String identifier = context.getFeedIdentifier();
+        String identifier = context.getChangeStreamIdentifier();
         if (identifier == null) {
             identifier = generateChangeStreamRandomIdentifier();
         }

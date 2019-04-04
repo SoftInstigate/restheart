@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.feed;
+package org.restheart.handlers.stream;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
@@ -35,10 +35,10 @@ import org.restheart.utils.URLUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @author Omar Trasatti {@literal <omar@softinstigate.com>}
  */
-public class FeedResultRepresentationFactory
+public class ChangeStreamResultRepresentationFactory
         extends AbstractRepresentationFactory {
 
-    public FeedResultRepresentationFactory() {
+    public ChangeStreamResultRepresentationFactory() {
     }
 
     /**

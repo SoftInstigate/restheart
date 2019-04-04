@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.feed;
+package org.restheart.handlers.stream;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.Set;
@@ -29,9 +29,9 @@ import org.restheart.utils.ResponseHelper;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @author Omar Trasatti {@literal <omar@softinstigate.com>}
  */
-public class DeleteFeedHandler extends PipedHttpHandler {
+public class DeleteChangeStreamHandler extends PipedHttpHandler {
 
-    public DeleteFeedHandler() {
+    public DeleteChangeStreamHandler() {
         super();
     }
 
@@ -40,7 +40,7 @@ public class DeleteFeedHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public DeleteFeedHandler(PipedHttpHandler next) {
+    public DeleteChangeStreamHandler(PipedHttpHandler next) {
         super(next);
     }
 
@@ -63,7 +63,7 @@ public class DeleteFeedHandler extends PipedHttpHandler {
                 .getUri()
                 .getPath();
 
-        if (context.getFeedIdentifier() != null) {
+        if (context.getChangeStreamIdentifier() != null) {
             Set<String> changeStreamUriSet = CacheManagerSingleton
                     .getChangeStreamsUriSet();
 
@@ -77,8 +77,8 @@ public class DeleteFeedHandler extends PipedHttpHandler {
                             HttpStatus.SC_NO_CONTENT,
                             null);
                 } else {
-                    String responseMessage = "Feed "
-                            + getFeedIdentifier(changeStreamUriPath)
+                    String responseMessage = "Change stream "
+                            + getChangeStreamIdentifier(changeStreamUriPath)
                             + " hasn't been found";
 
                     ResponseHelper.endExchangeWithMessage(
@@ -95,7 +95,7 @@ public class DeleteFeedHandler extends PipedHttpHandler {
                         exchange,
                         context,
                         HttpStatus.SC_NOT_FOUND,
-                        "No feeds are notifying for this feedOperation");
+                        "No streams are notifying for this changeStreamOperation");
 
                 next(exchange, context);
             }
@@ -111,7 +111,7 @@ public class DeleteFeedHandler extends PipedHttpHandler {
 
     }
 
-    private String getFeedIdentifier(String path) {
+    private String getChangeStreamIdentifier(String path) {
         String[] pathArray = path.split("/");
         return pathArray[pathArray.length - 1];
     }
