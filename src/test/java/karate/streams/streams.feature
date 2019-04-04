@@ -22,13 +22,13 @@ Scenario: GET the Change Stream resources associated to given changeStreamOperat
 
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: Open Change Stream resources and listen for "globalNotificationsStream" ws message after POSTing a document.
-    * def streamPath = '/_streams/changeStreamOperation/globalNotificationsStream'
-    * def baseUrl = 'http://localhost:18080'
-    * def handler = function(notification) { java.lang.Thread.sleep(1000); karate.signal(notification) }
-    * def host = baseUrl + coll + streamPath    
     
     # Establish WebSocket connection to get notified.
-    * def socket = karate.webSocket(host, handler)
+    Given def streamPath = '/_streams/changeStreamOperation/globalNotificationsStream'
+    And def baseUrl = 'http://localhost:18080'
+    And def handler = function(notification) { java.lang.Thread.sleep(1000); karate.signal(notification) }
+    And def host = baseUrl + coll + streamPath    
+    Then def socket = karate.webSocket(host, handler)
 
     Given path coll
     And request {}
@@ -40,14 +40,13 @@ Scenario: Open Change Stream resources and listen for "globalNotificationsStream
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: Open a Change Stream resources and listen for "targettedDataNotificationsStream" message after POSTing a document. Only changes for documents that meets the changeStreamOperation's stage condition ($match) should be notified.
 
-    * def streamPath = '/_streams/changeStreamOperationWithStageParam/targettedDataNotificationsStream'
-    * def baseUrl = 'http://localhost:18080'
-    * def handler = function(notification) { java.lang.Thread.sleep(1000); karate.signal(notification) }
-    * def host = baseUrl + coll + streamPath
-
-    
     # Establish WebSocket connection to get notified.
-    * def socket = karate.webSocket(host, handler)
+    Given def streamPath = '/_streams/changeStreamOperationWithStageParam/targettedDataNotificationsStream'
+    And def baseUrl = 'http://localhost:18080'
+    And def handler = function(notification) { java.lang.Thread.sleep(1000); karate.signal(notification) }
+    And def host = baseUrl + coll + streamPath
+    Then def socket = karate.webSocket(host, handler)
+    
 
     Given path coll
     When request {}

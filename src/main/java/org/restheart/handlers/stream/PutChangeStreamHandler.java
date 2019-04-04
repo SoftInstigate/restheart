@@ -21,8 +21,6 @@ import com.mongodb.client.ChangeStreamIterable;
 import com.mongodb.client.MongoCollection;
 
 import io.undertow.server.HttpServerExchange;
-import java.math.BigInteger;
-import java.security.SecureRandom;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,12 +40,11 @@ import org.slf4j.LoggerFactory;
  * @author Omar Trasatti {@literal <omar@softinstigate.com>}
  *
  */
-public class PostChangeStreamHandler extends PipedHttpHandler {
+public class PutChangeStreamHandler extends PipedHttpHandler {
 
-    private static SecureRandom RND_GENERATOR = new SecureRandom();
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestDispatcherHandler.class);
 
-    public PostChangeStreamHandler() {
+    public PutChangeStreamHandler() {
         super();
     }
 
@@ -56,7 +53,7 @@ public class PostChangeStreamHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public PostChangeStreamHandler(PipedHttpHandler next) {
+    public PutChangeStreamHandler(PipedHttpHandler next) {
         super(next);
     }
 
@@ -69,7 +66,7 @@ public class PostChangeStreamHandler extends PipedHttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
 
-        if (context.getChangeStreamIdentifier() != null) {
+        if (context.getChangeStreamIdentifier() == null) {
             LOGGER.debug(
                     "This method is not allowed: returning a <{}> HTTP code",
                     HttpStatus.SC_METHOD_NOT_ALLOWED);
@@ -98,7 +95,7 @@ public class PostChangeStreamHandler extends PipedHttpHandler {
             return;
         }
 
-        String changesStreamIdentifier =  generateChangeStreamRandomIdentifier();
+        String changesStreamIdentifier =  context.getChangeStreamIdentifier();
         String changesStreamUriPath = getChangeStreamOperationUri(context) + "/" + changesStreamIdentifier;
 
         CacheManagerSingleton.cacheChangeStreamCursor(changesStreamUriPath,
@@ -128,16 +125,11 @@ public class PostChangeStreamHandler extends PipedHttpHandler {
         return resolvedStages;
     }
 
-    private String generateChangeStreamRandomIdentifier() {
-        String randomId = new BigInteger(256, RND_GENERATOR).toString(Character.MAX_RADIX).substring(0, 16);
-
-        return randomId;
-    }
-
     private String getChangeStreamOperationUri(RequestContext context) {
         return "/" + context.getDBName() + "/" + context.getCollectionName() + "/_streams/"
                 + context.getChangeStreamOperation();
     }
+
 
     private ChangeStreamIterable initChangeStream(RequestContext context, List<BsonDocument> resolvedStages) {
 
