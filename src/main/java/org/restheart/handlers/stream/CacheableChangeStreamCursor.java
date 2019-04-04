@@ -29,12 +29,12 @@ import org.bson.Document;
  *
  * @author omartrasatti
  */
-public class CacheableChangesStreamCursor {
+public class CacheableChangeStreamCursor {
 
     private MongoCursor<ChangeStreamDocument<Document>> iterator = null;
     private List<BsonDocument> aVars = null;
 
-    public CacheableChangesStreamCursor(MongoCursor<ChangeStreamDocument<Document>> iterator,
+    public CacheableChangeStreamCursor(MongoCursor<ChangeStreamDocument<Document>> iterator,
             List<BsonDocument> aVars) {
 
         this.iterator = iterator;

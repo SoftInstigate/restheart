@@ -31,7 +31,7 @@ import org.restheart.cache.CacheFactory;
  */
 public class CacheManagerSingleton {
 
-    private Cache<String, CacheableChangesStreamCursor> CACHE = CacheFactory.createLocalCache(1000,
+    private Cache<String, CacheableChangeStreamCursor> CACHE = CacheFactory.createLocalCache(1000,
             Cache.EXPIRE_POLICY.NEVER, 0);
 
     public static CacheManagerSingleton getInstance() {
@@ -40,13 +40,13 @@ public class CacheManagerSingleton {
 
     }
 
-    public static void cacheChangeStreamCursor(String uriPath, CacheableChangesStreamCursor cacheableCursor) {
+    public static void cacheChangeStreamCursor(String uriPath, CacheableChangeStreamCursor cacheableCursor) {
         CacheManagerSingleton.getInstance().CACHE.put(uriPath, cacheableCursor);
     }
 
-    public static CacheableChangesStreamCursor getCachedChangeStreamIterable(String uriPath) {
+    public static CacheableChangeStreamCursor getCachedChangeStreamIterable(String uriPath) {
 
-        Optional<CacheableChangesStreamCursor> result = CacheManagerSingleton.getInstance().CACHE.get(uriPath);
+        Optional<CacheableChangeStreamCursor> result = CacheManagerSingleton.getInstance().CACHE.get(uriPath);
 
         if (result != null) {
             return result.get();
@@ -55,16 +55,16 @@ public class CacheManagerSingleton {
         return null;
     }
 
-    public static Collection<Optional<CacheableChangesStreamCursor>> getCachedChangeStreams() {
+    public static Collection<Optional<CacheableChangeStreamCursor>> getCachedChangeStreams() {
 
-        Map<String, Optional<CacheableChangesStreamCursor>> result
+        Map<String, Optional<CacheableChangeStreamCursor>> result
                 = CacheManagerSingleton
                         .getInstance().CACHE
                         .asMap();
         return result.values();
     }
     
-    public static Map<String, Optional<CacheableChangesStreamCursor>> getCacheAsMap() {
+    public static Map<String, Optional<CacheableChangeStreamCursor>> getCacheAsMap() {
 
         return CacheManagerSingleton
                 .getInstance().CACHE

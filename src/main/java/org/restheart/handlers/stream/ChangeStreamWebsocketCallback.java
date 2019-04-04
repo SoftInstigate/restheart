@@ -50,7 +50,7 @@ public class ChangeStreamWebsocketCallback implements WebSocketConnectionCallbac
     private static boolean FIRST_CLIENT_CONNECTED = false;
 
     private static final Logger LOGGER
-            = LoggerFactory.getLogger(RequestContext.class);
+            = LoggerFactory.getLogger(ChangeStreamWebsocketCallback.class);
 
     private static final Consumer<ChangeStreamDocument> CHECK_FOR_NOTIFICATIONS = (ChangeStreamDocument x) -> {
         notifyClients();
@@ -86,16 +86,18 @@ public class ChangeStreamWebsocketCallback implements WebSocketConnectionCallbac
     }
 
     private static void checkCachedCursorsForNotifications() {
-        Map<String, Optional<CacheableChangesStreamCursor>> cacheMap = CacheManagerSingleton.getCacheAsMap();
+        Map<String, Optional<CacheableChangeStreamCursor>> cacheMap = CacheManagerSingleton.getCacheAsMap();
 
-        for (Map.Entry<String, Optional<CacheableChangesStreamCursor>> cacheableChangeStreamEntry : cacheMap
+        for (Map.Entry<String, Optional<CacheableChangeStreamCursor>> cacheableChangeStreamEntry : cacheMap
                 .entrySet()) {
+            LOGGER.info("Checking notification for "+ cacheableChangeStreamEntry.getKey());
             MongoCursor<ChangeStreamDocument<Document>> iterator = cacheableChangeStreamEntry.getValue().get()
                     .getIterator();
 
             ChangeStreamDocument<Document> changeStreamDocument = iterator.tryNext();
 
             if (changeStreamDocument != null) {
+                LOGGER.info("Notification found for "+ cacheableChangeStreamEntry.getKey());
                 // Move ahead cursor over changes
                 while (iterator.tryNext() != null) {
                 }
@@ -107,8 +109,8 @@ public class ChangeStreamWebsocketCallback implements WebSocketConnectionCallbac
     }
 
     private static void pushNotifications(String streamUrl, ChangeStreamDocument<Document> data) {
-        LOGGER.warn("Pushing notifications");
         if (PEER_CONNECTIONS != null) {
+            LOGGER.info("Pushing notifications");
             for (WebSocketChannel channel : PEER_CONNECTIONS) {
 
                 try {

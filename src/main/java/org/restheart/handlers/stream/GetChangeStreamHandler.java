@@ -59,7 +59,7 @@ public class GetChangeStreamHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        System.out.println(context.getUnmappedRequestUri());
+
         if (context.isInError()) {
             next(exchange, context);
             return;
@@ -138,7 +138,7 @@ public class GetChangeStreamHandler extends PipedHttpHandler {
 
                 if (resourceBelongsToChangeStreamOperation(resource, context)) {
 
-                    CacheableChangesStreamCursor cachedChangeStreamIterable = CacheManagerSingleton
+                    CacheableChangeStreamCursor cachedChangeStreamIterable = CacheManagerSingleton
                             .getCachedChangeStreamIterable(resource);
 
                     List<BsonDocument> aVars = cachedChangeStreamIterable.getAVars();
