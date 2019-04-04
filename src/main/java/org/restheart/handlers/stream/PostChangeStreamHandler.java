@@ -40,7 +40,6 @@ import org.restheart.utils.ResponseHelper;
  *
  */
 public class PostChangeStreamHandler extends PipedHttpHandler {
-    private static String QUERY_NOT_PRESENT_EXCEPTION_MESSAGE = "Query does not exist";
     private static SecureRandom RND_GENERATOR = new SecureRandom();
 
     public PostChangeStreamHandler() {
@@ -75,14 +74,10 @@ public class PostChangeStreamHandler extends PipedHttpHandler {
         try {
             resolvedStages = getResolvedStagesAsList(context);
         } catch (Exception ex) {
-            if (ex.getMessage().equals(QUERY_NOT_PRESENT_EXCEPTION_MESSAGE)) {
                 ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_NOT_FOUND,
                         "query does not exist");
                 next(exchange, context);
                 return;
-            } else {
-                throw ex;
-            }
         }
 
         String changesStreamIdentifier = getChangeStreamIdentifier(context);
@@ -106,7 +101,7 @@ public class PostChangeStreamHandler extends PipedHttpHandler {
                 .findFirst();
 
         if (!_query.isPresent()) {
-            throw new Exception(QUERY_NOT_PRESENT_EXCEPTION_MESSAGE);
+            throw new QueryNotFoundException("Query does not exist");
         }
 
         ChangeStreamOperation pipeline = _query.get();
