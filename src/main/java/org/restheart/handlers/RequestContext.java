@@ -103,7 +103,7 @@ public class RequestContext {
     public static final String _INDEXES = "_indexes";
     public static final String _SCHEMAS = "_schemas";
     public static final String _AGGREGATIONS = "_aggrs";
-    public static final String _FEEDS = "_feeds";
+    public static final String _STREAMS = "_streams";
 
     public static final String BINARY_CONTENT = "binary";
 
@@ -251,11 +251,11 @@ public class RequestContext {
                 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
             type = TYPE.AGGREGATION;
         } else if (pathTokens.length == 4
-                && pathTokens[3].equalsIgnoreCase(_FEEDS)) {
+                && pathTokens[3].equalsIgnoreCase(_STREAMS)) {
             type = TYPE.INVALID;
         } else if (pathTokens.length > 4
-                && pathTokens[3].equalsIgnoreCase(_FEEDS)) {
-            type = TYPE.FEED;
+                && pathTokens[3].equalsIgnoreCase(_STREAMS)) {
+            type = TYPE.CHANGE_STREAM;
         } else {
             type = TYPE.DOCUMENT;
         }
@@ -315,8 +315,8 @@ public class RequestContext {
                 && (type == TYPE.TRANSACTION
                 || !_TRANSACTIONS.equalsIgnoreCase(documentIdRaw))
                 && (documentIdRaw.startsWith(UNDERSCORE)
-                || (type != TYPE.FEED
-                && _FEEDS.equalsIgnoreCase(documentIdRaw)))
+                || (type != TYPE.CHANGE_STREAM
+                && _STREAMS.equalsIgnoreCase(documentIdRaw)))
                 && !documentIdRaw.equalsIgnoreCase(_METRICS)
                 && !documentIdRaw.equalsIgnoreCase(_SIZE)
                 && !documentIdRaw.equalsIgnoreCase(_INDEXES)
@@ -329,7 +329,7 @@ public class RequestContext {
                 && !documentIdRaw.equalsIgnoreCase(TRUE_KEY_ID)
                 && !documentIdRaw.equalsIgnoreCase(FALSE_KEY_ID)
                 && !(type == TYPE.AGGREGATION)
-                && !(type == TYPE.FEED)
+                && !(type == TYPE.CHANGE_STREAM)
                 && !(type == TYPE.TRANSACTION)
                 || (documentIdRaw.equals(RESOURCES_WILDCARD_KEY)
                 && !(type == TYPE.BULK_DOCUMENTS));
@@ -723,13 +723,13 @@ public class RequestContext {
     }
 
     /**
-     * @return feed operation name
+     * @return change stream operation name
      */
-    public String getFeedOperation() {
+    public String getChangeStreamOperation() {
         return getPathTokenAt(4);
     }
 
-    public String getFeedIdentifier() {
+    public String getChangeStreamIdentifier() {
         return getPathTokenAt(5);
     }
 
@@ -1876,13 +1876,13 @@ public class RequestContext {
         DB,
         DB_SIZE,
         DB_META,
+        CHANGE_STREAM,
         COLLECTION,
         COLLECTION_SIZE,
         COLLECTION_META,
         DOCUMENT,
         COLLECTION_INDEXES,
         INDEX,
-        FEED,
         FILES_BUCKET,
         FILES_BUCKET_SIZE,
         FILES_BUCKET_META,

@@ -15,13 +15,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.feed;
+package org.restheart.handlers.stream;
 
-import io.undertow.websockets.WebSocketProtocolHandshakeHandler;
 import java.util.List;
 
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.MongoIterable;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 
 import org.bson.BsonDocument;
@@ -33,7 +31,7 @@ import org.bson.Document;
  */
 public class CacheableChangesStreamCursor {
 
-    private MongoCursor<ChangeStreamDocument<Document>> iterator;
+    private MongoCursor<ChangeStreamDocument<Document>> iterator = null;
     private List<BsonDocument> aVars = null;
 
     public CacheableChangesStreamCursor(MongoCursor<ChangeStreamDocument<Document>> iterator,

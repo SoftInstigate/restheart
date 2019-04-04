@@ -1,4 +1,4 @@
-package org.restheart.handlers.feed;
+package org.restheart.handlers.stream;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,9 +13,9 @@ import org.restheart.utils.JsonUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @author Omar Trasatti {@literal <omar@softinstigate.com>}
  */
-public class FeedOperation {
+public class ChangeStreamOperation {
 
-    public static final String FEEDS_ELEMENT_NAME = "feeds";
+    public static final String STREAM_ELEMENT_NAME = "streams";
     public static final String URI_ELEMENT_NAME = "uri";
     public static final String STAGES_ELEMENT_NAME = "stages";
 
@@ -25,37 +25,37 @@ public class FeedOperation {
      * @return
      * @throws InvalidMetadataException
      */
-    public static List<FeedOperation>
+    public static List<ChangeStreamOperation>
             getFromJson(BsonDocument collProps)
             throws InvalidMetadataException {
         if (collProps == null) {
             return null;
         }
 
-        ArrayList<FeedOperation> ret = new ArrayList<>();
+        ArrayList<ChangeStreamOperation> ret = new ArrayList<>();
 
-        BsonValue _feeds = collProps.get(FEEDS_ELEMENT_NAME);
+        BsonValue _streams = collProps.get(STREAM_ELEMENT_NAME);
 
-        if (_feeds == null) {
+        if (_streams == null) {
             return ret;
         }
 
-        if (!_feeds.isArray()) {
+        if (!_streams.isArray()) {
             throw new InvalidMetadataException("element '"
-                    + FEEDS_ELEMENT_NAME
-                    + "' is not an array list." + _feeds);
+                    + STREAM_ELEMENT_NAME
+                    + "' is not an array list." + _streams);
         }
 
-        BsonArray feeds = _feeds.asArray();
+        BsonArray streams = _streams.asArray();
 
-        for (BsonValue _query : feeds.getValues()) {
+        for (BsonValue _query : streams.getValues()) {
             if (!_query.isDocument()) {
                 throw new InvalidMetadataException("element '"
-                        + FEEDS_ELEMENT_NAME
+                        + STREAM_ELEMENT_NAME
                         + "' is not valid." + _query);
             }
 
-            ret.add(new FeedOperation(_query.asDocument()));
+            ret.add(new ChangeStreamOperation(_query.asDocument()));
         }
 
         return ret;
@@ -89,7 +89,7 @@ public class FeedOperation {
         } else if (aVars.isArray()) {
             aVars.asArray().getValues().stream()
                     .filter(el -> (el.isDocument() || el.isArray()))
-                    .forEachOrdered(FeedOperation::checkAggregationVariables);
+                    .forEachOrdered(ChangeStreamOperation::checkAggregationVariables);
         }
     }
 
@@ -101,7 +101,7 @@ public class FeedOperation {
      * @param properties
      * @throws org.restheart.handlers.metadata.InvalidMetadataException
      */
-    public FeedOperation(BsonDocument properties)
+    public ChangeStreamOperation(BsonDocument properties)
             throws InvalidMetadataException {
         BsonValue _uri = properties.get(URI_ELEMENT_NAME);
 
@@ -152,7 +152,7 @@ public class FeedOperation {
      * @param vars RequestContext.getAggregationVars()
      * @return the stages, with unescaped operators and bound variables
      * @throws org.restheart.handlers.metadata.InvalidMetadataException
-     * @throws org.restheart.handlers.feed.QueryVariableNotBoundException
+     * @throws org.restheart.handlers.stream.QueryVariableNotBoundException
      */
     public List<BsonDocument> getResolvedStagesAsList(BsonDocument vars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
@@ -177,7 +177,7 @@ public class FeedOperation {
      * @return the json object where the variables ({"_$var": "var") are
      * replaced with the values defined in the avars URL query parameter
      * @throws org.restheart.handlers.metadata.InvalidMetadataException
-     * @throws org.restheart.handlers.feed.QueryVariableNotBoundException
+     * @throws org.restheart.handlers.stream.QueryVariableNotBoundException
      */
     protected BsonValue bindAggregationVariables(
             BsonValue obj,

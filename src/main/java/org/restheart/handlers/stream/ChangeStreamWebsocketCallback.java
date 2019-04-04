@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.feed;
+package org.restheart.handlers.stream;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * @author Omar Trasatti {@literal <omar@softinstigate.com>}
  *
  */
-public class FeedWebsocketCallback implements WebSocketConnectionCallback {
+public class ChangeStreamWebsocketCallback implements WebSocketConnectionCallback {
 
     private static Set<WebSocketChannel> PEER_CONNECTIONS = null;
     private static boolean ALREADY_NOTIFYING = false;
@@ -124,7 +124,7 @@ public class FeedWebsocketCallback implements WebSocketConnectionCallback {
     }
 
     private static String getHttpUrl(String webSocketUrl) throws MalformedURLException {
-        String result = webSocketUrl.substring(2); // remove ws protocol part
+        String result = webSocketUrl.substring(2); // remove ws protocol part of URL
         result = "http" + result;
         result = new URL(result).getPath();
         return result;

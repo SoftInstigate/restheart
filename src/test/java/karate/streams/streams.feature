@@ -1,31 +1,31 @@
-Feature: test changesFeed
+Feature: Test Change Streams
 
 Background:
 * url 'http://localhost:18080'
-* def db = '/test-changes-feed'
+* def db = '/test-change-streams'
 * def coll = db + '/coll'
 * callonce read('./features/set_up_test_environment.feature')
 
 # SUCCESSFULL SCENARIOS SECTION
 
 @requires-mongodb-3.6 @requires-replica-set
-Scenario: Delete a ChangesFeed resource.
-    Given path coll + '/_feeds/feedOperation/toBeDeletedFeed'
+Scenario: Delete a Change Stream resource.
+    Given path coll + '/_streams/changeStreamOperation/toBeDeletedStream'
     When method delete
     Then status 204
 
 @requires-mongodb-3.6 @requires-replica-set
-Scenario: GET the ChangesFeed resources associated to given feedOperation
-    Given path coll + '/_feeds/feedOperation'
+Scenario: GET the Change Stream resources associated to given changeStreamOperation
+    Given path coll + '/_streams/changeStreamOperation'
     When method get
     Then status 200
 
 @requires-mongodb-3.6 @requires-replica-set
-Scenario: Open ChangesFeeds resources and listen for "globalNotificationsFeed" ws message after POSTing a document.
-    * def feedPath = '/_feeds/feedOperation/globalNotificationsFeed'
+Scenario: Open Change Stream resources and listen for "globalNotificationsStream" ws message after POSTing a document.
+    * def streamPath = '/_streams/changeStreamOperation/globalNotificationsStream'
     * def baseUrl = 'http://localhost:18080'
     * def handler = function(notification) { java.lang.Thread.sleep(1000); karate.signal(notification) }
-    * def host = baseUrl + coll + feedPath    
+    * def host = baseUrl + coll + streamPath    
     
     # Establish WebSocket connection to get notified.
     * def socket = karate.webSocket(host, handler)
@@ -38,12 +38,12 @@ Scenario: Open ChangesFeeds resources and listen for "globalNotificationsFeed" w
     Then match result == '#notnull'
 
 @requires-mongodb-3.6 @requires-replica-set
-Scenario: Open a ChangesFeed resources and listen for "targettedDataNotificationsFeed" message after POSTing a document. Only changes for documents that meets the feedOperation's stage condition ($match) should be notified.
+Scenario: Open a Change Stream resources and listen for "targettedDataNotificationsStream" message after POSTing a document. Only changes for documents that meets the changeStreamOperation's stage condition ($match) should be notified.
 
-    * def feedPath = '/_feeds/feedOperationWithStageParam/targettedDataNotificationsFeed'
+    * def streamPath = '/_streams/changeStreamOperationWithStageParam/targettedDataNotificationsStream'
     * def baseUrl = 'http://localhost:18080'
     * def handler = function(notification) { java.lang.Thread.sleep(1000); karate.signal(notification) }
-    * def host = baseUrl + coll + feedPath
+    * def host = baseUrl + coll + streamPath
 
     
     # Establish WebSocket connection to get notified.
@@ -65,14 +65,14 @@ Scenario: Open a ChangesFeed resources and listen for "targettedDataNotification
 # FAILURE SCENARIOS SECTION
 
 @requires-mongodb-3.6 @requires-replica-set
-Scenario: Performing a simple GET request on a ChangeFeed resource (Expected 400 Bad Request)
+Scenario: Performing a simple GET request on a Change Stream resource (Expected 400 Bad Request)
 
-    Given path coll + '/_feeds/feedOperation/globalNotificationsFeed'
+    Given path coll + '/_streams/changeStreamOperation/globalNotificationsStream'
     When method get
     Then status 400
 
 @requires-mongodb-3.6 @requires-replica-set
-Scenario:  GET the list of running feeds on a FeedOperation w/o opened feeds (Expected 404 Not Found)
-    Given path coll + '/_feeds/emptyFeedOperation'
+Scenario:  GET the list of opened streams on a changeStreamOperation w/o opened streams (Expected 404 Not Found)
+    Given path coll + '/_streams/emptyChangeStreamOperation'
     When method get
     Then status 404

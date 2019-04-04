@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.feed;
+package org.restheart.handlers.stream;
 
 import io.undertow.Handlers;
 import io.undertow.server.HttpServerExchange;
@@ -34,11 +34,11 @@ import org.restheart.utils.ResponseHelper;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @author Omar Trasatti {@literal <omar@softinstigate.com>}
  */
-public class GetFeedHandler extends PipedHttpHandler {
+public class GetChangeStreamHandler extends PipedHttpHandler {
     private static WebSocketProtocolHandshakeHandler WEBSOCKET_HANDLER = Handlers
-            .websocket(new FeedWebsocketCallback());
+            .websocket(new ChangeStreamWebsocketCallback());
 
-    public GetFeedHandler() {
+    public GetChangeStreamHandler() {
         super();
     }
 
@@ -47,7 +47,7 @@ public class GetFeedHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public GetFeedHandler(PipedHttpHandler next) {
+    public GetChangeStreamHandler(PipedHttpHandler next) {
         super(next);
     }
 
@@ -65,7 +65,7 @@ public class GetFeedHandler extends PipedHttpHandler {
             return;
         }
 
-        if (context.getFeedIdentifier() != null) {
+        if (context.getChangeStreamIdentifier() != null) {
 
             if (exchange.getRequestHeaders().get("connection").getFirst().toLowerCase().equals("upgrade")) {
                 String changeStreamUri = getWsUri(context);
@@ -89,11 +89,11 @@ public class GetFeedHandler extends PipedHttpHandler {
 
             if (size == 0) {
                 ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_NOT_FOUND,
-                        "No feeds are notifying for this feedOperation");
+                        "No streams are notifying for this changeStreamOperation");
                 next(exchange, context);
             }
 
-            context.setResponseContent(new FeedResultRepresentationFactory()
+            context.setResponseContent(new ChangeStreamResultRepresentationFactory()
                     .getRepresentation(exchange, context, data, size).asBsonDocument());
             context.setResponseStatusCode(HttpStatus.SC_OK);
             next(exchange, context);
@@ -102,9 +102,9 @@ public class GetFeedHandler extends PipedHttpHandler {
 
     }
 
-    private boolean resourceBelongsToFeedOperation(String URI, RequestContext context) {
+    private boolean resourceBelongsToChangeStreamOperation(String URI, RequestContext context) {
         String[] uriPath = URI.split("/");
-        return uriPath[4].equals(context.getFeedOperation());
+        return uriPath[4].equals(context.getChangeStreamOperation());
     }
 
     private String getResourceIdentifier(String URI) {
@@ -114,8 +114,8 @@ public class GetFeedHandler extends PipedHttpHandler {
 
     private String getWsUri(RequestContext context) {
 
-        String result = "/" + context.getDBName() + "/" + context.getCollectionName() + "/_feeds/"
-                + context.getFeedOperation() + "/" + context.getFeedIdentifier();
+        String result = "/" + context.getDBName() + "/" + context.getCollectionName() + "/_streams/"
+                + context.getChangeStreamOperation() + "/" + context.getChangeStreamIdentifier();
 
         return result;
     }
@@ -136,7 +136,7 @@ public class GetFeedHandler extends PipedHttpHandler {
 
             for (String resource : changeStreamUriSet) {
 
-                if (resourceBelongsToFeedOperation(resource, context)) {
+                if (resourceBelongsToChangeStreamOperation(resource, context)) {
 
                     CacheableChangesStreamCursor cachedChangeStreamIterable = CacheManagerSingleton
                             .getCachedChangeStreamIterable(resource);

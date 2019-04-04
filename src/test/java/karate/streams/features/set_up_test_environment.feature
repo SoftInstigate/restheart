@@ -1,9 +1,9 @@
 @ignore
-Feature: Opens ChangesFeed resources
+Feature: Opens Change Stream resources
 
 Background:
 * url 'http://localhost:18080'
-* def db = '/test-changes-feed'
+* def db = '/test-change-streams'
 * def coll = db + '/coll'
 # note: db starting with 'test-' are automatically deleted after test finishes
 
@@ -18,9 +18,9 @@ Scenario: Setup test environment
 
 # Step 2: Create test collection
     Given path coll
-    And request {"feeds": [{"stages": [], "uri": "feedOperation" }, {"stages": [], "uri": "emptyFeedOperation" }, {"stages": [{"_$match": {"fullDocument.targettedProperty": {"_$var": "param"}}}], "uri": "feedOperationWithStageParam" }]}
+    And request {"streams": [{"stages": [], "uri": "changeStreamOperation" }, {"stages": [], "uri": "emptyChangeStreamOperation" }, {"stages": [{"_$match": {"fullDocument.targettedProperty": {"_$var": "param"}}}], "uri": "changeStreamOperationWithStageParam" }]}
     When method PUT
     Then status 201
 
-# Step 3: Open test feeds
-    * call read('./features/open_feeds.feature')
+# Step 3: Open test streams
+    * call read('./features/open_test_streams.feature')
